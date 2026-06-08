@@ -184,13 +184,30 @@
             <label for="tiers-slider" class="block text-[10px] font-bold text-yellow-500 uppercase tracking-widest mb-2">Nested Tiers (<span id="tiers-val" class="text-white">3</span>)</label>
             <input type="range" id="tiers-slider" min="1" max="4" value="3" class="w-full h-1 bg-gray-800 rounded appearance-none cursor-pointer outline-none border border-white/10 mb-6">
             
-            <label class="flex items-center text-yellow-500 text-[10px] uppercase tracking-widest font-bold cursor-pointer border-t border-white/10 pt-4">
-                <input type="checkbox" id="auto-rotate-cb" checked class="mr-2 w-4 h-4 accent-[#D4AF37]"> 
-                Auto Rotate System
-            </label>
+            <div class="mt-4 border-t border-white/10 pt-4">
+                <div class="flex justify-between items-center mb-2">
+                    <span class="text-[10px] text-yellow-500 font-bold uppercase tracking-widest">Transport Control</span>
+                </div>
+                <div class="flex justify-between items-center space-x-2">
+                    <button id="ctrl-stop" class="glass-panel p-2 rounded hover:bg-yellow-600/20 text-yellow-500 transition-colors" title="Stop & Reset">
+                        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M6 6h12v12H6z"/></svg>
+                    </button>
+                    <button id="ctrl-back" class="glass-panel p-2 rounded hover:bg-yellow-600/20 text-yellow-500 transition-colors" title="Step Back">
+                        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M15.41 16.59L10.83 12l4.58-4.59L14 6l-6 6 6 6 1.41-1.41z"/></svg>
+                    </button>
+                    <button id="ctrl-play-pause" class="glass-panel p-2 rounded hover:bg-yellow-600/20 text-yellow-500 transition-colors" title="Play/Pause">
+                        <svg id="icon-pause" class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
+                        <svg id="icon-play" class="w-4 h-4 hidden" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                    </button>
+                    <button id="ctrl-fwd" class="glass-panel p-2 rounded hover:bg-yellow-600/20 text-yellow-500 transition-colors" title="Step Forward">
+                        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6-1.41-1.41z"/></svg>
+                    </button>
+                </div>
+                <input type="range" id="frame-scrubber" min="0" max="4188" value="0" class="w-full h-1 bg-gray-800 rounded appearance-none cursor-pointer outline-none border border-white/10 mt-3">
+            </div>
 
-            <label id="cube-toggle-container" class="flex items-center text-[#00d4ff] text-[10px] uppercase tracking-widest font-bold cursor-pointer mt-4">
-                <input type="checkbox" id="show-cube-cb" class="mr-2 w-4 h-4 accent-[#00d4ff]"> 
+            <label id="cube-toggle-container" class="flex items-center text-[#00d4ff] text-[10px] uppercase tracking-widest font-bold cursor-pointer mt-4 border-t border-white/10 pt-4">
+                <input type="checkbox" id="show-cube-cb" checked class="mr-2 w-4 h-4 accent-[#00d4ff]"> 
                 Show 4x4x4 Wireframe
             </label>
 
@@ -395,7 +412,14 @@
         const multSlider = document.getElementById('mult-slider');
         const dimVal = document.getElementById('dim-val');
         const multVal = document.getElementById('mult-val');
-        const autoRotateCb = document.getElementById('auto-rotate-cb');
+        
+        const ctrlStop = document.getElementById('ctrl-stop');
+        const ctrlBack = document.getElementById('ctrl-back');
+        const ctrlPlayPause = document.getElementById('ctrl-play-pause');
+        const ctrlFwd = document.getElementById('ctrl-fwd');
+        const iconPlay = document.getElementById('icon-play');
+        const iconPause = document.getElementById('icon-pause');
+        const frameScrubber = document.getElementById('frame-scrubber');
         
         const showCubeCb = document.getElementById('show-cube-cb');
         const cubeToggleContainer = document.getElementById('cube-toggle-container');
@@ -404,10 +428,71 @@
         const tiersSlider = document.getElementById('tiers-slider');
         const tiersVal = document.getElementById('tiers-val');
         const frameVal = document.getElementById('frame-val');
+        
         let frameCount = 0;
+        const MAX_FRAMES = 4188; // Full 4π structural cycle at 0.003 increment
 
         let infoOpen = true;
-        let autoRotate = true;
+        let isPlaying = true;
+        let t = 0; // Global time/phase parameter
+
+        // Control Logic
+        function updatePlayState() {
+            if (isPlaying) {
+                iconPlay.classList.add('hidden');
+                iconPause.classList.remove('hidden');
+            } else {
+                iconPlay.classList.remove('hidden');
+                iconPause.classList.add('hidden');
+            }
+        }
+
+        ctrlPlayPause.addEventListener('click', () => {
+            isPlaying = !isPlaying;
+            // Auto restart if paused at the very end
+            if (isPlaying && frameCount >= MAX_FRAMES) {
+                frameCount = 0;
+                t = 0;
+            }
+            updatePlayState();
+        });
+
+        ctrlStop.addEventListener('click', () => {
+            isPlaying = false;
+            t = 0;
+            frameCount = 0;
+            frameScrubber.value = 0;
+            frameVal.innerText = 0;
+            updatePlayState();
+        });
+
+        ctrlBack.addEventListener('click', () => {
+            isPlaying = false;
+            t -= 0.003;
+            frameCount--;
+            if(frameCount < 0) { frameCount = MAX_FRAMES; t = MAX_FRAMES * 0.003; }
+            frameScrubber.value = frameCount;
+            frameVal.innerText = frameCount;
+            updatePlayState();
+        });
+
+        ctrlFwd.addEventListener('click', () => {
+            isPlaying = false;
+            t += 0.003;
+            frameCount++;
+            if(frameCount > MAX_FRAMES) { frameCount = 0; t = 0; }
+            frameScrubber.value = frameCount;
+            frameVal.innerText = frameCount;
+            updatePlayState();
+        });
+
+        frameScrubber.addEventListener('input', (e) => {
+            isPlaying = false;
+            frameCount = parseInt(e.target.value);
+            t = frameCount * 0.003;
+            frameVal.innerText = frameCount;
+            updatePlayState();
+        });
 
         // Visual Controls Interaction Logic
         visualSettingsBtn.addEventListener('click', () => {
@@ -440,10 +525,6 @@
 
         tiersSlider.addEventListener('input', (e) => {
             tiersVal.innerText = e.target.value;
-        });
-
-        autoRotateCb.addEventListener('change', (e) => {
-            autoRotate = e.target.checked;
         });
 
         infoToggle.addEventListener('click', () => {
@@ -601,7 +682,6 @@
             userRotation = 0;
         });
 
-        let t = 0;
         const PHI = 1.6180339887; // The Golden Subdivision Constant
 
         // Helper Function for dynamic N-sided polygon
@@ -697,14 +777,19 @@
             ctx.fillStyle = '#05030a';
             ctx.fillRect(0, 0, w, h);
             
-            // Auto Rotate state
-            if (autoRotate) {
+            // Playback state
+            if (isPlaying) {
                 t += 0.003;
-            }
+                frameCount++;
+                frameScrubber.value = frameCount;
+                frameVal.innerText = frameCount;
 
-            // Frame Tracker Update
-            frameCount++;
-            frameVal.innerText = frameCount;
+                // Stop loop exactly when one structural cycle completes
+                if (frameCount >= MAX_FRAMES) {
+                    isPlaying = false;
+                    updatePlayState();
+                }
+            }
 
             ctx.save();
             // Apply Camera Pan and Zoom
@@ -734,21 +819,22 @@
             // Dynamic Polygon constraint (Scales with N, maxes out at 12)
             let polySides = Math.max(3, Math.min(N, 12));
 
-            // 1. Central Manifold Structure OR 4x4x4 Cube (Dynamically scales with N)
+            // 1. Central Manifold Structure AND 4x4x4 Cube (Dynamically scales with N)
             let polySize = (Math.min(w, h) * 0.45);
             
+            // ALWAYS render Standard Dynamic Polygons to triangulate the 5th field
+            let currentPolySize = polySize;
+            for(let i=0; i<numTiers; i++) {
+                // Geometric Handshake Ratio: Middle(3) : Above(2) : Below(1) : Fourth(4)
+                let speed = (i === 1) ? 3 : (i === 0 ? 2 : (i === 2 ? 1 : 4)); 
+                let harmonicPhase = spinorCycle * speed; 
+                drawDynamicPolygon(0, 0, currentPolySize, polySides, `rgba(160, 32, 240, ${0.3 + i*0.15})`, 1.5, harmonicPhase * (i%2===0?1:-1));
+                currentPolySize /= PHI; 
+            }
+
             if (showCubeCb.checked && N >= 4) {
-                // Render the 4x4x4 Grid structure bound to the spinor phase
+                // ADDITIONALLY Render the 4x4x4 Grid structure bound to the spinor phase
                 drawGrid4x4x4(0, 0, polySize * 1.5, spinorCycle);
-            } else {
-                // Standard Dynamic Polygons
-                for(let i=0; i<numTiers; i++) {
-                    // Geometric Handshake Ratio: Middle(3) : Above(2) : Below(1) : Fourth(4)
-                    let speed = (i === 1) ? 3 : (i === 0 ? 2 : (i === 2 ? 1 : 4)); 
-                    let harmonicPhase = spinorCycle * speed; 
-                    drawDynamicPolygon(0, 0, polySize, polySides, `rgba(160, 32, 240, ${0.3 + i*0.15})`, 1.5, harmonicPhase * (i%2===0?1:-1));
-                    polySize /= PHI; 
-                }
             }
 
             // 2. Multi-Nested Toroid Structure & String Art Handshakes
