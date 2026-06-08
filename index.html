@@ -170,13 +170,33 @@
     <!-- Visual System Control Panel (Hidden by default, shown when info is closed) -->
     <div id="visual-controls-container" class="fixed bottom-8 right-8 z-50 flex flex-col items-end opacity-0 pointer-events-none fade-transition translate-y-4">
         <div id="visual-panel" class="glass-panel p-6 rounded-xl mb-4 hidden w-72 border border-yellow-600/30 shadow-[0_0_20px_rgba(0,0,0,0.8)]">
-            <h4 class="text-white font-bold text-sm mb-4 mystical-font border-b border-white/10 pb-2">Manifold Parameters</h4>
+            <h4 class="text-white font-bold text-sm mb-4 mystical-font border-b border-white/10 pb-2 flex justify-between items-end">
+                <span>Manifold Parameters</span>
+                <span class="text-[10px] text-yellow-500 font-mono font-normal tracking-widest">Frame: <span id="frame-val" class="text-white">0</span></span>
+            </h4>
             
             <label for="dim-slider" class="block text-[10px] font-bold text-yellow-500 uppercase tracking-widest mb-2">Hilbert Dimension (<span id="dim-val" class="text-white">12</span>)</label>
             <input type="range" id="dim-slider" min="3" max="36" value="12" class="w-full h-1 bg-gray-800 rounded appearance-none cursor-pointer mb-6 outline-none border border-white/10">
             
             <label for="mult-slider" class="block text-[10px] font-bold text-yellow-500 uppercase tracking-widest mb-2">Torsional Multiplier (<span id="mult-val" class="text-white">5</span>)</label>
-            <input type="range" id="mult-slider" min="1" max="12" value="5" class="w-full h-1 bg-gray-800 rounded appearance-none cursor-pointer outline-none border border-white/10">
+            <input type="range" id="mult-slider" min="1" max="12" value="5" class="w-full h-1 bg-gray-800 rounded appearance-none cursor-pointer outline-none border border-white/10 mb-6">
+            
+            <label for="tiers-slider" class="block text-[10px] font-bold text-yellow-500 uppercase tracking-widest mb-2">Nested Tiers (<span id="tiers-val" class="text-white">3</span>)</label>
+            <input type="range" id="tiers-slider" min="1" max="4" value="3" class="w-full h-1 bg-gray-800 rounded appearance-none cursor-pointer outline-none border border-white/10 mb-6">
+            
+            <label class="flex items-center text-yellow-500 text-[10px] uppercase tracking-widest font-bold cursor-pointer border-t border-white/10 pt-4">
+                <input type="checkbox" id="auto-rotate-cb" checked class="mr-2 w-4 h-4 accent-[#D4AF37]"> 
+                Auto Rotate System
+            </label>
+
+            <label id="cube-toggle-container" class="flex items-center text-[#00d4ff] text-[10px] uppercase tracking-widest font-bold cursor-pointer mt-4">
+                <input type="checkbox" id="show-cube-cb" class="mr-2 w-4 h-4 accent-[#00d4ff]"> 
+                Show 4x4x4 Wireframe
+            </label>
+
+            <button id="reset-view-btn" class="w-full mt-6 bg-yellow-600/20 hover:bg-yellow-600/40 text-yellow-500 border border-yellow-600/40 rounded py-2 text-[10px] uppercase tracking-widest font-bold transition-all">
+                Reset Viewport
+            </button>
             
             <p class="text-[9px] text-gray-500 mt-4 leading-relaxed">
                 Modifies the fundamental $N$ symmetry channels and the geometric $K$ routing protocol mapping $i \to (i \times K) \pmod N$.
@@ -188,11 +208,26 @@
         </button>
     </div>
 
-    <!-- Permanent Header (Title, Sigil, Name) -->
-    <header class="w-full pt-16 pb-12 px-6 flex flex-col items-center justify-center relative border-b border-yellow-600/20 bg-[#05030a]/80 backdrop-blur-md shadow-2xl z-20 pointer-events-auto">
-        <!-- Centerpiece Sigil -->
-        <div class="relative w-48 h-48 md:w-56 md:h-56 mb-6">
-            <svg viewBox="0 0 200 200" class="w-full h-full pulse-glow" xmlns="http://www.w3.org/2000/svg">
+    <!-- Permanent Header (Image Sigil Left, Title Center, SVG Sigil Right) -->
+    <header class="w-full py-4 px-6 md:px-10 flex flex-row items-center justify-between relative border-b border-yellow-600/20 bg-[#05030a]/80 backdrop-blur-md shadow-2xl z-20 pointer-events-auto">
+        <!-- Far Left: Uploaded Image Sigil -->
+        <div class="relative w-20 h-20 md:w-28 md:h-28 flex-shrink-0">
+            <img src="Screenshot 2026-06-02 041633.png" alt="Primary Sigil" class="w-full h-full object-contain spin-slow pulse-glow rounded-full mix-blend-screen" />
+        </div>
+
+        <!-- Center: Official Titles -->
+        <div class="flex-1 flex flex-col items-center justify-center text-center px-4">
+            <h1 class="text-2xl md:text-4xl lg:text-5xl font-bold tracking-[0.25em] gold-gradient mb-2 md:mb-3">OWL ACADEMY</h1>
+            <div class="text-xs md:text-sm text-yellow-600/80 tracking-[0.3em] md:tracking-[0.4em] uppercase mystical-font flex items-center justify-center">
+                <span class="w-4 md:w-8 h-[1px] bg-yellow-600/40 mr-2 md:mr-4 hidden sm:block"></span>
+                The Education Portal
+                <span class="w-4 md:w-8 h-[1px] bg-yellow-600/40 ml-2 md:ml-4 hidden sm:block"></span>
+            </div>
+        </div>
+
+        <!-- Far Right: Original SVG Sigil -->
+        <div class="relative w-20 h-20 md:w-28 md:h-28 flex-shrink-0">
+            <svg viewBox="0 0 200 200" class="w-full h-full spin-slow pulse-glow" xmlns="http://www.w3.org/2000/svg">
                 <defs>
                     <linearGradient id="goldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
                         <stop offset="0%" stop-color="#C59B3F" />
@@ -201,7 +236,7 @@
                     </linearGradient>
                 </defs>
                 <!-- Rotating Outer Star Geometry -->
-                <g class="spin-slow" style="transform-origin: 100px 100px;">
+                <g style="transform-origin: 100px 100px;">
                     <circle cx="100" cy="100" r="95" fill="none" stroke="url(#goldGrad)" stroke-width="1" opacity="0.6"/>
                     <circle cx="100" cy="100" r="85" fill="none" stroke="url(#goldGrad)" stroke-width="0.5" opacity="0.4"/>
                     <polygon points="100,15 173.6,142.5 26.4,142.5" fill="none" stroke="url(#goldGrad)" stroke-width="1" opacity="0.5"/>
@@ -218,13 +253,6 @@
                 </g>
                 <circle cx="100" cy="100" r="45" fill="none" stroke="url(#goldGrad)" stroke-width="0.5" stroke-dasharray="2 2" opacity="0.6"/>
             </svg>
-        </div>
-        <!-- Official Titles -->
-        <h1 class="text-3xl md:text-5xl font-bold tracking-[0.25em] gold-gradient mb-3 text-center">OWL ACADEMY</h1>
-        <div class="text-sm md:text-md text-yellow-600/80 tracking-[0.4em] uppercase mystical-font text-center flex items-center justify-center">
-            <span class="w-8 h-[1px] bg-yellow-600/40 mr-4 hidden md:block"></span>
-            The Education Portal
-            <span class="w-8 h-[1px] bg-yellow-600/40 ml-4 hidden md:block"></span>
         </div>
     </header>
 
@@ -367,8 +395,19 @@
         const multSlider = document.getElementById('mult-slider');
         const dimVal = document.getElementById('dim-val');
         const multVal = document.getElementById('mult-val');
+        const autoRotateCb = document.getElementById('auto-rotate-cb');
         
+        const showCubeCb = document.getElementById('show-cube-cb');
+        const cubeToggleContainer = document.getElementById('cube-toggle-container');
+        const resetViewBtn = document.getElementById('reset-view-btn');
+
+        const tiersSlider = document.getElementById('tiers-slider');
+        const tiersVal = document.getElementById('tiers-val');
+        const frameVal = document.getElementById('frame-val');
+        let frameCount = 0;
+
         let infoOpen = true;
+        let autoRotate = true;
 
         // Visual Controls Interaction Logic
         visualSettingsBtn.addEventListener('click', () => {
@@ -376,16 +415,35 @@
         });
 
         dimSlider.addEventListener('input', (e) => {
-            dimVal.innerText = e.target.value;
-            multSlider.max = e.target.value; // Max multiplier is strictly bound by dimension N
-            if(parseInt(multSlider.value) > parseInt(e.target.value)) {
-                multSlider.value = e.target.value;
-                multVal.innerText = e.target.value;
+            let nVal = parseInt(e.target.value);
+            dimVal.innerText = nVal;
+            multSlider.max = nVal; // Max multiplier is strictly bound by dimension N
+            if(parseInt(multSlider.value) > nVal) {
+                multSlider.value = nVal;
+                multVal.innerText = nVal;
+            }
+            
+            // Enable/Disable 4x4x4 Cube toggle based on N >= 4
+            if (nVal >= 4) {
+                cubeToggleContainer.style.opacity = '1';
+                showCubeCb.disabled = false;
+            } else {
+                cubeToggleContainer.style.opacity = '0.5';
+                showCubeCb.disabled = true;
+                showCubeCb.checked = false;
             }
         });
 
         multSlider.addEventListener('input', (e) => {
             multVal.innerText = e.target.value;
+        });
+
+        tiersSlider.addEventListener('input', (e) => {
+            tiersVal.innerText = e.target.value;
+        });
+
+        autoRotateCb.addEventListener('change', (e) => {
+            autoRotate = e.target.checked;
         });
 
         infoToggle.addEventListener('click', () => {
@@ -433,8 +491,10 @@
         let offsetX = 0;
         let offsetY = 0;
         let scale = 1;
-        let isDragging = false;
+        let isPanning = false;
+        let isRotating = false;
         let startX, startY;
+        let userRotation = 0;
 
         // Starfield Generation
         const stars = [];
@@ -455,39 +515,69 @@
         window.addEventListener('resize', resize);
         resize();
 
-        // Mouse Pan
+        // Prevent Context Menu for Right-Click Panning
+        canvas.addEventListener('contextmenu', (e) => {
+            if (!infoOpen) e.preventDefault();
+        });
+
+        // Mouse Controls: Left Click = Rotate, Right/Middle Click = Pan
         canvas.addEventListener('mousedown', (e) => {
-            isDragging = true;
-            startX = e.clientX - offsetX;
-            startY = e.clientY - offsetY;
-            canvas.style.cursor = 'grabbing';
+            if (infoOpen) return; // Disable interactions when info is open
+            if (e.button === 0) {
+                isRotating = true;
+                startX = e.clientX;
+                canvas.style.cursor = 'ew-resize';
+            } else if (e.button === 2 || e.button === 1) {
+                isPanning = true;
+                startX = e.clientX - offsetX;
+                startY = e.clientY - offsetY;
+                canvas.style.cursor = 'grabbing';
+            }
         });
         window.addEventListener('mousemove', (e) => {
-            if (!isDragging) return;
-            offsetX = e.clientX - startX;
-            offsetY = e.clientY - startY;
+            if (isRotating) {
+                let dx = e.clientX - startX;
+                userRotation += dx * 0.005;
+                startX = e.clientX; // Reset for continuous rotation calculation
+            } else if (isPanning) {
+                offsetX = e.clientX - startX;
+                offsetY = e.clientY - startY;
+            }
         });
         window.addEventListener('mouseup', () => {
-            isDragging = false;
+            isRotating = false;
+            isPanning = false;
             canvas.style.cursor = 'grab';
         });
 
-        // Touch Pan
+        // Touch Controls: 1 Finger = Rotate, 2 Fingers = Pan
         canvas.addEventListener('touchstart', (e) => {
-            if(e.touches.length === 1) {
-                isDragging = true;
+            if (infoOpen) return;
+            if (e.touches.length === 1) {
+                isRotating = true;
+                startX = e.touches.clientX;
+            } else if (e.touches.length === 2) {
+                isPanning = true;
                 startX = e.touches.clientX - offsetX;
                 startY = e.touches.clientY - offsetY;
             }
         }, {passive: false});
         canvas.addEventListener('touchmove', (e) => {
-            if (!isDragging || e.touches.length !== 1) return;
+            if (infoOpen) return;
             if(e.target === canvas) e.preventDefault(); // Prevent scroll when interacting with canvas
-            offsetX = e.touches.clientX - startX;
-            offsetY = e.touches.clientY - startY;
+            
+            if (isRotating && e.touches.length === 1) {
+                let dx = e.touches.clientX - startX;
+                userRotation += dx * 0.005;
+                startX = e.touches.clientX;
+            } else if (isPanning && e.touches.length === 2) {
+                offsetX = e.touches.clientX - startX;
+                offsetY = e.touches.clientY - startY;
+            }
         }, {passive: false});
         canvas.addEventListener('touchend', () => {
-            isDragging = false;
+            isRotating = false;
+            isPanning = false;
         });
 
         // Mouse Wheel Zoom
@@ -503,25 +593,102 @@
             scale = Math.max(0.2, Math.min(scale, 8));
         }, {passive: false});
 
+        // Reset Viewport
+        resetViewBtn.addEventListener('click', () => {
+            offsetX = 0;
+            offsetY = 0;
+            scale = 1;
+            userRotation = 0;
+        });
+
         let t = 0;
         const PHI = 1.6180339887; // The Golden Subdivision Constant
 
-        function drawIsometricCube(x, y, size, strokeColor, lineWidth) {
+        // Helper Function for dynamic N-sided polygon
+        function drawDynamicPolygon(x, y, radius, sides, strokeColor, lineWidth, rotationOffset) {
             ctx.beginPath();
             ctx.strokeStyle = strokeColor;
             ctx.lineWidth = lineWidth;
             
-            const angles = [Math.PI/6, Math.PI/2, 5*Math.PI/6, 7*Math.PI/6, 3*Math.PI/2, 11*Math.PI/6];
-            const pts = angles.map(a => ({x: x + Math.cos(a)*size, y: y + Math.sin(a)*size}));
-            
-            ctx.moveTo(pts.x, pts.y);
-            for(let i=1; i<6; i++) ctx.lineTo(pts[i].x, pts[i].y);
+            for (let i = 0; i < sides; i++) {
+                let angle = (i / sides) * Math.PI * 2 + rotationOffset;
+                let px = x + Math.cos(angle) * radius;
+                let py = y + Math.sin(angle) * radius;
+                if (i === 0) ctx.moveTo(px, py);
+                else ctx.lineTo(px, py);
+            }
             ctx.closePath();
+            ctx.stroke();
+
+            // Internal Spokes to origin to represent geometric volume
+            ctx.beginPath();
+            for (let i = 0; i < sides; i++) {
+                let angle = (i / sides) * Math.PI * 2 + rotationOffset;
+                ctx.moveTo(x, y);
+                ctx.lineTo(x + Math.cos(angle) * radius, y + Math.sin(angle) * radius);
+            }
+            // Inherit color but dramatically lower opacity for spokes
+            ctx.strokeStyle = strokeColor.replace(/[\d.]+\)$/, '0.05)');
+            ctx.stroke();
+        }
+
+        // Draw 4x4x4 Hypercube Wireframe (Isometric Projection)
+        function drawGrid4x4x4(x, y, totalSize, rotationOffset) {
+            const step = totalSize / 4;
+            const offset = totalSize / 2; // to center the grid
+            ctx.strokeStyle = `rgba(0, 212, 255, 0.4)`; // Holo blue
+            ctx.lineWidth = 1;
+            ctx.beginPath();
             
-            ctx.moveTo(x, y); ctx.lineTo(pts.x, pts.y);
-            ctx.moveTo(x, y); ctx.lineTo(pts.x, pts.y);
-            ctx.moveTo(x, y); ctx.lineTo(pts.x, pts.y);
-            
+            function project(i, j, k) {
+                // center coordinates
+                let cx = (i * step) - offset;
+                let cy = (j * step) - offset;
+                let cz = (k * step) - offset;
+                
+                // rotate around Z axis
+                let rx = cx * Math.cos(rotationOffset) - cy * Math.sin(rotationOffset);
+                let ry = cx * Math.sin(rotationOffset) + cy * Math.cos(rotationOffset);
+                
+                // Isometric projection
+                let px = (rx - ry) * 0.866025; // cos(30)
+                let py = (rx + ry) * 0.5 - cz; // sin(30)
+                return { x: x + px, y: y + py };
+            }
+
+            // Draw lines parallel to X
+            for(let j=0; j<=4; j++) {
+                for(let k=0; k<=4; k++) {
+                    let p1 = project(0, j, k);
+                    ctx.moveTo(p1.x, p1.y);
+                    for(let i=1; i<=4; i++) {
+                        let p2 = project(i, j, k);
+                        ctx.lineTo(p2.x, p2.y);
+                    }
+                }
+            }
+            // Draw lines parallel to Y
+            for(let i=0; i<=4; i++) {
+                for(let k=0; k<=4; k++) {
+                    let p1 = project(i, 0, k);
+                    ctx.moveTo(p1.x, p1.y);
+                    for(let j=1; j<=4; j++) {
+                        let p2 = project(i, j, k);
+                        ctx.lineTo(p2.x, p2.y);
+                    }
+                }
+            }
+            // Draw lines parallel to Z
+            for(let i=0; i<=4; i++) {
+                for(let j=0; j<=4; j++) {
+                    let p1 = project(i, j, 0);
+                    ctx.moveTo(p1.x, p1.y);
+                    for(let k=1; k<=4; k++) {
+                        let p2 = project(i, j, k);
+                        ctx.lineTo(p2.x, p2.y);
+                    }
+                }
+            }
             ctx.stroke();
         }
 
@@ -530,7 +697,14 @@
             ctx.fillStyle = '#05030a';
             ctx.fillRect(0, 0, w, h);
             
-            t += 0.003;
+            // Auto Rotate state
+            if (autoRotate) {
+                t += 0.003;
+            }
+
+            // Frame Tracker Update
+            frameCount++;
+            frameVal.innerText = frameCount;
 
             ctx.save();
             // Apply Camera Pan and Zoom
@@ -548,29 +722,52 @@
             });
 
             // Dynamic Variables from Floating Control Panel
-            let N = parseInt(dimSlider.value); // Dimension Nodes (Default 12 pos + 12 neg = 24 streams)
+            let N = parseInt(dimSlider.value); // Dimension Nodes (Default 12)
             let K = parseInt(multSlider.value); // Torsional Multiplier Route (Default 5)
+            let numTiers = parseInt(tiersSlider.value); // Nested Tiers (Default 3)
 
-            // 1. FP4 / Soliton Collapse: 4x4x4 Cube structure
-            let cubeSize = (Math.min(w, h) * 0.45);
-            for(let i=0; i<3; i++) {
-                // Upgraded to vibrant violet/magenta to stand out
-                drawIsometricCube(0, 0, cubeSize, `rgba(160, 32, 240, ${0.15 + i*0.15})`, 1.5);
-                cubeSize /= PHI; 
+            // 720:1 Cyclic Symmetry Mapping (720 degrees = 4π radians)
+            // System completes a full structural hyper-rotation every 4π.
+            let absolutePhase = t + userRotation;
+            let spinorCycle = absolutePhase % (Math.PI * 4); // The 720 degree bound
+
+            // Dynamic Polygon constraint (Scales with N, maxes out at 12)
+            let polySides = Math.max(3, Math.min(N, 12));
+
+            // 1. Central Manifold Structure OR 4x4x4 Cube (Dynamically scales with N)
+            let polySize = (Math.min(w, h) * 0.45);
+            
+            if (showCubeCb.checked && N >= 4) {
+                // Render the 4x4x4 Grid structure bound to the spinor phase
+                drawGrid4x4x4(0, 0, polySize * 1.5, spinorCycle);
+            } else {
+                // Standard Dynamic Polygons
+                for(let i=0; i<numTiers; i++) {
+                    // Geometric Handshake Ratio: Middle(3) : Above(2) : Below(1) : Fourth(4)
+                    let speed = (i === 1) ? 3 : (i === 0 ? 2 : (i === 2 ? 1 : 4)); 
+                    let harmonicPhase = spinorCycle * speed; 
+                    drawDynamicPolygon(0, 0, polySize, polySides, `rgba(160, 32, 240, ${0.3 + i*0.15})`, 1.5, harmonicPhase * (i%2===0?1:-1));
+                    polySize /= PHI; 
+                }
             }
 
-            // 2. Multi-Nested Toroid Structure (3 Tiers) & String Art Handshakes
+            // 2. Multi-Nested Toroid Structure & String Art Handshakes
             let baseR1 = (Math.min(w, h) * 0.4);
             
-            for (let tier = 0; tier < 3; tier++) {
+            for (let tier = 0; tier < numTiers; tier++) {
                 let r1 = baseR1 / Math.pow(PHI, tier * 1.5); 
                 let r2 = r1 / PHI;
+                
+                // Enforce the Trefoil Resonance Handshake across tiers:
+                // Middle tier spins 3x, Above/Outer spins 2x, Below/Inner spins 1x.
+                let speed = (tier === 1) ? 3 : (tier === 0 ? 2 : (tier === 2 ? 1 : 4));
+                let tierPhase = spinorCycle * speed;
                 
                 // Draw Base Toroid Manifold
                 ctx.beginPath();
                 for (let a = 0; a <= Math.PI * 2; a += 0.05) {
-                    let px = r1 * Math.cos(a + t * (tier%2===0?1:-1)) * Math.cos(t*0.1);
-                    let py = r2 * Math.sin(a + t * (tier%2===0?1:-1)) * Math.sin(t*0.1);
+                    let px = r1 * Math.cos(a + tierPhase * (tier%2===0?1:-1)) * Math.cos(tierPhase*0.1);
+                    let py = r2 * Math.sin(a + tierPhase * (tier%2===0?1:-1)) * Math.sin(tierPhase*0.1);
                     if (a === 0) ctx.moveTo(px, py);
                     else ctx.lineTo(px, py);
                 }
@@ -586,15 +783,15 @@
                     let angleOffset = (i * Math.PI * 2) / N;
                     
                     // Positive Flow Vector
-                    let posAngle = (t * 2) + angleOffset + (tier * Math.PI/6);
-                    let pxPos = r1 * Math.cos(posAngle) * Math.cos(t*0.1);
-                    let pyPos = r2 * Math.sin(posAngle) * Math.sin(t*0.1);
+                    let posAngle = (tierPhase * 2) + angleOffset + (tier * Math.PI/6);
+                    let pxPos = r1 * Math.cos(posAngle) * Math.cos(tierPhase*0.1);
+                    let pyPos = r2 * Math.sin(posAngle) * Math.sin(tierPhase*0.1);
                     posNodes.push({x: pxPos, y: pyPos});
 
                     // Negative Flow Vector
-                    let negAngle = -(t * 2.5) - angleOffset - (tier * Math.PI/6); 
-                    let pxNeg = r1 * Math.cos(negAngle) * Math.cos(t*0.1);
-                    let pyNeg = r2 * Math.sin(negAngle) * Math.sin(t*0.1);
+                    let negAngle = -(tierPhase * 2.5) - angleOffset - (tier * Math.PI/6); 
+                    let pxNeg = r1 * Math.cos(negAngle) * Math.cos(tierPhase*0.1);
+                    let pyNeg = r2 * Math.sin(negAngle) * Math.sin(tierPhase*0.1);
                     negNodes.push({x: pxNeg, y: pyNeg});
                 }
 
@@ -647,15 +844,15 @@
             // 4. One-Way Markov Pump Chain System (Center Core)
             let pumpRadius = baseR1 / Math.pow(PHI, 5.5);
             ctx.beginPath();
-            let pulse = Math.sin(t*5)*4; // Stronger pulse
+            let pulse = Math.sin(absolutePhase * 5) * 4; // Use absolute phase for pulse
             ctx.arc(0, 0, pumpRadius + pulse, 0, Math.PI*2);
-            ctx.strokeStyle = `rgba(0, 255, 255, ${0.8 + Math.sin(t*5)*0.2})`;
+            ctx.strokeStyle = `rgba(0, 255, 255, ${0.8 + Math.sin(absolutePhase * 5)*0.2})`;
             ctx.lineWidth = 3;
             ctx.stroke();
 
             // Tesla-valve suppression directional arrows
             for (let i = 0; i < 3; i++) {
-                let offset = (t * 30 + i * 15) % 45; 
+                let offset = (absolutePhase * 30 + i * 15) % 45; 
                 let opacity = 1 - (offset / 45); 
                 
                 // Top Ejection
