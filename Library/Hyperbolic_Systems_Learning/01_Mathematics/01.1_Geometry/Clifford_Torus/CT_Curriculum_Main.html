@@ -1,0 +1,1128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Owl Academy | The Clifford Torus</title>
+    
+    <!-- External Libraries -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Inter:wght@300;400;500;600&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+    
+    <!-- MathJax Configuration for Equations -->
+    <script>
+        window.MathJax = { 
+            tex: { 
+                inlineMath: [['$', '$'], ['\\(', '\\)']], 
+                displayMath: [['$$', '$$'], ['\\[', '\\]']] 
+            },
+            startup: {
+                pageReady: () => {
+                    return MathJax.startup.defaultPageReady().then(() => {
+                        console.log('MathJax initial rendering complete');
+                    });
+                }
+            }
+        };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+    <style>
+        :root {
+            --color-void: #05030a;
+            --color-primary: #D4AF37;
+            --color-primary-light: #FFF8DC;
+            --color-primary-dark: #aa771c;
+            --color-secondary: #8e9eab;
+            --color-holo1: #00d4ff;
+            --color-holo2: #8A2BE2;
+            --color-vector-p: #20b2aa; /* Light Sea Green */
+            --color-vector-q: #ff7f50; /* Coral */
+        }
+
+        body {
+            background-color: var(--color-void);
+            color: #e2e8f0;
+            font-family: 'Inter', sans-serif;
+            background: radial-gradient(circle at 50% 0%, color-mix(in srgb, var(--color-holo2) 8%, var(--color-void)), var(--color-void) 60%);
+            min-height: 100vh;
+            margin: 0;
+            overflow-x: hidden;
+            line-height: 1.7;
+        }
+
+        .starfield {
+            position: fixed; inset: 0;
+            background-image:
+                radial-gradient(2px 2px at 20px 30px, var(--color-primary), rgba(0,0,0,0)),
+                radial-gradient(2px 2px at 40px 70px, #fff, rgba(0,0,0,0)),
+                radial-gradient(2px 2px at 50px 160px, rgba(255,255,255,0.8), rgba(0,0,0,0)),
+                radial-gradient(2px 2px at 90px 40px, #fff, rgba(0,0,0,0)),
+                radial-gradient(2px 2px at 130px 80px, var(--color-primary), rgba(0,0,0,0));
+            background-repeat: repeat; background-size: 250px 250px;
+            animation: twinkle 8s infinite alternate;
+            opacity: 0.15; z-index: -2; pointer-events: none;
+        }
+        
+        .nebula-glow {
+            position: fixed; top: 0; left: 50%; transform: translateX(-50%);
+            width: 100vw; height: 50vh;
+            background: radial-gradient(ellipse at top center, color-mix(in srgb, var(--color-primary) 8%, transparent) 0%, transparent 70%);
+            z-index: -1; pointer-events: none;
+        }
+
+        @keyframes twinkle { 0% { opacity: 0.05; } 100% { opacity: 0.2; } }
+
+        h1, h2, h3, h4, h5, .mystical-font {
+            font-family: 'Cinzel', serif;
+        }
+
+        .gold-gradient {
+            background: linear-gradient(to right, var(--color-primary), var(--color-primary-light), var(--color-primary));
+            -webkit-background-clip: text; background-clip: text;
+            color: transparent; text-shadow: 0 0 15px color-mix(in srgb, var(--color-primary) 30%, transparent);
+        }
+
+        .glass-panel {
+            background: rgba(10, 8, 20, 0.4);
+            backdrop-filter: blur(12px);
+            border: 1px solid color-mix(in srgb, var(--color-primary) 15%, transparent);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5);
+        }
+
+        /* Tutorial Specific Prose Styles */
+        .tutorial-content h2 {
+            color: var(--color-primary);
+            font-size: 1.75rem;
+            margin-top: 2.5rem;
+            margin-bottom: 1rem;
+            border-bottom: 1px solid color-mix(in srgb, var(--color-primary) 20%, transparent);
+            padding-bottom: 0.5rem;
+            letter-spacing: 0.05em;
+        }
+
+        .tutorial-content h3 {
+            color: #f1f5f9;
+            font-size: 1.25rem;
+            margin-top: 2rem;
+            margin-bottom: 0.75rem;
+            letter-spacing: 0.05em;
+        }
+
+        .tutorial-content p { margin-bottom: 1.25rem; color: #cbd5e1; font-weight: 300; }
+        .tutorial-content strong { color: #f8fafc; font-weight: 600; }
+        .tutorial-content a { color: var(--color-holo1); text-decoration: none; transition: color 0.2s; }
+        .tutorial-content a:hover { color: #fff; text-shadow: 0 0 8px var(--color-holo1); }
+
+        .tutorial-content ul { list-style: none; padding-left: 1rem; margin-bottom: 1.5rem; }
+        .tutorial-content li { position: relative; padding-left: 1.5rem; margin-bottom: 0.5rem; color: #cbd5e1; font-weight: 300; }
+        .tutorial-content li::before {
+            content: '⬡';
+            position: absolute; left: 0; top: 0.1rem;
+            color: var(--color-primary); font-size: 0.7rem;
+        }
+
+        .lore-callout {
+            margin: 2rem 0; padding: 1.5rem;
+            background: linear-gradient(90deg, color-mix(in srgb, var(--color-primary) 10%, transparent), transparent);
+            border-left: 3px solid var(--color-primary);
+            border-radius: 0 8px 8px 0;
+            position: relative;
+        }
+        .lore-callout::before {
+            content: 'Theorem';
+            position: absolute; top: -10px; left: 1rem;
+            background: var(--color-void); padding: 0 0.5rem;
+            font-family: 'Cinzel', serif; font-size: 0.75rem; color: var(--color-primary);
+            letter-spacing: 0.1em; text-transform: uppercase;
+        }
+
+        pre {
+            background: #000;
+            border: 1px solid color-mix(in srgb, var(--color-secondary) 30%, transparent);
+            border-radius: 8px; padding: 1.25rem; overflow-x: auto;
+            margin: 1.5rem 0; font-family: 'Fira Code', monospace; font-size: 0.85rem;
+        }
+        code { color: #a5b4fc; }
+        .inline-code {
+            background: rgba(255,255,255,0.1); padding: 0.1rem 0.4rem;
+            border-radius: 4px; font-family: 'Fira Code', monospace;
+            font-size: 0.85em; color: #e2e8f0;
+        }
+
+        /* Header Animation */
+        .spin-slow { animation: spin 40s linear infinite; transform-origin: center; }
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+        
+        .pulse-glow { animation: pulseGlow 4s ease-in-out infinite alternate; }
+        @keyframes pulseGlow { 0% { filter: drop-shadow(0 0 5px rgba(212, 175, 55, 0.3)); } 100% { filter: drop-shadow(0 0 15px rgba(212, 175, 55, 0.8)); } }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: rgba(0,0,0,0.3); }
+        ::-webkit-scrollbar-thumb { background: color-mix(in srgb, var(--color-primary) 40%, transparent); border-radius: 10px; }
+
+        /* Tab Navigation */
+        .tab-link.active {
+            color: var(--color-primary);
+            font-weight: 500;
+            text-shadow: 0 0 8px rgba(212, 175, 55, 0.4);
+            border-left: 2px solid var(--color-primary);
+            padding-left: 0.75rem;
+        }
+        .tab-link {
+            padding-left: 0.8rem;
+            border-left: 2px solid transparent;
+            transition: all 0.3s ease;
+        }
+        .tab-content {
+            display: none;
+            animation: fadeIn 0.5s ease-out;
+        }
+        .tab-content.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Math Display Override for dark theme */
+        .MathJax_Display {
+            overflow-x: auto;
+            overflow-y: hidden;
+            padding: 1em 0;
+        }
+
+        /* Animation Viewer Styles */
+        .anim-viewer {
+            background: rgba(0, 0, 0, 0.6);
+            border: 1px solid rgba(212, 175, 55, 0.3);
+            border-radius: 12px;
+            padding: 1rem;
+            margin: 2rem 0;
+        }
+        .grid-line { stroke: rgba(255, 255, 255, 0.05); stroke-width: 0.75; }
+        .axis-line { stroke: rgba(255, 255, 255, 0.25); stroke-width: 1.2; }
+        .vector-p { stroke: var(--color-vector-p); stroke-width: 3; stroke-linecap: round; }
+        .vector-q { stroke: var(--color-vector-q); stroke-width: 3; stroke-linecap: round; }
+        .vector-diff { stroke: var(--color-holo2); stroke-width: 1.5; stroke-dasharray: 4,4; }
+        .anim-text { font-family: 'Fira Code', monospace; font-size: 11px; fill: #94a3b8; }
+        
+        /* Guide Ring Constraints */
+        .constraint-ring {
+            fill: none;
+            stroke-dasharray: 4, 4;
+            stroke-width: 1;
+            transition: stroke 0.3s, stroke-width 0.3s;
+        }
+    </style>
+</head>
+<body class="antialiased">
+
+    <!-- Atmospheric Background -->
+    <div class="starfield"></div>
+    <div class="nebula-glow"></div>
+
+    <header class="w-full pt-12 pb-8 px-6 flex flex-col items-center justify-center relative border-b border-yellow-600/20 bg-[#05030a]/80 backdrop-blur-md shadow-2xl z-20">
+        <!-- Centerpiece Sigil -->
+        <div class="relative w-32 h-32 md:w-40 md:h-40 mb-4">
+            <svg viewBox="0 0 200 200" class="w-full h-full pulse-glow" xmlns="http://www.w3.org/2000/svg">
+                <defs>
+                    <linearGradient id="goldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" stop-color="#C59B3F" />
+                        <stop offset="50%" stop-color="#FFF2C8" />
+                        <stop offset="100%" stop-color="#996515" />
+                    </linearGradient>
+                </defs>
+                <g class="spin-slow" style="transform-origin: 100px 100px;">
+                    <circle cx="100" cy="100" r="95" fill="none" stroke="url(#goldGrad)" stroke-width="1" opacity="0.6"/>
+                    <circle cx="100" cy="100" r="85" fill="none" stroke="url(#goldGrad)" stroke-width="0.5" opacity="0.4"/>
+                    <polygon points="100,15 173.6,142.5 26.4,142.5" fill="none" stroke="url(#goldGrad)" stroke-width="1" opacity="0.5"/>
+                    <polygon points="100,185 26.4,57.5 173.6,57.5" fill="none" stroke="url(#goldGrad)" stroke-width="1" opacity="0.5"/>
+                </g>
+                <g filter="drop-shadow(0 0 4px rgba(212,175,55,0.8))">
+                    <line x1="100" y1="60" x2="100.01" y2="140" stroke="url(#goldGrad)" stroke-width="2.5" stroke-linecap="round"/>
+                    <path d="M 100,60 C 120,60 120,90 100,90" fill="none" stroke="url(#goldGrad)" stroke-width="2.5" stroke-linecap="round"/>
+                    <line x1="80" y1="85" x2="120" y2="125" stroke="url(#goldGrad)" stroke-width="2.5" stroke-linecap="round"/>
+                    <line x1="120" y1="85" x2="80" y2="125" stroke="url(#goldGrad)" stroke-width="2.5" stroke-linecap="round"/>
+                    <text x="75" y="115" fill="#FFF8DC" font-family="Cinzel, serif" font-size="10" text-anchor="middle">A</text>
+                    <text x="125" y="115" fill="#FFF8DC" font-family="Cinzel, serif" font-size="10" text-anchor="middle">Ω</text>
+                </g>
+                <circle cx="100" cy="100" r="45" fill="none" stroke="url(#goldGrad)" stroke-width="0.5" stroke-dasharray="2 2" opacity="0.6"/>
+            </svg>
+        </div>
+
+        <h1 class="text-2xl md:text-4xl font-bold tracking-[0.25em] gold-gradient mb-2 text-center">OWL ACADEMY</h1>
+        <div class="text-xs md:text-sm text-yellow-600/80 tracking-[0.4em] uppercase mystical-font text-center flex items-center justify-center">
+            <span class="w-8 h-[1px] bg-yellow-600/40 mr-4 hidden md:block"></span>
+            Sacred Geometry & Topology
+            <span class="w-8 h-[1px] bg-yellow-600/40 ml-4 hidden md:block"></span>
+        </div>
+    </header>
+
+    <div class="max-w-7xl mx-auto px-4 md:px-8 py-8 flex flex-col lg:flex-row gap-8 relative z-10">
+        
+        <!-- Sidebar Navigation -->
+        <aside class="w-full lg:w-72 flex-shrink-0">
+            <nav class="glass-panel rounded-xl p-6 sticky top-8">
+                <h3 class="text-xs text-yellow-500 tracking-[0.2em] font-bold uppercase mb-6 border-b border-yellow-600/20 pb-2 mystical-font">
+                    Curriculum Index
+                </h3>
+                
+                <ul class="space-y-3 text-sm font-light text-slate-400" id="nav-tabs">
+                    <li><a href="#" data-target="intro" class="block tab-link active">Scope & Introduction</a></li>
+                    <li><a href="#" data-target="ring1" class="block tab-link">Ring 1: Linear Algebra in $\mathbb{R}^4$</a></li>
+                    <li><a href="#" data-target="ring2" class="block tab-link">Ring 2: Differential Geometry</a></li>
+                    <li><a href="#" data-target="ring3" class="block tab-link">Ring 3: Complex Numbers</a></li>
+                    <li><a href="#" data-target="ring4" class="block tab-link">Ring 4: The Clifford Torus</a></li>
+                    <li><a href="#" data-target="ring5" class="block tab-link">Ring 5: Intrinsic Flatness</a></li>
+                    <li><a href="#" data-target="ring6" class="block tab-link">Ring 6: Golden Ratio Scaling</a></li>
+                    <li><a href="#" data-target="ring7" class="block tab-link">Ring 7: Irrational Winding</a></li>
+                    <li class="pt-3 mt-3 border-t border-white/10"><a href="#" data-target="final" class="block tab-link">Final Theorem & Summary</a></li>
+                </ul>
+            </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="flex-1 glass-panel rounded-xl p-6 md:p-10 tutorial-content" id="content-container">
+            
+            <!-- SCOPE -->
+            <section id="intro" class="tab-content active">
+                <header class="mb-8 text-center lg:text-left">
+                    <div class="inline-block px-3 py-1 border border-yellow-500/30 rounded-full bg-yellow-900/20 text-yellow-300 text-[10px] tracking-widest uppercase mb-4 font-mono">
+                        Document Foundation
+                    </div>
+                    <h1 class="text-3xl md:text-4xl font-bold tracking-[0.05em] text-white mystical-font mb-4 leading-tight">
+                        The Clifford Torus
+                    </h1>
+                    <p class="text-gray-400 font-light text-lg italic">
+                        Built from Five Rings of Prerequisite Knowledge
+                    </p>
+                </header>
+
+                <h2>Scope</h2>
+                <p>
+                    This document proves and explains the mathematical foundations of the <strong>Clifford torus</strong>, beginning from linear algebra in $\mathbb{R}^4$ and building toward its role as a flat torus inside the unit $3$-sphere $S^3$.
+                </p>
+                <p>
+                    We will focus only on the Clifford torus for now, but we will prepare the ground for later sections involving quaternions and irrational winding.
+                </p>
+                
+                <div class="mt-12 flex justify-end">
+                    <button onclick="switchTab('ring1')" class="px-6 py-2 border border-yellow-600/40 rounded text-yellow-500 hover:bg-yellow-600/10 transition text-sm mystical-font tracking-widest">
+                        Begin Ring 1 ➔
+                    </button>
+                </div>
+            </section>
+
+            <!-- RING 1 -->
+            <section id="ring1" class="tab-content hidden">
+                <header class="mb-8">
+                    <h1 class="text-3xl font-bold text-white mystical-font mb-2">Ring 1: Linear Algebra and Geometry in $\mathbb{R}^4$</h1>
+                </header>
+
+                <!-- INTERACTIVE ANIMATION SECTION -->
+                <div class="anim-viewer mb-10 text-gray-200">
+                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 mb-4 border-b border-white/10 pb-3">
+                        <h3 class="text-yellow-500 mystical-font text-lg m-0 flex items-center gap-3">
+                            Interactive: Visualizing $\mathbb{R}^4$ via Coupled Planes
+                            <span class="px-2 py-0.5 bg-yellow-500/20 text-yellow-300 text-[9px] tracking-wider rounded font-sans">TACTILE</span>
+                        </h3>
+                        <div class="flex gap-2 self-stretch sm:self-auto justify-between items-center">
+                            <button id="anim-prev" class="px-3 py-1 bg-white/5 hover:bg-white/10 border border-white/20 rounded text-xs transition disabled:opacity-30 disabled:cursor-not-allowed">← Prev</button>
+                            <span id="anim-step-counter" class="text-xs font-mono text-gray-400 py-1 px-2">Step 1/5</span>
+                            <button id="anim-next" class="px-3 py-1 bg-yellow-600/20 hover:bg-yellow-600/40 border border-yellow-600/50 rounded text-yellow-500 text-xs transition disabled:opacity-30 disabled:cursor-not-allowed">Next →</button>
+                        </div>
+                    </div>
+                    
+                    <div class="flex flex-col lg:flex-row gap-4">
+                        <!-- Planes Container -->
+                        <div class="w-full lg:w-2/3 flex bg-black/40 rounded overflow-hidden aspect-video relative touch-none">
+                            <!-- Plane 1 (X1, Y1) -->
+                            <div class="w-1/2 h-full border-r border-white/10 relative flex flex-col items-center justify-center">
+                                <div class="absolute top-2 left-2 text-[9px] text-gray-400 font-mono bg-black/50 px-2 py-1 rounded z-10">$P_1$ Plane</div>
+                                <svg id="svg-plane1" viewBox="-10 -10 20 20" class="w-full h-full p-2 lg:p-4 overflow-visible cursor-crosshair">
+                                    <defs>
+                                        <marker id="arrowP1" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                                            <path d="M 0 0 L 10 5 L 0 10 z" fill="var(--color-vector-p)" />
+                                        </marker>
+                                        <marker id="arrowQ1" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                                            <path d="M 0 0 L 10 5 L 0 10 z" fill="var(--color-vector-q)" />
+                                        </marker>
+                                    </defs>
+                                    <!-- Grid & Axes -->
+                                    <g class="grid-line">
+                                        <line x1="-10" y1="-5" x2="10" y2="-5" /><line x1="-10" y1="5" x2="10" y2="5" />
+                                        <line x1="-5" y1="-10" x2="-5" y2="10" /><line x1="5" y1="-10" x2="5" y2="10" />
+                                    </g>
+                                    <g class="axis-line">
+                                        <line x1="-10" y1="0" x2="10" y2="0" />
+                                        <line x1="0" y1="-10" x2="0" y2="10" />
+                                    </g>
+                                    <text x="8.5" y="0.8" class="anim-text">x₁</text>
+                                    <text x="0.5" y="-8.5" class="anim-text">y₁</text>
+
+                                    <!-- Constraint Guide Rings -->
+                                    <g id="p1-constraints"></g>
+                                    <!-- Vectors & Handles (Injected via JS) -->
+                                    <g id="p1-vectors"></g>
+                                </svg>
+                            </div>
+
+                            <!-- Plane 2 (X2, Y2) -->
+                            <div class="w-1/2 h-full relative flex flex-col items-center justify-center">
+                                <div class="absolute top-2 left-2 text-[9px] text-gray-400 font-mono bg-black/50 px-2 py-1 rounded z-10">$P_2$ Plane</div>
+                                <svg id="svg-plane2" viewBox="-10 -10 20 20" class="w-full h-full p-2 lg:p-4 overflow-visible cursor-crosshair">
+                                    <defs>
+                                        <marker id="arrowP2" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                                            <path d="M 0 0 L 10 5 L 0 10 z" fill="var(--color-vector-p)" />
+                                        </marker>
+                                        <marker id="arrowQ2" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                                            <path d="M 0 0 L 10 5 L 0 10 z" fill="var(--color-vector-q)" />
+                                        </marker>
+                                    </defs>
+                                    <!-- Grid & Axes -->
+                                    <g class="grid-line">
+                                        <line x1="-10" y1="-5" x2="10" y2="-5" /><line x1="-10" y1="5" x2="10" y2="5" />
+                                        <line x1="-5" y1="-10" x2="-5" y2="10" /><line x1="5" y1="-10" x2="5" y2="10" />
+                                    </g>
+                                    <g class="axis-line">
+                                        <line x1="-10" y1="0" x2="10" y2="0" />
+                                        <line x1="0" y1="-10" x2="0" y2="10" />
+                                    </g>
+                                    <text x="8.5" y="0.8" class="anim-text">x₂</text>
+                                    <text x="0.5" y="-8.5" class="anim-text">y₂</text>
+
+                                    <!-- Constraint Guide Rings -->
+                                    <g id="p2-constraints"></g>
+                                    <!-- Vectors & Handles (Injected via JS) -->
+                                    <g id="p2-vectors"></g>
+                                </svg>
+                            </div>
+                        </div>
+
+                        <!-- Live 4D Inspector -->
+                        <div class="w-full lg:w-1/3 bg-[#0a0812]/90 border border-white/10 rounded p-4 font-mono text-xs flex flex-col justify-between shadow-inner">
+                            <div>
+                                <h4 class="text-yellow-500 mb-3 border-b border-yellow-600/30 pb-2 flex items-center justify-between">
+                                    <span>Live 4D Inspector</span>
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="opacity-50"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/></svg>
+                                </h4>
+
+                                <!-- Interactive Mode Selector -->
+                                <div class="mb-4">
+                                    <div class="text-gray-400 mb-1.5 uppercase tracking-wider text-[9px] font-sans">Visualization Mode</div>
+                                    <div class="grid grid-cols-3 gap-1 bg-[#05030a] p-1 rounded border border-white/10">
+                                        <button id="mode-free" class="py-1 rounded text-[9px] text-center transition font-bold" onclick="setVisualizationMode('free')">FREE</button>
+                                        <button id="mode-s3" class="py-1 rounded text-[9px] text-center transition font-bold" onclick="setVisualizationMode('s3')">S³ BOUND</button>
+                                        <button id="mode-torus" class="py-1 rounded text-[9px] text-center transition font-bold" onclick="setVisualizationMode('torus')">TORUS</button>
+                                    </div>
+                                </div>
+                                
+                                <div class="space-y-3 text-gray-300">
+                                    <div>
+                                        <span style="color: var(--color-vector-p); font-weight: bold;">Vector p</span>
+                                        <div id="insp-p-coords" class="pl-2 mt-1 text-white bg-white/5 p-1 rounded">p = (x₁, y₁, x₂, y₂)</div>
+                                    </div>
+                                    <div>
+                                        <span style="color: var(--color-vector-q); font-weight: bold;">Vector q</span>
+                                        <div id="insp-q-coords" class="pl-2 mt-1 text-white bg-white/5 p-1 rounded">q = (u₁, v₁, u₂, v₂)</div>
+                                    </div>
+                                    <div class="border-t border-white/10 pt-3 mt-2">
+                                        <div class="text-gray-400">Euclidean Norm</div>
+                                        <div id="insp-norm" class="pl-2 mt-1 font-bold text-white text-sm">||p|| = 0.00</div>
+                                    </div>
+                                    <div>
+                                        <div class="text-gray-400">Euclidean Distance</div>
+                                        <div id="insp-dist" class="pl-2 mt-1 font-bold text-sm" style="color: var(--color-holo1)">d(p,q) = 0.00</div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Tactical Mode Legend -->
+                            <div id="inspector-legend" class="mt-4 p-2 bg-purple-950/20 border border-purple-500/20 rounded text-[10px] text-gray-400 leading-snug">
+                                Free Mode: Drag p & q coordinates anywhere in 4-space.
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-4 p-4 bg-[#05030a] border border-yellow-600/20 rounded text-sm min-h-[4rem] flex items-center" id="anim-description">
+                        Initialize...
+                    </div>
+                </div>
+                <!-- /INTERACTIVE ANIMATION SECTION -->
+
+                <h2>1. Euclidean 4-space</h2>
+                <h3>Definition</h3>
+                <p>The real vector space $\mathbb{R}^4$ is the set of ordered quadruples</p>
+                $$ \mathbb{R}^4=\{(x_1,y_1,x_2,y_2):x_1,y_1,x_2,y_2\in\mathbb{R}\}. $$
+                <p>We write a point or vector as $p=(x_1,y_1,x_2,y_2)$.</p>
+                <p>The standard dot product on $\mathbb{R}^4$ is</p>
+                $$ p\cdot q=x_1u_1+y_1v_1+x_2u_2+y_2v_2, $$
+                <p>where $p=(x_1,y_1,x_2,y_2), \qquad q=(u_1,v_1,u_2,v_2)$.</p>
+                <p>The Euclidean norm is</p>
+                $$ \|p\|=\sqrt{p\cdot p} = \sqrt{x_1^2+y_1^2+x_2^2+y_2^2}. $$
+                <p>The Euclidean distance between two points $p,q\in\mathbb{R}^4$ is $d(p,q)=\|p-q\|$. Thus $\mathbb{R}^4$ is a metric space with metric:</p>
+                $$ d(p,q)=\sqrt{(x_1-u_1)^2+(y_1-v_1)^2+(x_2-u_2)^2+(y_2-v_2)^2}. $$
+
+                <h2>2. Orthogonal decomposition of $\mathbb{R}^4$</h2>
+                <p>We decompose $\mathbb{R}^4$ into two orthogonal coordinate planes:</p>
+                $$ P_1=\{(x_1,y_1,0,0):x_1,y_1\in\mathbb{R}\}, $$
+                <p>and</p>
+                $$ P_2=\{(0,0,x_2,y_2):x_2,y_2\in\mathbb{R}\}. $$
+                <p>Every point $p\in\mathbb{R}^4$ decomposes uniquely as $p=p_1+p_2$, where $p_1=(x_1,y_1,0,0)\in P_1$ and $p_2=(0,0,x_2,y_2)\in P_2$.</p>
+                <p>These planes are orthogonal because if $p_1\in P_1$ and $p_2\in P_2$, then $p_1\cdot p_2=0$.</p>
+                <p>Therefore, $\|p\|^2=\|p_1\|^2+\|p_2\|^2$. Explicitly, $\|p\|^2=x_1^2+y_1^2+x_2^2+y_2^2$.</p>
+                <div class="lore-callout">
+                    <p class="m-0 italic text-yellow-100/80">
+                        This decomposition is the linear-algebraic backbone of the Clifford torus: the torus is built by taking one circle in $P_1$ and another circle in $P_2$.
+                    </p>
+                </div>
+
+                <h2>3. The unit 3-sphere $S^3$</h2>
+                <h3>Definition</h3>
+                <p>The unit $3$-sphere in $\mathbb{R}^4$ is</p>
+                $$ S^3=\{(x_1,y_1,x_2,y_2)\in\mathbb{R}^4:x_1^2+y_1^2+x_2^2+y_2^2=1\}. $$
+                <p>Equivalently, $S^3=\{p\in\mathbb{R}^4:\|p\|=1\}$. Although $S^3$ sits inside $4$-dimensional space, it is itself $3$-dimensional. It is the $4$-dimensional analogue of the ordinary sphere $S^2=\{(x,y,z)\in\mathbb{R}^3:x^2+y^2+z^2=1\}$.</p>
+
+                <h2>4. $S^3$ as a smooth level set</h2>
+                <p>Define the smooth function $F:\mathbb{R}^4\to\mathbb{R}$ by $F(x_1,y_1,x_2,y_2)=x_1^2+y_1^2+x_2^2+y_2^2$. Then $S^3=F^{-1}(1)$.</p>
+                <p>The gradient of $F$ is $\nabla F=(2x_1,2y_1,2x_2,2y_2)$. At any point $p\in S^3$, we have $\|p\|=1$, so $p\neq 0$. Therefore $\nabla F(p)\neq 0$.</p>
+                <p>By the regular level set theorem, $S^3=F^{-1}(1)$ is a smooth $3$-dimensional submanifold of $\mathbb{R}^4$.</p>
+                
+                <h3>Conclusion</h3>
+                <p>The Clifford torus will be a $2$-dimensional surface sitting inside this $3$-dimensional sphere $S^3$.</p>
+            </section>
+
+            <!-- RING 2 -->
+            <section id="ring2" class="tab-content hidden">
+                <header class="mb-8">
+                    <h1 class="text-3xl font-bold text-white mystical-font mb-2">Ring 2: Differential Geometry of Surfaces</h1>
+                </header>
+
+                <h2>5. Parametrized surfaces</h2>
+                <p>A parametrized surface in Euclidean space is a smooth map</p>
+                $$ X:U\subset\mathbb{R}^2\to\mathbb{R}^n. $$
+                <p>Here the parameter domain $U$ is usually described by coordinates such as $(\theta,\gamma)$.</p>
+                <p>For the Clifford torus, the natural parameters are two angles:</p>
+                $$ \theta\in\mathbb{R}/2\pi\mathbb{Z}, \qquad \gamma\in\mathbb{R}/2\pi\mathbb{Z}. $$
+                <p>That means $\theta$ and $\gamma$ are periodic with period $2\pi$.</p>
+
+                <h2>6. The first fundamental form</h2>
+                <p>Given a parametrized surface $X(\theta,\gamma)$, the tangent vectors are</p>
+                $$ X_\theta=\frac{\partial X}{\partial \theta}, \qquad X_\gamma=\frac{\partial X}{\partial \gamma}. $$
+                <p>The first fundamental form is the metric induced on the surface from the ambient Euclidean space. Its coefficients are:</p>
+                $$ E=X_\theta\cdot X_\theta, $$
+                $$ F=X_\theta\cdot X_\gamma, $$
+                $$ G=X_\gamma\cdot X_\gamma. $$
+                <p>Thus the induced metric is</p>
+                $$ ds^2=E\,d\theta^2+2F\,d\theta\,d\gamma+G\,d\gamma^2. $$
+                <p>This tells us how distances are measured <em>within</em> the surface.</p>
+
+                <h2>7. Intrinsic versus extrinsic geometry</h2>
+                <p>A surface has two kinds of geometry:</p>
+                <ul>
+                    <li><strong>Extrinsic geometry</strong>: how the surface bends inside a larger ambient space.</li>
+                    <li><strong>Intrinsic geometry</strong>: what can be measured by someone living entirely on the surface.</li>
+                </ul>
+                <p>For example, a cylinder in $\mathbb{R}^3$ is extrinsically curved, but intrinsically flat. If you cut it open and unroll it, it becomes a flat rectangle without stretching.</p>
+                <p>Gaussian curvature $K$ is intrinsic. If $K=0$, the surface is intrinsically flat.</p>
+                
+                <div class="lore-callout">
+                    <p class="m-0 italic text-yellow-100/80">
+                        The key Clifford torus claim is:<br>
+                        <strong>The Clifford torus is intrinsically flat.</strong><br>
+                        This does not mean it is flat as a subset of $\mathbb{R}^4$. It means its induced metric has zero Gaussian curvature.
+                    </p>
+                </div>
+            </section>
+
+            <!-- RING 3 -->
+            <section id="ring3" class="tab-content hidden">
+                <header class="mb-8">
+                    <h1 class="text-3xl font-bold text-white mystical-font mb-2">Ring 3: Complex Numbers and the Product of Circles</h1>
+                </header>
+
+                <h2>8. The circle $S^1$</h2>
+                <p>The unit circle in $\mathbb{R}^2$ is</p>
+                $$ S^1=\{(x,y)\in\mathbb{R}^2:x^2+y^2=1\}. $$
+                <p>Using complex numbers, we identify $\mathbb{C}\cong\mathbb{R}^2$ by $z=x+iy$.</p>
+                <p>Then the unit circle is $S^1=\{z\in\mathbb{C}:|z|=1\}$.</p>
+                <p>The standard parametrization is $z=e^{i\theta}=\cos\theta+i\sin\theta$.</p>
+                <p>So $S^1=\{e^{i\theta}:\theta\in\mathbb{R}/2\pi\mathbb{Z}\}$.</p>
+
+                <h2>9. The product $S^1\times S^1$</h2>
+                <p>The product of two circles is $S^1\times S^1$.</p>
+                <p>A point of $S^1\times S^1$ is an ordered pair $(e^{i\theta},e^{i\gamma})$. This is a $2$-dimensional torus.</p>
+                <p>To embed it into $\mathbb{C}^2$, define $(\theta,\gamma)\mapsto (e^{i\theta},e^{i\gamma})$. Since $\mathbb{C}^2\cong\mathbb{R}^4$, we may write</p>
+                $$ (e^{i\theta},e^{i\gamma}) = (\cos\theta,\sin\theta,\cos\gamma,\sin\gamma). $$
+                <p>This lies in $\mathbb{R}^4$. However, its norm is</p>
+                $$ \cos^2\theta+\sin^2\theta+\cos^2\gamma+\sin^2\gamma=2. $$
+                <p>So this version lies on the sphere of radius $\sqrt{2}$ in $\mathbb{R}^4$, not the unit sphere $S^3$.</p>
+                <p>To place it on $S^3$, we scale both circles by $\frac{1}{\sqrt{2}}$.</p>
+            </section>
+
+            <!-- RING 4 -->
+            <section id="ring4" class="tab-content hidden">
+                <header class="mb-8">
+                    <h1 class="text-3xl font-bold text-white mystical-font mb-2">Ring 4: The Clifford Torus Itself</h1>
+                </header>
+
+                <h2>10. Definition of the standard Clifford torus</h2>
+                <p>The <strong>standard Clifford torus</strong> is the subset of $\mathbb{R}^4$ given by</p>
+                $$ T_{\mathrm{Cl}} = \left\{ (x_1,y_1,x_2,y_2)\in\mathbb{R}^4: x_1^2+y_1^2=\frac{1}{2}, \quad x_2^2+y_2^2=\frac{1}{2} \right\}. $$
+                <p>Equivalently,</p>
+                $$ T_{\mathrm{Cl}} = \frac{1}{\sqrt{2}}S^1\times \frac{1}{\sqrt{2}}S^1. $$
+                <p>A parametrization is</p>
+                $$ X(\theta,\gamma) = \left( \frac{1}{\sqrt{2}}\cos\theta, \frac{1}{\sqrt{2}}\sin\theta, \frac{1}{\sqrt{2}}\cos\gamma, \frac{1}{\sqrt{2}}\sin\gamma \right). $$
+
+                <h2>11. Proof that the Clifford torus lies in $S^3$</h2>
+                <p>We compute the squared norm:</p>
+                $$ \|X(\theta,\gamma)\|^2 = \left(\frac{1}{\sqrt{2}}\cos\theta\right)^2 + \left(\frac{1}{\sqrt{2}}\sin\theta\right)^2 + \left(\frac{1}{\sqrt{2}}\cos\gamma\right)^2 + \left(\frac{1}{\sqrt{2}}\sin\gamma\right)^2. $$
+                <p>Thus</p>
+                $$ \|X(\theta,\gamma)\|^2 = \frac{1}{2}(\cos^2\theta+\sin^2\theta) + \frac{1}{2}(\cos^2\gamma+\sin^2\gamma). $$
+                <p>Since $\cos^2\theta+\sin^2\theta=1$ and $\cos^2\gamma+\sin^2\gamma=1$, we get</p>
+                $$ \|X(\theta,\gamma)\|^2 = \frac{1}{2}+\frac{1}{2}=1. $$
+                <p>Therefore $X(\theta,\gamma)\in S^3$.</p>
+                
+                <h3>Conclusion</h3>
+                <p>The Clifford torus is a $2$-dimensional torus embedded in the unit $3$-sphere $S^3\subset\mathbb{R}^4$.</p>
+
+                <h2>12. General rectangular Clifford tori</h2>
+                <p>More generally, choose positive radii $r_1,r_2>0$ satisfying $r_1^2+r_2^2=1$.</p>
+                <p>Define</p>
+                $$ T_{r_1,r_2} = \left\{ (x_1,y_1,x_2,y_2)\in\mathbb{R}^4: x_1^2+y_1^2=r_1^2, \quad x_2^2+y_2^2=r_2^2 \right\}. $$
+                <p>A parametrization is</p>
+                $$ X(\theta,\gamma) = (r_1\cos\theta,r_1\sin\theta,r_2\cos\gamma,r_2\sin\gamma). $$
+                <p>Then</p>
+                $$ \|X(\theta,\gamma)\|^2 = r_1^2(\cos^2\theta+\sin^2\theta) + r_2^2(\cos^2\gamma+\sin^2\gamma) = r_1^2+r_2^2=1. $$
+                <p>So $T_{r_1,r_2}\subset S^3$. The standard Clifford torus corresponds to $r_1=r_2=\frac{1}{\sqrt{2}}$.</p>
+            </section>
+
+            <!-- RING 5 -->
+            <section id="ring5" class="tab-content hidden">
+                <header class="mb-8">
+                    <h1 class="text-3xl font-bold text-white mystical-font mb-2">Ring 5: Intrinsic Flatness of the Clifford Torus</h1>
+                </header>
+
+                <h2>13. Induced metric of $T_{r_1,r_2}$</h2>
+                <p>Let $X(\theta,\gamma) = (r_1\cos\theta,r_1\sin\theta,r_2\cos\gamma,r_2\sin\gamma)$.</p>
+                <p>Compute the tangent vectors:</p>
+                $$ X_\theta = (-r_1\sin\theta,r_1\cos\theta,0,0), \qquad X_\gamma = (0,0,-r_2\sin\gamma,r_2\cos\gamma). $$
+                <p>Now compute the metric coefficients. First,</p>
+                $$ E=X_\theta\cdot X_\theta = r_1^2\sin^2\theta+r_1^2\cos^2\theta = r_1^2. $$
+                <p>Second, $F=X_\theta\cdot X_\gamma$. Because $X_\theta$ lives entirely in the first coordinate plane and $X_\gamma$ lives entirely in the second coordinate plane,</p>
+                $$ F=0. $$
+                <p>Third,</p>
+                $$ G=X_\gamma\cdot X_\gamma = r_2^2\sin^2\gamma+r_2^2\cos^2\gamma = r_2^2. $$
+                <p>Therefore the induced metric is</p>
+                $$ ds^2=r_1^2\,d\theta^2+r_2^2\,d\gamma^2. $$
+
+                <h2>14. Proof that the Clifford torus is intrinsically flat</h2>
+                <p>The metric $ds^2=r_1^2\,d\theta^2+r_2^2\,d\gamma^2$ has constant coefficients.</p>
+                <p>Define new coordinates $u=r_1\theta, \qquad v=r_2\gamma$.</p>
+                <p>Then $du=r_1\,d\theta, \qquad dv=r_2\,d\gamma$. So,</p>
+                $$ ds^2=du^2+dv^2. $$
+                <p>This is exactly the Euclidean metric on a flat rectangle.</p>
+                <p>The only difference is that the coordinates are periodic: $\theta\sim\theta+2\pi, \quad \gamma\sim\gamma+2\pi$.</p>
+                <p>Therefore, $u\sim u+2\pi r_1, \quad v\sim v+2\pi r_2$.</p>
+                <p>So the torus is intrinsically equivalent to a flat rectangle with opposite sides identified:</p>
+                $$ [0,2\pi r_1]\times[0,2\pi r_2]. $$
+                <p>Since the Euclidean plane has Gaussian curvature $K=0$, and the metric is locally Euclidean, the Clifford torus has $K=0$.</p>
+                
+                <div class="lore-callout">
+                    <p class="m-0 italic text-yellow-100/80">
+                        <strong>Conclusion:</strong> Every torus $T_{r_1,r_2}$ of the form $X(\theta,\gamma) = (r_1\cos\theta,r_1\sin\theta,r_2\cos\gamma,r_2\sin\gamma)$, where $r_1^2+r_2^2=1$, is intrinsically flat. In particular, the standard Clifford torus is intrinsically flat.
+                    </p>
+                </div>
+            </section>
+
+            <!-- RING 6 -->
+            <section id="ring6" class="tab-content hidden">
+                <header class="mb-8">
+                    <h1 class="text-3xl font-bold text-white mystical-font mb-2">Ring 6: Golden Ratio Scaling</h1>
+                </header>
+
+                <p>Although the standard Clifford torus uses equal radii, the documents introduce a nonstandard torus whose radii satisfy a golden ratio relation.</p>
+                <p>Let</p>
+                $$ \frac{r_1}{r_2}=\varphi, \quad \text{where} \quad \varphi=\frac{1+\sqrt{5}}{2}. $$
+                <p>We also require the torus to lie on $S^3$, so $r_1^2+r_2^2=1$.</p>
+                <p>Since $r_1=\varphi r_2$, we substitute:</p>
+                $$ (\varphi r_2)^2+r_2^2=1 \implies (\varphi^2+1)r_2^2=1. $$
+                <p>Using the golden ratio identity $\varphi^2=\varphi+1$, we get $\varphi^2+1=\varphi+2$.</p>
+                <p>Therefore $r_2^2=\frac{1}{\varphi+2}$, so</p>
+                $$ r_2=\frac{1}{\sqrt{\varphi+2}}. $$
+                <p>Then</p>
+                $$ r_1=\varphi r_2 = \frac{\varphi}{\sqrt{\varphi+2}}. $$
+
+                <h3>Conclusion</h3>
+                <p>The golden-ratio-scaled torus has radii</p>
+                $$ r_1=\frac{\varphi}{\sqrt{\varphi+2}}, \qquad r_2=\frac{1}{\sqrt{\varphi+2}}. $$
+                <p>Its parametrization is</p>
+                $$ X(\theta,\gamma) = \left( \frac{\varphi}{\sqrt{\varphi+2}}\cos\theta, \frac{\varphi}{\sqrt{\varphi+2}}\sin\theta, \frac{1}{\sqrt{\varphi+2}}\cos\gamma, \frac{1}{\sqrt{\varphi+2}}\sin\gamma \right). $$
+                <p>It still lies on $S^3$ because $r_1^2+r_2^2=1$. It is still intrinsically flat because its induced metric is $ds^2=r_1^2\,d\theta^2+r_2^2\,d\gamma^2$, which becomes Euclidean after the coordinate change $u=r_1\theta, \quad v=r_2\gamma$.</p>
+            </section>
+
+            <!-- RING 7 -->
+            <section id="ring7" class="tab-content hidden">
+                <header class="mb-8">
+                    <h1 class="text-3xl font-bold text-white mystical-font mb-2">Ring 7: Irrational Winding on the Torus</h1>
+                </header>
+
+                <h2>15. Linear flow on the torus</h2>
+                <p>A winding path on the torus is given by</p>
+                $$ \theta(t)=\theta_0+\alpha t, \qquad \gamma(t)=\gamma_0+\beta t. $$
+                <p>Substituting into the torus parametrization gives</p>
+                $$ X(t) = (r_1\cos(\theta_0+\alpha t), r_1\sin(\theta_0+\alpha t), r_2\cos(\gamma_0+\beta t), r_2\sin(\gamma_0+\beta t)). $$
+                <p>This describes a linear flow on the torus.</p>
+
+                <h2>16. Closed versus dense winding</h2>
+                <p>Because both angles are periodic modulo $2\pi$, the path closes if there exists some $T>0$ such that $\alpha T\in 2\pi\mathbb{Z}$ and $\beta T\in 2\pi\mathbb{Z}$.</p>
+                <p>That means there exist integers $m,n$ such that $\alpha T=2\pi m$ and $\beta T=2\pi n$. Dividing gives:</p>
+                $$ \frac{\alpha}{\beta}=\frac{m}{n}. $$
+                <p>So if $\frac{\alpha}{\beta}\in\mathbb{Q}$, the path is periodic and closes.</p>
+                <p>If instead $\frac{\alpha}{\beta}\notin\mathbb{Q}$, then no such common period exists. The path never closes.</p>
+                <p>More strongly, a standard theorem on irrational linear flows on the torus says: If $\frac{\alpha}{\beta}\notin\mathbb{Q}$, then the trajectory is dense in $S^1\times S^1$.</p>
+                <p>That means for every point $p$ on the torus and every neighborhood $U$ of $p$, the winding path eventually enters $U$.</p>
+
+                <h2>17. Why the golden ratio matters</h2>
+                <p>The golden ratio $\varphi=\frac{1+\sqrt{5}}{2}$ is irrational. Therefore, if the winding rates satisfy</p>
+                $$ \frac{\alpha}{\beta}=\varphi, $$
+                <p>then the trajectory is nonperiodic and dense in the torus. So the golden ratio is not needed to define the Clifford torus itself. It matters when one wants a non-repeating winding rule.</p>
+
+                <div class="p-4 bg-yellow-900/10 border-l-4 border-yellow-500 rounded my-6">
+                    <h4 class="text-yellow-500 font-bold mb-2">Important distinction</h4>
+                    <p class="mb-2">There are two different uses of ratios:</p>
+                    <ol class="list-decimal pl-5 space-y-2">
+                        <li><strong>Radius ratio</strong> $\frac{r_1}{r_2}=\varphi$. This changes the rectangular shape of the flat torus.</li>
+                        <li><strong>Winding-rate ratio</strong> $\frac{\alpha}{\beta}=\varphi$. This makes the winding path nonperiodic and dense.</li>
+                    </ol>
+                    <p class="mt-2 text-sm text-gray-400">These are related in some speculative protocols, but mathematically they are distinct choices.</p>
+                </div>
+            </section>
+
+            <!-- FINAL THEOREM -->
+            <section id="final" class="tab-content hidden">
+                <header class="mb-8">
+                    <h1 class="text-3xl font-bold text-white mystical-font mb-2">Final Theorem: The Clifford Torus</h1>
+                </header>
+
+                <div class="lore-callout">
+                    <p class="m-0 italic text-yellow-100">
+                        Let $r_1,r_2>0$ satisfy $r_1^2+r_2^2=1$.<br><br>
+                        Define $X:S^1\times S^1\to S^3\subset\mathbb{R}^4$ by $X(\theta,\gamma) = (r_1\cos\theta,r_1\sin\theta,r_2\cos\gamma,r_2\sin\gamma)$.<br><br>
+                        Then:<br>
+                        1. $X(S^1\times S^1)$ lies in $S^3$.<br>
+                        2. $X(S^1\times S^1)$ is a smoothly embedded torus.<br>
+                        3. Its induced metric is $ds^2=r_1^2\,d\theta^2+r_2^2\,d\gamma^2$.<br>
+                        4. It is intrinsically flat.<br>
+                        5. If a path winds with angular rates $\alpha,\beta$ and $\alpha/\beta$ is irrational, then the path is dense in the torus.
+                    </p>
+                </div>
+
+                <h2>Proof</h2>
+                <p>First, compute the squared norm: $\|X(\theta,\gamma)\|^2 = r_1^2(\cos^2\theta+\sin^2\theta) + r_2^2(\cos^2\gamma+\sin^2\gamma)$. Using $\cos^2\theta+\sin^2\theta=1$ and $\cos^2\gamma+\sin^2\gamma=1$, we obtain $\|X(\theta,\gamma)\|^2=r_1^2+r_2^2=1$. Hence $X(\theta,\gamma)\in S^3$.</p>
+                <p>Second, the image is the product of two circles: $x_1^2+y_1^2=r_1^2, \quad x_2^2+y_2^2=r_2^2$. Therefore it is diffeomorphic to $S^1\times S^1$. So it is a smooth embedded torus.</p>
+                <p>Third, compute tangent vectors: $X_\theta = (-r_1\sin\theta,r_1\cos\theta,0,0)$, and $X_\gamma = (0,0,-r_2\sin\gamma,r_2\cos\gamma).$ Thus $X_\theta\cdot X_\theta=r_1^2$, $X_\theta\cdot X_\gamma=0$, and $X_\gamma\cdot X_\gamma=r_2^2$. Therefore the induced metric is $ds^2=r_1^2\,d\theta^2+r_2^2\,d\gamma^2$.</p>
+                <p>Set $u=r_1\theta, \quad v=r_2\gamma$. Then $ds^2=du^2+dv^2$. So the metric is locally Euclidean, and hence the Gaussian curvature is $K=0$. Thus the torus is intrinsically flat.</p>
+                <p>Finally, a linear winding path has the form $\theta(t)=\theta_0+\alpha t, \quad \gamma(t)=\gamma_0+\beta t$. If $\frac{\alpha}{\beta}\in\mathbb{Q}$, then the path closes. If $\frac{\alpha}{\beta}\notin\mathbb{Q}$, then the path is dense in the torus by the classical irrational-flow theorem on $S^1\times S^1$. Therefore all claims follow.</p>
+
+                <h2 class="mt-12 text-center text-yellow-500 border-none pb-0">Clean Summary</h2>
+                <div class="p-6 glass-panel rounded text-center">
+                    <p>The Clifford torus is not just an ordinary donut drawn in 3-space. It is the product of two circles embedded in $\mathbb{R}^4$:</p>
+                    $$ T_{r_1,r_2} = \{(x_1,y_1,x_2,y_2):x_1^2+y_1^2=r_1^2,\ x_2^2+y_2^2=r_2^2\}. $$
+                    <p>When $r_1^2+r_2^2=1$, it lies on the unit $3$-sphere $S^3$. Its induced metric is $ds^2=r_1^2\,d\theta^2+r_2^2\,d\gamma^2$. After the coordinate change $u=r_1\theta, \quad v=r_2\gamma$, this becomes $ds^2=du^2+dv^2$.</p>
+                    <p class="text-xl font-bold text-white mt-4">Therefore the Clifford torus is intrinsically flat.</p>
+                </div>
+                
+            </section>
+
+        </main>
+    </div>
+
+    <footer class="w-full border-t border-yellow-600/20 bg-black/60 backdrop-blur-md mt-12 py-8 text-center relative z-20">
+        <div class="flex justify-center mb-4">
+            <svg width="24" height="24" viewBox="0 0 100 100" fill="none" stroke="#D4AF37" stroke-width="3">
+                <circle cx="50" cy="50" r="45"/>
+                <polygon points="50,15 80,80 20,80"/>
+            </svg>
+        </div>
+        <p class="text-xs text-yellow-600/60 uppercase tracking-[0.3em] font-light">
+            © 2026 Owl Academy Archives. All rights reserved.
+        </p>
+    </footer>
+
+    <!-- Interactive Logic -->
+    <script>
+        /* --- TAB NAVIGATION LOGIC --- */
+        function switchTab(targetId) {
+            // Update Navigation Links
+            document.querySelectorAll('.tab-link').forEach(link => {
+                if(link.getAttribute('data-target') === targetId) {
+                    link.classList.add('active');
+                } else {
+                    link.classList.remove('active');
+                }
+            });
+
+            // Update Content Sections
+            document.querySelectorAll('.tab-content').forEach(section => {
+                if(section.id === targetId) {
+                    section.classList.remove('hidden');
+                    section.classList.add('active');
+                } else {
+                    section.classList.add('hidden');
+                    section.classList.remove('active');
+                }
+            });
+
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        // Add event listeners to sidebar links
+        document.querySelectorAll('.tab-link').forEach(link => {
+            link.addEventListener('click', (e) => {
+                e.preventDefault();
+                switchTab(e.target.getAttribute('data-target'));
+            });
+        });
+
+        /* --- RING 1 INTERACTIVE ANIMATION LOGIC --- */
+        const animState = {
+            step: 0,
+            maxSteps: 4,
+            mode: 'free', // 'free' | 's3' | 'torus'
+            points: {
+                p: { p1: { x: 4, y: 5 }, p2: { x: -6, y: 3 } },
+                q: { p1: { x: -3, y: 7 }, p2: { x: 5, y: -4 } }
+            },
+            dragging: null // { vector: 'p'|'q', plane: 'p1'|'p2' }
+        };
+
+        const stepsData = [
+            {
+                text: "1. The 4D space $\\mathbb{R}^4$ cannot be visualized directly. Instead, we split it into two coupled 2D coordinate planes: $P_1 (x_1, y_1)$ and $P_2 (x_2, y_2)$."
+            },
+            {
+                text: "2. A point $p \\in \\mathbb{R}^4$ is represented as two separate points/vectors: $p_1 \\in P_1$ and $p_2 \\in P_2$. <span class='text-yellow-400 font-bold ml-2'>(Try dragging the tip of vector p!)</span>"
+            },
+            {
+                text: "3. To find the relationship with another vector $q$, we plot $q_1$ and $q_2$ in their respective planes. <span class='text-yellow-400 font-bold ml-2'>(Both are now draggable)</span>"
+            },
+            {
+                text: "4. The distance $d(p,q)$ requires component-wise subtraction. We find the difference vectors $(p_1 - q_1)$ and $(p_2 - q_2)$."
+            },
+            {
+                text: "5. The total Euclidean Norm extends Pythagoras across both planes: $\\|p - q\\|^2 = \\|p_1 - q_1\\|^2 + \\|p_2 - q_2\\|^2$. Try switching the modes in the live inspector."
+            }
+        ];
+
+        const svgP1 = document.getElementById('svg-plane1');
+        const svgP2 = document.getElementById('svg-plane2');
+        const gP1 = document.getElementById('p1-vectors');
+        const gP2 = document.getElementById('p2-vectors');
+        const constraintsP1 = document.getElementById('p1-constraints');
+        const constraintsP2 = document.getElementById('p2-constraints');
+        const animText = document.getElementById('anim-description');
+        const btnPrev = document.getElementById('anim-prev');
+        const btnNext = document.getElementById('anim-next');
+        const counter = document.getElementById('anim-step-counter');
+
+        // Live Inspector Elements
+        const inspP = document.getElementById('insp-p-coords');
+        const inspQ = document.getElementById('insp-q-coords');
+        const inspNorm = document.getElementById('insp-norm');
+        const inspDist = document.getElementById('insp-dist');
+        const legend = document.getElementById('inspector-legend');
+
+        function setVisualizationMode(mode) {
+            animState.mode = mode;
+            
+            // UI Button styling
+            ['free', 's3', 'torus'].forEach(m => {
+                const btn = document.getElementById(`mode-${m}`);
+                if (m === mode) {
+                    btn.className = "py-1 rounded text-[9px] text-center transition font-bold bg-yellow-600/20 text-yellow-400 border border-yellow-500/30 shadow-inner";
+                } else {
+                    btn.className = "py-1 rounded text-[9px] text-center transition font-bold text-gray-400 hover:text-white";
+                }
+            });
+
+            // Mode constraints on state initialization
+            if (mode === 's3') {
+                legend.innerText = "S³ Mode: Drags are restricted to the unit 3-sphere. Note how stretching vector p₁ on Plane 1 collapses Plane 2's boundary guide circle!";
+                legend.className = "mt-4 p-2 bg-indigo-950/20 border border-indigo-500/20 rounded text-[10px] text-gray-300 leading-snug";
+                enforceS3Constraint('p');
+                enforceS3Constraint('q');
+            } else if (mode === 'torus') {
+                legend.innerText = "Torus Mode: Vectors sit on fixed circles of radius 1/√2 ≈ 0.707. Grabbing them only changes their parameter angles θ & γ.";
+                legend.className = "mt-4 p-2 bg-yellow-950/20 border border-yellow-500/20 rounded text-[10px] text-gray-300 leading-snug";
+                enforceTorusConstraint('p');
+                enforceTorusConstraint('q');
+            } else {
+                legend.innerText = "Free Mode: Drag p & q coordinates anywhere in 4-space.";
+                legend.className = "mt-4 p-2 bg-purple-950/20 border border-purple-500/20 rounded text-[10px] text-gray-400 leading-snug";
+            }
+
+            updateAnimation();
+        }
+
+        // Constraints enforcement
+        const SVG_SCALE = 8.0; // 8 units in SVG coordinate system represent 1.0 in normalized math space
+        const TORUS_RADIUS = SVG_SCALE * (1.0 / Math.sqrt(2.0)); // ~5.66
+
+        function enforceS3Constraint(vectorKey) {
+            const vec = animState.points[vectorKey];
+            let d1 = Math.sqrt(vec.p1.x**2 + vec.p1.y**2) / SVG_SCALE;
+            
+            if (d1 > 1.0) {
+                // cap Plane 1 to radius 1.0
+                const angle = Math.atan2(vec.p1.y, vec.p1.x);
+                vec.p1.x = SVG_SCALE * Math.cos(angle);
+                vec.p1.y = SVG_SCALE * Math.sin(angle);
+                d1 = 1.0;
+            }
+
+            const allowedD2 = Math.sqrt(1.0 - d1**2);
+            const currentD2Angle = Math.atan2(vec.p2.y, vec.p2.x);
+            vec.p2.x = SVG_SCALE * allowedD2 * Math.cos(currentD2Angle);
+            vec.p2.y = SVG_SCALE * allowedD2 * Math.sin(currentD2Angle);
+        }
+
+        function enforceTorusConstraint(vectorKey) {
+            const vec = animState.points[vectorKey];
+            
+            const a1 = Math.atan2(vec.p1.y, vec.p1.x);
+            vec.p1.x = TORUS_RADIUS * Math.cos(a1);
+            vec.p1.y = TORUS_RADIUS * Math.sin(a1);
+
+            const a2 = Math.atan2(vec.p2.y, vec.p2.x);
+            vec.p2.x = TORUS_RADIUS * Math.cos(a2);
+            vec.p2.y = TORUS_RADIUS * Math.sin(a2);
+        }
+
+        function updateInspector() {
+            const { p, q } = animState.points;
+            
+            // Normalize coords for the mathematical display (so SVG bounds match mathematical 1.0)
+            const np = {
+                p1: { x: p.p1.x / SVG_SCALE, y: p.p1.y / SVG_SCALE },
+                p2: { x: p.p2.x / SVG_SCALE, y: p.p2.y / SVG_SCALE }
+            };
+            const nq = {
+                p1: { x: q.p1.x / SVG_SCALE, y: q.p1.y / SVG_SCALE },
+                p2: { x: q.p2.x / SVG_SCALE, y: q.p2.y / SVG_SCALE }
+            };
+
+            inspP.innerText = `p = (${np.p1.x.toFixed(2)}, ${np.p1.y.toFixed(2)}, ${np.p2.x.toFixed(2)}, ${np.p2.y.toFixed(2)})`;
+            inspQ.innerText = `q = (${nq.p1.x.toFixed(2)}, ${nq.p1.y.toFixed(2)}, ${nq.p2.x.toFixed(2)}, ${nq.p2.y.toFixed(2)})`;
+
+            const normP = Math.sqrt(np.p1.x**2 + np.p1.y**2 + np.p2.x**2 + np.p2.y**2);
+            inspNorm.innerText = `||p|| = ${normP.toFixed(3)}`;
+
+            const dist = Math.sqrt(
+                (np.p1.x - nq.p1.x)**2 + (np.p1.y - nq.p1.y)**2 +
+                (np.p2.x - nq.p2.x)**2 + (np.p2.y - nq.p2.y)**2
+            );
+            inspDist.innerText = `d(p,q) = ${dist.toFixed(3)}`;
+        }
+
+        function drawVector(svgGroup, start, end, className, markerId, dragId) {
+            // Draw Line
+            const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+            line.setAttribute("x1", start.x);
+            line.setAttribute("y1", -start.y); // Flip Y to convert SVG coord structure into standard Cartesian
+            line.setAttribute("x2", end.x);
+            line.setAttribute("y2", -end.y);
+            line.setAttribute("class", className);
+            if(markerId) line.setAttribute("marker-end", `url(#${markerId})`);
+            svgGroup.appendChild(line);
+
+            // Draw Draggable Handle (Circle) at the tip
+            if (dragId) {
+                const handle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+                handle.setAttribute("cx", end.x);
+                handle.setAttribute("cy", -end.y);
+                handle.setAttribute("r", "1.2");
+                handle.setAttribute("fill", "transparent");
+                handle.setAttribute("stroke", "white");
+                handle.setAttribute("stroke-width", "0.3");
+                handle.setAttribute("class", "cursor-grab hover:stroke-yellow-400 hover:stroke-[0.5px] transition-all");
+                handle.setAttribute("data-drag-id", dragId);
+                
+                // Mouse & Touch Pointer Handlers
+                handle.addEventListener('pointerdown', (e) => {
+                    animState.dragging = dragId;
+                    handle.classList.replace('cursor-grab', 'cursor-grabbing');
+                    e.target.setPointerCapture(e.pointerId);
+                    e.stopPropagation();
+                });
+                
+                svgGroup.appendChild(handle);
+            }
+        }
+
+        function drawConstraints() {
+            constraintsP1.innerHTML = '';
+            constraintsP2.innerHTML = '';
+
+            const createCircle = (radius, strokeColor, isSolid) => {
+                const c = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+                c.setAttribute("cx", "0");
+                c.setAttribute("cy", "0");
+                c.setAttribute("r", radius);
+                c.setAttribute("class", "constraint-ring");
+                c.setAttribute("stroke", strokeColor);
+                if (isSolid) c.removeAttribute("stroke-dasharray");
+                return c;
+            };
+
+            if (animState.mode === 's3') {
+                // Show Unit Sphere Boundary ($R = 1$)
+                constraintsP1.appendChild(createCircle(SVG_SCALE, "rgba(255, 255, 255, 0.15)", false));
+                
+                // Show dynamic S3 boundary remaining for P2
+                const { p } = animState.points;
+                const d1 = Math.min(1.0, Math.sqrt(p.p1.x**2 + p.p1.y**2) / SVG_SCALE);
+                const d2 = Math.sqrt(1.0 - d1**2);
+                
+                constraintsP2.appendChild(createCircle(SVG_SCALE * d2, "rgba(0, 212, 255, 0.4)", false));
+            } else if (animState.mode === 'torus') {
+                // Show standard Torus coordinate circles
+                constraintsP1.appendChild(createCircle(TORUS_RADIUS, "rgba(212, 175, 55, 0.4)", true));
+                constraintsP2.appendChild(createCircle(TORUS_RADIUS, "rgba(212, 175, 55, 0.4)", true));
+            }
+        }
+
+        function updateAnimation() {
+            // Update Controls
+            btnPrev.disabled = animState.step === 0;
+            btnNext.disabled = animState.step === animState.maxSteps;
+            counter.innerText = `Step ${animState.step + 1}/${animState.maxSteps + 1}`;
+
+            // Update Text (Rendering inline LaTeX with MathJax dynamically)
+            animText.innerHTML = stepsData[animState.step].text;
+            if (window.MathJax && window.MathJax.typesetPromise) {
+                MathJax.typesetPromise([animText]).catch((err) => console.log('MathJax error', err));
+            }
+
+            // Draw guides & limits
+            drawConstraints();
+
+            // Clear Dynamic SVGs
+            gP1.innerHTML = '';
+            gP2.innerHTML = '';
+
+            const origin = { x: 0, y: 0 };
+            const { p, q } = animState.points;
+
+            // Step 1: Render vector p
+            if (animState.step >= 1) {
+                drawVector(gP1, origin, p.p1, 'vector-p', 'arrowP1', 'p-p1');
+                drawVector(gP2, origin, p.p2, 'vector-p', 'arrowP2', 'p-p2');
+            }
+
+            // Step 2: Render vector q
+            if (animState.step >= 2) {
+                drawVector(gP1, origin, q.p1, 'vector-q', 'arrowQ1', 'q-p1');
+                drawVector(gP2, origin, q.p2, 'vector-q', 'arrowQ2', 'q-p2');
+            }
+
+            // Step 3 & 4: Render difference vector path
+            if (animState.step >= 3) {
+                drawVector(gP1, q.p1, p.p1, 'vector-diff', null, null);
+                drawVector(gP2, q.p2, p.p2, 'vector-diff', null, null);
+            }
+
+            updateInspector();
+        }
+
+        // --- Dragging Engine math calculations ---
+        function getMousePosInSVG(svg, evt) {
+            const CTM = svg.getScreenCTM();
+            return {
+                x: (evt.clientX - CTM.e) / CTM.a,
+                y: -((evt.clientY - CTM.f) / CTM.d) 
+            };
+        }
+
+        function handleDrag(svg, planeId, evt) {
+            if (!animState.dragging) return;
+            
+            const [vector, plane] = animState.dragging.split('-');
+            if (plane !== planeId) return;
+
+            const pos = getMousePosInSVG(svg, evt);
+
+            if (animState.mode === 'free') {
+                // Simple box bounds clipping
+                pos.x = Math.max(-9.5, Math.min(9.5, pos.x));
+                pos.y = Math.max(-9.5, Math.min(9.5, pos.y));
+                animState.points[vector][plane] = pos;
+            } else if (animState.mode === 's3') {
+                const otherPlaneId = planeId === 'p1' ? 'p2' : 'p1';
+                let d_active = Math.sqrt(pos.x**2 + pos.y**2) / SVG_SCALE;
+                
+                if (d_active > 1.0) {
+                    const angle = Math.atan2(pos.y, pos.x);
+                    pos.x = SVG_SCALE * Math.cos(angle);
+                    pos.y = SVG_SCALE * Math.sin(angle);
+                    d_active = 1.0;
+                }
+
+                animState.points[vector][planeId] = pos;
+
+                // Restrict the other orthogonal plane based on hyper-sphere boundary
+                const remainingD = Math.sqrt(1.0 - d_active**2);
+                const otherVec = animState.points[vector][otherPlaneId];
+                const otherAngle = Math.atan2(otherVec.y, otherVec.x);
+                
+                animState.points[vector][otherPlaneId] = {
+                    x: SVG_SCALE * remainingD * Math.cos(otherAngle),
+                    y: SVG_SCALE * remainingD * Math.sin(otherAngle)
+                };
+            } else if (animState.mode === 'torus') {
+                // Keep points on exact circular torus parameter orbit path
+                const angle = Math.atan2(pos.y, pos.x);
+                animState.points[vector][planeId] = {
+                    x: TORUS_RADIUS * Math.cos(angle),
+                    y: TORUS_RADIUS * Math.sin(angle)
+                };
+            }
+
+            updateAnimation();
+        }
+
+        // Attach global events to SVGs
+        [ {svg: svgP1, plane: 'p1'}, {svg: svgP2, plane: 'p2'} ].forEach(({svg, plane}) => {
+            svg.addEventListener('pointermove', (e) => handleDrag(svg, plane, e));
+            svg.addEventListener('pointerup', () => { animState.dragging = null; });
+            svg.addEventListener('pointerleave', () => { animState.dragging = null; });
+        });
+
+
+        // --- Sequential Steps Engine navigation handlers ---
+        btnPrev.addEventListener('click', () => {
+            if (animState.step > 0) { 
+                animState.step--; 
+                updateAnimation(); 
+            }
+        });
+
+        btnNext.addEventListener('click', () => {
+            if (animState.step < animState.maxSteps) { 
+                animState.step++; 
+                updateAnimation(); 
+            }
+        });
+
+        // Initialize sandbox visualization mode styling
+        setVisualizationMode('free');
+
+    </script>
+</body>
+</html>
