@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Owl Academy | Dept III: Celestial Topology & Hyperbolic Kinematics</title>
+    
+    <!-- External Libraries -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Inter:wght@300;400;500;600&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+    
+    <!-- MathJax Configuration for Equations -->
+    <script>
+        window.MathJax = { 
+            tex: { 
+                inlineMath: [['$', '$'], ['\\(', '\\)']], 
+                displayMath: [['$$', '$$'], ['\\[', '\\]']] 
+            }
+        };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+    <style>
+        :root {
+            --color-void: #05030a;
+            --color-primary: #0ea5e9; /* Cosmic Blue / Cyan */
+            --color-primary-light: #7dd3fc;
+            --color-primary-dark: #0369a1;
+            --color-secondary: #8e9eab;
+            --color-holo1: #00d4ff;
+            --color-holo2: #D4AF37;
+        }
+
+        body {
+            background-color: var(--color-void);
+            color: #e2e8f0;
+            font-family: 'Inter', sans-serif;
+            background: radial-gradient(circle at 50% 0%, color-mix(in srgb, var(--color-primary-dark) 20%, var(--color-void)), var(--color-void) 60%);
+            min-height: 100vh;
+            margin: 0;
+            overflow-x: hidden;
+            line-height: 1.7;
+        }
+
+        .starfield {
+            position: fixed; inset: 0;
+            background-image:
+                radial-gradient(2px 2px at 20px 30px, var(--color-primary-light), rgba(0,0,0,0)),
+                radial-gradient(2px 2px at 40px 70px, #fff, rgba(0,0,0,0)),
+                radial-gradient(2px 2px at 50px 160px, rgba(255,255,255,0.8), rgba(0,0,0,0)),
+                radial-gradient(2px 2px at 90px 40px, #fff, rgba(0,0,0,0)),
+                radial-gradient(2px 2px at 130px 80px, var(--color-primary), rgba(0,0,0,0));
+            background-repeat: repeat; background-size: 250px 250px;
+            animation: twinkle 8s infinite alternate;
+            opacity: 0.15; z-index: -2; pointer-events: none;
+        }
+        
+        .nebula-glow {
+            position: fixed; top: 0; left: 50%; transform: translateX(-50%);
+            width: 100vw; height: 50vh;
+            background: radial-gradient(ellipse at top center, color-mix(in srgb, var(--color-primary) 12%, transparent) 0%, transparent 70%);
+            z-index: -1; pointer-events: none;
+        }
+
+        @keyframes twinkle { 0% { opacity: 0.05; } 100% { opacity: 0.2; } }
+
+        h1, h2, h3, h4, h5, .mystical-font {
+            font-family: 'Cinzel', serif;
+        }
+
+        .blue-gradient {
+            background: linear-gradient(to right, #38bdf8, #bae6fd, #0ea5e9);
+            -webkit-background-clip: text; background-clip: text;
+            color: transparent; text-shadow: 0 0 15px color-mix(in srgb, #38bdf8 40%, transparent);
+        }
+
+        .glass-panel {
+            background: rgba(10, 8, 20, 0.4);
+            backdrop-filter: blur(12px);
+            border: 1px solid color-mix(in srgb, var(--color-primary) 15%, transparent);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5);
+        }
+
+        /* Module Card Styles */
+        .module-card {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            transition: all 0.3s ease;
+        }
+        .module-card:hover {
+            background: rgba(14, 165, 233, 0.05);
+            border-color: rgba(14, 165, 233, 0.4);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(0,0,0,0.4), inset 0 0 15px rgba(14, 165, 233, 0.08);
+        }
+
+        /* Header Animation */
+        .spin-slow { animation: spin 45s linear infinite; transform-origin: center; }
+        .spin-reverse-slow { animation: spin-reverse 30s linear infinite; transform-origin: center; }
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+        @keyframes spin-reverse { 100% { transform: rotate(-360deg); } }
+        
+        .pulse-glow { animation: pulseGlow 4s ease-in-out infinite alternate; }
+        @keyframes pulseGlow { 0% { filter: drop-shadow(0 0 5px rgba(14, 165, 233, 0.3)); } 100% { filter: drop-shadow(0 0 15px rgba(14, 165, 233, 0.8)); } }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: rgba(0,0,0,0.3); }
+        ::-webkit-scrollbar-thumb { background: color-mix(in srgb, var(--color-primary) 40%, transparent); border-radius: 10px; }
+
+        .MathJax { overflow-x: auto; overflow-y: hidden; }
+        section { scroll-margin-top: 100px; }
+    </style>
+</head>
+<body class="antialiased">
+
+    <div class="starfield"></div>
+    <div class="nebula-glow"></div>
+
+    <!-- Minimal Header -->
+    <header class="w-full pt-10 pb-8 px-6 flex flex-col items-center justify-center relative border-b border-sky-600/20 bg-[#05030a]/80 backdrop-blur-md shadow-2xl z-20 sticky top-0">
+        <div class="flex items-center gap-6 max-w-7xl w-full justify-between">
+            <div class="flex items-center gap-4">
+                <div class="relative w-16 h-16 flex-shrink-0">
+                    <svg viewBox="0 0 200 200" class="w-full h-full pulse-glow" xmlns="http://www.w3.org/2000/svg">
+                        <defs>
+                            <linearGradient id="blueGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                                <stop offset="0%" stop-color="#0284c7" />
+                                <stop offset="50%" stop-color="#7dd3fc" />
+                                <stop offset="100%" stop-color="#0ea5e9" />
+                            </linearGradient>
+                        </defs>
+                        <!-- Outer Orbit -->
+                        <circle cx="100" cy="100" r="95" fill="none" stroke="url(#blueGrad)" stroke-width="0.5" stroke-dasharray="4 4" opacity="0.6"/>
+                        <!-- Sun D10 Representation -->
+                        <g class="spin-slow">
+                            <polygon points="100,20 176,75 147,165 53,165 24,75" fill="none" stroke="url(#blueGrad)" stroke-width="1" opacity="0.4"/>
+                            <polygon points="100,180 24,125 53,35 147,35 176,125" fill="none" stroke="url(#blueGrad)" stroke-width="1" opacity="0.4"/>
+                        </g>
+                        <!-- Moon D12 Representation -->
+                        <g class="spin-reverse-slow">
+                            <circle cx="100" cy="100" r="60" fill="none" stroke="url(#blueGrad)" stroke-width="0.5" opacity="0.5"/>
+                            <polygon points="100,40 157,81 135,148 65,148 43,81" fill="none" stroke="url(#blueGrad)" stroke-width="1.5" opacity="0.6"/>
+                        </g>
+                        <!-- Earth D8 Representation (Center Anchor) -->
+                        <path d="M100 75 L125 100 L100 125 L75 100 Z" fill="none" stroke="url(#blueGrad)" stroke-width="2"/>
+                        <line x1="100" y1="75" x2="100" y2="125" stroke="url(#blueGrad)" stroke-width="1"/>
+                        <line x1="75" y1="100" x2="125" y2="100" stroke="url(#blueGrad)" stroke-width="1"/>
+                    </svg>
+                </div>
+                <div>
+                    <div class="text-[10px] text-sky-400/80 tracking-[0.4em] uppercase mystical-font">Department III</div>
+                    <h1 class="text-xl md:text-2xl font-bold tracking-[0.15em] blue-gradient m-0">Celestial Topology & Hyperbolic Kinematics</h1>
+                </div>
+            </div>
+            <a href="library_home.html" class="hidden md:flex items-center gap-2 px-4 py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded transition text-xs tracking-widest uppercase text-gray-300">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
+                Return to Archives
+            </a>
+        </div>
+    </header>
+
+    <div class="max-w-7xl mx-auto px-4 md:px-8 py-10 flex flex-col lg:flex-row gap-10 relative z-10">
+        
+        <!-- Sidebar Navigation -->
+        <aside class="w-full lg:w-64 flex-shrink-0">
+            <nav class="glass-panel rounded-xl p-6 sticky top-32">
+                <h3 class="text-xs text-sky-400 tracking-[0.2em] font-bold uppercase mb-6 border-b border-sky-600/20 pb-2 mystical-font">
+                    Curriculum Branches
+                </h3>
+                
+                <ul class="space-y-4 text-sm font-light text-slate-400">
+                    <li class="text-[10px] text-sky-300/60 uppercase tracking-widest font-bold mt-2">Part I: Polyhedral Bodies</li>
+                    <li><a href="#branch1" class="block hover:text-sky-300 transition-colors">I. Earth Mechanics (D8)</a></li>
+                    <li><a href="#branch2" class="block hover:text-sky-300 transition-colors">II. Solar Mechanics (D10)</a></li>
+                    <li><a href="#branch3" class="block hover:text-sky-300 transition-colors">III. Lunar Mechanics (D12)</a></li>
+                    
+                    <li class="text-[10px] text-sky-300/60 uppercase tracking-widest font-bold pt-4 border-t border-sky-900/30 mt-2">Part II: Resonances</li>
+                    <li><a href="#branch4" class="block hover:text-sky-300 transition-colors">IV. Hyperbolic Syzygies</a></li>
+                    
+                    <li class="pt-4 mt-4 border-t border-white/10 md:hidden">
+                        <a href="library_home.html" class="block text-gray-500 hover:text-white transition-colors flex items-center gap-2">
+                            ← Back to Archives
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="flex-1 space-y-12 pb-20">
+            
+            <div class="glass-panel rounded-xl p-6 md:p-8 bg-sky-900/10 border-l-4 border-sky-500">
+                <p class="text-gray-300 font-light leading-relaxed m-0">
+                    <strong class="text-white">The Core Paradigm: Polyhedral Celestial Bodies.</strong><br>
+                    Instead of treating celestial bodies as simple spheres, this discipline models their gravitational and metaphysical fields as specific polyhedral matrices. Their interactions are determined by the geometry of their faces and vertices interacting within a curved (hyperbolic) vacuum.
+                </p>
+            </div>
+
+            <div class="mt-8 mb-4 border-b border-sky-500/30 pb-4">
+                <div class="text-[10px] text-sky-400 tracking-[0.2em] uppercase font-bold mb-2">Curriculum Division</div>
+                <h2 class="text-3xl text-white mystical-font m-0 tracking-widest">Part I: Polyhedral Bodies</h2>
+            </div>
+
+            <!-- Branch I: Earth Mechanics (D8) -->
+            <section id="branch1" class="pt-4">
+                <div class="flex items-center gap-4 mb-2">
+                    <div class="w-10 h-10 rounded-full bg-emerald-900/30 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
+                        <!-- Octahedron Icon -->
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                            <path d="M12 2 L22 12 L12 22 L2 12 Z"/>
+                            <line x1="12" y1="2" x2="12" y2="22"/>
+                            <line x1="2" y1="12" x2="22" y2="12"/>
+                        </svg>
+                    </div>
+                    <h2 class="text-2xl text-white mystical-font m-0 tracking-wide">Branch I: Earth Mechanics</h2>
+                </div>
+                <p class="text-sm text-sky-400/80 uppercase tracking-widest mb-6 font-semibold ml-14">The Octahedral Anchor (D8)</p>
+
+                <div class="ml-0 md:ml-14 mb-8 text-sm text-gray-400 space-y-3 font-light">
+                    <p><strong class="text-gray-200 font-medium">Geometric Profile:</strong> The Octahedron (8 faces, 6 vertices).</p>
+                    <p><strong class="text-gray-200 font-medium">Role in the Triad:</strong> The Inertial Frame and the Anchor.</p>
+                    <p><strong class="text-gray-200 font-medium">Mechanics:</strong> D8 mechanics represent the material plane and stable, grounded coordinates. In the math of the Academy, the Earth acts as the center of the local Poincaré disk. Its gravitational influence projects outward in an 8-fold lattice, prioritizing stability, crystalline structures, and the $x,y,z$ Cartesian axes.</p>
+                </div>
+
+                <div class="grid grid-cols-1 gap-4 ml-0 md:ml-14">
+                    <a href="#" class="module-card rounded-lg p-5 block group">
+                        <h4 class="text-white font-medium mb-1 group-hover:text-sky-300 transition flex items-center justify-between">
+                            Octahedral Inertia & The Observer's Lattice
+                            <svg class="w-4 h-4 opacity-0 group-hover:opacity-100 transform -translate-x-2 group-hover:translate-x-0 transition-all" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                        </h4>
+                        <div class="text-[10px] text-gray-400 font-mono mb-3 bg-black/50 inline-block px-2 py-0.5 rounded border border-sky-500/20">Base Euclidean Coordinates</div>
+                        <p class="text-sm text-gray-400 font-light">Teaching how to calculate the base Euclidean coordinate system derived from the 6 vertices of the D8 before mapping it outward into the hyperbolic void.</p>
+                    </a>
+                </div>
+            </section>
+
+            <!-- Branch II: Solar Mechanics (D10) -->
+            <section id="branch2" class="pt-4">
+                <div class="flex items-center gap-4 mb-2">
+                    <div class="w-10 h-10 rounded-full bg-amber-900/30 border border-amber-500/30 flex items-center justify-center text-amber-400">
+                        <!-- Trapezohedron / Star Polygon Icon -->
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                            <polygon points="12 2 15 10 23 12 15 14 12 22 9 14 1 12 9 10"/>
+                        </svg>
+                    </div>
+                    <h2 class="text-2xl text-white mystical-font m-0 tracking-wide">Branch II: Solar Mechanics</h2>
+                </div>
+                <p class="text-sm text-sky-400/80 uppercase tracking-widest mb-6 font-semibold ml-14">The Decagonal Attractor (D10)</p>
+
+                <div class="ml-0 md:ml-14 mb-8 text-sm text-gray-400 space-y-3 font-light">
+                    <p><strong class="text-gray-200 font-medium">Geometric Profile:</strong> The Pentagonal Trapezohedron (10 faces).</p>
+                    <p><strong class="text-gray-200 font-medium">Role in the Triad:</strong> The Prime Mover and the Golden Radiator.</p>
+                    <p><strong class="text-gray-200 font-medium">Mechanics:</strong> D10 mechanics are governed by $\phi$ (the Golden Ratio), naturally derived from the pentagonal symmetries of its cross-sections. The Sun's energy waves travel outward in logarithmic spirals. Its "gravity" in this system isn't just mass, but a topological sinkhole that warps straight lines into $\phi$-scaled curves.</p>
+                </div>
+
+                <div class="grid grid-cols-1 gap-4 ml-0 md:ml-14">
+                    <a href="#" class="module-card rounded-lg p-5 block group">
+                        <h4 class="text-white font-medium mb-1 group-hover:text-sky-300 transition flex items-center justify-between">
+                            Solar Flux and Golden Trajectories
+                            <svg class="w-4 h-4 opacity-0 group-hover:opacity-100 transform -translate-x-2 group-hover:translate-x-0 transition-all" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                        </h4>
+                        <div class="text-[10px] text-gray-400 font-mono mb-3 bg-black/50 inline-block px-2 py-0.5 rounded border border-sky-500/20">Logarithmic Curvature ($\phi$)</div>
+                        <p class="text-sm text-gray-400 font-light">Mapping how D10 solar winds warp the ambient space, requiring elliptical and hyperbolic integrals to calculate the true geodesic path of light.</p>
+                    </a>
+                </div>
+            </section>
+
+            <!-- Branch III: Lunar Mechanics (D12) -->
+            <section id="branch3" class="pt-4">
+                <div class="flex items-center gap-4 mb-2">
+                    <div class="w-10 h-10 rounded-full bg-slate-700/30 border border-slate-400/30 flex items-center justify-center text-slate-300">
+                        <!-- Dodecahedron (Pentagon Outline) Icon -->
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                            <polygon points="12 2 22 9 18 20 6 20 2 9"/>
+                            <circle cx="12" cy="13" r="3"/>
+                            <line x1="12" y1="2" x2="12" y2="10"/>
+                            <line x1="22" y1="9" x2="14.5" y2="11.5"/>
+                            <line x1="2" y1="9" x2="9.5" y2="11.5"/>
+                        </svg>
+                    </div>
+                    <h2 class="text-2xl text-white mystical-font m-0 tracking-wide">Branch III: Lunar Mechanics</h2>
+                </div>
+                <p class="text-sm text-sky-400/80 uppercase tracking-widest mb-6 font-semibold ml-14">The Dodecahedral Tide (D12)</p>
+
+                <div class="ml-0 md:ml-14 mb-8 text-sm text-gray-400 space-y-3 font-light">
+                    <p><strong class="text-gray-200 font-medium">Geometric Profile:</strong> The Dodecahedron (12 faces, 20 vertices).</p>
+                    <p><strong class="text-gray-200 font-medium">Role in the Triad:</strong> The Perturbator and the Hidden Metric.</p>
+                    <p><strong class="text-gray-200 font-medium">Mechanics:</strong> The Dodecahedron naturally tiles hyperbolic space (as seen in the 120-cell or the Order-4 Dodecahedral Honeycomb). Therefore, Lunar mechanics govern the <em>curvature</em> of the void itself. The D12 represents tidal forces, shifting phase spaces, and the introduction of imaginary numbers ($i$) into orbital calculations. It introduces the "wobble" that makes predicting alignments difficult.</p>
+                </div>
+
+                <div class="grid grid-cols-1 gap-4 ml-0 md:ml-14">
+                    <a href="#" class="module-card rounded-lg p-5 block group">
+                        <h4 class="text-white font-medium mb-1 group-hover:text-sky-300 transition flex items-center justify-between">
+                            Dodecahedral Honeycombs & Phase Shifting
+                            <svg class="w-4 h-4 opacity-0 group-hover:opacity-100 transform -translate-x-2 group-hover:translate-x-0 transition-all" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                        </h4>
+                        <div class="text-[10px] text-gray-400 font-mono mb-3 bg-black/50 inline-block px-2 py-0.5 rounded border border-sky-500/20">Imaginary Mathematics ($i$)</div>
+                        <p class="text-sm text-gray-400 font-light">Understanding the Moon not as a simple object orbiting the Earth, but as a moving topological lens that bends and refracts the hyperbolic grid of the local solar system.</p>
+                    </a>
+                </div>
+            </section>
+
+            <div class="mt-16 mb-4 border-b border-sky-500/30 pb-4">
+                <div class="text-[10px] text-sky-400 tracking-[0.2em] uppercase font-bold mb-2">Curriculum Division</div>
+                <h2 class="text-3xl text-white mystical-font m-0 tracking-widest">Part II: Resonances</h2>
+            </div>
+
+            <!-- Branch IV: Hyperbolic Syzygies -->
+            <section id="branch4" class="pt-4">
+                <div class="flex items-center gap-4 mb-2">
+                    <div class="w-10 h-10 rounded-full bg-fuchsia-900/30 border border-fuchsia-500/30 flex items-center justify-center text-fuchsia-400 shadow-[0_0_15px_rgba(217,70,239,0.3)]">
+                        <!-- Syzygy Alignment Icon -->
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                            <path d="M 4 12 Q 12 2 20 12" stroke-dasharray="3 3"/>
+                            <circle cx="4" cy="12" r="2" fill="currentColor"/>
+                            <circle cx="12" cy="7" r="2" fill="currentColor"/>
+                            <circle cx="20" cy="12" r="2" fill="currentColor"/>
+                        </svg>
+                    </div>
+                    <h2 class="text-2xl text-white mystical-font m-0 tracking-wide">Branch IV: Hyperbolic Syzygies</h2>
+                </div>
+                <p class="text-sm text-sky-400/80 uppercase tracking-widest mb-6 font-semibold ml-14">The Master Mechanic</p>
+                
+                <div class="ml-0 md:ml-14 mb-8 text-sm text-gray-400 space-y-4 font-light glass-panel p-6 rounded-lg border-l-2 border-l-fuchsia-500">
+                    <p>A "Syzygy" is a straight-line configuration of three or more celestial bodies. However, in hyperbolic space, "straight lines" (geodesics) are curved.</p>
+                    <h5 class="text-white font-semibold uppercase tracking-wider text-xs mb-2 mt-4">How the Mechanics Interlock:</h5>
+                    <p>To form a syzygy, the D8 (Anchor), D10 (Attractor), and D12 (Lens) must align along a single hyperbolic geodesic.</p>
+                    <ol class="list-decimal pl-5 space-y-2 text-gray-300 mt-2">
+                        <li><strong>The Solar D10</strong> emits a radial field based on the Golden Ratio.</li>
+                        <li><strong>The Lunar D12</strong> passes through this field, its 12-faced geometry acting as a topological prism that diffracts the $\phi$-scaled gravity into a hyperbolic honeycomb pattern.</li>
+                        <li><strong>The Earth D8</strong> must position one of its 6 vertices exactly upon the intersection of this diffracted geodesic.</li>
+                    </ol>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 ml-0 md:ml-14">
+                    <a href="#" class="module-card rounded-lg p-5 block group">
+                        <h4 class="text-white font-medium mb-1 group-hover:text-fuchsia-400 transition flex items-center justify-between">
+                            The Geodesic Alignment Theorem
+                            <svg class="w-4 h-4 opacity-0 group-hover:opacity-100 transform -translate-x-2 group-hover:translate-x-0 transition-all text-fuchsia-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                        </h4>
+                        <div class="text-[10px] text-gray-400 font-mono mb-3 bg-black/50 inline-block px-2 py-0.5 rounded border border-fuchsia-500/20">Negatively Curved Manifolds</div>
+                        <p class="text-sm text-gray-400 font-light">Calculating the exact moment when an Octahedron, Trapezohedron, and Dodecahedron share a common geodesic in a negatively curved manifold.</p>
+                    </a>
+
+                    <a href="#" class="module-card rounded-lg p-5 block group">
+                        <h4 class="text-white font-medium mb-1 group-hover:text-fuchsia-400 transition flex items-center justify-between">
+                            The Eclipse Matrix
+                            <svg class="w-4 h-4 opacity-0 group-hover:opacity-100 transform -translate-x-2 group-hover:translate-x-0 transition-all text-fuchsia-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                        </h4>
+                        <div class="text-[10px] text-gray-400 font-mono mb-3 bg-black/50 inline-block px-2 py-0.5 rounded border border-fuchsia-500/20">Warding through Syzygy</div>
+                        <p class="text-sm text-gray-400 font-light">A syzygy is traditionally a time of intense power. Learn how to cast "Shadow Wards" by calculating the geometry of a hyperbolic eclipse, using the Moon's D12 phase to perfectly cancel out the Sun's D10 radiation.</p>
+                    </a>
+
+                    <a href="#" class="module-card rounded-lg p-5 block group">
+                        <h4 class="text-white font-medium mb-1 group-hover:text-fuchsia-400 transition flex items-center justify-between">
+                            Orbital Braiding
+                            <svg class="w-4 h-4 opacity-0 group-hover:opacity-100 transform -translate-x-2 group-hover:translate-x-0 transition-all text-fuchsia-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                        </h4>
+                        <div class="text-[10px] text-gray-400 font-mono mb-3 bg-black/50 inline-block px-2 py-0.5 rounded border border-fuchsia-500/20">Closed Topological Knots</div>
+                        <p class="text-sm text-gray-400 font-light">When the three bodies don't just align, but their orbital paths weave together in 4D space to form a closed topological knot (linking to Knot Theory from Department I).</p>
+                    </a>
+
+                    <a href="#" class="module-card rounded-lg p-5 block group">
+                        <h4 class="text-white font-medium mb-1 group-hover:text-fuchsia-400 transition flex items-center justify-between">
+                            The N-Body Resonance Problem
+                            <svg class="w-4 h-4 opacity-0 group-hover:opacity-100 transform -translate-x-2 group-hover:translate-x-0 transition-all text-fuchsia-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                        </h4>
+                        <div class="text-[10px] text-gray-400 font-mono mb-3 bg-black/50 inline-block px-2 py-0.5 rounded border border-fuchsia-500/20">Modular Forms & Calculus</div>
+                        <p class="text-sm text-gray-400 font-light">Why standard Newtonian physics fails to predict the D8-D10-D12 alignment, requiring modular forms and non-Euclidean calculus to find the moment of Syzygy.</p>
+                    </a>
+                </div>
+            </section>
+
+        </main>
+    </div>
+
+    <footer class="w-full border-t border-sky-600/20 bg-black/60 backdrop-blur-md mt-12 py-8 text-center relative z-20">
+        <div class="flex justify-center mb-4">
+            <svg width="24" height="24" viewBox="0 0 100 100" fill="none" stroke="#0ea5e9" stroke-width="3">
+                <circle cx="50" cy="50" r="45"/>
+                <polygon points="50,15 80,80 20,80"/>
+            </svg>
+        </div>
+        <p class="text-xs text-sky-400/60 uppercase tracking-[0.3em] font-light">
+            © 2026 Owl Academy Archives. All rights reserved.
+        </p>
+    </footer>
+
+</body>
+</html>
