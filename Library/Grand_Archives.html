@@ -1,0 +1,815 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Owl Academy | The Grand Archives</title>
+    
+    <!-- External Libraries -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Inter:wght@300;400;500;600&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --color-void: #05030a;
+            --color-primary: #D4AF37;
+            --color-primary-light: #FFF8DC;
+            --color-primary-dark: #aa771c;
+            --color-secondary: #8e9eab;
+            --color-holo1: #00d4ff;
+            --color-holo2: #8A2BE2;
+        }
+
+        body {
+            background-color: var(--color-void);
+            color: #e2e8f0;
+            font-family: 'Inter', sans-serif;
+            background: radial-gradient(circle at 50% 0%, color-mix(in srgb, var(--color-holo2) 8%, var(--color-void)), var(--color-void) 60%);
+            min-height: 100vh;
+            margin: 0;
+            overflow-x: hidden;
+            line-height: 1.7;
+        }
+
+        .starfield {
+            position: fixed; inset: 0;
+            background-image:
+                radial-gradient(2px 2px at 20px 30px, var(--color-primary), rgba(0,0,0,0)),
+                radial-gradient(2px 2px at 40px 70px, #fff, rgba(0,0,0,0)),
+                radial-gradient(2px 2px at 50px 160px, rgba(255,255,255,0.8), rgba(0,0,0,0)),
+                radial-gradient(2px 2px at 90px 40px, #fff, rgba(0,0,0,0)),
+                radial-gradient(2px 2px at 130px 80px, var(--color-primary), rgba(0,0,0,0));
+            background-repeat: repeat; background-size: 250px 250px;
+            animation: twinkle 8s infinite alternate;
+            opacity: 0.15; z-index: -2; pointer-events: none;
+        }
+        
+        .nebula-glow {
+            position: fixed; top: 0; left: 50%; transform: translateX(-50%);
+            width: 100vw; height: 50vh;
+            background: radial-gradient(ellipse at top center, color-mix(in srgb, var(--color-primary) 8%, transparent) 0%, transparent 70%);
+            z-index: -1; pointer-events: none;
+        }
+
+        @keyframes twinkle { 0% { opacity: 0.05; } 100% { opacity: 0.2; } }
+
+        h1, h2, h3, h4, h5, .mystical-font {
+            font-family: 'Cinzel', serif;
+        }
+
+        .gold-gradient {
+            background: linear-gradient(to right, var(--color-primary), var(--color-primary-light), var(--color-primary));
+            -webkit-background-clip: text; background-clip: text;
+            color: transparent; text-shadow: 0 0 15px color-mix(in srgb, var(--color-primary) 30%, transparent);
+        }
+
+        .glass-panel {
+            background: rgba(10, 8, 20, 0.4);
+            backdrop-filter: blur(12px);
+            border: 1px solid color-mix(in srgb, var(--color-primary) 15%, transparent);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5);
+            transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
+        }
+
+        .glass-panel:hover {
+            border-color: color-mix(in srgb, var(--color-primary) 40%, transparent);
+            box-shadow: 0 12px 48px 0 rgba(0, 0, 0, 0.6), inset 0 0 20px rgba(212, 175, 55, 0.05);
+        }
+
+        /* Module Card Styles */
+        .module-link {
+            display: flex;
+            align-items: center;
+            padding: 0.75rem 1rem;
+            margin-bottom: 0.5rem;
+            border-radius: 0.5rem;
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            transition: all 0.2s ease;
+            text-decoration: none;
+            color: #cbd5e1;
+        }
+
+        .module-link:hover {
+            background: rgba(212, 175, 55, 0.1);
+            border-color: rgba(212, 175, 55, 0.3);
+            color: #FFF8DC;
+            transform: translateX(5px);
+        }
+
+        .module-link.locked {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        .module-link.locked:hover {
+            transform: none;
+            background: rgba(255, 255, 255, 0.02);
+            border-color: rgba(255, 255, 255, 0.05);
+            color: #cbd5e1;
+        }
+
+        /* Tome Tag Base */
+        .tome-tag {
+            font-size: 0.5rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            padding: 0.1rem 0.4rem;
+            border-radius: 9999px;
+            font-weight: 600;
+            white-space: nowrap;
+            margin-left: 0.5rem;
+        }
+
+        /* Header Animation */
+        .spin-slow { animation: spin 40s linear infinite; transform-origin: center; }
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+        
+        .pulse-glow { animation: pulseGlow 4s ease-in-out infinite alternate; }
+        @keyframes pulseGlow { 0% { filter: drop-shadow(0 0 5px rgba(212, 175, 55, 0.3)); } 100% { filter: drop-shadow(0 0 15px rgba(212, 175, 55, 0.8)); } }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: rgba(0,0,0,0.3); }
+        ::-webkit-scrollbar-thumb { background: color-mix(in srgb, var(--color-primary) 40%, transparent); border-radius: 10px; }
+
+        .search-input::placeholder { color: rgba(255, 255, 255, 0.3); }
+    </style>
+</head>
+<body class="antialiased">
+
+    <!-- Atmospheric Background -->
+    <div class="starfield"></div>
+    <div class="nebula-glow"></div>
+
+    <header class="w-full pt-16 pb-12 px-6 flex flex-col items-center justify-center relative border-b border-yellow-600/20 bg-[#05030a]/60 backdrop-blur-md shadow-2xl z-20 overflow-hidden">
+        
+        <!-- Top Right Sigil Link -->
+        <a href="https://biochainai.github.io/Owl-Academy/Learning-Hub.html" class="absolute top-4 right-4 md:top-6 md:right-8 w-20 h-20 md:w-28 md:h-28 hover:scale-105 hover:drop-shadow-[0_0_15px_rgba(212,175,55,0.4)] transition-all duration-300 z-30" title="Return to Learning Hub">
+            <svg viewBox="0 0 200 200" class="w-full h-full pulse-glow" xmlns="http://www.w3.org/2000/svg">
+                <defs>
+                    <linearGradient id="goldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" stop-color="#C59B3F" />
+                        <stop offset="50%" stop-color="#FFF2C8" />
+                        <stop offset="100%" stop-color="#996515" />
+                    </linearGradient>
+                </defs>
+                <g class="spin-slow" style="transform-origin: 100px 100px;">
+                    <circle cx="100" cy="100" r="95" fill="none" stroke="url(#goldGrad)" stroke-width="1" opacity="0.6"/>
+                    <circle cx="100" cy="100" r="85" fill="none" stroke="url(#goldGrad)" stroke-width="0.5" opacity="0.4"/>
+                    <polygon points="100,15 173.6,142.5 26.4,142.5" fill="none" stroke="url(#goldGrad)" stroke-width="1" opacity="0.5"/>
+                    <polygon points="100,185 26.4,57.5 173.6,57.5" fill="none" stroke="url(#goldGrad)" stroke-width="1" opacity="0.5"/>
+                </g>
+                <g filter="drop-shadow(0 0 4px rgba(212,175,55,0.8))">
+                    <line x1="100" y1="60" x2="100.01" y2="140" stroke="url(#goldGrad)" stroke-width="2.5" stroke-linecap="round"/>
+                    <path d="M 100,60 C 120,60 120,90 100,90" fill="none" stroke="url(#goldGrad)" stroke-width="2.5" stroke-linecap="round"/>
+                    <line x1="80" y1="85" x2="120" y2="125" stroke="url(#goldGrad)" stroke-width="2.5" stroke-linecap="round"/>
+                    <line x1="120" y1="85" x2="80" y2="125" stroke="url(#goldGrad)" stroke-width="2.5" stroke-linecap="round"/>
+                    <text x="75" y="115" fill="#FFF8DC" font-family="Cinzel, serif" font-size="10" text-anchor="middle">A</text>
+                    <text x="125" y="115" fill="#FFF8DC" font-family="Cinzel, serif" font-size="10" text-anchor="middle">Ω</text>
+                </g>
+                <circle cx="100" cy="100" r="45" fill="none" stroke="url(#goldGrad)" stroke-width="0.5" stroke-dasharray="2 2" opacity="0.6"/>
+            </svg>
+        </a>
+
+        <!-- Official Titles -->
+        <h1 class="text-3xl md:text-5xl font-bold tracking-[0.25em] gold-gradient mb-3 text-center">OWL ACADEMY</h1>
+        <div class="text-sm md:text-md text-yellow-600/80 tracking-[0.4em] uppercase mystical-font text-center flex items-center justify-center">
+            <span class="w-8 h-[1px] bg-yellow-600/40 mr-4 hidden md:block"></span>
+            The Grand Archives
+            <span class="w-8 h-[1px] bg-yellow-600/40 ml-4 hidden md:block"></span>
+        </div>
+        
+        <div class="mt-6 mb-2 flex flex-col items-center">
+            <p class="text-yellow-500/90 font-serif italic text-center text-sm md:text-md tracking-wider px-4">
+                "The lips of wisdom are closed, except to the ears of understanding"
+            </p>
+            <span class="text-yellow-600/50 text-[10px] tracking-[0.2em] uppercase mt-2 mystical-font">— The Kybalion</span>
+        </div>
+
+        <p class="mt-4 pt-4 border-t border-white/5 text-gray-400 font-light max-w-2xl text-center text-sm md:text-base tracking-wide px-12 md:px-0">
+            "Enter the Archives. Select a tome of prerequisite knowledge, and let the geometry of the universe unfold before your mind."
+        </p>
+    </header>
+
+    <div class="max-w-7xl mx-auto px-4 md:px-8 py-12 relative z-10">
+        
+        <!-- Search and Filter Bar -->
+        <div class="mb-10 flex flex-col md:flex-row gap-4 items-center justify-between glass-panel rounded-lg p-4">
+            <div class="relative w-full md:w-96 flex-shrink-0">
+                <svg class="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                <input type="text" id="archive-search" placeholder="Search the Archives or Tomes..." class="w-full bg-black/40 border border-white/10 rounded-md py-2 pl-10 pr-4 text-sm text-white focus:outline-none focus:border-yellow-500/50 transition-colors search-input">
+            </div>
+            <div class="flex gap-2 w-full overflow-x-auto pb-2 md:pb-0 hide-scrollbar" id="quick-filters">
+                <button class="filter-btn active px-4 py-1.5 rounded-full text-xs font-medium tracking-wider bg-yellow-600/20 text-yellow-500 border border-yellow-500/30 whitespace-nowrap" data-filter="">All Tomes</button>
+                <button class="filter-btn px-4 py-1.5 rounded-full text-xs font-medium tracking-wider bg-white/5 text-gray-400 border border-white/10 hover:bg-white/10 transition whitespace-nowrap" data-filter="geometry">Geometry</button>
+                <button class="filter-btn px-4 py-1.5 rounded-full text-xs font-medium tracking-wider bg-white/5 text-gray-400 border border-white/10 hover:bg-white/10 transition whitespace-nowrap" data-filter="cryptography">Cryptography</button>
+                <button class="filter-btn px-4 py-1.5 rounded-full text-xs font-medium tracking-wider bg-white/5 text-gray-400 border border-white/10 hover:bg-white/10 transition whitespace-nowrap" data-filter="metaphysics">Metaphysics</button>
+                <button class="filter-btn px-4 py-1.5 rounded-full text-xs font-medium tracking-wider bg-white/5 text-gray-400 border border-white/10 hover:bg-white/10 transition whitespace-nowrap" data-filter="hyperbolic">Hyperbolic</button>
+                <button class="filter-btn px-4 py-1.5 rounded-full text-xs font-medium tracking-wider bg-white/5 text-gray-400 border border-white/10 hover:bg-white/10 transition whitespace-nowrap" data-filter="fractal">Fractals</button>
+                <button class="filter-btn px-4 py-1.5 rounded-full text-xs font-medium tracking-wider bg-white/5 text-gray-400 border border-white/10 hover:bg-white/10 transition whitespace-nowrap" data-filter="computation">Computation</button>
+                <button class="filter-btn px-4 py-1.5 rounded-full text-xs font-medium tracking-wider bg-white/5 text-gray-400 border border-white/10 hover:bg-white/10 transition whitespace-nowrap" data-filter="consciousness">Consciousness</button>
+            </div>
+        </div>
+
+        <!-- Default View Wrapper -->
+        <div id="default-view">
+            <!-- Archive Grid -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                
+                <!-- Department I: Sacred Geometry -->
+                <div class="glass-panel rounded-xl p-6 flex flex-col h-full archive-card relative group hover:-translate-y-1 transition-all duration-300" data-category="geometry">
+                    <a href="https://biochainai.github.io/Owl-Academy/Library/DepartmentI/Sacred_Geometry/SG_Main.html" class="absolute inset-0 z-10" aria-label="View Department 1"></a>
+                    <div class="flex items-center gap-4 mb-6 border-b border-white/10 pb-4">
+                        <div class="w-12 h-12 rounded-full bg-yellow-900/30 border border-yellow-500/30 flex items-center justify-center flex-shrink-0 text-yellow-500 group-hover:bg-yellow-500/20 transition-colors">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polygon points="12 2 22 8.5 22 15.5 12 22 2 15.5 2 8.5 12 2"/><line x1="12" y1="22" x2="12" y2="15.5"/><line x1="22" y1="8.5" x2="12" y2="15.5"/><line x1="2" y1="8.5" x2="12" y2="15.5"/><line x1="12" y1="2" x2="12" y2="8.5"/></svg>
+                        </div>
+                        <div>
+                            <div class="text-[10px] text-yellow-500 tracking-[0.2em] uppercase font-bold mb-1">Department I</div>
+                            <h2 class="text-xl text-white mystical-font m-0 border-none pb-0 group-hover:text-yellow-400 transition-colors">Sacred Geometry & Topology</h2>
+                        </div>
+                    </div>
+                    
+                    <p class="text-sm text-gray-400 font-light mb-6 relative z-20 pointer-events-none">
+                        Explore the mathematical folding of space, multi-dimensional manifolds, and the perfect divine ratios underlying physical reality.
+                    </p>
+
+                    <div class="space-y-2 relative z-20 flex-grow">
+                        <a href="https://biochainai.github.io/Owl-Academy/Library/DepartmentI/Sacred_Geometry/SG_Main.html" class="module-link group/link">
+                            <span class="text-yellow-600 mr-3 text-lg opacity-50 group-hover/link:opacity-100 transition">⬡</span>
+                            <div class="flex-grow">
+                                <div class="text-sm font-medium flex items-center">
+                                    The Clifford Torus
+                                    <span class="tome-tag bg-yellow-500/10 text-yellow-500 border border-yellow-500/30">Tome of Proofs</span>
+                                </div>
+                                <div class="text-[10px] text-gray-500 uppercase tracking-widest mt-0.5">Interactive Proofs in ℝ⁴</div>
+                            </div>
+                            <svg class="w-4 h-4 text-gray-600 group-hover/link:text-yellow-500 transition transform group-hover/link:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                        </a>
+                        
+                        <a href="https://biochainai.github.io/Owl-Academy/Library/DepartmentI/Sacred_Geometry/SG_Main.html" class="module-link group/link">
+                            <span class="text-yellow-600 mr-3 text-lg opacity-50 group-hover/link:opacity-100 transition">⬡</span>
+                            <div class="flex-grow">
+                                <div class="text-sm font-medium flex items-center">
+                                    Hyper-spheres (S³)
+                                    <span class="tome-tag bg-yellow-500/10 text-yellow-500 border border-yellow-500/30">Tome of Topologies</span>
+                                </div>
+                                <div class="text-[10px] text-gray-500 uppercase tracking-widest mt-0.5">Topological Manifolds</div>
+                            </div>
+                            <svg class="w-4 h-4 text-gray-600 group-hover/link:text-yellow-500 transition transform group-hover/link:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                        </a>
+
+                        <a href="https://biochainai.github.io/Owl-Academy/Library/DepartmentI/Sacred_Geometry/SG_Main.html" class="module-link locked" title="Requires clearance level 2">
+                            <span class="text-gray-600 mr-3 text-lg">⬡</span>
+                            <div class="flex-grow">
+                                <div class="text-sm text-gray-500 font-medium flex items-center gap-2">
+                                    Golden Ratio Projections
+                                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
+                                </div>
+                                <div class="text-[10px] text-gray-600 uppercase tracking-widest mt-0.5">Sealed Tome</div>
+                            </div>
+                        </a>
+                    </div>
+                    
+                    <div class="mt-6 pt-4 border-t border-white/5 flex justify-center relative z-20 pointer-events-none">
+                        <span class="text-xs text-yellow-500/70 uppercase tracking-widest font-semibold group-hover:text-yellow-400 transition-colors">Enter Codex →</span>
+                    </div>
+                </div>
+
+                <!-- Department II: Cryptographic Sigils -->
+                <div class="glass-panel rounded-xl p-6 flex flex-col h-full archive-card relative group hover:-translate-y-1 transition-all duration-300" data-category="cryptography">
+                    <a href="https://biochainai.github.io/Owl-Academy/Library/DepartmentII/Cryptography/Cryptography_main.html" class="absolute inset-0 z-10" aria-label="View Department 2"></a>
+                    <div class="flex items-center gap-4 mb-6 border-b border-white/10 pb-4">
+                        <div class="w-12 h-12 rounded-full bg-purple-900/30 border border-purple-500/30 flex items-center justify-center flex-shrink-0 text-purple-400 group-hover:bg-purple-500/20 transition-colors">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg>
+                        </div>
+                        <div>
+                            <div class="text-[10px] text-purple-400 tracking-[0.2em] uppercase font-bold mb-1">Department II</div>
+                            <h2 class="text-xl text-white mystical-font m-0 border-none pb-0 group-hover:text-purple-300 transition-colors">Cryptography & Sigils</h2>
+                        </div>
+                    </div>
+                    
+                    <p class="text-sm text-gray-400 font-light mb-6 relative z-20 pointer-events-none">
+                        Deconstruct the visual language of the academy. Learn the programmatic generation of unbroken lines and unbreakable wards.
+                    </p>
+
+                    <div class="space-y-2 relative z-20 flex-grow">
+                        <a href="https://biochainai.github.io/Owl-Academy/Library/DepartmentII/Cryptography/Cryptography_main.html" class="module-link group/link">
+                            <span class="text-purple-500 mr-3 text-lg opacity-50 group-hover/link:opacity-100 transition">⬡</span>
+                            <div class="flex-grow">
+                                <div class="text-sm font-medium flex items-center">
+                                    The Trapdoor Geometry
+                                    <span class="tome-tag bg-purple-500/10 text-purple-400 border border-purple-500/30">Tome of Matrices</span>
+                                </div>
+                                <div class="text-[10px] text-gray-500 uppercase tracking-widest mt-0.5">Elliptic Curve Matrices</div>
+                            </div>
+                            <svg class="w-4 h-4 text-gray-600 group-hover/link:text-purple-400 transition transform group-hover/link:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                        </a>
+                        
+                        <a href="https://biochainai.github.io/Owl-Academy/Library/DepartmentII/Cryptography/Cryptography_main.html" class="module-link group/link">
+                            <span class="text-purple-500 mr-3 text-lg opacity-50 group-hover/link:opacity-100 transition">⬡</span>
+                            <div class="flex-grow">
+                                <div class="text-sm font-medium flex items-center">
+                                    Algorithmic Labyrinths
+                                    <span class="tome-tag bg-purple-500/10 text-purple-400 border border-purple-500/30">Tome of Cascades</span>
+                                </div>
+                                <div class="text-[10px] text-gray-500 uppercase tracking-widest mt-0.5">The Avalanche Effect</div>
+                            </div>
+                            <svg class="w-4 h-4 text-gray-600 group-hover/link:text-purple-400 transition transform group-hover/link:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                        </a>
+                    </div>
+
+                    <div class="mt-6 pt-4 border-t border-white/5 flex justify-center relative z-20 pointer-events-none">
+                        <span class="text-xs text-purple-400/70 uppercase tracking-widest font-semibold group-hover:text-purple-400 transition-colors">Enter Codex →</span>
+                    </div>
+                </div>
+
+                <!-- Department III: Metaphysical Mechanics -->
+                <div class="glass-panel rounded-xl p-6 flex flex-col h-full archive-card relative group hover:-translate-y-1 transition-all duration-300" data-category="metaphysics">
+                    <a href="https://biochainai.github.io/Owl-Academy/Library/Department%20III/Celestial_Topology/Dept3_main.html" class="absolute inset-0 z-10" aria-label="View Department 3"></a>
+                    <div class="flex items-center gap-4 mb-6 border-b border-white/10 pb-4">
+                        <div class="w-12 h-12 rounded-full bg-blue-900/30 border border-blue-500/30 flex items-center justify-center flex-shrink-0 text-blue-400 group-hover:bg-blue-500/20 transition-colors">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M12 8v4"/><path d="M12 16h.01"/></svg>
+                        </div>
+                        <div>
+                            <div class="text-[10px] text-blue-400 tracking-[0.2em] uppercase font-bold mb-1">Department III</div>
+                            <h2 class="text-xl text-white mystical-font m-0 border-none pb-0 group-hover:text-blue-400 transition-colors">Metaphysical Mechanics</h2>
+                        </div>
+                    </div>
+                    
+                    <p class="text-sm text-gray-400 font-light mb-6 relative z-20 pointer-events-none">
+                        Theoretical frameworks blending orbital mechanics, quantum states, and ancient spiritual syzygies.
+                    </p>
+
+                    <div class="space-y-2 relative z-20 flex-grow">
+                        <a href="https://biochainai.github.io/Owl-Academy/Library/Department%20III/Celestial_Topology/Dept3_main.html" class="module-link locked" title="Requires clearance level 3">
+                            <span class="text-gray-600 mr-3 text-lg">⬡</span>
+                            <div class="flex-grow">
+                                <div class="text-sm text-gray-500 font-medium flex items-center gap-2">
+                                    Mechanics of Syzygies
+                                    <span class="tome-tag bg-gray-500/10 text-gray-500 border border-gray-500/30">Tome of Resonance</span>
+                                    <svg class="w-3 h-3 ml-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
+                                </div>
+                                <div class="text-[10px] text-gray-600 uppercase tracking-widest mt-0.5">Sealed Tome</div>
+                            </div>
+                        </a>
+
+                        <a href="https://biochainai.github.io/Owl-Academy/Library/Department%20III/Celestial_Topology/Dept3_main.html" class="module-link locked" title="Requires clearance level 3">
+                            <span class="text-gray-600 mr-3 text-lg">⬡</span>
+                            <div class="flex-grow">
+                                <div class="text-sm text-gray-500 font-medium flex items-center gap-2">
+                                    Strassen Matrix Mapping
+                                    <span class="tome-tag bg-gray-500/10 text-gray-500 border border-gray-500/30">Sealed Tome</span>
+                                    <svg class="w-3 h-3 ml-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
+                                </div>
+                                <div class="text-[10px] text-gray-600 uppercase tracking-widest mt-0.5">Sealed Tome</div>
+                            </div>
+                        </a>
+                    </div>
+
+                    <div class="mt-6 pt-4 border-t border-white/5 flex justify-center relative z-20 pointer-events-none">
+                        <span class="text-xs text-blue-400/70 uppercase tracking-widest font-semibold group-hover:text-blue-400 transition-colors">Enter Codex →</span>
+                    </div>
+                </div>
+
+                <!-- Department IV: Hyperbolic Systems -->
+                <div class="glass-panel rounded-xl p-6 flex flex-col h-full archive-card relative group hover:-translate-y-1 transition-all duration-300" data-category="hyperbolic">
+                    <a href="#" class="absolute inset-0 z-10" aria-label="View Department 4"></a>
+                    <div class="flex items-center gap-4 mb-6 border-b border-white/10 pb-4">
+                        <div class="w-12 h-12 rounded-full bg-rose-900/30 border border-rose-500/30 flex items-center justify-center flex-shrink-0 text-rose-400 group-hover:bg-rose-500/20 transition-colors">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/></svg>
+                        </div>
+                        <div>
+                            <div class="text-[10px] text-rose-400 tracking-[0.2em] uppercase font-bold mb-1">Department IV</div>
+                            <h2 class="text-xl text-white mystical-font m-0 border-none pb-0 group-hover:text-rose-300 transition-colors">Hyperbolic Systems</h2>
+                        </div>
+                    </div>
+                    
+                    <p class="text-sm text-gray-400 font-light mb-6 relative z-20 pointer-events-none">
+                        Advanced non-Euclidean manifolds, curvature tensors, and the complex topology bridging infinite geometric planes.
+                    </p>
+
+                    <div class="space-y-2 relative z-20 flex-grow">
+                        <a href="#" class="module-link group/link">
+                            <span class="text-rose-500 mr-3 text-lg opacity-50 group-hover/link:opacity-100 transition">⬡</span>
+                            <div class="flex-grow">
+                                <div class="text-sm font-medium flex items-center">
+                                    The Poincaré Manifold
+                                    <span class="tome-tag bg-rose-500/10 text-rose-400 border border-rose-500/30">Tome of the Curved Void</span>
+                                </div>
+                                <div class="text-[10px] text-gray-500 uppercase tracking-widest mt-0.5">Non-Euclidean Coordinates</div>
+                            </div>
+                            <svg class="w-4 h-4 text-gray-600 group-hover/link:text-rose-400 transition transform group-hover/link:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                        </a>
+                    </div>
+
+                    <div class="mt-6 pt-4 border-t border-white/5 flex justify-center relative z-20 pointer-events-none">
+                        <span class="text-xs text-rose-400/70 uppercase tracking-widest font-semibold group-hover:text-rose-400 transition-colors">Enter Codex →</span>
+                    </div>
+                </div>
+
+                <!-- Department V: Fractal Processing -->
+                <div class="glass-panel rounded-xl p-6 flex flex-col h-full archive-card relative group hover:-translate-y-1 transition-all duration-300" data-category="fractal">
+                    <a href="#" class="absolute inset-0 z-10" aria-label="View Department 5"></a>
+                    <div class="flex items-center gap-4 mb-6 border-b border-white/10 pb-4">
+                        <div class="w-12 h-12 rounded-full bg-emerald-900/30 border border-emerald-500/30 flex items-center justify-center flex-shrink-0 text-emerald-400 group-hover:bg-emerald-500/20 transition-colors">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polygon points="12 2 22 8.5 22 15.5 12 22 2 15.5 2 8.5 12 2"/></svg>
+                        </div>
+                        <div>
+                            <div class="text-[10px] text-emerald-400 tracking-[0.2em] uppercase font-bold mb-1">Department V</div>
+                            <h2 class="text-xl text-white mystical-font m-0 border-none pb-0 group-hover:text-emerald-300 transition-colors">Fractal Processing</h2>
+                        </div>
+                    </div>
+                    
+                    <p class="text-sm text-gray-400 font-light mb-6 relative z-20 pointer-events-none">
+                        Recursive scaling matrices, infinite self-similarity processing, and deterministic chaos within bounded equations.
+                    </p>
+
+                    <div class="space-y-2 relative z-20 flex-grow">
+                        <a href="#" class="module-link group/link">
+                            <span class="text-emerald-500 mr-3 text-lg opacity-50 group-hover/link:opacity-100 transition">⬡</span>
+                            <div class="flex-grow">
+                                <div class="text-sm font-medium flex items-center">
+                                    Mandelbrot Architecture
+                                    <span class="tome-tag bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">Tome of Infinite Recursion</span>
+                                </div>
+                                <div class="text-[10px] text-gray-500 uppercase tracking-widest mt-0.5">Scale & Self-Similarity</div>
+                            </div>
+                            <svg class="w-4 h-4 text-gray-600 group-hover/link:text-emerald-400 transition transform group-hover/link:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                        </a>
+                    </div>
+
+                    <div class="mt-6 pt-4 border-t border-white/5 flex justify-center relative z-20 pointer-events-none">
+                        <span class="text-xs text-emerald-400/70 uppercase tracking-widest font-semibold group-hover:text-emerald-400 transition-colors">Enter Codex →</span>
+                    </div>
+                </div>
+
+                <!-- Department VI: Computational Engines -->
+                <div class="glass-panel rounded-xl p-6 flex flex-col h-full archive-card relative group hover:-translate-y-1 transition-all duration-300" data-category="computation">
+                    <a href="#" class="absolute inset-0 z-10" aria-label="View Department 6"></a>
+                    <div class="flex items-center gap-4 mb-6 border-b border-white/10 pb-4">
+                        <div class="w-12 h-12 rounded-full bg-amber-900/30 border border-amber-500/30 flex items-center justify-center flex-shrink-0 text-amber-400 group-hover:bg-amber-500/20 transition-colors">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="4" y="4" width="16" height="16" rx="2" ry="2"/><rect x="9" y="9" width="6" height="6"/><line x1="9" y1="1" x2="9" y2="4"/><line x1="15" y1="1" x2="15" y2="4"/><line x1="9" y1="20" x2="9" y2="23"/><line x1="15" y1="20" x2="15" y2="23"/><line x1="20" y1="9" x2="23" y2="9"/><line x1="20" y1="14" x2="23" y2="14"/><line x1="1" y1="9" x2="4" y2="9"/><line x1="1" y1="14" x2="4" y2="14"/></svg>
+                        </div>
+                        <div>
+                            <div class="text-[10px] text-amber-400 tracking-[0.2em] uppercase font-bold mb-1">Department VI</div>
+                            <h2 class="text-xl text-white mystical-font m-0 border-none pb-0 group-hover:text-amber-300 transition-colors">Computational Engines</h2>
+                        </div>
+                    </div>
+                    
+                    <p class="text-sm text-gray-400 font-light mb-6 relative z-20 pointer-events-none">
+                        Cellular automata, finite state machines, and the algorithmic weaving required to process universal mathematical constants.
+                    </p>
+
+                    <div class="space-y-2 relative z-20 flex-grow">
+                        <a href="#" class="module-link group/link">
+                            <span class="text-amber-500 mr-3 text-lg opacity-50 group-hover/link:opacity-100 transition">⬡</span>
+                            <div class="flex-grow">
+                                <div class="text-sm font-medium flex items-center">
+                                    Turing's Loom
+                                    <span class="tome-tag bg-amber-500/10 text-amber-400 border border-amber-500/30">Tome of Algorithmic Weaving</span>
+                                </div>
+                                <div class="text-[10px] text-gray-500 uppercase tracking-widest mt-0.5">State Machines & Functions</div>
+                            </div>
+                            <svg class="w-4 h-4 text-gray-600 group-hover/link:text-amber-400 transition transform group-hover/link:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                        </a>
+                    </div>
+
+                    <div class="mt-6 pt-4 border-t border-white/5 flex justify-center relative z-20 pointer-events-none">
+                        <span class="text-xs text-amber-400/70 uppercase tracking-widest font-semibold group-hover:text-amber-400 transition-colors">Enter Codex →</span>
+                    </div>
+                </div>
+
+                <!-- Department VII: Human Consciousness -->
+                <div class="glass-panel rounded-xl p-6 flex flex-col h-full archive-card relative group hover:-translate-y-1 transition-all duration-300" data-category="consciousness">
+                    <a href="#" class="absolute inset-0 z-10" aria-label="View Department 7"></a>
+                    <div class="flex items-center gap-4 mb-6 border-b border-white/10 pb-4">
+                        <div class="w-12 h-12 rounded-full bg-fuchsia-900/30 border border-fuchsia-500/30 flex items-center justify-center flex-shrink-0 text-fuchsia-400 group-hover:bg-fuchsia-500/20 transition-colors">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><circle cx="12" cy="12" r="3"/></svg>
+                        </div>
+                        <div>
+                            <div class="text-[10px] text-fuchsia-400 tracking-[0.2em] uppercase font-bold mb-1">Department VII</div>
+                            <h2 class="text-xl text-white mystical-font m-0 border-none pb-0 group-hover:text-fuchsia-300 transition-colors">Human Consciousness</h2>
+                        </div>
+                    </div>
+                    
+                    <p class="text-sm text-gray-400 font-light mb-6 relative z-20 pointer-events-none">
+                        Neural topologies, cognitive resonance mapping, and awakening the metaphysical inner eye through deliberate perception.
+                    </p>
+
+                    <div class="space-y-2 relative z-20 flex-grow">
+                        <a href="#" class="module-link group/link">
+                            <span class="text-fuchsia-500 mr-3 text-lg opacity-50 group-hover/link:opacity-100 transition">⬡</span>
+                            <div class="flex-grow">
+                                <div class="text-sm font-medium flex items-center">
+                                    Neural Syzygy
+                                    <span class="tome-tag bg-fuchsia-500/10 text-fuchsia-400 border border-fuchsia-500/30">Tome of the Inner Eye</span>
+                                </div>
+                                <div class="text-[10px] text-gray-500 uppercase tracking-widest mt-0.5">Neural Mapping Integrations</div>
+                            </div>
+                            <svg class="w-4 h-4 text-gray-600 group-hover/link:text-fuchsia-400 transition transform group-hover/link:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                        </a>
+                    </div>
+
+                    <div class="mt-6 pt-4 border-t border-white/5 flex justify-center relative z-20 pointer-events-none">
+                        <span class="text-xs text-fuchsia-400/70 uppercase tracking-widest font-semibold group-hover:text-fuchsia-400 transition-colors">Enter Codex →</span>
+                    </div>
+                </div>
+
+                <!-- Department VIII: Soul-Mind Projection -->
+                <div class="glass-panel rounded-xl p-6 flex flex-col h-full archive-card relative group hover:-translate-y-1 transition-all duration-300" data-category="projection">
+                    <a href="#" class="absolute inset-0 z-10" aria-label="View Department 8"></a>
+                    <div class="flex items-center gap-4 mb-6 border-b border-white/10 pb-4">
+                        <div class="w-12 h-12 rounded-full bg-teal-900/30 border border-teal-500/30 flex items-center justify-center flex-shrink-0 text-teal-400 group-hover:bg-teal-500/20 transition-colors">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
+                        </div>
+                        <div>
+                            <div class="text-[10px] text-teal-400 tracking-[0.2em] uppercase font-bold mb-1">Department VIII</div>
+                            <h2 class="text-xl text-white mystical-font m-0 border-none pb-0 group-hover:text-teal-300 transition-colors">Soul-Mind Projection</h2>
+                        </div>
+                    </div>
+                    
+                    <p class="text-sm text-gray-400 font-light mb-6 relative z-20 pointer-events-none">
+                        Astral ascents, trajectory tethering outside the physical hull, and mathematical methods for dimensional phase-shifting.
+                    </p>
+
+                    <div class="space-y-2 relative z-20 flex-grow">
+                        <a href="#" class="module-link group/link">
+                            <span class="text-teal-500 mr-3 text-lg opacity-50 group-hover/link:opacity-100 transition">⬡</span>
+                            <div class="flex-grow">
+                                <div class="text-sm font-medium flex items-center">
+                                    D10 Tethering Protocol
+                                    <span class="tome-tag bg-teal-500/10 text-teal-400 border border-teal-500/30">Tome of Astral Ascent</span>
+                                </div>
+                                <div class="text-[10px] text-gray-500 uppercase tracking-widest mt-0.5">Metaphysical Trajectories</div>
+                            </div>
+                            <svg class="w-4 h-4 text-gray-600 group-hover/link:text-teal-400 transition transform group-hover/link:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                        </a>
+                    </div>
+
+                    <div class="mt-6 pt-4 border-t border-white/5 flex justify-center relative z-20 pointer-events-none">
+                        <span class="text-xs text-teal-400/70 uppercase tracking-widest font-semibold group-hover:text-teal-400 transition-colors">Enter Codex →</span>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- Dynamic Search Results View -->
+        <div id="search-view" class="hidden">
+            <div class="mb-4 text-sm text-yellow-500 tracking-[0.2em] font-bold uppercase mystical-font border-b border-yellow-600/20 pb-2">
+                Query Results from the Universal Index
+            </div>
+            <div id="search-results-grid" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <!-- Search results injected here via JS -->
+            </div>
+            <div id="no-results" class="hidden text-center py-12 text-gray-500 font-light">
+                <svg class="w-12 h-12 mx-auto mb-4 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                No tomes match your query in the archives...
+            </div>
+        </div>
+
+    </div>
+
+    <footer class="w-full border-t border-yellow-600/20 bg-black/60 backdrop-blur-md mt-12 py-8 text-center relative z-20">
+        <div class="flex justify-center mb-4">
+            <svg width="24" height="24" viewBox="0 0 100 100" fill="none" stroke="#D4AF37" stroke-width="3">
+                <circle cx="50" cy="50" r="45"/>
+                <polygon points="50,15 80,80 20,80"/>
+            </svg>
+        </div>
+        <p class="text-xs text-yellow-600/60 uppercase tracking-[0.3em] font-light">
+            © 2026 Owl Academy Archives. All rights reserved.
+        </p>
+    </footer>
+
+    <script>
+        // The Universal Search Index (Level 2 Global Search)
+        const archiveIndex = [
+            // Department I: Geometry
+            {
+                title: "The Clifford Torus",
+                type: "Interactive Proofs in ℝ⁴",
+                department: "Sacred Geometry & Topology",
+                category: "geometry",
+                tomeLabel: "Tome of Proofs",
+                url: "https://biochainai.github.io/Owl-Academy/Library/DepartmentI/Sacred_Geometry/SG_Main.html",
+                keywords: ["clifford", "torus", "toroid", "r4", "topology", "geometry", "flat", "proof", "math", "tome of proofs"]
+            },
+            {
+                title: "Hyper-spheres (S³)",
+                type: "Topological Manifolds",
+                department: "Sacred Geometry & Topology",
+                category: "geometry",
+                tomeLabel: "Tome of Topologies",
+                url: "https://biochainai.github.io/Owl-Academy/Library/DepartmentI/Sacred_Geometry/SG_Main.html",
+                keywords: ["sphere", "s3", "manifolds", "dimension", "higher spheres", "hopf", "tome of topologies"]
+            },
+            {
+                title: "Golden Ratio Projections",
+                type: "Sealed Tome",
+                department: "Sacred Geometry & Topology",
+                category: "geometry",
+                tomeLabel: "Sealed Tome",
+                url: "https://biochainai.github.io/Owl-Academy/Library/DepartmentI/Sacred_Geometry/SG_Main.html",
+                keywords: ["golden", "ratio", "phi", "projection", "fractal", "sealed"]
+            },
+            // Department II: Cryptography
+            {
+                title: "The Trapdoor Geometry",
+                type: "Elliptic Curve Matrices",
+                department: "Cryptography & Sigils",
+                category: "cryptography",
+                tomeLabel: "Tome of Matrices",
+                url: "https://biochainai.github.io/Owl-Academy/Library/DepartmentII/Cryptography/Cryptography_main.html",
+                keywords: ["trapdoor", "elliptic", "curve", "ecc", "matrix", "asymmetric", "key", "tome of matrices"]
+            },
+            {
+                title: "Algorithmic Labyrinths",
+                type: "The Avalanche Effect",
+                department: "Cryptography & Sigils",
+                category: "cryptography",
+                tomeLabel: "Tome of Cascades",
+                url: "https://biochainai.github.io/Owl-Academy/Library/DepartmentII/Cryptography/Cryptography_main.html",
+                keywords: ["algorithm", "labyrinth", "avalanche", "hash", "sha", "merkle", "tome of cascades"]
+            },
+            // Department III: Metaphysics
+            {
+                title: "Mechanics of Syzygies",
+                type: "Sealed Tome",
+                department: "Metaphysical Mechanics",
+                category: "metaphysics",
+                tomeLabel: "Tome of Resonance",
+                url: "https://biochainai.github.io/Owl-Academy/Library/Department%20III/Celestial_Topology/Dept3_main.html",
+                keywords: ["syzygy", "mechanics", "alignment", "celestial", "resonance", "sealed tome"]
+            },
+            {
+                title: "Strassen Matrix Mapping",
+                type: "Sealed Tome",
+                department: "Metaphysical Mechanics",
+                category: "metaphysics",
+                tomeLabel: "Sealed Tome",
+                url: "https://biochainai.github.io/Owl-Academy/Library/Department%20III/Celestial_Topology/Dept3_main.html",
+                keywords: ["strassen", "matrix", "mapping", "tensor", "multiplication", "sealed"]
+            },
+            // Department IV: Hyperbolic Systems
+            {
+                title: "The Poincaré Manifold",
+                type: "Non-Euclidean Coordinates",
+                department: "Hyperbolic Systems",
+                category: "hyperbolic",
+                tomeLabel: "Tome of the Curved Void",
+                url: "#",
+                keywords: ["hyperbolic", "systems", "non-euclidean", "manifold", "poincare", "curved void", "tome of the curved void", "geometry"]
+            },
+            // Department V: Fractal Processing
+            {
+                title: "Mandelbrot Architecture",
+                type: "Scale & Self-Similarity",
+                department: "Fractal Processing",
+                category: "fractal",
+                tomeLabel: "Tome of Infinite Recursion",
+                url: "#",
+                keywords: ["fractal", "processing", "scale", "self-similarity", "recursion", "mandelbrot", "tome of infinite recursion"]
+            },
+            // Department VI: Computational Engines
+            {
+                title: "Turing's Loom",
+                type: "State Machines & Functions",
+                department: "Computational Engines",
+                category: "computation",
+                tomeLabel: "Tome of Algorithmic Weaving",
+                url: "#",
+                keywords: ["computational", "engines", "state machines", "functions", "weaving", "turing", "tome of algorithmic weaving"]
+            },
+            // Department VII: Human Consciousness
+            {
+                title: "Neural Syzygy",
+                type: "Neural Mapping Integrations",
+                department: "Human Consciousness",
+                category: "consciousness",
+                tomeLabel: "Tome of the Inner Eye",
+                url: "#",
+                keywords: ["human", "consciousness", "neural", "mapping", "syzygy", "inner eye", "tome of the inner eye"]
+            },
+            // Department VIII: Soul-Mind Projection
+            {
+                title: "D10 Tethering Protocol",
+                type: "Metaphysical Trajectories",
+                department: "Soul-Mind Projection",
+                category: "projection",
+                tomeLabel: "Tome of Astral Ascent",
+                url: "#",
+                keywords: ["soul", "mind", "projection", "astral", "ascent", "d10", "trajectory", "tethering", "tome of astral ascent"]
+            }
+        ];
+
+        const searchInput = document.getElementById('archive-search');
+        const defaultView = document.getElementById('default-view');
+        const searchView = document.getElementById('search-view');
+        const resultsGrid = document.getElementById('search-results-grid');
+        const noResults = document.getElementById('no-results');
+        const filterBtns = document.querySelectorAll('.filter-btn');
+
+        // Handles applying a query string against the universal index
+        function executeSearch(query) {
+            query = query.toLowerCase().trim();
+            
+            if (query === '') {
+                defaultView.classList.remove('hidden');
+                searchView.classList.add('hidden');
+                
+                // Clear active pill state if empty
+                filterBtns.forEach(btn => btn.classList.remove('bg-yellow-600/20', 'text-yellow-500', 'border-yellow-500/30'));
+                document.querySelector('[data-filter=""]').classList.add('bg-yellow-600/20', 'text-yellow-500', 'border-yellow-500/30');
+                return;
+            }
+
+            defaultView.classList.add('hidden');
+            searchView.classList.remove('hidden');
+
+            const filteredResults = archiveIndex.filter(item => {
+                return item.title.toLowerCase().includes(query) ||
+                       item.department.toLowerCase().includes(query) ||
+                       item.type.toLowerCase().includes(query) ||
+                       item.tomeLabel.toLowerCase().includes(query) ||
+                       item.category.toLowerCase() === query || 
+                       item.keywords.some(kw => kw.includes(query));
+            });
+
+            renderResults(filteredResults);
+        }
+
+        // Live text input binding
+        searchInput.addEventListener('input', function(e) {
+            executeSearch(e.target.value);
+        });
+
+        // Quick Filter Buttons binding
+        filterBtns.forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                // Update active button styles
+                filterBtns.forEach(b => {
+                    b.classList.remove('bg-yellow-600/20', 'text-yellow-500', 'border-yellow-500/30');
+                    b.classList.add('bg-white/5', 'text-gray-400', 'border-white/10');
+                });
+                const currentBtn = e.target;
+                currentBtn.classList.remove('bg-white/5', 'text-gray-400', 'border-white/10');
+                currentBtn.classList.add('bg-yellow-600/20', 'text-yellow-500', 'border-yellow-500/30');
+
+                // Execute the search filter
+                const filterTerm = currentBtn.getAttribute('data-filter');
+                if(filterTerm === "") {
+                    searchInput.value = "";
+                } else {
+                    searchInput.value = filterTerm;
+                }
+                executeSearch(filterTerm);
+            });
+        });
+
+        // Renders the matched JSON items into HTML blocks
+        function renderResults(results) {
+            resultsGrid.innerHTML = ''; 
+
+            if (results.length === 0) {
+                noResults.classList.remove('hidden');
+            } else {
+                noResults.classList.add('hidden');
+                
+                results.forEach(result => {
+                    const isLocked = result.type.includes("Sealed");
+                    const linkClasses = isLocked ? "opacity-50 cursor-not-allowed" : "hover:border-yellow-500/50 hover:bg-yellow-600/10 hover:-translate-y-1";
+                    
+                    let colorTheme = "text-yellow-500 border-yellow-500/30 bg-yellow-500/10";
+                    if (result.category === 'cryptography') colorTheme = "text-purple-400 border-purple-500/30 bg-purple-500/10";
+                    if (result.category === 'metaphysics') colorTheme = "text-blue-400 border-blue-500/30 bg-blue-500/10";
+                    if (result.category === 'hyperbolic') colorTheme = "text-rose-400 border-rose-500/30 bg-rose-500/10";
+                    if (result.category === 'fractal') colorTheme = "text-emerald-400 border-emerald-500/30 bg-emerald-500/10";
+                    if (result.category === 'computation') colorTheme = "text-amber-400 border-amber-500/30 bg-amber-500/10";
+                    if (result.category === 'consciousness') colorTheme = "text-fuchsia-400 border-fuchsia-500/30 bg-fuchsia-500/10";
+                    if (result.category === 'projection') colorTheme = "text-teal-400 border-teal-500/30 bg-teal-500/10";
+                    if (isLocked) colorTheme = "text-gray-500 border-gray-500/30 bg-gray-500/10";
+
+                    const cardHTML = `
+                        <a href="${result.url}" class="block glass-panel rounded-lg p-4 border border-white/10 transition-all duration-200 ${linkClasses}">
+                            <div class="flex justify-between items-start mb-2">
+                                <div class="text-[10px] text-gray-400 uppercase tracking-widest font-bold">${result.department}</div>
+                                ${isLocked ? `<svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>` : ''}
+                            </div>
+                            <h3 class="text-white text-lg font-medium mb-1 flex items-center flex-wrap gap-2">
+                                ${result.title}
+                                <span class="tome-tag ${colorTheme} ml-0">${result.tomeLabel}</span>
+                            </h3>
+                            <div class="text-xs text-gray-500 font-mono">${result.type}</div>
+                        </a>
+                    `;
+                    resultsGrid.insertAdjacentHTML('beforeend', cardHTML);
+                });
+            }
+        }
+    </script>
+</body>
+</html>
