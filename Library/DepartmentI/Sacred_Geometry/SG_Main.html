@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Owl Academy | Dept I: Sacred Geometry & Topology</title>
+    
+    <!-- External Libraries -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Inter:wght@300;400;500;600&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+    
+    <!-- MathJax Configuration for Equations -->
+    <script>
+        window.MathJax = { 
+            tex: { 
+                inlineMath: [['$', '$'], ['\\(', '\\)']], 
+                displayMath: [['$$', '$$'], ['\\[', '\\]']] 
+            }
+        };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+    <style>
+        :root {
+            --color-void: #05030a;
+            --color-primary: #D4AF37;
+            --color-primary-light: #FFF8DC;
+            --color-primary-dark: #aa771c;
+            --color-secondary: #8e9eab;
+            --color-holo1: #00d4ff;
+            --color-holo2: #8A2BE2;
+        }
+
+        body {
+            background-color: var(--color-void);
+            color: #e2e8f0;
+            font-family: 'Inter', sans-serif;
+            background: radial-gradient(circle at 50% 0%, color-mix(in srgb, var(--color-holo2) 8%, var(--color-void)), var(--color-void) 60%);
+            min-height: 100vh;
+            margin: 0;
+            overflow-x: hidden;
+            line-height: 1.7;
+        }
+
+        .starfield {
+            position: fixed; inset: 0;
+            background-image:
+                radial-gradient(2px 2px at 20px 30px, var(--color-primary), rgba(0,0,0,0)),
+                radial-gradient(2px 2px at 40px 70px, #fff, rgba(0,0,0,0)),
+                radial-gradient(2px 2px at 50px 160px, rgba(255,255,255,0.8), rgba(0,0,0,0)),
+                radial-gradient(2px 2px at 90px 40px, #fff, rgba(0,0,0,0)),
+                radial-gradient(2px 2px at 130px 80px, var(--color-primary), rgba(0,0,0,0));
+            background-repeat: repeat; background-size: 250px 250px;
+            animation: twinkle 8s infinite alternate;
+            opacity: 0.15; z-index: -2; pointer-events: none;
+        }
+        
+        .nebula-glow {
+            position: fixed; top: 0; left: 50%; transform: translateX(-50%);
+            width: 100vw; height: 50vh;
+            background: radial-gradient(ellipse at top center, color-mix(in srgb, var(--color-primary) 8%, transparent) 0%, transparent 70%);
+            z-index: -1; pointer-events: none;
+        }
+
+        @keyframes twinkle { 0% { opacity: 0.05; } 100% { opacity: 0.2; } }
+
+        h1, h2, h3, h4, h5, .mystical-font {
+            font-family: 'Cinzel', serif;
+        }
+
+        .gold-gradient {
+            background: linear-gradient(to right, var(--color-primary), var(--color-primary-light), var(--color-primary));
+            -webkit-background-clip: text; background-clip: text;
+            color: transparent; text-shadow: 0 0 15px color-mix(in srgb, var(--color-primary) 30%, transparent);
+        }
+
+        .glass-panel {
+            background: rgba(10, 8, 20, 0.4);
+            backdrop-filter: blur(12px);
+            border: 1px solid color-mix(in srgb, var(--color-primary) 15%, transparent);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5);
+        }
+
+        /* Module Card Styles */
+        .module-card {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            transition: all 0.3s ease;
+        }
+        .module-card:hover {
+            background: rgba(212, 175, 55, 0.05);
+            border-color: rgba(212, 175, 55, 0.3);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(0,0,0,0.4), inset 0 0 15px rgba(212, 175, 55, 0.05);
+        }
+
+        /* Header Animation */
+        .spin-slow { animation: spin 40s linear infinite; transform-origin: center; }
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+        .pulse-glow { animation: pulseGlow 4s ease-in-out infinite alternate; }
+        @keyframes pulseGlow { 0% { filter: drop-shadow(0 0 5px rgba(212, 175, 55, 0.3)); } 100% { filter: drop-shadow(0 0 15px rgba(212, 175, 55, 0.8)); } }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: rgba(0,0,0,0.3); }
+        ::-webkit-scrollbar-thumb { background: color-mix(in srgb, var(--color-primary) 40%, transparent); border-radius: 10px; }
+
+        /* MathJax Overflow Fix */
+        .MathJax { overflow-x: auto; overflow-y: hidden; }
+        
+        section { scroll-margin-top: 100px; }
+    </style>
+</head>
+<body class="antialiased">
+
+    <!-- Atmospheric Background -->
+    <div class="starfield"></div>
+    <div class="nebula-glow"></div>
+
+    <!-- Minimal Header -->
+    <header class="w-full pt-10 pb-8 px-6 flex flex-col items-center justify-center relative border-b border-yellow-600/20 bg-[#05030a]/80 backdrop-blur-md shadow-2xl z-20 sticky top-0">
+        <div class="flex items-center gap-6 max-w-7xl w-full justify-between">
+            <div class="flex items-center gap-4">
+                <div class="relative w-16 h-16 flex-shrink-0">
+                    <svg viewBox="0 0 200 200" class="w-full h-full pulse-glow" xmlns="http://www.w3.org/2000/svg">
+                        <defs>
+                            <linearGradient id="goldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                                <stop offset="0%" stop-color="#C59B3F" />
+                                <stop offset="50%" stop-color="#FFF2C8" />
+                                <stop offset="100%" stop-color="#996515" />
+                            </linearGradient>
+                        </defs>
+                        <g class="spin-slow" style="transform-origin: 100px 100px;">
+                            <circle cx="100" cy="100" r="95" fill="none" stroke="url(#goldGrad)" stroke-width="1" opacity="0.6"/>
+                            <polygon points="100,15 173.6,142.5 26.4,142.5" fill="none" stroke="url(#goldGrad)" stroke-width="1" opacity="0.5"/>
+                            <polygon points="100,185 26.4,57.5 173.6,57.5" fill="none" stroke="url(#goldGrad)" stroke-width="1" opacity="0.5"/>
+                        </g>
+                        <circle cx="100" cy="100" r="45" fill="none" stroke="url(#goldGrad)" stroke-width="0.5" stroke-dasharray="2 2" opacity="0.6"/>
+                    </svg>
+                </div>
+                <div>
+                    <div class="text-[10px] text-yellow-600/80 tracking-[0.4em] uppercase mystical-font">Department I</div>
+                    <h1 class="text-xl md:text-2xl font-bold tracking-[0.15em] gold-gradient m-0">Sacred Geometry & Topology</h1>
+                </div>
+            </div>
+            <a href="#" class="hidden md:flex items-center gap-2 px-4 py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded transition text-xs tracking-widest uppercase text-gray-300">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
+                Return to Archives
+            </a>
+        </div>
+    </header>
+
+    <div class="max-w-7xl mx-auto px-4 md:px-8 py-10 flex flex-col lg:flex-row gap-10 relative z-10">
+        
+        <!-- Sidebar Navigation -->
+        <aside class="w-full lg:w-64 flex-shrink-0">
+            <nav class="glass-panel rounded-xl p-6 sticky top-32">
+                <h3 class="text-xs text-yellow-500 tracking-[0.2em] font-bold uppercase mb-6 border-b border-yellow-600/20 pb-2 mystical-font">
+                    Curriculum Branches
+                </h3>
+                
+                <ul class="space-y-4 text-sm font-light text-slate-400">
+                    <li><a href="#branch1" class="block hover:text-yellow-400 transition-colors">I. Hyper-Dimensional Topology</a></li>
+                    <li><a href="#branch2" class="block hover:text-yellow-400 transition-colors">II. Knot Theory & Entanglement</a></li>
+                    <li><a href="#branch3" class="block hover:text-yellow-400 transition-colors">III. Fractal Proportions</a></li>
+                    <li><a href="#branch4" class="block hover:text-yellow-400 transition-colors">IV. Non-Euclidean Paradigms</a></li>
+                    <li><a href="#branch5" class="block hover:text-yellow-400 transition-colors">V. Geometric Algebra</a></li>
+                    
+                    <li class="pt-4 mt-4 border-t border-white/10 md:hidden">
+                        <a href="#" class="block text-gray-500 hover:text-white transition-colors flex items-center gap-2">
+                            ← Back to Archives
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="flex-1 space-y-12 pb-20">
+            
+            <div class="glass-panel rounded-xl p-6 md:p-8 bg-yellow-900/10 border-l-4 border-yellow-500">
+                <p class="text-gray-300 font-light leading-relaxed m-0">
+                    <strong class="text-white">Welcome to the Premier Department of the Owl Academy.</strong><br>
+                    This codex outlines the foundational modules of our curriculum. Each topic within these branches blends rigorous mathematical principles with the metaphysical, arcane aesthetic required to understand the architecture of the universe.
+                </p>
+            </div>
+
+            <!-- Branch I -->
+            <section id="branch1" class="pt-4">
+                <div class="flex items-center gap-4 mb-2">
+                    <div class="w-10 h-10 rounded-full bg-blue-900/30 border border-blue-500/30 flex items-center justify-center text-blue-400">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg>
+                    </div>
+                    <h2 class="text-2xl text-white mystical-font m-0 tracking-wide">Branch I: Hyper-Dimensional Topology</h2>
+                </div>
+                <p class="text-sm text-yellow-600/80 uppercase tracking-widest mb-6 font-semibold ml-14">The Higher Spheres</p>
+                <p class="text-gray-400 font-light mb-6 ml-14">Expanding beyond 3D space to understand the geometry of the void.</p>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 ml-0 md:ml-14">
+                    <a href="#" class="module-card rounded-lg p-5 block group">
+                        <h4 class="text-white font-medium mb-1 group-hover:text-yellow-400 transition flex items-center justify-between">
+                            The Hopf Fibration
+                            <svg class="w-4 h-4 opacity-0 group-hover:opacity-100 transform -translate-x-2 group-hover:translate-x-0 transition-all" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                        </h4>
+                        <div class="text-[10px] text-gray-500 font-mono mb-3 bg-black/50 inline-block px-2 py-0.5 rounded">$S^3 \rightarrow S^2$</div>
+                        <p class="text-sm text-gray-400 font-light">The "Loom." Visualizing how the 3-sphere is woven entirely out of perfectly interlocking, non-intersecting circles. A beautiful bridge between 3D and 4D topology.</p>
+                    </a>
+
+                    <a href="#" class="module-card rounded-lg p-5 block group">
+                        <h4 class="text-white font-medium mb-1 group-hover:text-yellow-400 transition flex items-center justify-between">
+                            The 4D Platonic Solids
+                            <svg class="w-4 h-4 opacity-0 group-hover:opacity-100 transform -translate-x-2 group-hover:translate-x-0 transition-all" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                        </h4>
+                        <div class="text-[10px] text-gray-500 font-mono mb-3 bg-black/50 inline-block px-2 py-0.5 rounded">Regular Polytopes</div>
+                        <p class="text-sm text-gray-400 font-light">Moving beyond the traditional 5 Platonic solids into the 6 regular 4-dimensional convex polytopes (e.g., the Tesseract, the 120-Cell, and the 600-Cell).</p>
+                    </a>
+
+                    <a href="#" class="module-card rounded-lg p-5 block group">
+                        <h4 class="text-white font-medium mb-1 group-hover:text-yellow-400 transition flex items-center justify-between">
+                            Calabi-Yau Manifolds
+                            <svg class="w-4 h-4 opacity-0 group-hover:opacity-100 transform -translate-x-2 group-hover:translate-x-0 transition-all" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                        </h4>
+                        <div class="text-[10px] text-gray-500 font-mono mb-3 bg-black/50 inline-block px-2 py-0.5 rounded">Compactification</div>
+                        <p class="text-sm text-gray-400 font-light">The hidden dimensions of string theory. Exploring spaces where 6 extra dimensions are "compactified" or curled up into microscopic, complex shapes.</p>
+                    </a>
+
+                    <a href="#" class="module-card rounded-lg p-5 block group">
+                        <h4 class="text-white font-medium mb-1 group-hover:text-yellow-400 transition flex items-center justify-between">
+                            Projective Geometry
+                            <svg class="w-4 h-4 opacity-0 group-hover:opacity-100 transform -translate-x-2 group-hover:translate-x-0 transition-all" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                        </h4>
+                        <div class="text-[10px] text-gray-500 font-mono mb-3 bg-black/50 inline-block px-2 py-0.5 rounded">The Real Projective Plane ($\mathbb{R}P^2$)</div>
+                        <p class="text-sm text-gray-400 font-light">Visualizing infinity. Studying the Boy's Surface and the Cross-Cap, where parallel lines finally meet.</p>
+                    </a>
+                </div>
+            </section>
+
+            <!-- Branch II -->
+            <section id="branch2" class="pt-4">
+                <div class="flex items-center gap-4 mb-2">
+                    <div class="w-10 h-10 rounded-full bg-purple-900/30 border border-purple-500/30 flex items-center justify-center text-purple-400">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 12a4 4 0 1 0 8 0 4 4 0 1 0-8 0"/><path d="M12 8a4 4 0 1 0 0 8 4 4 0 1 0 0-8"/><path d="M16 12a4 4 0 1 0-8 0 4 4 0 1 0 8 0"/></svg>
+                    </div>
+                    <h2 class="text-2xl text-white mystical-font m-0 tracking-wide">Branch II: Knot Theory & Entanglement</h2>
+                </div>
+                <p class="text-sm text-yellow-600/80 uppercase tracking-widest mb-6 font-semibold ml-14">The Weave</p>
+                <p class="text-gray-400 font-light mb-6 ml-14">The mathematical study of unbreakable bounds and continuous loops.</p>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 ml-0 md:ml-14">
+                    <a href="clifford_torus.html" class="module-card rounded-lg p-5 block group border-yellow-500/30 relative overflow-hidden">
+                        <div class="absolute top-0 right-0 bg-yellow-500 text-black text-[9px] font-bold px-2 py-1 uppercase tracking-wider rounded-bl-lg">Active Module</div>
+                        <h4 class="text-white font-medium mb-1 group-hover:text-yellow-400 transition flex items-center justify-between">
+                            Torus Knots
+                            <svg class="w-4 h-4 opacity-0 group-hover:opacity-100 transform -translate-x-2 group-hover:translate-x-0 transition-all text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                        </h4>
+                        <div class="text-[10px] text-gray-500 font-mono mb-3 bg-black/50 inline-block px-2 py-0.5 rounded">$p,q$-knots</div>
+                        <p class="text-sm text-gray-400 font-light">Building directly off the Clifford Torus. What happens when a single continuous line winds $p$ times around the meridian and $q$ times around the longitude, closing in on itself to form an unbreakable sigil?</p>
+                    </a>
+
+                    <a href="#" class="module-card rounded-lg p-5 block group">
+                        <h4 class="text-white font-medium mb-1 group-hover:text-yellow-400 transition flex items-center justify-between">
+                            Borromean Rings
+                            <svg class="w-4 h-4 opacity-0 group-hover:opacity-100 transform -translate-x-2 group-hover:translate-x-0 transition-all" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                        </h4>
+                        <div class="text-[10px] text-gray-500 font-mono mb-3 bg-black/50 inline-block px-2 py-0.5 rounded">Topological Trinities</div>
+                        <p class="text-sm text-gray-400 font-light">The mathematics of interdependence. Three rings linked in such a way that no two are linked to each other, but all three are completely inseparable.</p>
+                    </a>
+
+                    <a href="#" class="module-card rounded-lg p-5 block group">
+                        <h4 class="text-white font-medium mb-1 group-hover:text-yellow-400 transition flex items-center justify-between">
+                            Braid Groups
+                            <svg class="w-4 h-4 opacity-0 group-hover:opacity-100 transform -translate-x-2 group-hover:translate-x-0 transition-all" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                        </h4>
+                        <div class="text-[10px] text-gray-500 font-mono mb-3 bg-black/50 inline-block px-2 py-0.5 rounded">Artin Groups</div>
+                        <p class="text-sm text-gray-400 font-light">The algebra of weaving. Translating the physical crossing of strands in 3D space into rigorous matrix algebra.</p>
+                    </a>
+
+                    <a href="#" class="module-card rounded-lg p-5 block group">
+                        <h4 class="text-white font-medium mb-1 group-hover:text-yellow-400 transition flex items-center justify-between">
+                            The Trefoil
+                            <svg class="w-4 h-4 opacity-0 group-hover:opacity-100 transform -translate-x-2 group-hover:translate-x-0 transition-all" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                        </h4>
+                        <div class="text-[10px] text-gray-500 font-mono mb-3 bg-black/50 inline-block px-2 py-0.5 rounded">Unknotting Numbers</div>
+                        <p class="text-sm text-gray-400 font-light">Measuring the complexity of cosmic entanglements. Analyzing the simplest non-trivial knot.</p>
+                    </a>
+                </div>
+            </section>
+
+            <!-- Branch III -->
+            <section id="branch3" class="pt-4">
+                <div class="flex items-center gap-4 mb-2">
+                    <div class="w-10 h-10 rounded-full bg-emerald-900/30 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polygon points="12 2 22 8.5 22 15.5 12 22 2 15.5 2 8.5 12 2"/></svg>
+                    </div>
+                    <h2 class="text-2xl text-white mystical-font m-0 tracking-wide">Branch III: Fractal Proportions</h2>
+                </div>
+                <p class="text-sm text-yellow-600/80 uppercase tracking-widest mb-6 font-semibold ml-14">The Infinite Mirror</p>
+                <p class="text-gray-400 font-light mb-6 ml-14">Mathematics of self-similarity and irrational constants.</p>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 ml-0 md:ml-14">
+                    <a href="#" class="module-card rounded-lg p-5 block group">
+                        <h4 class="text-white font-medium mb-1 group-hover:text-yellow-400 transition flex items-center justify-between">
+                            Aperiodic Symmetries
+                            <svg class="w-4 h-4 opacity-0 group-hover:opacity-100 transform -translate-x-2 group-hover:translate-x-0 transition-all" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                        </h4>
+                        <div class="text-[10px] text-gray-500 font-mono mb-3 bg-black/50 inline-block px-2 py-0.5 rounded">Penrose Tilings</div>
+                        <p class="text-sm text-gray-400 font-light">The "Forbidden Symmetries." Tessellating the plane using Golden Ratio proportions (darts and kites) without the pattern ever perfectly repeating itself.</p>
+                    </a>
+
+                    <a href="#" class="module-card rounded-lg p-5 block group">
+                        <h4 class="text-white font-medium mb-1 group-hover:text-yellow-400 transition flex items-center justify-between">
+                            Logarithmic Spirals
+                            <svg class="w-4 h-4 opacity-0 group-hover:opacity-100 transform -translate-x-2 group-hover:translate-x-0 transition-all" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                        </h4>
+                        <div class="text-[10px] text-gray-500 font-mono mb-3 bg-black/50 inline-block px-2 py-0.5 rounded">Complex Dynamics ($\phi$)</div>
+                        <p class="text-sm text-gray-400 font-light">Mapping the Fibonacci sequence and the Golden Spiral using complex numbers and exponential growth.</p>
+                    </a>
+
+                    <a href="#" class="module-card rounded-lg p-5 block group md:col-span-2">
+                        <h4 class="text-white font-medium mb-1 group-hover:text-yellow-400 transition flex items-center justify-between">
+                            The Geometry of Continued Fractions
+                            <svg class="w-4 h-4 opacity-0 group-hover:opacity-100 transform -translate-x-2 group-hover:translate-x-0 transition-all" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                        </h4>
+                        <div class="text-[10px] text-gray-500 font-mono mb-3 bg-black/50 inline-block px-2 py-0.5 rounded">Irrational Constants</div>
+                        <p class="text-sm text-gray-400 font-light">Why the Golden Ratio is the "most irrational" number, making it the perfect constant for optimizing energy flow and avoiding resonances (e.g., in leaf arrangements or orbital mechanics).</p>
+                    </a>
+                </div>
+            </section>
+
+            <!-- Branch IV -->
+            <section id="branch4" class="pt-4">
+                <div class="flex items-center gap-4 mb-2">
+                    <div class="w-10 h-10 rounded-full bg-red-900/30 border border-red-500/30 flex items-center justify-center text-red-400">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/></svg>
+                    </div>
+                    <h2 class="text-2xl text-white mystical-font m-0 tracking-wide">Branch IV: Non-Euclidean Paradigms</h2>
+                </div>
+                <p class="text-sm text-yellow-600/80 uppercase tracking-widest mb-6 font-semibold ml-14">The Curved Void</p>
+                <p class="text-gray-400 font-light mb-6 ml-14">Bending the rules of standard space and time.</p>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 ml-0 md:ml-14">
+                    <a href="#" class="module-card rounded-lg p-5 block group">
+                        <h4 class="text-white font-medium mb-1 group-hover:text-yellow-400 transition flex items-center justify-between">
+                            Hyperbolic Tessellations
+                            <svg class="w-4 h-4 opacity-0 group-hover:opacity-100 transform -translate-x-2 group-hover:translate-x-0 transition-all" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                        </h4>
+                        <div class="text-[10px] text-gray-500 font-mono mb-3 bg-black/50 inline-block px-2 py-0.5 rounded">The Poincaré Disk Model</div>
+                        <p class="text-sm text-gray-400 font-light">Mapping infinite space within a finite circle. Exploring the geometry where the sum of angles in a triangle is less than 180 degrees (often visualized in M.C. Escher's "Circle Limit" works).</p>
+                    </a>
+
+                    <a href="#" class="module-card rounded-lg p-5 block group">
+                        <h4 class="text-white font-medium mb-1 group-hover:text-yellow-400 transition flex items-center justify-between">
+                            Non-Orientable Surfaces
+                            <svg class="w-4 h-4 opacity-0 group-hover:opacity-100 transform -translate-x-2 group-hover:translate-x-0 transition-all" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                        </h4>
+                        <div class="text-[10px] text-gray-500 font-mono mb-3 bg-black/50 inline-block px-2 py-0.5 rounded">Möbius & Klein</div>
+                        <p class="text-sm text-gray-400 font-light">The Möbius Strip and the Klein Bottle. Surfaces with only one side and one boundary, challenging the binary concept of "inside" and "outside."</p>
+                    </a>
+                </div>
+            </section>
+
+            <!-- Branch V -->
+            <section id="branch5" class="pt-4">
+                <div class="flex items-center gap-4 mb-2">
+                    <div class="w-10 h-10 rounded-full bg-cyan-900/30 border border-cyan-500/30 flex items-center justify-center text-cyan-400">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polygon points="12 2 19 21 12 17 5 21 12 2"/></svg>
+                    </div>
+                    <h2 class="text-2xl text-white mystical-font m-0 tracking-wide">Branch V: Geometric Algebra</h2>
+                </div>
+                <p class="text-sm text-yellow-600/80 uppercase tracking-widest mb-6 font-semibold ml-14">Mechanics of Syzygies</p>
+                <p class="text-gray-400 font-light mb-6 ml-14">The arithmetic of rotation, reflection, and physical transformation.</p>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 ml-0 md:ml-14">
+                    <a href="#" class="module-card rounded-lg p-5 block group">
+                        <h4 class="text-white font-medium mb-1 group-hover:text-yellow-400 transition flex items-center justify-between">
+                            Quaternions
+                            <svg class="w-4 h-4 opacity-0 group-hover:opacity-100 transform -translate-x-2 group-hover:translate-x-0 transition-all" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                        </h4>
+                        <div class="text-[10px] text-gray-500 font-mono mb-3 bg-black/50 inline-block px-2 py-0.5 rounded">$\mathbb{H}$ Number System</div>
+                        <p class="text-sm text-gray-400 font-light">Hamilton's hypercomplex numbers. The mathematical engine behind smooth 3D rotations, avoiding "gimbal lock," and their metaphysical implication as a 4D number system.</p>
+                    </a>
+
+                    <a href="#" class="module-card rounded-lg p-5 block group">
+                        <h4 class="text-white font-medium mb-1 group-hover:text-yellow-400 transition flex items-center justify-between">
+                            Lie Groups
+                            <svg class="w-4 h-4 opacity-0 group-hover:opacity-100 transform -translate-x-2 group-hover:translate-x-0 transition-all" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                        </h4>
+                        <div class="text-[10px] text-gray-500 font-mono mb-3 bg-black/50 inline-block px-2 py-0.5 rounded">$SU(2)$ and $SO(3)$</div>
+                        <p class="text-sm text-gray-400 font-light">The continuous symmetries of the universe. The math underlying the conservation of angular momentum and the structure of quantum particles.</p>
+                    </a>
+
+                    <a href="#" class="module-card rounded-lg p-5 block group md:col-span-2">
+                        <h4 class="text-white font-medium mb-1 group-hover:text-yellow-400 transition flex items-center justify-between">
+                            Spinors and Dirac's Belt Trick
+                            <svg class="w-4 h-4 opacity-0 group-hover:opacity-100 transform -translate-x-2 group-hover:translate-x-0 transition-all" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                        </h4>
+                        <div class="text-[10px] text-gray-500 font-mono mb-3 bg-black/50 inline-block px-2 py-0.5 rounded">The $4\pi$ Rotation</div>
+                        <p class="text-sm text-gray-400 font-light">Proving mathematically and physically why some objects must be rotated 720 degrees (not 360) to return to their original state.</p>
+                    </a>
+                </div>
+            </section>
+
+        </main>
+    </div>
+
+    <footer class="w-full border-t border-yellow-600/20 bg-black/60 backdrop-blur-md mt-12 py-8 text-center relative z-20">
+        <div class="flex justify-center mb-4">
+            <svg width="24" height="24" viewBox="0 0 100 100" fill="none" stroke="#D4AF37" stroke-width="3">
+                <circle cx="50" cy="50" r="45"/>
+                <polygon points="50,15 80,80 20,80"/>
+            </svg>
+        </div>
+        <p class="text-xs text-yellow-600/60 uppercase tracking-[0.3em] font-light">
+            © 2026 Owl Academy Archives. All rights reserved.
+        </p>
+    </footer>
+
+</body>
+</html>
