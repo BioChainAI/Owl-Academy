@@ -185,6 +185,23 @@
             <input type="range" id="tiers-slider" min="1" max="4" value="3" class="w-full h-1 bg-gray-800 rounded appearance-none cursor-pointer outline-none border border-white/10 mb-6">
             
             <div class="mt-4 border-t border-white/10 pt-4">
+                <button id="adv-toggle-btn" class="w-full flex justify-between items-center text-[10px] text-yellow-500 font-bold uppercase tracking-widest mb-2 focus:outline-none">
+                    <span>Scaling & TQF Projection</span>
+                    <svg id="adv-chevron" class="w-4 h-4 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                </button>
+                <div id="adv-panel" class="hidden flex-col gap-4 mt-2">
+                    <div>
+                        <label for="scale-slider" class="block text-[9px] font-bold text-yellow-500 uppercase tracking-widest mb-2">Expansion Scale (<span id="scale-val" class="text-white">1.618</span>)</label>
+                        <input type="range" id="scale-slider" min="1.0" max="3.0" step="0.001" value="1.618" class="w-full h-1 bg-gray-800 rounded appearance-none cursor-pointer outline-none border border-white/10">
+                    </div>
+                    <label class="flex items-center text-[#8A2BE2] text-[10px] uppercase tracking-widest font-bold cursor-pointer mb-2">
+                        <input type="checkbox" id="tqf-cb" class="mr-2 w-4 h-4 accent-[#8A2BE2]"> 
+                        TQF Quadrance Triangulation
+                    </label>
+                </div>
+            </div>
+
+            <div class="mt-4 border-t border-white/10 pt-4">
                 <div class="flex justify-between items-center mb-2">
                     <span class="text-[10px] text-yellow-500 font-bold uppercase tracking-widest">Transport Control</span>
                 </div>
@@ -205,6 +222,11 @@
                 </div>
                 <input type="range" id="frame-scrubber" min="0" max="4188" value="0" class="w-full h-1 bg-gray-800 rounded appearance-none cursor-pointer outline-none border border-white/10 mt-3">
             </div>
+
+            <label id="axis-lock-container" class="flex items-center text-[#8A2BE2] text-[10px] uppercase tracking-widest font-bold cursor-pointer mt-4 border-t border-white/10 pt-4">
+                <input type="checkbox" id="axis-lock-cb" class="mr-2 w-4 h-4 accent-[#8A2BE2]"> 
+                Lock Axis (3D View)
+            </label>
 
             <label id="cube-toggle-container" class="flex items-center text-[#00d4ff] text-[10px] uppercase tracking-widest font-bold cursor-pointer mt-4 border-t border-white/10 pt-4">
                 <input type="checkbox" id="show-cube-cb" checked class="mr-2 w-4 h-4 accent-[#00d4ff]"> 
@@ -421,6 +443,7 @@
         const iconPause = document.getElementById('icon-pause');
         const frameScrubber = document.getElementById('frame-scrubber');
         
+        const axisLockCb = document.getElementById('axis-lock-cb');
         const showCubeCb = document.getElementById('show-cube-cb');
         const cubeToggleContainer = document.getElementById('cube-toggle-container');
         const resetViewBtn = document.getElementById('reset-view-btn');
@@ -429,12 +452,28 @@
         const tiersVal = document.getElementById('tiers-val');
         const frameVal = document.getElementById('frame-val');
         
+        const advToggleBtn = document.getElementById('adv-toggle-btn');
+        const advPanel = document.getElementById('adv-panel');
+        const advChevron = document.getElementById('adv-chevron');
+        const scaleSlider = document.getElementById('scale-slider');
+        const scaleVal = document.getElementById('scale-val');
+        const tqfCb = document.getElementById('tqf-cb');
+        
         let frameCount = 0;
         const MAX_FRAMES = 4188; // Full 4π structural cycle at 0.003 increment
 
         let infoOpen = true;
         let isPlaying = true;
         let t = 0; // Global time/phase parameter
+        
+        // 3D Engine State
+        let axisLocked = false;
+        let camRotX = 0;
+        let camRotY = 0;
+        
+        // Expansion scaling settings
+        let currentScale = 1.6180339887; // Defaults to Phi
+        let tqfTriangulation = false;
 
         // Control Logic
         function updatePlayState() {
@@ -526,6 +565,27 @@
         tiersSlider.addEventListener('input', (e) => {
             tiersVal.innerText = e.target.value;
         });
+        
+        let advOpen = false;
+        advToggleBtn.addEventListener('click', () => {
+            advOpen = !advOpen;
+            advPanel.classList.toggle('hidden');
+            advPanel.classList.toggle('flex');
+            advChevron.style.transform = advOpen ? 'rotate(180deg)' : 'rotate(0deg)';
+        });
+
+        scaleSlider.addEventListener('input', (e) => {
+            currentScale = parseFloat(e.target.value);
+            scaleVal.innerText = currentScale.toFixed(3);
+        });
+
+        tqfCb.addEventListener('change', (e) => {
+            tqfTriangulation = e.target.checked;
+        });
+        
+        axisLockCb.addEventListener('change', (e) => {
+            axisLocked = e.target.checked;
+        });
 
         infoToggle.addEventListener('click', () => {
             infoOpen = !infoOpen;
@@ -607,7 +667,8 @@
             if (e.button === 0) {
                 isRotating = true;
                 startX = e.clientX;
-                canvas.style.cursor = 'ew-resize';
+                startY = e.clientY;
+                canvas.style.cursor = axisLocked ? 'move' : 'ew-resize';
             } else if (e.button === 2 || e.button === 1) {
                 isPanning = true;
                 startX = e.clientX - offsetX;
@@ -618,8 +679,19 @@
         window.addEventListener('mousemove', (e) => {
             if (isRotating) {
                 let dx = e.clientX - startX;
-                userRotation += dx * 0.005;
-                startX = e.clientX; // Reset for continuous rotation calculation
+                let dy = e.clientY - startY;
+                
+                if (axisLocked) {
+                    // Update 3D Camera Angles
+                    camRotY += dx * 0.01;
+                    camRotX -= dy * 0.01;
+                } else {
+                    // Standard 1D Phase Rotation
+                    userRotation += dx * 0.005;
+                }
+                
+                startX = e.clientX;
+                startY = e.clientY;
             } else if (isPanning) {
                 offsetX = e.clientX - startX;
                 offsetY = e.clientY - startY;
@@ -637,6 +709,7 @@
             if (e.touches.length === 1) {
                 isRotating = true;
                 startX = e.touches.clientX;
+                startY = e.touches.clientY;
             } else if (e.touches.length === 2) {
                 isPanning = true;
                 startX = e.touches.clientX - offsetX;
@@ -649,8 +722,17 @@
             
             if (isRotating && e.touches.length === 1) {
                 let dx = e.touches.clientX - startX;
-                userRotation += dx * 0.005;
+                let dy = e.touches.clientY - startY;
+                
+                if (axisLocked) {
+                    camRotY += dx * 0.01;
+                    camRotX -= dy * 0.01;
+                } else {
+                    userRotation += dx * 0.005;
+                }
+                
                 startX = e.touches.clientX;
+                startY = e.touches.clientY;
             } else if (isPanning && e.touches.length === 2) {
                 offsetX = e.touches.clientX - startX;
                 offsetY = e.touches.clientY - startY;
@@ -680,39 +762,60 @@
             offsetY = 0;
             scale = 1;
             userRotation = 0;
+            camRotX = 0;
+            camRotY = 0;
         });
 
         const PHI = 1.6180339887; // The Golden Subdivision Constant
 
-        // Helper Function for dynamic N-sided polygon
+        // Unified 3D Camera Projection
+        function applyGlobalCamera(x, y, z) {
+            // Rotate around X axis
+            let y1 = y * Math.cos(camRotX) - z * Math.sin(camRotX);
+            let z1 = y * Math.sin(camRotX) + z * Math.cos(camRotX);
+
+            // Rotate around Y axis
+            let x2 = x * Math.cos(camRotY) - z1 * Math.sin(camRotY);
+            let z2 = x * Math.sin(camRotY) + z1 * Math.cos(camRotY);
+
+            return { x: x2, y: y1, z: z2 };
+        }
+
+        // Helper Function for dynamic N-sided polygon in 3D
         function drawDynamicPolygon(x, y, radius, sides, strokeColor, lineWidth, rotationOffset) {
             ctx.beginPath();
             ctx.strokeStyle = strokeColor;
             ctx.lineWidth = lineWidth;
             
+            let pts = [];
             for (let i = 0; i < sides; i++) {
                 let angle = (i / sides) * Math.PI * 2 + rotationOffset;
-                let px = x + Math.cos(angle) * radius;
-                let py = y + Math.sin(angle) * radius;
-                if (i === 0) ctx.moveTo(px, py);
-                else ctx.lineTo(px, py);
+                let px = Math.cos(angle) * radius;
+                let py = Math.sin(angle) * radius;
+                let proj = applyGlobalCamera(px, py, 0); // Flat on XY plane
+                pts.push(proj);
+
+                if (i === 0) ctx.moveTo(x + proj.x, y + proj.y);
+                else ctx.lineTo(x + proj.x, y + proj.y);
             }
             ctx.closePath();
             ctx.stroke();
 
             // Internal Spokes to origin to represent geometric volume
             ctx.beginPath();
+            let origin = applyGlobalCamera(0, 0, 0);
             for (let i = 0; i < sides; i++) {
-                let angle = (i / sides) * Math.PI * 2 + rotationOffset;
-                ctx.moveTo(x, y);
-                ctx.lineTo(x + Math.cos(angle) * radius, y + Math.sin(angle) * radius);
+                ctx.moveTo(x + origin.x, y + origin.y);
+                ctx.lineTo(x + pts[i].x, y + pts[i].y);
             }
             // Inherit color but dramatically lower opacity for spokes
             ctx.strokeStyle = strokeColor.replace(/[\d.]+\)$/, '0.05)');
             ctx.stroke();
+            
+            return pts;
         }
 
-        // Draw 4x4x4 Hypercube Wireframe (Isometric Projection)
+        // Draw 4x4x4 Hypercube Wireframe (True Rigid 3D Coordinate construction)
         function drawGrid4x4x4(x, y, totalSize, rotationOffset) {
             const step = totalSize / 4;
             const offset = totalSize / 2; // to center the grid
@@ -720,29 +823,40 @@
             ctx.lineWidth = 1;
             ctx.beginPath();
             
-            function project(i, j, k) {
+            function projectCube(i, j, k) {
                 // center coordinates
                 let cx = (i * step) - offset;
                 let cy = (j * step) - offset;
                 let cz = (k * step) - offset;
                 
-                // rotate around Z axis
+                // Spinor Rotation around Z
                 let rx = cx * Math.cos(rotationOffset) - cy * Math.sin(rotationOffset);
                 let ry = cx * Math.sin(rotationOffset) + cy * Math.cos(rotationOffset);
+                let rz = cz;
                 
-                // Isometric projection
-                let px = (rx - ry) * 0.866025; // cos(30)
-                let py = (rx + ry) * 0.5 - cz; // sin(30)
-                return { x: x + px, y: y + py };
+                // Intrinsic Isometric Pre-Transform (Rigid 3D representation matching previous visual)
+                let zRot = Math.PI / 4; // 45 deg
+                let xRot = Math.atan(1 / Math.SQRT2); // ~35.26 deg
+                
+                let x1 = rx * Math.cos(zRot) - ry * Math.sin(zRot);
+                let y1 = rx * Math.sin(zRot) + ry * Math.cos(zRot);
+                
+                let x2 = x1;
+                let y2 = y1 * Math.cos(xRot) - rz * Math.sin(xRot);
+                let z2 = y1 * Math.sin(xRot) + rz * Math.cos(xRot);
+                
+                let scaleAdj = 1.2247; // Adjustment to keep size exact to prior 2D projection
+                let proj = applyGlobalCamera(x2 * scaleAdj, y2 * scaleAdj, z2 * scaleAdj);
+                return { x: x + proj.x, y: y + proj.y };
             }
 
             // Draw lines parallel to X
             for(let j=0; j<=4; j++) {
                 for(let k=0; k<=4; k++) {
-                    let p1 = project(0, j, k);
+                    let p1 = projectCube(0, j, k);
                     ctx.moveTo(p1.x, p1.y);
                     for(let i=1; i<=4; i++) {
-                        let p2 = project(i, j, k);
+                        let p2 = projectCube(i, j, k);
                         ctx.lineTo(p2.x, p2.y);
                     }
                 }
@@ -750,10 +864,10 @@
             // Draw lines parallel to Y
             for(let i=0; i<=4; i++) {
                 for(let k=0; k<=4; k++) {
-                    let p1 = project(i, 0, k);
+                    let p1 = projectCube(i, 0, k);
                     ctx.moveTo(p1.x, p1.y);
                     for(let j=1; j<=4; j++) {
-                        let p2 = project(i, j, k);
+                        let p2 = projectCube(i, j, k);
                         ctx.lineTo(p2.x, p2.y);
                     }
                 }
@@ -761,10 +875,10 @@
             // Draw lines parallel to Z
             for(let i=0; i<=4; i++) {
                 for(let j=0; j<=4; j++) {
-                    let p1 = project(i, j, 0);
+                    let p1 = projectCube(i, j, 0);
                     ctx.moveTo(p1.x, p1.y);
                     for(let k=1; k<=4; k++) {
-                        let p2 = project(i, j, k);
+                        let p2 = projectCube(i, j, k);
                         ctx.lineTo(p2.x, p2.y);
                     }
                 }
@@ -776,6 +890,14 @@
             // Draw void space
             ctx.fillStyle = '#05030a';
             ctx.fillRect(0, 0, w, h);
+            
+            // Camera Reset Interpolation if axis is unlocked
+            if (!axisLocked) {
+                camRotX += (0 - camRotX) * 0.05;
+                camRotY += (0 - camRotY) * 0.05;
+                if (Math.abs(camRotX) < 0.001) camRotX = 0;
+                if (Math.abs(camRotY) < 0.001) camRotY = 0;
+            }
             
             // Playback state
             if (isPlaying) {
@@ -824,12 +946,15 @@
             
             // ALWAYS render Standard Dynamic Polygons to triangulate the 5th field
             let currentPolySize = polySize;
+            let allPolyPts = [];
+            
             for(let i=0; i<numTiers; i++) {
                 // Geometric Handshake Ratio: Middle(3) : Above(2) : Below(1) : Fourth(4)
                 let speed = (i === 1) ? 3 : (i === 0 ? 2 : (i === 2 ? 1 : 4)); 
                 let harmonicPhase = spinorCycle * speed; 
-                drawDynamicPolygon(0, 0, currentPolySize, polySides, `rgba(160, 32, 240, ${0.3 + i*0.15})`, 1.5, harmonicPhase * (i%2===0?1:-1));
-                currentPolySize /= PHI; 
+                let tierPts = drawDynamicPolygon(0, 0, currentPolySize, polySides, `rgba(160, 32, 240, ${0.3 + i*0.15})`, 1.5, harmonicPhase * (i%2===0?1:-1));
+                allPolyPts.push(tierPts);
+                currentPolySize /= currentScale; 
             }
 
             if (showCubeCb.checked && N >= 4) {
@@ -841,21 +966,22 @@
             let baseR1 = (Math.min(w, h) * 0.4);
             
             for (let tier = 0; tier < numTiers; tier++) {
-                let r1 = baseR1 / Math.pow(PHI, tier * 1.5); 
-                let r2 = r1 / PHI;
+                let r1 = baseR1 / Math.pow(currentScale, tier * 1.5); 
+                let r2 = r1 / currentScale;
                 
                 // Enforce the Trefoil Resonance Handshake across tiers:
                 // Middle tier spins 3x, Above/Outer spins 2x, Below/Inner spins 1x.
                 let speed = (tier === 1) ? 3 : (tier === 0 ? 2 : (tier === 2 ? 1 : 4));
                 let tierPhase = spinorCycle * speed;
                 
-                // Draw Base Toroid Manifold
+                // Draw Base Toroid Manifold (In 3D)
                 ctx.beginPath();
                 for (let a = 0; a <= Math.PI * 2; a += 0.05) {
-                    let px = r1 * Math.cos(a + tierPhase * (tier%2===0?1:-1)) * Math.cos(tierPhase*0.1);
-                    let py = r2 * Math.sin(a + tierPhase * (tier%2===0?1:-1)) * Math.sin(tierPhase*0.1);
-                    if (a === 0) ctx.moveTo(px, py);
-                    else ctx.lineTo(px, py);
+                    let base_px = r1 * Math.cos(a + tierPhase * (tier%2===0?1:-1)) * Math.cos(tierPhase*0.1);
+                    let base_py = r2 * Math.sin(a + tierPhase * (tier%2===0?1:-1)) * Math.sin(tierPhase*0.1);
+                    let proj = applyGlobalCamera(base_px, base_py, 0);
+                    if (a === 0) ctx.moveTo(proj.x, proj.y);
+                    else ctx.lineTo(proj.x, proj.y);
                 }
                 ctx.strokeStyle = `rgba(255, 215, 0, ${0.3 - tier*0.05})`;
                 ctx.lineWidth = 1.0;
@@ -872,13 +998,13 @@
                     let posAngle = (tierPhase * 2) + angleOffset + (tier * Math.PI/6);
                     let pxPos = r1 * Math.cos(posAngle) * Math.cos(tierPhase*0.1);
                     let pyPos = r2 * Math.sin(posAngle) * Math.sin(tierPhase*0.1);
-                    posNodes.push({x: pxPos, y: pyPos});
+                    posNodes.push(applyGlobalCamera(pxPos, pyPos, 0));
 
                     // Negative Flow Vector
                     let negAngle = -(tierPhase * 2.5) - angleOffset - (tier * Math.PI/6); 
                     let pxNeg = r1 * Math.cos(negAngle) * Math.cos(tierPhase*0.1);
                     let pyNeg = r2 * Math.sin(negAngle) * Math.sin(tierPhase*0.1);
-                    negNodes.push({x: pxNeg, y: pyNeg});
+                    negNodes.push(applyGlobalCamera(pxNeg, pyNeg, 0));
                 }
 
                 // Draw Nested Hilbert String Art Connections (Synchronization Routing)
@@ -906,6 +1032,25 @@
                 ctx.strokeStyle = `rgba(0, 212, 255, ${0.4 + tier*0.1})`;
                 ctx.stroke();
 
+                // Draw TQF Quadrance Triangulation (Linking nodes to the emergent polygon fields)
+                if (tqfTriangulation && allPolyPts[tier]) {
+                    ctx.lineWidth = 0.5;
+                    ctx.beginPath();
+                    for (let i = 0; i < N; i++) {
+                        let targetPolyPt = allPolyPts[tier][i % polySides];
+                        
+                        // Link positive flow nodes to internal polygons
+                        ctx.moveTo(posNodes[i].x, posNodes[i].y);
+                        ctx.lineTo(targetPolyPt.x, targetPolyPt.y);
+                        
+                        // Link negative flow nodes to internal polygons
+                        ctx.moveTo(negNodes[i].x, negNodes[i].y);
+                        ctx.lineTo(targetPolyPt.x, targetPolyPt.y);
+                    }
+                    ctx.strokeStyle = `rgba(138, 43, 226, ${0.15 + tier*0.08})`; // Ethereal purple
+                    ctx.stroke();
+                }
+
                 // Draw The Nodes (Solitons)
                 for (let i = 0; i < N; i++) {
                     // Positive Node
@@ -928,10 +1073,20 @@
             }
 
             // 4. One-Way Markov Pump Chain System (Center Core)
-            let pumpRadius = baseR1 / Math.pow(PHI, 5.5);
+            let pumpRadius = baseR1 / Math.pow(currentScale, 5.5);
             ctx.beginPath();
-            let pulse = Math.sin(absolutePhase * 5) * 4; // Use absolute phase for pulse
-            ctx.arc(0, 0, pumpRadius + pulse, 0, Math.PI*2);
+            let pulse = Math.sin(absolutePhase * 5) * 4; 
+            let currentPumpRadius = pumpRadius + pulse;
+            
+            // Draw Center Core as 3D Polygon
+            for (let i = 0; i <= 32; i++) {
+                let ang = (i / 32) * Math.PI * 2;
+                let bx = Math.cos(ang) * currentPumpRadius;
+                let by = Math.sin(ang) * currentPumpRadius;
+                let proj = applyGlobalCamera(bx, by, 0);
+                if (i === 0) ctx.moveTo(proj.x, proj.y);
+                else ctx.lineTo(proj.x, proj.y);
+            }
             ctx.strokeStyle = `rgba(0, 255, 255, ${0.8 + Math.sin(absolutePhase * 5)*0.2})`;
             ctx.lineWidth = 3;
             ctx.stroke();
@@ -942,22 +1097,18 @@
                 let opacity = 1 - (offset / 45); 
                 
                 // Top Ejection
-                ctx.beginPath();
-                ctx.moveTo(0, -offset - pulse);
-                ctx.lineTo(-6, -offset + 8 - pulse);
-                ctx.lineTo(6, -offset + 8 - pulse);
-                ctx.closePath();
-                ctx.fillStyle = `rgba(0, 255, 255, ${opacity})`;
-                ctx.fill();
+                let t1 = applyGlobalCamera(0, -offset - pulse, 0);
+                let t2 = applyGlobalCamera(-6, -offset + 8 - pulse, 0);
+                let t3 = applyGlobalCamera(6, -offset + 8 - pulse, 0);
+                ctx.beginPath(); ctx.moveTo(t1.x, t1.y); ctx.lineTo(t2.x, t2.y); ctx.lineTo(t3.x, t3.y); ctx.closePath();
+                ctx.fillStyle = `rgba(0, 255, 255, ${opacity})`; ctx.fill();
                 
                 // Bottom Ejection
-                ctx.beginPath();
-                ctx.moveTo(0, offset + pulse);
-                ctx.lineTo(-6, offset - 8 + pulse);
-                ctx.lineTo(6, offset - 8 + pulse);
-                ctx.closePath();
-                ctx.fillStyle = `rgba(0, 255, 255, ${opacity})`;
-                ctx.fill();
+                let b1 = applyGlobalCamera(0, offset + pulse, 0);
+                let b2 = applyGlobalCamera(-6, offset - 8 + pulse, 0);
+                let b3 = applyGlobalCamera(6, offset - 8 + pulse, 0);
+                ctx.beginPath(); ctx.moveTo(b1.x, b1.y); ctx.lineTo(b2.x, b2.y); ctx.lineTo(b3.x, b3.y); ctx.closePath();
+                ctx.fillStyle = `rgba(0, 255, 255, ${opacity})`; ctx.fill();
             }
 
             ctx.restore(); // Restore to normal 2D screen coordinates
