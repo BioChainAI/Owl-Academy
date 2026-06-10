@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Owl Academy | Dept II: Cryptography & Hyperbolic Sigils</title>
+    
+    <!-- External Libraries -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Inter:wght@300;400;500;600&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+    
+    <!-- MathJax Configuration for Equations -->
+    <script>
+        window.MathJax = { 
+            tex: { 
+                inlineMath: [['$', '$'], ['\\(', '\\)']], 
+                displayMath: [['$$', '$$'], ['\\[', '\\]']] 
+            }
+        };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+    <style>
+        :root {
+            --color-void: #05030a;
+            --color-primary: #8A2BE2; /* Cryptography Purple */
+            --color-primary-light: #d8b4fe;
+            --color-primary-dark: #4c1d95;
+            --color-secondary: #8e9eab;
+            --color-holo1: #00d4ff;
+            --color-holo2: #D4AF37;
+        }
+
+        body {
+            background-color: var(--color-void);
+            color: #e2e8f0;
+            font-family: 'Inter', sans-serif;
+            background: radial-gradient(circle at 50% 0%, color-mix(in srgb, var(--color-primary) 8%, var(--color-void)), var(--color-void) 60%);
+            min-height: 100vh;
+            margin: 0;
+            overflow-x: hidden;
+            line-height: 1.7;
+        }
+
+        .starfield {
+            position: fixed; inset: 0;
+            background-image:
+                radial-gradient(2px 2px at 20px 30px, var(--color-primary), rgba(0,0,0,0)),
+                radial-gradient(2px 2px at 40px 70px, #fff, rgba(0,0,0,0)),
+                radial-gradient(2px 2px at 50px 160px, rgba(255,255,255,0.8), rgba(0,0,0,0)),
+                radial-gradient(2px 2px at 90px 40px, #fff, rgba(0,0,0,0)),
+                radial-gradient(2px 2px at 130px 80px, var(--color-primary), rgba(0,0,0,0));
+            background-repeat: repeat; background-size: 250px 250px;
+            animation: twinkle 8s infinite alternate;
+            opacity: 0.15; z-index: -2; pointer-events: none;
+        }
+        
+        .nebula-glow {
+            position: fixed; top: 0; left: 50%; transform: translateX(-50%);
+            width: 100vw; height: 50vh;
+            background: radial-gradient(ellipse at top center, color-mix(in srgb, var(--color-primary) 12%, transparent) 0%, transparent 70%);
+            z-index: -1; pointer-events: none;
+        }
+
+        @keyframes twinkle { 0% { opacity: 0.05; } 100% { opacity: 0.2; } }
+
+        h1, h2, h3, h4, h5, .mystical-font {
+            font-family: 'Cinzel', serif;
+        }
+
+        .purple-gradient {
+            background: linear-gradient(to right, #c084fc, #e9d5ff, #c084fc);
+            -webkit-background-clip: text; background-clip: text;
+            color: transparent; text-shadow: 0 0 15px color-mix(in srgb, #c084fc 30%, transparent);
+        }
+
+        .glass-panel {
+            background: rgba(10, 8, 20, 0.4);
+            backdrop-filter: blur(12px);
+            border: 1px solid color-mix(in srgb, var(--color-primary) 15%, transparent);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5);
+        }
+
+        /* Module Card Styles */
+        .module-card {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            transition: all 0.3s ease;
+        }
+        .module-card:hover {
+            background: rgba(138, 43, 226, 0.05);
+            border-color: rgba(138, 43, 226, 0.4);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(0,0,0,0.4), inset 0 0 15px rgba(138, 43, 226, 0.08);
+        }
+
+        /* Header Animation */
+        .spin-slow { animation: spin 40s linear infinite; transform-origin: center; }
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+        .pulse-glow { animation: pulseGlow 4s ease-in-out infinite alternate; }
+        @keyframes pulseGlow { 0% { filter: drop-shadow(0 0 5px rgba(138, 43, 226, 0.3)); } 100% { filter: drop-shadow(0 0 15px rgba(138, 43, 226, 0.8)); } }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: rgba(0,0,0,0.3); }
+        ::-webkit-scrollbar-thumb { background: color-mix(in srgb, var(--color-primary) 40%, transparent); border-radius: 10px; }
+
+        .MathJax { overflow-x: auto; overflow-y: hidden; }
+        section { scroll-margin-top: 100px; }
+    </style>
+</head>
+<body class="antialiased">
+
+    <div class="starfield"></div>
+    <div class="nebula-glow"></div>
+
+    <!-- Minimal Header -->
+    <header class="w-full pt-10 pb-8 px-6 flex flex-col items-center justify-center relative border-b border-purple-600/20 bg-[#05030a]/80 backdrop-blur-md shadow-2xl z-20 sticky top-0">
+        <div class="flex items-center gap-6 max-w-7xl w-full justify-between">
+            <div class="flex items-center gap-4">
+                <div class="relative w-16 h-16 flex-shrink-0">
+                    <svg viewBox="0 0 200 200" class="w-full h-full pulse-glow" xmlns="http://www.w3.org/2000/svg">
+                        <defs>
+                            <linearGradient id="purpleGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                                <stop offset="0%" stop-color="#9333ea" />
+                                <stop offset="50%" stop-color="#d8b4fe" />
+                                <stop offset="100%" stop-color="#4c1d95" />
+                            </linearGradient>
+                        </defs>
+                        <g class="spin-slow" style="transform-origin: 100px 100px;">
+                            <circle cx="100" cy="100" r="95" fill="none" stroke="url(#purpleGrad)" stroke-width="1" opacity="0.6"/>
+                            <polygon points="100,15 173.6,142.5 26.4,142.5" fill="none" stroke="url(#purpleGrad)" stroke-width="1" opacity="0.5"/>
+                            <polygon points="100,185 26.4,57.5 173.6,57.5" fill="none" stroke="url(#purpleGrad)" stroke-width="1" opacity="0.5"/>
+                        </g>
+                        <circle cx="100" cy="100" r="45" fill="none" stroke="url(#purpleGrad)" stroke-width="0.5" stroke-dasharray="2 2" opacity="0.6"/>
+                        <!-- Inner Eye for Crypto -->
+                        <path d="M 70 100 Q 100 70 130 100 Q 100 130 70 100" fill="none" stroke="url(#purpleGrad)" stroke-width="1" opacity="0.8"/>
+                        <circle cx="100" cy="100" r="8" fill="url(#purpleGrad)" opacity="0.6"/>
+                    </svg>
+                </div>
+                <div>
+                    <div class="text-[10px] text-purple-400/80 tracking-[0.4em] uppercase mystical-font">Department II</div>
+                    <h1 class="text-xl md:text-2xl font-bold tracking-[0.15em] purple-gradient m-0">Cryptography & Hyperbolic Sigils</h1>
+                </div>
+            </div>
+            <a href="library_home.html" class="hidden md:flex items-center gap-2 px-4 py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded transition text-xs tracking-widest uppercase text-gray-300">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
+                Return to Archives
+            </a>
+        </div>
+    </header>
+
+    <div class="max-w-7xl mx-auto px-4 md:px-8 py-10 flex flex-col lg:flex-row gap-10 relative z-10">
+        
+        <!-- Sidebar Navigation -->
+        <aside class="w-full lg:w-64 flex-shrink-0">
+            <nav class="glass-panel rounded-xl p-6 sticky top-32">
+                <h3 class="text-xs text-purple-400 tracking-[0.2em] font-bold uppercase mb-6 border-b border-purple-600/20 pb-2 mystical-font">
+                    Curriculum Branches
+                </h3>
+                
+                <ul class="space-y-4 text-sm font-light text-slate-400">
+                    <li class="text-[10px] text-purple-300/60 uppercase tracking-widest font-bold mt-2">Part I: Hyperbolic Sigils</li>
+                    <li><a href="#branch1" class="block hover:text-purple-300 transition-colors">I. Elliptic Curve Hexagrammatics</a></li>
+                    <li><a href="#branch2" class="block hover:text-purple-300 transition-colors">II. Programmatic Topology</a></li>
+                    
+                    <li class="text-[10px] text-purple-300/60 uppercase tracking-widest font-bold pt-4 border-t border-purple-900/30 mt-2">Part II: Cryptography</li>
+                    <li><a href="#branch3" class="block hover:text-purple-300 transition-colors">III. Algorithmic Labyrinths</a></li>
+                    <li><a href="#branch4" class="block hover:text-purple-300 transition-colors">IV. Zero-Knowledge Proofs</a></li>
+                    <li><a href="#branch5" class="block hover:text-purple-300 transition-colors">V. Steganography & Secret Sharing</a></li>
+                    <li><a href="#branch6" class="block hover:text-purple-300 transition-colors">VI. Post-Quantum Lattices</a></li>
+                    
+                    <li class="pt-4 mt-4 border-t border-white/10 md:hidden">
+                        <a href="library_home.html" class="block text-gray-500 hover:text-white transition-colors flex items-center gap-2">
+                            ← Back to Archives
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="flex-1 space-y-12 pb-20">
+            
+            <div class="glass-panel rounded-xl p-6 md:p-8 bg-purple-900/10 border-l-4 border-purple-500">
+                <p class="text-gray-300 font-light leading-relaxed m-0">
+                    <strong class="text-white">The Art of the Unbreakable Seal.</strong><br>
+                    Welcome to Department II. These modules bridge the gap between rigorous computer science, computational geometry, and the arcane aesthetics of the Owl Academy. Here, mathematical equations and cryptographic functions are treated as literal, functioning wards and magical constructs.
+                </p>
+            </div>
+
+            <div class="mt-8 mb-4 border-b border-purple-500/30 pb-4">
+                <div class="text-[10px] text-purple-400 tracking-[0.2em] uppercase font-bold mb-2">Curriculum Division</div>
+                <h2 class="text-3xl text-white mystical-font m-0 tracking-widest">Part I: Hyperbolic Sigils</h2>
+            </div>
+
+            <!-- Branch I -->
+            <section id="branch1" class="pt-4">
+                <div class="flex items-center gap-4 mb-2">
+                    <div class="w-10 h-10 rounded-full bg-fuchsia-900/30 border border-fuchsia-500/30 flex items-center justify-center text-fuchsia-400">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><circle cx="12" cy="11" r="3"/></svg>
+                    </div>
+                    <h2 class="text-2xl text-white mystical-font m-0 tracking-wide">Branch I: Elliptic Curve Hexagrammatics</h2>
+                </div>
+                <p class="text-sm text-purple-400/80 uppercase tracking-widest mb-6 font-semibold ml-14">The Asymmetric Ward</p>
+                <p class="text-gray-400 font-light mb-6 ml-14">Translating the algebraic structures of modern public-key cryptography into geometric, continuous lines.</p>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 ml-0 md:ml-14">
+                    <a href="#" class="module-card rounded-lg p-5 block group md:col-span-2">
+                        <h4 class="text-white font-medium mb-1 group-hover:text-purple-300 transition flex items-center justify-between">
+                            The Geometry of the Trapdoor
+                            <svg class="w-4 h-4 opacity-0 group-hover:opacity-100 transform -translate-x-2 group-hover:translate-x-0 transition-all" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                        </h4>
+                        <div class="text-[10px] text-gray-400 font-mono mb-3 bg-black/50 inline-block px-2 py-0.5 rounded border border-purple-500/20">Elliptic Curve Cryptography ($y^2 = x^3 + ax + b$)</div>
+                        <p class="text-sm text-gray-400 font-light">Visualizing point addition and scalar multiplication on elliptic curves across finite fields. Representing public/private key pairs as intersecting nodes in a non-Euclidean landscape.</p>
+                    </a>
+
+                    <a href="#" class="module-card rounded-lg p-5 block group">
+                        <h4 class="text-white font-medium mb-1 group-hover:text-purple-300 transition flex items-center justify-between">
+                            The Unsolvable Maze
+                            <svg class="w-4 h-4 opacity-0 group-hover:opacity-100 transform -translate-x-2 group-hover:translate-x-0 transition-all" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                        </h4>
+                        <div class="text-[10px] text-gray-400 font-mono mb-3 bg-black/50 inline-block px-2 py-0.5 rounded border border-purple-500/20">The Discrete Logarithm Problem</div>
+                        <p class="text-sm text-gray-400 font-light">Mathematical one-way functions visualized as inescapable algorithmic labyrinths.</p>
+                    </a>
+
+                    <a href="#" class="module-card rounded-lg p-5 block group">
+                        <h4 class="text-white font-medium mb-1 group-hover:text-purple-300 transition flex items-center justify-between">
+                            The Diffie-Hellman Exchange Ritual
+                            <svg class="w-4 h-4 opacity-0 group-hover:opacity-100 transform -translate-x-2 group-hover:translate-x-0 transition-all" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                        </h4>
+                        <div class="text-[10px] text-gray-400 font-mono mb-3 bg-black/50 inline-block px-2 py-0.5 rounded border border-purple-500/20">Shared Secrets</div>
+                        <p class="text-sm text-gray-400 font-light">The mathematics of shared secrets. How two entities can collaboratively draw the same geometric sigil in plain sight without a watcher understanding the final form.</p>
+                    </a>
+                </div>
+            </section>
+
+            <!-- Branch II (Formerly IV: Programmatic Gen) -->
+            <section id="branch2" class="pt-4">
+                <div class="flex items-center gap-4 mb-2">
+                    <div class="w-10 h-10 rounded-full bg-rose-900/30 border border-rose-500/30 flex items-center justify-center text-rose-400">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 19l7-7 3 3-7 7-3-3z"/><path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/><path d="M2 2l7.586 7.586"/><circle cx="11" cy="11" r="2"/></svg>
+                    </div>
+                    <h2 class="text-2xl text-white mystical-font m-0 tracking-wide">Branch II: Programmatic Topology</h2>
+                </div>
+                <p class="text-sm text-purple-400/80 uppercase tracking-widest mb-6 font-semibold ml-14">The Unbroken Line</p>
+                <p class="text-gray-400 font-light mb-6 ml-14">The computational art of drawing continuous, non-intersecting pathways.</p>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 ml-0 md:ml-14">
+                    <a href="#" class="module-card rounded-lg p-5 block group">
+                        <h4 class="text-white font-medium mb-1 group-hover:text-purple-300 transition flex items-center justify-between">
+                            Eulerian Paths
+                            <svg class="w-4 h-4 opacity-0 group-hover:opacity-100 transform -translate-x-2 group-hover:translate-x-0 transition-all" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                        </h4>
+                        <div class="text-[10px] text-gray-400 font-mono mb-3 bg-black/50 inline-block px-2 py-0.5 rounded border border-purple-500/20">Unicursal Hexagrams</div>
+                        <p class="text-sm text-gray-400 font-light">The graph theory behind drawing a complex shape without ever lifting the "pen" or retracing a line—the foundational requirement for a binding sigil.</p>
+                    </a>
+
+                    <a href="#" class="module-card rounded-lg p-5 block group">
+                        <h4 class="text-white font-medium mb-1 group-hover:text-purple-300 transition flex items-center justify-between">
+                            Lindenmayer Systems
+                            <svg class="w-4 h-4 opacity-0 group-hover:opacity-100 transform -translate-x-2 group-hover:translate-x-0 transition-all" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                        </h4>
+                        <div class="text-[10px] text-gray-400 font-mono mb-3 bg-black/50 inline-block px-2 py-0.5 rounded border border-purple-500/20">L-Systems & Fractal Wards</div>
+                        <p class="text-sm text-gray-400 font-light">Using recursive string-rewriting algorithms to generate infinitely complex, nature-inspired runes and fractal borders.</p>
+                    </a>
+
+                    <a href="#" class="module-card rounded-lg p-5 block group md:col-span-2">
+                        <h4 class="text-white font-medium mb-1 group-hover:text-purple-300 transition flex items-center justify-between">
+                            SVG Matrix Mathematics
+                            <svg class="w-4 h-4 opacity-0 group-hover:opacity-100 transform -translate-x-2 group-hover:translate-x-0 transition-all" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                        </h4>
+                        <div class="text-[10px] text-gray-400 font-mono mb-3 bg-black/50 inline-block px-2 py-0.5 rounded border border-purple-500/20">Vector Digital Void</div>
+                        <p class="text-sm text-gray-400 font-light">The literal code (M, L, C, Z commands) used to mathematically forge and scale Bézier curves in the digital void.</p>
+                    </a>
+                </div>
+            </section>
+
+            <div class="mt-16 mb-4 border-b border-purple-500/30 pb-4">
+                <div class="text-[10px] text-purple-400 tracking-[0.2em] uppercase font-bold mb-2">Curriculum Division</div>
+                <h2 class="text-3xl text-white mystical-font m-0 tracking-widest">Part II: Cryptography</h2>
+            </div>
+
+            <!-- Branch III (Formerly II: Algorithmic Labyrinths) -->
+            <section id="branch3" class="pt-4">
+                <div class="flex items-center gap-4 mb-2">
+                    <div class="w-10 h-10 rounded-full bg-indigo-900/30 border border-indigo-500/30 flex items-center justify-center text-indigo-400">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polygon points="12 2 22 8.5 22 15.5 12 22 2 15.5 2 8.5 12 2"/><line x1="12" y1="22" x2="12" y2="15.5"/><line x1="22" y1="8.5" x2="12" y2="15.5"/><line x1="2" y1="8.5" x2="12" y2="15.5"/><line x1="12" y1="2" x2="12" y2="8.5"/></svg>
+                    </div>
+                    <h2 class="text-2xl text-white mystical-font m-0 tracking-wide">Branch III: Algorithmic Labyrinths & Hashing</h2>
+                </div>
+                <p class="text-sm text-purple-400/80 uppercase tracking-widest mb-6 font-semibold ml-14">The Avalanche Effect</p>
+                <p class="text-gray-400 font-light mb-6 ml-14">The study of chaotic determinism and irreversible transformations.</p>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 ml-0 md:ml-14">
+                    <a href="#" class="module-card rounded-lg p-5 block group">
+                        <h4 class="text-white font-medium mb-1 group-hover:text-purple-300 transition flex items-center justify-between">
+                            The Avalanche Cascade
+                            <svg class="w-4 h-4 opacity-0 group-hover:opacity-100 transform -translate-x-2 group-hover:translate-x-0 transition-all text-purple-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                        </h4>
+                        <div class="text-[10px] text-gray-400 font-mono mb-3 bg-black/50 inline-block px-2 py-0.5 rounded border border-purple-500/20">SHA-256 & Matrices</div>
+                        <p class="text-sm text-gray-400 font-light">Visualizing how changing a single "pixel" or coordinate in the initial input drastically mutates the final generated sigil.</p>
+                    </a>
+
+                    <a href="#" class="module-card rounded-lg p-5 block group">
+                        <h4 class="text-white font-medium mb-1 group-hover:text-purple-300 transition flex items-center justify-between">
+                            Merkle Trees
+                            <svg class="w-4 h-4 opacity-0 group-hover:opacity-100 transform -translate-x-2 group-hover:translate-x-0 transition-all" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                        </h4>
+                        <div class="text-[10px] text-gray-400 font-mono mb-3 bg-black/50 inline-block px-2 py-0.5 rounded border border-purple-500/20">The Cryptographic Tree of Life</div>
+                        <p class="text-sm text-gray-400 font-light">Structuring data verification into a mystical hierarchy. Tracing the "Root Hash" back to the original seed of truth.</p>
+                    </a>
+
+                    <a href="#" class="module-card rounded-lg p-5 block group md:col-span-2">
+                        <h4 class="text-white font-medium mb-1 group-hover:text-purple-300 transition flex items-center justify-between">
+                            Cellular Automata as Wards
+                            <svg class="w-4 h-4 opacity-0 group-hover:opacity-100 transform -translate-x-2 group-hover:translate-x-0 transition-all" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                        </h4>
+                        <div class="text-[10px] text-gray-400 font-mono mb-3 bg-black/50 inline-block px-2 py-0.5 rounded border border-purple-500/20">Rule 30 Determinism</div>
+                        <p class="text-sm text-gray-400 font-light">Using simple, deterministic rules to generate infinitely complex, unpredictable, and visually striking boundaries.</p>
+                    </a>
+                </div>
+            </section>
+
+            <!-- Branch IV (Formerly III: Zero Knowledge) -->
+            <section id="branch4" class="pt-4">
+                <div class="flex items-center gap-4 mb-2">
+                    <div class="w-10 h-10 rounded-full bg-pink-900/30 border border-pink-500/30 flex items-center justify-center text-pink-400">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                    </div>
+                    <h2 class="text-2xl text-white mystical-font m-0 tracking-wide">Branch IV: Zero-Knowledge Proofs</h2>
+                </div>
+                <p class="text-sm text-purple-400/80 uppercase tracking-widest mb-6 font-semibold ml-14">The Invisible Sigil</p>
+                <p class="text-gray-400 font-light mb-6 ml-14">The mathematics of demonstrating absolute truth while revealing absolutely nothing.</p>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 ml-0 md:ml-14">
+                    <a href="#" class="module-card rounded-lg p-5 block group">
+                        <h4 class="text-white font-medium mb-1 group-hover:text-purple-300 transition flex items-center justify-between">
+                            zk-SNARKs
+                            <svg class="w-4 h-4 opacity-0 group-hover:opacity-100 transform -translate-x-2 group-hover:translate-x-0 transition-all" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                        </h4>
+                        <div class="text-[10px] text-gray-400 font-mono mb-3 bg-black/50 inline-block px-2 py-0.5 rounded border border-purple-500/20">The Blind Oracle's Truth</div>
+                        <p class="text-sm text-gray-400 font-light">The protocol of proving you possess the Master Key (or the solution to a complex geometric puzzle) without showing the key itself.</p>
+                    </a>
+
+                    <a href="#" class="module-card rounded-lg p-5 block group">
+                        <h4 class="text-white font-medium mb-1 group-hover:text-purple-300 transition flex items-center justify-between">
+                            Interactive Proof Systems
+                            <svg class="w-4 h-4 opacity-0 group-hover:opacity-100 transform -translate-x-2 group-hover:translate-x-0 transition-all" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                        </h4>
+                        <div class="text-[10px] text-gray-400 font-mono mb-3 bg-black/50 inline-block px-2 py-0.5 rounded border border-purple-500/20">The Challenge-Response Ritual</div>
+                        <p class="text-sm text-gray-400 font-light">A probabilistic dance between the Prover and the Verifier, conceptualized as a magical duel of queries and responses.</p>
+                    </a>
+
+                    <a href="#" class="module-card rounded-lg p-5 block group md:col-span-2">
+                        <h4 class="text-white font-medium mb-1 group-hover:text-purple-300 transition flex items-center justify-between">
+                            Homomorphic Encryption
+                            <svg class="w-4 h-4 opacity-0 group-hover:opacity-100 transform -translate-x-2 group-hover:translate-x-0 transition-all" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                        </h4>
+                        <div class="text-[10px] text-gray-400 font-mono mb-3 bg-black/50 inline-block px-2 py-0.5 rounded border border-purple-500/20">The Veiled Crucible</div>
+                        <p class="text-sm text-gray-400 font-light">Performing mathematical operations and drawing sigils on encrypted space. Changing the structure of a locked box from the outside without ever looking inside.</p>
+                    </a>
+                </div>
+            </section>
+
+            <!-- Branch V -->
+            <section id="branch5" class="pt-4">
+                <div class="flex items-center gap-4 mb-2">
+                    <div class="w-10 h-10 rounded-full bg-cyan-900/30 border border-cyan-500/30 flex items-center justify-center text-cyan-400">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                    </div>
+                    <h2 class="text-2xl text-white mystical-font m-0 tracking-wide">Branch V: Steganography & Visual Cryptography</h2>
+                </div>
+                <p class="text-sm text-purple-400/80 uppercase tracking-widest mb-6 font-semibold ml-14">The Hidden Cipher</p>
+                <p class="text-gray-400 font-light mb-6 ml-14">Concealing sacred knowledge in plain sight.</p>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 ml-0 md:ml-14">
+                    <a href="#" class="module-card rounded-lg p-5 block group">
+                        <h4 class="text-white font-medium mb-1 group-hover:text-purple-300 transition flex items-center justify-between">
+                            Least Significant Bit Embedding
+                            <svg class="w-4 h-4 opacity-0 group-hover:opacity-100 transform -translate-x-2 group-hover:translate-x-0 transition-all" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                        </h4>
+                        <div class="text-[10px] text-gray-400 font-mono mb-3 bg-black/50 inline-block px-2 py-0.5 rounded border border-purple-500/20">The Whisper in the Void</div>
+                        <p class="text-sm text-gray-400 font-light">Mathematically injecting hidden incantations, coordinates, or sub-sigils into the noise layer of an otherwise innocent image.</p>
+                    </a>
+
+                    <a href="#" class="module-card rounded-lg p-5 block group">
+                        <h4 class="text-white font-medium mb-1 group-hover:text-purple-300 transition flex items-center justify-between">
+                            Visual Secret Sharing
+                            <svg class="w-4 h-4 opacity-0 group-hover:opacity-100 transform -translate-x-2 group-hover:translate-x-0 transition-all" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                        </h4>
+                        <div class="text-[10px] text-gray-400 font-mono mb-3 bg-black/50 inline-block px-2 py-0.5 rounded border border-purple-500/20">The Sundered Seal</div>
+                        <p class="text-sm text-gray-400 font-light">Splitting a singular Master Sigil into two layers of absolute cryptographic noise. Only when the two transparencies are perfectly overlaid is the true geometry revealed.</p>
+                    </a>
+                </div>
+            </section>
+
+            <!-- Branch VI -->
+            <section id="branch6" class="pt-4">
+                <div class="flex items-center gap-4 mb-2">
+                    <div class="w-10 h-10 rounded-full bg-teal-900/30 border border-teal-500/30 flex items-center justify-center text-teal-400">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polygon points="12 2 22 8.5 22 15.5 12 22 2 15.5 2 8.5 12 2"/><line x1="12" y1="22" x2="12" y2="15.5"/><line x1="22" y1="8.5" x2="12" y2="15.5"/><line x1="2" y1="8.5" x2="12" y2="15.5"/><line x1="12" y1="2" x2="12" y2="8.5"/></svg>
+                    </div>
+                    <h2 class="text-2xl text-white mystical-font m-0 tracking-wide">Branch VI: Lattice-Based Post-Quantum Defense</h2>
+                </div>
+                <p class="text-sm text-purple-400/80 uppercase tracking-widest mb-6 font-semibold ml-14">The Crystal Labyrinth</p>
+                <p class="text-gray-400 font-light mb-6 ml-14">Wards designed to withstand the brute-force divination of quantum algorithms (Shor's Algorithm).</p>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 ml-0 md:ml-14">
+                    <a href="#" class="module-card rounded-lg p-5 block group">
+                        <h4 class="text-white font-medium mb-1 group-hover:text-purple-300 transition flex items-center justify-between">
+                            The Shortest Vector Problem
+                            <svg class="w-4 h-4 opacity-0 group-hover:opacity-100 transform -translate-x-2 group-hover:translate-x-0 transition-all" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                        </h4>
+                        <div class="text-[10px] text-gray-400 font-mono mb-3 bg-black/50 inline-block px-2 py-0.5 rounded border border-purple-500/20">SVP Crystal Lattices</div>
+                        <p class="text-sm text-gray-400 font-light">Navigating high-dimensional algebraic lattices. A puzzle so complex that even quantum superpositions collapse before finding the origin point.</p>
+                    </a>
+
+                    <a href="#" class="module-card rounded-lg p-5 block group">
+                        <h4 class="text-white font-medium mb-1 group-hover:text-purple-300 transition flex items-center justify-between">
+                            Learning with Errors
+                            <svg class="w-4 h-4 opacity-0 group-hover:opacity-100 transform -translate-x-2 group-hover:translate-x-0 transition-all" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                        </h4>
+                        <div class="text-[10px] text-gray-400 font-mono mb-3 bg-black/50 inline-block px-2 py-0.5 rounded border border-purple-500/20">LWE Indeterminacy</div>
+                        <p class="text-sm text-gray-400 font-light">The mathematical introduction of "noise" to confuse algorithmic adversaries. Building sigils that shift and blur slightly upon inspection, securing them against quantum decryption.</p>
+                    </a>
+                </div>
+            </section>
+
+        </main>
+    </div>
+
+    <footer class="w-full border-t border-purple-600/20 bg-black/60 backdrop-blur-md mt-12 py-8 text-center relative z-20">
+        <div class="flex justify-center mb-4">
+            <svg width="24" height="24" viewBox="0 0 100 100" fill="none" stroke="#9333ea" stroke-width="3">
+                <circle cx="50" cy="50" r="45"/>
+                <polygon points="50,15 80,80 20,80"/>
+            </svg>
+        </div>
+        <p class="text-xs text-purple-400/60 uppercase tracking-[0.3em] font-light">
+            © 2026 Owl Academy Archives. All rights reserved.
+        </p>
+    </footer>
+
+</body>
+</html>
