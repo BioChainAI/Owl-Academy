@@ -10,8 +10,8 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://accounts.google.com/gsi/client" async defer></script>
     
-    <!-- We comment out auth.js to prevent 404 fallback HTML errors if the file doesn't exist yet locally -->
-    <!-- <script src="auth.js"></script> -->
+    <!-- Firebase Initialization script (Must initialize Firebase App) -->
+    <script src="auth.js"></script>
 
     <!-- MathJax Configuration for Esoteric Equations -->
     <script>
@@ -182,8 +182,8 @@
                 <h1 class="font-mono text-3xl text-neon-orange uppercase tracking-widest mb-2 relative z-10">
                     Owl Academy <span class="text-neon-copper">Access</span>
                 </h1>
-                <p class="font-mono text-sm text-gray-400 mb-8 relative z-10">
-                    Authenticate to access neural-symbolic logic and manifold tutorials.
+                <p id="auth-status-text" class="font-mono text-sm text-gray-400 mb-8 relative z-10">
+                    Verifying Authentication Resonance...
                 </p>
                 
                 <div class="relative z-10 flex flex-col items-center gap-4">
@@ -430,6 +430,40 @@
     </main>
 
     <div id="toast-container"></div>
+
+    <!-- Firebase Auth Lock Logic -->
+    <script type="module">
+        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        
+        document.addEventListener('DOMContentLoaded', () => {
+            try {
+                // auth.js should have initialized the Firebase App
+                const auth = getAuth();
+                
+                onAuthStateChanged(auth, (user) => {
+                    const statusText = document.getElementById('auth-status-text');
+                    
+                    if (user) {
+                        // User is authenticated in the shared Firebase environment
+                        showToast("Resonance Verified. Initializing Monad.");
+                        if (statusText) statusText.innerText = "Authentication Successful.";
+                        
+                        // Automatically unlock the main workspace
+                        unlockMainPlatform();
+                    } else {
+                        // User is NOT authenticated, redirect to login.html
+                        if (statusText) statusText.innerText = "Access Denied. Redirecting to Gateway...";
+                        
+                        // Redirect to the login gateway. 
+                        // NOTE: Comment out the line below if you only want to use the Dev Bypass button.
+                        window.location.href = 'login.html';
+                    }
+                });
+            } catch (error) {
+                console.error("Firebase Auth Lock Error. Make sure auth.js is initializing Firebase properly.", error);
+            }
+        });
+    </script>
 
     <script>
         // --- 1. UI Navigation & State ---
