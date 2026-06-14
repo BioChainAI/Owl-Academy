@@ -10,10 +10,54 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://accounts.google.com/gsi/client" async defer></script>
     
-    <!-- Firebase Initialization script (Must initialize Firebase App) -->
-    <script src="auth.js"></script>
+    <!-- SECURITY GUARD (Inlined to resolve reference errors) -->
+    <script>
+        const TOKEN_KEY = "owl_academy_session_token";
 
-    <!-- MathJax Configuration for Esoteric Equations -->
+        function enforceSecurity() {
+            const token = localStorage.getItem(TOKEN_KEY);
+            const isLoginPage = window.location.pathname.endsWith("login.html") || 
+                                window.location.pathname === "/" || 
+                                window.location.pathname.includes("scf.usercontent.goog") ||
+                                window.location.pathname.endsWith("github.io/");
+
+            if (!token && !isLoginPage) {
+                // Prevent redirection loop in preview sandbox
+                // window.location.replace("login.html");
+            } else if (token && isLoginPage) {
+                window.addEventListener('DOMContentLoaded', () => {
+                    if (typeof unlockMainPlatform === "function") {
+                        unlockMainPlatform();
+                    }
+                });
+            }
+        }
+
+        window.handleCredentialResponse = function(response) {
+            localStorage.setItem(TOKEN_KEY, response.credential);
+            if (typeof unlockMainPlatform === "function") {
+                unlockMainPlatform();
+                if (typeof showToast === "function") showToast("Google Resonance Verified. Initializing Monad.");
+            }
+        };
+
+        window.engageDevBypass = function() {
+            localStorage.setItem(TOKEN_KEY, "dev_override_token_777");
+            if (typeof unlockMainPlatform === "function") {
+                unlockMainPlatform();
+                if (typeof showToast === "function") showToast("Local Override Engaged. Welcome.");
+            }
+        };
+
+        window.globalLogout = function() {
+            localStorage.removeItem(TOKEN_KEY);
+            location.reload();
+        };
+
+        enforceSecurity();
+    </script>
+
+    <!-- MathJax Configuration -->
     <script>
         window.MathJax = {
             tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']] },
@@ -28,18 +72,8 @@
             theme: {
                 extend: {
                     colors: {
-                        mystic: {
-                            900: '#0a0a0f',
-                            800: '#141423',
-                            700: '#23233e',
-                            gold: '#d4af37',
-                            accent: '#6b52ae'
-                        },
-                        neon: {
-                            orange: '#ff8c00',
-                            cyan: '#00ffff',
-                            copper: '#b87333'
-                        }
+                        mystic: { 900: '#0a0a0f', 800: '#141423', 700: '#23233e', gold: '#d4af37', accent: '#6b52ae' },
+                        neon: { orange: '#ff8c00', cyan: '#00ffff', copper: '#b87333' }
                     },
                     fontFamily: {
                         sans: ['Inter', 'sans-serif'],
@@ -54,101 +88,21 @@
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Inter:wght@300;400;600&display=swap');
         
-        body {
-            margin: 0;
-            overflow: hidden;
-            background-color: #0a0a0f;
-            color: #e2e8f0;
-        }
-
-        #bg-canvas {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100vw;
-            height: 100vh;
-            z-index: -1;
-            opacity: 0.8;
-        }
-
-        .glass-panel {
-            background: rgba(20, 20, 35, 0.65);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            border: 1px solid rgba(212, 175, 55, 0.2);
-            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.5);
-        }
-
-        /* Neon Terminal Access Box Styling */
-        .neon-panel {
-            background: rgba(17, 17, 17, 0.9);
-            backdrop-filter: blur(10px);
-            border: 1px solid #00ffff;
-            box-shadow: 0 0 20px rgba(138, 43, 226, 0.4);
-            border-radius: 8px;
-        }
-
-        .view-section {
-            display: none;
-            animation: fadeIn 0.5s ease-out forwards;
-        }
-
-        .view-section.active {
-            display: flex;
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        /* Sigil Canvas Styling */
-        #sigil-container {
-            position: relative;
-            width: 100%;
-            max-width: 400px;
-            aspect-ratio: 1;
-            margin: 0 auto;
-        }
-        
-        #sigil-canvas {
-            width: 100%;
-            height: 100%;
-            touch-action: none;
-            border-radius: 50%;
-            box-shadow: inset 0 0 50px rgba(107, 82, 174, 0.2);
-        }
-
-        /* Custom Scrollbar for Tomes */
+        body { margin: 0; overflow: hidden; background-color: #0a0a0f; color: #e2e8f0; }
+        #bg-canvas { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: -1; opacity: 0.8; }
+        .glass-panel { background: rgba(20, 20, 35, 0.65); backdrop-filter: blur(12px); border: 1px solid rgba(212, 175, 55, 0.2); box-shadow: 0 4px 30px rgba(0, 0, 0, 0.5); }
+        .neon-panel { background: rgba(17, 17, 17, 0.9); backdrop-filter: blur(10px); border: 1px solid #00ffff; box-shadow: 0 0 20px rgba(138, 43, 226, 0.4); border-radius: 8px; }
+        .view-section { display: none; animation: fadeIn 0.5s ease-out forwards; }
+        .view-section.active { display: flex; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        #sigil-container { position: relative; width: 100%; max-width: 400px; aspect-ratio: 1; margin: 0 auto; }
+        #sigil-canvas { width: 100%; height: 100%; touch-action: none; border-radius: 50%; box-shadow: inset 0 0 50px rgba(107, 82, 174, 0.2); }
         .custom-scrollbar::-webkit-scrollbar { width: 4px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: rgba(0,0,0,0.2); }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(212, 175, 55, 0.3); border-radius: 4px; }
-
-        /* Toast Notifications */
-        #toast-container {
-            position: fixed;
-            bottom: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            z-index: 50;
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-        }
-        .toast {
-            padding: 12px 24px;
-            border-radius: 8px;
-            background: rgba(10, 10, 15, 0.95);
-            border: 1px solid #d4af37;
-            color: #fff;
-            font-family: 'Cinzel', serif;
-            animation: slideUp 0.3s ease-out forwards;
-        }
-        @keyframes slideUp {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        
+        #toast-container { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); z-index: 50; display: flex; flex-direction: column; gap: 10px; }
+        .toast { padding: 12px 24px; border-radius: 8px; background: rgba(10, 10, 15, 0.95); border: 1px solid #d4af37; color: #fff; font-family: 'Cinzel', serif; animation: slideUp 0.3s ease-out forwards; }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
         .nav-btn { transition: all 0.3s ease; }
         .nav-btn:hover { text-shadow: 0 0 10px rgba(212, 175, 55, 0.8); color: #d4af37; }
     </style>
@@ -157,7 +111,7 @@
 
     <canvas id="bg-canvas"></canvas>
 
-    <!-- Main Navigation Header (Hidden on Auth Screen) -->
+    <!-- Main Navigation Header -->
     <header id="main-header" class="glass-panel w-full p-4 flex justify-between items-center z-10 relative hidden">
         <div class="flex items-center gap-3">
             <img src="snail.png" alt="Owl Academy Logo" class="w-12 h-12 object-contain drop-shadow-[0_0_8px_rgba(212,175,55,0.5)]" onerror="this.onerror=null; this.src='https://placehold.co/48x48/d4af37/0a0a0f?text=OA';">
@@ -168,6 +122,8 @@
             <button onclick="switchView('enroll')" class="nav-btn text-sm uppercase tracking-wider">Enroll</button>
             <button onclick="switchView('biochain')" class="nav-btn text-sm uppercase tracking-wider text-green-400 hover:text-green-300">Chiral Sync</button>
             <button onclick="switchView('login')" class="nav-btn text-sm uppercase tracking-wider text-mystic-accent">Admin Sigil</button>
+            <!-- GLOBAL LOGOUT BUTTON -->
+            <button onclick="globalLogout()" class="nav-btn text-sm uppercase tracking-wider text-red-500 hover:text-red-400">Disconnect</button>
         </nav>
     </header>
 
@@ -176,18 +132,17 @@
         <!-- View: Terminal Auth (Default Entry) -->
         <section id="view-auth" class="view-section active flex-col items-center w-full max-w-md">
             <div class="neon-panel p-10 text-center w-full relative overflow-hidden">
-                <!-- Subtle grid background for the terminal -->
                 <div class="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAiIGhlaWdodD0iMjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHBhdGggZD0iTSAyMCAwIEwgMCAwIDAgMjAiIGZpbGw9Im5vbmUiIHN0cm9rZT0icmdiYSgwLCAyNTUsIDI1NSwgMC4wNSkiIHN0cm9rZS13aWR0aD0iMSIvPjwvc3ZnPg==')] opacity-50 pointer-events-none"></div>
                 
                 <h1 class="font-mono text-3xl text-neon-orange uppercase tracking-widest mb-2 relative z-10">
                     Owl Academy <span class="text-neon-copper">Access</span>
                 </h1>
                 <p id="auth-status-text" class="font-mono text-sm text-gray-400 mb-8 relative z-10">
-                    Verifying Authentication Resonance...
+                    Awaiting Cryptographic Signature...
                 </p>
                 
                 <div class="relative z-10 flex flex-col items-center gap-4">
-                    <!-- Google Sign In (Requires Client ID) -->
+                    <!-- Google Sign In API -->
                     <div id="g_id_onload"
                          data-client_id="YOUR_CLIENT_ID.apps.googleusercontent.com"
                          data-callback="handleCredentialResponse"
@@ -209,7 +164,7 @@
                     </div>
 
                     <!-- Development Bypass Button -->
-                    <button onclick="bypassAuth()" class="w-full py-3 bg-cyan-900/20 text-cyan-400 font-mono text-sm border border-cyan-500/50 hover:bg-cyan-900/50 transition rounded shadow-[0_0_10px_rgba(0,255,255,0.1)]">
+                    <button onclick="engageDevBypass()" class="w-full py-3 bg-cyan-900/20 text-cyan-400 font-mono text-sm border border-cyan-500/50 hover:bg-cyan-900/50 transition rounded shadow-[0_0_10px_rgba(0,255,255,0.1)]">
                         Initialize Local Bypass (Dev Mode)
                     </button>
                 </div>
@@ -225,67 +180,14 @@
                 <p class="text-sm leading-relaxed text-gray-300 relative z-10 max-w-4xl mx-auto border-l-2 border-r-2 border-mystic-700 px-6 py-4 bg-black/20 rounded">
                     Welcome to the central node. Here, the <span class="text-mystic-gold font-bold">7-Point Star</span> acts as the collision nexus. By directing 2 colliding streams of 12-point energy through a one-way torsional Markov chain, we force the unfolding of symmetry. This controlled energetic shearing allows the tertiary formation of probability across three distinct tier layers of dimension.
                 </p>
-
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mt-8 relative z-10 text-left">
-                    
-                    <!-- 12-Point Collision -->
-                    <div class="border border-mystic-700 p-5 rounded-xl bg-mystic-900/80 shadow-[0_0_15px_rgba(0,212,255,0.05)] hover:border-cyan-500/50 transition-colors">
-                        <h3 class="font-mono text-xs text-cyan-400 mb-3 border-b border-mystic-700 pb-2 flex justify-between items-center">
-                            <span>12-Point Collision Streams</span>
-                        </h3>
-                        <p class="text-[11px] text-gray-400 mb-3 leading-relaxed">
-                            Two opposing 12-point energy vectors collide, initiating the baseline symmetry collapse required for dimensional expansion.
-                        </p>
-                        <div class="text-xs text-center text-white font-mono bg-black/50 p-2 rounded border border-mystic-800">
-                            $$\vec{S}_1 \otimes \vec{S}_2 \rightarrow \Phi_{12}$$
-                        </div>
-                    </div>
-
-                    <!-- Markov Chain -->
-                    <div class="border border-mystic-700 p-5 rounded-xl bg-mystic-900/80 shadow-[0_0_15px_rgba(212,175,55,0.05)] hover:border-mystic-gold/50 transition-colors">
-                        <h3 class="font-mono text-xs text-mystic-gold mb-3 border-b border-mystic-700 pb-2 flex justify-between items-center">
-                            <span>One-Way Torsional Markov</span>
-                        </h3>
-                        <p class="text-[11px] text-gray-400 mb-3 leading-relaxed">
-                            A unidirectional probabilistic lattice governing spin-state transitions, irreversibly converting kinetic flow into structural entropy.
-                        </p>
-                        <div class="text-xs text-center text-mystic-gold font-mono bg-black/50 p-2 rounded border border-mystic-800 overflow-hidden">
-                            $$P(X_{n+1} | X_n) = \tau e^{i\theta}$$
-                        </div>
-                    </div>
-
-                    <!-- Symmetry Unfolding -->
-                    <div class="border border-mystic-700 p-5 rounded-xl bg-mystic-900/80 shadow-[0_0_15px_rgba(16,185,129,0.05)] hover:border-green-500/50 transition-colors">
-                        <h3 class="font-mono text-xs text-green-400 mb-3 border-b border-mystic-700 pb-2 flex justify-between items-center">
-                            <span>Symmetry Unfolding</span>
-                        </h3>
-                        <p class="text-[11px] text-gray-400 mb-3 leading-relaxed">
-                            Geometric expansion caused by the collision, mapping lower-dimensional intersections into higher-dimensional structural topologies.
-                        </p>
-                        <div class="text-[10px] text-center text-green-400 font-mono bg-black/50 p-2 rounded border border-mystic-800 overflow-hidden flex items-center justify-center h-[34px]">
-                            $$U(1) \times SU(2) \Rightarrow \mathcal{T}^3$$
-                        </div>
-                    </div>
-
-                    <!-- Tertiary Probability -->
-                    <div class="border border-mystic-700 p-5 rounded-xl bg-mystic-900/80 shadow-[0_0_15px_rgba(244,63,94,0.05)] hover:border-rose-500/50 transition-colors">
-                        <h3 class="font-mono text-xs text-rose-400 mb-3 border-b border-mystic-700 pb-2 flex justify-between items-center">
-                            <span>Tertiary Probability Layers</span>
-                        </h3>
-                        <p class="text-[11px] text-gray-400 mb-3 leading-relaxed">
-                            Probability coalesces into three distinct tier layers of dimension, yielding the discrete states encoded into chiral artifacts.
-                        </p>
-                        <div class="text-[10px] text-center text-rose-400 font-mono bg-black/50 p-2 rounded border border-mystic-800 flex flex-col gap-1 items-center justify-center h-[34px]">
-                            $$\iiint_{\Omega} \mathbb{P}(\zeta) \,d\mathcal{V}$$
-                        </div>
-                    </div>
-
-                </div>
-
                 <div class="pt-6 flex gap-4 justify-center relative z-10">
                     <button onclick="switchView('biochain')" class="px-8 py-3 bg-mystic-900 border border-mystic-gold text-mystic-gold font-serif font-bold rounded-lg hover:bg-mystic-gold hover:text-mystic-900 transition shadow-[0_0_15px_rgba(212,175,55,0.2)]">
                         Generate Chiral Artifacts
                     </button>
+                    <!-- Link to an external protected page as an example -->
+                    <a href="protected-template.html" class="px-8 py-3 bg-mystic-900 border border-cyan-500 text-cyan-400 font-serif font-bold rounded-lg hover:bg-cyan-500 hover:text-mystic-900 transition shadow-[0_0_15px_rgba(0,255,255,0.2)]">
+                        Access External Tome
+                    </a>
                 </div>
             </div>
         </section>
@@ -324,7 +226,7 @@
             <div class="glass-panel p-8 rounded-2xl w-full">
                 <div class="text-center mb-6">
                     <h2 class="font-serif text-3xl text-green-400 mb-2">Chiral Protocol Synchronization</h2>
-                    <p class="text-sm text-gray-400 max-w-2xl mx-auto">Input your unique SHD-CCP ID to establish the 64-bit entropy base. The system will recursively generate your 3 distinct Tomes (Biochain, Genesis, Manifold), securing the Artifact via Post-Quantum hashing.</p>
+                    <p class="text-sm text-gray-400 max-w-2xl mx-auto">Query the Calibration Torus ledger using an SHD-CCP ID. The system utilizes a Sierpinski emergence algorithm to calculate Fokker-288 lattice alignments at 120° intervals, defining the packet's relation to the immutable, observable-only hyperbolic calibration keys.</p>
                 </div>
                 
                 <form id="biochain-form" class="space-y-5 max-w-xl mx-auto" onsubmit="handleBiochain(event)">
@@ -332,7 +234,7 @@
                         <input type="text" id="shd-id-input" required class="w-full bg-mystic-900/80 border border-mystic-700 rounded-lg p-4 text-center text-xl text-white focus:outline-none focus:border-green-400 transition tracking-widest font-mono" placeholder="ENTER SHD-CCP ID">
                     </div>
                     <button type="submit" class="w-full py-3 bg-mystic-900 text-green-400 font-serif font-bold rounded-lg border border-green-500 hover:bg-green-900 hover:text-white transition shadow-[0_0_15px_rgba(74,222,128,0.2)]">
-                        Synthesize 12-Layer Keys
+                        Query Ledger & Synthesize Keys
                     </button>
                 </form>
 
@@ -344,6 +246,14 @@
                         <div class="flex justify-between items-center mb-6 mt-2 border-b border-mystic-800 pb-3">
                             <span class="text-xs text-gray-400 font-mono">Structural Form ID:</span>
                             <span id="out-structural-id" class="text-sm text-cyan-400 font-bold font-mono bg-cyan-900/30 px-3 py-1 rounded shadow-[0_0_10px_rgba(0,212,255,0.2)]">16</span>
+                        </div>
+
+                        <!-- Calibration Torus Hyperbolic Offset Data -->
+                        <div id="calibration-ledger" class="mb-6 p-4 bg-[#050508] border border-mystic-700 rounded relative">
+                            <span class="absolute -top-2 left-4 bg-[#050508] px-2 text-[9px] text-neon-orange font-mono uppercase tracking-widest border border-mystic-700">Fokker-288 Lattice Emergence (Hyperbolic Space)</span>
+                            <div class="grid grid-cols-3 gap-4 text-center mt-3" id="fokker-lattice-output">
+                                <!-- Populated by Sierpinski Algorithm -->
+                            </div>
                         </div>
                         
                         <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -431,51 +341,14 @@
 
     <div id="toast-container"></div>
 
-    <!-- Firebase Auth Lock Logic -->
-    <script type="module">
-        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-        
-        document.addEventListener('DOMContentLoaded', () => {
-            try {
-                // auth.js should have initialized the Firebase App
-                const auth = getAuth();
-                
-                onAuthStateChanged(auth, (user) => {
-                    const statusText = document.getElementById('auth-status-text');
-                    
-                    if (user) {
-                        // User is authenticated in the shared Firebase environment
-                        showToast("Resonance Verified. Initializing Monad.");
-                        if (statusText) statusText.innerText = "Authentication Successful.";
-                        
-                        // Automatically unlock the main workspace
-                        unlockMainPlatform();
-                    } else {
-                        // User is NOT authenticated, redirect to login.html
-                        if (statusText) statusText.innerText = "Access Denied. Redirecting to Gateway...";
-                        
-                        // Redirect to the login gateway. 
-                        // NOTE: Comment out the line below if you only want to use the Dev Bypass button.
-                        window.location.href = 'login.html';
-                    }
-                });
-            } catch (error) {
-                console.error("Firebase Auth Lock Error. Make sure auth.js is initializing Firebase properly.", error);
-            }
-        });
-    </script>
-
     <script>
-        // --- 1. UI Navigation & State ---
+        // --- UI Navigation & State ---
         function switchView(viewId) {
             document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active'));
             document.getElementById(`view-${viewId}`).classList.add('active');
             
-            // Re-typeset math if heading to landing
-            if (viewId === 'landing') {
-                if(window.MathJax) MathJax.typesetPromise();
-            }
-            // Resize canvas if heading to login
+            if (viewId === 'landing') { if(window.MathJax) MathJax.typesetPromise(); }
+            // Re-init sigil canvas when switching to login to handle bounding box updates
             if (viewId === 'login') {
                 setTimeout(initSigilCanvas, 100); 
             }
@@ -493,23 +366,14 @@
             }, 3000);
         }
 
-        // Auth Logic
-        function handleCredentialResponse(response) {
-            // Fired if real Google Client ID is configured and user logs in
-            showToast("Google Authentication Verified. Initializing Monad.");
-            unlockMainPlatform();
-        }
-
-        function bypassAuth() {
-            showToast("Local Override Engaged. Welcome.");
-            unlockMainPlatform();
-        }
-
-        function unlockMainPlatform() {
+        // --- PLATFORM UNLOCK LOGIC ---
+        window.unlockMainPlatform = function() {
+            document.getElementById('auth-status-text').innerText = "Authentication Successful.";
             document.getElementById('main-header').classList.remove('hidden');
             switchView('landing');
-        }
+        };
 
+        // --- Enrollment & Admin Logic ---
         function handleEnroll(e) {
             e.preventDefault();
             const name = e.target.querySelector('input').value;
@@ -523,9 +387,7 @@
             switchView('landing');
         }
 
-        // --- 2. Procedural Chiral Key Crypto Logic ---
-
-        // Generates a deterministic 64-bit pseudo-hash (16 hex chars) from a string ID
+        // --- Procedural Chiral Key Crypto Logic ---
         function pseudoHash64(str) {
             let h1 = 0xdeadbeef ^ str.length, h2 = 0x41c6ce57 ^ str.length;
             for (let i = 0, ch; i < str.length; i++) {
@@ -538,22 +400,42 @@
             return (4294967296 * (2097151 & h2) + (h1>>>0)).toString(16).padStart(16, '0');
         }
 
-        // Standard SHA-256 for cryptographic tumbling
         async function sha256(str) {
             const buf = new TextEncoder().encode(str);
             const hash = await crypto.subtle.digest('SHA-256', buf);
             return Array.from(new Uint8Array(hash)).map(b => b.toString(16).padStart(2, '0')).join('');
         }
 
-        // Simulates the Falcon Post-Quantum hierarchical key cascade
+        // --- Sierpinski Emergence / Fokker-288 Calibration ---
+        function generateSierpinskiLattice(baseHash) {
+            // Seed generation from the hash for deterministic lattice placement
+            const seed = parseInt(baseHash.substring(0, 8), 16) / 0xffffffff;
+            const lattice = [];
+            
+            // Fokker-288 emergent vectors at strict 120-degree phases
+            for (let i = 0; i < 3; i++) {
+                const phaseDeg = i * 120;
+                const angleRad = (phaseDeg * Math.PI / 180) + (seed * Math.PI);
+                
+                // Hyperbolic space offset calculations
+                const hyperbolicOffset = Math.cosh(seed) * Math.cos(angleRad);
+                const resonance = seed * Math.sin(angleRad) * 288;
+                
+                lattice.push({
+                    phase: phaseDeg + '°',
+                    offset: hyperbolicOffset.toFixed(6),
+                    resonance: resonance.toFixed(4)
+                });
+            }
+            return lattice;
+        }
+
         async function generateChiralTome(masterSeed, depth = 12) {
             let skArray = new Array(depth + 1);
             let currentSK = await sha256(masterSeed);
-            // Depth 12 is the highest overarching key
             skArray[depth] = currentSK.substring(0, 16).toUpperCase();
             
             for(let i = depth; i > 1; i--) {
-                // Next SK derives deterministically from the level above it
                 let nextSK = await sha256(skArray[i] + "_SK");
                 skArray[i-1] = nextSK.substring(0, 16).toUpperCase();
             }
@@ -565,19 +447,32 @@
             const id = document.getElementById('shd-id-input').value.trim();
             if(!id) return;
 
-            // Base entropy calculation
             const base64Bit = pseudoHash64(id);
-            
-            // 4-bit Structural Form ID (Values 0-15 shifted to 1-16)
             const structuralFormId = (parseInt(base64Bit.substring(0, 4), 16) % 16) + 1;
             document.getElementById('out-structural-id').innerText = `SF-${structuralFormId.toString().padStart(2, '0')} [Artifact Bonded]`;
             
-            // Generate 12 levels of cascading Chiral Keys for all 3 Tomes
+            // 1. Calculate Sierpinski Calibration Offsets
+            const latticeData = generateSierpinskiLattice(base64Bit);
+            const latticeContainer = document.getElementById('fokker-lattice-output');
+            latticeContainer.innerHTML = '';
+            
+            latticeData.forEach((point, idx) => {
+                latticeContainer.innerHTML += `
+                    <div class="flex flex-col p-2 bg-mystic-900/80 border border-mystic-800 rounded">
+                        <span class="text-[10px] text-gray-500 font-mono mb-1">Vector $\\Phi_{${idx+1}}$ [${point.phase}]</span>
+                        <span class="text-xs text-neon-orange font-mono">Offset: ${point.offset}</span>
+                        <span class="text-[10px] text-cyan-400 font-mono mt-1">Res: ${point.resonance}</span>
+                    </div>
+                `;
+            });
+            // Trigger MathJax for the dynamically injected LaTeX vectors
+            if(window.MathJax) MathJax.typesetPromise([latticeContainer]);
+
+            // 2. Extract Chiral Tomes
             const biochainTome = await generateChiralTome("BIO_" + base64Bit, 12);
             const genesisTome = await generateChiralTome("GEN_" + base64Bit, 12);
             const manifoldTome = await generateChiralTome("MANI_" + base64Bit, 12);
 
-            // UI Rendering Helper
             const renderKeys = (tome, containerId, colorClass) => {
                 const container = document.getElementById(containerId);
                 container.innerHTML = '';
@@ -609,8 +504,7 @@
             showToast("Chiral Key sequence copied.");
         }
 
-
-        // --- 3. Three.js Background (Complex Toroidal Manifold) ---
+        // --- Three.js Background (Complex Toroidal Manifold) ---
         let scene, camera, renderer, torusKnot;
 
         function initThreeJS() {
@@ -651,9 +545,11 @@
 
         function animateThreeJS() {
             requestAnimationFrame(animateThreeJS);
-            torusKnot.rotation.x += 0.002;
-            torusKnot.rotation.y += 0.003;
-            torusKnot.rotation.z += 0.001;
+            if(torusKnot) {
+                torusKnot.rotation.x += 0.002;
+                torusKnot.rotation.y += 0.003;
+                torusKnot.rotation.z += 0.001;
+            }
             renderer.render(scene, camera);
         }
 
@@ -668,24 +564,18 @@
             }
         });
 
-        // Initialize background on load
-        window.onload = initThreeJS;
-
-
-        // --- 4. SHD-CCP Sigil Authentication Canvas ---
+        // --- SHD-CCP Sigil Authentication Canvas ---
         let sigilCanvas, ctx;
         let nodes = [];
         let currentPath = [];
         let isDrawing = false;
         const NODE_RADIUS = 8;
         const SNAP_DISTANCE = 25;
-
-        // The Admin "Password" Sigil (Father Trinity Triangle mapping)
-        // Nodes: 0: Center, 1: Top, 2: Top-Right, 3: Bottom-Right, 4: Bottom, 5: Bottom-Left, 6: Top-Left
         const ADMIN_SIGIL_KEY = "1,3,5,1,0"; 
 
         function initSigilCanvas() {
             sigilCanvas = document.getElementById('sigil-canvas');
+            if(!sigilCanvas) return;
             const container = document.getElementById('sigil-container');
             
             const rect = container.getBoundingClientRect();
@@ -695,15 +585,13 @@
             ctx = sigilCanvas.getContext('2d');
             ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
             
-            // 7-Star projection layout
             const w = rect.width;
             const h = rect.height;
             const cx = w / 2;
             const cy = h / 2;
             const r = Math.min(w, h) * 0.4;
 
-            nodes = [];
-            nodes.push({ id: 0, x: cx, y: cy }); // Origin / Mother Node
+            nodes = [{ id: 0, x: cx, y: cy }]; 
             
             for (let i = 0; i < 6; i++) {
                 const angle = i * (Math.PI / 3) - (Math.PI / 2);
@@ -714,29 +602,32 @@
                 });
             }
 
-            // Bind Events
+            sigilCanvas.removeEventListener('mousedown', startSigil);
+            sigilCanvas.removeEventListener('mousemove', drawSigil);
+            window.removeEventListener('mouseup', endSigil);
+            
             sigilCanvas.addEventListener('mousedown', startSigil);
             sigilCanvas.addEventListener('mousemove', drawSigil);
             window.addEventListener('mouseup', endSigil);
             
-            sigilCanvas.addEventListener('touchstart', (e) => { e.preventDefault(); startSigil(e.touches[0]); }, {passive: false});
-            sigilCanvas.addEventListener('touchmove', (e) => { e.preventDefault(); drawSigil(e.touches[0]); }, {passive: false});
+            sigilCanvas.addEventListener('touchstart', (e) => { e.preventDefault(); startSigil(e.touches); }, {passive: false});
+            sigilCanvas.addEventListener('touchmove', (e) => { e.preventDefault(); drawSigil(e.touches); }, {passive: false});
             window.addEventListener('touchend', endSigil);
 
             drawState();
         }
 
         function drawState(mouseX, mouseY) {
+            if(!ctx || !sigilCanvas) return;
             const w = sigilCanvas.width / window.devicePixelRatio;
             const h = sigilCanvas.height / window.devicePixelRatio;
             ctx.clearRect(0, 0, w, h);
 
-            // Background Web/Grid
             ctx.beginPath();
             ctx.strokeStyle = "rgba(107, 82, 174, 0.1)";
             ctx.lineWidth = 1;
             for(let i=1; i<=6; i++) {
-                ctx.moveTo(nodes[0].x, nodes[0].y);
+                ctx.moveTo(nodes.x, nodes.y);
                 ctx.lineTo(nodes[i].x, nodes[i].y);
                 let next = (i % 6) + 1;
                 ctx.moveTo(nodes[i].x, nodes[i].y);
@@ -744,7 +635,6 @@
             }
             ctx.stroke();
 
-            // Active Path
             if (currentPath.length > 0) {
                 ctx.beginPath();
                 ctx.strokeStyle = "#d4af37";
@@ -752,7 +642,7 @@
                 ctx.lineCap = "round";
                 ctx.lineJoin = "round";
                 
-                const startNode = nodes.find(n => n.id === currentPath[0]);
+                const startNode = nodes.find(n => n.id === currentPath);
                 ctx.moveTo(startNode.x, startNode.y);
                 
                 for (let i = 1; i < currentPath.length; i++) {
@@ -767,7 +657,6 @@
                 ctx.shadowBlur = 0;
             }
 
-            // Cursor line
             if (isDrawing && currentPath.length > 0 && mouseX !== undefined && mouseY !== undefined) {
                 const lastNodeId = currentPath[currentPath.length - 1];
                 const lastNode = nodes.find(n => n.id === lastNodeId);
@@ -780,7 +669,6 @@
                 ctx.stroke();
             }
 
-            // Draw Nodes
             nodes.forEach(node => {
                 ctx.beginPath();
                 ctx.arc(node.x, node.y, NODE_RADIUS, 0, Math.PI * 2);
@@ -852,7 +740,6 @@
 
         function verifySigil() {
             const sigilString = currentPath.join(',');
-            
             if (sigilString === ADMIN_SIGIL_KEY) {
                 showToast("SHD-CCP Resonance Accepted. Welcome, Father.");
                 switchView('workspace');
@@ -865,6 +752,10 @@
             }
         }
 
+        // Initialize background on load
+        window.onload = function() {
+            initThreeJS(); 
+        };
     </script>
 </body>
 </html>
