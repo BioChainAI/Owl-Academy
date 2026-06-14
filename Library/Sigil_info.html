@@ -1,0 +1,946 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Owl Academy | Interactive Sigil & 4D Projection</title>
+    
+    <!-- Tome Protection Authentication Script -->
+    <script src="scripts/auth.js"></script>
+
+    <!-- CSS & Fonts -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+    
+    <!-- Three.js Core & Controls -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    
+    <!-- Three.js Post-Processing (For Ethereal Bloom) -->
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/EffectComposer.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/RenderPass.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/ShaderPass.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/shaders/CopyShader.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/shaders/LuminosityHighPassShader.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/UnrealBloomPass.js"></script>
+
+    <!-- MathJax -->
+    <script>
+        window.MathJax = {
+            tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']] }
+        };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    
+    <style>
+        /* Dynamic Theme Variables */
+        :root {
+            --color-void: #090614;
+            --color-primary: #D4AF37;
+            --color-secondary: #8e9eab;
+            --color-holo1: #00d4ff;
+            --color-holo2: #8A2BE2;
+            --color-text: #E6C27A;
+        }
+
+        body {
+            background-color: var(--color-void);
+            color: #e2e8f0;
+            font-family: 'Inter', sans-serif;
+            background: radial-gradient(circle at 50% 50%, color-mix(in srgb, var(--color-holo2) 10%, var(--color-void)), var(--color-void) 80%);
+            min-height: 100vh;
+            margin: 0;
+            overflow: hidden;
+            transition: background 0.5s;
+        }
+
+        /* --- TOGGLE 3: DEEP ATMOSPHERE (Nebula & Vignette) --- */
+        .nebula-layer {
+            position: absolute; inset: 0;
+            background: 
+                radial-gradient(circle at 20% 30%, var(--color-holo2) 0%, transparent 40%),
+                radial-gradient(circle at 80% 70%, var(--color-holo1) 0%, transparent 40%);
+            opacity: 0;
+            mix-blend-mode: screen;
+            filter: blur(80px);
+            transition: opacity 1.5s ease;
+            pointer-events: none;
+            z-index: 0;
+        }
+        .vignette-layer {
+            position: absolute; inset: 0;
+            background: radial-gradient(circle, transparent 40%, rgba(0,0,0,0.8) 120%);
+            opacity: 0;
+            transition: opacity 1.5s ease;
+            pointer-events: none;
+            z-index: 15;
+        }
+        body.atmo-active .nebula-layer { opacity: 0.15; }
+        body.atmo-active .vignette-layer { opacity: 1; }
+
+        /* Background Starfield */
+        .starfield {
+            position: absolute; inset: 0;
+            background-image:
+                radial-gradient(2px 2px at 20px 30px, var(--color-primary), rgba(0,0,0,0)),
+                radial-gradient(2px 2px at 40px 70px, #fff, rgba(0,0,0,0)),
+                radial-gradient(2px 2px at 50px 160px, rgba(255,255,255,0.8), rgba(0,0,0,0)),
+                radial-gradient(2px 2px at 90px 40px, #fff, rgba(0,0,0,0)),
+                radial-gradient(2px 2px at 130px 80px, var(--color-primary), rgba(0,0,0,0));
+            background-repeat: repeat; background-size: 250px 250px;
+            animation: twinkle 8s infinite alternate;
+            opacity: 0.35; z-index: 0; pointer-events: none;
+        }
+        .starfield-layer-2 {
+            background-size: 350px 350px; background-position: 50px 50px;
+            opacity: 0.2; animation: twinkle 12s infinite alternate-reverse;
+        }
+        @keyframes twinkle { 0% { opacity: 0.1; transform: scale(1); } 100% { opacity: 0.5; transform: scale(1.05); } }
+
+        h1, h2, h3, .mystical-font { font-family: 'Cinzel', serif; }
+
+        .gold-gradient {
+            background: linear-gradient(to right, var(--color-primary), #FFF8DC, var(--color-primary));
+            -webkit-background-clip: text; background-clip: text;
+            color: transparent; text-shadow: 0 0 15px color-mix(in srgb, var(--color-primary) 30%, transparent);
+        }
+
+        /* SVG Visualization Styling */
+        svg { transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1); }
+        .sigil-layer { transition: opacity 0.5s ease, filter 0.5s ease, transform 0.5s ease; transform-origin: center; }
+        .layer-dimmed { opacity: 0.08; filter: grayscale(100%) blur(1px); }
+        .layer-active { opacity: 1; filter: drop-shadow(0 0 12px color-mix(in srgb, var(--color-primary) 60%, transparent)); transform: scale(1.02); }
+        
+        /* --- TOGGLE 2: SACRED GEOMETRY REFINEMENTS --- */
+        .refined-geo path, .refined-geo line, .refined-geo circle, .refined-geo polygon {
+            stroke-width: 0.75 !important;
+            vector-effect: non-scaling-stroke;
+        }
+        .refined-geo .cipher-element { stroke-width: 1.5 !important; }
+        .spin-slow {
+            animation: spin 60s linear infinite;
+            transform-origin: 300px 300px;
+        }
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+
+        /* Control Panel Styles */
+        .layer-btn {
+            background: rgba(15, 10, 25, 0.5);
+            border: 1px solid color-mix(in srgb, var(--color-primary) 20%, transparent);
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative; overflow: hidden;
+        }
+        .layer-btn::before {
+            content: ''; position: absolute; inset: 0;
+            background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--color-primary) 8%, transparent), transparent);
+            transform: translateX(-100%); transition: transform 0.6s ease;
+        }
+        .layer-btn:hover::before, .layer-btn.active::before { transform: translateX(100%); }
+        .layer-btn:hover {
+            background: rgba(30, 20, 45, 0.7);
+            border-color: color-mix(in srgb, var(--color-primary) 50%, transparent);
+        }
+        .layer-btn.active {
+            background: rgba(40, 30, 20, 0.8);
+            border-color: var(--color-primary);
+            box-shadow: 0 0 25px color-mix(in srgb, var(--color-primary) 15%, transparent), inset 0 0 15px color-mix(in srgb, var(--color-primary) 5%, transparent);
+        }
+        .layer-btn.active h3 { color: var(--color-primary); text-shadow: 0 0 10px color-mix(in srgb, var(--color-primary) 40%, transparent); }
+        
+        /* --- TOGGLE 4: LUXURIOUS UI --- */
+        body.lux-ui-active .layer-btn {
+            backdrop-filter: blur(16px);
+            background: rgba(10, 5, 20, 0.4);
+            border-radius: 12px;
+        }
+        body.lux-ui-active header, body.lux-ui-active #sidebar-inner {
+            backdrop-filter: blur(20px);
+            background: rgba(5, 3, 10, 0.5);
+        }
+
+        .btn-4d { border: 1px solid color-mix(in srgb, var(--color-holo2) 30%, transparent); background: rgba(25, 10, 40, 0.4); }
+        .btn-4d:hover, .btn-4d.active {
+            background: rgba(45, 15, 70, 0.6);
+            border-color: color-mix(in srgb, var(--color-holo2) 80%, transparent);
+            box-shadow: 0 0 30px color-mix(in srgb, var(--color-holo2) 20%, transparent);
+        }
+        .btn-4d.active h3 { color: #d8b4fe; text-shadow: 0 0 12px rgba(216, 180, 254, 0.6); }
+
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-track { background: rgba(0,0,0,0.2); }
+        ::-webkit-scrollbar-thumb { background: linear-gradient(to bottom, color-mix(in srgb, var(--color-primary) 30%, transparent), color-mix(in srgb, var(--color-primary) 70%, transparent)); border-radius: 10px; }
+
+        .fade-transition { transition: opacity 0.8s ease-in-out, transform 0.8s ease-in-out; }
+        .hidden-view { opacity: 0; pointer-events: none; position: absolute; inset: 0; transform: scale(0.95); }
+        .visible-view { opacity: 1; pointer-events: auto; position: relative; width: 100%; height: 100%; transform: scale(1); }
+
+        /* Settings Modal Inputs */
+        input[type="color"] {
+            -webkit-appearance: none; border: none; width: 32px; height: 32px; border-radius: 4px; cursor: pointer; padding: 0; background: transparent;
+        }
+        input[type="color"]::-webkit-color-swatch-wrapper { padding: 0; }
+        input[type="color"]::-webkit-color-swatch { border: 1px solid rgba(255,255,255,0.2); border-radius: 4px; }
+    </style>
+</head>
+<body class="flex flex-col h-screen overflow-hidden">
+    
+    <!-- Atmospheric Layers -->
+    <div class="nebula-layer"></div>
+    <div class="starfield"></div>
+    <div class="starfield starfield-layer-2"></div>
+    <div class="vignette-layer"></div>
+
+    <!-- Header -->
+    <header class="w-full py-4 border-b border-yellow-600/20 bg-[#05030a]/80 backdrop-blur-xl z-30 flex-shrink-0 relative shadow-lg transition-all duration-500">
+        <div class="w-full mx-auto px-6 flex justify-between items-center">
+            <div class="flex items-center space-x-4 group cursor-pointer" onclick="selectLayer(null, '2d')">
+                <svg width="35" height="35" viewBox="0 0 100 100" class="fill-none group-hover:rotate-90 transition-transform duration-700" style="stroke: var(--color-primary); filter: drop-shadow(0 0 5px var(--color-primary));">
+                    <circle cx="50" cy="50" r="45" stroke-width="2.5"/>
+                    <polygon points="50,15 80,80 20,80" stroke-width="2.5"/>
+                </svg>
+                <h1 class="text-xl md:text-3xl font-bold tracking-[0.2em] gold-gradient" id="main-title">OWL ACADEMY</h1>
+            </div>
+            
+            <div class="flex items-center space-x-3 md:space-x-6">
+                <div class="hidden lg:block text-xs tracking-[0.3em] uppercase mystical-font" style="color: color-mix(in srgb, var(--color-primary) 50%, transparent);">
+                    Fundamenta Caeli In Terra
+                </div>
+
+                <!-- NEW: Return to Grand Hall -->
+                <a href="https://biochainai.github.io/Owl-Academy/Learning-Hub.html" class="flex items-center px-3 py-2 rounded border transition-all duration-300 text-[10px] md:text-xs font-bold tracking-[0.1em] md:tracking-[0.15em] mystical-font hover:bg-white/5 text-gray-400 border-gray-600/30 hover:text-white" title="Return to Grand Hall">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="mr-0 md:mr-2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+                    <span class="hidden md:inline">GRAND HALL</span>
+                </a>
+
+                <!-- NEW: Sever Connection (Logout) -->
+                <button onclick="globalLogout()" class="flex items-center px-3 py-2 rounded border transition-all duration-300 text-[10px] md:text-xs font-bold tracking-[0.1em] md:tracking-[0.15em] mystical-font border-red-900/50 text-red-500 bg-red-900/10 hover:bg-red-900/30 hover:text-red-400 hover:border-red-500/50 hover:shadow-[0_0_10px_rgba(255,0,0,0.2)]" title="Sever Connection">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="mr-0 md:mr-2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg>
+                    <span class="hidden md:inline">SEVER</span>
+                </button>
+                
+                <button id="view-toggle-btn" onclick="toggleGlobal3D()" class="flex items-center px-4 py-2 rounded border transition-all duration-300 text-xs font-bold tracking-[0.15em] mystical-font" style="border-color: color-mix(in srgb, var(--color-primary) 50%, transparent); color: var(--color-primary); background: rgba(0,0,0,0.4);">
+                    <span class="mr-2 text-lg leading-none">⬡</span> <span id="view-toggle-text">ENTER 3D</span>
+                </button>
+
+                <!-- Settings Button -->
+                <button onclick="toggleSettings()" class="p-2 rounded border border-transparent hover:bg-white/5 transition-all duration-300" title="Aesthetics & Colors">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" style="stroke: var(--color-primary);" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="3"></circle>
+                        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+                    </svg>
+                </button>
+                
+                <!-- Sidebar Collapse -->
+                <button onclick="toggleSidebar()" class="p-2 rounded border border-transparent hover:bg-white/5 transition-all duration-300" title="Toggle Architecture Panel">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" style="stroke: var(--color-primary);" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                        <line x1="15" y1="3" x2="15" y2="21"></line>
+                    </svg>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Settings Modal -->
+    <div id="settings-modal" class="fixed inset-0 bg-black/60 hidden z-50 flex items-center justify-center backdrop-blur-sm transition-opacity opacity-0">
+        <div class="bg-[#0a0614] border border-yellow-600/40 p-8 rounded-xl w-full max-w-lg shadow-2xl transform scale-95 transition-transform" id="settings-content">
+            <div class="flex justify-between items-center mb-6 border-b border-white/10 pb-4">
+                <h2 class="text-xl font-bold tracking-[0.1em] mystical-font" style="color: var(--color-primary);">AESTHETIC CONTROLS</h2>
+                <button onclick="toggleSettings()" class="text-gray-400 hover:text-white">✕</button>
+            </div>
+            
+            <div class="space-y-6">
+                <!-- Visual Upgrades -->
+                <div>
+                    <h3 class="text-xs uppercase tracking-widest text-gray-500 mb-3">Visual Upgrades</h3>
+                    <div class="space-y-3">
+                        <label class="flex items-center justify-between cursor-pointer group">
+                            <span class="text-sm text-gray-300 group-hover:text-white transition">Ethereal 3D Rendering <span class="block text-[10px] text-gray-500">Bloom, Post-processing & Particles</span></span>
+                            <input type="checkbox" id="toggle-3d-fx" class="form-checkbox h-5 w-5 rounded bg-gray-800 border-gray-600 text-purple-500 focus:ring-purple-500" onchange="applySettings()">
+                        </label>
+                        <label class="flex items-center justify-between cursor-pointer group">
+                            <span class="text-sm text-gray-300 group-hover:text-white transition">Sacred Geometry <span class="block text-[10px] text-gray-500">Hairlines, Construction Rings & Rotation</span></span>
+                            <input type="checkbox" id="toggle-2d-fx" class="form-checkbox h-5 w-5 rounded bg-gray-800 border-gray-600 text-yellow-500 focus:ring-yellow-500" onchange="applySettings()">
+                        </label>
+                        <label class="flex items-center justify-between cursor-pointer group">
+                            <span class="text-sm text-gray-300 group-hover:text-white transition">Deep Atmosphere <span class="block text-[10px] text-gray-500">Cosmic Nebula & Vignette Shadows</span></span>
+                            <input type="checkbox" id="toggle-atmo-fx" class="form-checkbox h-5 w-5 rounded bg-gray-800 border-gray-600 text-blue-500 focus:ring-blue-500" onchange="applySettings()">
+                        </label>
+                        <label class="flex items-center justify-between cursor-pointer group">
+                            <span class="text-sm text-gray-300 group-hover:text-white transition">Luxurious UI <span class="block text-[10px] text-gray-500">Frosted Glassmorphism & Refined Spacing</span></span>
+                            <input type="checkbox" id="toggle-ui-fx" class="form-checkbox h-5 w-5 rounded bg-gray-800 border-gray-600 text-white focus:ring-gray-400" onchange="applySettings()">
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Color Matrix -->
+                <div>
+                    <h3 class="text-xs uppercase tracking-widest text-gray-500 mb-3 border-t border-white/10 pt-4">Matrix Customization</h3>
+                    <div class="grid grid-cols-2 gap-4">
+                        <label class="flex items-center justify-between">
+                            <span class="text-xs text-gray-400">Primary (Male/Gold)</span>
+                            <input type="color" id="col-primary" value="#D4AF37" oninput="updateColors()">
+                        </label>
+                        <label class="flex items-center justify-between">
+                            <span class="text-xs text-gray-400">Secondary (Female/Silver)</span>
+                            <input type="color" id="col-secondary" value="#8e9eab" oninput="updateColors()">
+                        </label>
+                        <label class="flex items-center justify-between">
+                            <span class="text-xs text-gray-400">Holo Core 1 (Cyan)</span>
+                            <input type="color" id="col-holo1" value="#00d4ff" oninput="updateColors()">
+                        </label>
+                        <label class="flex items-center justify-between">
+                            <span class="text-xs text-gray-400">Holo Core 2 (Magenta)</span>
+                            <input type="color" id="col-holo2" value="#8A2BE2" oninput="updateColors()">
+                        </label>
+                        <label class="flex items-center justify-between col-span-2">
+                            <span class="text-xs text-gray-400">The Void (Background)</span>
+                            <input type="color" id="col-void" value="#090614" oninput="updateColors()">
+                        </label>
+                    </div>
+                    <div class="mt-4 text-right">
+                        <button onclick="resetColors()" class="text-xs text-gray-500 hover:text-white underline">Reset to Default</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <main class="flex-grow flex flex-col md:flex-row overflow-hidden w-full relative z-10 transition-all duration-500">
+        
+        <!-- Visualization Area -->
+        <section id="viz-section" class="flex-1 p-4 md:p-8 flex flex-col items-center justify-center relative overflow-hidden transition-all duration-500">
+            <!-- 2D SVG -->
+            <div id="view-2d" class="visible-view flex flex-col items-center justify-center">
+                <div id="sigil-container" class="w-full max-w-[500px] md:max-w-[650px] xl:max-w-[750px] aspect-square relative z-10 drop-shadow-2xl transition-all duration-500">
+                    <!-- SVG injected -->
+                </div>
+                <div class="mt-8 flex space-x-4 z-10">
+                    <button onclick="selectLayer(null, '2d')" class="px-8 py-3 rounded border transition-all duration-500 text-xs font-bold tracking-[0.25em] mystical-font" style="border-color: color-mix(in srgb, var(--color-primary) 50%, transparent); color: var(--color-primary); background: rgba(0,0,0,0.4);">
+                        RESTORE FULL MATRIX
+                    </button>
+                </div>
+            </div>
+
+            <!-- 3D WebGL -->
+            <div id="view-3d" class="hidden-view">
+                <div id="webgl-container" class="w-full h-full absolute inset-0"></div>
+                <div class="absolute bottom-8 left-0 right-0 text-center z-20 pointer-events-none">
+                    <div class="inline-block px-6 py-3 border rounded-lg backdrop-blur-md shadow-lg transition-all" style="background: color-mix(in srgb, var(--color-void) 80%, transparent); border-color: color-mix(in srgb, var(--color-holo2) 30%, transparent);">
+                        <span class="mystical-font text-sm tracking-[0.2em] uppercase block mb-1" style="color: var(--color-holo2);">Active Projection Parameter:</span>
+                        <span class="text-xs font-mono tracking-widest text-gray-300">r₁/r₂ = φ (1.6180339...) | Clifford Toroid</span>
+                    </div>
+                    <div class="mt-4 pointer-events-auto">
+                        <button id="btn-vortex" onclick="toggleVortex()" class="px-6 py-2 rounded-full border border-purple-500/50 text-purple-300 bg-purple-900/30 hover:bg-purple-800/60 transition-all duration-300 text-xs font-bold tracking-[0.2em] shadow-[0_0_20px_rgba(138,43,226,0.3)] hover:shadow-[0_0_30px_rgba(138,43,226,0.6)] mystical-font">
+                            ACTIVATE HYPERBOLIC WEAVE
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Right Sidebar -->
+        <section id="sidebar-section" class="w-full md:w-[45%] max-w-[600px] flex-shrink-0 h-full transition-all duration-500 ease-in-out relative z-20 overflow-hidden">
+            <div id="sidebar-inner" class="w-full min-w-[320px] h-full flex flex-col border-l shadow-2xl relative overflow-hidden transition-all duration-300" style="background: color-mix(in srgb, var(--color-void) 40%, transparent); border-color: color-mix(in srgb, var(--color-primary) 10%, transparent);">
+                <div class="absolute top-0 w-full h-12 bg-gradient-to-b from-black to-transparent z-10 pointer-events-none opacity-50"></div>
+                
+                <div class="p-6 md:p-10 pb-4 z-10">
+                    <h2 class="text-xl md:text-2xl mb-3 tracking-[0.2em] font-bold" style="color: var(--color-primary);">SIGIL ARCHITECTURE</h2>
+                    <p class="text-sm text-slate-400 mb-2 leading-relaxed font-light">
+                        Select a foundational layer to isolate its sacred geometry and study its metaphysical significance.
+                    </p>
+                </div>
+
+                <div id="layers-panel" class="flex-grow overflow-y-auto px-6 md:px-10 pb-20 space-y-4 relative z-0">
+                    <!-- Buttons injected -->
+                </div>
+                
+                <div class="absolute bottom-0 w-full h-20 bg-gradient-to-t from-black to-transparent z-10 pointer-events-none opacity-50"></div>
+            </div>
+        </section>
+    </main>
+
+    <script>
+        // --- DATA LORE ---
+        const sigilLayers = [
+            { id: "layer-1a", title: "Layer 1: The Outer Ring", subtitle: "The Earthly Boundary", type: "2d", description: `<strong>The Border Text:</strong> Features ancient text: <em>SIGILLVM ACADEMIAE VLULAE</em> and <em>FUNDAMENTA CAELI IN TERRA</em>. Maintains geometric balance.`, renderFn: drawOuterRing },
+            { id: "layer-1b", title: "Layer 1b: The 24 Points", subtitle: "Male & Female Syzygies", type: "2d", description: `<strong>The 24 Points:</strong> Interlocking 12-pointed stars representing active (Solar) and receptive (Lunar) disciples, mirroring the 24 Elders.`, renderFn: draw24Points },
+            { id: "layer-2", title: "Layer 2: The Middle Geometry", subtitle: "The Trinity & Reflection", type: "2d", description: `<strong>The Father's Trinity:</strong> An upward triangle (The Father) reflects downwards to form the Hexagram—"As Above, So Below."`, renderFn: drawMiddleGeometry },
+            { id: "layer-3a", title: "Layer 3a: The Inner Sanctum", subtitle: "The Mother Plenum", type: "2d", description: `<strong>The Plenum Void:</strong> A perfect hexagon inscribed as the Mother Plenum—the womb of creation within the Father's framework.`, renderFn: drawMotherPlenum },
+            { id: "layer-3b", title: "Layer 3b: The 7-Star", subtitle: "The Spiritual Goal", type: "2d", description: `<strong>The 7-Star:</strong> A continuous Heptagram. The Star of Babalon, representing the ultimate spiritual goal.`, renderFn: draw7Star },
+            { id: "layer-4", title: "Layer 4: The Core Cipher", subtitle: "The Authentic Chi-Rho", type: "2d", description: `<strong>Chi-Rho (☧):</strong> The ancient monogram for Yeshua, flanked by Alpha and Omega. Divine Wisdom in perfect symmetry.`, renderFn: drawCoreCipher },
+            { id: "layer-5", title: "Cryptographic Matrix", subtitle: "The 888 & 24 Constant", type: "2d", description: `Maps integers: <strong>8, 8, 8, 12, 12, 3, 7</strong> matching Gematria and geometric structures.`, renderFn: drawCryptography },
+            { id: "layer-6", title: "4D Strassen Projection", subtitle: "Golden Clifford Toroid", type: "3d", className: "btn-4d", description: `<strong>The Nested Toroid:</strong> The entire 2D sigil mathematically projected into 4D Euclidean space ($\\mathbb{R}^{4}$).` }
+        ];
+
+        // --- GLOBAL STATE ---
+        const SVGCenter = 300, SVGSize = 600, svgNS = "http://www.w3.org/2000/svg";
+        const R_OuterRing = 265, R_Dodecagram = 215, R_Trinity = 155, R_Plenum = R_Trinity/1.8, R_Heptagram = 75;
+        let last2DLayer = null, isSidebarOpen = true;
+        let activeSettings = { bloom: false, sacredGeo: false, atmosphere: false, luxUI: false };
+
+        // Color State Map
+        const defaultColors = { primary: "#D4AF37", secondary: "#8e9eab", holo1: "#00d4ff", holo2: "#8A2BE2", void: "#090614" };
+
+        // 3D Engine Refs
+        let scene, camera, renderer, composer, torusGroup, controls, particleSystem;
+        let is3DInitialized = false, starNodes = [];
+        const materials3D = {}; // Store references for real-time color updates
+        
+        // Vortex System Refs
+        let isVortexActive = false;
+        let vortexProgress = 0;
+        let secondaryWeaveRings = [];
+
+        // --- 2D MATH ---
+        function polarToCartesian(cx, cy, r, deg) {
+            let rad = (deg - 90) * Math.PI / 180.0;
+            return { x: cx + (r * Math.cos(rad)), y: cy + (r * Math.sin(rad)) };
+        }
+        function createContinuousStarPath(pts, step, r) {
+            let path = "";
+            for(let i=0; i <= pts; i++) {
+                let coords = polarToCartesian(SVGCenter, SVGCenter, r, (i * step * (360/pts)) % 360);
+                path += (i === 0) ? `M ${coords.x} ${coords.y} ` : `L ${coords.x} ${coords.y} `;
+            }
+            return path;
+        }
+
+        // --- SVG GENERATION (Binding directly to CSS vars) ---
+        function initSVG(containerId) {
+            const container = document.getElementById(containerId);
+            container.innerHTML = '';
+            const svg = document.createElementNS(svgNS, "svg");
+            svg.setAttribute("viewBox", `0 0 ${SVGSize} ${SVGSize}`);
+            svg.setAttribute("width", "100%"); svg.setAttribute("height", "100%");
+            svg.setAttribute("class", "mx-auto");
+            
+            // Defs & Glow
+            const defs = document.createElementNS(svgNS, "defs");
+            const filter = document.createElementNS(svgNS, "filter");
+            filter.setAttribute("id", "sigilGlow");
+            filter.innerHTML = `<feGaussianBlur stdDeviation="3" result="blur" /><feComposite in="SourceGraphic" in2="blur" operator="over" />`;
+            defs.appendChild(filter);
+            svg.appendChild(defs);
+
+            // Sacred Geometry Construction Layer (Hidden by default)
+            const constructionGroup = document.createElementNS(svgNS, "g");
+            constructionGroup.setAttribute("id", "construction-layer");
+            constructionGroup.style.display = "none";
+            constructionGroup.style.opacity = "0.2";
+            constructionGroup.style.stroke = "var(--color-primary)";
+            constructionGroup.style.strokeWidth = "0.5";
+            constructionGroup.style.fill = "none";
+            [R_OuterRing, R_Dodecagram, R_Trinity, R_Plenum, R_Heptagram].forEach(r => {
+                const c = document.createElementNS(svgNS, "circle");
+                c.setAttribute("cx", SVGCenter); c.setAttribute("cy", SVGCenter); c.setAttribute("r", r);
+                constructionGroup.appendChild(c);
+            });
+            for(let i=0; i<12; i++) {
+                const l = document.createElementNS(svgNS, "line");
+                let end = polarToCartesian(SVGCenter, SVGCenter, R_OuterRing+25, i*30);
+                l.setAttribute("x1", SVGCenter); l.setAttribute("y1", SVGCenter); l.setAttribute("x2", end.x); l.setAttribute("y2", end.y);
+                constructionGroup.appendChild(l);
+            }
+            svg.appendChild(constructionGroup);
+
+            sigilLayers.forEach(l => { if(l.type === "2d") l.renderFn(svg); });
+            container.appendChild(svg);
+        }
+
+        function drawOuterRing(svg) {
+            const group = document.createElementNS(svgNS, "g");
+            group.setAttribute("id", "layer-1a"); group.classList.add("sigil-layer");
+
+            // Text Ring Group (For optional animation)
+            const textGroup = document.createElementNS(svgNS, "g");
+            textGroup.setAttribute("id", "text-ring-group");
+
+            const outerC = document.createElementNS(svgNS, "circle");
+            outerC.setAttribute("cx", SVGCenter); outerC.setAttribute("cy", SVGCenter); outerC.setAttribute("r", R_OuterRing + 25);
+            outerC.style.fill = "none"; outerC.style.stroke = "var(--color-primary)"; outerC.style.strokeWidth = "2"; outerC.style.opacity = "0.6";
+
+            const innerC = document.createElementNS(svgNS, "circle");
+            innerC.setAttribute("cx", SVGCenter); innerC.setAttribute("cy", SVGCenter); innerC.setAttribute("r", R_OuterRing - 15);
+            innerC.style.fill = "none"; innerC.style.stroke = "var(--color-primary)"; innerC.style.strokeWidth = "1.5"; innerC.style.opacity = "0.4";
+
+            const defs = document.createElementNS(svgNS, "defs");
+            const topPath = document.createElementNS(svgNS, "path");
+            topPath.setAttribute("id", "topPath"); topPath.setAttribute("d", `M ${SVGCenter - R_OuterRing},${SVGCenter} A ${R_OuterRing},${R_OuterRing} 0 0,1 ${SVGCenter + R_OuterRing},${SVGCenter}`);
+            const botPath = document.createElementNS(svgNS, "path");
+            botPath.setAttribute("id", "botPath"); botPath.setAttribute("d", `M ${SVGCenter - R_OuterRing},${SVGCenter} A ${R_OuterRing},${R_OuterRing} 0 0,0 ${SVGCenter + R_OuterRing},${SVGCenter}`);
+            defs.appendChild(topPath); defs.appendChild(botPath); textGroup.appendChild(defs);
+
+            const tTop = document.createElementNS(svgNS, "text");
+            tTop.style.fill = "var(--color-text)"; tTop.style.fontFamily = "Cinzel, serif"; tTop.style.fontSize = "30px"; tTop.style.letterSpacing = "6px";
+            tTop.innerHTML = `<textPath href="#topPath" startOffset="50%" text-anchor="middle" dominant-baseline="middle">• SIGILLVM ACADEMIAE VLULAE •</textPath>`;
+            
+            const tBot = document.createElementNS(svgNS, "text");
+            tBot.style.fill = "var(--color-text)"; tBot.style.fontFamily = "Cinzel, serif"; tBot.style.fontSize = "22px"; tBot.style.letterSpacing = "4px";
+            tBot.innerHTML = `<textPath href="#botPath" startOffset="50%" text-anchor="middle" dominant-baseline="middle">• FUNDAMENTA CAELI IN TERRA •</textPath>`;
+
+            textGroup.appendChild(outerC); textGroup.appendChild(innerC); textGroup.appendChild(tTop); textGroup.appendChild(tBot);
+            group.appendChild(textGroup); svg.appendChild(group);
+        }
+
+        function draw24Points(svg) {
+            const group = document.createElementNS(svgNS, "g");
+            group.setAttribute("id", "layer-1b"); group.classList.add("sigil-layer");
+            
+            const sStar = document.createElementNS(svgNS, "path");
+            sStar.setAttribute("d", createContinuousStarPath(12, 5, R_Dodecagram));
+            sStar.style.fill = "none"; sStar.style.stroke = "var(--color-primary)"; sStar.style.strokeWidth = "2";
+            
+            const dStar = document.createElementNS(svgNS, "path");
+            dStar.setAttribute("d", createContinuousStarPath(12, 5, R_Dodecagram));
+            dStar.style.fill = "none"; dStar.style.stroke = "var(--color-secondary)"; dStar.style.strokeWidth = "1.5"; dStar.style.strokeDasharray = "6 4";
+            dStar.setAttribute("transform", `rotate(15 ${SVGCenter} ${SVGCenter})`);
+            
+            group.appendChild(sStar); group.appendChild(dStar); svg.appendChild(group);
+        }
+
+        function drawMiddleGeometry(svg) {
+            const group = document.createElementNS(svgNS, "g");
+            group.setAttribute("id", "layer-2"); group.classList.add("sigil-layer");
+
+            const upTri = document.createElementNS(svgNS, "polygon");
+            let p1 = polarToCartesian(SVGCenter, SVGCenter, R_Trinity, 0), p2 = polarToCartesian(SVGCenter, SVGCenter, R_Trinity, 120), p3 = polarToCartesian(SVGCenter, SVGCenter, R_Trinity, 240);
+            upTri.setAttribute("points", `${p1.x},${p1.y} ${p2.x},${p2.y} ${p3.x},${p3.y}`);
+            upTri.style.fill = "color-mix(in srgb, var(--color-primary) 3%, transparent)"; upTri.style.stroke = "var(--color-primary)"; upTri.style.strokeWidth = "2.5";
+
+            const dnTri = document.createElementNS(svgNS, "polygon");
+            let d1 = polarToCartesian(SVGCenter, SVGCenter, R_Trinity, 180), d2 = polarToCartesian(SVGCenter, SVGCenter, R_Trinity, 300), d3 = polarToCartesian(SVGCenter, SVGCenter, R_Trinity, 60);
+            dnTri.setAttribute("points", `${d1.x},${d1.y} ${d2.x},${d2.y} ${d3.x},${d3.y}`);
+            dnTri.style.fill = "color-mix(in srgb, var(--color-secondary) 2%, transparent)"; dnTri.style.stroke = "var(--color-secondary)"; dnTri.style.strokeWidth = "1.5"; dnTri.style.strokeDasharray = "8 6";
+
+            group.appendChild(upTri); group.appendChild(dnTri); svg.appendChild(group);
+        }
+
+        function drawMotherPlenum(svg) {
+            const group = document.createElementNS(svgNS, "g");
+            group.setAttribute("id", "layer-3a"); group.classList.add("sigil-layer");
+
+            const pc = document.createElementNS(svgNS, "circle");
+            pc.setAttribute("cx", SVGCenter); pc.setAttribute("cy", SVGCenter); pc.setAttribute("r", R_Plenum);
+            pc.style.fill = "color-mix(in srgb, var(--color-void) 90%, transparent)"; pc.style.stroke = "var(--color-primary)"; pc.style.strokeWidth = "1.5"; pc.style.strokeDasharray = "4 4";
+            
+            group.appendChild(pc); svg.appendChild(group);
+        }
+
+        function draw7Star(svg) {
+            const group = document.createElementNS(svgNS, "g");
+            group.setAttribute("id", "layer-3b"); group.classList.add("sigil-layer");
+            
+            const h = document.createElementNS(svgNS, "path");
+            h.setAttribute("d", createContinuousStarPath(7, 3, R_Heptagram));
+            h.style.fill = "none"; h.style.stroke = "var(--color-primary)"; h.style.strokeWidth = "1.5";
+            
+            group.appendChild(h); svg.appendChild(group);
+        }
+
+        function drawCoreCipher(svg) {
+            const group = document.createElementNS(svgNS, "g");
+            group.setAttribute("id", "layer-4"); group.classList.add("sigil-layer");
+            // Glow applied via JS toggle later, but base group established
+            
+            const strokeW = "2.5";
+            
+            const stem = document.createElementNS(svgNS, "line");
+            stem.setAttribute("x1", SVGCenter); stem.setAttribute("y1", SVGCenter - 45); stem.setAttribute("x2", SVGCenter + 0.01); stem.setAttribute("y2", SVGCenter + 45);
+            stem.style.stroke = "var(--color-primary)"; stem.style.strokeWidth = strokeW; stem.style.strokeLinecap = "round"; stem.classList.add('cipher-element');
+
+            const rhoLoop = document.createElementNS(svgNS, "path");
+            rhoLoop.setAttribute("d", `M ${SVGCenter},${SVGCenter - 45} C ${SVGCenter + 28},${SVGCenter - 45} ${SVGCenter + 28},${SVGCenter - 12} ${SVGCenter},${SVGCenter - 12}`);
+            rhoLoop.style.fill = "none"; rhoLoop.style.stroke = "var(--color-primary)"; rhoLoop.style.strokeWidth = strokeW; rhoLoop.style.strokeLinecap = "round"; rhoLoop.classList.add('cipher-element');
+
+            const chi1 = document.createElementNS(svgNS, "line");
+            chi1.setAttribute("x1", SVGCenter - 25); chi1.setAttribute("y1", SVGCenter - 10); chi1.setAttribute("x2", SVGCenter + 25); chi1.setAttribute("y2", SVGCenter + 30);
+            chi1.style.stroke = "var(--color-primary)"; chi1.style.strokeWidth = strokeW; chi1.style.strokeLinecap = "round"; chi1.classList.add('cipher-element');
+
+            const chi2 = document.createElementNS(svgNS, "line");
+            chi2.setAttribute("x1", SVGCenter + 25); chi2.setAttribute("y1", SVGCenter - 10); chi2.setAttribute("x2", SVGCenter - 25); chi2.setAttribute("y2", SVGCenter + 30);
+            chi2.style.stroke = "var(--color-primary)"; chi2.style.strokeWidth = strokeW; chi2.style.strokeLinecap = "round"; chi2.classList.add('cipher-element');
+
+            const alpha = document.createElementNS(svgNS, "text");
+            alpha.setAttribute("x", SVGCenter - 35); alpha.setAttribute("y", SVGCenter + 20);
+            alpha.style.fill = "var(--color-text)"; alpha.style.fontFamily = "Cinzel, serif"; alpha.style.fontSize = "14px"; alpha.setAttribute("text-anchor", "middle"); alpha.textContent = "A";
+
+            const omega = document.createElementNS(svgNS, "text");
+            omega.setAttribute("x", SVGCenter + 35); omega.setAttribute("y", SVGCenter + 20);
+            omega.style.fill = "var(--color-text)"; omega.style.fontFamily = "Cinzel, serif"; omega.style.fontSize = "14px"; omega.setAttribute("text-anchor", "middle"); omega.textContent = "Ω";
+
+            group.appendChild(chi1); group.appendChild(chi2); group.appendChild(stem); group.appendChild(rhoLoop); group.appendChild(alpha); group.appendChild(omega);
+            svg.appendChild(group);
+        }
+
+        function drawCryptography(svg) {
+            const group = document.createElementNS(svgNS, "g");
+            group.setAttribute("id", "layer-5"); group.classList.add("sigil-layer");
+            
+            ['8', '8', '8', '12', '12', '3', '7'].forEach((num, i) => {
+                let c = polarToCartesian(SVGCenter, SVGCenter, R_Heptagram - 16, i * (360/7));
+                let t = document.createElementNS(svgNS, "text");
+                t.setAttribute("x", c.x); t.setAttribute("y", c.y + 4);
+                t.style.fill = "color-mix(in srgb, var(--color-text) 70%, transparent)"; t.style.fontFamily = "Cinzel, serif"; t.style.fontSize = "12px"; t.style.fontWeight = "600"; t.setAttribute("text-anchor", "middle");
+                t.textContent = num; group.appendChild(t);
+            });
+            svg.appendChild(group);
+        }
+
+
+        // --- 3D ENGINE ---
+        const phi = (1 + Math.sqrt(5)) / 2;
+        const r2_base = 1 / Math.sqrt(phi + 2), r1_base = phi / Math.sqrt(phi + 2);
+        
+        function project4Dto3D(theta, gamma) {
+            const d = 1.2 - (r2_base * Math.sin(gamma)); 
+            return new THREE.Vector3(((r1_base * Math.cos(theta)) / d) * 11, ((r1_base * Math.sin(theta)) / d) * 11, ((r2_base * Math.cos(gamma)) / d) * 11);
+        }
+
+        function init3D() {
+            if (is3DInitialized) return;
+            const container = document.getElementById('webgl-container');
+            
+            scene = new THREE.Scene();
+            camera = new THREE.PerspectiveCamera(60, container.clientWidth / container.clientHeight, 0.1, 100);
+            camera.position.set(0, 5, 22);
+
+            renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true, powerPreference: "high-performance" });
+            renderer.setSize(container.clientWidth, container.clientHeight);
+            renderer.setPixelRatio(window.devicePixelRatio);
+            container.appendChild(renderer.domElement);
+
+            controls = new THREE.OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true; controls.dampingFactor = 0.05; controls.autoRotateSpeed = 0.5;
+
+            // Post-Processing (Bloom)
+            const renderScene = new THREE.RenderPass(scene, camera);
+            const bloomPass = new THREE.UnrealBloomPass(new THREE.Vector2(container.clientWidth, container.clientHeight), 1.5, 0.4, 0.1);
+            composer = new THREE.EffectComposer(renderer);
+            composer.addPass(renderScene);
+            composer.addPass(bloomPass);
+
+            torusGroup = new THREE.Group(); torusGroup.rotation.x = 0.5; scene.add(torusGroup);
+
+            // Material Setup (Saved for color updates)
+            materials3D.holo1 = new THREE.LineBasicMaterial({ color: document.getElementById('col-holo1').value, transparent: true, opacity: 0.15, blending: THREE.AdditiveBlending });
+            materials3D.holo2 = new THREE.LineBasicMaterial({ color: document.getElementById('col-holo2').value, transparent: true, opacity: 0.15, blending: THREE.AdditiveBlending });
+            materials3D.primary = new THREE.MeshBasicMaterial({ color: document.getElementById('col-primary').value, transparent: true, opacity: 0.7 });
+            materials3D.secondary = new THREE.MeshBasicMaterial({ color: document.getElementById('col-secondary').value, transparent: true, opacity: 0.4 });
+            materials3D.anchor = new THREE.MeshBasicMaterial({ color: document.getElementById('col-holo2').value, transparent: true, opacity: 0.6, blending: THREE.AdditiveBlending });
+            materials3D.coreUp = new THREE.MeshBasicMaterial({ color: document.getElementById('col-primary').value, transparent: true, opacity: 0.1, side: THREE.DoubleSide, blending: THREE.AdditiveBlending });
+            materials3D.coreDn = new THREE.MeshBasicMaterial({ color: document.getElementById('col-holo1').value, transparent: true, opacity: 0.08, side: THREE.DoubleSide, blending: THREE.AdditiveBlending });
+            materials3D.starNodes = new THREE.MeshBasicMaterial({ color: 0xffffff });
+            materials3D.starGlow = new THREE.MeshBasicMaterial({ color: document.getElementById('col-holo2').value, transparent: true, opacity: 0.5, blending: THREE.AdditiveBlending });
+
+            // Plenums
+            for (let i = 0; i < 48; i++) {
+                const gamma = (i / 48) * Math.PI * 2, ptsH1 = [];
+                for (let j = 0; j <= 48; j++) ptsH1.push(project4Dto3D((j / 48) * Math.PI * 2, gamma));
+                torusGroup.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(ptsH1), materials3D.holo1));
+                
+                const theta = (i / 48) * Math.PI * 2, ptsH2 = [];
+                for (let j = 0; j <= 48; j++) ptsH2.push(project4Dto3D(theta, (j / 48) * Math.PI * 2));
+                torusGroup.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(ptsH2), materials3D.holo2));
+            }
+
+            // Streams
+            for (let i = 0; i < 12; i++) {
+                const off = (i / 12) * Math.PI * 2, pts1 = [], pts2 = [];
+                for (let j = 0; j <= 400; j++) {
+                    const t = (j / 400) * Math.PI * 2 * 13;
+                    pts1.push(project4Dto3D(phi * t + off, t));
+                    pts2.push(project4Dto3D(-phi * t + off, t));
+                }
+                torusGroup.add(new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts1), 400, 0.03, 4, false), materials3D.primary));
+                torusGroup.add(new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts2), 400, 0.03, 4, false), materials3D.secondary));
+            }
+
+            // Anchors
+            for (let i = 0; i < 3; i++) {
+                const pts = [];
+                for (let j = 0; j <= 100; j++) pts.push(project4Dto3D((i / 3) * Math.PI * 2, (j / 100) * Math.PI * 2));
+                torusGroup.add(new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), 100, 0.06, 6, true), materials3D.anchor));
+            }
+
+            // Cores
+            const triR = 4.5;
+            const uS = new THREE.Shape(); uS.moveTo(0, triR); uS.lineTo(triR*0.866, -triR*0.5); uS.lineTo(-triR*0.866, -triR*0.5);
+            torusGroup.add(new THREE.Mesh(new THREE.ShapeGeometry(uS), materials3D.coreUp));
+            const dS = new THREE.Shape(); dS.moveTo(0, -triR); dS.lineTo(triR*0.866, triR*0.5); dS.lineTo(-triR*0.866, triR*0.5);
+            torusGroup.add(new THREE.Mesh(new THREE.ShapeGeometry(dS), materials3D.coreDn));
+
+            const sCore = new THREE.Mesh(new THREE.SphereGeometry(0.3, 16, 16), new THREE.MeshBasicMaterial({color: 0xFFF8DC}));
+            sCore.add(new THREE.Mesh(new THREE.SphereGeometry(1.5, 32, 32), materials3D.coreUp));
+            torusGroup.add(sCore);
+
+            for(let i = 0; i < 7; i++) {
+                const n = new THREE.Mesh(new THREE.SphereGeometry(0.2, 16, 16), materials3D.starNodes);
+                n.add(new THREE.Mesh(new THREE.SphereGeometry(0.5, 16, 16), materials3D.starGlow));
+                torusGroup.add(n); starNodes.push(n);
+            }
+
+            // Secondary Weave Rings (Hyperbolic Connector)
+            const weaveMat = new THREE.MeshBasicMaterial({ color: document.getElementById('col-holo1').value, transparent: true, opacity: 0, blending: THREE.AdditiveBlending });
+            materials3D.weave = weaveMat; // Save for color updating
+            for(let i=0; i<3; i++) {
+                // Use TorusKnot for a weaving/braided connection look
+                const weaveRing = new THREE.Mesh(new THREE.TorusKnotGeometry(5, 0.04, 128, 16, 2, 5), weaveMat);
+                weaveRing.scale.set(0.01, 0.01, 0.01);
+                torusGroup.add(weaveRing);
+                secondaryWeaveRings.push(weaveRing);
+            }
+
+            // Particle System (For Deep Atmosphere)
+            const pGeo = new THREE.BufferGeometry();
+            const pArr = new Float32Array(2000 * 3);
+            for(let i=0; i<6000; i++) pArr[i] = (Math.random() - 0.5) * 40;
+            pGeo.setAttribute('position', new THREE.BufferAttribute(pArr, 3));
+            particleSystem = new THREE.Points(pGeo, new THREE.PointsMaterial({ color: 0xffffff, size: 0.05, transparent: true, opacity: 0.4 }));
+            particleSystem.visible = false;
+            scene.add(particleSystem);
+
+            window.addEventListener('resize', () => {
+                if (!is3DInitialized) return;
+                camera.aspect = container.clientWidth / container.clientHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(container.clientWidth, container.clientHeight);
+                composer.setSize(container.clientWidth, container.clientHeight);
+            });
+
+            is3DInitialized = true;
+            animate3D();
+        }
+
+        function animate3D() {
+            if (document.getElementById('view-3d').classList.contains('hidden-view')) {
+                requestAnimationFrame(animate3D); return; 
+            }
+            requestAnimationFrame(animate3D);
+            if (controls) controls.update();
+            
+            const time = Date.now() * 0.0004;
+            
+            // Smoothly lerp the transition state
+            vortexProgress += (isVortexActive ? 0.015 : -0.015);
+            vortexProgress = Math.max(0, Math.min(1, vortexProgress));
+            
+            // Animate Secondary Weave Rings
+            secondaryWeaveRings.forEach((ring, i) => {
+                const targetScale = 1.2 + Math.sin(time * 2 + i) * 0.1; // Cosmic Breathing effect
+                const currentScale = 0.01 + (targetScale * vortexProgress);
+                ring.scale.set(currentScale, currentScale, currentScale);
+                ring.rotation.y = time * 0.5 * (i % 2 === 0 ? 1 : -1);
+                ring.rotation.x = time * 0.2 + (i * Math.PI/3);
+                materials3D.weave.opacity = vortexProgress * 0.6;
+            });
+
+            starNodes.forEach((node, index) => {
+                const t = (time + ((index / 7) * Math.PI * 2)) * 5; 
+                
+                // Base Toroidal Projection
+                const normalPos = project4Dto3D(phi * t, t);
+                
+                // Hyperbolic Vortex Path (Helical Corkscrew)
+                // "Like planets wrapping around a sun travelling through space"
+                const vortexY = Math.sin(t * 0.3) * 8; // Travel up and down the central axis
+                const vortexR = 1.0 + Math.cos(t * 0.3) * 0.5; // Tighten radius at the extremities
+                const vortexX = Math.cos(t * 2) * vortexR;
+                const vortexZ = Math.sin(t * 2) * vortexR;
+                const helicalPos = new THREE.Vector3(vortexX, vortexY, vortexZ);
+                
+                // Seamlessly blend between Toroid surface and the inner Vortex Weave
+                node.position.lerpVectors(normalPos, helicalPos, vortexProgress);
+            });
+
+            if(particleSystem.visible) particleSystem.rotation.y = time * 0.1;
+
+            if (activeSettings.bloom) composer.render();
+            else renderer.render(scene, camera);
+        }
+
+        // --- APP UI & LOGIC ---
+        function initApp() {
+            initSVG('sigil-container');
+            const panel = document.getElementById('layers-panel');
+            sigilLayers.forEach((l) => {
+                const btn = document.createElement('div');
+                btn.className = `layer-btn p-5 rounded-lg cursor-pointer mb-4 ${l.className || ''}`;
+                btn.dataset.layerId = l.id; btn.dataset.type = l.type;
+                btn.innerHTML = `
+                    <div class="flex items-center justify-between mb-2 relative z-10">
+                        <h3 class="text-[0.95rem] font-bold text-slate-200 uppercase tracking-[0.1em]">${l.title}</h3>
+                        <span class="text-[0.65rem] md:text-xs text-yellow-600/80 mystical-font ${l.type==='3d'?'text-purple-400/80':''}">${l.subtitle}</span>
+                    </div>
+                    <div class="description-content text-sm text-slate-300 hidden mt-4 leading-relaxed border-t border-yellow-600/20 pt-4 relative z-10 font-light">${l.description}</div>`;
+                btn.addEventListener('click', () => selectLayer(l.id, l.type));
+                panel.appendChild(btn);
+            });
+            updateColors(); // Load default colors
+        }
+
+        function toggleSidebar() {
+            isSidebarOpen = !isSidebarOpen;
+            const sidebar = document.getElementById('sidebar-section'), inner = document.getElementById('sidebar-inner');
+            if (isSidebarOpen) {
+                sidebar.classList.remove('md:w-0', 'w-0'); sidebar.classList.add('md:w-[45%]', 'w-full');
+                setTimeout(() => { inner.classList.remove('opacity-0'); }, 150); 
+            } else {
+                sidebar.classList.remove('md:w-[45%]', 'w-full'); sidebar.classList.add('md:w-0', 'w-0');
+                inner.classList.add('opacity-0');
+            }
+            setTimeout(() => { window.dispatchEvent(new Event('resize')); }, 500); 
+        }
+
+        function toggleGlobal3D() {
+            const is3D = !document.getElementById('view-3d').classList.contains('hidden-view');
+            is3D ? selectLayer(last2DLayer, "2d") : selectLayer("layer-6", "3d");
+        }
+
+        function toggleVortex() {
+            isVortexActive = !isVortexActive;
+            const btn = document.getElementById('btn-vortex');
+            if (isVortexActive) {
+                btn.innerHTML = 'DEACTIVATE WEAVE';
+                btn.classList.replace('border-purple-500/50', 'border-cyan-400/80');
+                btn.classList.replace('text-purple-300', 'text-cyan-300');
+                btn.classList.replace('shadow-[0_0_20px_rgba(138,43,226,0.3)]', 'shadow-[0_0_25px_rgba(0,212,255,0.6)]');
+            } else {
+                btn.innerHTML = 'ACTIVATE HYPERBOLIC WEAVE';
+                btn.classList.replace('border-cyan-400/80', 'border-purple-500/50');
+                btn.classList.replace('text-cyan-300', 'text-purple-300');
+                btn.classList.replace('shadow-[0_0_25px_rgba(0,212,255,0.6)]', 'shadow-[0_0_20px_rgba(138,43,226,0.3)]');
+            }
+        }
+
+        function selectLayer(selectedId, type) {
+            const view2d = document.getElementById('view-2d'), view3d = document.getElementById('view-3d'), toggleBtn = document.getElementById('view-toggle-btn');
+            
+            if (type === "3d") {
+                view2d.classList.replace('visible-view', 'hidden-view'); view3d.classList.replace('hidden-view', 'visible-view');
+                toggleBtn.innerHTML = '<span class="mr-2 text-lg leading-none">◬</span> <span id="view-toggle-text">RETURN TO 2D</span>';
+                init3D(); setTimeout(() => { window.dispatchEvent(new Event('resize')); }, 50); 
+            } else {
+                last2DLayer = selectedId; 
+                view3d.classList.replace('visible-view', 'hidden-view'); view2d.classList.replace('hidden-view', 'visible-view');
+                toggleBtn.innerHTML = '<span class="mr-2 text-lg leading-none">⬡</span> <span id="view-toggle-text">ENTER 3D</span>';
+            }
+            
+            if (type === "2d") {
+                document.querySelectorAll('.sigil-layer').forEach(layer => {
+                    if (selectedId === null) { layer.classList.remove('layer-dimmed', 'layer-active'); }
+                    else {
+                        if (layer.id === selectedId) { layer.classList.remove('layer-dimmed'); layer.classList.add('layer-active'); layer.parentNode.appendChild(layer); }
+                        else { layer.classList.remove('layer-active'); layer.classList.add('layer-dimmed'); }
+                    }
+                });
+            }
+
+            document.querySelectorAll('.layer-btn').forEach(btn => {
+                const desc = btn.querySelector('.description-content');
+                if (selectedId && btn.dataset.layerId === selectedId) { btn.classList.add('active'); desc.classList.remove('hidden'); btn.scrollIntoView({ behavior: 'smooth', block: 'center' }); }
+                else { btn.classList.remove('active'); desc.classList.add('hidden'); }
+            });
+        }
+
+        // --- SETTINGS & CUSTOMIZATION LOGIC ---
+        function toggleSettings() {
+            const modal = document.getElementById('settings-modal'), content = document.getElementById('settings-content');
+            if(modal.classList.contains('hidden')) {
+                modal.classList.remove('hidden');
+                setTimeout(() => { modal.classList.remove('opacity-0'); content.classList.remove('scale-95'); }, 10);
+            } else {
+                modal.classList.add('opacity-0'); content.classList.add('scale-95');
+                setTimeout(() => { modal.classList.add('hidden'); }, 300);
+            }
+        }
+
+        function applySettings() {
+            activeSettings.bloom = document.getElementById('toggle-3d-fx').checked;
+            activeSettings.sacredGeo = document.getElementById('toggle-2d-fx').checked;
+            activeSettings.atmosphere = document.getElementById('toggle-atmo-fx').checked;
+            activeSettings.luxUI = document.getElementById('toggle-ui-fx').checked;
+
+            // 1. 3D Ethereal FX
+            if(controls) controls.autoRotate = activeSettings.bloom;
+            if(particleSystem) particleSystem.visible = activeSettings.bloom;
+            
+            // 2. Sacred Geometry 2D
+            const svgGroup = document.getElementById('sigil-container').querySelector('svg');
+            const constRing = document.getElementById('construction-layer');
+            const textRing = document.getElementById('text-ring-group');
+            const cipher = document.getElementById('layer-4');
+            
+            if(activeSettings.sacredGeo) {
+                svgGroup.classList.add('refined-geo');
+                constRing.style.display = 'block';
+                textRing.classList.add('spin-slow');
+                cipher.setAttribute('filter', 'url(#sigilGlow)');
+            } else {
+                svgGroup.classList.remove('refined-geo');
+                constRing.style.display = 'none';
+                textRing.classList.remove('spin-slow');
+                cipher.removeAttribute('filter');
+            }
+
+            // 3. Deep Atmosphere
+            document.body.classList.toggle('atmo-active', activeSettings.atmosphere);
+
+            // 4. Luxurious UI
+            document.body.classList.toggle('lux-ui-active', activeSettings.luxUI);
+        }
+
+        function updateColors() {
+            const root = document.documentElement;
+            const cPri = document.getElementById('col-primary').value;
+            const cSec = document.getElementById('col-secondary').value;
+            const cH1 = document.getElementById('col-holo1').value;
+            const cH2 = document.getElementById('col-holo2').value;
+            const cVoid = document.getElementById('col-void').value;
+
+            // Map to CSS Variables (Updates UI & SVG immediately)
+            root.style.setProperty('--color-primary', cPri);
+            root.style.setProperty('--color-secondary', cSec);
+            root.style.setProperty('--color-holo1', cH1);
+            root.style.setProperty('--color-holo2', cH2);
+            root.style.setProperty('--color-void', cVoid);
+            root.style.setProperty('--color-text', cPri); // Tie text to primary for now
+
+            // Push to Three.js Materials if initialized
+            if(is3DInitialized) {
+                materials3D.primary.color.set(cPri);
+                materials3D.secondary.color.set(cSec);
+                materials3D.holo1.color.set(cH1);
+                materials3D.holo2.color.set(cH2);
+                materials3D.anchor.color.set(cH2);
+                materials3D.coreUp.color.set(cPri);
+                materials3D.coreDn.color.set(cH1);
+                materials3D.starGlow.color.set(cH2);
+                if (materials3D.weave) materials3D.weave.color.set(cH1);
+                scene.fog.color.set(cVoid);
+            }
+        }
+
+        function resetColors() {
+            document.getElementById('col-primary').value = defaultColors.primary;
+            document.getElementById('col-secondary').value = defaultColors.secondary;
+            document.getElementById('col-holo1').value = defaultColors.holo1;
+            document.getElementById('col-holo2').value = defaultColors.holo2;
+            document.getElementById('col-void').value = defaultColors.void;
+            updateColors();
+        }
+
+        // Fallback for globalLogout in case scripts/auth.js is missing or blocked in the environment
+        if (typeof window.globalLogout === 'undefined') {
+            window.globalLogout = function() {
+                console.log("Severing connection...");
+                // Avoid location.href assignment in sandboxed iframe which causes URL resolution errors
+                document.body.innerHTML = '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;background:#05030a;color:#8A2BE2;font-family:monospace;letter-spacing:0.2em;"><h1>CONNECTION SEVERED</h1><br><a href="https://biochainai.github.io/Owl-Academy/Learning-Hub.html" style="color:#D4AF37;text-decoration:underline;margin-top:20px;">RETURN TO GRAND HALL</a></div>';
+            };
+        }
+
+        window.onload = initApp;
+    </script>
+</body>
+</html>
