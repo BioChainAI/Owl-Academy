@@ -1,0 +1,1239 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Owl Academy | Trefoil Quaternion Equilibrium</title>
+    
+    <!-- 1. SECURITY GUARD (Instantly protects the Module) -->
+    <script src="scripts/auth.js"></script>
+
+    <!-- Three.js & Controls -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <!-- Tailwind CSS Config -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        void: '#05030a',
+                        primary: '#D4AF37',
+                        cyan: '#00ffff',
+                        magenta: '#ff0055'
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        serif: ['Cinzel', 'serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                    }
+                }
+            }
+        }
+    </script>
+
+    <!-- MathJax -->
+    <script>
+    window.MathJax = {
+      tex: {
+        inlineMath: [['$', '$'], ['\\(', '\\)']],
+        displayMath: [['$$', '$$'], ['\\[', '\\]']],
+        processEscapes: true
+      },
+      options: {
+        ignoreHtmlClass: 'tex2jax_ignore',
+        processHtmlClass: 'tex2jax_process'
+      }
+    };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;700&display=swap');
+
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: #05030a;
+            color: #e2e8f0;
+            font-family: 'Inter', sans-serif;
+            display: flex;
+            height: 100vh;
+        }
+
+        .mystical-font { font-family: 'Cinzel', serif; }
+        .math-font { font-family: 'JetBrains Mono', monospace; }
+
+        /* Academy Style Overlays */
+        .glass-panel {
+            background: rgba(10, 8, 20, 0.6);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border-left: 1px solid rgba(212, 175, 55, 0.15);
+            box-shadow: -10px 0 30px rgba(0, 0, 0, 0.8);
+        }
+
+        /* Custom Scrollbar */
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(212, 175, 55, 0.4); border-radius: 4px; }
+
+        /* Sliders */
+        input[type="range"] {
+            -webkit-appearance: none;
+            width: 100%;
+            height: 2px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 2px;
+            outline: none;
+            margin-top: 8px;
+            margin-bottom: 16px;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #00ffff;
+            cursor: pointer;
+            box-shadow: 0 0 10px rgba(0, 255, 255, 0.5);
+            transition: transform 0.1s;
+        }
+        input[type="range"]::-webkit-slider-thumb:hover { transform: scale(1.3); }
+
+        /* Legend Interactive Styling */
+        .legend-item {
+            transition: all 0.2s ease;
+            cursor: pointer;
+            border-left-width: 3px;
+        }
+        .legend-item:hover {
+            background: rgba(255,255,255,0.05);
+            transform: translateX(4px);
+        }
+        .legend-item.active {
+            background: rgba(255,255,255,0.1);
+            box-shadow: 0 0 15px rgba(0,0,0,0.5);
+        }
+
+        .math-block {
+            background: rgba(0,0,0,0.4);
+            padding: 12px;
+            border-radius: 6px;
+            border: 1px solid rgba(255,255,255,0.05);
+            font-size: 0.85rem;
+            color: #D4AF37;
+            text-align: center;
+            margin: 12px 0;
+            box-shadow: inset 0 0 15px rgba(0,0,0,0.5);
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Global Navigation -->
+    <div class="absolute top-6 left-6 z-20 flex gap-3 pointer-events-auto">
+        <a href="Grand_Archives.html" class="bg-black/40 backdrop-blur-md border border-primary/30 text-primary text-[10px] uppercase tracking-widest px-5 py-2.5 rounded font-bold hover:bg-primary/20 hover:text-white transition-colors shadow-[0_0_15px_rgba(212,175,55,0.2)]">
+            ← Return to Archives
+        </a>
+    </div>
+
+    <!-- 3D Visualization Container -->
+    <div id="canvas-container" class="flex-grow relative">
+        <!-- Floating Interactive Legend -->
+        <div id="canvas-ui" class="absolute bottom-8 left-8 flex flex-col gap-2 pointer-events-none z-10">
+            <div id="phase-alpha" class="legend-item pointer-events-auto bg-black/60 backdrop-blur px-4 py-2 rounded border-[#ff0055] text-xs" onclick="highlightPhase(0)">
+                <strong class="text-white">Phase Alpha</strong> <span class="text-gray-400 font-mono">(Stream 1 + Inverse)</span>
+            </div>
+            <div id="phase-beta" class="legend-item pointer-events-auto bg-black/60 backdrop-blur px-4 py-2 rounded border-[#00f2ff] text-xs" onclick="highlightPhase(1)">
+                <strong class="text-white">Phase Beta</strong> <span class="text-gray-400 font-mono">(Stream 2 + Inverse)</span>
+            </div>
+            <div id="phase-gamma" class="legend-item pointer-events-auto bg-black/60 backdrop-blur px-4 py-2 rounded border-[#ffd700] text-xs" onclick="highlightPhase(2)">
+                <strong class="text-white">Phase Gamma</strong> <span class="text-gray-400 font-mono">(Stream 3 + Inverse)</span>
+            </div>
+            <div id="phase-delta" class="legend-item pointer-events-auto bg-black/60 backdrop-blur px-4 py-2 rounded border-white text-xs opacity-90" onclick="highlightPhase(3)">
+                <strong class="text-white">Emergent Phase 4</strong> <span class="text-gray-400 font-mono">(Quaternion Centroid)</span>
+            </div>
+            <div class="legend-item pointer-events-auto bg-black/40 backdrop-blur px-4 py-2 rounded border-transparent text-xs text-gray-400 hover:text-white mt-1" onclick="highlightPhase(-1)">
+                Reset Focus (Show All Streams)
+            </div>
+        </div>
+    </div>
+
+    <!-- Sidebar -->
+    <div id="sidebar" class="glass-panel w-full max-w-[420px] flex flex-col h-full relative z-20 custom-scrollbar pointer-events-auto">
+        
+        <!-- Academy Department Header -->
+        <div class="p-6 border-b border-white/5 bg-black/20">
+            <div class="text-[10px] text-primary tracking-[0.2em] uppercase font-bold mb-1">Department I</div>
+            <h1 class="text-2xl text-white mystical-font leading-tight">Triple Trefoil <br><span class="text-cyan">Equilibrium</span></h1>
+            <p class="text-xs text-gray-400 mt-2 font-light leading-relaxed">Interactive topological mapping of quaternion rotations across interwoven Clifford Torus structures.</p>
+        </div>
+
+        <div class="p-6 flex-grow overflow-y-auto custom-scrollbar">
+            
+            <div class="mb-8">
+                <h2 class="text-xs text-primary uppercase tracking-[0.15em] font-bold mb-4 flex items-center gap-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                    Quaternion Mechanics
+                </h2>
+                
+                <div>
+                    <label class="flex justify-between text-[10px] font-mono text-gray-400 uppercase">Micro-Twist Rotation <span id="val-twist" class="text-cyan font-bold">2.5</span></label>
+                    <input type="range" id="input-twist" min="0" max="15" step="0.01" value="2.5">
+                </div>
+
+                <div>
+                    <label class="flex justify-between text-[10px] font-mono text-gray-400 uppercase">Stream Expansion <span id="val-buckle" class="text-cyan font-bold">3.0</span></label>
+                    <input type="range" id="input-buckle" min="0.5" max="8.0" step="0.1" value="3.0">
+                </div>
+                
+                 <div>
+                    <label class="flex justify-between text-[10px] font-mono text-gray-400 uppercase">Inverse Separation <span id="val-pair-sep" class="text-cyan font-bold">0.8</span></label>
+                    <input type="range" id="input-pair-sep" min="0.1" max="2.0" step="0.1" value="0.8">
+                </div>
+            </div>
+
+            <div class="mb-8 border-t border-white/5 pt-6">
+                <h2 class="text-xs text-primary uppercase tracking-[0.15em] font-bold mb-4 flex items-center gap-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 10l-2 1m0 0l-2-1m2 1v2.5M20 7l-2 1m2-1l-2-1m2 1v2.5M14 4l-2-1-2 1M4 7l2-1M4 7l2 1M4 7v2.5M12 21l-2-1m2 1l2-1m-2 1v-2.5M6 18l-2-1v-2.5M18 18l2-1v-2.5"></path></svg>
+                    Topology Controls
+                </h2>
+                
+                <div>
+                    <label class="flex justify-between text-[10px] font-mono text-gray-400 uppercase">Torus Major Radius <span id="val-separation" class="text-cyan font-bold">25.0</span></label>
+                    <input type="range" id="input-separation" min="10" max="40" step="0.1" value="25.0">
+                </div>
+                
+                 <div>
+                    <label class="flex justify-between text-[10px] font-mono text-gray-400 uppercase">Knot Z-Scale <span id="val-zscale" class="text-cyan font-bold">12.0</span></label>
+                    <input type="range" id="input-zscale" min="5" max="30" step="0.1" value="12.0">
+                </div>
+                
+                <div>
+                    <label class="flex justify-between text-[10px] font-mono text-gray-400 uppercase">Kinematic Velocity <span id="val-speed" class="text-cyan font-bold">0.20</span></label>
+                    <input type="range" id="input-speed" min="0" max="2.0" step="0.01" value="0.2">
+                </div>
+
+                <label class="flex items-center gap-3 mt-4 text-xs text-gray-300 cursor-pointer font-mono tracking-wide hover:text-white transition-colors">
+                    <input type="checkbox" id="check-lattice" checked onchange="toggleLattice(this.checked)" class="w-4 h-4 accent-cyan cursor-pointer bg-black border-white/20">
+                    Render Orthogonal Lattice
+                </label>
+            </div>
+
+            <div class="mb-4 border-t border-white/5 pt-6">
+                <h2 class="text-xs text-primary uppercase tracking-[0.15em] font-bold mb-4">Geometric Theorem</h2>
+                <p class="text-[11px] text-gray-400 mb-4 leading-relaxed font-light">
+                    3 Interlaced Trefoils form a Clifford Torus skeleton. Within the SHD-CCP protocol, each structural loop carries a primary data stream and its exact negative inverse.
+                </p>
+                
+                <h3 class="text-xs text-white border-l-2 border-primary pl-2 mb-2 font-bold tracking-wide">Quaternion Rotation</h3>
+                <p class="text-[11px] text-gray-400 mb-2 leading-relaxed font-light">
+                    Instead of linear matrices, absolute position $P$ is rotated dynamically by quaternion $q$ derived directly from the localized Frenet frame:
+                </p>
+                <div class="math-block">
+                    $$ P' = q \cdot P \cdot q^{-1} $$
+                </div>
+
+                <h3 class="text-xs text-white border-l-2 border-primary pl-2 mt-6 mb-2 font-bold tracking-wide">Emergent 4th Phase</h3>
+                <p class="text-[11px] text-gray-400 mb-2 leading-relaxed font-light">
+                    The white luminescent core is the localized vector sum of the 3 pairs. In perfect topological equilibrium, it stabilizes perfectly at the singularity (Zero Point).
+                </p>
+                <div class="math-block">
+                    $$ \Psi_{4} = \sum_{k=1}^{3} (S_k + S_k^{-1}) $$
+                </div>
+                
+                <button id="reset-btn" onclick="resetCamera()" class="w-full mt-6 bg-white/5 hover:bg-white/10 border border-white/10 text-white text-[10px] font-bold py-3 rounded transition-all uppercase tracking-widest font-mono">
+                    Recalibrate Viewport
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- 1. Three.js Setup ---
+        const container = document.getElementById('canvas-container');
+        const scene = new THREE.Scene();
+        // Force Owl Academy Dark Void colors
+        scene.background = new THREE.Color(0x05030a);
+        scene.fog = new THREE.FogExp2(0x05030a, 0.006);
+        
+        // Camera
+        const camera = new THREE.PerspectiveCamera(50, container.clientWidth / container.clientHeight, 0.1, 2000);
+        const initialCameraPos = { x: 0, y: 0, z: 120 }; 
+        camera.position.set(initialCameraPos.x, initialCameraPos.y, initialCameraPos.z);
+        camera.lookAt(0, 0, 0);
+
+        // Renderer
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        renderer.setSize(container.clientWidth, container.clientHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        container.appendChild(renderer.domElement);
+
+        // Orbit Controls
+        const controls = new THREE.OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.05;
+        controls.target.set(0, 0, 0);
+        controls.autoRotate = true;
+        controls.autoRotateSpeed = 0.5;
+
+        // Lights
+        scene.add(new THREE.AmbientLight(0xffffff, 0.4));
+        const pLight = new THREE.PointLight(0xffffff, 1.2);
+        pLight.position.set(50, 50, 50);
+        scene.add(pLight);
+        const pLight2 = new THREE.PointLight(0x00f2ff, 0.8);
+        pLight2.position.set(-50, -50, 50);
+        scene.add(pLight2);
+        
+        // Lattice Group
+        const latticeGroup = new THREE.Group();
+        latticeGroup.visible = true; // Default On
+        scene.add(latticeGroup);
+
+        function createLattice() {
+            const size = 80;
+            const divisions = 4;
+            const step = size / divisions;
+            const offset = size / 2;
+            
+            const material = new THREE.LineBasicMaterial({ color: 0x444444, transparent: true, opacity: 0.15 });
+            const geometry = new THREE.BufferGeometry();
+            const vertices = [];
+
+            for (let i = 0; i <= divisions; i++) {
+                for (let j = 0; j <= divisions; j++) {
+                    const k = -offset + i * step;
+                    const l = -offset + j * step;
+                    vertices.push(k, -offset, l); vertices.push(k, offset, l);
+                    vertices.push(-offset, k, l); vertices.push(offset, k, l);
+                    vertices.push(l, k, -offset); vertices.push(l, k, offset);
+                }
+            }
+            geometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
+            latticeGroup.add(new THREE.LineSegments(geometry, material));
+            
+            // Nodes
+            const dotGeometry = new THREE.BufferGeometry();
+            const dotVertices = [];
+            for (let x = 0; x <= divisions; x++) {
+                for (let y = 0; y <= divisions; y++) {
+                    for (let z = 0; z <= divisions; z++) {
+                        dotVertices.push(-offset + x * step, -offset + y * step, -offset + z * step);
+                    }
+                }
+            }
+            dotGeometry.setAttribute('position', new THREE.Float32BufferAttribute(dotVertices, 3));
+            const dotMaterial = new THREE.PointsMaterial({ color: 0x666666, size: 0.8, transparent:true, opacity:0.3 });
+            latticeGroup.add(new THREE.Points(dotGeometry, dotMaterial));
+        }
+        createLattice();
+
+        // --- STREAMING_CHUNK: Trefoil Toroidal Mathematics ---
+
+        // Returns point on a Toroidal Trefoil
+        // R = Major Radius, r = Minor Radius
+        // Phase Offset allows interleaving 3 knots
+        function getTorusTrefoilPoint(t, R, zScale, phaseOffset) {
+            const minorR = 6.0; 
+            const tubeAngle = 3 * t + phaseOffset; 
+            const torusAngle = 2 * t;
+            
+            const r = minorR * Math.cos(tubeAngle); 
+            const z = minorR * Math.sin(tubeAngle); 
+            
+            const x = (R + r) * Math.cos(torusAngle);
+            const y = (R + r) * Math.sin(torusAngle);
+            
+            return new THREE.Vector3(x, y, z * (zScale/10.0));
+        }
+
+        function computeQuaternionFrame(t, R, zScale, phaseOffset) {
+            const epsilon = 0.01;
+            const p0 = getTorusTrefoilPoint(t, R, zScale, phaseOffset);
+            const p1 = getTorusTrefoilPoint(t + epsilon, R, zScale, phaseOffset);
+            
+            const T = new THREE.Vector3().subVectors(p1, p0).normalize();
+            
+            const p2 = getTorusTrefoilPoint(t + epsilon * 2, R, zScale, phaseOffset);
+            const T2 = new THREE.Vector3().subVectors(p2, p1).normalize();
+            const N = new THREE.Vector3().subVectors(T2, T).normalize();
+            
+            const B = new THREE.Vector3().crossVectors(T, N).normalize();
+            
+            const m = new THREE.Matrix4();
+            m.makeBasis(N, B, T);
+            const q = new THREE.Quaternion();
+            q.setFromRotationMatrix(m);
+            
+            return { p: p0, q: q };
+        }
+
+        class TwistorPair {
+            constructor(color, phaseOffset, particleCount) {
+                this.baseColor = color;
+                this.phaseOffset = phaseOffset;
+                this.particleCount = particleCount;
+                
+                this.streamA = this.createStreamMesh();
+                this.streamB = this.createStreamMesh();
+                
+                scene.add(this.streamA);
+                scene.add(this.streamB);
+                
+                this.currentPositionsA = [];
+                this.currentPositionsB = [];
+            }
+
+            createStreamMesh() {
+                const geometry = new THREE.BufferGeometry();
+                const positions = new Float32Array(this.particleCount * 3);
+                geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+                
+                const sprite = new THREE.TextureLoader().load('https://threejs.org/examples/textures/sprites/disc.png');
+                const material = new THREE.PointsMaterial({
+                    color: this.baseColor,
+                    size: 1.0,
+                    map: sprite,
+                    transparent: true,
+                    opacity: 0.8,
+                    alphaTest: 0.5
+                });
+                return new THREE.Points(geometry, material);
+            }
+            
+            setHighlight(active) {
+                const opacity = active ? 0.9 : 0.08;
+                const size = active ? 1.2 : 0.5;
+                this.streamA.material.opacity = opacity;
+                this.streamB.material.opacity = opacity;
+                this.streamA.material.size = size;
+                this.streamB.material.size = size;
+            }
+
+            update(time, state) {
+                const posA = this.streamA.geometry.attributes.position.array;
+                const posB = this.streamB.geometry.attributes.position.array;
+                
+                this.currentPositionsA = [];
+                this.currentPositionsB = [];
+                
+                for(let i=0; i<this.particleCount; i++) {
+                    const tOffset = (i / this.particleCount) * Math.PI * 2;
+                    const t = (tOffset + time * state.speed) % (Math.PI * 2);
+                    
+                    const frame = computeQuaternionFrame(t, state.phaseSep, state.zScale, this.phaseOffset);
+                    
+                    const buckleRadius = state.buckle;
+                    const vLocal = new THREE.Vector3(buckleRadius, 0, 0);
+                    
+                    const twistAngle = t * state.microTwist;
+                    const sepAngle = state.pairSep * 0.5;
+                    
+                    const qTwistA = new THREE.Quaternion();
+                    qTwistA.setFromAxisAngle(new THREE.Vector3(0, 0, 1), twistAngle + sepAngle);
+                    
+                    const qTwistB = new THREE.Quaternion();
+                    qTwistB.setFromAxisAngle(new THREE.Vector3(0, 0, 1), twistAngle + Math.PI - sepAngle);
+                    
+                    const vA = vLocal.clone().applyQuaternion(qTwistA);
+                    const vB = vLocal.clone().applyQuaternion(qTwistB);
+                    
+                    vA.applyQuaternion(frame.q);
+                    vB.applyQuaternion(frame.q);
+                    
+                    const finalA = new THREE.Vector3().addVectors(frame.p, vA);
+                    const finalB = new THREE.Vector3().addVectors(frame.p, vB);
+
+                    posA[i*3] = finalA.x; posA[i*3+1] = finalA.y; posA[i*3+2] = finalA.z;
+                    posB[i*3] = finalB.x; posB[i*3+1] = finalB.y; posB[i*3+2] = finalB.z;
+                    
+                    if(i % 10 === 0) { 
+                        this.currentPositionsA.push(finalA);
+                        this.currentPositionsB.push(finalB);
+                    }
+                }
+                
+                this.streamA.geometry.attributes.position.needsUpdate = true;
+                this.streamB.geometry.attributes.position.needsUpdate = true;
+            }
+        }
+
+        // --- STREAMING_CHUNK: Emergent Phase 4 Centroid Calculation ---
+        class EmergentCore {
+            constructor() {
+                const geometry = new THREE.BufferGeometry();
+                const count = 50; 
+                const positions = new Float32Array(count * 3);
+                geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+                
+                const sprite = new THREE.TextureLoader().load('https://threejs.org/examples/textures/sprites/spark1.png');
+                const material = new THREE.PointsMaterial({
+                    color: 0xffffff,
+                    size: 2.5,
+                    map: sprite,
+                    transparent: true,
+                    opacity: 0.9,
+                    blending: THREE.AdditiveBlending
+                });
+                
+                this.mesh = new THREE.Points(geometry, material);
+                scene.add(this.mesh);
+            }
+            
+            update(pairs) {
+                const positions = this.mesh.geometry.attributes.position.array;
+                const count = positions.length / 3;
+                
+                for(let i=0; i<count; i++) {
+                    let sumX=0, sumY=0, sumZ=0;
+                    let total = 0;
+                    
+                    pairs.forEach(pair => {
+                        if(pair.currentPositionsA[i]) {
+                            sumX += pair.currentPositionsA[i].x + pair.currentPositionsB[i].x;
+                            sumY += pair.currentPositionsA[i].y + pair.currentPositionsB[i].y;
+                            sumZ += pair.currentPositionsA[i].z + pair.currentPositionsB[i].z;
+                            total += 2;
+                        }
+                    });
+                    
+                    if(total > 0) {
+                        positions[i*3] = sumX / total;
+                        positions[i*3+1] = sumY / total;
+                        positions[i*3+2] = sumZ / total;
+                    }
+                }
+                this.mesh.geometry.attributes.position.needsUpdate = true;
+            }
+            
+            setHighlight(active) {
+                this.mesh.material.opacity = active ? 1.0 : 0.1;
+                this.mesh.material.size = active ? 3.5 : 1.0;
+            }
+        }
+
+        // --- Instantiation ---
+        const pair1 = new TwistorPair(0xff0055, 0, 250);             // Magenta
+        const pair2 = new TwistorPair(0x00ffff, (Math.PI*2)/3, 250); // Cyan
+        const pair3 = new TwistorPair(0xD4AF37, (Math.PI*4)/3, 250); // Gold
+        
+        const pairs = [pair1, pair2, pair3];
+        const emergentCore = new EmergentCore();
+
+        // --- STREAMING_CHUNK: State & Controls Bindings ---
+        const state = {
+            microTwist: 2.5,
+            buckle: 3.0,
+            pairSep: 0.8,
+            phaseSep: 25.0, 
+            zScale: 12.0,
+            speed: 0.2
+        };
+        
+        let time = 0;
+
+        function bind(id, key) {
+            const el = document.getElementById(id);
+            el.addEventListener('input', (e) => {
+                state[key] = parseFloat(e.target.value);
+                const label = document.getElementById(id.replace('input-', 'val-'));
+                if(label) {
+                    // Formatting specific to speed to show trailing zero
+                    label.innerText = key === 'speed' ? state[key].toFixed(2) : state[key].toFixed(1);
+                }
+            });
+        }
+
+        bind('input-twist', 'microTwist');
+        bind('input-buckle', 'buckle');
+        bind('input-pair-sep', 'pairSep');
+        bind('input-separation', 'phaseSep');
+        bind('input-zscale', 'zScale');
+        bind('input-speed', 'speed');
+
+        window.resetCamera = function() {
+            camera.position.set(initialCameraPos.x, initialCameraPos.y, initialCameraPos.z);
+            camera.lookAt(0, 0, 0);
+            controls.target.set(0, 0, 0);
+            controls.update();
+        };
+
+        window.toggleLattice = function(checked) {
+            latticeGroup.visible = checked;
+        };
+
+        window.highlightPhase = function(index) {
+            if (index === 3) {
+                pairs.forEach(p => p.setHighlight(false));
+                emergentCore.setHighlight(true);
+            } else {
+                pairs.forEach((p, i) => {
+                    if (index === -1) p.setHighlight(true);
+                    else p.setHighlight(i === index);
+                });
+                emergentCore.setHighlight(index === -1);
+            }
+            
+            const ids = ['phase-alpha', 'phase-beta', 'phase-gamma', 'phase-delta'];
+            ids.forEach((id, i) => {
+                const el = document.getElementById(id);
+                if (index === -1) {
+                    el.classList.remove('active');
+                } else {
+                    if (i === index) el.classList.add('active');
+                    else el.classList.remove('active');
+                }
+            });
+        };
+
+        // --- STREAMING_CHUNK: Animation Loop ---
+        function animate() {
+            requestAnimationFrame(animate);
+            time += 0.05;
+            
+            pairs.forEach(p => p.update(time, state));
+            emergentCore.update(pairs);
+            
+            controls.update();
+            renderer.render(scene, camera);
+        }
+        
+        window.addEventListener('resize', () => {
+            const width = container.clientWidth;
+            const height = container.clientHeight;
+            camera.aspect = width / height;
+            camera.updateProjectionMatrix();
+            renderer.setSize(width, height);
+        });
+
+        animate();
+
+    </script>
+</body>
+</html><!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Owl Academy | Trefoil Quaternion Equilibrium</title>
+    
+    <!-- 1. SECURITY GUARD (Instantly protects the Module) -->
+    <script src="scripts/auth.js"></script>
+
+    <!-- Three.js & Controls -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <!-- Tailwind CSS Config -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        void: '#05030a',
+                        primary: '#D4AF37',
+                        cyan: '#00ffff',
+                        magenta: '#ff0055'
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        serif: ['Cinzel', 'serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                    }
+                }
+            }
+        }
+    </script>
+
+    <!-- MathJax -->
+    <script>
+    window.MathJax = {
+      tex: {
+        inlineMath: [['$', '$'], ['\\(', '\\)']],
+        displayMath: [['$$', '$$'], ['\\[', '\\]']],
+        processEscapes: true
+      },
+      options: {
+        ignoreHtmlClass: 'tex2jax_ignore',
+        processHtmlClass: 'tex2jax_process'
+      }
+    };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;700&display=swap');
+
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: #05030a;
+            color: #e2e8f0;
+            font-family: 'Inter', sans-serif;
+            display: flex;
+            height: 100vh;
+        }
+
+        .mystical-font { font-family: 'Cinzel', serif; }
+        .math-font { font-family: 'JetBrains Mono', monospace; }
+
+        /* Academy Style Overlays */
+        .glass-panel {
+            background: rgba(10, 8, 20, 0.6);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border-left: 1px solid rgba(212, 175, 55, 0.15);
+            box-shadow: -10px 0 30px rgba(0, 0, 0, 0.8);
+        }
+
+        /* Custom Scrollbar */
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(212, 175, 55, 0.4); border-radius: 4px; }
+
+        /* Sliders */
+        input[type="range"] {
+            -webkit-appearance: none;
+            width: 100%;
+            height: 2px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 2px;
+            outline: none;
+            margin-top: 8px;
+            margin-bottom: 16px;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #00ffff;
+            cursor: pointer;
+            box-shadow: 0 0 10px rgba(0, 255, 255, 0.5);
+            transition: transform 0.1s;
+        }
+        input[type="range"]::-webkit-slider-thumb:hover { transform: scale(1.3); }
+
+        /* Legend Interactive Styling */
+        .legend-item {
+            transition: all 0.2s ease;
+            cursor: pointer;
+            border-left-width: 3px;
+        }
+        .legend-item:hover {
+            background: rgba(255,255,255,0.05);
+            transform: translateX(4px);
+        }
+        .legend-item.active {
+            background: rgba(255,255,255,0.1);
+            box-shadow: 0 0 15px rgba(0,0,0,0.5);
+        }
+
+        .math-block {
+            background: rgba(0,0,0,0.4);
+            padding: 12px;
+            border-radius: 6px;
+            border: 1px solid rgba(255,255,255,0.05);
+            font-size: 0.85rem;
+            color: #D4AF37;
+            text-align: center;
+            margin: 12px 0;
+            box-shadow: inset 0 0 15px rgba(0,0,0,0.5);
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Global Navigation -->
+    <div class="absolute top-6 left-6 z-20 flex gap-3 pointer-events-auto">
+        <a href="Grand_Archives.html" class="bg-black/40 backdrop-blur-md border border-primary/30 text-primary text-[10px] uppercase tracking-widest px-5 py-2.5 rounded font-bold hover:bg-primary/20 hover:text-white transition-colors shadow-[0_0_15px_rgba(212,175,55,0.2)]">
+            ← Return to Archives
+        </a>
+    </div>
+
+    <!-- 3D Visualization Container -->
+    <div id="canvas-container" class="flex-grow relative">
+        <!-- Floating Interactive Legend -->
+        <div id="canvas-ui" class="absolute bottom-8 left-8 flex flex-col gap-2 pointer-events-none z-10">
+            <div id="phase-alpha" class="legend-item pointer-events-auto bg-black/60 backdrop-blur px-4 py-2 rounded border-[#ff0055] text-xs" onclick="highlightPhase(0)">
+                <strong class="text-white">Phase Alpha</strong> <span class="text-gray-400 font-mono">(Stream 1 + Inverse)</span>
+            </div>
+            <div id="phase-beta" class="legend-item pointer-events-auto bg-black/60 backdrop-blur px-4 py-2 rounded border-[#00f2ff] text-xs" onclick="highlightPhase(1)">
+                <strong class="text-white">Phase Beta</strong> <span class="text-gray-400 font-mono">(Stream 2 + Inverse)</span>
+            </div>
+            <div id="phase-gamma" class="legend-item pointer-events-auto bg-black/60 backdrop-blur px-4 py-2 rounded border-[#ffd700] text-xs" onclick="highlightPhase(2)">
+                <strong class="text-white">Phase Gamma</strong> <span class="text-gray-400 font-mono">(Stream 3 + Inverse)</span>
+            </div>
+            <div id="phase-delta" class="legend-item pointer-events-auto bg-black/60 backdrop-blur px-4 py-2 rounded border-white text-xs opacity-90" onclick="highlightPhase(3)">
+                <strong class="text-white">Emergent Phase 4</strong> <span class="text-gray-400 font-mono">(Quaternion Centroid)</span>
+            </div>
+            <div class="legend-item pointer-events-auto bg-black/40 backdrop-blur px-4 py-2 rounded border-transparent text-xs text-gray-400 hover:text-white mt-1" onclick="highlightPhase(-1)">
+                Reset Focus (Show All Streams)
+            </div>
+        </div>
+    </div>
+
+    <!-- Sidebar -->
+    <div id="sidebar" class="glass-panel w-full max-w-[420px] flex flex-col h-full relative z-20 custom-scrollbar pointer-events-auto">
+        
+        <!-- Academy Department Header -->
+        <div class="p-6 border-b border-white/5 bg-black/20">
+            <div class="text-[10px] text-primary tracking-[0.2em] uppercase font-bold mb-1">Department I</div>
+            <h1 class="text-2xl text-white mystical-font leading-tight">Triple Trefoil <br><span class="text-cyan">Equilibrium</span></h1>
+            <p class="text-xs text-gray-400 mt-2 font-light leading-relaxed">Interactive topological mapping of quaternion rotations across interwoven Clifford Torus structures.</p>
+        </div>
+
+        <div class="p-6 flex-grow overflow-y-auto custom-scrollbar">
+            
+            <div class="mb-8">
+                <h2 class="text-xs text-primary uppercase tracking-[0.15em] font-bold mb-4 flex items-center gap-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                    Quaternion Mechanics
+                </h2>
+                
+                <div>
+                    <label class="flex justify-between text-[10px] font-mono text-gray-400 uppercase">Micro-Twist Rotation <span id="val-twist" class="text-cyan font-bold">2.5</span></label>
+                    <input type="range" id="input-twist" min="0" max="15" step="0.01" value="2.5">
+                </div>
+
+                <div>
+                    <label class="flex justify-between text-[10px] font-mono text-gray-400 uppercase">Stream Expansion <span id="val-buckle" class="text-cyan font-bold">3.0</span></label>
+                    <input type="range" id="input-buckle" min="0.5" max="8.0" step="0.1" value="3.0">
+                </div>
+                
+                 <div>
+                    <label class="flex justify-between text-[10px] font-mono text-gray-400 uppercase">Inverse Separation <span id="val-pair-sep" class="text-cyan font-bold">0.8</span></label>
+                    <input type="range" id="input-pair-sep" min="0.1" max="2.0" step="0.1" value="0.8">
+                </div>
+            </div>
+
+            <div class="mb-8 border-t border-white/5 pt-6">
+                <h2 class="text-xs text-primary uppercase tracking-[0.15em] font-bold mb-4 flex items-center gap-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 10l-2 1m0 0l-2-1m2 1v2.5M20 7l-2 1m2-1l-2-1m2 1v2.5M14 4l-2-1-2 1M4 7l2-1M4 7l2 1M4 7v2.5M12 21l-2-1m2 1l2-1m-2 1v-2.5M6 18l-2-1v-2.5M18 18l2-1v-2.5"></path></svg>
+                    Topology Controls
+                </h2>
+                
+                <div>
+                    <label class="flex justify-between text-[10px] font-mono text-gray-400 uppercase">Torus Major Radius <span id="val-separation" class="text-cyan font-bold">25.0</span></label>
+                    <input type="range" id="input-separation" min="10" max="40" step="0.1" value="25.0">
+                </div>
+                
+                 <div>
+                    <label class="flex justify-between text-[10px] font-mono text-gray-400 uppercase">Knot Z-Scale <span id="val-zscale" class="text-cyan font-bold">12.0</span></label>
+                    <input type="range" id="input-zscale" min="5" max="30" step="0.1" value="12.0">
+                </div>
+                
+                <div>
+                    <label class="flex justify-between text-[10px] font-mono text-gray-400 uppercase">Kinematic Velocity <span id="val-speed" class="text-cyan font-bold">0.20</span></label>
+                    <input type="range" id="input-speed" min="0" max="2.0" step="0.01" value="0.2">
+                </div>
+
+                <label class="flex items-center gap-3 mt-4 text-xs text-gray-300 cursor-pointer font-mono tracking-wide hover:text-white transition-colors">
+                    <input type="checkbox" id="check-lattice" checked onchange="toggleLattice(this.checked)" class="w-4 h-4 accent-cyan cursor-pointer bg-black border-white/20">
+                    Render Orthogonal Lattice
+                </label>
+            </div>
+
+            <div class="mb-4 border-t border-white/5 pt-6">
+                <h2 class="text-xs text-primary uppercase tracking-[0.15em] font-bold mb-4">Geometric Theorem</h2>
+                <p class="text-[11px] text-gray-400 mb-4 leading-relaxed font-light">
+                    3 Interlaced Trefoils form a Clifford Torus skeleton. Within the SHD-CCP protocol, each structural loop carries a primary data stream and its exact negative inverse.
+                </p>
+                
+                <h3 class="text-xs text-white border-l-2 border-primary pl-2 mb-2 font-bold tracking-wide">Quaternion Rotation</h3>
+                <p class="text-[11px] text-gray-400 mb-2 leading-relaxed font-light">
+                    Instead of linear matrices, absolute position $P$ is rotated dynamically by quaternion $q$ derived directly from the localized Frenet frame:
+                </p>
+                <div class="math-block">
+                    $$ P' = q \cdot P \cdot q^{-1} $$
+                </div>
+
+                <h3 class="text-xs text-white border-l-2 border-primary pl-2 mt-6 mb-2 font-bold tracking-wide">Emergent 4th Phase</h3>
+                <p class="text-[11px] text-gray-400 mb-2 leading-relaxed font-light">
+                    The white luminescent core is the localized vector sum of the 3 pairs. In perfect topological equilibrium, it stabilizes perfectly at the singularity (Zero Point).
+                </p>
+                <div class="math-block">
+                    $$ \Psi_{4} = \sum_{k=1}^{3} (S_k + S_k^{-1}) $$
+                </div>
+                
+                <button id="reset-btn" onclick="resetCamera()" class="w-full mt-6 bg-white/5 hover:bg-white/10 border border-white/10 text-white text-[10px] font-bold py-3 rounded transition-all uppercase tracking-widest font-mono">
+                    Recalibrate Viewport
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- 1. Three.js Setup ---
+        const container = document.getElementById('canvas-container');
+        const scene = new THREE.Scene();
+        // Force Owl Academy Dark Void colors
+        scene.background = new THREE.Color(0x05030a);
+        scene.fog = new THREE.FogExp2(0x05030a, 0.006);
+        
+        // Camera
+        const camera = new THREE.PerspectiveCamera(50, container.clientWidth / container.clientHeight, 0.1, 2000);
+        const initialCameraPos = { x: 0, y: 0, z: 120 }; 
+        camera.position.set(initialCameraPos.x, initialCameraPos.y, initialCameraPos.z);
+        camera.lookAt(0, 0, 0);
+
+        // Renderer
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        renderer.setSize(container.clientWidth, container.clientHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        container.appendChild(renderer.domElement);
+
+        // Orbit Controls
+        const controls = new THREE.OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.05;
+        controls.target.set(0, 0, 0);
+        controls.autoRotate = true;
+        controls.autoRotateSpeed = 0.5;
+
+        // Lights
+        scene.add(new THREE.AmbientLight(0xffffff, 0.4));
+        const pLight = new THREE.PointLight(0xffffff, 1.2);
+        pLight.position.set(50, 50, 50);
+        scene.add(pLight);
+        const pLight2 = new THREE.PointLight(0x00f2ff, 0.8);
+        pLight2.position.set(-50, -50, 50);
+        scene.add(pLight2);
+        
+        // Lattice Group
+        const latticeGroup = new THREE.Group();
+        latticeGroup.visible = true; // Default On
+        scene.add(latticeGroup);
+
+        function createLattice() {
+            const size = 80;
+            const divisions = 4;
+            const step = size / divisions;
+            const offset = size / 2;
+            
+            const material = new THREE.LineBasicMaterial({ color: 0x444444, transparent: true, opacity: 0.15 });
+            const geometry = new THREE.BufferGeometry();
+            const vertices = [];
+
+            for (let i = 0; i <= divisions; i++) {
+                for (let j = 0; j <= divisions; j++) {
+                    const k = -offset + i * step;
+                    const l = -offset + j * step;
+                    vertices.push(k, -offset, l); vertices.push(k, offset, l);
+                    vertices.push(-offset, k, l); vertices.push(offset, k, l);
+                    vertices.push(l, k, -offset); vertices.push(l, k, offset);
+                }
+            }
+            geometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
+            latticeGroup.add(new THREE.LineSegments(geometry, material));
+            
+            // Nodes
+            const dotGeometry = new THREE.BufferGeometry();
+            const dotVertices = [];
+            for (let x = 0; x <= divisions; x++) {
+                for (let y = 0; y <= divisions; y++) {
+                    for (let z = 0; z <= divisions; z++) {
+                        dotVertices.push(-offset + x * step, -offset + y * step, -offset + z * step);
+                    }
+                }
+            }
+            dotGeometry.setAttribute('position', new THREE.Float32BufferAttribute(dotVertices, 3));
+            const dotMaterial = new THREE.PointsMaterial({ color: 0x666666, size: 0.8, transparent:true, opacity:0.3 });
+            latticeGroup.add(new THREE.Points(dotGeometry, dotMaterial));
+        }
+        createLattice();
+
+        // --- STREAMING_CHUNK: Trefoil Toroidal Mathematics ---
+
+        // Returns point on a Toroidal Trefoil
+        // R = Major Radius, r = Minor Radius
+        // Phase Offset allows interleaving 3 knots
+        function getTorusTrefoilPoint(t, R, zScale, phaseOffset) {
+            const minorR = 6.0; 
+            const tubeAngle = 3 * t + phaseOffset; 
+            const torusAngle = 2 * t;
+            
+            const r = minorR * Math.cos(tubeAngle); 
+            const z = minorR * Math.sin(tubeAngle); 
+            
+            const x = (R + r) * Math.cos(torusAngle);
+            const y = (R + r) * Math.sin(torusAngle);
+            
+            return new THREE.Vector3(x, y, z * (zScale/10.0));
+        }
+
+        function computeQuaternionFrame(t, R, zScale, phaseOffset) {
+            const epsilon = 0.01;
+            const p0 = getTorusTrefoilPoint(t, R, zScale, phaseOffset);
+            const p1 = getTorusTrefoilPoint(t + epsilon, R, zScale, phaseOffset);
+            
+            const T = new THREE.Vector3().subVectors(p1, p0).normalize();
+            
+            const p2 = getTorusTrefoilPoint(t + epsilon * 2, R, zScale, phaseOffset);
+            const T2 = new THREE.Vector3().subVectors(p2, p1).normalize();
+            const N = new THREE.Vector3().subVectors(T2, T).normalize();
+            
+            const B = new THREE.Vector3().crossVectors(T, N).normalize();
+            
+            const m = new THREE.Matrix4();
+            m.makeBasis(N, B, T);
+            const q = new THREE.Quaternion();
+            q.setFromRotationMatrix(m);
+            
+            return { p: p0, q: q };
+        }
+
+        class TwistorPair {
+            constructor(color, phaseOffset, particleCount) {
+                this.baseColor = color;
+                this.phaseOffset = phaseOffset;
+                this.particleCount = particleCount;
+                
+                this.streamA = this.createStreamMesh();
+                this.streamB = this.createStreamMesh();
+                
+                scene.add(this.streamA);
+                scene.add(this.streamB);
+                
+                this.currentPositionsA = [];
+                this.currentPositionsB = [];
+            }
+
+            createStreamMesh() {
+                const geometry = new THREE.BufferGeometry();
+                const positions = new Float32Array(this.particleCount * 3);
+                geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+                
+                const sprite = new THREE.TextureLoader().load('https://threejs.org/examples/textures/sprites/disc.png');
+                const material = new THREE.PointsMaterial({
+                    color: this.baseColor,
+                    size: 1.0,
+                    map: sprite,
+                    transparent: true,
+                    opacity: 0.8,
+                    alphaTest: 0.5
+                });
+                return new THREE.Points(geometry, material);
+            }
+            
+            setHighlight(active) {
+                const opacity = active ? 0.9 : 0.08;
+                const size = active ? 1.2 : 0.5;
+                this.streamA.material.opacity = opacity;
+                this.streamB.material.opacity = opacity;
+                this.streamA.material.size = size;
+                this.streamB.material.size = size;
+            }
+
+            update(time, state) {
+                const posA = this.streamA.geometry.attributes.position.array;
+                const posB = this.streamB.geometry.attributes.position.array;
+                
+                this.currentPositionsA = [];
+                this.currentPositionsB = [];
+                
+                for(let i=0; i<this.particleCount; i++) {
+                    const tOffset = (i / this.particleCount) * Math.PI * 2;
+                    const t = (tOffset + time * state.speed) % (Math.PI * 2);
+                    
+                    const frame = computeQuaternionFrame(t, state.phaseSep, state.zScale, this.phaseOffset);
+                    
+                    const buckleRadius = state.buckle;
+                    const vLocal = new THREE.Vector3(buckleRadius, 0, 0);
+                    
+                    const twistAngle = t * state.microTwist;
+                    const sepAngle = state.pairSep * 0.5;
+                    
+                    const qTwistA = new THREE.Quaternion();
+                    qTwistA.setFromAxisAngle(new THREE.Vector3(0, 0, 1), twistAngle + sepAngle);
+                    
+                    const qTwistB = new THREE.Quaternion();
+                    qTwistB.setFromAxisAngle(new THREE.Vector3(0, 0, 1), twistAngle + Math.PI - sepAngle);
+                    
+                    const vA = vLocal.clone().applyQuaternion(qTwistA);
+                    const vB = vLocal.clone().applyQuaternion(qTwistB);
+                    
+                    vA.applyQuaternion(frame.q);
+                    vB.applyQuaternion(frame.q);
+                    
+                    const finalA = new THREE.Vector3().addVectors(frame.p, vA);
+                    const finalB = new THREE.Vector3().addVectors(frame.p, vB);
+
+                    posA[i*3] = finalA.x; posA[i*3+1] = finalA.y; posA[i*3+2] = finalA.z;
+                    posB[i*3] = finalB.x; posB[i*3+1] = finalB.y; posB[i*3+2] = finalB.z;
+                    
+                    if(i % 10 === 0) { 
+                        this.currentPositionsA.push(finalA);
+                        this.currentPositionsB.push(finalB);
+                    }
+                }
+                
+                this.streamA.geometry.attributes.position.needsUpdate = true;
+                this.streamB.geometry.attributes.position.needsUpdate = true;
+            }
+        }
+
+        // --- STREAMING_CHUNK: Emergent Phase 4 Centroid Calculation ---
+        class EmergentCore {
+            constructor() {
+                const geometry = new THREE.BufferGeometry();
+                const count = 50; 
+                const positions = new Float32Array(count * 3);
+                geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+                
+                const sprite = new THREE.TextureLoader().load('https://threejs.org/examples/textures/sprites/spark1.png');
+                const material = new THREE.PointsMaterial({
+                    color: 0xffffff,
+                    size: 2.5,
+                    map: sprite,
+                    transparent: true,
+                    opacity: 0.9,
+                    blending: THREE.AdditiveBlending
+                });
+                
+                this.mesh = new THREE.Points(geometry, material);
+                scene.add(this.mesh);
+            }
+            
+            update(pairs) {
+                const positions = this.mesh.geometry.attributes.position.array;
+                const count = positions.length / 3;
+                
+                for(let i=0; i<count; i++) {
+                    let sumX=0, sumY=0, sumZ=0;
+                    let total = 0;
+                    
+                    pairs.forEach(pair => {
+                        if(pair.currentPositionsA[i]) {
+                            sumX += pair.currentPositionsA[i].x + pair.currentPositionsB[i].x;
+                            sumY += pair.currentPositionsA[i].y + pair.currentPositionsB[i].y;
+                            sumZ += pair.currentPositionsA[i].z + pair.currentPositionsB[i].z;
+                            total += 2;
+                        }
+                    });
+                    
+                    if(total > 0) {
+                        positions[i*3] = sumX / total;
+                        positions[i*3+1] = sumY / total;
+                        positions[i*3+2] = sumZ / total;
+                    }
+                }
+                this.mesh.geometry.attributes.position.needsUpdate = true;
+            }
+            
+            setHighlight(active) {
+                this.mesh.material.opacity = active ? 1.0 : 0.1;
+                this.mesh.material.size = active ? 3.5 : 1.0;
+            }
+        }
+
+        // --- Instantiation ---
+        const pair1 = new TwistorPair(0xff0055, 0, 250);             // Magenta
+        const pair2 = new TwistorPair(0x00ffff, (Math.PI*2)/3, 250); // Cyan
+        const pair3 = new TwistorPair(0xD4AF37, (Math.PI*4)/3, 250); // Gold
+        
+        const pairs = [pair1, pair2, pair3];
+        const emergentCore = new EmergentCore();
+
+        // --- STREAMING_CHUNK: State & Controls Bindings ---
+        const state = {
+            microTwist: 2.5,
+            buckle: 3.0,
+            pairSep: 0.8,
+            phaseSep: 25.0, 
+            zScale: 12.0,
+            speed: 0.2
+        };
+        
+        let time = 0;
+
+        function bind(id, key) {
+            const el = document.getElementById(id);
+            el.addEventListener('input', (e) => {
+                state[key] = parseFloat(e.target.value);
+                const label = document.getElementById(id.replace('input-', 'val-'));
+                if(label) {
+                    // Formatting specific to speed to show trailing zero
+                    label.innerText = key === 'speed' ? state[key].toFixed(2) : state[key].toFixed(1);
+                }
+            });
+        }
+
+        bind('input-twist', 'microTwist');
+        bind('input-buckle', 'buckle');
+        bind('input-pair-sep', 'pairSep');
+        bind('input-separation', 'phaseSep');
+        bind('input-zscale', 'zScale');
+        bind('input-speed', 'speed');
+
+        window.resetCamera = function() {
+            camera.position.set(initialCameraPos.x, initialCameraPos.y, initialCameraPos.z);
+            camera.lookAt(0, 0, 0);
+            controls.target.set(0, 0, 0);
+            controls.update();
+        };
+
+        window.toggleLattice = function(checked) {
+            latticeGroup.visible = checked;
+        };
+
+        window.highlightPhase = function(index) {
+            if (index === 3) {
+                pairs.forEach(p => p.setHighlight(false));
+                emergentCore.setHighlight(true);
+            } else {
+                pairs.forEach((p, i) => {
+                    if (index === -1) p.setHighlight(true);
+                    else p.setHighlight(i === index);
+                });
+                emergentCore.setHighlight(index === -1);
+            }
+            
+            const ids = ['phase-alpha', 'phase-beta', 'phase-gamma', 'phase-delta'];
+            ids.forEach((id, i) => {
+                const el = document.getElementById(id);
+                if (index === -1) {
+                    el.classList.remove('active');
+                } else {
+                    if (i === index) el.classList.add('active');
+                    else el.classList.remove('active');
+                }
+            });
+        };
+
+        // --- STREAMING_CHUNK: Animation Loop ---
+        function animate() {
+            requestAnimationFrame(animate);
+            time += 0.05;
+            
+            pairs.forEach(p => p.update(time, state));
+            emergentCore.update(pairs);
+            
+            controls.update();
+            renderer.render(scene, camera);
+        }
+        
+        window.addEventListener('resize', () => {
+            const width = container.clientWidth;
+            const height = container.clientHeight;
+            camera.aspect = width / height;
+            camera.updateProjectionMatrix();
+            renderer.setSize(width, height);
+        });
+
+        animate();
+
+    </script>
+</body>
+</html>
