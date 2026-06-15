@@ -1,0 +1,2209 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Owl Academy | Fractal Processing</title>
+    
+    <!-- SECURITY LOCK: Points 2 levels up to the root /scripts directory -->
+    <script src="../../scripts/auth.js"></script>
+    
+    <!-- Tailwind CSS with Dark Mode Config -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        darkbg: '#05030a', 
+                        lightbg: '#f8fafc',
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <!-- MathJax -->
+    <script>
+        MathJax = {
+            tex: {
+                inlineMath: [['$', '$'], ['\\(', '\\)']],
+                displayMath: [['$$', '$$'], ['\\[', '\\]']],
+                processEscapes: true
+            }
+        };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+    <!-- Three.js and OrbitControls -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&family=JetBrains+Mono:wght@400;700&display=swap');
+        
+        body {
+            margin: 0;
+            overflow: hidden;
+            font-family: 'Inter', sans-serif;
+            user-select: none;
+            transition: background-color 0.5s ease;
+            background-color: #05030a;
+        }
+
+        .font-mono { font-family: 'JetBrains Mono', monospace; }
+
+        /* Voxel Owl Pulse Animation */
+        .voxel-pulse {
+            animation: pulse-glow-voxel 3s infinite alternate;
+        }
+        @keyframes pulse-glow-voxel {
+            0% { filter: drop-shadow(0 0 4px rgba(0, 212, 255, 0.4)); }
+            100% { filter: drop-shadow(0 0 12px rgba(0, 212, 255, 0.8)); }
+        }
+
+        #canvas-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: 1;
+        }
+
+        /* UI Panels Styling */
+        .glass-panel {
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border-radius: 1.25rem;
+            box-shadow: 0 30px 60px -12px rgba(0, 0, 0, 0.9);
+            transition: all 0.3s ease;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .dark .glass-panel {
+            background: linear-gradient(145deg, rgba(6, 6, 10, 0.85) 0%, rgba(2, 2, 4, 0.95) 100%);
+            border-color: rgba(168, 85, 247, 0.3);
+        }
+
+        #ui-panel {
+            position: absolute;
+            top: 90px;
+            left: 20px;
+            width: 440px;
+            max-height: calc(100vh - 110px);
+            overflow-y: auto;
+            z-index: 10;
+            padding: 1.5rem;
+        }
+
+        #telemetry-panel {
+            position: absolute;
+            top: 90px;
+            right: 20px;
+            width: 400px;
+            z-index: 10;
+            padding: 1.5rem;
+            display: none;
+            animation: slideInRight 0.4s ease-out forwards;
+        }
+
+        @keyframes slideInRight {
+            from { opacity: 0; transform: translateX(20px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        #ui-panel::-webkit-scrollbar, #telemetry-panel::-webkit-scrollbar, .ledger-scroll::-webkit-scrollbar { width: 6px; }
+        #ui-panel::-webkit-scrollbar-track, #telemetry-panel::-webkit-scrollbar-track, .ledger-scroll::-webkit-scrollbar-track { background: transparent; }
+        #ui-panel::-webkit-scrollbar-thumb, #telemetry-panel::-webkit-scrollbar-thumb { background: rgba(168, 85, 247, 0.5); border-radius: 3px; }
+        .ledger-scroll::-webkit-scrollbar-thumb { background: rgba(45, 212, 191, 0.5); }
+
+        input[type=range] {
+            -webkit-appearance: none;
+            width: 100%;
+            background: transparent;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 16px;
+            width: 16px;
+            border-radius: 50%;
+            background: #c084fc;
+            cursor: pointer;
+            margin-top: -6px;
+            box-shadow: 0 0 10px rgba(192, 132, 252, 0.8);
+            transition: transform 0.1s;
+        }
+        input[type=range]::-webkit-slider-thumb:hover { transform: scale(1.3); }
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 4px;
+            cursor: pointer;
+            background: #475569;
+            border-radius: 2px;
+        }
+        
+        .stat-row { display: flex; justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,0.05); padding: 0.4rem 0; }
+
+        .magic-square-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 2px;
+            margin-top: 10px;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(168, 85, 247, 0.3);
+            border-radius: 0.5rem;
+            padding: 4px;
+        }
+        .magic-cell {
+            background: rgba(0,0,0,0.4);
+            text-align: center;
+            padding: 6px 2px;
+            font-size: 10px;
+            border-radius: 0.25rem;
+            color: #cbd5e1;
+            transition: all 0.2s ease;
+        }
+        .magic-cell.active {
+            background: rgba(168, 85, 247, 0.4);
+            color: #fff;
+            font-weight: bold;
+            box-shadow: inset 0 0 8px rgba(168, 85, 247, 0.8);
+        }
+
+        #loader {
+            position: absolute;
+            top: 0; left: 0; width: 100vw; height: 100vh;
+            z-index: 50;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            transition: opacity 0.5s ease;
+            background: #05030a;
+        }
+        .hex-spinner {
+            width: 60px; height: 60px;
+            border: 3px solid transparent;
+            border-top-color: #c084fc;
+            border-bottom-color: #2dd4bf;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* Custom color picker */
+        input[type="color"] {
+            -webkit-appearance: none;
+            border: none;
+            width: 24px;
+            height: 24px;
+            border-radius: 4px;
+            cursor: pointer;
+            padding: 0;
+            background: transparent;
+        }
+        input[type="color"]::-webkit-color-swatch-wrapper { padding: 0; }
+        input[type="color"]::-webkit-color-swatch { border: 1px solid rgba(255,255,255,0.2); border-radius: 4px; }
+    </style>
+</head>
+<body class="bg-lightbg dark:bg-darkbg text-slate-800 dark:text-slate-300">
+
+    <div id="loader">
+        <div class="hex-spinner mb-4"></div>
+        <div class="font-mono text-purple-400 tracking-widest text-sm animate-pulse">ENGAGING TOPOLOGICAL PLAYBACK ENGINE</div>
+    </div>
+
+    <!-- Security Header containing Voxel Owl, Title, and Logout -->
+    <header class="fixed top-0 left-0 w-full pt-4 pb-4 px-6 flex justify-between items-center border-b border-cyan-900/50 bg-[#05030a]/80 backdrop-blur-md shadow-2xl z-40 transition-all duration-300">
+        
+        <!-- Left Side: Voxel Owl Sigil + Title -->
+        <div class="flex items-center gap-4">
+            <!-- Voxel Owl Sigil (SVG Grid) linked to Grand Archives -->
+            <a href="https://biochainai.github.io/Owl-Academy/Library/Grand_Archives.html" title="Return to Grand Archives" class="w-10 h-10 flex-shrink-0 voxel-pulse block hover:scale-105 transition-transform">
+                <svg viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg" class="w-full h-full">
+                    <!-- Ears -->
+                    <rect x="10" y="10" width="10" height="10" fill="#00d4ff"/>
+                    <rect x="60" y="10" width="10" height="10" fill="#00d4ff"/>
+                    <!-- Forehead -->
+                    <rect x="20" y="20" width="40" height="10" fill="#00d4ff"/>
+                    <rect x="10" y="20" width="10" height="10" fill="#00d4ff"/>
+                    <rect x="60" y="20" width="10" height="10" fill="#00d4ff"/>
+                    <!-- Eyes (Dark voids) & Center Bridge -->
+                    <rect x="10" y="30" width="20" height="10" fill="#00d4ff"/>
+                    <rect x="30" y="30" width="20" height="10" fill="#D4AF37"/> <!-- Gold Brow -->
+                    <rect x="50" y="30" width="20" height="10" fill="#00d4ff"/>
+                    <!-- Cheeks & Beak -->
+                    <rect x="10" y="40" width="20" height="10" fill="#00d4ff"/>
+                    <rect x="30" y="40" width="20" height="10" fill="#D4AF37"/> <!-- Gold Beak -->
+                    <rect x="50" y="40" width="20" height="10" fill="#00d4ff"/>
+                    <!-- Lower Beak & Jaw -->
+                    <rect x="10" y="50" width="20" height="10" fill="#00d4ff"/>
+                    <rect x="30" y="50" width="20" height="10" fill="#D4AF37"/> <!-- Gold Beak Tip -->
+                    <rect x="50" y="50" width="20" height="10" fill="#00d4ff"/>
+                    <!-- Base / Body connection -->
+                    <rect x="20" y="60" width="40" height="10" fill="#00d4ff"/>
+                    <rect x="30" y="70" width="20" height="10" fill="#00d4ff"/>
+                </svg>
+            </a>
+
+            <div>
+                <div class="text-[9px] text-cyan-600 tracking-[0.2em] uppercase mb-0.5 font-mono">Department V • The Loom and Weave</div>
+                <h1 class="text-cyan-400 text-lg tracking-widest uppercase font-bold drop-shadow-[0_0_8px_rgba(0,212,255,0.3)]" style="font-family: 'Cinzel', serif;">Fractal Processing</h1>
+            </div>
+        </div>
+        
+        <!-- Right Side: Sever Connection -->
+        <button onclick="globalLogout()" class="group flex items-center gap-2 text-red-500 hover:text-red-400 hover:bg-red-950/30 transition-all uppercase tracking-widest text-[10px] font-bold border border-red-900 px-3 py-1.5 rounded shadow-[0_0_10px_rgba(239,68,68,0.1)] hover:shadow-[0_0_15px_rgba(239,68,68,0.2)] font-mono z-50 cursor-pointer">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="group-hover:-translate-x-1 transition-transform"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+            Sever Connection
+        </button>
+    </header>
+
+    <!-- 3D Canvas -->
+    <div id="canvas-container"></div>
+
+    <!-- Main UI Panel -->
+    <div id="ui-panel" class="glass-panel flex flex-col gap-3">
+        
+        <!-- Access Granted Banner -->
+        <div class="flex items-start gap-3 mb-1 p-3 bg-green-950/20 border border-green-900/50 rounded-md shadow-lg">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#4ade80" stroke-width="2" class="mt-0.5 flex-shrink-0"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+            <div>
+                <h2 class="text-green-400 font-bold text-[10px] tracking-wider uppercase mb-0.5 font-mono">Access Granted</h2>
+                <p class="text-gray-400 text-[9px] leading-relaxed font-mono">
+                    SHD-CCP resonance verified. Local token matches Department V requirements.
+                </p>
+            </div>
+        </div>
+
+        <div class="flex items-center gap-3 border-b border-slate-700 pb-2 mt-2">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#2dd4bf" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                <line x1="3" y1="9" x2="21" y2="9"></line>
+                <line x1="9" y1="21" x2="9" y2="9"></line>
+            </svg>
+            <h2 class="text-md font-bold text-white tracking-tight">TTMPT <span class="text-teal-400">Blackwell Architect</span></h2>
+        </div>
+
+        <!-- SHD-CCP Seed Architect -->
+        <details class="bg-slate-900/60 rounded-xl border border-teal-500/30 shadow-inner group" open>
+            <summary class="p-3 text-[10px] font-bold text-teal-400 uppercase tracking-widest cursor-pointer list-none flex justify-between items-center border-b border-transparent group-open:border-slate-700 transition-all">
+                <span>SHD-CCP Blackwell Seed</span>
+                <span class="transition-transform group-open:rotate-180 duration-300 text-slate-400">▼</span>
+            </summary>
+            <div class="p-3">
+                <div class="flex justify-between items-center mb-3">
+                    <span class="text-[9px] text-slate-400">Define the 64-bit Constellation</span>
+                    <button id="btn-sym" class="text-[9px] font-bold bg-teal-600/20 text-teal-300 border border-teal-500/50 hover:bg-teal-500 hover:text-white px-2 py-1 rounded transition-colors">
+                        1/16 M.C. ESCHER SYMMETRY
+                    </button>
+                </div>
+                
+                <div class="flex flex-col items-center w-full mb-3">
+                    <span class="text-[8px] text-slate-500 font-mono uppercase tracking-widest mb-1">North Halo (Row 0)</span>
+                    <div class="flex w-full">
+                        <span class="text-[8px] text-slate-500 font-mono uppercase tracking-widest mr-1 rotate-180" style="writing-mode: vertical-rl;">L2 Cache Line</span>
+                        <div id="seed-grid" class="grid grid-cols-8 gap-[3px] bg-black/50 p-2 rounded-lg flex-1"></div>
+                    </div>
+                    <span class="text-[8px] text-slate-500 font-mono uppercase tracking-widest mt-1">South Halo (Row 7)</span>
+                </div>
+
+                <!-- Ledger Validation Box -->
+                <div class="bg-black/80 border border-slate-700 rounded-lg p-2 mb-2">
+                    <span class="text-[9px] font-bold text-slate-500 uppercase tracking-widest block mb-1">O(N) Collision Ledger</span>
+                    <div id="ledger-box" class="h-16 overflow-y-auto ledger-scroll font-mono text-[9px] text-slate-400 space-y-1">
+                        <div class="text-teal-500 opacity-50">System initialized. Awaiting orbital collisions...</div>
+                    </div>
+                </div>
+
+                <div class="flex gap-2">
+                    <input type="file" id="engram-upload" accept=".json" class="hidden">
+                    <button id="btn-import" class="flex-1 bg-slate-800 hover:bg-fuchsia-900 border border-fuchsia-500/50 text-fuchsia-400 text-[9px] font-bold py-2 rounded transition-colors uppercase tracking-widest flex justify-center items-center gap-2">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+                        Import JSON
+                    </button>
+                    <button id="btn-export" class="flex-1 bg-slate-800 hover:bg-teal-900 border border-teal-500/50 text-teal-300 text-[9px] font-bold py-2 rounded transition-colors uppercase tracking-widest flex justify-center items-center gap-2">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                        Export JSON
+                    </button>
+                </div>
+                <div id="import-status" class="text-[8px] text-slate-500 font-mono mt-1 px-1 text-center"></div>
+            </div>
+        </details>
+
+        <!-- Precision Playback Controls -->
+        <details class="bg-slate-800/40 rounded-xl border border-slate-700 shadow-inner group" open>
+            <summary class="p-3 text-[10px] font-bold text-purple-400 uppercase tracking-widest cursor-pointer list-none flex justify-between items-center border-b border-transparent group-open:border-slate-700 transition-all">
+                <span>Topological Playback Engine</span>
+                <span class="transition-transform group-open:rotate-180 duration-300 text-slate-400">▼</span>
+            </summary>
+            
+            <div class="p-3 bg-slate-900/50 rounded-b-xl border-t border-slate-700 relative overflow-hidden">
+                <div id="coherence-bar" class="absolute bottom-0 left-0 h-1 bg-emerald-400 transition-all" style="width: 100%;"></div>
+
+                <div class="flex justify-between items-center text-xs font-mono mb-3">
+                    <span class="text-slate-400">720-Frame Sequence</span>
+                    <div class="flex items-center gap-2">
+                        <span id="coh-status" class="text-[9px] text-emerald-400 border border-emerald-500/50 bg-emerald-500/10 px-1 py-0.5 rounded font-bold animate-pulse">COHERENCE LOCK</span>
+                        <span id="frame-val" class="text-white font-bold bg-purple-500/20 px-2 py-1 rounded">0 / 720</span>
+                    </div>
+                </div>
+                <input type="range" id="frame-slider" min="0" max="720" value="0" step="1" class="mb-4">
+
+                <!-- Playback Core -->
+                <div class="flex flex-col gap-2">
+                    <div class="flex gap-2">
+                        <button id="btn-prev" class="flex-none bg-slate-800 border border-slate-600 hover:border-teal-400 text-slate-300 text-[10px] font-bold py-2 px-4 rounded-lg transition-all">
+                            ⏮
+                        </button>
+                        <button id="btn-play" class="flex-1 bg-purple-600 hover:bg-purple-500 text-white text-[10px] font-bold py-2 rounded-lg transition-all uppercase tracking-widest shadow-[0_0_15px_rgba(168,85,247,0.4)]">
+                            ⏯ Play
+                        </button>
+                        <button id="btn-next" class="flex-none bg-slate-800 border border-slate-600 hover:border-teal-400 text-slate-300 text-[10px] font-bold py-2 px-4 rounded-lg transition-all">
+                            ⏭
+                        </button>
+                    </div>
+                    
+                    <!-- Speed Toggles -->
+                    <div class="flex gap-2 mt-1">
+                        <button id="btn-speed-1" class="flex-1 bg-teal-600 text-white border border-teal-400 text-[9px] font-bold py-1.5 rounded transition-all uppercase tracking-widest">
+                            1x
+                        </button>
+                        <button id="btn-speed-10" class="flex-1 bg-slate-800 text-slate-400 border border-slate-600 hover:border-teal-400 hover:text-white text-[9px] font-bold py-1.5 rounded transition-all uppercase tracking-widest">
+                            0.1x Slower
+                        </button>
+                        <button id="btn-speed-100" class="flex-1 bg-slate-800 text-slate-400 border border-slate-600 hover:border-teal-400 hover:text-white text-[9px] font-bold py-1.5 rounded transition-all uppercase tracking-widest">
+                            0.01x Slower
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </details>
+
+        <!-- Visibility Toggles -->
+        <details class="bg-black/30 rounded-lg border border-purple-500/20 group">
+            <summary class="p-3 text-[10px] font-bold text-teal-400 uppercase tracking-widest cursor-pointer list-none flex justify-between items-center border-b border-transparent group-open:border-white/10 transition-all">
+                <span>Visibility & Object Toggles</span>
+                <span class="transition-transform group-open:rotate-180 duration-300 text-slate-400">▼</span>
+            </summary>
+            
+            <div class="p-3 flex flex-col gap-2">
+                <label class="flex items-center gap-3 text-[10px] text-slate-300 font-mono cursor-pointer hover:text-emerald-400 transition-colors">
+                    <input type="checkbox" id="toggle-active-streams" class="w-4 h-4 accent-emerald-500 rounded border-slate-600 bg-slate-700" checked>
+                    <span>Prune View: Only Active Seed Streams</span>
+                </label>
+                <label class="flex items-center gap-3 text-[10px] text-slate-300 font-mono cursor-pointer hover:text-white transition-colors">
+                    <input type="checkbox" id="toggle-conjugate" class="w-4 h-4 accent-pink-500 rounded border-slate-600 bg-slate-700" checked>
+                    <span class="text-pink-400 font-bold">View Phase-Conjugate Waves (Backprop)</span>
+                </label>
+                <label class="flex items-center gap-3 text-[10px] text-slate-300 font-mono cursor-pointer hover:text-white transition-colors">
+                    <input type="checkbox" id="toggle-toroidal-weave" class="w-4 h-4 accent-fuchsia-500 rounded border-slate-600 bg-slate-700" checked>
+                    <span class="text-fuchsia-400 font-bold">View 360° Toroidal Manifold Weave</span>
+                </label>
+                <label class="flex items-center gap-3 text-[10px] text-slate-300 font-mono cursor-pointer hover:text-white transition-colors">
+                    <input type="checkbox" id="toggle-gyroscope" class="w-4 h-4 accent-fuchsia-500 rounded border-slate-600 bg-slate-700" checked>
+                    <span class="text-fuchsia-400">Gyroscopic Holographic Core (Wave Offsets)</span>
+                </label>
+                <label class="flex items-center gap-3 text-[10px] text-slate-300 font-mono cursor-pointer hover:text-white transition-colors">
+                    <input type="checkbox" id="toggle-tessellation" class="w-4 h-4 accent-teal-400 rounded border-slate-600 bg-slate-700">
+                    <span class="text-teal-400">View 4x4x4 Tessellation Bounding Grid</span>
+                </label>
+                <label class="flex items-center gap-3 text-[10px] text-slate-300 font-mono cursor-pointer hover:text-white transition-colors">
+                    <input type="checkbox" id="toggle-scan" class="w-4 h-4 accent-orange-500 rounded border-slate-600 bg-slate-700">
+                    <span class="text-orange-400">View 4:3 Probability Scan & Balance</span>
+                </label>
+                <label class="flex items-center gap-3 text-[10px] text-slate-300 font-mono cursor-pointer hover:text-white transition-colors">
+                    <input type="checkbox" id="toggle-atom" class="w-4 h-4 accent-indigo-400 rounded border-slate-600 bg-slate-700">
+                    <span>View Emergent Atom Packet (SHD-CCP)</span>
+                </label>
+                <label class="flex items-center gap-3 text-[10px] text-slate-300 font-mono cursor-pointer hover:text-white transition-colors">
+                    <input type="checkbox" id="toggle-atom-cubes" class="w-4 h-4 accent-indigo-400 rounded border-slate-600 bg-slate-700">
+                    <span>View Atom Quaternions (Cubes)</span>
+                </label>
+                <label class="flex items-center gap-3 text-[10px] text-slate-300 font-mono cursor-pointer hover:text-white transition-colors">
+                    <input type="checkbox" id="toggle-trefoils" class="w-4 h-4 accent-purple-500 rounded border-slate-600 bg-slate-700" checked>
+                    <span>View Trefoil Knot Orbits & Bounds</span>
+                </label>
+                <label class="flex items-center gap-3 text-[10px] text-slate-300 font-mono cursor-pointer hover:text-white transition-colors">
+                    <input type="checkbox" id="toggle-tqf" class="w-4 h-4 accent-teal-400 rounded border-slate-600 bg-slate-700">
+                    <span>Show TQF Triangulation & Implied 5th</span>
+                </label>
+                <label class="flex items-center gap-3 text-[10px] text-slate-300 font-mono cursor-pointer hover:text-white transition-colors">
+                    <input type="checkbox" id="toggle-hilbert" class="w-4 h-4 accent-indigo-400 rounded border-slate-600 bg-slate-700" checked>
+                    <span>View Outer Hilbert Space Envelope</span>
+                </label>
+            </div>
+        </details>
+
+        <!-- Config & Hilbert Shell -->
+        <details class="bg-black/30 rounded-lg border border-purple-500/20 group">
+            <summary class="p-3 text-[10px] font-bold text-teal-400 uppercase tracking-widest cursor-pointer list-none flex justify-between items-center border-b border-transparent group-open:border-white/10 transition-all">
+                <span>Hilbert Shell & Tuning</span>
+                <span class="transition-transform group-open:rotate-180 duration-300 text-slate-400">▼</span>
+            </summary>
+            
+            <div class="p-3 space-y-4">
+                <div>
+                    <h3 class="text-[9px] font-bold text-indigo-400 uppercase tracking-widest mb-2">Outer Hilbert Envelope</h3>
+                    <div class="grid grid-cols-1 gap-2">
+                        <div>
+                            <div class="flex justify-between text-[9px] text-slate-400 font-mono mb-1"><span>Dimensions (N)</span><span id="val-hilb-n">12</span></div>
+                            <input type="range" id="ctrl-hilb-n" min="3" max="12" step="1" value="12" class="accent-indigo-500">
+                        </div>
+                        <div>
+                            <div class="flex justify-between text-[9px] text-slate-400 font-mono mb-1"><span>String Multiplier (K)</span><span id="val-hilb-k">5</span></div>
+                            <input type="range" id="ctrl-hilb-k" min="1" max="5" step="1" value="5" class="accent-indigo-500">
+                        </div>
+                        <div>
+                            <div class="flex justify-between text-[9px] text-slate-400 font-mono mb-1"><span>Nested Fields (Tiers)</span><span id="val-hilb-t">3</span></div>
+                            <input type="range" id="ctrl-hilb-t" min="1" max="3" step="1" value="3" class="accent-indigo-500">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-3 pt-3 border-t border-white/10">
+                    <div>
+                        <div class="flex justify-between text-[9px] text-slate-400 font-mono mb-1"><span>Matrix Alpha</span><span id="val-mat-op">0.8</span></div>
+                        <input type="range" id="ctrl-mat-op" min="0" max="1" step="0.1" value="0.8" class="accent-slate-400">
+                    </div>
+                    <div>
+                        <div class="flex justify-between text-[9px] text-slate-400 font-mono mb-1"><span>Stream Alpha</span><span id="val-str-op">0.6</span></div>
+                        <input type="range" id="ctrl-str-op" min="0" max="1" step="0.1" value="0.6" class="accent-slate-400">
+                    </div>
+                </div>
+                
+                <div class="grid grid-cols-2 gap-3 pt-2 border-t border-white/5">
+                    <div class="flex items-center justify-between">
+                        <span class="text-[9px] text-slate-400 font-mono uppercase">Pos Pole (+)</span>
+                        <input type="color" id="color-pos" value="#f97316">
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <span class="text-[9px] text-slate-400 font-mono uppercase">Neg Pole (-)</span>
+                        <input type="color" id="color-neg" value="#a855f7">
+                    </div>
+                </div>
+            </div>
+        </details>
+
+        <button id="rotate-toggle-btn" class="w-full bg-slate-800 border border-slate-600 hover:border-teal-400 text-slate-300 text-[10px] font-bold py-2 rounded-lg transition-all uppercase tracking-widest">
+            Auto-Rotate Camera: ON
+        </button>
+    </div>
+
+    <!-- Telemetry HUD -->
+    <div id="telemetry-panel" class="glass-panel text-slate-300 font-mono text-xs">
+        <div class="flex items-center justify-between mb-3 border-b border-slate-700 pb-2">
+            <span class="text-sm font-bold text-teal-400 uppercase tracking-widest flex items-center gap-2">
+                <span class="w-2 h-2 rounded-full bg-teal-400 animate-pulse"></span> Telemetry
+            </span>
+            <span id="tel-face" class="bg-teal-900/50 text-teal-300 px-2 py-1 rounded border border-teal-500/30 text-[10px]">FACE: --</span>
+        </div>
+        
+        <div class="space-y-1 mb-3">
+            <div class="stat-row">
+                <span class="text-slate-400">Node ID</span>
+                <span id="tel-id" class="font-bold text-white text-[10px]">--</span>
+            </div>
+            <div class="stat-row">
+                <span class="text-slate-400">Polarity</span>
+                <span id="tel-type" class="font-bold text-white">--</span>
+            </div>
+            <div class="stat-row">
+                <span class="text-slate-400">Local Vector $(u,v)$</span>
+                <span id="tel-local" class="font-bold text-purple-300">[ 0.0, 0.0 ]</span>
+            </div>
+            
+            <div id="tqf-context" style="display: none;">
+                <div class="stat-row">
+                    <span class="text-slate-400">TQF Phase</span>
+                    <span id="tel-tqf-step" class="font-bold">--</span>
+                </div>
+            </div>
+
+            <div id="pan-context" style="display: none;">
+                <div class="stat-row">
+                    <span class="text-slate-400">D12 Fold Target</span>
+                    <span id="tel-d12" class="font-bold text-orange-400">Vertex $\phi_{--}$</span>
+                </div>
+                <div class="stat-row">
+                    <span class="text-slate-400">Current Density $J$</span>
+                    <span id="tel-tension" class="font-bold text-teal-400">0.000 $\tau$</span>
+                </div>
+            </div>
+        </div>
+        
+        <div id="magic-square-container" style="display: none;">
+            <div class="border-t border-slate-700 pt-3">
+                <span class="text-[10px] text-purple-400 uppercase tracking-widest block mb-1">Pandiagonal Lensing</span>
+                <div id="magic-grid" class="magic-square-grid"></div>
+                <div class="mt-2 text-[9px] text-center text-slate-400">
+                    Active Value Form: <span id="tel-alg" class="text-white font-bold bg-white/10 px-1 rounded">--</span>
+                </div>
+            </div>
+        </div>
+
+        <button id="close-telemetry" class="mt-4 w-full text-center py-2 border border-slate-700 text-slate-400 rounded-lg hover:bg-white/5 hover:text-white transition-colors uppercase tracking-widest text-[10px] font-bold">
+            Terminate Link
+        </button>
+    </div>
+
+    <!-- Main Engine -->
+    <script>
+        // Setup Magic Grid UI safely before anything else
+        const gridUI = document.getElementById('magic-grid');
+        if (gridUI) {
+            for(let i=0; i<16; i++) {
+                const cell = document.createElement('div');
+                cell.className = 'magic-cell';
+                cell.id = `ui-cell-${i}`;
+                const pSquare = [1, 14, 7, 12, 8, 11, 2, 13, 10, 5, 16, 3, 15, 4, 9, 6];
+                cell.innerText = pSquare[i];
+                gridUI.appendChild(cell);
+            }
+        }
+
+        // --- Playback & System State ---
+        let currentFrame = 0;
+        let targetFrame = 0;
+        const TOTAL_FRAMES = 720;
+        let isPlaying = false;
+        let playbackSpeed = 1.0; 
+        const baseSpeed = 1.0; 
+        let selectedNode = null;
+        
+        // Imported JSON Ledger Data
+        let importedEngram = null;
+
+        // Stream Control Variables
+        const config = {
+            matrixOpacity: 0.8,
+            streamOpacity: 0.6,
+            showTrefoils: true,
+            showTQF: false,
+            showAtom: false, // Disabled by default
+            showAtomCubes: false, // Disabled by default
+            showHilbert: true,
+            showGyroscope: true,
+            showTessellation: false, // Disabled by default
+            showScan: false, // Disabled by default (4:3 Probability Scan)
+            showToroidalWeave: true, // Enabled by default
+            showConjugate: true, // Enabled by default
+            onlyActiveStreams: true, // Prune view enabled by default
+            hilbertN: 12,
+            hilbertK: 5,
+            hilbertTiers: 3,
+            colorPos: '#f97316',
+            colorNeg: '#a855f7'
+        };
+
+        const PHI = 1.6180339887;
+        const BASE_4x4_RADIUS = 50; 
+        const L = 6; 
+
+        // O(1) Memory Engine Allocations
+        const _vLens = new THREE.Vector3();
+        const _vTarget = new THREE.Vector3();
+        const _faceUp = new THREE.Vector3();
+        const _faceRight = new THREE.Vector3();
+        const _dir1 = new THREE.Vector3();
+        const _dir2 = new THREE.Vector3();
+        const _pRing = new THREE.Vector3();
+        const _pRingConj = new THREE.Vector3(); 
+        const _rDir = new THREE.Vector3();
+        const _vSrc = new THREE.Vector3();
+        const _vTgt = new THREE.Vector3();
+        const _up = new THREE.Vector3();
+        const _v = new THREE.Vector3();
+        const _w = new THREE.Vector3();
+        const _expandedPos = new THREE.Vector3();
+        const _finalPos = new THREE.Vector3();
+        const _qRot = new THREE.Quaternion();
+        const _topologicExpandedPos = new THREE.Vector3();
+        const _vPosTopologic = new THREE.Vector3();
+        const _pt = new THREE.Vector3();
+        const _vOuter = new THREE.Vector3();
+        
+        const line3Temp = new THREE.Line3();
+        const targetPtTemp = new THREE.Vector3();
+
+        const _pt1 = new THREE.Vector3();
+        const _pt2 = new THREE.Vector3();
+        const _pt3 = new THREE.Vector3();
+        const _pt4 = new THREE.Vector3();
+
+        // The Master Holographic Ledger
+        let manifoldLedger = new Array(TOTAL_FRAMES).fill(null);
+
+        // Blackwell Protocol Field Mapping
+        const seedSchema = [
+            {label: 'ST', color: 'bg-purple-500'}, {label: 'ST', color: 'bg-purple-500'}, {label: 'ST', color: 'bg-purple-500'}, {label: 'ST', color: 'bg-purple-500'},
+            {label: 'PA', color: 'bg-slate-400'},  {label: 'PA', color: 'bg-emerald-500'}, {label: 'PA', color: 'bg-emerald-500'}, {label: 'PA', color: 'bg-emerald-500'},
+            {label: 'PA', color: 'bg-emerald-500'}, {label: 'PA', color: 'bg-emerald-500'}, {label: 'PA', color: 'bg-emerald-500'}, {label: 'PA', color: 'bg-emerald-500'},
+            {label: 'PA', color: 'bg-emerald-500'}, {label: 'PA', color: 'bg-emerald-500'}, {label: 'PA', color: 'bg-emerald-500'}, {label: 'PA', color: 'bg-emerald-500'},
+            {label: 'CO', color: 'bg-pink-500'}, {label: 'CO', color: 'bg-pink-500'}, {label: 'CO', color: 'bg-pink-500'}, {label: 'CO', color: 'bg-pink-500'},
+            {label: 'CO', color: 'bg-pink-500'}, {label: 'CO', color: 'bg-pink-500'}, {label: 'CO', color: 'bg-pink-500'}, {label: 'CO', color: 'bg-pink-500'},
+            {label: 'CO', color: 'bg-pink-500'}, {label: 'CO', color: 'bg-pink-500'}, {label: 'CO', color: 'bg-pink-500'}, {label: 'CO', color: 'bg-pink-500'},
+            {label: 'CO', color: 'bg-pink-500'}, {label: 'CO', color: 'bg-pink-500'}, {label: 'CO', color: 'bg-pink-500'}, {label: 'CO', color: 'bg-pink-500'},
+            {label: 'CO', color: 'bg-pink-500'}, {label: 'CO', color: 'bg-pink-500'}, {label: 'CO', color: 'bg-pink-500'}, {label: 'CO', color: 'bg-pink-500'},
+            {label: 'CO', color: 'bg-pink-500'}, {label: 'CO', color: 'bg-pink-500'}, {label: 'CO', color: 'bg-pink-500'}, {label: 'CO', color: 'bg-pink-500'},
+            {label: 'CO', color: 'bg-pink-500'}, {label: 'CO', color: 'bg-pink-500'}, {label: 'CO', color: 'bg-pink-500'}, {label: 'CO', color: 'bg-pink-500'},
+            {label: 'CO', color: 'bg-pink-500'}, {label: 'CO', color: 'bg-pink-500'}, {label: 'CO', color: 'bg-pink-500'}, {label: 'CO', color: 'bg-pink-500'},
+            {label: 'PA', color: 'bg-emerald-500'}, {label: 'PA', color: 'bg-emerald-500'}, {label: 'PA', color: 'bg-emerald-500'}, {label: 'PA', color: 'bg-emerald-500'},
+            {label: 'PA', color: 'bg-emerald-500'}, {label: 'FR', color: 'bg-blue-500'}, {label: 'FR', color: 'bg-blue-500'}, {label: 'FR', color: 'bg-blue-500'},
+            {label: 'FR', color: 'bg-blue-500'}, {label: 'FR', color: 'bg-blue-500'}, {label: 'SP', color: 'bg-red-500'}, {label: 'SP', color: 'bg-red-500'},
+            {label: 'SP', color: 'bg-red-500'}, {label: 'AM', color: 'bg-orange-500'}, {label: 'AM', color: 'bg-orange-500'}, {label: 'AM', color: 'bg-orange-500'}
+        ];
+
+        const seedState = new Array(64).fill(0);
+        
+        // Define root 2x2 seed 
+        seedState[0] = 1; seedState[1] = 0;
+        seedState[8] = 0; seedState[9] = 1;
+
+        function renderSeedGrid() {
+            const grid = document.getElementById('seed-grid');
+            grid.innerHTML = '';
+            for(let i=0; i<64; i++) {
+                const cell = document.createElement('div');
+                const schema = seedSchema[i];
+                const isActive = seedState[i] === 1;
+                
+                const bgClass = isActive ? schema.color : 'bg-slate-800 hover:bg-slate-700';
+                const shadow = isActive ? `shadow-[0_0_8px_rgba(255,255,255,0.4)] opacity-100 scale-105 z-10` : `opacity-40`;
+                const textCol = isActive ? 'text-white' : 'text-slate-500';
+
+                cell.className = `w-full aspect-square flex items-center justify-center text-[7px] font-bold ${textCol} cursor-pointer rounded-[3px] transition-all duration-200 ${bgClass} ${shadow}`;
+                cell.innerText = schema.label;
+                
+                cell.onclick = () => {
+                    seedState[i] = 1 - seedState[i];
+                    renderSeedGrid();
+                    if (typeof computeWeaveTrails === 'function') computeWeaveTrails();
+                };
+                grid.appendChild(cell);
+            }
+        }
+
+        function logLedger(message) {
+            const box = document.getElementById('ledger-box');
+            const entry = document.createElement('div');
+            entry.innerHTML = `<span class="text-teal-400">></span> ${message}`;
+            box.appendChild(entry);
+            if(box.children.length > 50) box.removeChild(box.children[1]); 
+            box.scrollTop = box.scrollHeight;
+        }
+
+        // --- Data Export/Import Logic ---
+        document.getElementById('btn-export').addEventListener('click', () => {
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(manifoldLedger));
+            const dlAnchorElem = document.createElement('a');
+            dlAnchorElem.setAttribute("href", dataStr);
+            dlAnchorElem.setAttribute("download", "manifold_engram_720.json");
+            document.body.appendChild(dlAnchorElem);
+            dlAnchorElem.click();
+            dlAnchorElem.remove();
+            logLedger("[SYSTEM] Toroidal Engram Exported Successfully.");
+        });
+
+        document.getElementById('btn-import').addEventListener('click', () => {
+            document.getElementById('engram-upload').click();
+        });
+
+        document.getElementById('engram-upload').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const parsed = JSON.parse(e.target.result);
+                    if (parsed && parsed.length === 720) {
+                        importedEngram = parsed;
+                        document.getElementById('import-status').innerHTML = `<span class="text-emerald-400">Engram Loaded: 720 Frames Verified.</span>`;
+                        logLedger("[SYSTEM] Toroidal Engram Imported.");
+                        if(!isPlaying) document.getElementById('btn-play').click();
+                    } else {
+                        document.getElementById('import-status').innerHTML = `<span class="text-red-400">Invalid Engram Format.</span>`;
+                    }
+                } catch(err) {
+                    document.getElementById('import-status').innerHTML = `<span class="text-red-400">JSON Parse Error.</span>`;
+                }
+            };
+            reader.readAsText(file);
+        });
+
+        // Add 1/16 Symmetry Action
+        document.getElementById('btn-sym').addEventListener('click', () => {
+            const m00 = seedState[0]; const m10 = seedState[1];
+            const m01 = seedState[8]; const m11 = seedState[9];
+            for(let y=0; y<8; y++) {
+                for(let x=0; x<8; x++) {
+                    let rx = x > 3 ? 7 - x : x;
+                    if(rx > 1) rx = 3 - rx; 
+                    let ry = y > 3 ? 7 - y : y;
+                    if(ry > 1) ry = 3 - ry;
+                    let val = 0;
+                    if(rx===0 && ry===0) val = m00;
+                    if(rx===1 && ry===0) val = m10;
+                    if(rx===0 && ry===1) val = m01;
+                    if(rx===1 && ry===1) val = m11;
+                    seedState[y*8 + x] = val;
+                }
+            }
+            renderSeedGrid();
+            computeWeaveTrails();
+        });
+
+        const tqfSteps = [
+            { id: 'alpha', name: 'Base Measurement', color: 0xfde047 }, 
+            { id: 'beta',  name: 'Double Triangle',  color: 0x67e8f9 }, 
+            { id: 'gamma', name: 'Delta Change',     color: 0xf43f5e }  
+        ];
+
+        const permutations = [
+            [0, 1, 2], [0, 2, 1], [1, 0, 2], 
+            [1, 2, 0], [2, 0, 1], [2, 1, 0]  
+        ];
+
+        const pandiagonalAlgebra = [
+            "a", "a+b+c+e", "a+c+d", "a+b+d+e",
+            "a+b+c+d", "a+d+e", "a+b", "a+c+e",
+            "a+b+e", "a+c", "a+b+c+d+e", "a+d",
+            "a+c+d+e", "a+b+d", "a+e", "a+b+c"
+        ];
+
+        function getTrefoil(t_angle, scale) {
+            return new THREE.Vector3(
+                (Math.sin(t_angle) + 2 * Math.sin(2 * t_angle)) * scale,
+                (Math.cos(t_angle) - 2 * Math.cos(2 * t_angle)) * scale,
+                (-Math.sin(3 * t_angle)) * scale
+            );
+        }
+
+        function getTrefoilTangent(t_angle) {
+            return new THREE.Vector3(
+                Math.cos(t_angle) + 4 * Math.cos(2 * t_angle),
+                -Math.sin(t_angle) + 4 * Math.sin(2 * t_angle),
+                -3 * Math.cos(3 * t_angle)
+            ).normalize();
+        }
+
+        const container = document.getElementById('canvas-container');
+        const scene = new THREE.Scene();
+        scene.fog = new THREE.FogExp2(0x05030a, 0.002);
+
+        const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.set(160, 140, 190); 
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        container.appendChild(renderer.domElement);
+
+        const controls = new THREE.OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.05;
+        controls.autoRotate = true;
+        controls.autoRotateSpeed = 0.6;
+
+        scene.add(new THREE.AmbientLight(0xffffff, 0.4));
+        const dirLight = new THREE.DirectionalLight(0xffffff, 1.2);
+        dirLight.position.set(100, 200, 50);
+        scene.add(dirLight);
+
+        // --- 1. The Markov Pump Funnel Core ---
+        const coreGroup = new THREE.Group();
+        scene.add(coreGroup);
+
+        const tierD12 = new THREE.Group();     
+        const tierHex = new THREE.Group();     
+        const tierHept = new THREE.Group();    
+        const tierScalar = new THREE.Group();  
+        const tierAtom = new THREE.Group();    
+        
+        coreGroup.add(tierD12, tierHex, tierHept, tierScalar, tierAtom);
+
+        const d12Radius = 16, hexRadius = 10, heptRadius = 5;
+
+        const vD12Pos = [], vD12Neg = [];
+        for(let i=0; i<12; i++) {
+            const a = (i/12)*Math.PI*2;
+            vD12Pos.push(new THREE.Vector3(Math.cos(a)*d12Radius, 0, Math.sin(a)*d12Radius));
+            vD12Neg.push(new THREE.Vector3(Math.cos(a + Math.PI/12)*d12Radius, 0, Math.sin(a + Math.PI/12)*d12Radius));
+        }
+
+        const vHexPos = [], vHexNeg = [];
+        for(let i=0; i<6; i++) {
+            const a = (i/6)*Math.PI*2;
+            vHexPos.push(new THREE.Vector3(Math.cos(a)*hexRadius, 0, Math.sin(a)*hexRadius));
+            vHexNeg.push(new THREE.Vector3(Math.cos(a + Math.PI/6)*hexRadius, 0, Math.sin(a + Math.PI/6)*hexRadius));
+        }
+
+        const vHept = [];
+        for(let i=0; i<7; i++) {
+            const a = (i/7)*Math.PI*2;
+            vHept.push(new THREE.Vector3(Math.cos(a)*heptRadius, 0, Math.sin(a)*heptRadius));
+        }
+
+        function createRing(verts, color, dash=false) {
+            const pts = [...verts, verts[0]];
+            const geo = new THREE.BufferGeometry().setFromPoints(pts);
+            const mat = dash ? new THREE.LineDashedMaterial({color, dashSize:0.5, gapSize:0.5, transparent:true, opacity:0.6}) :
+                               new THREE.LineBasicMaterial({color, transparent:true, opacity:0.6});
+            const line = new THREE.Line(geo, mat);
+            if(dash) line.computeLineDistances();
+            return line;
+        }
+
+        tierD12.add(createRing(vD12Pos, config.colorPos));
+        tierD12.add(createRing(vD12Neg, config.colorNeg, true));
+
+        function createStar(verts, step, color, dash=false, offset=0) {
+            const pts = [];
+            for(let i=0; i<=verts.length; i++) pts.push(verts[((i*step)+offset)%verts.length]);
+            const geo = new THREE.BufferGeometry().setFromPoints(pts);
+            const mat = dash ? new THREE.LineDashedMaterial({color, dashSize:0.5, gapSize:0.5, transparent:true, opacity:0.8}) :
+                               new THREE.LineBasicMaterial({color, transparent:true, opacity:0.8});
+            const line = new THREE.Line(geo, mat);
+            if(dash) line.computeLineDistances();
+            return line;
+        }
+        
+        tierHex.add(createStar(vHexPos, 2, 0xfde047, false, 0)); 
+        tierHex.add(createStar(vHexNeg, 2, 0x67e8f9, true, 1)); 
+
+        tierHept.add(createStar(vHept, 2, 0x2dd4bf, false, 0)); 
+        tierHept.add(createStar(vHept, 3, 0x2dd4bf, true, 0)); 
+
+        const scalarRing = new THREE.Mesh(
+            new THREE.TorusGeometry(2.5, 0.05, 8, 32),
+            new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.4 })
+        );
+        const scalarPolygon = new THREE.Mesh(
+            new THREE.CylinderGeometry(2, 2, 0.2, 8),
+            new THREE.MeshPhongMaterial({ color: 0x38bdf8, transparent: true, opacity: 0.8, flatShading: true })
+        );
+        tierScalar.add(scalarRing, scalarPolygon);
+
+        const funnelLines = [];
+        const funnelMatPos = new THREE.LineBasicMaterial({color: 0xf97316, transparent: true, opacity: 0.3});
+        const funnelMatNeg = new THREE.LineBasicMaterial({color: 0xa855f7, transparent: true, opacity: 0.3});
+        const funnelMatHept = new THREE.LineBasicMaterial({color: 0x2dd4bf, transparent: true, opacity: 0.4});
+
+        function addFunnelLine(sourceIdx, targetIdx, sVerts, tVerts, sTier, tTier, mat) {
+            const line = new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(), new THREE.Vector3()]), mat.clone());
+            line.userData = { sourceIdx, targetIdx, sVerts, tVerts, sTier, tTier, baseColor: mat.color.getHex() };
+            coreGroup.add(line);
+            funnelLines.push(line);
+        }
+
+        for(let i=0; i<12; i++) {
+            addFunnelLine(i, i%6, vD12Pos, vHexPos, tierD12, tierHex, funnelMatPos);
+            addFunnelLine(i, i%6, vD12Neg, vHexNeg, tierD12, tierHex, funnelMatNeg);
+        }
+        for(let i=0; i<6; i++) {
+            addFunnelLine(i, i, vHexPos, vHept, tierHex, tierHept, funnelMatHept);
+            addFunnelLine(i, (i+3)%7, vHexNeg, vHept, tierHex, tierHept, funnelMatHept);
+        }
+        for(let i=0; i<7; i++) {
+            addFunnelLine(i, 0, vHept, [new THREE.Vector3(0,0,0)], tierHept, tierScalar, funnelMatHept);
+        }
+
+        // --- 1.5 NEW: Clifford-Strassen Tensor Optimization (12 Nested Toroids) ---
+        const strassenGroup = new THREE.Group();
+        const strassenNodes = [];
+        const tMajorR = 16.0;
+        
+        for(let i=0; i<12; i++) {
+            const station = new THREE.Group();
+            const angle = (i / 12) * Math.PI * 2;
+            station.position.set(Math.cos(angle) * tMajorR, 0, Math.sin(angle) * tMajorR);
+            station.rotation.y = -angle;
+
+            // 3 Rings (Clifford Tensor Group)
+            const r1 = new THREE.Mesh(
+                new THREE.TorusGeometry(2.5, 0.08, 8, 32), 
+                new THREE.MeshPhongMaterial({color: 0xfde047, transparent: true, opacity: 0.6, emissive: 0xfde047, emissiveIntensity: 0.2})
+            );
+            r1.rotation.x = Math.PI/2;
+            
+            const r2 = new THREE.Mesh(
+                new THREE.TorusGeometry(2.5, 0.08, 8, 32), 
+                new THREE.MeshPhongMaterial({color: 0x67e8f9, transparent: true, opacity: 0.6, emissive: 0x67e8f9, emissiveIntensity: 0.2})
+            );
+            r2.rotation.y = Math.PI/2;
+            
+            const r3 = new THREE.Mesh(
+                new THREE.TorusGeometry(2.5, 0.08, 8, 32), 
+                new THREE.MeshPhongMaterial({color: 0xf43f5e, transparent: true, opacity: 0.6, emissive: 0xf43f5e, emissiveIntensity: 0.2})
+            );
+            r3.rotation.z = Math.PI/2;
+
+            // 1 Emergent Node
+            const emMat = new THREE.MeshPhongMaterial({color: 0xffffff, transparent: true, opacity: 0.9, emissive: 0x2dd4bf, emissiveIntensity: 0.8});
+            const emNode = new THREE.Mesh(new THREE.SphereGeometry(0.8, 16, 16), emMat);
+            
+            emNode.userData = { isNode: true, isStrassen: true, globalId: `Strassen-Node-${i}`, matRef: emMat, baseColor: 0x2dd4bf };
+            strassenNodes.push(emNode);
+
+            station.add(r1, r2, r3, emNode);
+            station.userData = { r1, r2, r3, emNode, idx: i };
+            strassenGroup.add(station);
+        }
+        tierAtom.add(strassenGroup);
+
+        const atomVoxels = [];
+        let aIndex = 0;
+        const aL = 3.5;
+        const aCoords = [-1.5, -0.5, 0.5, 1.5];
+        const aCubeGeo = new THREE.BoxGeometry(aL*0.5, aL*0.5, aL*0.5);
+        const aEdgeGeo = new THREE.EdgesGeometry(aCubeGeo);
+
+        const atomAxes = [];
+        for(let i=0; i<16; i++) {
+            let y = 1 - (i / 15) * 2; 
+            let radius = Math.sqrt(1 - y * y);
+            let theta = PHI * Math.PI * 2 * i;
+            atomAxes.push(new THREE.Vector3(Math.cos(theta)*radius, y, Math.sin(theta)*radius).normalize());
+        }
+
+        aCoords.forEach(x => {
+            aCoords.forEach(y => {
+                aCoords.forEach(z => {
+                    const orbitId = aIndex % 16;
+                    const ringAxis = atomAxes[orbitId];
+
+                    const localCoord = new THREE.Vector3(x*1.0, y*1.0, z*1.0);
+                    const basePos = localCoord.clone().multiplyScalar(PHI);
+
+                    const hue = (orbitId / 16) * 360;
+                    const color = new THREE.Color(`hsl(${hue}, 80%, 60%)`);
+
+                    const matSolid = new THREE.MeshLambertMaterial({ color: color, transparent: true });
+                    const matWire = new THREE.LineBasicMaterial({ color: color, transparent: true });
+
+                    const mesh = new THREE.Mesh(aCubeGeo, matSolid);
+                    const wire = new THREE.LineSegments(aEdgeGeo, matWire);
+                    mesh.add(wire);
+                    
+                    mesh.userData = { 
+                        isNode: true, isAtom: true, 
+                        id: aIndex, basePos, axis: ringAxis, 
+                        wire: wire, matRef: matSolid,
+                        globalId: `AtomVoxel-${aIndex}`
+                    };
+                    
+                    atomVoxels.push({ group: mesh, data: mesh.userData });
+                    tierAtom.add(mesh);
+                    aIndex++;
+                });
+            });
+        });
+
+        // --- 1.6 NEW: Outer Hilbert Space Shell ---
+        const hilbertGroup = new THREE.Group();
+        scene.add(hilbertGroup);
+        const hilbertWeaveLines = []; 
+
+        function buildHilbertSpace() {
+            hilbertGroup.clear();
+            hilbertWeaveLines.length = 0;
+
+            const planes = [
+                { up: new THREE.Vector3(0,1,0), right: new THREE.Vector3(1,0,0) }, 
+                { up: new THREE.Vector3(0,0,1), right: new THREE.Vector3(1,0,0) }, 
+                { up: new THREE.Vector3(1,0,0), right: new THREE.Vector3(0,1,0) }  
+            ];
+
+            const baseRadius = 85; 
+            const N = config.hilbertN;
+            const K = config.hilbertK;
+            const Tiers = config.hilbertTiers;
+
+            const matWire = new THREE.LineBasicMaterial({ color: 0x4f46e5, transparent: true, opacity: 0.25, blending: THREE.AdditiveBlending });
+            const matNode = new THREE.MeshBasicMaterial({ color: 0x2dd4bf, transparent: true, opacity: 0.6 });
+            const matWeave = new THREE.LineBasicMaterial({ color: 0x67e8f9, transparent: true, opacity: 0.15, blending: THREE.AdditiveBlending });
+
+            planes.forEach((plane, pIdx) => {
+                const planeGroup = new THREE.Group();
+                for (let t = 0; t < Tiers; t++) {
+                    const radius = baseRadius + (t * 15);
+                    const pts = [];
+                    for (let i = 0; i < N; i++) {
+                        const angle = (i / N) * Math.PI * 2;
+                        const p = new THREE.Vector3()
+                            .addScaledVector(plane.right, Math.cos(angle) * radius)
+                            .addScaledVector(new THREE.Vector3().crossVectors(plane.right, plane.up).normalize(), Math.sin(angle) * radius);
+                        pts.push(p);
+
+                        const mesh = new THREE.Mesh(new THREE.SphereGeometry(0.6, 8, 8), matNode);
+                        mesh.position.copy(p);
+                        planeGroup.add(mesh);
+                    }
+
+                    const lineGeo = new THREE.BufferGeometry();
+                    const linePts = [];
+                    for (let i = 0; i < N; i++) {
+                        const target = (i * K) % N;
+                        linePts.push(pts[i], pts[target]);
+                    }
+                    lineGeo.setFromPoints(linePts);
+                    const lines = new THREE.LineSegments(lineGeo, matWire);
+                    planeGroup.add(lines);
+
+                    if (t === 0) {
+                        for (let i = 0; i < N; i++) {
+                            const weaveLine = new THREE.Line(
+                                new THREE.BufferGeometry().setFromPoints([pts[i], new THREE.Vector3()]),
+                                matWeave
+                            );
+                            weaveLine.userData = { source: pts[i], planeGroup: planeGroup, targetD24Idx: (i + pIdx*4) % 12 };
+                            planeGroup.add(weaveLine);
+                            hilbertWeaveLines.push(weaveLine);
+                        }
+                    }
+                }
+                hilbertGroup.add(planeGroup);
+            });
+        }
+        buildHilbertSpace();
+
+        // --- 1.7 NEW: 4x4x4 Tessellation Bounding Grid & 4:3 Scan System ---
+        const tessellationGroup = new THREE.Group();
+        scene.add(tessellationGroup);
+        
+        const latticePts = [];
+        for(let i=0; i<=4; i++) {
+            let d = -1 + (i/4)*2;
+            for(let j=0; j<=4; j++) {
+                let d2 = -1 + (j/4)*2;
+                latticePts.push(new THREE.Vector3(-1, d, d2), new THREE.Vector3(1, d, d2));
+                latticePts.push(new THREE.Vector3(d, -1, d2), new THREE.Vector3(d, 1, d2));
+                latticePts.push(new THREE.Vector3(d, d2, -1), new THREE.Vector3(d, d2, 1));
+            }
+        }
+        const latticeGeo = new THREE.BufferGeometry().setFromPoints(latticePts);
+        const latticeMat = new THREE.LineBasicMaterial({color: 0x2dd4bf, transparent: true, opacity: 0.15});
+        const latticeLines = new THREE.LineSegments(latticeGeo, latticeMat);
+        tessellationGroup.add(latticeLines);
+
+        const scanGroup = new THREE.Group();
+        scene.add(scanGroup);
+
+        const corners3x3 = [ [-L, -L], [L, -L], [L, L], [-L, L] ];
+        const corners4x4 = [ [-1.5*L, -1.5*L], [1.5*L, -1.5*L], [1.5*L, 1.5*L], [-1.5*L, 1.5*L] ];
+
+        const outerBlocks = [];
+        const tetPts = [
+            new THREE.Vector3(1, 1, 1),
+            new THREE.Vector3(-1, -1, 1),
+            new THREE.Vector3(-1, 1, -1),
+            new THREE.Vector3(1, -1, -1)
+        ];
+        const blockGeo = new THREE.BoxGeometry(4, 4, 4);
+        const blockMat = new THREE.MeshPhongMaterial({color: 0xf97316, transparent: true, opacity: 0.6, emissive: 0xf97316, emissiveIntensity: 0.4});
+        const blockWireMat = new THREE.LineBasicMaterial({color: 0xffffff, transparent: true, opacity: 0.5});
+
+        for(let i=0; i<4; i++) {
+            const block = new THREE.Mesh(blockGeo, blockMat);
+            const wire = new THREE.LineSegments(new THREE.EdgesGeometry(blockGeo), blockWireMat);
+            block.add(wire);
+            scanGroup.add(block);
+            outerBlocks.push(block);
+        }
+
+        const scanPtsArray = new Float32Array(576);
+        const scanGeo = new THREE.BufferGeometry();
+        scanGeo.setAttribute('position', new THREE.BufferAttribute(scanPtsArray, 3));
+        const scanMat = new THREE.LineBasicMaterial({ color: 0x38bdf8, transparent: true, opacity: 0.35, blending: THREE.AdditiveBlending });
+        const scanLinesMesh = new THREE.LineSegments(scanGeo, scanMat);
+        scanGroup.add(scanLinesMesh);
+
+        // --- 1.8 Toroidal Manifold Weave Trails ---
+        const weaveTrailsGroup = new THREE.Group();
+        scene.add(weaveTrailsGroup);
+        const weaveTrails = [];
+
+        function initWeaveTrails() {
+            for(let i=0; i<12; i++) {
+                let geoP = new THREE.BufferGeometry();
+                geoP.setAttribute('position', new THREE.BufferAttribute(new Float32Array(TOTAL_FRAMES * 3), 3));
+                let matP = new THREE.LineBasicMaterial({ color: config.colorPos, transparent: true, opacity: 0.6, blending: THREE.AdditiveBlending });
+                let lineP = new THREE.Line(geoP, matP);
+                weaveTrailsGroup.add(lineP);
+                weaveTrails.push({ line: lineP, arr: geoP.attributes.position.array, isPos: true, idx: i });
+
+                let geoN = new THREE.BufferGeometry();
+                geoN.setAttribute('position', new THREE.BufferAttribute(new Float32Array(TOTAL_FRAMES * 3), 3));
+                let matN = new THREE.LineBasicMaterial({ color: config.colorNeg, transparent: true, opacity: 0.6, blending: THREE.AdditiveBlending });
+                let lineN = new THREE.Line(geoN, matN);
+                weaveTrailsGroup.add(lineN);
+                weaveTrails.push({ line: lineN, arr: geoN.attributes.position.array, isPos: false, idx: i });
+            }
+        }
+        initWeaveTrails();
+
+        function applyCoreTransform(t) {
+            const baseTheta = t * Math.PI * 2; 
+            tierScalar.rotation.y = baseTheta;               
+            tierHept.rotation.y = baseTheta * 12;            
+            tierHex.rotation.y = baseTheta * 120;            
+            tierD12.rotation.y = baseTheta * 720;            
+
+            const tiltX = Math.sin(t * Math.PI * 2 * 7) * 0.4;
+            const tiltZ = Math.cos(t * Math.PI * 2 * 7) * 0.4;
+            const normal = new THREE.Vector3(tiltX, 1, tiltZ).normalize();
+            scalarPolygon.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0), normal);
+
+            if (config.showGyroscope) {
+                const waveFunction = Math.sin(t * Math.PI * 8); 
+                tierD12.rotation.x = Math.sin(baseTheta * PHI) * 0.25 * waveFunction;
+                tierD12.rotation.z = Math.cos(baseTheta * PHI) * 0.25 * waveFunction;
+                
+                tierHex.rotation.x = Math.sin(baseTheta * PHI * 2) * 0.4 * waveFunction;
+                tierHex.rotation.z = Math.cos(baseTheta * PHI * 2) * 0.4 * waveFunction;
+                
+                tierHept.rotation.x = Math.sin(baseTheta * PHI * 3) * 0.5 * waveFunction;
+                tierHept.rotation.z = Math.cos(baseTheta * PHI * 3) * 0.5 * waveFunction;
+            } else {
+                tierD12.rotation.x = 0; tierD12.rotation.z = 0;
+                tierHex.rotation.x = 0; tierHex.rotation.z = 0;
+                tierHept.rotation.x = 0; tierHept.rotation.z = 0;
+            }
+
+            if (config.showToroidalWeave) {
+                const R_major = 25;
+                const theta_torus = t * Math.PI * 2;
+                coreGroup.position.set(Math.cos(theta_torus) * R_major, 0, Math.sin(theta_torus) * R_major);
+                coreGroup.rotation.set(0, -theta_torus, 0);
+                coreGroup.rotateX(Math.PI / 2);
+                const breath = 1.0 + Math.sin(Math.PI * t) * 0.5;
+                coreGroup.scale.set(breath, breath, breath);
+            } else {
+                coreGroup.position.set(0,0,0);
+                coreGroup.rotation.set(0,0,0);
+                coreGroup.scale.setScalar(1);
+            }
+            coreGroup.updateMatrixWorld(true);
+        }
+
+        // --- 2. 4x4 Matrices & 3x3 Trefoil Triads ---
+        const faceDefinitions = [
+            { name: "+Y",    dir: new THREE.Vector3(0, 1, 0),  polarity: 1 }, 
+            { name: "-Y",    dir: new THREE.Vector3(0, -1, 0), polarity: -1 },
+            { name: "+X",    dir: new THREE.Vector3(1, 0, 0),  polarity: 1 }, 
+            { name: "-X",    dir: new THREE.Vector3(-1, 0, 0), polarity: -1 },
+            { name: "+Z",    dir: new THREE.Vector3(0, 0, 1),  polarity: 1 },
+            { name: "-Z",    dir: new THREE.Vector3(0, 0, -1), polarity: -1 }
+        ];
+
+        const matrices4x4 = []; 
+        const triads3x3 = [];
+        const allClickableNodes = []; 
+
+        const cellGeo4x4 = new THREE.BoxGeometry(L*0.8, L*0.8, L*0.15);
+        const edgeGeo4x4 = new THREE.EdgesGeometry(cellGeo4x4);
+        const cellGeo3x3 = new THREE.BoxGeometry(L*0.8, L*0.8, L*0.1);
+        const edgeGeo3x3 = new THREE.EdgesGeometry(cellGeo3x3);
+
+        faceDefinitions.forEach((def, faceIndex) => {
+            def.perm = permutations[faceIndex];
+            def.isInv = def.polarity === -1;
+            def.color = def.polarity === 1 ? config.colorPos : config.colorNeg;
+
+            const group4x4 = new THREE.Group();
+            const target = def.dir.clone().add(def.dir);
+            group4x4.up.copy(new THREE.Vector3(0,1,0));
+            if(Math.abs(def.dir.y) > 0.9) group4x4.up.copy(new THREE.Vector3(0,0,1));
+            group4x4.lookAt(target);
+
+            let cellIndex = 0;
+            for(let row=0; row<4; row++) {
+                for(let col=0; col<4; col++) {
+                    const lx = (col - 1.5) * L;
+                    const ly = -(row - 1.5) * L; 
+                    
+                    const matSolid = new THREE.MeshLambertMaterial({ color: def.color, transparent: true, opacity: 0.6 });
+                    const matWire = new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.3 });
+
+                    const mesh = new THREE.Mesh(cellGeo4x4, matSolid);
+                    mesh.position.set(lx, ly, 0);
+                    const wire = new THREE.LineSegments(edgeGeo4x4, matWire);
+                    mesh.add(wire);
+
+                    mesh.userData = {
+                        isNode: true, is4x4: true,
+                        faceName: def.name, polarity: def.polarity,
+                        localU: col, localV: row,
+                        algForm: pandiagonalAlgebra[cellIndex],
+                        d12Index: (faceIndex * 2 + (row+col)) % 12,
+                        wireRef: wire, matRef: matSolid,
+                        globalId: `4x4-${def.name}-${row}-${col}`
+                    };
+
+                    group4x4.add(mesh);
+                    allClickableNodes.push({ mesh, def });
+                    cellIndex++;
+                }
+            }
+            scene.add(group4x4);
+            matrices4x4.push({ group: group4x4, def });
+
+            const triadBaseGroup = new THREE.Group();
+            triadBaseGroup.up.copy(group4x4.up);
+            triadBaseGroup.lookAt(target);
+
+            const columnRefs = []; 
+            const layerObjects = [];
+
+            def.perm.forEach((stepIdx, layerIndex) => {
+                const step = tqfSteps[stepIdx];
+                const layerGroup = new THREE.Group();
+                
+                for(let row=-1; row<=1; row++) {
+                    for(let col=-1; col<=1; col++) {
+                        const lx = col * L;
+                        const ly = -row * L;
+                        
+                        const matSolid = new THREE.MeshLambertMaterial({ color: step.color, transparent: true, opacity: 0.4 });
+                        const matWire = new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.2 });
+
+                        const mesh = new THREE.Mesh(cellGeo3x3, matSolid);
+                        mesh.position.set(lx, ly, 0);
+                        const wire = new THREE.LineSegments(edgeGeo3x3, matWire);
+                        mesh.add(wire);
+
+                        mesh.userData = {
+                            isNode: true, is3x3: true,
+                            faceName: def.name, polarity: def.polarity,
+                            localU: col, localV: row,
+                            stepName: step.name, layerIndex: layerIndex,
+                            wireRef: wire,
+                            globalId: `3x3-${def.name}-L${layerIndex}-${row}-${col}`
+                        };
+
+                        layerGroup.add(mesh);
+                        allClickableNodes.push({ mesh, def });
+
+                        let flatIdx = (row+1)*3 + (col+1);
+                        if(!columnRefs[flatIdx]) columnRefs[flatIdx] = [];
+                        columnRefs[flatIdx].push(mesh);
+                    }
+                }
+                triadBaseGroup.add(layerGroup);
+                layerObjects.push(layerGroup);
+            });
+
+            scene.add(triadBaseGroup);
+            triads3x3.push({ baseGroup: triadBaseGroup, layers: layerObjects, def, columnRefs });
+        });
+
+        // Register Selectable Objects
+        atomVoxels.forEach(v => allClickableNodes.push({ mesh: v.group }));
+        strassenNodes.forEach(t => allClickableNodes.push({ mesh: t }));
+
+        // --- 3. Telemetry Weave Streams ---
+        const streamGroup = new THREE.Group();
+        scene.add(streamGroup);
+        const streamLines = [];
+
+        triads3x3.forEach((triadData, faceIndex) => {
+            triadData.columnRefs.forEach((colMeshes, flatIdx) => {
+                const streamBundle = new THREE.Group();
+
+                const rigidGeo = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(), new THREE.Vector3(), new THREE.Vector3()]);
+                const rigidMat = new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.15 });
+                const rigidLine = new THREE.Line(rigidGeo, rigidMat);
+
+                const waveGeo = new THREE.BufferGeometry();
+                const wavePts = new Float32Array(60 * 3); 
+                waveGeo.setAttribute('position', new THREE.BufferAttribute(wavePts, 3));
+                const waveMat = new THREE.LineBasicMaterial({ 
+                    color: triadData.def.polarity === 1 ? config.colorPos : config.colorNeg,
+                    transparent: true, opacity: 0.6, blending: THREE.AdditiveBlending
+                });
+                const waveLine = new THREE.Line(waveGeo, waveMat);
+
+                const ringGeo = new THREE.TorusGeometry(1, 0.15, 4, 16);
+                const ringMat = new THREE.MeshBasicMaterial({ 
+                    color: triadData.def.polarity === 1 ? 0xfde047 : 0x67e8f9, 
+                    transparent: true, opacity: 0.8, side: THREE.DoubleSide 
+                });
+                const pulseRing = new THREE.Mesh(ringGeo, ringMat);
+
+                streamBundle.add(rigidLine, waveLine, pulseRing);
+
+                streamBundle.userData = {
+                    meshes3x3: colMeshes, faceDef: triadData.def,
+                    localU: colMeshes[0].userData.localU, localV: colMeshes[0].userData.localV,
+                    d12Idx: (faceIndex * 2 + flatIdx) % 12,
+                    matWave: waveMat, matRing: ringMat,
+                    rigidLine, waveLine, pulseRing, wavePts,
+                    pLens: new THREE.Vector3(), vTarget: new THREE.Vector3(), lastCol: 0
+                };
+                
+                streamLines.push(streamBundle);
+                streamGroup.add(streamBundle);
+            });
+        });
+
+        // Compute Weave Trails Setup
+        function computeWeaveTrails() {
+            const m00 = seedState[0] === 1;
+            const m10 = seedState[1] === 1;
+            const m01 = seedState[8] === 1;
+            const m11 = seedState[9] === 1;
+            
+            let activeD12 = new Array(12).fill(false);
+            streamLines.forEach((bundle) => {
+                const dt = bundle.userData;
+                let isStreamActiveInSeed = false;
+                if (['+Y', '-Y', '+X', '-X'].includes(dt.faceDef.name)) {
+                    if (dt.localU === -1 && dt.localV === -1 && m00) isStreamActiveInSeed = true;
+                    if (dt.localU ===  1 && dt.localV === -1 && m10) isStreamActiveInSeed = true;
+                    if (dt.localU === -1 && dt.localV ===  1 && m01) isStreamActiveInSeed = true;
+                    if (dt.localU ===  1 && dt.localV ===  1 && m11) isStreamActiveInSeed = true;
+                }
+                if(isStreamActiveInSeed) activeD12[dt.d12Idx] = true;
+            });
+
+            const cacheT = currentFrame / TOTAL_FRAMES;
+            for (let f = 0; f < TOTAL_FRAMES; f++) {
+                applyCoreTransform(f / TOTAL_FRAMES);
+                for(let i=0; i<12; i++) {
+                    _vTarget.copy(vD12Pos[i]).applyMatrix4(tierD12.matrixWorld);
+                    let pTrail = weaveTrails.find(tr => tr.isPos && tr.idx === i);
+                    pTrail.arr[f*3] = _vTarget.x; pTrail.arr[f*3+1] = _vTarget.y; pTrail.arr[f*3+2] = _vTarget.z;
+                    
+                    _vTarget.copy(vD12Neg[i]).applyMatrix4(tierD12.matrixWorld);
+                    let nTrail = weaveTrails.find(tr => !tr.isPos && tr.idx === i);
+                    nTrail.arr[f*3] = _vTarget.x; nTrail.arr[f*3+1] = _vTarget.y; nTrail.arr[f*3+2] = _vTarget.z;
+                }
+            }
+            weaveTrails.forEach(tr => {
+                tr.line.geometry.attributes.position.needsUpdate = true;
+            });
+            applyCoreTransform(cacheT); 
+        }
+
+        // Apply symmetry after all streams have been initialized
+        function initializeSystem() {
+            const m00 = seedState[0]; const m10 = seedState[1];
+            const m01 = seedState[8]; const m11 = seedState[9];
+            for(let y=0; y<8; y++) {
+                for(let x=0; x<8; x++) {
+                    let rx = x > 3 ? 7 - x : x;
+                    if(rx > 1) rx = 3 - rx; 
+                    let ry = y > 3 ? 7 - y : y;
+                    if(ry > 1) ry = 3 - ry;
+                    let val = 0;
+                    if(rx===0 && ry===0) val = m00;
+                    if(rx===1 && ry===0) val = m10;
+                    if(rx===0 && ry===1) val = m01;
+                    if(rx===1 && ry===1) val = m11;
+                    seedState[y*8 + x] = val;
+                }
+            }
+            renderSeedGrid();
+            computeWeaveTrails();
+        }
+
+        // --- 4. Toggles Geometry Generators ---
+        const visualGuidesGroup = new THREE.Group();
+        scene.add(visualGuidesGroup);
+
+        const trefoilLines = [];
+        const orbitCircles = [];
+        
+        const trefoilGeoPoints = [];
+        for(let i=0; i<=64; i++) trefoilGeoPoints.push(getTrefoil(i * (Math.PI*2/64), 1));
+        const baseTrefoilGeo = new THREE.BufferGeometry().setFromPoints(trefoilGeoPoints);
+        
+        const circleGeo = new THREE.BufferGeometry().setFromPoints(
+            new THREE.Path().absarc(0, 0, 3.2, 0, Math.PI * 2).getPoints(64)
+        );
+
+        triads3x3.forEach(tData => {
+            const matT = new THREE.LineBasicMaterial({ color: 0x475569, transparent: true, opacity: 0.4 });
+            const line = new THREE.Line(baseTrefoilGeo, matT);
+            
+            const matC = new THREE.LineDashedMaterial({ color: 0x64748b, transparent: true, opacity: 0.3, dashSize: 0.2, gapSize: 0.2 });
+            const circle = new THREE.Line(circleGeo, matC);
+            circle.computeLineDistances();
+
+            const qAlign = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0,0,1), tData.def.dir);
+            line.quaternion.copy(qAlign);
+            circle.quaternion.copy(qAlign);
+            if(tData.def.isInv) line.scale.z = -1;
+
+            trefoilLines.push({ line, tData });
+            orbitCircles.push({ circle, tData });
+            visualGuidesGroup.add(line, circle);
+        });
+
+        const tqfTriangulationLines = [];
+        triads3x3.forEach(tData => {
+            const mat = new THREE.LineBasicMaterial({ color: 0x2dd4bf, transparent: true, opacity: 0.6 });
+            const geom = new THREE.BufferGeometry();
+            const line = new THREE.LineSegments(geom, mat);
+            line.visible = false; 
+            
+            const apexMesh = new THREE.Mesh(
+                new THREE.ConeGeometry(2, 4, 4),
+                new THREE.MeshBasicMaterial({ color: 0xfde047, wireframe: true })
+            );
+            apexMesh.visible = false;
+            
+            tqfTriangulationLines.push({ line, apexMesh, tData });
+            visualGuidesGroup.add(line, apexMesh);
+        });
+
+        // --- Collision Sparks System ---
+        const sparkGeo = new THREE.SphereGeometry(0.8, 8, 8);
+        const sparkMat = new THREE.MeshBasicMaterial({color: 0xffffff});
+        const collisionSparks = []; 
+
+        // UI Events
+        document.getElementById('toggle-atom').addEventListener('change', e => { config.showAtom = e.target.checked; });
+        document.getElementById('toggle-atom-cubes').addEventListener('change', e => { config.showAtomCubes = e.target.checked; });
+        document.getElementById('toggle-trefoils').addEventListener('change', e => {
+            config.showTrefoils = e.target.checked;
+            trefoilLines.forEach(t => t.line.visible = config.showTrefoils);
+            orbitCircles.forEach(c => c.circle.visible = config.showTrefoils);
+        });
+        document.getElementById('toggle-tqf').addEventListener('change', e => {
+            config.showTQF = e.target.checked;
+            tqfTriangulationLines.forEach(t => {
+                t.line.visible = config.showTQF;
+                t.apexMesh.visible = config.showTQF;
+            });
+        });
+        document.getElementById('toggle-active-streams').addEventListener('change', e => { config.onlyActiveStreams = e.target.checked; });
+        document.getElementById('toggle-hilbert').addEventListener('change', e => { config.showHilbert = e.target.checked; });
+        document.getElementById('toggle-gyroscope').addEventListener('change', e => { config.showGyroscope = e.target.checked; });
+        document.getElementById('toggle-tessellation').addEventListener('change', e => { config.showTessellation = e.target.checked; });
+        document.getElementById('toggle-scan').addEventListener('change', e => { config.showScan = e.target.checked; });
+        
+        document.getElementById('toggle-toroidal-weave').addEventListener('change', e => { 
+            config.showToroidalWeave = e.target.checked; 
+            computeWeaveTrails();
+        });
+
+        document.getElementById('ctrl-mat-op').addEventListener('input', e => {
+            config.matrixOpacity = parseFloat(e.target.value);
+            document.getElementById('val-mat-op').innerText = config.matrixOpacity.toFixed(1);
+        });
+        document.getElementById('ctrl-str-op').addEventListener('input', e => {
+            config.streamOpacity = parseFloat(e.target.value);
+            document.getElementById('val-str-op').innerText = config.streamOpacity.toFixed(1);
+        });
+
+        // Hilbert Space Event Listeners
+        document.getElementById('ctrl-hilb-n').addEventListener('input', e => {
+            config.hilbertN = parseInt(e.target.value);
+            document.getElementById('val-hilb-n').innerText = config.hilbertN;
+            buildHilbertSpace();
+        });
+        document.getElementById('ctrl-hilb-k').addEventListener('input', e => {
+            config.hilbertK = parseInt(e.target.value);
+            document.getElementById('val-hilb-k').innerText = config.hilbertK;
+            buildHilbertSpace();
+        });
+        document.getElementById('ctrl-hilb-t').addEventListener('input', e => {
+            config.hilbertTiers = parseInt(e.target.value);
+            document.getElementById('val-hilb-t').innerText = config.hilbertTiers;
+            buildHilbertSpace();
+        });
+
+        const frameSlider = document.getElementById('frame-slider');
+        const frameValText = document.getElementById('frame-val');
+        
+        const btnPlay = document.getElementById('btn-play');
+        const btnPrev = document.getElementById('btn-prev');
+        const btnNext = document.getElementById('btn-next');
+        const btnS1 = document.getElementById('btn-speed-1');
+        const btnS10 = document.getElementById('btn-speed-10');
+        const btnS100 = document.getElementById('btn-speed-100');
+
+        function updateUI(frame) {
+            targetFrame = parseFloat(frame);
+            frameSlider.value = targetFrame;
+            frameValText.innerText = `${Math.round(targetFrame)} / 720`;
+        }
+
+        frameSlider.addEventListener('input', (e) => {
+            isPlaying = false;
+            btnPlay.innerHTML = '⏯ Play';
+            updateUI(e.target.value);
+        });
+
+        btnPlay.addEventListener('click', () => {
+            isPlaying = !isPlaying;
+            btnPlay.innerHTML = isPlaying ? '⏸ Pause' : '⏯ Play';
+        });
+
+        btnPrev.addEventListener('click', () => {
+            isPlaying = false;
+            btnPlay.innerHTML = '⏯ Play';
+            let f = targetFrame - 1;
+            if(f < 0) f = TOTAL_FRAMES;
+            updateUI(f);
+            currentFrame = f; 
+        });
+
+        btnNext.addEventListener('click', () => {
+            isPlaying = false;
+            btnPlay.innerHTML = '⏯ Play';
+            let f = targetFrame + 1;
+            if(f >= TOTAL_FRAMES) f = 0;
+            updateUI(f);
+            currentFrame = f; 
+        });
+
+        function setSpeed(speed, activeBtn) {
+            playbackSpeed = speed;
+            [btnS1, btnS10, btnS100].forEach(b => {
+                b.classList.remove('bg-teal-600', 'text-white', 'border-teal-400');
+                b.classList.add('bg-slate-800', 'text-slate-400', 'border-slate-600');
+            });
+            activeBtn.classList.remove('bg-slate-800', 'text-slate-400', 'border-slate-600');
+            activeBtn.classList.add('bg-teal-600', 'text-white', 'border-teal-400');
+        }
+
+        btnS1.addEventListener('click', () => setSpeed(1.0, btnS1));
+        btnS10.addEventListener('click', () => setSpeed(0.1, btnS10));
+        btnS100.addEventListener('click', () => setSpeed(0.01, btnS100));
+
+        const rotateBtn = document.getElementById('rotate-toggle-btn');
+        rotateBtn.addEventListener('click', () => {
+            controls.autoRotate = !controls.autoRotate;
+            rotateBtn.innerText = `Auto-Rotate Camera: ${controls.autoRotate ? 'ON' : 'OFF'}`;
+            if(controls.autoRotate) {
+                rotateBtn.classList.replace('text-slate-500', 'text-slate-300');
+                rotateBtn.classList.add('border-teal-400');
+            } else {
+                rotateBtn.classList.replace('text-slate-300', 'text-slate-500');
+                rotateBtn.classList.remove('border-teal-400');
+            }
+        });
+
+        const raycaster = new THREE.Raycaster();
+        const mouse = new THREE.Vector2();
+
+        window.addEventListener('pointerdown', (e) => {
+            if(e.clientX < 460 && e.clientY < window.innerHeight) return; 
+            if(e.clientX > window.innerWidth - 420 && document.getElementById('telemetry-panel').style.display === 'block') return; 
+            
+            mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
+            mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
+            raycaster.setFromCamera(mouse, camera);
+            
+            const targetMeshes = allClickableNodes.map(n => n.mesh);
+            const intersects = raycaster.intersectObjects(targetMeshes, false);
+
+            if (intersects.length > 0) {
+                const object = intersects[0].object;
+                const data = object.userData;
+
+                if(data.isNode) {
+                    if(selectedNode) {
+                        if(selectedNode.is3x3 || selectedNode.is4x4) {
+                            selectedNode.wireRef.material.color.setHex(0xffffff);
+                            selectedNode.wireRef.material.opacity = selectedNode.is3x3 ? 0.2 : 0.3;
+                        } else if (selectedNode.isStrassen || selectedNode.isAtom) {
+                            selectedNode.matRef.emissive.setHex(selectedNode.baseColor || 0x000000);
+                        }
+                    }
+                    selectedNode = data;
+                    
+                    if(data.is3x3 || data.is4x4) {
+                        selectedNode.wireRef.material.color.setHex(0xffffff);
+                        selectedNode.wireRef.material.opacity = 1.0;
+                    } else if (data.isStrassen || data.isAtom) {
+                        if(selectedNode.matRef.emissive) {
+                            selectedNode.matRef.emissive.setHex(0xffffff);
+                        }
+                    }
+
+                    const telPanel = document.getElementById('telemetry-panel');
+                    telPanel.style.display = 'block';
+                    
+                    if(data.is3x3 || data.is4x4) {
+                        document.getElementById('tel-face').innerText = `FACE: ${data.faceName}`;
+                        const targetHex = data.polarity === 1 ? config.colorPos : config.colorNeg;
+                        document.getElementById('tel-face').style.color = targetHex;
+                        document.getElementById('tel-face').style.borderColor = targetHex;
+                        document.getElementById('tel-type').innerText = data.polarity === 1 ? "Positive Flow (+)" : "Negative Inverse (-)";
+                        document.getElementById('tel-type').style.color = targetHex;
+                        document.getElementById('tel-local').innerText = `[ ${data.localU}, ${data.localV} ]`;
+                    } else {
+                        document.getElementById('tel-face').innerText = data.isAtom ? `SEED ATOM` : `STRASSEN NODE`;
+                        document.getElementById('tel-face').style.color = '#67e8f9';
+                        document.getElementById('tel-face').style.borderColor = '#67e8f9';
+                        document.getElementById('tel-type').innerText = data.isAtom ? "Crystalline Component" : "Clifford-Strassen Tensor";
+                        document.getElementById('tel-type').style.color = '#fff';
+                        document.getElementById('tel-local').innerText = `N/A`;
+                    }
+                    
+                    document.getElementById('tel-id').innerText = data.globalId;
+                    
+                    const tqfContext = document.getElementById('tqf-context');
+                    const panContext = document.getElementById('pan-context');
+                    const magicSquareBlock = document.getElementById('magic-square-container');
+                    
+                    if(data.is3x3) {
+                        tqfContext.style.display = 'block';
+                        panContext.style.display = 'none';
+                        if(magicSquareBlock) magicSquareBlock.style.display = 'none';
+                        document.getElementById('tel-tqf-step').innerText = data.stepName;
+                    } 
+                    else if(data.is4x4) {
+                        tqfContext.style.display = 'none';
+                        panContext.style.display = 'block';
+                        if(magicSquareBlock) magicSquareBlock.style.display = 'block';
+                        document.getElementById('tel-d12').innerText = `Vertex $\\phi_{${data.d12Index}}$`;
+                        const telAlg = document.getElementById('tel-alg');
+                        if(telAlg) telAlg.innerText = data.algForm;
+
+                        document.querySelectorAll('.magic-cell').forEach(c => c.classList.remove('active'));
+                        const flatIndex = data.localV * 4 + data.localU;
+                        const cellEl = document.getElementById(`ui-cell-${flatIndex}`);
+                        if(cellEl) cellEl.classList.add('active');
+                    }
+                    else {
+                        tqfContext.style.display = 'none';
+                        panContext.style.display = 'none';
+                        if(magicSquareBlock) magicSquareBlock.style.display = 'none';
+                    }
+                }
+            }
+        });
+
+        document.getElementById('close-telemetry').addEventListener('click', () => {
+            document.getElementById('telemetry-panel').style.display = 'none';
+            if(selectedNode) {
+                if(selectedNode.is3x3 || selectedNode.is4x4) {
+                    selectedNode.wireRef.material.color.setHex(0xffffff);
+                    selectedNode.wireRef.material.opacity = selectedNode.is3x3 ? 0.2 : 0.3; 
+                } else if (selectedNode.isStrassen || selectedNode.isAtom) {
+                    if (selectedNode.matRef.emissive) {
+                        selectedNode.matRef.emissive.setHex(selectedNode.baseColor || 0x000000);
+                    }
+                }
+                selectedNode = null;
+            }
+            document.querySelectorAll('.magic-cell').forEach(c => c.classList.remove('active'));
+        });
+
+        function applyFibonacciWave(pt, globalS, dir, t, isInverse) {
+            const amp = Math.pow(PHI, (1 - globalS) * 4) * 0.7; 
+            const freq = 40; 
+            const speed = t * 15 * Math.PI * 2;
+            const phase = isInverse ? -1 : 1;
+
+            _up.set(1,0,0);
+            if(Math.abs(dir.dot(_up)) > 0.99) _up.set(0,1,0);
+            
+            _v.crossVectors(dir, _up).normalize();
+            _w.crossVectors(dir, _v).normalize();
+
+            const angle = phase * (globalS * freq - speed);
+            pt.addScaledVector(_v, Math.cos(angle) * amp);
+            pt.addScaledVector(_w, Math.sin(angle) * amp);
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            controls.update();
+
+            if (isPlaying) {
+                targetFrame += baseSpeed * playbackSpeed;
+                if (targetFrame >= TOTAL_FRAMES) {
+                    targetFrame -= TOTAL_FRAMES;
+                    currentFrame -= TOTAL_FRAMES; 
+                }
+                updateUI(targetFrame);
+            }
+
+            currentFrame += (targetFrame - currentFrame) * 0.15; 
+            const t = currentFrame / TOTAL_FRAMES; 
+
+            applyCoreTransform(t);
+
+            const R_t = Math.sin(Math.PI * t); 
+            const currentR_4x4 = BASE_4x4_RADIUS + (R_t * 15); 
+            const currentR_3x3 = currentR_4x4 * PHI; 
+
+            const m00 = seedState[0] === 1;
+            const m10 = seedState[1] === 1;
+            const m01 = seedState[8] === 1;
+            const m11 = seedState[9] === 1;
+
+            let activeD12 = new Array(12).fill(false);
+            let activeHex = new Array(6).fill(false);
+            let activeHept = new Array(7).fill(false);
+
+            const baseTheta = t * Math.PI * 2; 
+
+            if (config.showHilbert) {
+                hilbertGroup.visible = true;
+                const hCollapse = (t * 8) % 1.0; 
+                const hScale = Math.pow(PHI, -hCollapse * 4); 
+                hilbertGroup.scale.setScalar(hScale);
+                hilbertGroup.rotation.y = baseTheta * 0.1;
+                hilbertGroup.rotation.x = Math.sin(t * Math.PI * 2) * 0.05;
+            } else {
+                hilbertGroup.visible = false;
+            }
+
+            if (config.showHilbert) {
+                hilbertWeaveLines.forEach(line => {
+                    const dt = line.userData;
+                    _vSrc.copy(dt.source).applyMatrix4(dt.planeGroup.matrixWorld);
+                    const targetVertices = (dt.targetD24Idx % 2 === 0) ? vD12Pos : vD12Neg;
+                    _vTarget.copy(targetVertices[dt.targetD24Idx]).applyMatrix4(tierD12.matrixWorld);
+                    _vSrc.applyMatrix4(line.parent.matrixWorld.clone().invert());
+                    _vTarget.applyMatrix4(line.parent.matrixWorld.clone().invert());
+                    line.geometry.setFromPoints([_vSrc, _vTarget]);
+                });
+            }
+
+            matrices4x4.forEach(m => {
+                const pos = m.def.dir.clone().multiplyScalar(currentR_4x4);
+                m.group.position.copy(pos);
+                m.group.children.forEach(mesh => {
+                    if(mesh.material && !mesh.material.isLineBasicMaterial) {
+                        mesh.material.opacity = config.matrixOpacity * (0.3 + 0.7 * (1-R_t)); 
+                    }
+                });
+            });
+
+            const zAxis = new THREE.Vector3(0,0,1);
+            triads3x3.forEach(tData => {
+                const baseCenter = tData.def.dir.clone().multiplyScalar(currentR_3x3);
+                tData.baseGroup.position.copy(baseCenter);
+                const trefoilScale = 12 + (R_t * 6); 
+
+                tData.layers.forEach((layerGroup, lIdx) => {
+                    const t_angle = (baseTheta * 3) - (lIdx * 0.4); 
+                    let tPt = getTrefoil(t_angle, trefoilScale);
+                    let tTan = getTrefoilTangent(t_angle);
+
+                    if (tData.def.isInv) {
+                        tPt.multiplyScalar(-1); 
+                        tTan.multiplyScalar(-1);
+                    }
+                    
+                    layerGroup.position.copy(tPt);
+                    layerGroup.quaternion.setFromUnitVectors(zAxis, tTan);
+
+                    layerGroup.children.forEach(mesh => {
+                        if(mesh.material && !mesh.material.isLineBasicMaterial) {
+                            let isNodeActiveInSeed = false;
+                            const mFace = mesh.userData.faceName;
+                            const mU = mesh.userData.localU;
+                            const mV = mesh.userData.localV;
+                            
+                            if (['+Y', '-Y', '+X', '-X'].includes(mFace)) {
+                                if (mU === -1 && mV === -1 && m00) isNodeActiveInSeed = true;
+                                if (mU ===  1 && mV === -1 && m10) isNodeActiveInSeed = true;
+                                if (mU === -1 && mV ===  1 && m01) isNodeActiveInSeed = true;
+                                if (mU ===  1 && mV ===  1 && m11) isNodeActiveInSeed = true;
+                            }
+
+                            if (config.onlyActiveStreams && !isNodeActiveInSeed) {
+                                mesh.material.opacity = 0.05; 
+                            } else {
+                                mesh.material.opacity = config.matrixOpacity * 0.4;
+                            }
+                        }
+                    });
+                });
+                tData.baseGroup.updateMatrixWorld(true);
+            });
+
+            if(config.showTrefoils) {
+                const trefoilScale = 12 + (R_t * 6);
+                trefoilLines.forEach(t => {
+                    t.line.position.copy(t.tData.baseGroup.position);
+                    t.line.scale.set(trefoilScale, trefoilScale, t.tData.def.isInv ? -trefoilScale : trefoilScale);
+                });
+                orbitCircles.forEach(c => {
+                    c.circle.position.copy(c.tData.baseGroup.position);
+                    c.circle.scale.set(trefoilScale, trefoilScale, 1);
+                });
+            }
+
+            if(config.showTQF) {
+                tqfTriangulationLines.forEach(t => {
+                    const pts = [];
+                    const layer0 = t.tData.layers[0];
+                    const v1 = new THREE.Vector3(), v2 = new THREE.Vector3(), v3 = new THREE.Vector3(), vCenter = new THREE.Vector3();
+                    
+                    layer0.children[0].getWorldPosition(v1); 
+                    layer0.children[2].getWorldPosition(v2); 
+                    layer0.children[7].getWorldPosition(v3); 
+                    layer0.children[4].getWorldPosition(vCenter); 
+
+                    pts.push(v1, v2, v2, v3, v3, v1);
+                    
+                    const v4x4Center = t.tData.def.dir.clone().multiplyScalar(currentR_4x4);
+                    pts.push(vCenter, v4x4Center);
+
+                    t.line.geometry.setFromPoints(pts);
+
+                    const impliedDist = currentR_3x3 + 25; 
+                    t.apexMesh.position.copy(t.tData.def.dir.clone().multiplyScalar(impliedDist));
+                    t.apexMesh.quaternion.copy(new THREE.Quaternion().setFromUnitVectors(zAxis, t.tData.def.dir));
+                    t.apexMesh.rotation.z += 0.05; 
+                });
+            }
+
+            if (config.showTessellation) {
+                tessellationGroup.visible = true;
+                const impliedDist = currentR_3x3 + 25;
+                tessellationGroup.scale.setScalar(impliedDist);
+            } else {
+                tessellationGroup.visible = false;
+            }
+
+            // NEW 4:3 Probability Scan & Balance Logic
+            if (config.showScan) {
+                scanGroup.visible = true;
+                const impliedDist = currentR_3x3 + 25;
+                
+                // Outer Perspectives (4 Nodes)
+                outerBlocks.forEach((block, i) => {
+                    block.position.copy(tetPts[i]).multiplyScalar(impliedDist);
+                    block.rotation.x += 0.01;
+                    block.rotation.y += 0.02;
+                });
+
+                let sIdx = 0;
+                triads3x3.forEach((tData, idx) => {
+                    const mData = matrices4x4[idx];
+                    const tGroup = tData.layers[0];
+                    const mGroup = mData.group;
+                    
+                    // Frustum Expansion (3x3 front layer to 4x4 face layer)
+                    for(let i=0; i<4; i++) {
+                        _pt1.set(corners3x3[i][0], corners3x3[i][1], 0).applyMatrix4(tGroup.matrixWorld);
+                        _pt2.set(corners4x4[i][0], corners4x4[i][1], 0).applyMatrix4(mGroup.matrixWorld);
+                        _pt3.set(corners3x3[(i+1)%4][0], corners3x3[(i+1)%4][1], 0).applyMatrix4(tGroup.matrixWorld);
+                        _pt4.set(corners4x4[(i+1)%4][0], corners4x4[(i+1)%4][1], 0).applyMatrix4(mGroup.matrixWorld);
+                        
+                        // Corner to corner connection
+                        scanPtsArray[sIdx++] = _pt1.x; scanPtsArray[sIdx++] = _pt1.y; scanPtsArray[sIdx++] = _pt1.z;
+                        scanPtsArray[sIdx++] = _pt2.x; scanPtsArray[sIdx++] = _pt2.y; scanPtsArray[sIdx++] = _pt2.z;
+                        
+                        // 3x3 rim
+                        scanPtsArray[sIdx++] = _pt1.x; scanPtsArray[sIdx++] = _pt1.y; scanPtsArray[sIdx++] = _pt1.z;
+                        scanPtsArray[sIdx++] = _pt3.x; scanPtsArray[sIdx++] = _pt3.y; scanPtsArray[sIdx++] = _pt3.z;
+                        
+                        // 4x4 rim
+                        scanPtsArray[sIdx++] = _pt2.x; scanPtsArray[sIdx++] = _pt2.y; scanPtsArray[sIdx++] = _pt2.z;
+                        scanPtsArray[sIdx++] = _pt4.x; scanPtsArray[sIdx++] = _pt4.y; scanPtsArray[sIdx++] = _pt4.z;
+                    }
+
+                    // Geometric Tethers (Grounding the 3x3 nodes to the 4 probability poles)
+                    _pt1.set(0,0,0).applyMatrix4(tGroup.matrixWorld); 
+                    for(let b=0; b<4; b++) {
+                        scanPtsArray[sIdx++] = _pt1.x; scanPtsArray[sIdx++] = _pt1.y; scanPtsArray[sIdx++] = _pt1.z;
+                        scanPtsArray[sIdx++] = outerBlocks[b].position.x; 
+                        scanPtsArray[sIdx++] = outerBlocks[b].position.y; 
+                        scanPtsArray[sIdx++] = outerBlocks[b].position.z;
+                    }
+                });
+                scanLinesMesh.geometry.attributes.position.needsUpdate = true;
+            } else {
+                scanGroup.visible = false;
+            }
+
+            streamLines.forEach((bundle, idx) => {
+                const dt = bundle.userData;
+                const wavePts = dt.wavePts;
+
+                let isStreamActiveInSeed = false;
+                if (['+Y', '-Y', '+X', '-X'].includes(dt.faceDef.name)) {
+                    if (dt.localU === -1 && dt.localV === -1 && m00) isStreamActiveInSeed = true;
+                    if (dt.localU ===  1 && dt.localV === -1 && m10) isStreamActiveInSeed = true;
+                    if (dt.localU === -1 && dt.localV ===  1 && m01) isStreamActiveInSeed = true;
+                    if (dt.localU ===  1 && dt.localV ===  1 && m11) isStreamActiveInSeed = true;
+                }
+
+                if (config.onlyActiveStreams && !isStreamActiveInSeed) {
+                    bundle.visible = false;
+                } else {
+                    bundle.visible = true;
+
+                    dt.meshes3x3[0].getWorldPosition(_vOuter); 
+
+                    _faceUp.set(0,1,0);
+                    if(Math.abs(dt.faceDef.dir.y) > 0.9) _faceUp.set(0,0,1);
+                    _faceRight.crossVectors(_faceUp, dt.faceDef.dir).normalize();
+                    
+                    _vLens.copy(dt.faceDef.dir).multiplyScalar(currentR_4x4)
+                        .addScaledVector(_faceRight, dt.localU * L)
+                        .addScaledVector(_faceUp, dt.localV * L); 
+
+                    const targetVertices = dt.faceDef.polarity === 1 ? vD12Pos : vD12Neg;
+                    _vTarget.copy(targetVertices[dt.d12Idx]).applyMatrix4(tierD12.matrixWorld);
+
+                    dt.pLens.copy(_vLens);
+                    dt.vTarget.copy(_vTarget);
+
+                    dt.rigidLine.geometry.setFromPoints([_vOuter, _vLens, _vTarget]);
+
+                    _dir1.subVectors(_vLens, _vOuter);
+                    const len1 = _dir1.length(); _dir1.normalize();
+
+                    _dir2.subVectors(_vTarget, _vLens);
+                    const len2 = _dir2.length(); _dir2.normalize();
+
+                    const totalLen = len1 + len2;
+                    const splitS = len1 / totalLen; 
+                    let ptIdx = 0;
+
+                    const seg1Pts = 20;
+                    for(let i=0; i<seg1Pts; i++) {
+                        const localS = i / (seg1Pts - 1);
+                        const globalS = localS * splitS;
+                        _pt.lerpVectors(_vOuter, _vLens, localS);
+                        applyFibonacciWave(_pt, globalS, _dir1, t, dt.faceDef.isInv);
+                        wavePts[ptIdx++] = _pt.x; wavePts[ptIdx++] = _pt.y; wavePts[ptIdx++] = _pt.z;
+                    }
+
+                    const seg2Pts = 40;
+                    for(let i=0; i<seg2Pts; i++) {
+                        const localS = i / (seg2Pts - 1);
+                        const globalS = splitS + localS * (1 - splitS);
+                        _pt.lerpVectors(_vLens, _vTarget, localS);
+                        applyFibonacciWave(_pt, globalS, _dir2, t, dt.faceDef.isInv);
+                        wavePts[ptIdx++] = _pt.x; wavePts[ptIdx++] = _pt.y; wavePts[ptIdx++] = _pt.z;
+                    }
+                    dt.waveLine.geometry.attributes.position.needsUpdate = true;
+
+                    const pulseCycle = (t * 2 + (idx * 0.05)) % 1.0; 
+
+                    if(pulseCycle <= splitS) {
+                        _pRing.lerpVectors(_vOuter, _vLens, pulseCycle / splitS);
+                        _rDir.copy(_dir1);
+                    } else {
+                        _pRing.lerpVectors(_vLens, _vTarget, (pulseCycle - splitS) / (1 - splitS));
+                        _rDir.copy(_dir2);
+                    }
+
+                    dt.pulseRing.position.copy(_pRing);
+                    dt.pulseRing.quaternion.setFromUnitVectors(zAxis, _rDir);
+                    dt.pulseRing.scale.setScalar(Math.pow(PHI, (1 - pulseCycle) * 4) * 0.8);
+
+                    if (isStreamActiveInSeed) {
+                        activeD12[dt.d12Idx] = true;
+                    }
+
+                    let isStreamActive = false;
+                    if(selectedNode) {
+                        if(selectedNode.is3x3 && dt.meshes3x3.some(m => m.userData.globalId === selectedNode.globalId)) {
+                            isStreamActive = true;
+                        } 
+                        else if (selectedNode.is4x4 && selectedNode.faceName === dt.faceDef.name) {
+                            isStreamActive = true;
+                        }
+                    }
+
+                    if(isStreamActive) {
+                        dt.rigidLine.material.opacity = 0.8;
+                        dt.waveLine.material.opacity = 1.0;
+                        dt.waveLine.material.linewidth = 2;
+                        dt.waveLine.material.color.setHex(0xffffff);
+                        dt.pulseRing.material.color.setHex(0xffffff);
+                    } else {
+                        dt.rigidLine.material.opacity = config.streamOpacity * 0.15;
+                        dt.waveLine.material.opacity = config.streamOpacity * 0.4;
+                        dt.waveLine.material.linewidth = 1;
+                        dt.waveLine.material.color.setHex(dt.streamColor);
+                        dt.pulseRing.material.color.setHex(dt.faceDef.polarity === 1 ? 0xfde047 : 0x67e8f9);
+                    }
+                }
+            });
+
+            // Cascade funnel line trace backwards to the center scalar point
+            funnelLines.forEach(fl => {
+                const dt = fl.userData;
+                let isActive = false;
+                
+                if (dt.sTier === tierD12) {
+                    isActive = activeD12[dt.sourceIdx];
+                    if (isActive) activeHex[dt.targetIdx] = true;
+                } else if (dt.sTier === tierHex) {
+                    isActive = activeHex[dt.sourceIdx];
+                    if (isActive) activeHept[dt.targetIdx] = true;
+                } else if (dt.sTier === tierHept) {
+                    isActive = activeHept[dt.sourceIdx];
+                }
+
+                if (config.onlyActiveStreams && !isActive) {
+                    fl.visible = false;
+                } else {
+                    fl.visible = true;
+                    if (isActive) {
+                        fl.material.opacity = 1.0;
+                        fl.material.color.setHex(0xffffff);
+                    } else {
+                        fl.material.opacity = 0.2;
+                        fl.material.color.setHex(dt.baseColor);
+                    }
+                }
+
+                _vSrc.copy(dt.sVerts[dt.sourceIdx]).applyMatrix4(dt.sTier.matrixWorld);
+                _vTgt.copy(dt.tVerts[dt.targetIdx]).applyMatrix4(dt.tTier.matrixWorld);
+                _vSrc.applyMatrix4(coreGroup.matrixWorld.clone().invert());
+                _vTgt.applyMatrix4(coreGroup.matrixWorld.clone().invert());
+
+                const positions = fl.geometry.attributes.position.array;
+                positions[0] = _vSrc.x; positions[1] = _vSrc.y; positions[2] = _vSrc.z;
+                positions[3] = _vTgt.x; positions[4] = _vTgt.y; positions[5] = _vTgt.z;
+                fl.geometry.attributes.position.needsUpdate = true;
+            });
+
+            // Draw Toroidal Trails
+            const frameIdx = Math.floor(currentFrame);
+            weaveTrails.forEach(tr => {
+                tr.line.geometry.setDrawRange(0, frameIdx);
+                if (config.onlyActiveStreams && !activeD12[tr.idx]) {
+                    tr.line.visible = false;
+                } else {
+                    tr.line.visible = config.showToroidalWeave;
+                }
+            });
+
+            if (config.showAtom) {
+                tierAtom.visible = true;
+                const scaleR_atom = Math.sin(Math.PI * t); 
+                const theta_atom = t * 4 * Math.PI; 
+
+                // Tumble the Strassen Tensor rings with Holographic Standing Wave Interference pulse
+                strassenGroup.rotation.y = -baseTheta * 0.5;
+                strassenGroup.scale.setScalar(1.0 + Math.sin(Math.PI * t) * 0.15);
+                
+                strassenGroup.children.forEach(station => {
+                    const stData = station.userData;
+                    stData.r1.rotation.x = (t * Math.PI * 8) + stData.idx;
+                    stData.r2.rotation.y = (t * Math.PI * 12) + stData.idx;
+                    stData.r3.rotation.z = (t * Math.PI * 16) + stData.idx;
+                    
+                    // Holographic Interference Density pulse
+                    let pulse = 0.5 + Math.sin(t * Math.PI * 32 + stData.idx) * 0.5;
+                    
+                    // If receiving an active handshake from D12, intensify
+                    if (activeD12[stData.idx]) {
+                        pulse *= 1.5;
+                        stData.emNode.material.emissive.setHex(0xffffff);
+                    } else {
+                        stData.emNode.material.emissive.setHex(0x2dd4bf);
+                    }
+                    
+                    stData.emNode.scale.setScalar(1.0 + pulse * 0.5);
+                    stData.emNode.material.emissiveIntensity = 0.5 + pulse * 0.8;
+                });
+
+                atomVoxels.forEach(voxel => {
+                    const isActive = seedState[voxel.data.id] === 1;
+                    
+                    _expandedPos.copy(voxel.data.basePos).normalize().multiplyScalar(18 + scaleR_atom * 4); 
+                    _qRot.setFromAxisAngle(voxel.data.axis, theta_atom);
+                    _finalPos.copy(_expandedPos).applyQuaternion(_qRot);
+                    
+                    voxel.group.position.copy(_finalPos);
+                    voxel.group.quaternion.copy(_qRot);
+                    voxel.group.scale.setScalar(scaleR_atom * 1.5 + 0.5);
+                    
+                    if (isActive && config.showAtomCubes) {
+                        voxel.data.matRef.opacity = config.matrixOpacity * Math.max(0.4, scaleR_atom);
+                        voxel.data.matRef.color.setHex(selectedNode && selectedNode.id === voxel.data.id ? 0xffffff : 0x2dd4bf);
+                        voxel.data.wire.material.opacity = 0.8;
+                    } else {
+                        voxel.data.matRef.opacity = 0.0;
+                        voxel.data.wire.material.opacity = 0.0;
+                    }
+
+                    if (!isActive) return;
+
+                    _topologicExpandedPos.copy(voxel.data.basePos).multiplyScalar(1.5 + scaleR_atom * 2.5); 
+                    _vPosTopologic.copy(_topologicExpandedPos).applyQuaternion(_qRot);
+                    _up.set(0,1,0);
+                    _vPosTopologic.applyAxisAngle(_up, -baseTheta * 0.25);
+                    
+                    streamLines.forEach((bundle, sIdx) => {
+                        if (!bundle.visible) return;
+                        const dt = bundle.userData;
+                        line3Temp.set(dt.pLens, dt.vTarget); 
+                        line3Temp.closestPointToPoint(_vPosTopologic, true, targetPtTemp);
+                        
+                        if (_vPosTopologic.distanceTo(targetPtTemp) < 3.5) {
+                            if (currentFrame - dt.lastCol > 20) { 
+                                dt.lastCol = currentFrame;
+                                const spark = new THREE.Mesh(sparkGeo, sparkMat);
+                                spark.position.copy(targetPtTemp);
+                                scene.add(spark);
+                                collisionSparks.push({mesh: spark, life: 1.0});
+                                logLedger(`[F-${Math.round(currentFrame).toString().padStart(3,'0')}] Seed:${voxel.data.id} ⚡ Str:${sIdx} (${dt.faceDef.name})`);
+                            }
+                        }
+                    });
+                });
+
+                tierAtom.rotation.y = -baseTheta * 0.25;
+            } else {
+                tierAtom.visible = false;
+            }
+
+            for(let i=collisionSparks.length-1; i>=0; i--) {
+                collisionSparks[i].life -= 0.05;
+                collisionSparks[i].mesh.scale.setScalar(collisionSparks[i].life);
+                if(collisionSparks[i].life <= 0) {
+                    scene.remove(collisionSparks[i].mesh);
+                    collisionSparks.splice(i, 1);
+                }
+            }
+
+            if(selectedNode && selectedNode.is4x4 && document.getElementById('telemetry-panel').style.display === 'block') {
+                const telTension = document.getElementById('tel-tension');
+                if (telTension) {
+                    const tension = 1.0 + (t * 720 / 100); 
+                    telTension.innerText = `${tension.toFixed(3)} τ`;
+                }
+            }
+
+            renderer.render(scene, camera);
+        }
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        // Global security logout function
+        window.globalLogout = function() {
+            localStorage.clear();
+            sessionStorage.clear();
+            window.location.href = "https://biochainai.github.io/Owl-Academy/login.html";
+        };
+
+        window.onload = () => {
+            initializeSystem();
+            setTimeout(() => {
+                document.getElementById('loader').style.opacity = '0';
+                setTimeout(() => {
+                    document.getElementById('loader').style.display = 'none';
+                }, 500);
+            }, 1000);
+            animate();
+        };
+
+    </script>
+</body>
+</html>
