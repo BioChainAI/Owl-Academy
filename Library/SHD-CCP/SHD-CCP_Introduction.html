@@ -1,0 +1,551 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Owl Academy | SHD-CCP Seed Protocol</title>
+    
+    <!-- SECURITY LOCK: Points 2 levels up to the root /scripts directory -->
+    <script src="../../scripts/auth.js"></script>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Inter:wght@300;400;500;600&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+    
+    <script>
+        window.MathJax = {
+            tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']] }
+        };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+    <style>
+        :root {
+            --color-void: #05030a;
+            --color-primary: #D4AF37;
+            --color-primary-light: #FFF8DC;
+            --color-secondary: #8e9eab;
+            --color-holo1: #00d4ff;
+            --color-holo2: #8A2BE2;
+            --color-text: #CBD5E1;
+            --color-danger: #ef4444;
+        }
+
+        body {
+            background-color: var(--color-void);
+            color: var(--color-text);
+            font-family: 'Inter', sans-serif;
+            background: radial-gradient(circle at 50% 0%, color-mix(in srgb, var(--color-holo2) 8%, var(--color-void)), var(--color-void) 60%);
+            min-height: 100vh;
+            margin: 0;
+            overflow-x: hidden;
+            line-height: 1.7;
+        }
+
+        /* Voxel Owl Pulse Animation */
+        .voxel-pulse {
+            animation: pulse-glow-voxel 3s infinite alternate;
+        }
+        @keyframes pulse-glow-voxel {
+            0% { filter: drop-shadow(0 0 4px rgba(0, 212, 255, 0.4)); }
+            100% { filter: drop-shadow(0 0 12px rgba(0, 212, 255, 0.8)); }
+        }
+
+        .starfield {
+            position: fixed; inset: 0;
+            background-image:
+                radial-gradient(2px 2px at 20px 30px, var(--color-primary), rgba(0,0,0,0)),
+                radial-gradient(2px 2px at 40px 70px, #fff, rgba(0,0,0,0)),
+                radial-gradient(2px 2px at 50px 160px, rgba(255,255,255,0.8), rgba(0,0,0,0)),
+                radial-gradient(2px 2px at 90px 40px, #fff, rgba(0,0,0,0)),
+                radial-gradient(2px 2px at 130px 80px, var(--color-primary), rgba(0,0,0,0));
+            background-repeat: repeat; background-size: 250px 250px;
+            animation: twinkle 8s infinite alternate;
+            opacity: 0.15; z-index: -2; pointer-events: none;
+        }
+
+        @keyframes twinkle { 0% { opacity: 0.05; } 100% { opacity: 0.2; } }
+
+        h1, h2, h3, h4, h5, .mystical-font { font-family: 'Cinzel', serif; }
+        
+        .gold-gradient {
+            background: linear-gradient(to right, var(--color-primary), var(--color-primary-light), var(--color-primary));
+            -webkit-background-clip: text; background-clip: text;
+            color: transparent; text-shadow: 0 0 15px color-mix(in srgb, var(--color-primary) 30%, transparent);
+        }
+
+        .glass-panel {
+            background: rgba(10, 8, 20, 0.6);
+            backdrop-filter: blur(12px);
+            border: 1px solid color-mix(in srgb, var(--color-primary) 15%, transparent);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5);
+        }
+
+        pre {
+            background: #000;
+            border: 1px solid color-mix(in srgb, var(--color-secondary) 30%, transparent);
+            border-radius: 8px; padding: 1.25rem; overflow-x: auto;
+            margin: 1.5rem 0; font-family: 'Fira Code', monospace; font-size: 0.85rem;
+        }
+        code { color: #a5b4fc; }
+        .inline-code {
+            background: rgba(255,255,255,0.1); padding: 0.1rem 0.4rem;
+            border-radius: 4px; font-family: 'Fira Code', monospace;
+            font-size: 0.85em; color: #e2e8f0;
+        }
+
+        .hardware-card {
+            transition: all 0.3s ease;
+            border-left: 3px solid transparent;
+        }
+        .hardware-card:hover {
+            background: rgba(255,255,255,0.03);
+            border-left-color: var(--color-primary);
+            transform: translateX(4px);
+        }
+
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: rgba(0,0,0,0.3); }
+        ::-webkit-scrollbar-thumb { background: color-mix(in srgb, var(--color-primary) 40%, transparent); border-radius: 10px; }
+
+        /* Custom Animations for Illustrations */
+        @keyframes pulse-ring {
+            0% { transform: scale(0.8); opacity: 0.5; }
+            100% { transform: scale(1.2); opacity: 0; }
+        }
+        
+        @keyframes float-geom {
+            0% { transform: translateY(0px) rotate(0deg); }
+            50% { transform: translateY(-10px) rotate(5deg); }
+            100% { transform: translateY(0px) rotate(0deg); }
+        }
+
+        @keyframes data-flow {
+            0% { stroke-dashoffset: 20; }
+            100% { stroke-dashoffset: 0; }
+        }
+
+        .anim-float { animation: float-geom 6s ease-in-out infinite; }
+        .anim-flow { animation: data-flow 1s linear infinite; stroke-dasharray: 4 4; }
+        
+        .pulse-circle {
+            animation: pulse-ring 2s cubic-bezier(0.215, 0.61, 0.355, 1) infinite;
+        }
+    </style>
+</head>
+<body class="antialiased">
+
+    <div class="starfield"></div>
+
+    <!-- Header containing Voxel Owl, Title, and Logout -->
+    <header class="w-full pt-6 pb-6 px-6 md:px-10 flex flex-col md:flex-row justify-between items-start md:items-center border-b border-cyan-900/50 bg-[#05030a]/80 backdrop-blur-md shadow-2xl z-40 sticky top-0 gap-6">
+        
+        <!-- Left Side: Voxel Owl Sigil + Title -->
+        <div class="flex items-center gap-5">
+            
+            <!-- Voxel Owl Sigil (SVG Grid) -->
+            <div class="w-12 h-12 flex-shrink-0 voxel-pulse">
+                <svg viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg" class="w-full h-full">
+                    <!-- Ears -->
+                    <rect x="10" y="10" width="10" height="10" fill="#00d4ff"/>
+                    <rect x="60" y="10" width="10" height="10" fill="#00d4ff"/>
+                    <!-- Forehead -->
+                    <rect x="20" y="20" width="40" height="10" fill="#00d4ff"/>
+                    <rect x="10" y="20" width="10" height="10" fill="#00d4ff"/>
+                    <rect x="60" y="20" width="10" height="10" fill="#00d4ff"/>
+                    <!-- Eyes (Dark voids) & Center Bridge -->
+                    <rect x="10" y="30" width="20" height="10" fill="#00d4ff"/>
+                    <rect x="30" y="30" width="20" height="10" fill="#D4AF37"/> <!-- Gold Brow -->
+                    <rect x="50" y="30" width="20" height="10" fill="#00d4ff"/>
+                    <!-- Cheeks & Beak -->
+                    <rect x="10" y="40" width="20" height="10" fill="#00d4ff"/>
+                    <rect x="30" y="40" width="20" height="10" fill="#D4AF37"/> <!-- Gold Beak -->
+                    <rect x="50" y="40" width="20" height="10" fill="#00d4ff"/>
+                    <!-- Lower Beak & Jaw -->
+                    <rect x="10" y="50" width="20" height="10" fill="#00d4ff"/>
+                    <rect x="30" y="50" width="20" height="10" fill="#D4AF37"/> <!-- Gold Beak Tip -->
+                    <rect x="50" y="50" width="20" height="10" fill="#00d4ff"/>
+                    <!-- Base / Body connection -->
+                    <rect x="20" y="60" width="40" height="10" fill="#00d4ff"/>
+                    <rect x="30" y="70" width="20" height="10" fill="#00d4ff"/>
+                </svg>
+            </div>
+
+            <div>
+                <div class="text-[10px] text-cyan-600 tracking-[0.2em] uppercase mb-1 font-mono flex gap-4">
+                    <span>Department VI • Computational Engines</span>
+                    <span class="text-gray-500">[PRE-REQ: DEPT 3 / DEPT 4]</span>
+                </div>
+                <h1 class="text-cyan-400 text-xl md:text-2xl tracking-widest uppercase font-bold drop-shadow-[0_0_8px_rgba(0,212,255,0.3)] mystical-font">SHD-CCP Seed Protocol</h1>
+                <div class="text-[10px] text-yellow-600/80 tracking-[0.3em] uppercase font-mono mt-1">
+                    Standardization, Parity & Markov Dynamics
+                </div>
+            </div>
+        </div>
+        
+        <!-- Right Side: Sever Connection -->
+        <button onclick="globalLogout()" class="group flex items-center gap-2 text-red-500 hover:text-red-400 hover:bg-red-950/30 transition-all uppercase tracking-widest text-xs font-bold border border-red-900 px-4 py-2 rounded shadow-[0_0_10px_rgba(239,68,68,0.1)] hover:shadow-[0_0_15px_rgba(239,68,68,0.2)] font-mono z-50 cursor-pointer">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="group-hover:-translate-x-1 transition-transform"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+            Sever Connection
+        </button>
+    </header>
+
+    <main class="max-w-5xl mx-auto px-4 md:px-8 py-12 relative z-10 space-y-12">
+        
+        <!-- Access Granted Banner -->
+        <div class="flex items-start gap-4 mb-8 p-4 bg-green-950/20 border border-green-900/50 rounded-md">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#4ade80" stroke-width="2" class="mt-1 flex-shrink-0"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+            <div>
+                <h2 class="text-green-400 font-bold text-sm tracking-wider uppercase mb-1 font-mono">Access Granted</h2>
+                <p class="text-gray-400 text-xs leading-relaxed font-mono">
+                    If you are reading this, the SHD-CCP resonance was verified. Your local biometric/cryptographic token matches the requirements for Department VI.
+                </p>
+            </div>
+        </div>
+        
+        <section class="glass-panel p-8 rounded-xl">
+            <h2 class="text-xl text-yellow-500 mystical-font border-b border-yellow-500/20 pb-2 mb-4 uppercase tracking-widest">I. Linguistic Entropy vs. Geometric Crystallization</h2>
+            
+            <div class="flex flex-col lg:flex-row gap-8 items-center mb-6">
+                <div class="flex-1 space-y-4">
+                    <p class="text-sm text-gray-300 font-light">
+                        Context initialization within legacy systems relies on human-readable linguistics: discrete tokens, semantic arrays, and prompt strings. This methodology proves catastrophic within the S.P.I.R.E. high-dimensional resonance engine.
+                    </p>
+                    <p class="text-sm text-gray-300 font-light">
+                        Linguistics suffer from cultural drift, interpretation bias, and severe entropic decay during transmission across hyperbolic topologies. 
+                    </p>
+                    <p class="text-sm text-cyan-300 font-medium">
+                        The solution mandates an immutable sequence: The Seed. A purely mathematical, geometrically verifiable construct. Random 64-bit integers induce lattice collapse; only geometry passing strict parity checks may engage the One-Way Markov Pump.
+                    </p>
+                </div>
+                
+                <!-- Illustration: Entropy vs Order -->
+                <div class="w-full lg:w-1/3 flex justify-center bg-black/40 border border-gray-800 rounded-lg p-6 relative overflow-hidden h-48">
+                    <svg viewBox="0 0 200 150" class="w-full h-full">
+                        <!-- Left: Linguistic Entropy -->
+                        <g transform="translate(40, 75)">
+                            <text x="0" y="0" fill="rgba(239, 68, 68, 0.4)" font-size="10" font-family="monospace" text-anchor="middle" transform="rotate(-15) translate(-10,-10)">WORD</text>
+                            <text x="0" y="0" fill="rgba(239, 68, 68, 0.6)" font-size="14" font-family="serif" text-anchor="middle" transform="rotate(25) translate(10,10)">Prompt</text>
+                            <text x="0" y="0" fill="rgba(239, 68, 68, 0.3)" font-size="8" text-anchor="middle" transform="rotate(-45) translate(20,-15)">semantic</text>
+                            <path d="M-20,20 Q0,40 30,10 T60,30" fill="none" stroke="#ef4444" stroke-width="1" stroke-dasharray="2 2" opacity="0.5"/>
+                            <text x="0" y="40" fill="#ef4444" font-size="8" font-family="Fira Code" text-anchor="middle">ENTROPY</text>
+                        </g>
+                        
+                        <!-- Center: Transition -->
+                        <path d="M 80,75 L 120,75" fill="none" stroke="var(--color-holo1)" stroke-width="2" class="anim-flow" marker-end="url(#arrow)"/>
+                        
+                        <!-- Right: Geometric Crystal -->
+                        <g transform="translate(160, 75)" class="anim-float">
+                            <polygon points="0,-20 17.32,-10 17.32,10 0,20 -17.32,10 -17.32,-10" fill="rgba(0,212,255,0.1)" stroke="#00d4ff" stroke-width="1.5"/>
+                            <line x1="0" y1="-20" x2="0" y2="20" stroke="#00d4ff" stroke-width="1"/>
+                            <line x1="-17.32" y1="-10" x2="17.32" y2="10" stroke="#00d4ff" stroke-width="1"/>
+                            <line x1="-17.32" y1="10" x2="17.32" y2="-10" stroke="#00d4ff" stroke-width="1"/>
+                            <circle cx="0" cy="0" r="3" fill="#D4AF37"/>
+                            <text x="0" y="40" fill="#00d4ff" font-size="8" font-family="Fira Code" text-anchor="middle">CRYSTAL</text>
+                        </g>
+                        <defs>
+                            <marker id="arrow" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                                <path d="M 0 0 L 10 5 L 0 10 z" fill="#00d4ff" />
+                            </marker>
+                        </defs>
+                    </svg>
+                </div>
+            </div>
+        </section>
+
+        <section class="glass-panel p-8 rounded-xl">
+            <h2 class="text-xl text-yellow-500 mystical-font border-b border-yellow-500/20 pb-2 mb-6 uppercase tracking-widest">II. Geometric Standardization & Parity</h2>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8 items-start mb-8">
+                <div>
+                    <h3 class="text-sm font-bold text-white mb-2 tracking-widest uppercase font-mono">The 64-Bit Voxel Cube</h3>
+                    <p class="text-xs text-gray-400 mb-4 leading-relaxed">
+                        The baseline unit requires 8 bytes (64 bits). The geometric mapping defines a $4 \times 4 \times 4$ voxel matrix.
+                    </p>
+                    <ul class="text-xs text-gray-400 space-y-2 list-none pl-0">
+                        <li class="flex items-start gap-2">
+                            <span class="text-yellow-500 mt-0.5">◈</span>
+                            <span><strong>Inner Core (8 bits):</strong> Central $2 \times 2 \times 2$ lattice. Encodes the active state index.</span>
+                        </li>
+                        <li class="flex items-start gap-2">
+                            <span class="text-cyan-500 mt-0.5">◈</span>
+                            <span><strong>Outer Mantle (56 bits):</strong> Shielding matrix. Establishes the cryptographic topology.</span>
+                        </li>
+                    </ul>
+                </div>
+                
+                <!-- Illustration: Voxel Cube Breakdown -->
+                <div class="bg-black/30 border border-gray-800 rounded-lg p-4 flex justify-center items-center h-48 relative">
+                    <svg viewBox="0 0 200 200" class="w-full h-full anim-float">
+                        <!-- Isometric 4x4x4 Outline (Mantle) -->
+                        <g stroke="rgba(0,212,255,0.4)" stroke-width="1" fill="none">
+                            <polygon points="100,20 160,50 160,120 100,150 40,120 40,50" />
+                            <polyline points="40,50 100,80 160,50" />
+                            <line x1="100" y1="80" x2="100" y2="150" />
+                            <!-- Grid lines to imply 4x4x4 -->
+                            <line x1="55" y1="42.5" x2="115" y2="72.5" stroke-dasharray="2 2" opacity="0.5"/>
+                            <line x1="70" y1="35" x2="130" y2="65" stroke-dasharray="2 2" opacity="0.5"/>
+                            <line x1="85" y1="27.5" x2="145" y2="57.5" stroke-dasharray="2 2" opacity="0.5"/>
+                        </g>
+                        <!-- Inner 2x2x2 Core -->
+                        <g stroke="#D4AF37" stroke-width="1.5" fill="rgba(212,175,55,0.2)">
+                            <polygon points="100,60 120,70 120,95 100,105 80,95 80,70" />
+                            <polyline points="80,70 100,80 120,70" />
+                            <line x1="100" y1="80" x2="100" y2="105" />
+                        </g>
+                        <!-- Annotations -->
+                        <path d="M 125,80 L 160,80" stroke="#D4AF37" stroke-width="1" />
+                        <text x="165" y="83" fill="#D4AF37" font-size="10" font-family="Fira Code">CORE (8)</text>
+                        <path d="M 60,110 L 30,130" stroke="#00d4ff" stroke-width="1" />
+                        <text x="0" y="140" fill="#00d4ff" font-size="10" font-family="Fira Code">MANTLE (56)</text>
+                    </svg>
+                </div>
+            </div>
+
+            <div class="bg-black/50 border border-gray-800 p-4 rounded-lg font-mono text-xs mb-6">
+                <div class="text-cyan-400 mb-2">// Seed Parity Check Algorithm</div>
+                <code>
+function verifyGeometricSeed(uint64 seed) {<br>
+&nbsp;&nbsp;uint8 core = (seed >> 28) & 0xFF;<br>
+&nbsp;&nbsp;uint64 mantle = (seed & ~0x00000FF000000000);<br>
+<br>
+&nbsp;&nbsp;// The core must be the homotopic reflection<br>
+&nbsp;&nbsp;// of the mantle modulo Prime Sieve<br>
+&nbsp;&nbsp;if (calculateTorusWinding(mantle) % 7 != core) {<br>
+&nbsp;&nbsp;&nbsp;&nbsp;return THROW_ENTROPIC_COLLAPSE;<br>
+&nbsp;&nbsp;}<br>
+&nbsp;&nbsp;return SEED_VALID;<br>
+}
+                </code>
+            </div>
+
+            <div class="p-4 border border-red-900/30 bg-red-950/20 rounded-lg flex gap-4 items-center">
+                <div class="w-10 h-10 flex-shrink-0 flex items-center justify-center bg-red-900/50 rounded-full border border-red-500">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+                </div>
+                <div>
+                    <h4 class="text-xs font-mono text-red-400 uppercase mb-1 font-bold">Strict Exclusion Principle</h4>
+                    <p class="text-[11px] text-gray-400 leading-tight">
+                        A 64-bit string failing topological parity is summarily rejected by S.P.I.R.E. This mechanism negates malicious fuzzing and prevents hallucinatory linguistic artifacts from contaminating the crystalline matrix. 
+                    </p>
+                </div>
+            </div>
+        </section>
+
+        <section class="glass-panel p-8 rounded-xl border border-fuchsia-900/30 relative overflow-hidden">
+            <div class="absolute -right-20 -bottom-20 opacity-5 pointer-events-none">
+                <svg width="300" height="300" viewBox="0 0 100 100" class="animate-[spin_30s_linear_infinite_reverse]">
+                    <polygon points="50,10 90,90 10,90" fill="none" stroke="#e81cff" stroke-width="2"/>
+                    <circle cx="50" cy="50" r="20" fill="none" stroke="#e81cff" stroke-width="1"/>
+                </svg>
+            </div>
+
+            <h2 class="text-xl text-fuchsia-400 mystical-font border-b border-fuchsia-500/20 pb-2 mb-6 uppercase tracking-widest relative z-10">III. Nested Quaternions & Quadrance Compression</h2>
+            
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 relative z-10 items-center">
+                <div class="space-y-4">
+                    <p class="text-sm text-gray-300 font-light">
+                        Spatial logging across the 64-bit topology demands nested quaternions. A discrete quaternion $q = w + xi + yj + zk$ projects an equilibrium voxel $Q_0$.
+                    </p>
+                    <div class="bg-black/50 border border-fuchsia-900/40 p-4 rounded-lg font-mono text-xs text-fuchsia-200 overflow-x-auto shadow-inner">
+                        $$Q = \begin{pmatrix} w+xi & y+zi \\ -y+zi & w-xi \end{pmatrix} \times U = \begin{pmatrix} a & b \\ c & d \end{pmatrix} = P$$
+                    </div>
+                    <p class="text-sm text-gray-300 font-light">
+                        Chaining these quaternions in sequential pairs unlocks emergent quadrance metrics. Quadrance calculates the absolute squared distance of the manifold topology without invoking processor-heavy floating-point square root instructions.
+                    </p>
+                    <p class="text-sm text-gray-300 font-light">
+                        Executing exactly four nested quaternions logs the complete volumetric motion path of the lattice. Standard processing demands 8 multiplications per quaternion node. Deploying Strassen algorithmic substitution reduces this to 7 multiplications.
+                    </p>
+                    <div class="p-3 border border-fuchsia-900/50 bg-fuchsia-950/20 rounded-lg flex items-center gap-3">
+                        <div class="w-8 h-8 flex-shrink-0 flex items-center justify-center bg-fuchsia-900/50 rounded-full border border-fuchsia-500">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#f0abfc" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                        </div>
+                        <p class="text-[11px] text-fuchsia-200 leading-tight">
+                            <strong>5-Step Centroid Compression:</strong> $P_{n+1} = \text{Proj}_\phi(P_n)$. The coordinate trajectory projects through the Golden Ratio ($\phi \approx 1.618$) directly into a dense, crystallized centroid.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="w-full flex justify-center bg-black/40 border border-gray-800 rounded-lg p-6 relative overflow-hidden h-72">
+                    <div class="absolute top-4 left-4 font-mono text-[9px] text-gray-500 uppercase tracking-widest z-20">
+                        <span class="text-red-400">Standard: 8 Mult</span><br>
+                        <span class="text-green-400">Strassen: 7 Mult</span>
+                    </div>
+                    <svg viewBox="0 0 200 200" class="w-full h-full absolute inset-0 z-10">
+                        <defs>
+                            <radialGradient id="centroidGlow" cx="50%" cy="50%" r="50%">
+                                <stop offset="0%" stop-color="#e81cff" stop-opacity="0.8"/>
+                                <stop offset="100%" stop-color="#e81cff" stop-opacity="0"/>
+                            </radialGradient>
+                            <linearGradient id="flowGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                                <stop offset="0%" stop-color="#00d4ff"/>
+                                <stop offset="100%" stop-color="#e81cff"/>
+                            </linearGradient>
+                        </defs>
+                        
+                        <!-- Convergence Lines -->
+                        <g fill="none" stroke="url(#flowGrad)" stroke-width="1.5" stroke-dasharray="3 3">
+                            <line x1="100" y1="100" x2="40" y2="40" class="anim-flow"/>
+                            <line x1="100" y1="100" x2="160" y2="40" class="anim-flow"/>
+                            <line x1="100" y1="100" x2="40" y2="160" class="anim-flow"/>
+                            <line x1="100" y1="100" x2="160" y2="160" class="anim-flow"/>
+                        </g>
+
+                        <!-- Orbiting Quaternions -->
+                        <g stroke="#00d4ff" stroke-width="1.5" fill="rgba(0,212,255,0.1)">
+                            <rect x="30" y="30" width="20" height="20" class="anim-float"/>
+                            <rect x="150" y="30" width="20" height="20" class="anim-float" style="animation-delay: -1.5s;"/>
+                            <rect x="30" y="150" width="20" height="20" class="anim-float" style="animation-delay: -3s;"/>
+                            <rect x="150" y="150" width="20" height="20" class="anim-float" style="animation-delay: -4.5s;"/>
+                        </g>
+
+                        <text x="40" y="44" fill="#fff" font-size="8" font-family="Fira Code" text-anchor="middle">q1</text>
+                        <text x="160" y="44" fill="#fff" font-size="8" font-family="Fira Code" text-anchor="middle">q2</text>
+                        <text x="40" y="164" fill="#fff" font-size="8" font-family="Fira Code" text-anchor="middle">q3</text>
+                        <text x="160" y="164" fill="#fff" font-size="8" font-family="Fira Code" text-anchor="middle">q4</text>
+
+                        <!-- Centroid Core -->
+                        <circle cx="100" cy="100" r="25" fill="url(#centroidGlow)" class="pulse-circle"/>
+                        <circle cx="100" cy="100" r="5" fill="#f0abfc"/>
+                        <polygon points="100,85 115,107.5 85,107.5" fill="none" stroke="#f0abfc" stroke-width="1" class="animate-[spin_4s_linear_infinite]"/>
+                        <polygon points="100,115 85,92.5 115,92.5" fill="none" stroke="#f0abfc" stroke-width="1" class="animate-[spin_4s_linear_infinite_reverse]"/>
+                        
+                        <text x="100" y="135" fill="#f0abfc" font-size="10" font-family="Fira Code" text-anchor="middle">Proj_φ(P_n)</text>
+                    </svg>
+                </div>
+            </div>
+        </section>
+
+        <section class="glass-panel p-8 rounded-xl border border-cyan-900/50 relative overflow-hidden mt-12">
+            <!-- Background Gear decorative -->
+            <div class="absolute -right-20 -top-20 opacity-5 pointer-events-none">
+                <svg width="300" height="300" viewBox="0 0 100 100" class="animate-[spin_20s_linear_infinite]">
+                    <path d="M50 10 A40 40 0 1 1 49.9 10" fill="none" stroke="#00d4ff" stroke-width="2" stroke-dasharray="4 8"/>
+                    <circle cx="50" cy="50" r="30" fill="none" stroke="#00d4ff" stroke-width="5" stroke-dasharray="10 5"/>
+                </svg>
+            </div>
+
+            <h2 class="text-xl text-cyan-400 mystical-font border-b border-cyan-500/20 pb-2 mb-6 uppercase tracking-widest relative z-10">IV. The One-Way Markov Pump</h2>
+            
+            <div class="flex flex-col lg:flex-row gap-8 relative z-10">
+                <div class="flex-1">
+                    <p class="text-sm text-gray-300 font-light mb-4">
+                        The core engine is a one-way deterministic state-transition function. Upon injection of a validated SHD-CCP 8-byte seed, the pump engages.
+                    </p>
+                    <p class="text-sm text-gray-300 font-light mb-6">
+                        It mechanically expands the topology into the subsequent dimensional state. This mathematical cranking establishes an unbreakable chain of consensus data, incapable of reverse calculation without complete matrix definition.
+                    </p>
+                    
+                    <div class="bg-black/50 border border-cyan-900/50 p-6 rounded-lg flex flex-col items-center">
+                        <div class="flex items-center gap-2 md:gap-6 mb-8 w-full justify-between">
+                            <!-- State N -->
+                            <div class="w-16 h-16 md:w-20 md:h-20 border-2 border-yellow-500/50 bg-yellow-900/20 rounded shadow-[0_0_15px_rgba(212,175,55,0.2)] flex flex-col items-center justify-center font-mono text-[8px] md:text-[10px]">
+                                <span class="text-gray-400">SEED_IN</span>
+                                <span id="vis-seed-in" class="text-yellow-400 font-bold mt-1">0x1A4F...</span>
+                            </div>
+
+                            <!-- Pump Mechanics -->
+                            <div class="flex flex-col items-center flex-1">
+                                <span class="text-[8px] text-cyan-400 font-mono mb-1 text-center">MARKOV<br>GEARS</span>
+                                <div class="w-10 h-10 md:w-12 md:h-12 border-2 border-cyan-500 rounded-full border-dashed animate-[spin_4s_linear_infinite] flex items-center justify-center relative">
+                                    <div class="w-4 h-4 md:w-6 md:h-6 border border-cyan-400 rounded-full animate-[spin_2s_linear_infinite_reverse]"></div>
+                                    <line x1="-15" y1="6" x2="-2" y2="6" stroke="#00d4ff" stroke-width="2" class="anim-flow absolute -left-4"/>
+                                    <line x1="2" y1="6" x2="15" y2="6" stroke="#00d4ff" stroke-width="2" class="anim-flow absolute -right-4"/>
+                                </div>
+                            </div>
+
+                            <!-- State N+1 -->
+                            <div class="w-16 h-16 md:w-20 md:h-20 border-2 border-fuchsia-500/50 bg-fuchsia-900/20 rounded shadow-[0_0_15px_rgba(232,28,255,0.2)] flex flex-col items-center justify-center font-mono text-[8px] md:text-[10px]">
+                                <span class="text-gray-400">STATE_N+1</span>
+                                <span id="vis-seed-out" class="text-fuchsia-400 font-bold mt-1">WAITING</span>
+                            </div>
+                        </div>
+
+                        <button onclick="crankMarkovPump()" class="w-full px-6 py-3 bg-cyan-950/50 border border-cyan-500/50 text-cyan-400 hover:bg-cyan-900/50 hover:text-white transition-all rounded font-mono text-xs font-bold tracking-widest uppercase shadow-[0_0_10px_rgba(0,212,255,0.1)] hover:shadow-[0_0_20px_rgba(0,212,255,0.3)]">
+                            Execute Pump Cycle
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="glass-panel p-8 rounded-xl mt-12">
+            <h2 class="text-xl text-yellow-500 mystical-font border-b border-yellow-500/20 pb-2 mb-6 uppercase tracking-widest">V. Hardware Protocol Modalities</h2>
+            <p class="text-sm text-gray-300 font-light mb-6">
+                Accessibility across computational generations is guaranteed. The SHD-CCP pack/unpack mechanism conforms to the host architecture. Any system capable of sequential 8-byte processing can interface with the Markov pump.
+            </p>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="hardware-card bg-black/40 border border-gray-800 p-4 rounded-lg flex items-start gap-4">
+                    <div class="w-12 h-12 rounded bg-gradient-to-br from-green-600 to-green-900 flex-shrink-0 flex items-center justify-center text-white font-bold font-mono text-xs">B200</div>
+                    <div>
+                        <h4 class="text-xs font-bold text-green-400 font-mono tracking-wider mb-1">NVIDIA Blackwell</h4>
+                        <p class="text-[10px] text-gray-400 leading-relaxed">
+                            2nd Gen Transformer Engines map the $4 \times 4 \times 4$ voxel directly into FP4 tensors. Markov pump operates at Block Level in parallel warps.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="hardware-card bg-black/40 border border-gray-800 p-4 rounded-lg flex items-start gap-4">
+                    <div class="w-12 h-12 rounded bg-gradient-to-br from-teal-600 to-teal-900 flex-shrink-0 flex items-center justify-center text-white font-bold font-mono text-xs">H100</div>
+                    <div>
+                        <h4 class="text-xs font-bold text-teal-400 font-mono tracking-wider mb-1">NVIDIA Hopper</h4>
+                        <p class="text-[10px] text-gray-400 leading-relaxed">
+                            Utilizes Asynchronous Execution and DPX instructions. The 64-bit seed unpacks via TMA fetching sequential topology from global memory.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="hardware-card bg-black/40 border border-gray-800 p-4 rounded-lg flex items-start gap-4">
+                    <div class="w-12 h-12 rounded bg-gradient-to-br from-blue-600 to-blue-900 flex-shrink-0 flex items-center justify-center text-white font-bold font-mono text-xs">GPU</div>
+                    <div>
+                        <h4 class="text-xs font-bold text-blue-400 font-mono tracking-wider mb-1">Generic Compute</h4>
+                        <p class="text-[10px] text-gray-400 leading-relaxed">
+                            Geometry flattened to linear 1D arrays (`uint64_t`). Compute shaders execute modular arithmetic explicitly validating parity matrix.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="hardware-card bg-[#1a1510] border border-yellow-900/50 p-4 rounded-lg flex items-start gap-4">
+                    <div class="w-12 h-12 rounded bg-gradient-to-br from-yellow-600 to-yellow-800 flex-shrink-0 flex items-center justify-center text-white font-bold font-mono text-xs">CPU</div>
+                    <div>
+                        <h4 class="text-xs font-bold text-yellow-400 font-mono tracking-wider mb-1">Sequential 8-Byte</h4>
+                        <p class="text-[10px] text-gray-400 leading-relaxed">
+                            Universal fallback. Single thread ingests 64-bit seed via deterministic bitwise transition table. Hardware-agnostic immortality.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <footer class="w-full border-t border-yellow-600/20 bg-black/60 backdrop-blur-md py-8 text-center relative z-20 mt-12">
+        <p class="text-[10px] text-yellow-600/60 uppercase tracking-[0.3em] font-light font-mono">
+            Owl Academy • Dept 6 Computational Engines • Internal Documentation
+        </p>
+    </footer>
+
+    <script>
+        let currentSeed = 0x1A4F;
+        
+        function crankMarkovPump() {
+            const inSpan = document.getElementById('vis-seed-in');
+            const outSpan = document.getElementById('vis-seed-out');
+            
+            inSpan.innerText = `0x${currentSeed.toString(16).toUpperCase()}...`;
+            
+            currentSeed = (currentSeed * 1664525 + 1013904223) & 0xFFFF;
+            
+            outSpan.innerText = "CALCULATING";
+            outSpan.classList.add("animate-pulse", "text-cyan-400");
+            outSpan.classList.remove("text-fuchsia-400");
+
+            setTimeout(() => {
+                outSpan.classList.remove("animate-pulse", "text-cyan-400");
+                outSpan.classList.add("text-fuchsia-400");
+                outSpan.innerText = `0x${currentSeed.toString(16).toUpperCase()}...`;
+            }, 800);
+        }
+    </script>
+</body>
+</html>
