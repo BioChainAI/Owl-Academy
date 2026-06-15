@@ -1,0 +1,1126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Owl Academy | Dimensional Lifting in Lattice Systems</title>
+    
+    <!-- SECURITY LOCK: Points 2 levels up to the root /scripts directory -->
+    <script src="../../scripts/auth.js"></script>
+
+    <!-- External Libraries -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Inter:wght@300;400;500;600&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+    
+    <!-- MathJax Configuration for Equations -->
+    <script>
+        window.MathJax = { 
+            tex: { 
+                inlineMath: [['$', '$'], ['\\(', '\\)']], 
+                displayMath: [['$$', '$$'], ['\\[', '\\]']] 
+            },
+            startup: {
+                pageReady: () => {
+                    return MathJax.startup.defaultPageReady().then(() => {
+                        // Re-calculate heights for open accordions after MathJax renders
+                        document.querySelectorAll('.collapsible-section.is-open .collapsible-content').forEach(content => {
+                            content.style.maxHeight = content.scrollHeight + 100 + "px";
+                        });
+                    });
+                }
+            }
+        };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+    <!-- Three.js for 3D Interactive Module -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+
+    <style>
+        :root {
+            --color-void: #05030a;
+            --color-primary: #D4AF37;
+            --color-primary-light: #FFF8DC;
+            --color-primary-dark: #aa771c;
+            --color-secondary: #8e9eab;
+            --color-holo1: #00d4ff;
+            --color-holo2: #8A2BE2;
+        }
+
+        body {
+            background-color: var(--color-void);
+            color: #e2e8f0;
+            font-family: 'Inter', sans-serif;
+            background: radial-gradient(circle at 50% 0%, color-mix(in srgb, var(--color-holo2) 8%, var(--color-void)), var(--color-void) 60%);
+            min-height: 100vh;
+            margin: 0;
+            overflow-x: hidden;
+            line-height: 1.7;
+            scroll-behavior: smooth;
+        }
+
+        /* Subtle pulse for the Voxel Sigil */
+        .voxel-pulse {
+            animation: pulse-glow 3s infinite alternate;
+        }
+        @keyframes pulse-glow {
+            0% { filter: drop-shadow(0 0 4px rgba(0, 212, 255, 0.4)); }
+            100% { filter: drop-shadow(0 0 12px rgba(0, 212, 255, 0.8)); }
+        }
+
+        .starfield {
+            position: fixed; inset: 0;
+            background-image:
+                radial-gradient(2px 2px at 20px 30px, var(--color-primary), rgba(0,0,0,0)),
+                radial-gradient(2px 2px at 40px 70px, #fff, rgba(0,0,0,0)),
+                radial-gradient(2px 2px at 50px 160px, rgba(255,255,255,0.8), rgba(0,0,0,0)),
+                radial-gradient(2px 2px at 90px 40px, #fff, rgba(0,0,0,0)),
+                radial-gradient(2px 2px at 130px 80px, var(--color-primary), rgba(0,0,0,0));
+            background-repeat: repeat; background-size: 250px 250px;
+            animation: twinkle 8s infinite alternate;
+            opacity: 0.15; z-index: -2; pointer-events: none;
+        }
+        
+        .nebula-glow {
+            position: fixed; top: 0; left: 50%; transform: translateX(-50%);
+            width: 100vw; height: 50vh;
+            background: radial-gradient(ellipse at top center, color-mix(in srgb, var(--color-primary) 8%, transparent) 0%, transparent 70%);
+            z-index: -1; pointer-events: none;
+        }
+
+        @keyframes twinkle { 0% { opacity: 0.05; } 100% { opacity: 0.2; } }
+
+        h1, h2, h3, h4, h5, .mystical-font { font-family: 'Cinzel', serif; }
+
+        .gold-gradient {
+            background: linear-gradient(to right, var(--color-primary), var(--color-primary-light), var(--color-primary));
+            -webkit-background-clip: text; background-clip: text;
+            color: transparent; text-shadow: 0 0 15px color-mix(in srgb, var(--color-primary) 30%, transparent);
+        }
+
+        .glass-panel {
+            background: rgba(10, 8, 20, 0.4);
+            backdrop-filter: blur(12px);
+            border: 1px solid color-mix(in srgb, var(--color-primary) 15%, transparent);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5);
+        }
+
+        .tutorial-content p { margin-bottom: 1.25rem; color: #cbd5e1; font-weight: 300; }
+        .tutorial-content strong { color: #f8fafc; font-weight: 600; }
+        .tutorial-content a { color: var(--color-holo1); text-decoration: none; transition: color 0.2s; }
+        .tutorial-content a:hover { color: #fff; text-shadow: 0 0 8px var(--color-holo1); }
+
+        .tutorial-content ul { list-style: none; padding-left: 1rem; margin-bottom: 1.5rem; }
+        .tutorial-content li { position: relative; padding-left: 1.5rem; margin-bottom: 0.5rem; color: #cbd5e1; font-weight: 300; }
+        .tutorial-content li::before {
+            content: '⬡'; position: absolute; left: 0; top: 0.1rem;
+            color: var(--color-primary); font-size: 0.7rem;
+        }
+
+        .math-block { overflow-x: auto; padding: 1rem 0; margin: 1rem 0; }
+
+        /* Header Animation */
+        .spin-slow { animation: spin 40s linear infinite; transform-origin: center; }
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+        
+        .pulse-glow { animation: pulseGlow 4s ease-in-out infinite alternate; }
+        @keyframes pulseGlow { 0% { filter: drop-shadow(0 0 5px rgba(212, 175, 55, 0.3)); } 100% { filter: drop-shadow(0 0 15px rgba(212, 175, 55, 0.8)); } }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: rgba(0,0,0,0.3); }
+        ::-webkit-scrollbar-thumb { background: color-mix(in srgb, var(--color-primary) 40%, transparent); border-radius: 10px; }
+
+        /* Collapsible Sections */
+        .collapsible-section {
+            background: rgba(5, 3, 10, 0.5);
+            border: 1px solid color-mix(in srgb, var(--color-primary) 20%, transparent);
+            border-radius: 12px;
+            margin-bottom: 1.5rem;
+            overflow: hidden;
+            transition: border-color 0.3s;
+        }
+        .collapsible-section:hover {
+            border-color: color-mix(in srgb, var(--color-primary) 40%, transparent);
+        }
+        .collapsible-trigger {
+            width: 100%; padding: 1.25rem 1.5rem;
+            display: flex; justify-content: space-between; align-items: center;
+            background: rgba(255, 255, 255, 0.02); cursor: pointer;
+            border: none; outline: none; transition: background 0.3s;
+        }
+        .collapsible-trigger:hover { background: rgba(255, 255, 255, 0.05); }
+        .collapsible-title {
+            color: var(--color-primary); font-size: 1.25rem; margin: 0;
+            letter-spacing: 0.05em; text-align: left;
+        }
+        .collapsible-icon {
+            color: var(--color-primary); font-size: 0.9rem;
+            transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .collapsible-content {
+            max-height: 0; opacity: 0; overflow: hidden;
+            transition: max-height 0.6s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.5s ease;
+        }
+        .collapsible-section.is-open .collapsible-icon { transform: rotate(180deg); }
+        .collapsible-section.is-open .collapsible-content { opacity: 1; }
+        .collapsible-inner { padding: 0 1.5rem 1.5rem 1.5rem; border-top: 1px solid rgba(255,255,255,0.05); margin-top: 0.5rem; padding-top: 1.5rem; }
+
+        /* Explainer Animation Styles */
+        .explainer-box {
+            background: rgba(0, 0, 0, 0.5);
+            border: 1px solid color-mix(in srgb, var(--color-holo1) 20%, transparent);
+            border-radius: 8px; padding: 1.5rem; margin: 2rem 0;
+            display: flex; flex-direction: column; align-items: center;
+            box-shadow: inset 0 0 20px rgba(0,0,0,0.8);
+        }
+        .explainer-caption {
+            font-size: 0.85rem; color: var(--color-secondary); margin-top: 1rem;
+            text-align: center; font-family: 'Fira Code', monospace;
+            border-top: 1px dashed color-mix(in srgb, var(--color-secondary) 30%, transparent);
+            padding-top: 0.75rem; width: 100%;
+        }
+
+        /* SVG Specifics */
+        .iso-plane-toda { fill: rgba(212, 175, 55, 0.05); stroke: var(--color-primary); stroke-width: 1.5; opacity: 0.8; }
+        .iso-plane-kagome { fill: rgba(138, 43, 226, 0.05); stroke: var(--color-holo2); stroke-width: 1.5; opacity: 0.8; }
+        .toda-flow { stroke: var(--color-primary); stroke-width: 2; stroke-dasharray: 40; animation: flowForward 3s linear infinite; filter: drop-shadow(0 0 4px var(--color-primary)); }
+        .kagome-loop { fill: none; stroke: var(--color-holo2); stroke-width: 2; stroke-dasharray: 30; animation: loopCirculate 2s linear infinite; filter: drop-shadow(0 0 4px var(--color-holo2)); }
+        .vertical-bind { stroke: rgba(255, 255, 255, 0.2); stroke-width: 1; stroke-dasharray: 4 4; }
+        
+        @keyframes flowForward { 0% { stroke-dashoffset: 80; } 100% { stroke-dashoffset: 0; } }
+        @keyframes loopCirculate { 0% { stroke-dashoffset: 60; } 100% { stroke-dashoffset: 0; } }
+        
+        /* New Animations */
+        .torsion-arrow { fill: none; stroke: var(--color-primary); stroke-width: 2; marker-end: url(#arrowhead); animation: pulseStroke 2s infinite alternate; }
+        .torsion-arrow-weak { fill: none; stroke: var(--color-secondary); stroke-width: 1; stroke-dasharray: 3 3; marker-end: url(#arrowhead-weak); }
+        .stress-node { fill: #ff3333; filter: drop-shadow(0 0 8px #ff3333); animation: throb 1s infinite alternate; }
+        
+        @keyframes pulseStroke { 0% { stroke-width: 1.5; filter: drop-shadow(0 0 2px var(--color-primary)); } 100% { stroke-width: 3; filter: drop-shadow(0 0 8px var(--color-primary)); } }
+        @keyframes throb { 0% { r: 3; opacity: 0.6; } 100% { r: 6; opacity: 1; } }
+
+        /* Structural Graphics & Graph Animations */
+        .float-toda-1 { animation: float1 4s ease-in-out infinite alternate; }
+        .float-toda-2 { animation: float2 4s ease-in-out infinite alternate; }
+        @keyframes float1 { 0% { transform: translateY(-40px); } 100% { transform: translateY(-30px); } }
+        @keyframes float2 { 0% { transform: translateY(40px); } 100% { transform: translateY(30px); } }
+
+        @keyframes lockInK2 { 0% { opacity: 0; transform: translate(0, 100px); } 100% { opacity: 1; transform: translate(0, 150px); } }
+        @keyframes lockInK1 { 0% { opacity: 0; transform: translate(0, 100px); } 100% { opacity: 1; transform: translate(0, 50px); } }
+        .animate-k2 { opacity: 0; animation: lockInK2 1.5s 1s ease-out forwards; }
+        .animate-k1 { opacity: 0; animation: lockInK1 1.5s 1s ease-out forwards; }
+        
+        .draw-bind { stroke-dasharray: 300; stroke-dashoffset: 300; animation: drawDash 2s 2.5s ease-in-out forwards; }
+        
+        .graph-line-red { fill: none; stroke: #ff3333; stroke-width: 2; stroke-dasharray: 300; stroke-dashoffset: 300; animation: drawDash 3s ease-out forwards; }
+        .graph-line-green { fill: none; stroke: #4ade80; stroke-width: 2; stroke-dasharray: 300; stroke-dashoffset: 300; animation: drawDash 3s 1s ease-out forwards; }
+        .graph-line-blue { fill: none; stroke: var(--color-holo1); stroke-width: 3; stroke-dasharray: 300; stroke-dashoffset: 300; animation: drawDash 3s 2s ease-out forwards; filter: drop-shadow(0 0 4px var(--color-holo1)); }
+        .graph-axes { stroke: rgba(255,255,255,0.3); stroke-width: 1; }
+        .graph-label { font-family: 'Fira Code', monospace; font-size: 10px; fill: var(--color-secondary); }
+        
+        .force-arrow-up { transform-origin: bottom; animation: stretchArrow 2s ease-in-out infinite alternate; }
+        .force-arrow-down { transform-origin: top; animation: stretchArrow 2s ease-in-out infinite alternate; }
+        @keyframes stretchArrow { 0% { transform: scaleY(0.8); } 100% { transform: scaleY(1.1); } }
+        @keyframes drawDash { to { stroke-dashoffset: 0; } }
+
+        /* Volumetric Expansion Specifics */
+        .pump-ring { fill: none; stroke: var(--color-holo1); stroke-width: 2; stroke-dasharray: 8 4; animation: spinRing 2s linear infinite; }
+        .seed-cube { fill: rgba(212, 175, 55, 0.8); stroke: #FFF8DC; stroke-width: 1; }
+        .expanded-grid { fill: rgba(138, 43, 226, 0.2); stroke: var(--color-holo2); stroke-width: 1; }
+        .lifting-trail { stroke: var(--color-primary); stroke-width: 1; stroke-dasharray: 4 2; opacity: 0.5; animation: dashTrail 1.5s linear infinite; }
+        
+        @keyframes spinRing { 100% { transform: rotateX(70deg) rotateZ(360deg); } }
+        @keyframes dashTrail { to { stroke-dashoffset: -12; } }
+
+    </style>
+</head>
+<body class="antialiased">
+
+    <!-- Atmospheric Background -->
+    <div class="starfield"></div>
+    <div class="nebula-glow"></div>
+
+    <!-- Header containing Voxel Owl, Title, and Logout -->
+    <header class="w-full pt-6 pb-6 px-6 md:px-10 flex flex-col md:flex-row justify-between items-start md:items-center border-b border-cyan-900/50 bg-[#05030a]/80 backdrop-blur-md shadow-2xl z-40 sticky top-0 gap-6">
+        
+        <!-- Left Side: Voxel Owl Sigil + Title -->
+        <div class="flex items-center gap-5">
+            
+            <!-- Voxel Owl Sigil (SVG Grid) -->
+            <div class="w-12 h-12 flex-shrink-0 voxel-pulse">
+                <svg viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg" class="w-full h-full">
+                    <!-- Ears -->
+                    <rect x="10" y="10" width="10" height="10" fill="#00d4ff"/>
+                    <rect x="60" y="10" width="10" height="10" fill="#00d4ff"/>
+                    <!-- Forehead -->
+                    <rect x="20" y="20" width="40" height="10" fill="#00d4ff"/>
+                    <rect x="10" y="20" width="10" height="10" fill="#00d4ff"/>
+                    <rect x="60" y="20" width="10" height="10" fill="#00d4ff"/>
+                    <!-- Eyes (Dark voids) & Center Bridge -->
+                    <rect x="10" y="30" width="20" height="10" fill="#00d4ff"/>
+                    <rect x="30" y="30" width="20" height="10" fill="#D4AF37"/> <!-- Gold Brow -->
+                    <rect x="50" y="30" width="20" height="10" fill="#00d4ff"/>
+                    <!-- Cheeks & Beak -->
+                    <rect x="10" y="40" width="20" height="10" fill="#00d4ff"/>
+                    <rect x="30" y="40" width="20" height="10" fill="#D4AF37"/> <!-- Gold Beak -->
+                    <rect x="50" y="40" width="20" height="10" fill="#00d4ff"/>
+                    <!-- Lower Beak & Jaw -->
+                    <rect x="10" y="50" width="20" height="10" fill="#00d4ff"/>
+                    <rect x="30" y="50" width="20" height="10" fill="#D4AF37"/> <!-- Gold Beak Tip -->
+                    <rect x="50" y="50" width="20" height="10" fill="#00d4ff"/>
+                    <!-- Base / Body connection -->
+                    <rect x="20" y="60" width="40" height="10" fill="#00d4ff"/>
+                    <rect x="30" y="70" width="20" height="10" fill="#00d4ff"/>
+                </svg>
+            </div>
+
+            <div>
+                <div class="text-[10px] text-cyan-600 tracking-[0.2em] uppercase mb-1 font-mono">Department III • Multi-Dimensional Physics (Mechanics)</div>
+                <h1 class="text-cyan-400 text-xl md:text-2xl tracking-widest uppercase font-bold drop-shadow-[0_0_8px_rgba(0,212,255,0.3)] mystical-font">Dimensional Lifting</h1>
+            </div>
+        </div>
+        
+        <!-- Right Side: Sever Connection -->
+        <button onclick="globalLogout()" class="group flex items-center gap-2 text-red-500 hover:text-red-400 hover:bg-red-950/30 transition-all uppercase tracking-widest text-xs font-bold border border-red-900 px-4 py-2 rounded shadow-[0_0_10px_rgba(239,68,68,0.1)] hover:shadow-[0_0_15px_rgba(239,68,68,0.2)] font-mono z-50 cursor-pointer">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="group-hover:-translate-x-1 transition-transform"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+            Sever Connection
+        </button>
+    </header>
+
+    <div class="max-w-7xl mx-auto px-4 md:px-8 py-12 flex flex-col lg:flex-row gap-10 relative z-10">
+        
+        <!-- Left Sidebar Navigation -->
+        <aside class="w-full lg:w-64 flex-shrink-0">
+            <nav class="glass-panel rounded-xl p-6 sticky top-8">
+                <h3 class="text-xs text-yellow-500 tracking-[0.2em] font-bold uppercase mb-6 border-b border-yellow-600/20 pb-2 mystical-font">
+                    Research Archive
+                </h3>
+                
+                <ul class="space-y-4 text-sm font-light text-slate-300">
+                    <li>
+                        <a href="#abstract" class="block hover:text-yellow-400 transition-colors">
+                            Abstract & Synopsis
+                        </a>
+                    </li>
+                    <li>
+                        <a href="#" onclick="openSection(0); return false;" class="block hover:text-yellow-400 transition-colors">
+                            I. The 2-Layer Substrate
+                        </a>
+                    </li>
+                    <li>
+                        <a href="#" onclick="openSection(1); return false;" class="block hover:text-yellow-400 transition-colors">
+                            II. Topological Embedding
+                        </a>
+                    </li>
+                    <li>
+                        <a href="#" onclick="openSection(2); return false;" class="block hover:text-yellow-400 transition-colors">
+                            III. Torsion Dissipation
+                        </a>
+                    </li>
+                    <li>
+                        <a href="#" onclick="openSection(3); return false;" class="block hover:text-yellow-400 transition-colors">
+                            IV. Structural Tension
+                        </a>
+                    </li>
+                    <li>
+                        <a href="#" onclick="openSection(4); return false;" class="block hover:text-yellow-400 transition-colors">
+                            V. Matrix Formulation
+                        </a>
+                    </li>
+                    <li>
+                        <a href="#" onclick="openSection(5); return false;" class="block hover:text-yellow-400 transition-colors">
+                            VI. Volumetric Expansion
+                        </a>
+                    </li>
+                    <li>
+                        <a href="#" onclick="openSection(6); return false;" class="block text-cyan-400 hover:text-cyan-300 transition-colors font-semibold">
+                            VII. Interactive 3D Module
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+        </aside>
+
+        <!-- Main Content Area -->
+        <main class="flex-1 glass-panel rounded-xl p-8 md:p-12">
+            
+            <!-- Access Granted Banner -->
+            <div class="flex items-start gap-4 mb-8 p-4 bg-green-950/20 border border-green-900/50 rounded-md">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#4ade80" stroke-width="2" class="mt-1 flex-shrink-0"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+                <div>
+                    <h2 class="text-green-400 font-bold text-sm tracking-wider uppercase mb-1 font-mono">Access Granted</h2>
+                    <p class="text-gray-400 text-xs leading-relaxed font-mono">
+                        If you are reading this, the SHD-CCP resonance was verified. Your local biometric/cryptographic token matches the requirements for Department III.
+                    </p>
+                </div>
+            </div>
+            
+            <article class="tutorial-content">
+                <header class="mb-10 text-center lg:text-left" id="abstract">
+                    <div class="inline-block px-3 py-1 border border-purple-500/30 rounded-full bg-purple-900/20 text-purple-300 text-[10px] tracking-widest uppercase mb-4 font-mono">
+                        Published Research Paper
+                    </div>
+                    <h1 class="text-3xl md:text-4xl font-bold tracking-[0.1em] text-white mystical-font mb-4 leading-tight">
+                        Dimensional Lifting in Lattice Systems
+                    </h1>
+                    <p class="text-gray-400 font-light text-lg">
+                        Stabilizing one-way torsional Markov pumps via higher-layer alternating geometries.
+                    </p>
+                </header>
+
+                <div class="bg-white/5 p-6 rounded-lg border-l-4 border-yellow-500 mb-10">
+                    <h3 class="text-yellow-500 font-bold uppercase tracking-widest text-sm mt-0 mb-3 mystical-font">Abstract</h3>
+                    <p class="text-sm m-0 text-slate-300">
+                        We mathematically postulate that transitioning from a two-layer hyper-Toda lattice into a five-layer alternating hyper-Kagome / hyper-Toda lattice constitutes a valid <strong>dimensional lifting</strong> embedding ($\mathcal{L}_2 \longrightarrow \mathcal{L}_5$). By expanding the lattice, directed Markov current is preserved while destructive expansion torsion and phase drift are redistributed across internal geometric loops.
+                    </p>
+                </div>
+
+                <!-- Collapsible Sections Container -->
+                <div id="accordion-container">
+                    
+                    <!-- Section I -->
+                    <div class="collapsible-section is-open">
+                        <button class="collapsible-trigger">
+                            <h2 class="collapsible-title">I. The Hyper-Toda Substrate & Torsional Drive</h2>
+                            <span class="collapsible-icon">▼</span>
+                        </button>
+                        <div class="collapsible-content">
+                            <div class="collapsible-inner">
+                                <p>We establish our starting conditions with a two-layer hyper-Toda state defined as:</p>
+                                <div class="math-block">
+                                    $$\mathcal{T}_2= \begin{bmatrix} T_1\\ T_2 \end{bmatrix}$$
+                                </div>
+                                <p>
+                                    Here, $T_1$ and $T_2$ are two coupled Toda-type chains. Toda lattices are highly effective for modeling directed nonlinear wave propagation due to their natural support for soliton-like transfer. A simplified Toda interaction is parameterized by:
+                                </p>
+                                <div class="math-block">
+                                    $$\ddot{x}_i=e^{x_{i-1}-x_i}-e^{x_i-x_{i+1}}$$
+                                </div>
+                                <p>
+                                    <strong>The Instability Problem:</strong> The system is propelled by a one-way torsional Markov pump. The Markov current satisfies:
+                                </p>
+                                <div class="math-block">
+                                    $$J_{ij}=\pi_iK_{ij}-\pi_jK_{ji}>0$$
+                                </div>
+                                <p>
+                                    This strict inequality indicates that forward probability flux dominates reverse flux ($\pi_iK_{ij}>\pi_jK_{ji}$). By violating detailed balance, the system experiences a <strong>net torsional drive</strong>. While this provides momentum, $J_{ij}>0$ causes unchecked shear accumulation without a topological relief mechanism.
+                                </p>
+
+                                <!-- Exhibit I -->
+                                <div class="explainer-box">
+                                    <svg viewBox="0 0 400 250" width="100%" height="250" xmlns="http://www.w3.org/2000/svg">
+                                        <defs>
+                                            <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+                                              <polygon points="0 0, 10 3.5, 0 7" fill="var(--color-primary)" />
+                                            </marker>
+                                        </defs>
+                                        <g transform="translate(200, 125)">
+                                            <!-- Uncoupled T1 Layer -->
+                                            <g class="float-toda-1">
+                                                <polygon points="0,20 -140,-50 0,-120 140,-50" fill="rgba(212,175,55,0.05)" stroke="var(--color-primary)" stroke-width="1.5" opacity="0.8"/>
+                                                <text x="-160" y="-45" fill="var(--color-primary)" font-family="Fira Code" font-size="12">T_1 (Hyper-Toda)</text>
+                                                <!-- Chain 1 -->
+                                                <path d="M -90,-50 L 90,-50" stroke="rgba(255,255,255,0.2)" stroke-width="2"/>
+                                                <circle cx="-60" cy="-50" r="4" fill="var(--color-primary)"/>
+                                                <circle cx="0" cy="-50" r="4" fill="var(--color-primary)"/>
+                                                <circle cx="60" cy="-50" r="4" fill="var(--color-primary)"/>
+                                                <circle cx="90" cy="-50" r="6" class="stress-node"/>
+                                                <!-- Current Flow -->
+                                                <path d="M -50,-50 Q 0,-70 50,-50" class="torsion-arrow" />
+                                            </g>
+
+                                            <!-- Uncoupled T2 Layer -->
+                                            <g class="float-toda-2">
+                                                <polygon points="0,20 -140,-50 0,-120 140,-50" fill="rgba(212,175,55,0.05)" stroke="var(--color-primary)" stroke-width="1.5" opacity="0.8"/>
+                                                <text x="60" y="-10" fill="var(--color-primary)" font-family="Fira Code" font-size="12">T_2 (Hyper-Toda)</text>
+                                                <!-- Chain 2 -->
+                                                <path d="M -90,-50 L 90,-50" stroke="rgba(255,255,255,0.2)" stroke-width="2"/>
+                                                <circle cx="-60" cy="-50" r="4" fill="var(--color-primary)"/>
+                                                <circle cx="0" cy="-50" r="4" fill="var(--color-primary)"/>
+                                                <circle cx="60" cy="-50" r="4" fill="var(--color-primary)"/>
+                                                <circle cx="90" cy="-50" r="6" class="stress-node"/>
+                                                <!-- Current Flow -->
+                                                <path d="M -50,-50 Q 0,-70 50,-50" class="torsion-arrow" />
+                                            </g>
+
+                                            <!-- Unconnected indication -->
+                                            <path d="M 0,-60 L 0,0" stroke="rgba(255,51,51,0.5)" stroke-width="2" stroke-dasharray="4 4"/>
+                                            <text x="10" y="-20" fill="#ff3333" font-size="10" font-family="Fira Code">Uncoupled Dimensional Gap</text>
+                                        </g>
+                                    </svg>
+                                    <div class="explainer-caption">
+                                        Exhibit A: Establishing Starting Conditions. Two independent Hyper-Toda planes carrying forward flux. Because they are disconnected, they lack a relief manifold, leading to terminal stress build-up (red).
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Section II -->
+                    <div class="collapsible-section">
+                        <button class="collapsible-trigger">
+                            <h2 class="collapsible-title">II. Topological Embedding (Dimensional Lifting)</h2>
+                            <span class="collapsible-icon">▼</span>
+                        </button>
+                        <div class="collapsible-content">
+                            <div class="collapsible-inner">
+                                <p>To prevent catastrophic accumulation of tension, we apply the mathematical operation of <strong>dimensional lifting</strong>:</p>
+                                <div class="math-block">
+                                    $$\mathcal{L}_2= \begin{bmatrix} T_1\\ T_2 \end{bmatrix} \quad\longrightarrow\quad \mathcal{L}_5= \begin{bmatrix} T_1\\ K_1\\ T_2\\ K_2\\ T_3 \end{bmatrix}$$
+                                </div>
+                                <p>
+                                    This lifts the 2-layer state into a 5-layer alternating topology. $T_i$ represents hyper-Toda layers responsible for linear wave transport, while $K_i$ introduces hyper-Kagome layers specifically injected to absorb frustration and angular stress. The resulting sequence is $T-K-T-K-T$.
+                                </p>
+
+                                <!-- Exhibit II -->
+                                <div class="explainer-box">
+                                    <svg viewBox="0 0 400 350" width="100%" height="300" xmlns="http://www.w3.org/2000/svg">
+                                        <g transform="translate(200, 40)">
+                                            <!-- Binding Matrix Animates In -->
+                                            <path d="M -100 30 L -100 230 M 0 80 L 0 280 M 100 30 L 100 230" class="vertical-bind draw-bind" />
+                                            
+                                            <!-- T_3 (Bottom Toda) remains static -->
+                                            <g transform="translate(0, 200)">
+                                                <polygon points="0,0 -120,-60 0,-120 120,-60" class="iso-plane-toda" />
+                                                <text x="-140" y="-55" fill="var(--color-primary)" font-family="Fira Code" font-size="12">T_3 (Toda)</text>
+                                                <line x1="-80" y1="-80" x2="80" y2="0" class="toda-flow" />
+                                            </g>
+                                            
+                                            <!-- K_2 locks into place -->
+                                            <g class="animate-k2">
+                                                <polygon points="0,0 -120,-60 0,-120 120,-60" class="iso-plane-kagome" />
+                                                <text x="130" y="-55" fill="var(--color-holo2)" font-family="Fira Code" font-size="12">K_2 (Kagome Bind)</text>
+                                                <polygon points="-20,-60 20,-40 20,-80" class="kagome-loop" />
+                                                <polygon points="-60,-40 -20,-20 -20,-60" class="kagome-loop" style="animation-delay: 0.5s;" />
+                                                <polygon points="20,-80 60,-60 60,-100" class="kagome-loop" style="animation-delay: 1s;" />
+                                            </g>
+                                            
+                                            <!-- T_2 (Spine) -->
+                                            <g transform="translate(0, 100)">
+                                                <polygon points="0,0 -120,-60 0,-120 120,-60" class="iso-plane-toda" />
+                                                <text x="-140" y="-55" fill="var(--color-primary)" font-family="Fira Code" font-size="12">T_2 (Spine)</text>
+                                                <line x1="-80" y1="-80" x2="80" y2="0" class="toda-flow" />
+                                            </g>
+                                            
+                                            <!-- K_1 locks into place -->
+                                            <g class="animate-k1">
+                                                <polygon points="0,0 -120,-60 0,-120 120,-60" class="iso-plane-kagome" />
+                                                <text x="130" y="-55" fill="var(--color-holo2)" font-family="Fira Code" font-size="12">K_1 (Kagome Bind)</text>
+                                                <polygon points="-20,-60 20,-40 20,-80" class="kagome-loop" style="animation-delay: 0.2s;" />
+                                                <polygon points="-60,-40 -20,-20 -20,-60" class="kagome-loop" style="animation-delay: 0.7s;" />
+                                                <polygon points="20,-80 60,-60 60,-100" class="kagome-loop" style="animation-delay: 1.2s;" />
+                                            </g>
+                                            
+                                            <!-- T_1 (Top Toda) -->
+                                            <g transform="translate(0, 0)">
+                                                <polygon points="0,0 -120,-60 0,-120 120,-60" class="iso-plane-toda" />
+                                                <text x="-140" y="-55" fill="var(--color-primary)" font-family="Fira Code" font-size="12">T_1 (Toda)</text>
+                                                <line x1="-80" y1="-80" x2="80" y2="0" class="toda-flow" />
+                                            </g>
+                                        </g>
+                                    </svg>
+                                    <div class="explainer-caption">
+                                        Exhibit B: The Topological Connection. The Hyper-Kagome layers dynamically lock into the structure, bridging the dimensional gap and enabling torsion distribution.
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Section III -->
+                    <div class="collapsible-section">
+                        <button class="collapsible-trigger">
+                            <h2 class="collapsible-title">III. Torsion Dissipation via Kagome Geometries</h2>
+                            <span class="collapsible-icon">▼</span>
+                        </button>
+                        <div class="collapsible-content">
+                            <div class="collapsible-inner">
+                                <p>
+                                    Hyper-Kagome lattices are constructed from corner-sharing triangles. This specific geometry naturally engenders localized circulation loops. When the one-way directed current ($J_{ij}>0$) enters a Kagome layer, it is fractured. Instead of persisting as a rigid axial chain ($i\to j\to k\to \cdots$), the current routes around triangular bounds ($i\to j\to k\to i$).
+                                </p>
+                                <p>The local circulation current within the Kagome layer is modeled as:</p>
+                                <div class="math-block">
+                                    $$J_{\triangle}=J_{ij}+J_{jk}+J_{ki}$$
+                                </div>
+                                <p>
+                                    This internal circulation generates a counter-force to the global torsion. The effective system torsion becomes:
+                                </p>
+                                <div class="math-block">
+                                    $$J_{\text{effective}}=J_{\text{global}}-J_{\text{loop compensation}}$$
+                                </div>
+
+                                <!-- Exhibit III -->
+                                <div class="explainer-box">
+                                    <svg viewBox="0 0 500 200" width="100%" height="200" xmlns="http://www.w3.org/2000/svg">
+                                        <defs>
+                                            <marker id="graph-arrow" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto">
+                                                <polygon points="0 0, 6 3, 0 6" fill="rgba(255,255,255,0.5)" />
+                                            </marker>
+                                        </defs>
+                                        <!-- Animated Triangle Graphic -->
+                                        <g transform="translate(100, 100)">
+                                            <polygon points="0,-45 39,22.5 -39,22.5" fill="rgba(138,43,226,0.1)" stroke="rgba(138,43,226,0.5)" stroke-width="2"/>
+                                            <circle cx="0" cy="-45" r="5" fill="#fff" />
+                                            <circle cx="39" cy="22.5" r="5" fill="#fff" />
+                                            <circle cx="-39" cy="22.5" r="5" fill="#fff" />
+                                            
+                                            <path d="M 6,-36 L 34,13" stroke="var(--color-holo1)" stroke-width="3" stroke-dasharray="10 5" fill="none">
+                                                <animate attributeName="stroke-dashoffset" values="15;0" dur="0.5s" repeatCount="indefinite"/>
+                                            </path>
+                                            <path d="M 30,22.5 L -30,22.5" stroke="var(--color-holo1)" stroke-width="3" stroke-dasharray="10 5" fill="none">
+                                                <animate attributeName="stroke-dashoffset" values="15;0" dur="0.5s" repeatCount="indefinite"/>
+                                            </path>
+                                            <path d="M -34,13 L -6,-36" stroke="var(--color-holo1)" stroke-width="3" stroke-dasharray="10 5" fill="none">
+                                                <animate attributeName="stroke-dashoffset" values="15;0" dur="0.5s" repeatCount="indefinite"/>
+                                            </path>
+                                        </g>
+                                        
+                                        <!-- Dynamic Graph Area -->
+                                        <g transform="translate(250, 40)">
+                                            <line x1="0" y1="120" x2="220" y2="120" class="graph-axes" marker-end="url(#graph-arrow)"/>
+                                            <line x1="0" y1="120" x2="0" y2="-10" class="graph-axes" marker-end="url(#graph-arrow)"/>
+                                            <text x="210" y="135" class="graph-label">Time</text>
+                                            <text x="-40" y="0" class="graph-label">Torsion</text>
+                                            
+                                            <!-- Diverging J_global -->
+                                            <path d="M 0 120 Q 100 80 200 0" class="graph-line-red" />
+                                            <text x="205" y="10" fill="#ff3333" font-size="10" font-family="Fira Code">J_global</text>
+
+                                            <!-- Loop compensation -->
+                                            <path d="M 0 120 Q 80 120 200 60" class="graph-line-green" />
+                                            <text x="205" y="65" fill="#4ade80" font-size="10" font-family="Fira Code">J_loop</text>
+
+                                            <!-- Stabilized J_effective -->
+                                            <path d="M 0 120 Q 50 120 100 80 T 200 80" class="graph-line-blue" />
+                                            <text x="205" y="85" fill="var(--color-holo1)" font-size="10" font-family="Fira Code">J_effective</text>
+                                        </g>
+                                    </svg>
+                                    <div class="explainer-caption">
+                                        Exhibit C: Torsion Dissipation Dynamics. Left: Kagome loops capture linear input and enforce internal circulation. Right: As J_loop (green) scales dynamically, it offsets the runaway J_global (red), establishing a bounded, stable J_effective (blue).
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Section IV -->
+                    <div class="collapsible-section">
+                        <button class="collapsible-trigger">
+                            <h2 class="collapsible-title">IV. Structural Tension Balancing</h2>
+                            <span class="collapsible-icon">▼</span>
+                        </button>
+                        <div class="collapsible-content">
+                            <div class="collapsible-inner">
+                                <p>
+                                    The architectural elegance of the 5-layer state lies in its intrinsic symmetrical balance. The $T_2$ layer functions as the neutral structural spine (the central transport manifold).
+                                </p>
+                                <p>
+                                    Because of this core, the outer layers counterbalance each other perfectly across the median plane ($T_1 \leftrightarrow T_3$ and $K_1 \leftrightarrow K_2$). This results in an architecture comprised of:
+                                </p>
+                                <ul>
+                                    <li>Two outer Toda boundary surfaces (flow containment).</li>
+                                    <li>Two intermediate Kagome surfaces (shear diffusion).</li>
+                                    <li>One central Toda transmission spine (primary momentum).</li>
+                                </ul>
+
+                                <!-- Exhibit IV -->
+                                <div class="explainer-box">
+                                    <svg viewBox="0 0 400 150" width="100%" height="150" xmlns="http://www.w3.org/2000/svg">
+                                        <defs>
+                                            <marker id="force-arrowhead-red" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+                                              <polygon points="0 0, 8 3, 0 6" fill="#ff3333" />
+                                            </marker>
+                                            <marker id="force-arrowhead-green" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+                                              <polygon points="0 0, 8 3, 0 6" fill="#4ade80" />
+                                            </marker>
+                                        </defs>
+                                        <g transform="translate(200, 75)">
+                                            <!-- Center Spine -->
+                                            <rect x="-150" y="-12" width="300" height="24" fill="rgba(212,175,55,0.1)" stroke="var(--color-primary)" rx="4"/>
+                                            <text x="0" y="4" fill="var(--color-primary)" font-size="12" font-family="Fira Code" text-anchor="middle">T_2 Neutral Spine (Net = 0)</text>
+                                            
+                                            <!-- T1 Pulling Vector -->
+                                            <g class="force-arrow-up" transform="translate(0, -12)">
+                                                <line x1="0" y1="0" x2="0" y2="-45" stroke="#ff3333" stroke-width="3" marker-end="url(#force-arrowhead-red)"/>
+                                            </g>
+                                            <text x="15" y="-45" fill="#ff3333" font-size="10" font-family="Fira Code">T_1 Tension</text>
+
+                                            <!-- T3 Pulling Vector -->
+                                            <g class="force-arrow-down" transform="translate(0, 12)">
+                                                <line x1="0" y1="0" x2="0" y2="45" stroke="#4ade80" stroke-width="3" marker-end="url(#force-arrowhead-green)"/>
+                                            </g>
+                                            <text x="15" y="55" fill="#4ade80" font-size="10" font-family="Fira Code">T_3 Tension</text>
+                                            
+                                            <!-- Counter-balancing Kagome sheers -->
+                                            <path d="M -80,-30 Q 0,-10 80,-30" fill="none" stroke="var(--color-holo2)" stroke-width="2" class="torsion-arrow-weak"/>
+                                            <text x="-135" y="-30" fill="var(--color-holo2)" font-size="9" font-family="Fira Code">K_1 Shear</text>
+                                            
+                                            <path d="M -80,30 Q 0,10 80,30" fill="none" stroke="var(--color-holo2)" stroke-width="2" class="torsion-arrow-weak"/>
+                                            <text x="-135" y="35" fill="var(--color-holo2)" font-size="9" font-family="Fira Code">K_2 Shear</text>
+                                        </g>
+                                    </svg>
+                                    <div class="explainer-caption">
+                                        Exhibit D: Structural Tension Balancing. T1 and T3 exert opposing outward pulls across the T2 median plane, while K1 and K2 shear forces mirror symmetrically. Total $\Sigma F = 0$.
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Section V -->
+                    <div class="collapsible-section">
+                        <button class="collapsible-trigger">
+                            <h2 class="collapsible-title">V. Matrix Formulation of the Transition State</h2>
+                            <span class="collapsible-icon">▼</span>
+                        </button>
+                        <div class="collapsible-content">
+                            <div class="collapsible-inner">
+                                <p>We define the fully lifted state vector at time $t$ as:</p>
+                                <div class="math-block">
+                                    $$\Psi_t= \begin{bmatrix} T_{1,t}\\ K_{1,t}\\ T_{2,t}\\ K_{2,t}\\ T_{3,t} \end{bmatrix}$$
+                                </div>
+                                <p>The Markov pump advances the state via $\Psi_{t+1}=M_5\Psi_t$, governed by the block transition matrix:</p>
+                                <div class="math-block">
+                                    $$M_5= \begin{bmatrix} A_T & C_{TK} & 0 & 0 & 0\\ C_{KT} & A_K & C_{KT} & 0 & 0\\ 0 & C_{TK} & A_T & C_{TK} & 0\\ 0 & 0 & C_{KT} & A_K & C_{KT}\\ 0 & 0 & 0 & C_{TK} & A_T \end{bmatrix}$$
+                                </div>
+                                <p>Where:</p>
+                                <ul>
+                                    <li>$A_T$ governs internal hyper-Toda mechanics.</li>
+                                    <li>$A_K$ governs internal hyper-Kagome redistribution loops.</li>
+                                    <li>$C_{TK}$ and $C_{KT}$ describe the interlayer coupling matrices.</li>
+                                </ul>
+                                <p>
+                                    <strong>Conclusion:</strong> By maintaining $0<J_{\text{effective}}<J_{\text{critical}}$, the global pump achieves sustained rotation. The dimensional lifting procedure successfully stabilizes a purely directional Markov pump, resolving the accumulation of structural tension through topological embedding.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Section VI -->
+                    <div class="collapsible-section">
+                        <button class="collapsible-trigger">
+                            <h2 class="collapsible-title">VI. Volumetric Seed Expansion ($64 \to 4\times64$ Kernel)</h2>
+                            <span class="collapsible-icon">▼</span>
+                        </button>
+                        <div class="collapsible-content">
+                            <div class="collapsible-inner">
+                                <p>
+                                    With the system stabilized by dimensional lifting ($\mathcal{L}_2 \to \mathcal{L}_5$), we can now examine the interaction between the topological matrix and the <strong>SHD-CCP 64-bit standardized seed</strong> introduced by the One-Way Markov Pump. 
+                                </p>
+                                <p>
+                                    As the dense 64-bit geometric seed ($S_0 \in \mathbb{F}_2^{64}$, a $4 \times 4 \times 4$ voxel structure) enters the pump, the continuous forward current ($J_{ij}>0$) forces the kernel into the $\mathcal{L}_5$ embedding. Because the Kagome layers ($K_1, K_2$) distribute torsional shear orthogonally away from the Toda transport spines ($T_1, T_3$), the single 64-bit kernel cannot remain a localized point.
+                                </p>
+                                <div class="math-block">
+                                    $$\Lambda(S_0) = \bigoplus_{k=1}^{4} \left( M_5^{(k)} S_0 \right) \implies \mathbb{F}_2^{4 \times 64}$$
+                                </div>
+                                <p>
+                                    This forces the <strong>Volumetric Expansion</strong>. The lifting operator $\Lambda(S_0)$ extrudes the seed across the four active interstitial spaces of the $\mathcal{L}_5$ lattice (excluding the neutral $T_2$ spine). The single 64-bit square kernel mathematically expands into four distinct, yet entangled, $4 \times 4 \times 4$ cubic grids. 
+                                </p>
+                                <p>
+                                    This generates a $4 \times 64$ ($256$-bit) <strong>volumetric spatial matrix</strong> capable of holding highly complex holographic contextual encoding without requiring linguistic definitions.
+                                </p>
+
+                                <!-- Exhibit V / VI -->
+                                <div class="explainer-box">
+                                    <svg viewBox="0 0 500 250" width="100%" height="250" xmlns="http://www.w3.org/2000/svg">
+                                        
+                                        <!-- Original 64-bit Seed -->
+                                        <g transform="translate(80, 125)">
+                                            <text x="0" y="-45" fill="var(--color-primary)" font-size="10" font-family="Fira Code" text-anchor="middle">Input 64-Bit Seed</text>
+                                            
+                                            <!-- Simple isometric cube representing 4x4x4 -->
+                                            <g class="seed-cube">
+                                                <polygon points="0,-15 20,-5 20,15 0,5"/>
+                                                <polygon points="0,-15 -20,-5 -20,15 0,5"/>
+                                                <polygon points="0,5 20,15 0,25 -20,15"/>
+                                            </g>
+                                            <!-- Trail leading into pump -->
+                                            <line x1="25" y1="5" x2="110" y2="5" class="lifting-trail"/>
+                                        </g>
+
+                                        <!-- The Markov Pump (Torsional Drive) -->
+                                        <g transform="translate(200, 130)">
+                                            <ellipse cx="0" cy="0" rx="15" ry="40" class="pump-ring" />
+                                            <ellipse cx="10" cy="0" rx="15" ry="40" class="pump-ring" style="animation-delay: -0.3s;" />
+                                            <ellipse cx="20" cy="0" rx="15" ry="40" class="pump-ring" style="animation-delay: -0.6s;" />
+                                            <text x="10" y="-55" fill="var(--color-holo1)" font-size="10" font-family="Fira Code" text-anchor="middle">Markov Pump \Lambda</text>
+                                            <line x1="35" y1="0" x2="110" y2="-40" class="lifting-trail"/>
+                                            <line x1="35" y1="0" x2="110" y2="-15" class="lifting-trail"/>
+                                            <line x1="35" y1="0" x2="110" y2="10" class="lifting-trail"/>
+                                            <line x1="35" y1="0" x2="110" y2="35" class="lifting-trail"/>
+                                        </g>
+
+                                        <!-- The 4x64 Volumetric Expansion -->
+                                        <g transform="translate(370, 110)">
+                                            <text x="0" y="-65" fill="var(--color-holo2)" font-size="10" font-family="Fira Code" text-anchor="middle">4 x 64 Expanded Kernel</text>
+                                            
+                                            <!-- 4 distinct iso planes representing the new matrix -->
+                                            <g transform="translate(0, -35)">
+                                                <polygon points="0,-15 30,-5 0,5 -30,-5" class="expanded-grid"/>
+                                                <text x="40" y="-2" fill="rgba(255,255,255,0.4)" font-size="8" font-family="Fira Code">T_1 Grid</text>
+                                            </g>
+                                            <g transform="translate(0, -10)">
+                                                <polygon points="0,-15 30,-5 0,5 -30,-5" class="expanded-grid"/>
+                                                <text x="40" y="-2" fill="rgba(255,255,255,0.4)" font-size="8" font-family="Fira Code">K_1 Grid</text>
+                                            </g>
+                                            <g transform="translate(0, 15)">
+                                                <polygon points="0,-15 30,-5 0,5 -30,-5" class="expanded-grid"/>
+                                                <text x="40" y="-2" fill="rgba(255,255,255,0.4)" font-size="8" font-family="Fira Code">K_2 Grid</text>
+                                            </g>
+                                            <g transform="translate(0, 40)">
+                                                <polygon points="0,-15 30,-5 0,5 -30,-5" class="expanded-grid"/>
+                                                <text x="40" y="-2" fill="rgba(255,255,255,0.4)" font-size="8" font-family="Fira Code">T_3 Grid</text>
+                                            </g>
+                                            
+                                            <!-- Interconnecting matrix lines -->
+                                            <line x1="-30" y1="-40" x2="-30" y2="35" stroke="var(--color-holo2)" stroke-dasharray="2 2" stroke-width="1" opacity="0.5"/>
+                                            <line x1="30" y1="-40" x2="30" y2="35" stroke="var(--color-holo2)" stroke-dasharray="2 2" stroke-width="1" opacity="0.5"/>
+                                            <line x1="0" y1="-30" x2="0" y2="45" stroke="var(--color-holo2)" stroke-dasharray="2 2" stroke-width="1" opacity="0.5"/>
+                                        </g>
+                                    </svg>
+                                    <div class="explainer-caption">
+                                        Exhibit E: Torsional Extrusion. The Markov Pump generates sufficient dimensional torsion to "lift" the input 64-bit geometric seed ($S_0$) across the active spatial planes of the $\mathcal{L}_5$ structure, resulting in a cohesive $4 \times 64$ volumetric array.
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Section VII (New 3D Module) -->
+                    <div class="collapsible-section">
+                        <button class="collapsible-trigger">
+                            <h2 class="collapsible-title text-cyan-400">VII. Interactive 3D Expansion Module</h2>
+                            <span class="collapsible-icon text-cyan-400">▼</span>
+                        </button>
+                        <div class="collapsible-content">
+                            <div class="collapsible-inner">
+                                <p class="text-sm font-light text-gray-300 mb-4">
+                                    Engage the interactive simulation below to trace the exact geometric transformation. We visualize the $4 \times 4 \times 4$ lattice array (the 64-bit seed) and subject it to the Markov Pump, observing the orthogonal shear and dimensional lifting into the $\mathcal{L}_5$ substrate. <strong>Use your mouse to rotate, zoom, and pan the manifold space.</strong>
+                                </p>
+                                
+                                <div id="three-container" class="relative w-full h-[500px] rounded-lg border border-cyan-900/50 overflow-hidden bg-[#020106] shadow-[0_0_20px_rgba(0,212,255,0.15)]">
+                                    <!-- UI overlay -->
+                                    <div class="absolute top-4 left-4 z-10 bg-black/80 p-5 border border-cyan-900/50 rounded-lg backdrop-blur-md max-w-[300px]">
+                                        <div class="text-[10px] text-cyan-500 font-mono tracking-widest mb-1 uppercase">Simulation Phase <span id="sim-phase-num">1</span> / 4</div>
+                                        <h4 id="step-title" class="text-white font-mono text-sm font-bold mb-2">I. The 64-bit Root Seed</h4>
+                                        <p id="step-desc" class="text-gray-400 text-xs font-mono leading-relaxed h-16">
+                                            The core SHD-CCP geometric seed rests at the origin point. All 64 voxels (4x4x4) are tightly bound in equilibrium prior to pump activation.
+                                        </p>
+                                        <div class="flex gap-3 mt-2">
+                                            <button onclick="changeSimStep(-1)" class="flex-1 py-1.5 border border-cyan-900/50 text-cyan-500 text-[10px] font-mono rounded hover:bg-cyan-900/30 transition-colors uppercase">&lt; Reverse</button>
+                                            <button onclick="changeSimStep(1)" class="flex-1 py-1.5 bg-cyan-950/80 border border-cyan-500/50 text-cyan-300 text-[10px] font-mono font-bold rounded hover:bg-cyan-800 transition-colors uppercase shadow-[0_0_10px_rgba(0,212,255,0.2)]">Advance &gt;</button>
+                                        </div>
+                                    </div>
+                                    <div class="absolute bottom-4 right-4 z-10 text-[10px] font-mono text-cyan-600/50 pointer-events-none">
+                                        [DRAG TO ROTATE] [SCROLL TO ZOOM]
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div> <!-- End Accordion -->
+
+                <div class="mt-16 pt-8 border-t border-white/10 flex justify-between items-center">
+                    <span class="text-sm text-gray-500">End of Published Document</span>
+                    <a href="#" class="inline-flex items-center px-6 py-2 border border-yellow-600/40 rounded text-yellow-500 hover:bg-yellow-600/10 transition text-sm mystical-font tracking-widest">
+                        Return to Archives ➔
+                    </a>
+                </div>
+
+            </article>
+        </main>
+    </div>
+
+    <footer class="w-full border-t border-yellow-600/20 bg-black/60 backdrop-blur-md mt-12 py-8 text-center relative z-20">
+        <div class="flex justify-center mb-4">
+            <svg width="24" height="24" viewBox="0 0 100 100" fill="none" stroke="#D4AF37" stroke-width="3">
+                <circle cx="50" cy="50" r="45"/>
+                <polygon points="50,15 80,80 20,80"/>
+            </svg>
+        </div>
+        <p class="text-xs text-yellow-600/60 uppercase tracking-[0.3em] font-light">
+            © 2026 Owl Academy Archives. All rights reserved.
+        </p>
+    </footer>
+
+    <!-- Accordion Logic -->
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const sections = document.querySelectorAll('.collapsible-section');
+            
+            sections.forEach(section => {
+                const trigger = section.querySelector('.collapsible-trigger');
+                const content = section.querySelector('.collapsible-content');
+                
+                // Initialization for open panels
+                if (section.classList.contains('is-open')) {
+                    content.style.maxHeight = content.scrollHeight + 50 + "px";
+                }
+
+                trigger.addEventListener('click', () => {
+                    const isOpen = section.classList.contains('is-open');
+                    
+                    if (isOpen) {
+                        content.style.maxHeight = "0px";
+                        section.classList.remove('is-open');
+                    } else {
+                        section.classList.add('is-open');
+                        content.style.maxHeight = content.scrollHeight + 50 + "px";
+                        
+                        // Force MathJax to process new visible content if needed
+                        if (window.MathJax && MathJax.typesetPromise) {
+                            MathJax.typesetPromise([content]).then(() => {
+                                // Adjust height post-render
+                                content.style.maxHeight = content.scrollHeight + 50 + "px";
+                            });
+                        }
+
+                        // Init 3D if opening section 6 (VII)
+                        if (section.querySelector('h2').innerText.includes('VII.')) {
+                            if (typeof initThreeJS === 'function') {
+                                setTimeout(initThreeJS, 300); // Allow container to size correctly
+                            }
+                        }
+                    }
+                });
+            });
+            
+            // Expose function for sidebar links
+            window.openSection = function(index) {
+                if (sections[index]) {
+                    const section = sections[index];
+                    const content = section.querySelector('.collapsible-content');
+                    if (!section.classList.contains('is-open')) {
+                        section.classList.add('is-open');
+                        content.style.maxHeight = content.scrollHeight + 50 + "px";
+                        
+                        // Check if triggering the 3D module (index 6)
+                        if (index === 6 && typeof initThreeJS === 'function') {
+                            setTimeout(initThreeJS, 300);
+                        }
+                    }
+                    section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+            };
+        });
+
+        // --- 3D Interactive Module Logic ---
+        let threeInitialized = false;
+        let simStep = 1;
+        
+        let scene, camera, renderer, controls;
+        let groupT1, groupK1, groupK2, groupT3;
+        let pumpMesh;
+        
+        // Target Y positions and opacity for interpolation
+        const targets = {
+            T1: { y: 0 }, K1: { y: 0 }, K2: { y: 0 }, T3: { y: 0 },
+            pumpScale: 0.01, pumpOpacity: 0
+        };
+
+        const phaseContent = [
+            {
+                title: "I. The 64-bit Root Seed",
+                desc: "The core SHD-CCP geometric seed rests at the origin point. All 64 voxels (4x4x4) are tightly bound in mathematical equilibrium."
+            },
+            {
+                title: "II. Pump Activation",
+                desc: "The One-Way Markov Pump engages, generating a powerful localized torsional ring envelope around the seed matrix."
+            },
+            {
+                title: "III. Torsional Extrusion",
+                desc: "The intense rotational shear begins lifting the single seed along the Z-axis, splitting it into mathematically entangled Toda and Kagome layers."
+            },
+            {
+                title: "IV. The 4x64 Kernel",
+                desc: "Volumetric expansion complete. The 64-bit seed has expanded into four distinct interconnected spatial planes, yielding a 256-bit matrix."
+            }
+        ];
+
+        function changeSimStep(dir) {
+            simStep += dir;
+            if (simStep < 1) simStep = 1;
+            if (simStep > 4) simStep = 4;
+            
+            document.getElementById('sim-phase-num').innerText = simStep;
+            document.getElementById('step-title').innerText = phaseContent[simStep-1].title;
+            document.getElementById('step-desc').innerText = phaseContent[simStep-1].desc;
+            
+            // Set animation targets based on phase
+            if (simStep === 1) {
+                targets.T1.y = 0; targets.K1.y = 0; targets.K2.y = 0; targets.T3.y = 0;
+                targets.pumpScale = 0.01; targets.pumpOpacity = 0;
+            } else if (simStep === 2) {
+                targets.T1.y = 0; targets.K1.y = 0; targets.K2.y = 0; targets.T3.y = 0;
+                targets.pumpScale = 1.0; targets.pumpOpacity = 0.8;
+            } else if (simStep === 3) {
+                targets.T1.y = 4; targets.K1.y = 1.5; targets.K2.y = -1.5; targets.T3.y = -4;
+                targets.pumpScale = 1.5; targets.pumpOpacity = 0.5;
+            } else if (simStep === 4) {
+                targets.T1.y = 12; targets.K1.y = 4; targets.K2.y = -4; targets.T3.y = -12;
+                targets.pumpScale = 2.0; targets.pumpOpacity = 0.1;
+            }
+        }
+
+        function createCubeGroup(colorHex) {
+            const group = new THREE.Group();
+            const geometry = new THREE.BoxGeometry(0.8, 0.8, 0.8);
+            
+            // Glowing translucent material
+            const material = new THREE.MeshPhysicalMaterial({ 
+                color: colorHex, metalness: 0.2, roughness: 0.1, 
+                transmission: 0.5, transparent: true, opacity: 0.8,
+                emissive: colorHex, emissiveIntensity: 0.3
+            });
+
+            // Holographic structural edges
+            const edgesGeo = new THREE.EdgesGeometry(geometry);
+            const edgeMat = new THREE.LineBasicMaterial({ color: colorHex, linewidth: 2, transparent: true, opacity: 0.8 });
+
+            const spacing = 1.2;
+            const start = -1.5 * spacing; // Centering logic for 4 cubes
+
+            for (let x = 0; x < 4; x++) {
+                for (let y = 0; y < 4; y++) {
+                    for (let z = 0; z < 4; z++) {
+                        const mesh = new THREE.Mesh(geometry, material);
+                        const edges = new THREE.LineSegments(edgesGeo, edgeMat);
+                        
+                        const posX = start + x * spacing;
+                        const posY = start + y * spacing;
+                        const posZ = start + z * spacing;
+
+                        mesh.position.set(posX, posY, posZ);
+                        edges.position.set(posX, posY, posZ);
+
+                        group.add(mesh);
+                        group.add(edges);
+                    }
+                }
+            }
+            return group;
+        }
+
+        function initThreeJS() {
+            if (threeInitialized) return;
+            const container = document.getElementById('three-container');
+            if (!container) return;
+
+            // Scene & Fog
+            scene = new THREE.Scene();
+            scene.fog = new THREE.FogExp2(0x020106, 0.015);
+
+            // Camera setup
+            camera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1, 1000);
+            camera.position.set(25, 20, 35);
+
+            // Renderer setup
+            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+            renderer.setSize(container.clientWidth, container.clientHeight);
+            renderer.setPixelRatio(window.devicePixelRatio);
+            container.appendChild(renderer.domElement);
+
+            // Initialize OrbitControls
+            if(typeof THREE.OrbitControls !== 'undefined') {
+                controls = new THREE.OrbitControls(camera, renderer.domElement);
+                controls.enableDamping = true;
+                controls.dampingFactor = 0.05;
+                controls.autoRotate = true;
+                controls.autoRotateSpeed = 0.5;
+            }
+
+            // Lighting
+            scene.add(new THREE.AmbientLight(0xffffff, 0.4));
+
+            const pointLight1 = new THREE.PointLight(0x00d4ff, 1, 100);
+            pointLight1.position.set(10, 20, 10);
+            scene.add(pointLight1);
+            
+            const pointLight2 = new THREE.PointLight(0x8A2BE2, 1, 100);
+            pointLight2.position.set(-10, -20, -10);
+            scene.add(pointLight2);
+
+            // Generate the 4 distinct layer matrices (T1, K1, K2, T3)
+            groupT1 = createCubeGroup(0x4ade80); // Green (Toda Top)
+            groupK1 = createCubeGroup(0x8A2BE2); // Purple (Kagome Top)
+            groupK2 = createCubeGroup(0x8A2BE2); // Purple (Kagome Bottom)
+            groupT3 = createCubeGroup(0x4ade80); // Green (Toda Bottom)
+
+            scene.add(groupT1);
+            scene.add(groupK1);
+            scene.add(groupK2);
+            scene.add(groupT3);
+
+            // Generate the Markov Pump Geometry (Torus)
+            const pumpGeo = new THREE.TorusGeometry(6, 0.3, 16, 100);
+            const pumpMat = new THREE.MeshBasicMaterial({ 
+                color: 0x00d4ff, wireframe: true, transparent: true, opacity: 0
+            });
+            pumpMesh = new THREE.Mesh(pumpGeo, pumpMat);
+            pumpMesh.rotation.x = Math.PI / 2;
+            pumpMesh.scale.set(0.01, 0.01, 0.01);
+            scene.add(pumpMesh);
+
+            // Vertical Binding Axis Line
+            const lineMat = new THREE.LineBasicMaterial({ color: 0x8A2BE2, transparent: true, opacity: 0.3 });
+            const lineGeo = new THREE.BufferGeometry().setFromPoints([
+                new THREE.Vector3(0, 25, 0),
+                new THREE.Vector3(0, -25, 0)
+            ]);
+            scene.add(new THREE.Line(lineGeo, lineMat));
+
+            threeInitialized = true;
+            animateThreeJS();
+        }
+
+        function animateThreeJS() {
+            requestAnimationFrame(animateThreeJS);
+
+            // Linear interpolation for smooth layer splitting animations
+            const lerpSpeed = 0.05;
+            groupT1.position.y += (targets.T1.y - groupT1.position.y) * lerpSpeed;
+            groupK1.position.y += (targets.K1.y - groupK1.position.y) * lerpSpeed;
+            groupK2.position.y += (targets.K2.y - groupK2.position.y) * lerpSpeed;
+            groupT3.position.y += (targets.T3.y - groupT3.position.y) * lerpSpeed;
+
+            // Pump animation
+            pumpMesh.scale.setScalar( pumpMesh.scale.x + (targets.pumpScale - pumpMesh.scale.x) * lerpSpeed );
+            pumpMesh.material.opacity += (targets.pumpOpacity - pumpMesh.material.opacity) * lerpSpeed;
+            pumpMesh.rotation.z -= 0.02; // Spin the pump
+            
+            // Apply counter-rotational shear to layers during expansion
+            if (simStep > 1) {
+                const rotSpeed = 0.005;
+                groupT1.rotation.y += rotSpeed;
+                groupK1.rotation.y -= rotSpeed;
+                groupK2.rotation.y += rotSpeed;
+                groupT3.rotation.y -= rotSpeed;
+            } else {
+                groupT1.rotation.y = 0;
+                groupK1.rotation.y = 0;
+                groupK2.rotation.y = 0;
+                groupT3.rotation.y = 0;
+            }
+
+            if(controls) controls.update();
+            renderer.render(scene, camera);
+        }
+
+        // Keep rendering scaled if the window changes size
+        window.addEventListener('resize', () => {
+            if (!threeInitialized) return;
+            const container = document.getElementById('three-container');
+            if (container && camera && renderer) {
+                camera.aspect = container.clientWidth / container.clientHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(container.clientWidth, container.clientHeight);
+            }
+        });
+
+    </script>
+</body>
+</html>
