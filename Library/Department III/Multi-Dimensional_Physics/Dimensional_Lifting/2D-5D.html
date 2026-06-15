@@ -249,8 +249,8 @@
         <!-- Left Side: Voxel Owl Sigil + Title -->
         <div class="flex items-center gap-5">
             
-            <!-- Voxel Owl Sigil (SVG Grid) -->
-            <div class="w-12 h-12 flex-shrink-0 voxel-pulse">
+            <!-- Voxel Owl Sigil (SVG Grid) linked to Grand Archives -->
+            <a href="https://biochainai.github.io/Owl-Academy/Library/Grand_Archives.html" title="Return to Grand Archives" class="w-12 h-12 flex-shrink-0 voxel-pulse block hover:scale-105 transition-transform">
                 <svg viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg" class="w-full h-full">
                     <!-- Ears -->
                     <rect x="10" y="10" width="10" height="10" fill="#00d4ff"/>
@@ -275,7 +275,7 @@
                     <rect x="20" y="60" width="40" height="10" fill="#00d4ff"/>
                     <rect x="30" y="70" width="20" height="10" fill="#00d4ff"/>
                 </svg>
-            </div>
+            </a>
 
             <div>
                 <div class="text-[10px] text-cyan-600 tracking-[0.2em] uppercase mb-1 font-mono">Department III • Multi-Dimensional Physics (Mechanics)</div>
@@ -807,7 +807,7 @@
                                         <div class="text-[10px] text-cyan-500 font-mono tracking-widest mb-1 uppercase">Simulation Phase <span id="sim-phase-num">1</span> / 4</div>
                                         <h4 id="step-title" class="text-white font-mono text-sm font-bold mb-2">I. The 64-bit Root Seed</h4>
                                         <p id="step-desc" class="text-gray-400 text-xs font-mono leading-relaxed h-16">
-                                            The core SHD-CCP geometric seed rests at the origin point. All 64 voxels (4x4x4) are tightly bound in equilibrium prior to pump activation.
+                                            The core SHD-CCP geometric seed rests at the origin point. All 64 voxels (4x4x4) are tightly bound in mathematical equilibrium.
                                         </p>
                                         <div class="flex gap-3 mt-2">
                                             <button onclick="changeSimStep(-1)" class="flex-1 py-1.5 border border-cyan-900/50 text-cyan-500 text-[10px] font-mono rounded hover:bg-cyan-900/30 transition-colors uppercase">&lt; Reverse</button>
@@ -1121,6 +1121,15 @@
             }
         });
 
+        // Handle explicit severance of connection
+        window.globalLogout = function() {
+            // Clear standard local/session storage tokens used by the academy
+            localStorage.clear();
+            sessionStorage.clear();
+            
+            // Redirect to the absolute Academy Monad login
+            window.location.href = "https://biochainai.github.io/Owl-Academy/login.html";
+        };
     </script>
 </body>
 </html>
