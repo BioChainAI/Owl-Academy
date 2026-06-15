@@ -1,0 +1,1224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Owl Academy | Clifford Toroid Proof</title>
+    
+    <!-- SECURITY LOCK: Points 2 levels up to the root /scripts directory -->
+    <script src="../../scripts/auth.js"></script>
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=Inter:wght@300;400;500;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+    
+    <!-- MathJax Configuration -->
+    <script>
+        window.MathJax = {
+            tex: {
+                inlineMath: [['$', '$'], ['\\(', '\\)']],
+                displayMath: [['$$', '$$'], ['\\[', '\\]']],
+                processEscapes: true
+            }
+        };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+    <!-- Three.js for 3D Projection Simulation -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+
+    <style>
+        :root {
+            --color-void: #05030a;
+            --color-primary: #D4AF37;
+            --color-primary-light: #FFF8DC;
+            --color-primary-dark: #aa771c;
+            --color-secondary: #8e9eab;
+            --color-glowing-gold: rgba(212, 175, 55, 0.15);
+        }
+
+        body {
+            background-color: var(--color-void);
+            color: #e5e7eb;
+            font-family: 'Inter', sans-serif;
+            scroll-behavior: smooth;
+        }
+
+        .mystical-font {
+            font-family: 'Cinzel', serif;
+        }
+
+        .code-font {
+            font-family: 'Fira Code', monospace;
+        }
+
+        /* Gold glow effects */
+        .gold-border {
+            border: 1px solid rgba(212, 175, 55, 0.25);
+        }
+        
+        .gold-border-glow:hover {
+            border-color: rgba(212, 175, 55, 0.6);
+            box-shadow: 0 0 15px rgba(212, 175, 55, 0.15);
+            transition: all 0.3s ease;
+        }
+
+        .gold-text-glow {
+            text-shadow: 0 0 10px rgba(212, 175, 55, 0.4);
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #05030a;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(212, 175, 55, 0.3);
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(212, 175, 55, 0.6);
+        }
+
+        /* Custom Active Sidebar Ring Glow */
+        .active-ring {
+            background: rgba(212, 175, 55, 0.1);
+            border-left: 3px solid var(--color-primary);
+            color: var(--color-primary-light) !important;
+        }
+
+        /* Glassmorphism card backdrops */
+        .glass-card {
+            background: rgba(10, 8, 20, 0.7);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+        }
+
+        /* Voxel Owl Pulse Animation */
+        .voxel-pulse {
+            animation: pulse-glow-voxel 3s infinite alternate;
+        }
+        @keyframes pulse-glow-voxel {
+            0% { filter: drop-shadow(0 0 4px rgba(0, 212, 255, 0.4)); }
+            100% { filter: drop-shadow(0 0 12px rgba(0, 212, 255, 0.8)); }
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col relative overflow-x-hidden">
+
+    <!-- Ambient background nebula grids -->
+    <div class="absolute inset-0 z-0 pointer-events-none opacity-20 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-yellow-900/40 via-purple-950/20 to-black"></div>
+    <div class="absolute inset-0 z-0 pointer-events-none opacity-10" style="background-image: radial-gradient(rgba(212,175,55,0.15) 1px, transparent 0); background-size: 24px 24px;"></div>
+
+    <!-- Security Header containing Voxel Owl, Title, and Logout -->
+    <header class="w-full pt-6 pb-6 px-6 md:px-10 flex flex-col md:flex-row justify-between items-start md:items-center border-b border-cyan-900/50 bg-[#05030a]/80 backdrop-blur-md shadow-2xl z-40 sticky top-0 gap-6 transition-all duration-300">
+        
+        <!-- Left Side: Voxel Owl Sigil + Title -->
+        <div class="flex items-center gap-5">
+            
+            <!-- Voxel Owl Sigil (SVG Grid) linked to Grand Archives -->
+            <a href="https://biochainai.github.io/Owl-Academy/Library/Grand_Archives.html" title="Return to Grand Archives" class="w-12 h-12 flex-shrink-0 voxel-pulse block hover:scale-105 transition-transform">
+                <svg viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg" class="w-full h-full">
+                    <!-- Ears -->
+                    <rect x="10" y="10" width="10" height="10" fill="#00d4ff"/>
+                    <rect x="60" y="10" width="10" height="10" fill="#00d4ff"/>
+                    <!-- Forehead -->
+                    <rect x="20" y="20" width="40" height="10" fill="#00d4ff"/>
+                    <rect x="10" y="20" width="10" height="10" fill="#00d4ff"/>
+                    <rect x="60" y="20" width="10" height="10" fill="#00d4ff"/>
+                    <!-- Eyes (Dark voids) & Center Bridge -->
+                    <rect x="10" y="30" width="20" height="10" fill="#00d4ff"/>
+                    <rect x="30" y="30" width="20" height="10" fill="#D4AF37"/> <!-- Gold Brow -->
+                    <rect x="50" y="30" width="20" height="10" fill="#00d4ff"/>
+                    <!-- Cheeks & Beak -->
+                    <rect x="10" y="40" width="20" height="10" fill="#00d4ff"/>
+                    <rect x="30" y="40" width="20" height="10" fill="#D4AF37"/> <!-- Gold Beak -->
+                    <rect x="50" y="40" width="20" height="10" fill="#00d4ff"/>
+                    <!-- Lower Beak & Jaw -->
+                    <rect x="10" y="50" width="20" height="10" fill="#00d4ff"/>
+                    <rect x="30" y="50" width="20" height="10" fill="#D4AF37"/> <!-- Gold Beak Tip -->
+                    <rect x="50" y="50" width="20" height="10" fill="#00d4ff"/>
+                    <!-- Base / Body connection -->
+                    <rect x="20" y="60" width="40" height="10" fill="#00d4ff"/>
+                    <rect x="30" y="70" width="20" height="10" fill="#00d4ff"/>
+                </svg>
+            </a>
+
+            <div>
+                <div class="text-[10px] text-cyan-600 tracking-[0.2em] uppercase mb-1 font-mono">Department I • Celestial Topology</div>
+                <h1 class="text-cyan-400 text-xl md:text-2xl tracking-widest uppercase font-bold drop-shadow-[0_0_8px_rgba(0,212,255,0.3)] mystical-font">Clifford Toroid Proof</h1>
+            </div>
+        </div>
+        
+        <!-- Right Side: Sever Connection -->
+        <button onclick="globalLogout()" class="group flex items-center gap-2 text-red-500 hover:text-red-400 hover:bg-red-950/30 transition-all uppercase tracking-widest text-xs font-bold border border-red-900 px-4 py-2 rounded shadow-[0_0_10px_rgba(239,68,68,0.1)] hover:shadow-[0_0_15px_rgba(239,68,68,0.2)] font-mono z-50 cursor-pointer">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="group-hover:-translate-x-1 transition-transform"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+            Sever Connection
+        </button>
+    </header>
+
+    <!-- Main Workspace Container -->
+    <div class="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex flex-col lg:flex-row gap-8 relative z-10">
+        
+        <!-- Left Sticky Sidebar: Ring Tracker & Index -->
+        <aside class="w-full lg:w-72 shrink-0 lg:sticky lg:top-36 h-fit space-y-6">
+            <div class="glass-card gold-border p-5 rounded-lg space-y-4 shadow-xl">
+                <div class="border-b border-yellow-600/20 pb-3">
+                    <span class="text-xs uppercase tracking-widest text-[#D4AF37]">Course Syllabus</span>
+                    <h3 class="mystical-font text-lg text-white font-bold tracking-wider mt-1">7 Rings of Knowledge</h3>
+                </div>
+                
+                <nav class="space-y-1 text-sm">
+                    <a href="#ring1" id="link-ring1" class="flex items-center gap-3 p-2.5 rounded text-gray-400 hover:text-white hover:bg-white/5 transition font-medium">
+                        <span class="w-6 h-6 rounded-full border border-yellow-600/30 flex items-center justify-center text-xs code-font">I</span>
+                        <span>Ring 1: Linear Algebra in $\mathbb{R}^4$</span>
+                    </a>
+                    <a href="#ring2" id="link-ring2" class="flex items-center gap-3 p-2.5 rounded text-gray-400 hover:text-white hover:bg-white/5 transition font-medium">
+                        <span class="w-6 h-6 rounded-full border border-yellow-600/30 flex items-center justify-center text-xs code-font">II</span>
+                        <span>Ring 2: Differential Geometry</span>
+                    </a>
+                    <a href="#ring3" id="link-ring3" class="flex items-center gap-3 p-2.5 rounded text-gray-400 hover:text-white hover:bg-white/5 transition font-medium">
+                        <span class="w-6 h-6 rounded-full border border-yellow-600/30 flex items-center justify-center text-xs code-font">III</span>
+                        <span>Ring 3: Complex Circle Products</span>
+                    </a>
+                    <a href="#ring4" id="link-ring4" class="flex items-center gap-3 p-2.5 rounded text-gray-400 hover:text-white hover:bg-white/5 transition font-medium">
+                        <span class="w-6 h-6 rounded-full border border-yellow-600/30 flex items-center justify-center text-xs code-font">IV</span>
+                        <span>Ring 4: The Clifford Toroid</span>
+                    </a>
+                    <a href="#ring5" id="link-ring5" class="flex items-center gap-3 p-2.5 rounded text-gray-400 hover:text-white hover:bg-white/5 transition font-medium">
+                        <span class="w-6 h-6 rounded-full border border-yellow-600/30 flex items-center justify-center text-xs code-font">V</span>
+                        <span>Ring 5: Intrinsic Flatness</span>
+                    </a>
+                    <a href="#ring6" id="link-ring6" class="flex items-center gap-3 p-2.5 rounded text-gray-400 hover:text-white hover:bg-white/5 transition font-medium">
+                        <span class="w-6 h-6 rounded-full border border-yellow-600/30 flex items-center justify-center text-xs code-font">VI</span>
+                        <span>Ring 6: Golden Ratio Scaling</span>
+                    </a>
+                    <a href="#ring7" id="link-ring7" class="flex items-center gap-3 p-2.5 rounded text-gray-400 hover:text-white hover:bg-white/5 transition font-medium">
+                        <span class="w-6 h-6 rounded-full border border-yellow-600/30 flex items-center justify-center text-xs code-font">VII</span>
+                        <span>Ring 7: Irrational Winding Flow</span>
+                    </a>
+                </nav>
+
+                <div class="pt-4 border-t border-yellow-600/20 text-center">
+                    <a href="#visualizer-section" class="w-full inline-flex items-center justify-center gap-2 px-4 py-2 bg-yellow-600/15 hover:bg-yellow-600/25 border border-yellow-600/50 rounded text-sm text-[#D4AF37] font-semibold tracking-wider uppercase transition">
+                        <span>Launch Visualizer</span>
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                    </a>
+                </div>
+            </div>
+
+            <!-- Fast Quick-Facts card -->
+            <div class="glass-card border border-yellow-600/10 p-5 rounded-lg space-y-3">
+                <h4 class="mystical-font text-xs uppercase text-[#D4AF37] tracking-widest font-semibold">Toroid Properties</h4>
+                <div class="space-y-2 text-xs">
+                    <div class="flex justify-between border-b border-white/5 pb-1">
+                        <span class="text-gray-400">Ambient Dimensions:</span>
+                        <span class="code-font text-[#FFF8DC]">4D ($\mathbb{R}^4$)</span>
+                    </div>
+                    <div class="flex justify-between border-b border-white/5 pb-1">
+                        <span class="text-gray-400">Submanifold Target:</span>
+                        <span class="code-font text-[#FFF8DC]">3-Sphere ($S^3$)</span>
+                    </div>
+                    <div class="flex justify-between border-b border-white/5 pb-1">
+                        <span class="text-gray-400">Gaussian Curvature $K$:</span>
+                        <span class="code-font text-emerald-400">0 (Intrinsically Flat)</span>
+                    </div>
+                    <div class="flex justify-between pb-1">
+                        <span class="text-gray-400">Topology:</span>
+                        <span class="code-font text-[#FFF8DC]">$S^1 \times S^1$</span>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Mathematical Content & Visualizers -->
+        <main class="flex-1 space-y-12 max-w-full">
+            
+            <!-- Access Granted Banner -->
+            <div class="flex items-start gap-4 p-4 bg-green-950/20 border border-green-900/50 rounded-md shadow-lg">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#4ade80" stroke-width="2" class="mt-1 flex-shrink-0"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+                <div>
+                    <h2 class="text-green-400 font-bold text-sm tracking-wider uppercase mb-1 font-mono">Access Granted</h2>
+                    <p class="text-gray-400 text-xs leading-relaxed font-mono">
+                        If you are reading this, the SHD-CCP resonance was verified. Your local biometric/cryptographic token matches the requirements for Department I.
+                    </p>
+                </div>
+            </div>
+
+            <!-- Introduction Hero banner -->
+            <section class="glass-card gold-border p-8 rounded-xl shadow-2xl relative overflow-hidden">
+                <div class="absolute top-0 right-0 w-64 h-64 bg-yellow-600/5 rounded-full blur-3xl pointer-events-none"></div>
+                <div class="relative z-10 space-y-4">
+                    <span class="text-xs tracking-[0.4em] uppercase text-[#D4AF37] font-semibold block">ACADEMIC PROOF & GRAPHICS WORKBENCH</span>
+                    <h1 class="mystical-font text-3xl md:text-5xl font-black text-white leading-tight">Clifford Toroid Proof</h1>
+                    <p class="text-gray-300 max-w-3xl leading-relaxed text-sm md:text-base">
+                        This document proves and explains the elegant mathematical foundations of the <strong>Clifford toroid</strong>, beginning from fundamental linear algebra in 4-dimensional Euclidean space $\mathbb{R}^4$ and building step-by-step toward its exact representation as an intrinsically flat toroid inside the unit 3-sphere $S^3$.
+                    </p>
+                    <div class="flex flex-wrap gap-3 pt-2">
+                        <span class="px-3 py-1 rounded bg-yellow-600/10 border border-yellow-600/30 text-xs text-[#D4AF37] uppercase tracking-wider">4D Geometry</span>
+                        <span class="px-3 py-1 rounded bg-yellow-600/10 border border-yellow-600/30 text-xs text-[#D4AF37] uppercase tracking-wider">Differential Manifolds</span>
+                        <span class="px-3 py-1 rounded bg-yellow-600/10 border border-yellow-600/30 text-xs text-[#D4AF37] uppercase tracking-wider">Golden Ratio ($\phi$) scaling</span>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Interactive 3D Visualizer Section -->
+            <section id="visualizer-section" class="scroll-mt-36 space-y-6">
+                <div class="flex items-center gap-4 border-b border-yellow-600/20 pb-2">
+                    <svg class="w-6 h-6 text-yellow-500 animate-pulse" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+                    <h2 class="mystical-font text-xl md:text-2xl text-white font-bold tracking-wide">Interactive 3D Visualizer & Projection Laboratory</h2>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    
+                    <!-- Controls Panel -->
+                    <div class="glass-card gold-border rounded-xl p-6 space-y-6 flex flex-col justify-between shadow-2xl">
+                        <div>
+                            <span class="text-xs font-semibold tracking-widest text-[#D4AF37] uppercase block mb-1">Interactive Parameters</span>
+                            <h3 class="mystical-font text-lg text-white font-bold mb-4">Geometry & Winding Controls</h3>
+                            
+                            <!-- Radius Ratio Controls -->
+                            <div class="space-y-2 mb-6">
+                                <div class="flex justify-between items-center text-xs">
+                                    <span class="text-gray-400 font-medium">Radius $r_1$ (Plane 1):</span>
+                                    <span class="code-font text-[#D4AF37]" id="val-r1">0.707</span>
+                                </div>
+                                <input type="range" id="slider-r1" min="0.1" max="0.95" step="0.005" value="0.707" class="w-full accent-[#D4AF37] h-1.5 bg-black rounded-lg appearance-none cursor-pointer">
+                                
+                                <div class="flex justify-between items-center text-xs pt-2">
+                                    <span class="text-gray-400 font-medium">Radius $r_2$ (Plane 2):</span>
+                                    <span class="code-font text-[#D4AF37]" id="val-r2">0.707</span>
+                                </div>
+                                <div class="text-[11px] text-gray-500 italic mt-0.5">Constraint: $r_1^2 + r_2^2 = 1$ is auto-enforced.</div>
+                            </div>
+
+                            <!-- Winding rates -->
+                            <div class="space-y-3 mb-6 pt-4 border-t border-white/5">
+                                <div class="flex justify-between items-center text-xs">
+                                    <span class="text-gray-400 font-medium">Winding Rate $\alpha$ ($\theta$-axis):</span>
+                                    <span class="code-font text-purple-400" id="val-alpha">1.0</span>
+                                </div>
+                                <input type="range" id="slider-alpha" min="0.1" max="5.0" step="0.1" value="1.0" class="w-full accent-purple-500 h-1.5 bg-black rounded-lg appearance-none cursor-pointer">
+
+                                <div class="flex justify-between items-center text-xs pt-2">
+                                    <span class="text-gray-400 font-medium">Winding Rate $\beta$ ($\gamma$-axis):</span>
+                                    <span class="code-font text-purple-400" id="val-beta">1.0</span>
+                                </div>
+                                <input type="range" id="slider-beta" min="0.1" max="5.0" step="0.1" value="1.0" class="w-full accent-purple-500 h-1.5 bg-black rounded-lg appearance-none cursor-pointer">
+
+                                <div class="flex justify-between items-center text-xs pt-1">
+                                    <span class="text-gray-500">Rate Ratio $\alpha/\beta$:</span>
+                                    <span class="code-font text-xs" id="val-ratio">1.00</span>
+                                </div>
+                            </div>
+
+                            <!-- Presets -->
+                            <div class="space-y-2 pt-4 border-t border-white/5">
+                                <span class="text-xs text-gray-400 block mb-2 font-semibold">Pre-configured States:</span>
+                                <div class="grid grid-cols-2 gap-2">
+                                    <button id="btn-standard" class="px-3 py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded text-xs text-white transition tracking-wider uppercase">
+                                        Standard Symmetric
+                                    </button>
+                                    <button id="btn-golden-radius" class="px-3 py-2 bg-[#D4AF37]/10 hover:bg-[#D4AF37]/20 border border-[#D4AF37]/40 rounded text-xs text-[#D4AF37] transition tracking-wider font-semibold uppercase">
+                                        Golden Radii ($\phi$)
+                                    </button>
+                                    <button id="btn-rational-winding" class="px-3 py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded text-xs text-white transition tracking-wider uppercase">
+                                        Periodic Flow
+                                    </button>
+                                    <button id="btn-golden-winding" class="px-3 py-2 bg-purple-600/10 hover:bg-purple-600/20 border border-purple-500/30 rounded text-xs text-purple-300 transition tracking-wider font-semibold uppercase">
+                                        Irrational Winding
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <!-- Auto Rotate Toggle -->
+                            <div class="space-y-2 pt-4 border-t border-white/5">
+                                <label class="flex items-center gap-3 cursor-pointer group w-fit">
+                                    <input type="checkbox" id="toggle-auto-rotate" class="hidden">
+                                    <div class="w-8 h-4 bg-black border border-gray-600 rounded-full relative transition-colors group-hover:border-[#D4AF37]" id="toggle-bg">
+                                        <div class="w-3 h-3 bg-gray-400 rounded-full absolute top-[1px] left-[1px] transition-transform" id="toggle-dot"></div>
+                                    </div>
+                                    <span class="text-xs text-gray-400 font-semibold uppercase tracking-wider group-hover:text-white transition-colors">Auto-Rotate View</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="text-xs text-gray-400 space-y-2 pt-4 border-t border-white/10">
+                            <p class="italic text-[11px] leading-relaxed">
+                                💡 <strong>How to view:</strong> Left-click & drag to rotate. Right-click & drag to pan. Scroll to zoom.
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Canvas Container -->
+                    <div class="glass-card gold-border rounded-xl col-span-2 relative h-[500px] flex flex-col overflow-hidden shadow-2xl">
+                        <!-- Holographic details overlay -->
+                        <div class="absolute top-4 left-4 z-20 pointer-events-none space-y-1">
+                            <div class="px-2 py-1 bg-black/60 border border-[#D4AF37]/30 text-[#D4AF37] text-[10px] uppercase font-bold tracking-widest rounded">
+                                Stereo Projection: $\mathbb{R}^4 \to S^3 \to \mathbb{R}^3$
+                            </div>
+                        </div>
+
+                        <div class="absolute top-4 right-4 z-20 pointer-events-none text-right">
+                            <span class="text-xs text-emerald-400 font-bold block" id="path-status">Periodic Orbit (Rational)</span>
+                        </div>
+
+                        <!-- Canvas element -->
+                        <div id="canvas-container" class="w-full flex-1 bg-[#020104]"></div>
+
+                        <div class="bg-black/60 border-t border-white/5 p-4 flex justify-between items-center text-xs text-gray-400">
+                            <div class="flex items-center gap-2">
+                                <span class="w-2.5 h-2.5 rounded-full bg-yellow-500"></span>
+                                <span>Toroid Surface Mesh</span>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <span class="w-2.5 h-2.5 rounded-full bg-purple-500"></span>
+                                <span>Flow Winding Path (Time $t$)</span>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </section>
+
+            <!-- Ring 1 -->
+            <section id="ring1" class="scroll-mt-36 space-y-6">
+                <div class="flex items-center gap-4 border-b border-yellow-600/20 pb-2">
+                    <div class="w-10 h-10 rounded-full border border-yellow-600/40 flex items-center justify-center bg-yellow-600/5 mystical-font text-yellow-500 font-bold">1</div>
+                    <h2 class="mystical-font text-xl md:text-2xl text-white font-bold tracking-wide">Ring 1: Linear Algebra and Geometry in $\mathbb{R}^4$</h2>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="glass-card border border-white/5 p-6 rounded-lg space-y-4">
+                        <h3 class="mystical-font text-[#D4AF37] font-semibold tracking-wider border-b border-white/5 pb-2">1. Euclidean $4$-space</h3>
+                        <div class="space-y-3 text-sm text-gray-300 leading-relaxed">
+                            <p>
+                                The real vector space $\mathbb{R}^4$ is the set of ordered quadruples:
+                                $$\mathbb{R}^4=\{(x_1,y_1,x_2,y_2):x_1,y_1,x_2,y_2\in\mathbb{R}\}$$
+                                We write a point or vector as $p=(x_1,y_1,x_2,y_2)$. The standard dot product on $\mathbb{R}^4$ is given by:
+                                $$p\cdot q=x_1u_1+y_1v_1+x_2u_2+y_2v_2$$
+                                where $p=(x_1,y_1,x_2,y_2)$ and $q=(u_1,v_1,u_2,v_2)$.
+                            </p>
+                            <p>
+                                The Euclidean norm and distance between points $p, q$ are defined as:
+                                $$\|p\|=\sqrt{p\cdot p} = \sqrt{x_1^2+y_1^2+x_2^2+y_2^2}$$
+                                $$d(p,q)=\|p-q\| = \sqrt{(x_1-u_1)^2+(y_1-v_1)^2+(x_2-u_2)^2+(y_2-v_2)^2}$$
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="glass-card border border-white/5 p-6 rounded-lg space-y-4">
+                        <h3 class="mystical-font text-[#D4AF37] font-semibold tracking-wider border-b border-white/5 pb-2">2. Orthogonal Decomposition</h3>
+                        <div class="space-y-3 text-sm text-gray-300 leading-relaxed">
+                            <p>
+                                We decompose $\mathbb{R}^4$ into two completely orthogonal coordinate 2-planes:
+                                $$P_1=\{(x_1,y_1,0,0):x_1,y_1\in\mathbb{R}\}, \qquad P_2=\{(0,0,x_2,y_2):x_2,y_2\in\mathbb{R}\}$$
+                                Every point $p\in\mathbb{R}^4$ decomposes uniquely as $p=p_1+p_2$, where $p_1\in P_1$ and $p_2\in P_2$.
+                            </p>
+                            <p>
+                                These planes are strictly orthogonal ($p_1\cdot p_2 = 0$), implying:
+                                $$\|p\|^2=\|p_1\|^2+\|p_2\|^2 = x_1^2+y_1^2+x_2^2+y_2^2$$
+                                This decomposition is the linear-algebraic backbone of the Clifford toroid: the toroid is built by taking one circle in $P_1$ and another circle in $P_2$.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="glass-card border border-white/5 p-6 rounded-lg space-y-4">
+                    <h3 class="mystical-font text-[#D4AF37] font-semibold tracking-wider border-b border-white/5 pb-2">3 & 4. The Unit 3-Sphere ($S^3$) as a Smooth Level Set</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 text-sm text-gray-300 leading-relaxed">
+                        <div class="space-y-3">
+                            <p class="font-semibold text-white">Definition of $S^3$:</p>
+                            <p>
+                                The unit $3$-sphere in $\mathbb{R}^4$ is:
+                                $$S^3=\{(x_1,y_1,x_2,y_2)\in\mathbb{R}^4:x_1^2+y_1^2+x_2^2+y_2^2=1\} = \{p\in\mathbb{R}^4:\|p\|=1\}$$
+                                Although $S^3$ sits inside $4$-dimensional space, it is itself a compact $3$-dimensional manifold, the $4$-dimensional analogue of the ordinary sphere $S^2$.
+                            </p>
+                        </div>
+                        <div class="space-y-3">
+                            <p class="font-semibold text-white">Smooth Manifold Proof via Regular Level Set Theorem:</p>
+                            <p>
+                                Let $F:\mathbb{R}^4\to\mathbb{R}$ be defined by $F(x_1,y_1,x_2,y_2)=x_1^2+y_1^2+x_2^2+y_2^2$, so that $S^3=F^{-1}(1)$.
+                                The gradient of $F$ is:
+                                $$\nabla F = (2x_1, 2y_1, 2x_2, 2y_2)$$
+                                At any point $p\in S^3$, we have $\|p\|=1$, so $p\neq 0$. Therefore, $\nabla F(p)\neq 0$. By the regular level set theorem, $S^3$ is a smooth $3$-dimensional submanifold of $\mathbb{R}^4$.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Ring 2 -->
+            <section id="ring2" class="scroll-mt-36 space-y-6">
+                <div class="flex items-center gap-4 border-b border-yellow-600/20 pb-2">
+                    <div class="w-10 h-10 rounded-full border border-yellow-600/40 flex items-center justify-center bg-yellow-600/5 mystical-font text-yellow-500 font-bold">2</div>
+                    <h2 class="mystical-font text-xl md:text-2xl text-white font-bold tracking-wide">Ring 2: Differential Geometry of Surfaces</h2>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="glass-card border border-white/5 p-6 rounded-lg space-y-4">
+                        <h3 class="mystical-font text-[#D4AF37] font-semibold tracking-wider border-b border-white/5 pb-2">5 & 6. Parametrized Surfaces & First Fundamental Form</h3>
+                        <div class="space-y-3 text-sm text-gray-300 leading-relaxed">
+                            <p>
+                                A parametrized surface in Euclidean space is a smooth map $X:U\subset\mathbb{R}^2\to\mathbb{R}^n$. 
+                                For the Clifford toroid, the parameter domain coordinates are represented by two periodic angles:
+                                $$\theta, \gamma \in \mathbb{R}/2\pi\mathbb{Z}$$
+                            </p>
+                            <p>
+                                The tangent vectors are:
+                                $$X_\theta=\frac{\partial X}{\partial \theta}, \qquad X_\gamma=\frac{\partial X}{\partial \gamma}$$
+                                The induced metric (First Fundamental Form) has coefficients:
+                                $$E=X_\theta\cdot X_\theta, \qquad F=X_\theta\cdot X_\gamma, \qquad G=X_\gamma\cdot X_\gamma$$
+                                yielding the metric line element:
+                                $$ds^2=E\,d\theta^2+2F\,d\theta\,d\gamma+G\,d\gamma^2$$
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="glass-card border border-white/5 p-6 rounded-lg space-y-4 flex flex-col justify-between">
+                        <div>
+                            <h3 class="mystical-font text-[#D4AF37] font-semibold tracking-wider border-b border-white/5 pb-2">7. Intrinsic vs Extrinsic Geometry</h3>
+                            <div class="space-y-3 text-sm text-gray-300 leading-relaxed mt-2">
+                                <p>
+                                    <strong>Extrinsic geometry</strong> characterizes how a surface bends within its embedding ambient space. 
+                                    <strong>Intrinsic geometry</strong> refers to measurements made entirely within the surface without reference to the surrounding space.
+                                </p>
+                                <p>
+                                    A cylinder is extrinsically curved, but intrinsically flat (its Gaussian curvature $K = 0$). If unrolled, it forms a flat plane without stretching. 
+                                    <span class="text-white font-medium">The key Clifford toroid claim is: the Clifford toroid is intrinsically flat ($K=0$).</span>
+                                </p>
+                            </div>
+                        </div>
+                        <div class="p-3 bg-yellow-600/5 rounded border border-yellow-600/20 text-xs text-yellow-200 mt-2">
+                            ✨ Intrinsic flatness allows for perfect translation of coordinate maps without metric distortion.
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Ring 3 -->
+            <section id="ring3" class="scroll-mt-36 space-y-6">
+                <div class="flex items-center gap-4 border-b border-yellow-600/20 pb-2">
+                    <div class="w-10 h-10 rounded-full border border-yellow-600/40 flex items-center justify-center bg-yellow-600/5 mystical-font text-yellow-500 font-bold">3</div>
+                    <h2 class="mystical-font text-xl md:text-2xl text-white font-bold tracking-wide">Ring 3: Complex Numbers and the Product of Circles</h2>
+                </div>
+
+                <div class="glass-card border border-white/5 p-6 rounded-lg space-y-6">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="space-y-4">
+                            <h3 class="mystical-font text-[#D4AF37] font-semibold tracking-wider">8. The Circle $S^1$</h3>
+                            <div class="space-y-3 text-sm text-gray-300 leading-relaxed">
+                                <p>
+                                    By identifying $\mathbb{C} \cong \mathbb{R}^2$ via $z=x+iy$, the unit circle $S^1$ is written:
+                                    $$S^1=\{z\in\mathbb{C}:|z|=1\} = \{e^{i\theta} : \theta\in\mathbb{R}/2\pi\mathbb{Z}\}$$
+                                    The standard parametrization is $z = e^{i\theta} = \cos\theta + i\sin\theta$.
+                                </p>
+                            </div>
+                        </div>
+
+                        <div class="space-y-4">
+                            <h3 class="mystical-font text-[#D4AF37] font-semibold tracking-wider">9. The Product $S^1 \times S^1$</h3>
+                            <div class="space-y-3 text-sm text-gray-300 leading-relaxed">
+                                <p>
+                                    A point on the product $S^1\times S^1$ is an ordered pair $(e^{i\theta}, e^{i\gamma})$.
+                                    To embed this into $\mathbb{C}^2 \cong \mathbb{R}^4$:
+                                    $$(\theta,\gamma)\mapsto (e^{i\theta},e^{i\gamma}) = (\cos\theta,\sin\theta,\cos\gamma,\sin\gamma)$$
+                                </p>
+                                <p class="text-xs text-yellow-500 font-semibold">
+                                    ⚠️ Note: The norm of this point is $\cos^2\theta+\sin^2\theta+\cos^2\gamma+\sin^2\gamma = 2$.
+                                    To place this on the unit sphere $S^3$, we must scale the circle radii by $\frac{1}{\sqrt{2}}$.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Ring 4 -->
+            <section id="ring4" class="scroll-mt-36 space-y-6">
+                <div class="flex items-center gap-4 border-b border-yellow-600/20 pb-2">
+                    <div class="w-10 h-10 rounded-full border border-yellow-600/40 flex items-center justify-center bg-yellow-600/5 mystical-font text-yellow-500 font-bold">4</div>
+                    <h2 class="mystical-font text-xl md:text-2xl text-white font-bold tracking-wide">Ring 4: The Clifford Toroid Itself</h2>
+                </div>
+
+                <div class="glass-card border border-white/5 p-6 rounded-lg space-y-6">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="space-y-4">
+                            <h3 class="mystical-font text-[#D4AF37] font-semibold tracking-wider">10 & 11. Definition & Proof of $T_{\mathrm{Cl}} \subset S^3$</h3>
+                            <div class="space-y-3 text-sm text-gray-300 leading-relaxed">
+                                <p>
+                                    The <strong>standard Clifford toroid</strong> is defined as:
+                                    $$T_{\mathrm{Cl}} = \left\{ (x_1,y_1,x_2,y_2)\in\mathbb{R}^4 : x_1^2+y_1^2=\frac{1}{2}, \, x_2^2+y_2^2=\frac{1}{2} \right\} = \frac{1}{\sqrt{2}}S^1\times \frac{1}{\sqrt{2}}S^1$$
+                                    The explicit parametrization is:
+                                    $$X(\theta,\gamma) = \left( \frac{1}{\sqrt{2}}\cos\theta, \frac{1}{\sqrt{2}}\sin\theta, \frac{1}{\sqrt{2}}\cos\gamma, \frac{1}{\sqrt{2}}\sin\gamma \right)$$
+                                </p>
+                                <p class="text-white font-semibold">Proof of Inclusion in $S^3$:</p>
+                                <p>
+                                    $$\|X(\theta,\gamma)\|^2 = \left(\frac{1}{\sqrt{2}}\cos\theta\right)^2 + \left(\frac{1}{\sqrt{2}}\sin\theta\right)^2 + \left(\frac{1}{\sqrt{2}}\cos\gamma\right)^2 + \left(\frac{1}{\sqrt{2}}\sin\gamma\right)^2$$
+                                    $$= \frac{1}{2}(\cos^2\theta+\sin^2\theta) + \frac{1}{2}(\cos^2\gamma+\sin^2\gamma) = \frac{1}{2}(1) + \frac{1}{2}(1) = 1$$
+                                    Hence, $\|X(\theta,\gamma)\| = 1$, proving $T_{\mathrm{Cl}} \subset S^3$.
+                                </p>
+                            </div>
+                        </div>
+
+                        <div class="space-y-4">
+                            <h3 class="mystical-font text-[#D4AF37] font-semibold tracking-wider">12. General Rectangular Clifford Toroids</h3>
+                            <div class="space-y-3 text-sm text-gray-300 leading-relaxed">
+                                <p>
+                                    More generally, choose positive radii $r_1, r_2 > 0$ such that $r_1^2 + r_2^2 = 1$. The general toroid is:
+                                    $$T_{r_1,r_2} = \left\{ (x_1,y_1,x_2,y_2)\in\mathbb{R}^4: x_1^2+y_1^2=r_1^2, \, x_2^2+y_2^2=r_2^2 \right\}$$
+                                    parametrized by:
+                                    $$X(\theta,\gamma) = (r_1\cos\theta, r_1\sin\theta, r_2\cos\gamma, r_2\sin\gamma)$$
+                                </p>
+                                <p>
+                                    Evaluating the norm confirms containment:
+                                    $$\|X(\theta,\gamma)\|^2 = r_1^2(\cos^2\theta+\sin^2\theta) + r_2^2(\cos^2\gamma+\sin^2\gamma) = r_1^2 + r_2^2 = 1$$
+                                    The standard Clifford toroid represents the symmetric configuration where $r_1 = r_2 = \frac{1}{\sqrt{2}}$.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Ring 5 -->
+            <section id="ring5" class="scroll-mt-36 space-y-6">
+                <div class="flex items-center gap-4 border-b border-yellow-600/20 pb-2">
+                    <div class="w-10 h-10 rounded-full border border-yellow-600/40 flex items-center justify-center bg-yellow-600/5 mystical-font text-yellow-500 font-bold">5</div>
+                    <h2 class="mystical-font text-xl md:text-2xl text-white font-bold tracking-wide">Ring 5: Intrinsic Flatness of the Clifford Toroid</h2>
+                </div>
+
+                <div class="glass-card border border-white/5 p-6 rounded-lg space-y-6">
+                    <h3 class="mystical-font text-[#D4AF37] font-semibold tracking-wider">13 & 14. Derivation & Complete Metric Proof</h3>
+                    
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 text-sm text-gray-300 leading-relaxed">
+                        <div class="space-y-4">
+                            <p>
+                                Consider our general parametrization:
+                                $$X(\theta,\gamma) = (r_1\cos\theta, r_1\sin\theta, r_2\cos\gamma, r_2\sin\gamma)$$
+                                Taking partial derivatives with respect to the angles yields the tangent vector fields:
+                                $$X_\theta = \frac{\partial X}{\partial \theta} = (-r_1\sin\theta, r_1\cos\theta, 0, 0)$$
+                                $$X_\gamma = \frac{\partial X}{\partial \gamma} = (0, 0, -r_2\sin\gamma, r_2\cos\gamma)$$
+                            </p>
+                            <p>
+                                We construct the coefficients of the First Fundamental Form by taking inner products:
+                                $$E = X_\theta \cdot X_\theta = r_1^2\sin^2\theta + r_1^2\cos^2\theta = r_1^2$$
+                                $$F = X_\theta \cdot X_\gamma = 0 + 0 + 0 + 0 = 0 \quad (\text{since } X_\theta \perp X_\gamma \text{ everywhere})$$
+                                $$G = X_\gamma \cdot X_\gamma = r_2^2\sin^2\gamma + r_2^2\cos^2\gamma = r_2^2$$
+                            </p>
+                        </div>
+
+                        <div class="space-y-4">
+                            <p>
+                                The induced Riemannian metric is diagonal and constant:
+                                $$ds^2 = r_1^2\,d\theta^2 + r_2^2\,d\gamma^2$$
+                                To understand why this implies the toroid is <strong>intrinsically flat</strong>, we perform a linear coordinate transformation. Define:
+                                $$u = r_1\theta, \qquad v = r_2\gamma$$
+                                Substituting these into the metric yields:
+                                $$ds^2 = du^2 + dv^2$$
+                            </p>
+                            <p class="p-4 bg-yellow-600/5 rounded border border-yellow-600/20 text-[#FFF8DC]">
+                                <strong>Remarkable Geometric Conclusion:</strong> This is exactly the flat Euclidean metric of a plane. The periodic boundaries map the toroid homeomorphically to a flat rectangle $[0, 2\pi r_1] \times [0, 2\pi r_2]$ with opposite sides identified. 
+                                Since the flat Euclidean plane has Gaussian curvature $K = 0$, and curvature is an intrinsic property invariant under local isometry (Gauss's <em>Theorema Egregium</em>), we have proved:
+                                $$K_{\mathrm{Clifford}} \equiv 0$$
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Ring 6 -->
+            <section id="ring6" class="scroll-mt-36 space-y-6">
+                <div class="flex items-center gap-4 border-b border-yellow-600/20 pb-2">
+                    <div class="w-10 h-10 rounded-full border border-yellow-600/40 flex items-center justify-center bg-yellow-600/5 mystical-font text-yellow-500 font-bold">6</div>
+                    <h2 class="mystical-font text-xl md:text-2xl text-white font-bold tracking-wide">Ring 6: Golden Ratio Scaling</h2>
+                </div>
+
+                <div class="glass-card border border-white/5 p-6 rounded-lg space-y-6">
+                    <div class="flex flex-col md:flex-row gap-6 items-center">
+                        <div class="flex-1 space-y-4 text-sm text-gray-300 leading-relaxed">
+                            <p>
+                                Although the standard toroid divides the radii equally, we can configure a non-standard Clifford toroid whose aspect ratio is governed directly by the golden ratio $\varphi$:
+                                $$\frac{r_1}{r_2} = \varphi = \frac{1+\sqrt{5}}{2} \approx 1.6180339887...$$
+                                Because the toroid must reside strictly on the unit 3-sphere $S^3$, we enforce $r_1^2 + r_2^2 = 1$. Substituting $r_1 = \varphi r_2$ gives:
+                                $$(\varphi r_2)^2 + r_2^2 = 1 \implies (\varphi^2 + 1)r_2^2 = 1$$
+                            </p>
+                            <p>
+                                Using the classic golden ratio identity $\varphi^2 = \varphi + 1$, the coefficient simplifies to:
+                                $$\varphi^2 + 1 = \varphi + 2$$
+                                Solving for the radii yields the <strong>Golden Clifford Toroid</strong> coordinates:
+                                $$r_2 = \frac{1}{\sqrt{\varphi+2}}, \qquad r_1 = \frac{\varphi}{\sqrt{\varphi+2}}$$
+                            </p>
+                        </div>
+
+                        <div class="w-full md:w-80 shrink-0 p-5 bg-[#D4AF37]/5 border border-[#D4AF37]/30 rounded-lg space-y-3">
+                            <span class="text-xs uppercase font-bold tracking-wider text-[#D4AF37] block">Golden Geometry Check</span>
+                            <div class="space-y-1 text-xs">
+                                <div class="flex justify-between">
+                                    <span class="text-gray-400">Golden Ratio $\varphi$:</span>
+                                    <span class="code-font text-white">1.61803...</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-400">Radii $r_1$:</span>
+                                    <span class="code-font text-white">0.85065...</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-400">Radii $r_2$:</span>
+                                    <span class="code-font text-white">0.52573...</span>
+                                </div>
+                                <div class="flex justify-between border-t border-white/10 pt-1 mt-1">
+                                    <span class="text-gray-400">$r_1^2 + r_2^2$:</span>
+                                    <span class="code-font text-emerald-400">1.00000 (Checks out!)</span>
+                                </div>
+                            </div>
+                            <p class="text-[11px] text-gray-400 italic">
+                                This specific configuration scales the rectangular flat-toroid domain to match golden proportions: $[0, 2\pi r_1] \times [0, 2\pi r_2]$.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Ring 7 -->
+            <section id="ring7" class="scroll-mt-36 space-y-6">
+                <div class="flex items-center gap-4 border-b border-yellow-600/20 pb-2">
+                    <div class="w-10 h-10 rounded-full border border-yellow-600/40 flex items-center justify-center bg-yellow-600/5 mystical-font text-yellow-500 font-bold">7</div>
+                    <h2 class="mystical-font text-xl md:text-2xl text-white font-bold tracking-wide">Ring 7: Irrational Winding on the Toroid</h2>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    
+                    <div class="glass-card border border-white/5 p-6 rounded-lg space-y-4">
+                        <h3 class="mystical-font text-[#D4AF37] font-semibold tracking-wider">15 & 16. Linear Flow and Orbit Closures</h3>
+                        <div class="space-y-3 text-sm text-gray-300 leading-relaxed">
+                            <p>
+                                A winding path on the toroid is generated as a constant-velocity linear flow across the coordinate parameters:
+                                $$\theta(t) = \theta_0 + \alpha t, \qquad \gamma(t) = \gamma_0 + \beta t$$
+                                Mapping this to 4D via our parametrization yields the trajectory $X(t) \in \mathbb{R}^4$:
+                                $$X(t) = \left( r_1\cos(\theta_0+\alpha t), r_1\sin(\theta_0+\alpha t), r_2\cos(\gamma_0+\beta t), r_2\sin(\gamma_0+\beta t) \right)$$
+                            </p>
+                            <p>
+                                Since coordinates are periodic modulo $2\pi$, the path will close if and only if there exists a common time period $T > 0$ such that:
+                                $$\alpha T \in 2\pi\mathbb{Z} \quad \text{and} \quad \beta T \in 2\pi\mathbb{Z} \implies \frac{\alpha}{\beta} \in \mathbb{Q}$$
+                                If the winding-rate ratio $\frac{\alpha}{\beta}$ is **rational**, the trajectory is a closed periodic orbit.
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="glass-card border border-white/5 p-6 rounded-lg space-y-4 flex flex-col justify-between">
+                        <div>
+                            <h3 class="mystical-font text-purple-400 font-semibold tracking-wider">17. Irrational Dense Flows & The Golden Ratio</h3>
+                            <div class="space-y-3 text-sm text-gray-300 leading-relaxed">
+                                <p>
+                                    If the ratio $\frac{\alpha}{\beta}$ is **irrational** ($\notin \mathbb{Q}$), no common period exists, and the path never closes.
+                                </p>
+                                <p>
+                                    By the classical **irrational flow theorem**, any irrational line slope on a flat toroid is dense in the surface:
+                                    $$\overline{\{X(t) : t \in \mathbb{R}\}} = T_{r_1, r_2}$$
+                                    This means the winding path will pass arbitrarily close to every single point on the toroid given enough time.
+                                </p>
+                            </div>
+                        </div>
+                        <div class="p-3 bg-purple-950/20 rounded border border-purple-800/30 text-xs text-purple-200">
+                            <strong>Note on Golden Winding:</strong> Setting the flow rates to $\frac{\alpha}{\beta} = \varphi$ creates an optimally irrational trajectory that is dense, non-intersecting, and traces out the entire toroid surface.
+                        </div>
+                    </div>
+
+                </div>
+            </section>
+
+            <!-- Ring Synthesis / Map Section -->
+            <section id="synthesizer-section" class="scroll-mt-36 space-y-6">
+                <div class="flex items-center gap-4 border-b border-yellow-600/20 pb-2">
+                    <svg class="w-6 h-6 text-yellow-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
+                    <h2 class="mystical-font text-xl md:text-2xl text-white font-bold tracking-wide">Ring Synthesis Diagram</h2>
+                </div>
+
+                <div class="glass-card gold-border p-6 rounded-xl shadow-2xl space-y-6">
+                    <p class="text-sm text-gray-300 max-w-3xl leading-relaxed">
+                        The ultimate realization of the Clifford Toroid (the 7th Ring) acts as a projective bridge. Explore how Rings 1-6 serve as the necessary structural prerequisites to construct the complete dense-winding model.
+                    </p>
+
+                    <!-- Interactive Connection Interface -->
+                    <div class="grid grid-cols-1 md:grid-cols-6 gap-4" id="synthesis-matrix">
+                        <!-- Ring 1 Panel -->
+                        <div class="p-4 rounded border border-white/5 bg-black/40 cursor-pointer hover:border-yellow-500/50 transition-all text-center space-y-2 group" onclick="highlightSynthesis(1)">
+                            <div class="w-8 h-8 rounded-full border border-yellow-600/30 flex items-center justify-center text-xs code-font mx-auto text-yellow-500 group-hover:bg-yellow-600/15">1</div>
+                            <div class="text-xs font-semibold uppercase text-gray-300">Linear Space</div>
+                            <div class="text-[10px] text-gray-500">Provides orthogonal embedding planes in $\mathbb{R}^4$.</div>
+                        </div>
+
+                        <!-- Ring 2 Panel -->
+                        <div class="p-4 rounded border border-white/5 bg-black/40 cursor-pointer hover:border-yellow-500/50 transition-all text-center space-y-2 group" onclick="highlightSynthesis(2)">
+                            <div class="w-8 h-8 rounded-full border border-yellow-600/30 flex items-center justify-center text-xs code-font mx-auto text-yellow-500 group-hover:bg-yellow-600/15">2</div>
+                            <div class="text-xs font-semibold uppercase text-gray-300">Differential</div>
+                            <div class="text-[10px] text-gray-500">First fundamental form metric coefficients.</div>
+                        </div>
+
+                        <!-- Ring 3 Panel -->
+                        <div class="p-4 rounded border border-white/5 bg-black/40 cursor-pointer hover:border-yellow-500/50 transition-all text-center space-y-2 group" onclick="highlightSynthesis(3)">
+                            <div class="w-8 h-8 rounded-full border border-yellow-600/30 flex items-center justify-center text-xs code-font mx-auto text-yellow-500 group-hover:bg-yellow-600/15">3</div>
+                            <div class="text-xs font-semibold uppercase text-gray-300">Circle Products</div>
+                            <div class="text-[10px] text-gray-500">Defines periodic topology $S^1 \times S^1 \subset \mathbb{C}^2$.</div>
+                        </div>
+
+                        <!-- Ring 4 Panel -->
+                        <div class="p-4 rounded border border-white/5 bg-black/40 cursor-pointer hover:border-yellow-500/50 transition-all text-center space-y-2 group" onclick="highlightSynthesis(4)">
+                            <div class="w-8 h-8 rounded-full border border-yellow-600/30 flex items-center justify-center text-xs code-font mx-auto text-yellow-500 group-hover:bg-yellow-600/15">4</div>
+                            <div class="text-xs font-semibold uppercase text-gray-300">Clifford Toroid</div>
+                            <div class="text-[10px] text-gray-500">Constrains coordinates to lie exactly on 3-sphere $S^3$.</div>
+                        </div>
+
+                        <!-- Ring 5 Panel -->
+                        <div class="p-4 rounded border border-white/5 bg-black/40 cursor-pointer hover:border-yellow-500/50 transition-all text-center space-y-2 group" onclick="highlightSynthesis(5)">
+                            <div class="w-8 h-8 rounded-full border border-yellow-600/30 flex items-center justify-center text-xs code-font mx-auto text-yellow-500 group-hover:bg-yellow-600/15">5</div>
+                            <div class="text-xs font-semibold uppercase text-gray-300">Flatness</div>
+                            <div class="text-[10px] text-gray-500">Isometry to flat rectangle $ds^2 = du^2 + dv^2$.</div>
+                        </div>
+
+                        <!-- Ring 6 Panel -->
+                        <div class="p-4 rounded border border-white/5 bg-black/40 cursor-pointer hover:border-yellow-500/50 transition-all text-center space-y-2 group" onclick="highlightSynthesis(6)">
+                            <div class="w-8 h-8 rounded-full border border-yellow-600/30 flex items-center justify-center text-xs code-font mx-auto text-yellow-500 group-hover:bg-yellow-600/15">6</div>
+                            <div class="text-xs font-semibold uppercase text-gray-300">Golden Scaling</div>
+                            <div class="text-[10px] text-gray-500">Enforces golden ratio proportion $\frac{r_1}{r_2} = \varphi$.</div>
+                        </div>
+                    </div>
+
+                    <!-- Output Dynamic Text -->
+                    <div class="bg-black/85 border border-yellow-600/25 p-5 rounded-lg">
+                        <div class="flex items-center gap-2 mb-2">
+                            <span class="w-2 h-2 rounded-full bg-yellow-500 animate-ping"></span>
+                            <span class="text-xs uppercase text-[#D4AF37] tracking-widest font-semibold" id="synth-title">Synthesis Active: Select a Ring</span>
+                        </div>
+                        <p class="text-xs text-gray-300 leading-relaxed" id="synth-desc">
+                            Select any prerequisite Ring card above to see how its mathematical structures feed directly into Ring 7's projective dense winding model.
+                        </p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Final Theorem Synthesis Document -->
+            <section class="glass-card gold-border p-8 rounded-xl shadow-2xl space-y-6">
+                <div class="border-b border-yellow-600/20 pb-4">
+                    <span class="text-xs uppercase tracking-widest text-[#D4AF37]">CONSOLIDATED SPECIFICATIONS</span>
+                    <h2 class="mystical-font text-2xl md:text-3xl text-white font-bold tracking-wide mt-1">Final Theorem: The Clifford Toroid</h2>
+                </div>
+
+                <div class="space-y-4 text-sm text-gray-300 leading-relaxed">
+                    <div class="p-4 bg-yellow-600/5 border border-yellow-600/30 rounded">
+                        <p class="font-bold text-white mb-2 mystical-font">Theorem Statement:</p>
+                        <p>
+                            Let $r_1,r_2>0$ satisfy $r_1^2+r_2^2=1$. Define $X:S^1\times S^1\to S^3\subset\mathbb{R}^4$ by:
+                            $$X(\theta,\gamma) = (r_1\cos\theta, r_1\sin\theta, r_2\cos\gamma, r_2\sin\gamma)$$
+                            Then:
+                            <br>1. $X(S^1\times S^1)$ lies strictly within the unit 3-sphere $S^3$.
+                            <br>2. It is a smoothly embedded 2D toroid.
+                            <br>3. Its induced metric is $ds^2=r_1^2\,d\theta^2+r_2^2\,d\gamma^2$.
+                            <br>4. It has constant Gaussian curvature $K = 0$ (intrinsically flat).
+                            <br>5. A linear flow path winding with rates $\alpha,\beta$ is dense in the toroid if and only if $\alpha/\beta$ is irrational.
+                        </p>
+                    </div>
+
+                    <p>
+                        The standard Clifford toroid provides the baseline geometry, while the Golden Scaled configuration ($r_1/r_2 = \varphi$) optimizes physical proportions. Combined with a winding slope ratio equal to $\varphi$, this produces an elegant, non-repeating trajectory winding infinitely around the 4D toroid without collision.
+                    </p>
+                </div>
+            </section>
+
+        </main>
+    </div>
+
+    <!-- Footer -->
+    <footer class="w-full border-t border-yellow-600/20 bg-black/80 backdrop-blur-md mt-12 py-8 text-center relative z-20">
+        <div class="flex justify-center mb-4">
+            <svg width="28" height="28" viewBox="0 0 100 100" fill="none" stroke="#D4AF37" stroke-width="2.5">
+                <circle cx="50" cy="50" r="42"/>
+                <polygon points="50,15 80,75 20,75"/>
+                <circle cx="50" cy="55" r="12" stroke-dasharray="2 2"/>
+            </svg>
+        </div>
+        <p class="text-xs text-gray-500 uppercase tracking-[0.2em] mb-1">Owl Academy Library | Advanced Mathematical Studies</p>
+        <p class="text-[10px] text-gray-600">Proof Level: COMPLETE | Structural Dimension: 4D</p>
+    </footer>
+
+    <!-- Three.js Visualizer Engine Code -->
+    <script>
+        // Parameters Object
+        const params = {
+            r1: 0.7071,
+            r2: 0.7071,
+            alpha: 1.0,
+            beta: 1.0,
+            pathPointsCount: 1500,
+            autoScaleRadii: function() {
+                // Keep r1^2 + r2^2 = 1
+                let r2Sq = 1 - (this.r1 * this.r1);
+                if(r2Sq < 0) r2Sq = 0;
+                this.r2 = Math.sqrt(r2Sq);
+            }
+        };
+
+        // ThreeJS variables
+        let scene, camera, renderer, controls;
+        let torusMesh, windingLine;
+        let container = document.getElementById('canvas-container');
+        let autoRotate = false;
+
+        // Initialized after DOM Ready
+        window.onload = function() {
+            initThree();
+            setupEventListeners();
+            animate();
+        };
+
+        function initThree() {
+            // Scene Setup
+            scene = new THREE.Scene();
+            scene.fog = new THREE.FogExp2(0x020104, 0.08);
+
+            // Camera Setup
+            camera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1, 100);
+            camera.position.set(0, 4, 8);
+
+            // Renderer Setup
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(container.clientWidth, container.clientHeight);
+            renderer.setPixelRatio(window.devicePixelRatio);
+            renderer.setClearColor(0x020104, 1);
+            container.appendChild(renderer.domElement);
+
+            // Add Lights
+            const ambientLight = new THREE.AmbientLight(0x404040, 1.5);
+            scene.add(ambientLight);
+
+            const dirLight = new THREE.DirectionalLight(0xfff8dc, 1.0);
+            dirLight.position.set(5, 10, 7);
+            scene.add(dirLight);
+
+            const pointLight = new THREE.PointLight(0xd4af37, 1, 15);
+            pointLight.position.set(-2, 3, -2);
+            scene.add(pointLight);
+
+            // OrbitControls for Pan, Zoom, Navigate
+            controls = new THREE.OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true;
+            controls.dampingFactor = 0.05;
+            controls.autoRotate = false;
+            controls.autoRotateSpeed = 1.0;
+
+            // Build Clifford Toroid Geometry using Stereographic Projection from 4D to 3D
+            buildTorusSurface();
+            buildWindingPath();
+
+            // Handle Resizing
+            window.addEventListener('resize', onWindowResize);
+        }
+
+        // Stereographic Projection: S^3 in R^4 to R^3
+        // Projection point: (0, 0, 0, 1) or similar.
+        // Formula: (x, y, z) = (X1, Y1, X2) / (1 - Y2)
+        function stereographicProject(x1, y1, x2, y2) {
+            const denom = 1.0 - y2;
+            const eps = 0.0001;
+            const d = Math.abs(denom) < eps ? eps : denom;
+            return new THREE.Vector3(
+                x1 / d,
+                y1 / d,
+                x2 / d
+            );
+        }
+
+        function buildTorusSurface() {
+            if (torusMesh) scene.remove(torusMesh);
+
+            const uSegments = 80;
+            const vSegments = 40;
+            const geometry = new THREE.ParametricGeometry(function(u, v, target) {
+                // Map u,v to theta, gamma (0 to 2pi)
+                const theta = u * Math.PI * 2;
+                const gamma = v * Math.PI * 2;
+
+                // 4D Clifford Toroid coordinates:
+                const x1 = params.r1 * Math.cos(theta);
+                const y1 = params.r1 * Math.sin(theta);
+                const x2 = params.r2 * Math.cos(gamma);
+                const y2 = params.r2 * Math.sin(gamma);
+
+                // Project to 3D
+                const p3d = stereographicProject(x1, y1, x2, y2);
+                target.set(p3d.x, p3d.y, p3d.z);
+            }, uSegments, vSegments);
+
+            // Semi-transparent Golden Wireframe & Mesh
+            const material = new THREE.MeshPhongMaterial({
+                color: 0xD4AF37,
+                emissive: 0xaa771c,
+                emissiveIntensity: 0.15,
+                side: THREE.DoubleSide,
+                wireframe: true,
+                transparent: true,
+                opacity: 0.28
+            });
+
+            torusMesh = new THREE.Mesh(geometry, material);
+            scene.add(torusMesh);
+        }
+
+        function buildWindingPath() {
+            if (windingLine) scene.remove(windingLine);
+
+            const points = [];
+            const dt = 0.05;
+            const totalSteps = params.pathPointsCount;
+
+            for (let i = 0; i < totalSteps; i++) {
+                const t = i * dt;
+                const theta = params.alpha * t;
+                const gamma = params.beta * t;
+
+                // 4D Winding path
+                const x1 = params.r1 * Math.cos(theta);
+                const y1 = params.r1 * Math.sin(theta);
+                const x2 = params.r2 * Math.cos(gamma);
+                const y2 = params.r2 * Math.sin(gamma);
+
+                const p3d = stereographicProject(x1, y1, x2, y2);
+                points.push(p3d);
+            }
+
+            const geometry = new THREE.BufferGeometry().setFromPoints(points);
+            const material = new THREE.LineBasicMaterial({
+                color: 0xa855f7, // Purple glow winding
+                linewidth: 2,
+                transparent: true,
+                opacity: 0.95
+            });
+
+            windingLine = new THREE.Line(geometry, material);
+            scene.add(windingLine);
+        }
+
+        function setupEventListeners() {
+            // Auto-Rotate Toggle Listener
+            const toggleRotateBtn = document.getElementById('toggle-auto-rotate');
+            const toggleBg = document.getElementById('toggle-bg');
+            const toggleDot = document.getElementById('toggle-dot');
+
+            toggleRotateBtn.addEventListener('change', (e) => {
+                autoRotate = e.target.checked;
+                controls.autoRotate = autoRotate;
+                
+                if(autoRotate) {
+                    toggleBg.classList.replace('bg-black', 'bg-[#D4AF37]/30');
+                    toggleBg.classList.replace('border-gray-600', 'border-[#D4AF37]');
+                    toggleDot.classList.replace('bg-gray-400', 'bg-[#D4AF37]');
+                    toggleDot.classList.add('translate-x-4');
+                } else {
+                    toggleBg.classList.replace('bg-[#D4AF37]/30', 'bg-black');
+                    toggleBg.classList.replace('border-[#D4AF37]', 'border-gray-600');
+                    toggleDot.classList.replace('bg-[#D4AF37]', 'bg-gray-400');
+                    toggleDot.classList.remove('translate-x-4');
+                }
+            });
+
+            // Slider listeners
+            const sliderR1 = document.getElementById('slider-r1');
+            const sliderAlpha = document.getElementById('slider-alpha');
+            const sliderBeta = document.getElementById('slider-beta');
+
+            sliderR1.addEventListener('input', (e) => {
+                params.r1 = parseFloat(e.target.value);
+                params.autoScaleRadii();
+                updateUIValues();
+                rebuildVisuals();
+            });
+
+            sliderAlpha.addEventListener('input', (e) => {
+                params.alpha = parseFloat(e.target.value);
+                updateUIValues();
+                rebuildVisuals();
+            });
+
+            sliderBeta.addEventListener('input', (e) => {
+                params.beta = parseFloat(e.target.value);
+                updateUIValues();
+                rebuildVisuals();
+            });
+
+            // Presets buttons
+            document.getElementById('btn-standard').addEventListener('click', () => {
+                params.r1 = 0.7071;
+                params.r2 = 0.7071;
+                params.alpha = 1.0;
+                params.beta = 1.0;
+                syncSliders();
+                rebuildVisuals();
+            });
+
+            document.getElementById('btn-golden-radius').addEventListener('click', () => {
+                const phi = (1 + Math.sqrt(5)) / 2;
+                params.r2 = 1.0 / Math.sqrt(phi + 2);
+                params.r1 = phi / Math.sqrt(phi + 2);
+                syncSliders();
+                rebuildVisuals();
+            });
+
+            document.getElementById('btn-rational-winding').addEventListener('click', () => {
+                params.alpha = 2.0;
+                params.beta = 3.0;
+                syncSliders();
+                rebuildVisuals();
+            });
+
+            document.getElementById('btn-golden-winding').addEventListener('click', () => {
+                // Golden ratio is roughly 1.618
+                params.alpha = 3.236; // 2 * phi
+                params.beta = 2.0;
+                syncSliders();
+                rebuildVisuals();
+            });
+        }
+
+        function syncSliders() {
+            document.getElementById('slider-r1').value = params.r1;
+            document.getElementById('slider-alpha').value = params.alpha;
+            document.getElementById('slider-beta').value = params.beta;
+            updateUIValues();
+        }
+
+        function updateUIValues() {
+            document.getElementById('val-r1').innerText = params.r1.toFixed(3);
+            document.getElementById('val-r2').innerText = params.r2.toFixed(3);
+            document.getElementById('val-alpha').innerText = params.alpha.toFixed(2);
+            document.getElementById('val-beta').innerText = params.beta.toFixed(2);
+
+            const ratio = params.alpha / params.beta;
+            document.getElementById('val-ratio').innerText = ratio.toFixed(3);
+
+            // Is rational check
+            const statusEl = document.getElementById('path-status');
+            const isRational = Math.abs(ratio - Math.round(ratio * 20) / 20) < 0.005; 
+            if (isRational) {
+                statusEl.innerText = "Periodic Orbit (Rational)";
+                statusEl.className = "text-xs text-yellow-400 font-bold block";
+            } else {
+                statusEl.innerText = "Dense Winding Flow (Irrational)";
+                statusEl.className = "text-xs text-purple-400 font-bold block";
+            }
+        }
+
+        function rebuildVisuals() {
+            buildTorusSurface();
+            buildWindingPath();
+        }
+
+        function onWindowResize() {
+            camera.aspect = container.clientWidth / container.clientHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(container.clientWidth, container.clientHeight);
+        }
+
+        // Standard Animation loop
+        function animate() {
+            requestAnimationFrame(animate);
+
+            // Update OrbitControls (handles damping and auto-rotation)
+            if (controls) {
+                controls.update();
+            }
+
+            renderer.render(scene, camera);
+        }
+
+        // Active Ring menu highlighting logic on scroll
+        const ringSections = ['ring1', 'ring2', 'ring3', 'ring4', 'ring5', 'ring6', 'ring7'];
+        window.addEventListener('scroll', () => {
+            let active = '';
+            for (const section of ringSections) {
+                const el = document.getElementById(section);
+                if (el) {
+                    const rect = el.getBoundingClientRect();
+                    if (rect.top <= 160) {
+                        active = section;
+                    }
+                }
+            }
+
+            ringSections.forEach(sec => {
+                const link = document.getElementById('link-' + sec);
+                if (link) {
+                    if (sec === active) {
+                        link.classList.add('active-ring');
+                    } else {
+                        link.classList.remove('active-ring');
+                    }
+                }
+            });
+        });
+
+        // Interactive synthesis text generator
+        const synthesisData = {
+            1: {
+                title: "Linear Algebra Synthesis to Ring 7",
+                desc: "Ring 1 supplies the 4D Euclidean space $\\mathbb{R}^4$ in which the winding trajectory $X(t)$ is computed. Without orthogonal coordinate decomposition, the toroid elements in $P_1$ and $P_2$ would collapse, distorting the velocity vectors $(\\alpha, \\beta)$ and destroying the dense winding orbits entirely."
+            },
+            2: {
+                title: "Differential Geometry Synthesis to Ring 7",
+                desc: "Ring 2 outlines the tangent vector mappings. The partial derivations $X_\\theta$ and $X_\\gamma$ are precisely the velocity paths traced by the linear flow coefficients $\\alpha = d\\theta/dt$ and $\\beta = d\\gamma/dt$. This allows us to map the 1D path accurately into the ambient metric."
+            },
+            3: {
+                title: "Circle Products Synthesis to Ring 7",
+                desc: "Ring 3 creates the global topological boundaries. Because $S^1 \\times S^1$ coordinates are strictly periodic ($2\\pi \\mathbb{Z}$), the winding path is wrapped back into the boundaries of the toroid space. This modular arithmetic is the exact mechanism that forces irrational flows to densely pack instead of flying off to infinity."
+            },
+            4: {
+                title: "Clifford Toroid Synthesis to Ring 7",
+                desc: "Ring 4 positions the surface inside the unit 3-sphere $S^3$. This provides the metric scaling constraints ($r_1^2 + r_2^2 = 1$). Without this, stereographic projections down to 3D would distort the uniform velocity flow, resulting in visually non-linear winding paths."
+            },
+            5: {
+                title: "Intrinsic Flatness Synthesis to Ring 7",
+                desc: "Ring 5 establishes that our path behaves exactly like a straight line on a flat plane. The coordinate change $u=r_1\\theta$, $v=r_2\\gamma$ preserves straight lines, meaning that the trajectory has zero geodesic curvature (it is a geodesic of the flat toroid, meaning a physical object would slide along this infinite path without any friction)."
+            },
+            6: {
+                title: "Golden Scaling Synthesis to Ring 7",
+                desc: "Ring 6 configures the aspect ratio of the rectangle to the golden ratio $\\varphi$. When the ratio of the physical radii matches the ratio of the winding rates, the path maps elegantly onto the surface with perfect proportional spacing, maximizing the efficiency of dense coverage."
+            }
+        };
+
+        function highlightSynthesis(ringId) {
+            const data = synthesisData[ringId];
+            if (data) {
+                document.getElementById('synth-title').innerText = data.title;
+                document.getElementById('synth-desc').innerHTML = data.desc;
+                
+                // Trigger MathJax typeset on updated element
+                MathJax.typesetPromise([document.getElementById('synth-desc')]).catch((err) => console.log(err));
+
+                // Style active state in grid
+                const cards = document.querySelectorAll('#synthesis-matrix > div');
+                cards.forEach((card, index) => {
+                    if (index + 1 === ringId) {
+                        card.classList.add('border-[#D4AF37]', 'bg-[#D4AF37]/15');
+                    } else {
+                        card.classList.remove('border-[#D4AF37]', 'bg-[#D4AF37]/15');
+                    }
+                });
+            }
+        }
+
+        // Handle explicit severance of connection
+        window.globalLogout = function() {
+            // Clear standard local/session storage tokens used by the academy
+            localStorage.clear();
+            sessionStorage.clear();
+            
+            // Redirect to the absolute Academy Monad login
+            window.location.href = "https://biochainai.github.io/Owl-Academy/login.html";
+        };
+    </script>
+</body>
+</html>
