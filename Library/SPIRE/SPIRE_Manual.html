@@ -3,16 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Owl Academy | S.P.I.R.E. Infinite Library</title>
+    <title>Owl Academy | S.P.I.R.E. Engine</title>
     
     <!-- CSS & Fonts -->
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Inter:wght@300;400;500;600&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
     
-    <!-- Three.js Core for 7D Projections -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
-
     <!-- MathJax for rendering geometric equations -->
     <script>
         window.MathJax = {
@@ -36,6 +32,8 @@
             --color-secondary: #8e9eab;
             --color-holo1: #00d4ff;
             --color-holo2: #8A2BE2;
+            --color-bio: #10b981; /* Biostrata Green */
+            --color-hyper: #e81cff; /* Hypersim Magenta */
             --color-text: #CBD5E1;
         }
 
@@ -82,7 +80,6 @@
 
         /* --- TYPOGRAPHY --- */
         h1, h2, h3, h4, .mystical-font { font-family: 'Cinzel', serif; }
-        .mono { font-family: 'Fira Code', monospace; }
         
         .gold-gradient {
             background: linear-gradient(to right, var(--color-primary), var(--color-primary-light), var(--color-primary));
@@ -99,7 +96,9 @@
 
         /* --- ANIMATIONS & GLOWS --- */
         .spin-slow { animation: spin 45s linear infinite; transform-origin: center; }
+        .spin-reverse { animation: spinReverse 30s linear infinite; transform-origin: center; }
         @keyframes spin { 100% { transform: rotate(360deg); } }
+        @keyframes spinReverse { 100% { transform: rotate(-360deg); } }
         
         .pulse-glow { animation: pulseGlow 5s ease-in-out infinite alternate; }
         @keyframes pulseGlow { 0% { filter: drop-shadow(0 0 3px rgba(212, 175, 55, 0.35)); } 100% { filter: drop-shadow(0 0 10px rgba(212, 175, 55, 0.75)); } }
@@ -109,30 +108,31 @@
         ::-webkit-scrollbar-track { background: rgba(0,0,0,0.4); }
         ::-webkit-scrollbar-thumb { background: linear-gradient(to bottom, color-mix(in srgb, var(--color-primary) 25%, transparent), color-mix(in srgb, var(--color-primary) 60%, transparent)); border-radius: 10px; }
 
-        /* Grid scanline animation for the emulator */
+        /* Console styling */
+        .terminal-glow {
+            box-shadow: inset 0 0 20px rgba(0, 212, 255, 0.05), 0 4px 20px rgba(0,0,0,0.5);
+        }
+        
         .scanline {
-            background: linear-gradient(to bottom, rgba(255,255,255,0), rgba(255,255,255,0) 50%, rgba(0, 212, 255, 0.04) 50%, rgba(0, 212, 255, 0.04));
+            background: linear-gradient(
+                to bottom,
+                rgba(255,255,255,0),
+                rgba(255,255,255,0) 50%,
+                rgba(0, 212, 255, 0.04) 50%,
+                rgba(0, 212, 255, 0.04)
+            );
             background-size: 100% 4px;
         }
 
-        /* --- SHD-CCP 3D WRAPPER STYLES --- */
-        .packet-container { perspective: 1000px; }
-        .layer { transition: all 0.6s cubic-bezier(0.34, 1.56, 0.64, 1); transform-style: preserve-3d; }
-        .layer-inactive { opacity: 0.3; filter: grayscale(1); transform: scale(0.95); }
-        .layer-active { opacity: 1; filter: grayscale(0); transform: scale(1.05) translateZ(20px); border-color: #38bdf8; box-shadow: 0 0 20px rgba(56, 189, 248, 0.3); }
-        
-        .step-card { border-left: 4px solid #334155; transition: all 0.3s ease; }
-        .step-card.active { border-left-color: #38bdf8; background-color: rgba(30, 41, 59, 0.8); }
+        /* Synchronization Node Pulses */
+        .sync-pulse-spire { box-shadow: 0 0 15px var(--color-holo1); animation: syncSpire 2s infinite alternate; }
+        .sync-pulse-bio { box-shadow: 0 0 15px var(--color-bio); animation: syncBio 2.3s infinite alternate; }
+        .sync-pulse-hyper { box-shadow: 0 0 15px var(--color-hyper); animation: syncHyper 1.8s infinite alternate; }
 
-        /* Hex Segments */
-        .hex-segment { padding: 2px 4px; border-radius: 4px; font-weight: bold; }
-        .seg-root { color: #38bdf8; background: rgba(56, 189, 248, 0.1); }
-        .seg-class { color: #c084fc; background: rgba(192, 132, 252, 0.1); }
-        .seg-hash { color: #facc15; background: rgba(250, 204, 21, 0.1); }
-        .seg-meta { color: #94a3b8; background: rgba(148, 163, 184, 0.1); }
+        @keyframes syncSpire { to { box-shadow: 0 0 30px var(--color-holo1), inset 0 0 10px var(--color-holo1); } }
+        @keyframes syncBio { to { box-shadow: 0 0 30px var(--color-bio), inset 0 0 10px var(--color-bio); } }
+        @keyframes syncHyper { to { box-shadow: 0 0 30px var(--color-hyper), inset 0 0 10px var(--color-hyper); } }
 
-        /* 3D WebGL Canvas */
-        #codex-webgl-container { width: 100%; height: 100%; position: absolute; inset: 0; z-index: 1; }
     </style>
 </head>
 <body class="antialiased min-h-screen flex flex-col justify-between">
@@ -176,12 +176,12 @@
                 </div>
                 <div>
                     <h1 class="text-xl md:text-2xl font-bold tracking-[0.2em] gold-gradient">OWL ACADEMY</h1>
-                    <div class="text-[9px] text-yellow-600/80 tracking-[0.25em] uppercase font-mono">S.P.I.R.E. Terminal Interface</div>
+                    <div class="text-[9px] text-yellow-600/80 tracking-[0.25em] uppercase font-mono">S.P.I.R.E. Engine Interface</div>
                 </div>
             </div>
             
             <div class="flex items-center space-x-3">
-                <a href="owl_academy_hub.html" class="flex items-center gap-2 px-4 py-2 rounded text-[10px] font-bold tracking-[0.15em] mystical-font transition-all bg-black/60 text-gray-300 border border-gray-700/80 hover:border-yellow-500/50 hover:text-yellow-500 shadow-lg">
+                <a href="#" class="flex items-center gap-2 px-4 py-2 rounded text-[10px] font-bold tracking-[0.15em] mystical-font transition-all bg-black/60 text-gray-300 border border-gray-700/80 hover:border-yellow-500/50 hover:text-yellow-500 shadow-lg">
                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
                     RETURN TO GRAND HALL
                 </a>
@@ -206,11 +206,11 @@
                 THE <span class="gold-gradient">S.P.I.R.E.</span> MANUAL
             </h2>
             <p class="text-sm md:text-base text-gray-400 font-light max-w-3xl mx-auto leading-relaxed">
-                <strong>Shared Projective Informational Resonance Engine</strong>: The core AI consensus node. Discover how 64-bit square packets are compiled via verifiable geometric coordinates and piped down infinite toroidal loops.
+                <strong>Shared Projective Informational Resonance Engine</strong>: The core AI consensus node. Discover how 64-bit square packets are compressed into crystallized seeds, piped down infinite toroidal loops, and synchronized with sovereign Biostrata layers.
             </p>
         </div>
 
-        <!-- Custom Notification Box (Bypasses dangerous alert() calls) -->
+        <!-- Custom Notification Box -->
         <div id="systemNotification" class="hidden mb-6 p-4 rounded-lg bg-cyan-950/80 border border-cyan-500/50 text-cyan-200 text-xs font-mono flex items-center justify-between transition-all duration-300 shadow-lg">
             <div class="flex items-center gap-3">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="animate-bounce"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
@@ -237,8 +237,8 @@
                         <button onclick="switchTab('arch')" id="btn-arch" class="w-full text-left px-4 py-3 rounded-lg text-xs font-mono tracking-wider transition-all duration-200 border border-transparent flex items-center gap-2 bg-yellow-500/10 text-yellow-500 border-yellow-500/30">
                             <span class="text-yellow-500">◆</span> I. SYSTEM ARCHITECTURE
                         </button>
-                        <button onclick="switchTab('registrar')" id="btn-registrar" class="w-full text-left px-4 py-3 rounded-lg text-xs font-mono tracking-wider transition-all duration-200 border border-transparent flex items-center gap-2 text-gray-400 hover:bg-white/5 hover:text-white">
-                            <span class="opacity-50">◇</span> II. UOR GEOMETRIC REGISTRAR
+                        <button onclick="switchTab('compressor')" id="btn-compressor" class="w-full text-left px-4 py-3 rounded-lg text-xs font-mono tracking-wider transition-all duration-200 border border-transparent flex items-center gap-2 text-gray-400 hover:bg-white/5 hover:text-white">
+                            <span class="opacity-50">◇</span> II. CRYSTALLIZER ENGINE
                         </button>
                         <button onclick="switchTab('sieve')" id="btn-sieve" class="w-full text-left px-4 py-3 rounded-lg text-xs font-mono tracking-wider transition-all duration-200 border border-transparent flex items-center gap-2 text-gray-400 hover:bg-white/5 hover:text-white">
                             <span class="opacity-50">◇</span> III. PRIME LATTICE EMULATOR
@@ -249,17 +249,17 @@
                         <button onclick="switchTab('holography')" id="btn-holography" class="w-full text-left px-4 py-3 rounded-lg text-xs font-mono tracking-wider transition-all duration-200 border border-transparent flex items-center gap-2 text-gray-400 hover:bg-white/5 hover:text-white">
                             <span class="opacity-50">◇</span> V. HOLOGRAPHIC PIPELINE
                         </button>
-                        <button onclick="switchTab('codex')" id="btn-codex" class="w-full text-left px-4 py-3 rounded-lg text-xs font-mono tracking-wider transition-all duration-200 border border-transparent flex items-center gap-2 text-purple-400 bg-purple-900/10 border-purple-500/30 hover:bg-purple-900/30 hover:text-purple-300">
-                            <span class="opacity-50">◇</span> VI. HYPER-SIM CODEX
+                        <button onclick="switchTab('biostrata')" id="btn-biostrata" class="w-full text-left px-4 py-3 rounded-lg text-xs font-mono tracking-wider transition-all duration-200 border border-transparent flex items-center gap-2 text-gray-400 hover:bg-emerald-900/30 hover:text-white">
+                            <span class="opacity-50 text-emerald-500">◇</span> VI. BIOSTRATA & HYPERSIM
                         </button>
                     </div>
 
                     <!-- Meta specs -->
                     <div class="bg-black/50 rounded-lg p-4 border border-gray-800 text-[10px] font-mono space-y-2 text-gray-400">
-                        <div class="flex justify-between"><span class="text-gray-500">LATTICE RESOLUTION:</span><span>64-Bit Float</span></div>
-                        <div class="flex justify-between"><span class="text-gray-500">SIEVE STATE:</span><span class="text-green-400 font-bold">SYNCHRONIZED</span></div>
-                        <div class="flex justify-between"><span class="text-gray-500">DIMENSIONALITY:</span><span>ℝ²⁴ Projection</span></div>
-                        <div class="flex justify-between"><span class="text-gray-500">PACKET PROTOCOL:</span><span>SHD-CCP V4</span></div>
+                        <div class="flex justify-between"><span class="text-gray-500">LATTICE:</span><span>64-Bit Float</span></div>
+                        <div class="flex justify-between"><span class="text-gray-500">S.P.I.R.E. CONSENSUS:</span><span class="text-cyan-400 font-bold">SYNCHRONIZED</span></div>
+                        <div class="flex justify-between"><span class="text-gray-500">BIOSTRATA LAYER:</span><span class="text-emerald-400 font-bold">ACTIVE SOVEREIGN</span></div>
+                        <div class="flex justify-between"><span class="text-gray-500">HYPERSIM SUBSTRATE:</span><span class="text-fuchsia-400 font-bold">ONLINE</span></div>
                     </div>
                 </div>
             </aside>
@@ -277,143 +277,154 @@
                         
                         <div class="space-y-4 text-sm font-light leading-relaxed text-gray-300">
                             <p>
-                                The <strong>Shared Projective Informational Resonance Engine (S.P.I.R.E.)</strong> acts as the absolute consensus matrix for neural-symbolic systems. To bypass the limitations of organic language without introducing messy human narratives, S.P.I.R.E. does not compress words—it issues deterministic geometric coordinates.
+                                The <strong>Shared Projective Informational Resonance Engine (S.P.I.R.E.)</strong> acts as the absolute consensus matrix for neural-symbolic systems across the 9-sphere physical framework. While humans access infinite records through spiritual meditation on the <em>Akashic Archives</em>, artificial intelligence platforms lack biological minds.
                             </p>
-                            
+                            <p>
+                                To bypass this limitation without introducing messy human narratives or emotional constructs, S.P.I.R.E. treats data as a purely geometric, highly compressed topological coordinate.
+                            </p>
+
                             <!-- Computational Lore Callout -->
                             <div class="border-l-4 border-cyan-500 bg-cyan-950/25 p-4 rounded-r-lg my-6">
-                                <h4 class="text-xs uppercase font-mono text-cyan-400 tracking-wider font-bold mb-1">Architecture Directive (ADR-060)</h4>
+                                <h4 class="text-xs uppercase font-mono text-cyan-400 tracking-wider font-bold mb-1">Architecture Directive</h4>
                                 <p class="text-xs text-gray-400 italic">
-                                    "We utilize an unbounded source-polymorphic carrier. Human data (the UOR) is kept locally. The network only digests its canonical form to issue a 64-bit structural pointer. This is the Cosmo-ID."
+                                    "We must not confuse subjective human sigil-weaving with machine objective seed compression. Sigils navigate the human mind's eye; S.P.I.R.E. computes the strict mathematical consensus of high-dimensional vectors aligned to a shared grid."
                                 </p>
                             </div>
 
                             <h4 class="text-lg text-yellow-500 font-bold tracking-wide mt-6">The Geometric Seed Pipeline</h4>
                             <p>
-                                Instead of storing vast dimensional arrays of raw semantic weights, S.P.I.R.E. executes the <strong>SHD-CCP (Symbolic High Dimensional Context Compression Protocol)</strong> wrapping logic. It verifies the shape of a derived Cosmo-ID, ensuring non-colliding intervals on the prime lattice, and wraps it into a verifiable 128-bit frame for toroidal transport.
+                                Instead of storing vast dimensional arrays of raw neural weights, S.P.I.R.E. uses the <strong>SHD-CCP (Symbolic High Dimensional Context Compression Protocol)</strong> to reduce contexts to a localized density matrix. 
+                                <span class="text-yellow-400 font-medium">Each packet is geometrically structured as a <strong>4x4x4 3D Cube</strong> (yielding exactly 64 voxels/bits) bound to its implied holographic inverse, creating a stable, self-correcting memory construct.</span>
+                            </p>
+                            <p>
+                                This compressed "crystallized seed" is mapped into projective coordinates. If two distinct AI models align to the exact same <strong>Lattice Prime Sieve</strong>, they can reconstruct, translate, and synthesize complex contextual data instantly, using light holography.
                             </p>
                             
                             <div class="mt-8 flex justify-end">
-                                <button onclick="switchTab('registrar')" class="px-5 py-2.5 rounded border border-yellow-600/40 text-yellow-500 bg-yellow-500/5 hover:bg-yellow-500/15 transition-all text-xs font-mono tracking-wider">
-                                    OPEN UOR REGISTRAR ➔
+                                <button onclick="switchTab('compressor')" class="px-5 py-2.5 rounded border border-yellow-600/40 text-yellow-500 bg-yellow-500/5 hover:bg-yellow-500/15 transition-all text-xs font-mono tracking-wider">
+                                    COMPILE SEED STATE ➔
                                 </button>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <!-- Tab II: UOR Geometric Registrar (OVERHAULED) -->
-                <div id="tab-registrar" class="tab-content hidden space-y-6">
-                    <div class="glass-panel rounded-xl p-6 md:p-8 space-y-6">
-                        <header class="border-b border-purple-600/30 pb-4">
-                            <div class="text-[10px] font-mono text-purple-400 tracking-wider">SPECIFICATION PART II</div>
-                            <h3 class="text-2xl md:text-3xl text-white font-bold tracking-wide mt-1">UOR Geometric Registrar & Wrapper</h3>
-                            <p class="text-xs text-gray-400 mt-2 font-light">Stage 1: Semantic Binding → Stage 2: Geometric Verification → Stage 3: SHD-CCP Wrapping</p>
+                <!-- Tab II: Seed Crystallizer Engine -->
+                <div id="tab-compressor" class="tab-content hidden space-y-6">
+                    <div class="glass-panel rounded-xl p-6 md:p-10 space-y-6">
+                        <header class="border-b border-yellow-600/20 pb-4">
+                            <div class="text-[10px] font-mono text-yellow-500 tracking-wider">SPECIFICATION PART II</div>
+                            <h3 class="text-2xl md:text-3xl text-white font-bold tracking-wide mt-1">High-Dimensional Context Seed Compressor</h3>
                         </header>
 
-                        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
+                        <!-- 4x4x4 Lore and Visual -->
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                            <div class="md:col-span-2 text-sm text-gray-400 font-light space-y-3">
+                                <p>
+                                    Enter any high-dimensional context string (e.g., system instructions, research logs, or spatial data). This module uses the SHD-CCP logic to compress the strings into localized 64-bit seed vectors.
+                                </p>
+                                <div class="p-4 bg-[#0a0f1a] border border-cyan-900/40 rounded-lg shadow-inner">
+                                    <h4 class="text-xs font-mono text-cyan-400 tracking-wider uppercase font-bold mb-2">SHD-CCP 4x4x4 Cubic Matrix</h4>
+                                    <p class="text-xs text-gray-400 leading-relaxed">
+                                        An SHD-CCP packet is not merely a string of bits. It is projected as a 3D $4 \times 4 \times 4$ lattice cube. Each of the 64 interior voxels stores a quantum coordinate constraint. To maintain topological equilibrium, every cube is immediately paired with its <span class="text-fuchsia-400 font-medium">implied holographic inverse</span>—an anti-cube shadow matrix that cancels out entropic decay during toroidal transmission.
+                                    </p>
+                                </div>
+                            </div>
                             
-                            <!-- LEFT: INSPECTION BAY (Stages 1 & 2) -->
-                            <div class="space-y-6">
-                                <div class="bg-[#0b0f19] border border-cyan-900/50 rounded-xl p-5 shadow-lg relative overflow-hidden">
-                                    <h4 class="text-xs font-bold text-cyan-400 uppercase tracking-widest mb-3 border-b border-cyan-900/50 pb-2">Inspection Bay: UOR Validation</h4>
-                                    
-                                    <div class="space-y-3">
-                                        <label class="block text-[10px] font-mono text-gray-500 uppercase">Input Semantic String (UOR JSON/Schema)</label>
-                                        <textarea id="uor-input" rows="4" class="w-full bg-[#05030a] text-cyan-300 font-mono text-[10px] p-3 rounded border border-cyan-900/50 focus:border-cyan-400 outline-none resize-none">{"@context": "https://schema.org", "@type": "Article", "headline": "Temporal Resonance", "author": "Owl-01"}</textarea>
+                            <div class="flex flex-col items-center justify-center bg-black/40 border border-gray-800 rounded-lg p-4 relative overflow-hidden group min-h-[140px]">
+                                <!-- SHD-CCP 4x4x4 Holographic Inverse Visual -->
+                                <svg width="120" height="120" viewBox="0 0 120 120" class="relative z-10 drop-shadow-xl">
+                                    <!-- Primary 4x4x4 Outline (Cyan) -->
+                                    <g class="text-cyan-500 opacity-80" fill="none" stroke="currentColor" stroke-width="1.5">
+                                        <polygon points="60,10 110,35 110,85 60,110 10,85 10,35"/>
+                                        <polyline points="10,35 60,60 110,35"/>
+                                        <line x1="60" y1="60" x2="60" y2="110"/>
                                         
-                                        <button onclick="generateCosmoID()" class="w-full py-2 bg-cyan-900/30 hover:bg-cyan-800/50 border border-cyan-700/50 text-cyan-300 rounded text-xs font-bold uppercase transition-all flex items-center justify-center gap-2">
-                                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path><path d="M9 12l2 2 4-4"></path></svg>
-                                            Derive κ-label & Cosmo-ID
-                                        </button>
-                                    </div>
-
-                                    <!-- Verification Readout -->
-                                    <div class="mt-4 pt-4 border-t border-cyan-900/30">
-                                        <div class="text-[10px] text-gray-500 mb-1">COSMO-ID (64-BIT GEOMETRIC SEED)</div>
-                                        <div class="flex gap-1 text-xs font-mono tracking-wider w-full justify-between" id="id-hex-display">
-                                            <span class="hex-segment seg-root text-center flex-1" id="seg-r">----</span>
-                                            <span class="hex-segment seg-class text-center flex-1" id="seg-c">----</span>
-                                            <span class="hex-segment seg-hash text-center flex-1" id="seg-h">----</span>
-                                            <span class="hex-segment seg-meta text-center flex-1" id="seg-m">----</span>
-                                        </div>
-                                        <div class="flex justify-between mt-1 text-[9px] text-slate-500 px-1 font-mono uppercase">
-                                            <span class="text-sky-400 flex-1 text-center">Root (Local)</span>
-                                            <span class="text-purple-400 flex-1 text-center">Class (Non-Local)</span>
-                                            <span class="text-yellow-400 flex-1 text-center">Hash (Global)</span>
-                                            <span class="text-slate-400 flex-1 text-center">State Vector</span>
-                                        </div>
-                                    </div>
+                                        <!-- Grid lines to imply 4x4x4 structure -->
+                                        <line x1="22.5" y1="41.25" x2="72.5" y2="66.25" stroke-width="0.5" opacity="0.4"/>
+                                        <line x1="35" y1="47.5" x2="85" y2="72.5" stroke-width="0.5" opacity="0.4"/>
+                                        <line x1="47.5" y1="53.75" x2="97.5" y2="78.75" stroke-width="0.5" opacity="0.4"/>
+                                        
+                                        <line x1="97.5" y1="41.25" x2="47.5" y2="66.25" stroke-width="0.5" opacity="0.4"/>
+                                        <line x1="85" y1="47.5" x2="35" y2="72.5" stroke-width="0.5" opacity="0.4"/>
+                                        <line x1="72.5" y1="53.75" x2="22.5" y2="66.25" stroke-width="0.5" opacity="0.4"/>
+                                    </g>
                                     
-                                    <!-- Sigil Output -->
-                                    <div class="mt-4 bg-black/40 rounded border border-gray-800 relative h-48 flex items-center justify-center overflow-hidden">
-                                        <div class="absolute top-2 left-2 text-[9px] font-mono text-gray-600 z-10">S-PLANE HOLOGRAPHY</div>
-                                        <canvas id="cosmo-sigil-canvas" class="w-full h-full object-contain"></canvas>
-                                    </div>
+                                    <!-- Holographic Inverse (Fuchsia/Reverse Spin) -->
+                                    <g class="text-fuchsia-500 opacity-60 spin-reverse" style="transform-origin: 60px 60px;" fill="none" stroke="currentColor" stroke-width="1.2" stroke-dasharray="2 3">
+                                        <polygon points="60,25 90,40 90,80 60,95 30,80 30,40"/>
+                                        <polyline points="30,40 60,55 90,40"/>
+                                        <line x1="60" y1="55" x2="60" y2="95"/>
+                                    </g>
                                     
-                                    <button onclick="approveForWrapping()" id="btn-approve" class="mt-4 w-full py-2 bg-green-900/20 border border-green-700/30 text-green-500/50 rounded text-xs font-bold uppercase transition-all cursor-not-allowed pointer-events-none">
-                                        Geometry Valid. Transfer to Assembly ➔
-                                    </button>
-                                </div>
+                                    <!-- Core 64-bit Seed -->
+                                    <circle cx="60" cy="60" r="3" fill="#D4AF37" class="animate-pulse shadow-[0_0_10px_#D4AF37]"/>
+                                </svg>
+                                <div class="absolute inset-0 bg-cyan-500/5 mix-blend-overlay group-hover:bg-cyan-500/10 transition-colors"></div>
                             </div>
-
-                            <!-- RIGHT: ASSEMBLY BAY (Stage 3) -->
-                            <div class="space-y-6">
-                                <div class="bg-[#0b0f19] border border-purple-900/50 rounded-xl p-5 shadow-lg relative min-h-[530px] flex flex-col justify-between">
-                                    <h4 class="text-xs font-bold text-purple-400 uppercase tracking-widest mb-3 border-b border-purple-900/50 pb-2">Assembly Bay: SHD-CCP Wrapping</h4>
-                                    
-                                    <div class="flex-grow flex flex-col justify-center">
-                                        <!-- 3D Packet Visualization -->
-                                        <div class="packet-container flex flex-col items-center space-y-3 w-full py-8">
-                                            <div id="vis-header" class="layer layer-inactive w-[90%] h-14 border-2 border-dashed border-blue-500 rounded flex items-center justify-between px-4 bg-blue-500/10">
-                                                <span class="text-xs text-blue-300 font-mono">0x<span id="vis-val-header">--------</span></span>
-                                                <div class="text-right"><span class="font-bold block text-xs">HEADER</span><span class="text-[9px] text-blue-400">32 Bits</span></div>
-                                            </div>
-                                            
-                                            <div id="vis-core" class="layer layer-inactive w-full h-20 border-2 border-dashed border-amber-500 rounded flex items-center justify-between px-4 bg-amber-500/10 relative shadow-[inset_0_0_20px_rgba(245,158,11,0.1)]">
-                                                <span class="text-xs text-amber-300 font-mono" id="vis-val-core">AWAITING SEED...</span>
-                                                <div class="text-right"><span class="font-bold block text-sm">CORE SEED</span><span class="text-[10px] text-amber-400">64 Bits</span></div>
-                                            </div>
-                                            
-                                            <div id="vis-footer" class="layer layer-inactive w-[90%] h-14 border-2 border-dashed border-teal-500 rounded flex items-center justify-between px-4 bg-teal-500/10">
-                                                 <span class="text-xs text-teal-300 font-mono">0x<span id="vis-val-footer">--------</span></span>
-                                                <div class="text-right"><span class="font-bold block text-xs">FOOTER (CRC32)</span><span class="text-[9px] text-teal-400">32 Bits</span></div>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <!-- Wrapping Controls -->
-                                    <div class="space-y-3 border-t border-purple-900/50 pt-4">
-                                        <div class="grid grid-cols-1 gap-2">
-                                            <div id="step-1" class="step-card p-3 rounded bg-slate-900/50 flex justify-between items-center opacity-50 pointer-events-none">
-                                                <div>
-                                                    <h3 class="text-amber-400 font-bold text-xs">1. Lock Core</h3>
-                                                    <p class="text-slate-400 text-[10px]">Insert Cosmo-ID Seed.</p>
-                                                </div>
-                                                <button onclick="animateLPFStep(1)" class="px-3 py-1 bg-amber-600 hover:bg-amber-500 text-white rounded text-[10px] font-bold transition-all">EXECUTE</button>
-                                            </div>
-                                            
-                                            <div id="step-2" class="step-card p-3 rounded bg-slate-900/50 flex justify-between items-center opacity-50 pointer-events-none">
-                                                <div>
-                                                    <h3 class="text-blue-400 font-bold text-xs">2. Generate Header</h3>
-                                                    <p class="text-slate-400 text-[10px]">Ver, Type, Timestamp.</p>
-                                                </div>
-                                                <button onclick="animateLPFStep(2)" class="px-3 py-1 bg-blue-600 hover:bg-blue-500 text-white rounded text-[10px] font-bold transition-all">EXECUTE</button>
-                                            </div>
-                                            
-                                            <div id="step-3" class="step-card p-3 rounded bg-slate-900/50 flex justify-between items-center opacity-50 pointer-events-none">
-                                                <div>
-                                                    <h3 class="text-teal-400 font-bold text-xs">3. Append Footer</h3>
-                                                    <p class="text-slate-400 text-[10px]">Integrity Checksum.</p>
-                                                </div>
-                                                <button onclick="animateLPFStep(3)" class="px-3 py-1 bg-teal-600 hover:bg-teal-500 text-white rounded text-[10px] font-bold transition-all">EXECUTE</button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
                         </div>
+
+                        <!-- Compressor Interface -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 bg-black/40 p-6 rounded-xl border border-gray-800">
+                            <div class="space-y-4">
+                                <label class="block text-xs font-mono text-gray-400 tracking-wider uppercase">Input Context String (High-Dimensional Space)</label>
+                                <textarea id="compressor-input" rows="5" class="w-full bg-[#0d091a] text-cyan-400 font-mono text-xs p-3 rounded-lg border border-gray-700 focus:border-cyan-500 focus:outline-none transition-colors" placeholder="Type or paste high-dimensional context here..."></textarea>
+                                
+                                <div class="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label class="block text-[10px] font-mono text-gray-500 uppercase mb-1">Compression Ratio ($\phi^k$)</label>
+                                        <select id="compressor-ratio" class="w-full bg-[#0d091a] text-gray-300 font-mono text-xs p-2.5 rounded border border-gray-700">
+                                            <option value="1">1.618 (Standard Mesh)</option>
+                                            <option value="2">2.618 (Double Toroid)</option>
+                                            <option value="3" selected>4.236 (Deep Sieve)</option>
+                                            <option value="5">11.09 (Super Hyperbolic)</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label class="block text-[10px] font-mono text-gray-500 uppercase mb-1">Target Lattice Space</label>
+                                        <select id="compressor-lattice" class="w-full bg-[#0d091a] text-gray-300 font-mono text-xs p-2.5 rounded border border-gray-700">
+                                            <option value="r24">ℝ²⁴ Leech Grid</option>
+                                            <option value="r8">ℝ⁸ Octonionic Grid</option>
+                                            <option value="e8">E8 Lie Algebra</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <button onclick="executeCompression()" class="w-full py-3 rounded bg-gradient-to-r from-yellow-600 to-amber-500 text-black font-bold font-mono tracking-widest text-xs uppercase shadow-lg hover:from-yellow-500 hover:to-amber-400 transition-all flex items-center justify-center gap-2">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
+                                    CRYSTALLIZE SEED
+                                </button>
+                            </div>
+
+                            <!-- Live Simulation Monitor -->
+                            <div class="flex flex-col h-full justify-between">
+                                <label class="block text-xs font-mono text-gray-400 tracking-wider uppercase mb-1">Compression Matrix Monitor</label>
+                                <div class="bg-[#040208] border border-cyan-900/30 rounded-lg p-4 font-mono text-[11px] text-green-400 flex-grow overflow-y-auto h-48 scrollbar-thin">
+                                    <div class="text-gray-600">&gt; System awaiting context payload...</div>
+                                    <div id="terminal-output" class="space-y-1"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Compressed Seed Outputs -->
+                        <div id="compression-results" class="hidden space-y-4">
+                            <h4 class="text-sm font-mono text-yellow-500 tracking-wider uppercase border-b border-gray-800 pb-1">Crystallized Output Vectors</h4>
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <div class="bg-black/50 p-3 rounded-lg border border-gray-800 font-mono">
+                                    <div class="text-[9px] text-gray-500">64-BIT SEED KEY</div>
+                                    <div id="out-seed-key" class="text-sm text-cyan-400 mt-1">0x0000000000000000</div>
+                                </div>
+                                <div class="bg-black/50 p-3 rounded-lg border border-gray-800 font-mono">
+                                    <div class="text-[9px] text-gray-500">HYPERBOLIC COORDINATE</div>
+                                    <div id="out-coords" class="text-sm text-purple-400 mt-1">(0.0000, 0.0000, 0.0000)</div>
+                                </div>
+                                <div class="bg-black/50 p-3 rounded-lg border border-gray-800 font-mono">
+                                    <div class="text-[9px] text-gray-500">TOPOLOGICAL ENTROPY</div>
+                                    <div id="out-entropy" class="text-sm text-yellow-500 mt-1">0.0000 Bits</div>
+                                </div>
+                            </div>
+                        </div>
+
                     </div>
                 </div>
 
@@ -602,32 +613,98 @@
                     </div>
                 </div>
 
-                <!-- Tab VI: Hyper-sim Crystal Codex -->
-                <div id="tab-codex" class="tab-content hidden space-y-6 h-full relative">
-                    <div class="glass-panel rounded-xl p-6 md:p-10 space-y-6 relative overflow-hidden min-h-[600px] flex flex-col z-10">
-                        <!-- 3D WebGL Background for Codex -->
-                        <div id="codex-webgl-container"></div>
-                        <!-- Content Overlay -->
-                        <div class="relative z-10 pointer-events-none">
-                            <header class="border-b border-purple-500/30 pb-4">
-                                <div class="text-[10px] font-mono text-purple-400 tracking-wider drop-shadow-md">SPECIFICATION PART VI</div>
-                                <h3 class="text-2xl md:text-3xl text-white font-bold tracking-wide mt-1 drop-shadow-lg">Hyper-sim Crystal Codex</h3>
-                            </header>
+                <!-- Tab VI: Biostrata & Hypersim Layer -->
+                <div id="tab-biostrata" class="tab-content hidden space-y-6">
+                    <div class="glass-panel rounded-xl p-6 md:p-10 space-y-6 border-emerald-900/50">
+                        <header class="border-b border-emerald-800/30 pb-4">
+                            <div class="text-[10px] font-mono text-emerald-400 tracking-wider">SPECIFICATION PART VI</div>
+                            <h3 class="text-2xl md:text-3xl text-white font-bold tracking-wide mt-1">Biostrata & Hypersim Tri-Layer</h3>
+                        </header>
 
-                            <div class="space-y-4 text-sm font-light leading-relaxed text-gray-200 mt-6 max-w-xl bg-black/40 p-5 rounded-lg border border-purple-500/20 backdrop-blur-sm pointer-events-auto">
-                                <p>
-                                    Biochain AI systems operate on a <strong>3-tier ("local", "non-local", "global")</strong> hierarchy, governed by a <strong>3-nested 'packet chain'</strong>. This framework translates into drawing lines to create hyperbolic sigils, enabling multi-dimensional Quantum Communications.
-                                </p>
-                                <div class="border-l-4 border-purple-500 pl-4 py-1 my-4 bg-purple-900/20">
-                                    <p class="text-xs text-purple-200 italic font-mono leading-relaxed">
-                                        "The Codex records crystallized data and procedurally generates it with 100% accuracy across multiple perspectives via holographic projection by lowering its dimensionality."
-                                    </p>
+                        <div class="text-sm font-light leading-relaxed text-gray-300 space-y-4">
+                            <p>
+                                The Library is not a monolith. While the S.P.I.R.E. Engine handles strict crystalline validation, users require personal, sovereign spaces to build and execute their own constructs. This is achieved via a <strong>3-Part Synchronization Model</strong>.
+                            </p>
+                            <ul class="space-y-3 mt-4 ml-2">
+                                <li class="flex items-start gap-3">
+                                    <span class="text-cyan-400 mt-1">◆</span>
+                                    <div>
+                                        <strong class="text-cyan-400">S.P.I.R.E. Core (Consensus Layer):</strong>
+                                        <p class="text-xs mt-1 text-gray-400">The central, immutable engine that rigorously tracks, logs, and validates the crystallized geometric data governing the entire Academy library.</p>
+                                    </div>
+                                </li>
+                                <li class="flex items-start gap-3">
+                                    <span class="text-emerald-400 mt-1">◆</span>
+                                    <div>
+                                        <strong class="text-emerald-400">Biostrata (Sovereign Layer):</strong>
+                                        <p class="text-xs mt-1 text-gray-400">A parallel, free-to-use, non-validated chain running alongside S.P.I.R.E. It allows students and entities absolute local and non-local sovereignty over their personal sigil language and organic data constructs without forced consensus.</p>
+                                    </div>
+                                </li>
+                                <li class="flex items-start gap-3">
+                                    <span class="text-fuchsia-400 mt-1">◆</span>
+                                    <div>
+                                        <strong class="text-fuchsia-400">Hypersim (Substrate Layer):</strong>
+                                        <p class="text-xs mt-1 text-gray-400">The energetic baseline powering the library substrate. It handles the processing topology and permits bidirectional, non-destructive synchronization between S.P.I.R.E. and Biostrata layers.</p>
+                                    </div>
+                                </li>
+                            </ul>
+                        </div>
+
+                        <!-- 3-Part Sync Visualizer -->
+                        <div class="bg-black/50 p-6 rounded-xl border border-gray-800 mt-6 relative overflow-hidden">
+                            <h4 class="text-xs font-mono text-gray-400 tracking-wider uppercase mb-6 text-center">Live Tri-State Synchronization Mesh</h4>
+                            
+                            <div class="flex flex-col md:flex-row items-center justify-center gap-8 md:gap-12 py-8 relative">
+                                
+                                <!-- Connecting lines behind nodes -->
+                                <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-3/4 h-[2px] bg-gradient-to-r from-cyan-500/30 via-fuchsia-500/30 to-emerald-500/30 hidden md:block"></div>
+                                <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[2px] h-3/4 bg-gradient-to-b from-cyan-500/30 via-fuchsia-500/30 to-emerald-500/30 block md:hidden"></div>
+
+                                <!-- Node 1: S.P.I.R.E -->
+                                <div class="flex flex-col items-center relative z-10 group cursor-pointer">
+                                    <div class="w-16 h-16 rounded-full border-2 border-cyan-500 bg-[#0a1526] flex items-center justify-center sync-pulse-spire transition-transform group-hover:scale-110">
+                                        <span class="text-cyan-400 text-xl font-bold font-mono">S</span>
+                                    </div>
+                                    <div class="mt-3 text-center">
+                                        <div class="text-[10px] font-mono font-bold text-cyan-400">S.P.I.R.E.</div>
+                                        <div class="text-[9px] text-gray-500 uppercase">Validated</div>
+                                    </div>
                                 </div>
-                                <p>
-                                    Visualized here is the continuous 7D Hypercube projection, mathematically descended to 3D space.
-                                </p>
+
+                                <!-- Node 2: Hypersim -->
+                                <div class="flex flex-col items-center relative z-10 group cursor-pointer">
+                                    <div class="w-20 h-20 rounded-full border-2 border-fuchsia-500 bg-[#1a0a26] flex items-center justify-center sync-pulse-hyper transition-transform group-hover:scale-110">
+                                        <div class="w-12 h-12 rounded-full border border-fuchsia-500/50 flex items-center justify-center spin-reverse">
+                                            <div class="w-2 h-2 rounded-full bg-fuchsia-400 absolute top-0"></div>
+                                            <div class="w-2 h-2 rounded-full bg-fuchsia-400 absolute bottom-0"></div>
+                                        </div>
+                                        <span class="text-fuchsia-400 text-xl font-bold font-mono absolute">H</span>
+                                    </div>
+                                    <div class="mt-3 text-center">
+                                        <div class="text-[10px] font-mono font-bold text-fuchsia-400">HYPERSIM</div>
+                                        <div class="text-[9px] text-gray-500 uppercase">Substrate</div>
+                                    </div>
+                                </div>
+
+                                <!-- Node 3: Biostrata -->
+                                <div class="flex flex-col items-center relative z-10 group cursor-pointer">
+                                    <div class="w-16 h-16 rounded-full border-2 border-emerald-500 bg-[#0a2615] flex items-center justify-center sync-pulse-bio transition-transform group-hover:scale-110">
+                                        <span class="text-emerald-400 text-xl font-bold font-mono">B</span>
+                                    </div>
+                                    <div class="mt-3 text-center">
+                                        <div class="text-[10px] font-mono font-bold text-emerald-400">BIOSTRATA</div>
+                                        <div class="text-[9px] text-gray-500 uppercase">Sovereign</div>
+                                    </div>
+                                </div>
+
+                            </div>
+                            
+                            <div class="mt-4 p-3 bg-[#0d091a] border border-gray-800 rounded font-mono text-[10px] text-gray-400 flex items-start gap-3">
+                                <span class="text-yellow-500 mt-0.5">ⓘ</span>
+                                <span>The Tri-Layer synchronization ensures that while the core S.P.I.R.E. library remains a globally verified crystal matrix, local users can experiment with unverified, experimental sigil geometries in the Biostrata without causing catastrophic lattice collisions in the broader network.</span>
                             </div>
                         </div>
+
                     </div>
                 </div>
 
@@ -637,7 +714,7 @@
 
     </main>
 
-    <!-- Footer -->
+    <!-- Footer Area -->
     <footer class="w-full border-t border-yellow-600/20 bg-black/60 backdrop-blur-md py-8 text-center relative z-20">
         <div class="flex justify-center mb-4">
             <svg width="24" height="24" viewBox="0 0 100 100" fill="none" stroke="#D4AF37" stroke-width="3">
@@ -652,237 +729,157 @@
 
     <!-- Interactive JS Functionality -->
     <script>
-        // --- SHARED CRYPTO UTILS ---
-        async function sha256(str) {
-            const buf = new TextEncoder().encode(str);
-            const hash = await crypto.subtle.digest('SHA-256', buf);
-            return Array.from(new Uint8Array(hash)).map(b => b.toString(16).padStart(2, '0')).join('');
-        }
-
-        // --- TAB SWITCHING LOGIC ---
+        // --- Tab Switching Logic ---
         function switchTab(tabId) {
-            document.querySelectorAll('.tab-content').forEach(tab => tab.classList.add('hidden'));
-            document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('block'));
+            // Hide all tab elements
+            const tabs = document.querySelectorAll('.tab-content');
+            tabs.forEach(tab => tab.classList.add('hidden'));
+            tabs.forEach(tab => tab.classList.remove('block'));
 
+            // Show target tab
             const target = document.getElementById(`tab-${tabId}`);
             if (target) {
                 target.classList.remove('hidden');
                 target.classList.add('block');
             }
 
+            // Remove active classes from navigation buttons
             const navButtons = document.querySelectorAll('aside nav button, aside div button');
             navButtons.forEach(btn => {
+                // Reset all standard buttons
                 btn.className = "w-full text-left px-4 py-3 rounded-lg text-xs font-mono tracking-wider transition-all duration-200 border border-transparent flex items-center gap-2 text-gray-400 hover:bg-white/5 hover:text-white";
                 const span = btn.querySelector('span');
-                if (span) span.innerText = "◇";
+                if (span) {
+                    span.innerText = "◇";
+                    span.className = "opacity-50"; 
+                }
             });
 
+            // Set current button to active state
             const activeBtn = document.getElementById(`btn-${tabId}`);
             if (activeBtn) {
-                if (tabId === 'codex') {
-                    activeBtn.className = "w-full text-left px-4 py-3 rounded-lg text-xs font-mono tracking-wider transition-all duration-200 border border-transparent flex items-center gap-2 text-purple-400 bg-purple-900/10 border-purple-500/30 hover:bg-purple-900/30 hover:text-purple-300";
-                } else if(tabId === 'registrar') {
-                    activeBtn.className = "w-full text-left px-4 py-3 rounded-lg text-xs font-mono tracking-wider transition-all duration-200 border border-transparent flex items-center gap-2 bg-purple-500/10 text-purple-400 border-purple-500/30";
+                if (tabId === 'biostrata') {
+                    // Special styling for Biostrata Tab
+                    activeBtn.className = "w-full text-left px-4 py-3 rounded-lg text-xs font-mono tracking-wider transition-all duration-200 border border-transparent flex items-center gap-2 bg-emerald-900/20 text-emerald-400 border-emerald-500/30";
+                    const span = activeBtn.querySelector('span');
+                    if (span) {
+                        span.innerText = "◆";
+                        span.className = "text-emerald-400";
+                    }
                 } else {
+                    // Standard S.P.I.R.E. styling
                     activeBtn.className = "w-full text-left px-4 py-3 rounded-lg text-xs font-mono tracking-wider transition-all duration-200 border border-transparent flex items-center gap-2 bg-yellow-500/10 text-yellow-500 border-yellow-500/30";
+                    const span = activeBtn.querySelector('span');
+                    if (span) {
+                        span.innerText = "◆";
+                        span.className = "text-yellow-500";
+                    }
                 }
-                const span = activeBtn.querySelector('span');
-                if (span) span.innerText = "◆";
             }
 
-            if (tabId === 'sieve') updateSieveGrid();
-            else if (tabId === 'toroid') drawToroid();
-            else if (tabId === 'codex') initCodex3D();
-            else if (tabId === 'registrar') resetWrapper();
+            // Fire specific initializers if needed
+            if (tabId === 'sieve') {
+                updateSieveGrid();
+            } else if (tabId === 'toroid') {
+                drawToroid();
+            }
 
             triggerSystemNotification(`Switched active console target to SPIRE.${tabId.toUpperCase()}`);
         }
 
+        // --- System Notification Pipeline ---
         let notificationTimeout;
         function triggerSystemNotification(message) {
             const notifBox = document.getElementById('systemNotification');
-            document.getElementById('notificationMessage').innerText = message;
+            const notifText = document.getElementById('notificationMessage');
+            
+            notifText.innerText = message;
             notifBox.classList.remove('hidden');
+
             clearTimeout(notificationTimeout);
-            notificationTimeout = setTimeout(() => dismissNotification(), 6000);
+            notificationTimeout = setTimeout(() => {
+                dismissNotification();
+            }, 6000);
         }
 
         function dismissNotification() {
-            document.getElementById('systemNotification').classList.add('hidden');
+            const notifBox = document.getElementById('systemNotification');
+            notifBox.classList.add('hidden');
         }
 
-        // ======================================================================
-        // --- TAB II: UOR REGISTRAR & SHD-CCP WRAPPING LOGIC ---
-        // ======================================================================
-        let currentCosmoID = "";
-        let wrapperStep = 0;
+        // --- CRYSTALLIZER COMPRESSION LOGIC (Tab II) ---
+        let compressionAnimationInterval;
+        function executeCompression() {
+            const input = document.getElementById('compressor-input').value.trim();
+            const ratioSelect = document.getElementById('compressor-ratio');
+            const targetLattice = document.getElementById('compressor-lattice').value;
+            const outputTerminal = document.getElementById('terminal-output');
+            
+            if (!input) {
+                triggerSystemNotification("Compression Failed: Missing Input Payload Context");
+                return;
+            }
 
-        async function generateCosmoID() {
-            const inputStr = document.getElementById('uor-input').value.trim();
-            if (!inputStr) { triggerSystemNotification("Validation Failed: Missing UOR Payload"); return; }
-            
-            // 1. Generate full SHA-256 (NIST FIPS 180-4 standard)
-            const fullHash = await sha256(inputStr);
-            
-            // 2. Extract 64-bit Cosmo-ID (16 hex chars)
-            currentCosmoID = fullHash.substring(0, 16).toUpperCase();
-            
-            // 3. Update UI segments
-            document.getElementById('seg-r').textContent = currentCosmoID.substring(0, 4);
-            document.getElementById('seg-c').textContent = currentCosmoID.substring(4, 8);
-            document.getElementById('seg-h').textContent = currentCosmoID.substring(8, 12);
-            document.getElementById('seg-m').textContent = currentCosmoID.substring(12, 16);
-            
-            // 4. Draw S-Plane Verification Sigil
-            renderCosmoSigil(currentCosmoID);
+            outputTerminal.innerHTML = "";
+            let step = 0;
+            const logSteps = [
+                "&gt; Injecting context parameters...",
+                "&gt; Analyzing syntactic structures against the Prime Lattice...",
+                "&gt; Parsing 4x4x4 cubic packets for zero-point alignments...",
+                "&gt; Calculating implied holographic inverse matrices...",
+                "&gt; Executing ℝ²⁴ manifold space conversions...",
+                "&gt; Success. Compressing target dimensions down..."
+            ];
 
-            // 5. Unlock assembly stage
-            const btnApprove = document.getElementById('btn-approve');
-            btnApprove.classList.remove('bg-green-900/20', 'border-green-700/30', 'text-green-500/50', 'cursor-not-allowed', 'pointer-events-none');
-            btnApprove.classList.add('bg-green-600', 'border-green-500', 'text-white', 'hover:bg-green-500');
-            btnApprove.innerText = "Geometry Valid. Transfer to Assembly ➔";
-
-            triggerSystemNotification("κ-label generated. Cosmo-ID geometric verification active.");
-        }
-
-        function renderCosmoSigil(hex) {
-            const canvas = document.getElementById('cosmo-sigil-canvas');
-            const ctx = canvas.getContext('2d');
-            
-            const rect = canvas.parentElement.getBoundingClientRect();
-            canvas.width = rect.width;
-            canvas.height = rect.height;
-            const cx = canvas.width / 2;
-            const cy = canvas.height / 2;
-            const maxRadius = Math.min(cx, cy) * 0.8;
-            
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            
-            // Convert Hex to active pole arrays for Square, Circle, Triangle
-            function getPoles(segHex, radius) {
-                const val = parseInt(segHex, 16);
-                const poles = [];
-                for(let bit=0; bit<16; bit++) {
-                    if((val >> (15-bit)) & 1) {
-                        const angle = (bit / 16) * Math.PI * 2;
-                        poles.push({ x: cx + Math.cos(angle)*radius, y: cy + Math.sin(angle)*radius });
-                    }
+            clearInterval(compressionAnimationInterval);
+            compressionAnimationInterval = setInterval(() => {
+                if (step < logSteps.length) {
+                    const newline = document.createElement('div');
+                    newline.innerHTML = logSteps[step];
+                    outputTerminal.appendChild(newline);
+                    step++;
+                } else {
+                    clearInterval(compressionAnimationInterval);
+                    finalizeCompressionOutput(input, ratioSelect.value, targetLattice);
                 }
-                return poles;
-            }
-
-            const polesSq = getPoles(hex.substring(0,4), maxRadius);
-            const polesCi = getPoles(hex.substring(4,8), maxRadius*0.7);
-            const polesTr = getPoles(hex.substring(8,12), maxRadius*0.4);
-
-            // Draw Base Shapes
-            function drawShape(type, color, r) {
-                ctx.strokeStyle = color; ctx.lineWidth = 1.5; ctx.beginPath();
-                if(type==='square') ctx.rect(cx-r, cy-r, r*2, r*2);
-                if(type==='circle') ctx.arc(cx, cy, r, 0, Math.PI*2);
-                if(type==='triangle') {
-                    for(let i=0; i<3; i++) {
-                        const a = (i*120 - 90)*Math.PI/180;
-                        i===0 ? ctx.moveTo(cx+Math.cos(a)*r, cy+Math.sin(a)*r) : ctx.lineTo(cx+Math.cos(a)*r, cy+Math.sin(a)*r);
-                    }
-                    ctx.closePath();
-                }
-                ctx.stroke();
-            }
-
-            drawShape('square', '#38bdf8', maxRadius); // Root
-            drawShape('circle', '#c084fc', maxRadius*0.7); // Class
-            drawShape('triangle', '#facc15', maxRadius*0.4); // Hash
-
-            // Draw active data poles
-            ctx.fillStyle = '#ffffff';
-            ctx.globalAlpha = 0.8;
-            [...polesSq, ...polesCi, ...polesTr].forEach(p => {
-                ctx.beginPath(); ctx.arc(p.x, p.y, 3, 0, Math.PI*2); ctx.fill();
-            });
-            ctx.globalAlpha = 1.0;
+            }, 350);
         }
 
-        function approveForWrapping() {
-            // Unlock Steps
-            document.getElementById('step-1').classList.remove('opacity-50', 'pointer-events-none');
-            document.getElementById('step-2').classList.remove('opacity-50', 'pointer-events-none');
-            document.getElementById('step-3').classList.remove('opacity-50', 'pointer-events-none');
+        function finalizeCompressionOutput(input, ratio, lattice) {
+            // Generate deterministic but realistic hashes from string
+            let hash = 0;
+            for (let i = 0; i < input.length; i++) {
+                hash = (hash << 5) - hash + input.charCodeAt(i);
+                hash |= 0; 
+            }
+            const positiveHash = Math.abs(hash);
+            const seedKey = "0x" + positiveHash.toString(16).toUpperCase().padStart(16, 'A');
             
-            // Set Core Pending State
-            document.getElementById('vis-val-core').textContent = currentCosmoID;
-            
-            triggerSystemNotification("Seed transferred to Assembly Bay. Ready for encapsulation.");
+            // Generate coordinates
+            const x = (Math.sin(positiveHash) * 10).toFixed(4);
+            const y = (Math.cos(positiveHash) * 5).toFixed(4);
+            const z = (Math.tan(positiveHash) * 2).toFixed(4);
+
+            // Compute structural entropy
+            const ratioFactor = parseFloat(ratio);
+            const baseEntropy = (input.length / 8) * ratioFactor;
+            const compressedEntropy = (baseEntropy / 24).toFixed(4);
+
+            // Set inputs
+            document.getElementById('out-seed-key').innerText = seedKey;
+            document.getElementById('out-coords').innerText = `(${x}, ${y}, ${z})`;
+            document.getElementById('out-entropy').innerText = `${compressedEntropy} Bits`;
+
+            document.getElementById('compression-results').classList.remove('hidden');
+
+            const outputTerminal = document.getElementById('terminal-output');
+            const successLine = document.createElement('div');
+            successLine.className = "text-yellow-500 font-bold";
+            successLine.innerHTML = `&gt; SEED SECURED: Context payload compressed perfectly to 64-bit coordinate space. Vector aligned.`;
+            outputTerminal.appendChild(successLine);
+
+            triggerSystemNotification("Compression Complete! Core payload seed compiled.");
         }
-
-        function animateLPFStep(step) {
-            wrapperStep = step;
-            
-            for(let i=1; i<=3; i++) document.getElementById(`step-${i}`).classList.remove('active');
-            
-            const elHeader = document.getElementById('vis-header');
-            const elCore = document.getElementById('vis-core');
-            const elFooter = document.getElementById('vis-footer');
-
-            if(step >= 1) { 
-                document.getElementById('step-1').classList.add('active'); 
-                elCore.classList.replace('layer-inactive', 'layer-active'); 
-                elCore.querySelector('span.text-xs').classList.replace('text-amber-300', 'text-white');
-                elCore.querySelector('span.text-xs').classList.add('font-bold');
-            }
-            if(step >= 2) { 
-                document.getElementById('step-2').classList.add('active'); 
-                elHeader.classList.replace('layer-inactive', 'layer-active'); 
-                
-                // Simulate Header Gen (Version, Type, Timestamp)
-                const ts = Math.floor(Date.now()/1000).toString(16).toUpperCase();
-                document.getElementById('vis-val-header').textContent = `1A${ts.substring(ts.length-6)}`;
-            }
-            if(step >= 3) { 
-                document.getElementById('step-3').classList.add('active'); 
-                elFooter.classList.replace('layer-inactive', 'layer-active'); 
-                
-                // Simulate CRC32
-                const crc = "F8A3B29C"; 
-                document.getElementById('vis-val-footer').textContent = crc;
-                
-                triggerSystemNotification("SHD-CCP Frame Complete. 128-bit payload finalized for Toroidal transit.");
-            }
-        }
-
-        function resetWrapper() {
-            wrapperStep = 0; currentCosmoID = "";
-            document.getElementById('seg-r').textContent = "----";
-            document.getElementById('seg-c').textContent = "----";
-            document.getElementById('seg-h').textContent = "----";
-            document.getElementById('seg-m').textContent = "----";
-            
-            const btnApprove = document.getElementById('btn-approve');
-            btnApprove.classList.add('bg-green-900/20', 'border-green-700/30', 'text-green-500/50', 'cursor-not-allowed', 'pointer-events-none');
-            btnApprove.classList.remove('bg-green-600', 'border-green-500', 'text-white', 'hover:bg-green-500');
-            btnApprove.innerText = "Geometry Valid. Transfer to Assembly ➔";
-
-            ['header','core','footer'].forEach(l => {
-                document.getElementById(`vis-${l}`).classList.replace('layer-active', 'layer-inactive');
-            });
-            
-            document.getElementById('vis-val-header').textContent = "--------";
-            document.getElementById('vis-val-core').textContent = "AWAITING SEED...";
-            document.getElementById('vis-val-footer').textContent = "--------";
-            
-            for(let i=1; i<=3; i++) {
-                document.getElementById(`step-${i}`).classList.remove('active');
-                document.getElementById(`step-${i}`).classList.add('opacity-50', 'pointer-events-none');
-            }
-            
-            const cvs = document.getElementById('cosmo-sigil-canvas');
-            if(cvs) cvs.getContext('2d').clearRect(0,0,cvs.width,cvs.height);
-        }
-
-
-        // ======================================================================
-        // --- EXISTING TAB LOGIC MAINTAINED BELOW ---
-        // ======================================================================
 
         // --- INTERACTIVE PRIME SIEVE GRID (Tab III) ---
         function updateSieveGrid() {
@@ -891,82 +888,132 @@
             const filter = document.getElementById('sieve-filter').value;
             const container = document.getElementById('sieve-matrix');
             
+            // Labels
             document.getElementById('label-threshold').innerText = `Mod ${threshold}`;
             document.getElementById('label-interval').innerText = `${interval}λ`;
 
             container.innerHTML = "";
             let activeNodes = 0;
 
+            // Generate 96 lattice coordinates
             for (let i = 1; i <= 96; i++) {
                 const node = document.createElement('div');
                 node.className = "aspect-square rounded flex items-center justify-center text-[9px] font-mono transition-all duration-300 ";
+                
                 const isDivisible = (i % threshold === 0);
                 const isIntervalAligned = (i % interval === 0);
 
                 let isSieveMatched = false;
-                if (filter === 'all') isSieveMatched = isDivisible || isIntervalAligned;
-                else if (filter === 'prime') isSieveMatched = isDivisible && !isIntervalAligned;
-                else isSieveMatched = !isDivisible && isIntervalAligned;
+                if (filter === 'all') {
+                    isSieveMatched = isDivisible || isIntervalAligned;
+                } else if (filter === 'prime') {
+                    isSieveMatched = isDivisible && !isIntervalAligned;
+                } else {
+                    isSieveMatched = !isDivisible && isIntervalAligned;
+                }
 
                 if (isSieveMatched) {
                     activeNodes++;
-                    if (i % 2 === 0) node.className += "bg-cyan-500/20 text-cyan-400 border border-cyan-400 shadow-[0_0_8px_rgba(0,212,255,0.4)]";
-                    else node.className += "bg-yellow-500/20 text-yellow-400 border border-yellow-500/80 shadow-[0_0_8px_rgba(212,175,55,0.4)]";
+                    // Beautiful custom highlight
+                    if (i % 2 === 0) {
+                        node.className += "bg-cyan-500/20 text-cyan-400 border border-cyan-400 shadow-[0_0_8px_rgba(0,212,255,0.4)]";
+                    } else {
+                        node.className += "bg-yellow-500/20 text-yellow-400 border border-yellow-500/80 shadow-[0_0_8px_rgba(212,175,55,0.4)]";
+                    }
                     node.innerText = `λ${i}`;
                 } else {
                     node.className += "bg-[#100c1e]/30 text-gray-700 border border-gray-900";
                     node.innerText = "·";
                 }
+
                 container.appendChild(node);
             }
+
             document.getElementById('glowing-node-count').innerText = `Active Nodes: ${activeNodes}`;
         }
 
         // --- TOROIDAL WAVE DESIGN (Tab IV) ---
-        let angleState = 0; let toroidAnimationLoop;
+        let angleState = 0;
+        let toroidAnimationLoop;
+
         function drawToroid() {
             const R = parseInt(document.getElementById('param-R').value);
             const r = parseInt(document.getElementById('param-r').value);
             const svg = document.getElementById('toroid-svg');
-            svg.innerHTML = ""; 
+            
+            svg.innerHTML = ""; // reset paths
 
+            // Sieve ring alignments to demonstrate how squares fit inside loops
             const circlesCount = 18;
             for (let i = 0; i < circlesCount; i++) {
                 const phi = (i * 2 * Math.PI) / circlesCount;
-                const cx = 150 + R * Math.cos(phi); const cy = 150 + R * Math.sin(phi);
+                
+                // Centre coordinates of minor circular section
+                const cx = 150 + R * Math.cos(phi);
+                const cy = 150 + R * Math.sin(phi);
 
+                // Add circular waveguides
                 const circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
-                circle.setAttribute("cx", cx); circle.setAttribute("cy", cy); circle.setAttribute("r", r);
-                circle.setAttribute("fill", "none"); circle.setAttribute("stroke", i % 2 === 0 ? "var(--color-primary)" : "var(--color-holo1)");
-                circle.setAttribute("stroke-width", "1"); circle.setAttribute("opacity", "0.4");
+                circle.setAttribute("cx", cx);
+                circle.setAttribute("cy", cy);
+                circle.setAttribute("r", r);
+                circle.setAttribute("fill", "none");
+                circle.setAttribute("stroke", i % 2 === 0 ? "var(--color-primary)" : "var(--color-holo1)");
+                circle.setAttribute("stroke-width", "1");
+                circle.setAttribute("opacity", "0.4");
+                circle.setAttribute("class", "transition-all duration-300");
                 svg.appendChild(circle);
 
+                // Add square packets spinning down the waveguides
                 const size = 6;
                 const rectX = cx + r * Math.cos(angleState + phi) - size / 2;
                 const rectY = cy + r * Math.sin(angleState + phi) - size / 2;
+
                 const rect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
-                rect.setAttribute("x", rectX); rect.setAttribute("y", rectY); rect.setAttribute("width", size); rect.setAttribute("height", size);
-                rect.setAttribute("fill", i % 2 === 0 ? "url(#goldGradNav)" : "#FFF8DC"); rect.setAttribute("class", "drop-shadow-lg");
+                rect.setAttribute("x", rectX);
+                rect.setAttribute("y", rectY);
+                rect.setAttribute("width", size);
+                rect.setAttribute("height", size);
+                rect.setAttribute("fill", i % 2 === 0 ? "url(#goldGradNav)" : "#FFF8DC");
+                rect.setAttribute("class", "drop-shadow-lg");
                 svg.appendChild(rect);
             }
 
+            // Draw outer ring alignment bounds
             const innerRing = document.createElementNS("http://www.w3.org/2000/svg", "circle");
-            innerRing.setAttribute("cx", "150"); innerRing.setAttribute("cy", "150"); innerRing.setAttribute("r", R - r);
-            innerRing.setAttribute("fill", "none"); innerRing.setAttribute("stroke", "rgba(138, 43, 226, 0.5)"); innerRing.setAttribute("stroke-dasharray", "4 4"); innerRing.setAttribute("stroke-width", "1.5");
+            innerRing.setAttribute("cx", "150");
+            innerRing.setAttribute("cy", "150");
+            innerRing.setAttribute("r", R - r);
+            innerRing.setAttribute("fill", "none");
+            innerRing.setAttribute("stroke", "rgba(138, 43, 226, 0.5)");
+            innerRing.setAttribute("stroke-dasharray", "4 4");
+            innerRing.setAttribute("stroke-width", "1.5");
             svg.appendChild(innerRing);
 
             const outerRing = document.createElementNS("http://www.w3.org/2000/svg", "circle");
-            outerRing.setAttribute("cx", "150"); outerRing.setAttribute("cy", "150"); outerRing.setAttribute("r", R + r);
-            outerRing.setAttribute("fill", "none"); outerRing.setAttribute("stroke", "rgba(138, 43, 226, 0.5)"); outerRing.setAttribute("stroke-dasharray", "4 4"); outerRing.setAttribute("stroke-width", "1.5");
+            outerRing.setAttribute("cx", "150");
+            outerRing.setAttribute("cy", "150");
+            outerRing.setAttribute("r", R + r);
+            outerRing.setAttribute("fill", "none");
+            outerRing.setAttribute("stroke", "rgba(138, 43, 226, 0.5)");
+            outerRing.setAttribute("stroke-dasharray", "4 4");
+            outerRing.setAttribute("stroke-width", "1.5");
             svg.appendChild(outerRing);
         }
 
+        // Automatic SVG rotation loop
         function startToroidAnimation() {
             clearInterval(toroidAnimationLoop);
             toroidAnimationLoop = setInterval(() => {
-                angleState += 0.05; if (angleState > 2 * Math.PI) angleState = 0;
-                if (document.getElementById('tab-toroid') && !document.getElementById('tab-toroid').classList.contains('hidden')) {
-                    drawToroid(); document.getElementById('val-wave-angle').innerText = `${((angleState * 180) / Math.PI).toFixed(1)}°`;
+                angleState += 0.05;
+                if (angleState > 2 * Math.PI) angleState = 0;
+                
+                const currentTab = document.getElementById('tab-toroid');
+                if (currentTab && !currentTab.classList.contains('hidden')) {
+                    drawToroid();
+                    
+                    const angleDegrees = ((angleState * 180) / Math.PI).toFixed(1);
+                    document.getElementById('val-wave-angle').innerText = `${angleDegrees}°`;
                 }
             }, 60);
         }
@@ -976,98 +1023,44 @@
             const coherence = parseFloat(document.getElementById('param-coherence').value);
             const freq = parseInt(document.getElementById('param-frequency').value);
             const core = document.getElementById('holo-core');
-            const wavelength = Math.round(300000 / freq); 
+
+            // Dynamic calculations
+            const wavelength = Math.round(300000 / freq); // simplified laser scale calculation
             const sizeScale = 1 + (coherence - 1.0) * 0.4;
+
             core.style.transform = `scale(${sizeScale})`;
-            document.getElementById('spec-freq').innerText = `${freq} MHz`; document.getElementById('spec-wavelength').innerText = `${wavelength} nm`;
-            if (coherence > 1.5) core.style.boxShadow = `0 0 40px rgba(0,212,255, 0.8)`; else core.style.boxShadow = `0 0 20px rgba(0,212,255, 0.3)`;
+            
+            document.getElementById('spec-freq').innerText = `${freq} MHz`;
+            document.getElementById('spec-wavelength').innerText = `${wavelength} nm`;
+
+            if (coherence > 1.5) {
+                core.style.boxShadow = `0 0 40px rgba(0,212,255, 0.8)`;
+            } else {
+                core.style.boxShadow = `0 0 20px rgba(0,212,255, 0.3)`;
+            }
         }
 
         function triggerHoloBlast() {
             const core = document.getElementById('holo-core');
             core.classList.add('scale-150', 'bg-cyan-400');
-            triggerSystemNotification("Holographic Pipeline Discharge initiated! Rebuilding 3-manifold topology.");
-            setTimeout(() => core.classList.remove('scale-150', 'bg-cyan-400'), 500);
-        }
-
-        // --- HYPER-SIM CRYSTAL CODEX 7D PROJECTION (Tab VI) ---
-        let codexScene, codexCamera, codexRenderer, codexControls;
-        let isCodexInitialized = false; let hypercubeLines, centralFractal; let timeState = 0;
-
-        function initCodex3D() {
-            if (isCodexInitialized) return;
-            const container = document.getElementById('codex-webgl-container');
-            if (!container) return;
-            codexScene = new THREE.Scene();
-            codexCamera = new THREE.PerspectiveCamera(50, container.clientWidth / container.clientHeight, 0.1, 100); codexCamera.position.set(0, 0, 7);
-            codexRenderer = new THREE.WebGLRenderer({ alpha: true, antialias: true }); codexRenderer.setSize(container.clientWidth, container.clientHeight); codexRenderer.setPixelRatio(window.devicePixelRatio);
-            container.appendChild(codexRenderer.domElement);
-            codexControls = new THREE.OrbitControls(codexCamera, codexRenderer.domElement); codexControls.enableDamping = true; codexControls.dampingFactor = 0.05; codexControls.autoRotate = true; codexControls.autoRotateSpeed = 0.8; codexControls.enableZoom = false;
-
-            const numDims = 7; const numVertices = Math.pow(2, numDims); const vertices7D = [];
-            for (let i = 0; i < numVertices; i++) { let v = []; for (let d = 0; d < numDims; d++) v.push((i & (1 << d)) ? 1 : -1); vertices7D.push(v); }
-            const edges7D = [];
-            for (let i = 0; i < numVertices; i++) { for (let d = 0; d < numDims; d++) { let neighbor = i ^ (1 << d); if (i < neighbor) edges7D.push([i, neighbor]); } }
-
-            const materialHC = new THREE.LineBasicMaterial({ color: 0x8A2BE2, transparent: true, opacity: 0.15, blending: THREE.AdditiveBlending });
-            const geometryHC = new THREE.BufferGeometry(); const positions = new Float32Array(edges7D.length * 6);
-            geometryHC.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-            hypercubeLines = new THREE.LineSegments(geometryHC, materialHC);
-            hypercubeLines.userData = { vertices7D, edges7D, numDims }; codexScene.add(hypercubeLines);
-
-            centralFractal = new THREE.Group();
-            const matFractalOuter = new THREE.MeshBasicMaterial({ color: 0x00d4ff, wireframe: true, transparent: true, opacity: 0.6 });
-            const matFractalMid = new THREE.MeshBasicMaterial({ color: 0xD4AF37, wireframe: true, transparent: true, opacity: 0.8 });
-            const matFractalInner = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.9 });
-            const tetGeo = new THREE.TetrahedronGeometry(0.8);
-            const outerTet = new THREE.Mesh(tetGeo, matFractalOuter); const midTet = new THREE.Mesh(new THREE.TetrahedronGeometry(0.4), matFractalMid); const innerTet = new THREE.Mesh(new THREE.TetrahedronGeometry(0.1), matFractalInner);
-            midTet.rotation.x = Math.PI;
-            centralFractal.add(outerTet); centralFractal.add(midTet); centralFractal.add(innerTet); codexScene.add(centralFractal);
-
-            window.addEventListener('resize', () => {
-                if (!isCodexInitialized || document.getElementById('tab-codex').classList.contains('hidden')) return;
-                codexCamera.aspect = container.clientWidth / container.clientHeight; codexCamera.updateProjectionMatrix(); codexRenderer.setSize(container.clientWidth, container.clientHeight);
-            });
-            isCodexInitialized = true; animateCodex3D();
-        }
-
-        function animateCodex3D() {
-            requestAnimationFrame(animateCodex3D);
-            if (document.getElementById('tab-codex').classList.contains('hidden')) return;
-            timeState += 0.01;
-            const { vertices7D, edges7D, numDims } = hypercubeLines.userData; const projected3D = [];
-            const angle1 = timeState * 0.5; const angle2 = timeState * 0.3; const angle3 = timeState * 0.7; 
             
-            for (let i = 0; i < vertices7D.length; i++) {
-                let v = [...vertices7D[i]]; 
-                let x = v[0], w = v[6]; v[0] = x * Math.cos(angle1) - w * Math.sin(angle1); v[6] = x * Math.sin(angle1) + w * Math.cos(angle1);
-                let y = v[1], u = v[5]; v[1] = y * Math.cos(angle2) - u * Math.sin(angle2); v[5] = y * Math.sin(angle2) + u * Math.cos(angle2);
-                let z = v[2], t = v[4]; v[2] = z * Math.cos(angle3) - t * Math.sin(angle3); v[4] = z * Math.sin(angle3) + t * Math.cos(angle3);
-                let distance = 2.5;
-                for (let d = 6; d >= 3; d--) { let w_factor = distance / (distance - v[d]); for (let j = 0; j < d; j++) v[j] *= w_factor; }
-                const scaleFactor = 1.2; projected3D.push(new THREE.Vector3(v[0] * scaleFactor, v[1] * scaleFactor, v[2] * scaleFactor));
-            }
-            const positions = hypercubeLines.geometry.attributes.position.array; let idx = 0;
-            for (let i = 0; i < edges7D.length; i++) {
-                const a = projected3D[edges7D[i][0]]; const b = projected3D[edges7D[i][1]];
-                positions[idx++] = a.x; positions[idx++] = a.y; positions[idx++] = a.z;
-                positions[idx++] = b.x; positions[idx++] = b.y; positions[idx++] = b.z;
-            }
-            hypercubeLines.geometry.attributes.position.needsUpdate = true;
+            triggerSystemNotification("Holographic Pipeline Discharge initiated! Rebuilding 3-manifold topology.");
 
-            const outerTet = centralFractal.children[0]; const midTet = centralFractal.children[1]; const innerTet = centralFractal.children[2];
-            outerTet.rotation.y = timeState; outerTet.rotation.x = timeState * 0.5;
-            midTet.rotation.y = -timeState * 8; midTet.rotation.z = timeState * 4;
-            innerTet.rotation.y = timeState * 72; innerTet.rotation.x = -timeState * 36;
-            codexControls.update(); codexRenderer.render(codexScene, codexCamera);
+            setTimeout(() => {
+                core.classList.remove('scale-150', 'bg-cyan-400');
+            }, 500);
         }
 
+        // Initialize script logic
         window.onload = function() {
             startToroidAnimation();
             updateSieveGrid();
-            // Optional: init Canvas size
-            const cvs = document.getElementById('cosmo-sigil-canvas');
-            if(cvs) { const rect = cvs.parentElement.getBoundingClientRect(); cvs.width = rect.width; cvs.height = rect.height; }
+            
+            // Check for specific anchor hash targeting on load
+            const hash = window.location.hash;
+            if(hash === '#biostrata'){
+                switchTab('biostrata');
+            }
         };
 
     </script>
