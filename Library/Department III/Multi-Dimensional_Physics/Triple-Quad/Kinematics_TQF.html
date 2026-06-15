@@ -1,0 +1,657 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Owl Academy | Time-Step Lattice Visualizer</title>
+
+    <!-- SECURITY GUARD -->
+    <script src="scripts/auth.js"></script>
+    
+    <!-- Tailwind CSS with Dark Mode Config -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        darkbg: '#05030a', /* Match Owl Academy Void */
+                        lightbg: '#e2e8f0',
+                        primary: '#D4AF37', /* Owl Academy Gold */
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <!-- MathJax -->
+    <script>
+        MathJax = {
+            tex: {
+                inlineMath: [['$', '$'], ['\\(', '\\)']],
+                displayMath: [['$$', '$$'], ['\\[', '\\]']],
+                processEscapes: true
+            }
+        };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+    <!-- Three.js and OrbitControls -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Inter:wght@300;400;600;800&family=JetBrains+Mono:wght@400;700&display=swap');
+        
+        body {
+            margin: 0;
+            overflow: hidden;
+            font-family: 'Inter', sans-serif;
+            user-select: none;
+            transition: background-color 0.5s ease;
+        }
+
+        .font-mono { font-family: 'JetBrains Mono', monospace; }
+        .mystical-font { font-family: 'Cinzel', serif; }
+
+        #canvas-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: 1;
+        }
+
+        /* Academy Style Overlays */
+        .glass-panel {
+            background: rgba(10, 8, 20, 0.6);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(212, 175, 55, 0.2);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.6);
+        }
+
+        #ui-panel {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            width: 460px;
+            max-height: calc(100vh - 40px);
+            overflow-y: auto;
+            z-index: 10;
+            padding: 1.5rem;
+            transition: all 0.3s ease;
+            border-radius: 1rem;
+        }
+
+        #ui-panel::-webkit-scrollbar { width: 6px; }
+        #ui-panel::-webkit-scrollbar-track { background: transparent; }
+        #ui-panel::-webkit-scrollbar-thumb { background: rgba(212, 175, 55, 0.5); border-radius: 3px; }
+
+        .slider-container { margin-bottom: 1.5rem; }
+
+        input[type=range] {
+            -webkit-appearance: none;
+            width: 100%;
+            background: transparent;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 16px;
+            width: 16px;
+            border-radius: 50%;
+            background: #D4AF37;
+            cursor: pointer;
+            margin-top: -6px;
+            box-shadow: 0 0 10px rgba(212, 175, 55, 0.6);
+            transition: transform 0.1s;
+        }
+        input[type=range]::-webkit-slider-thumb:hover { transform: scale(1.2); }
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 4px;
+            cursor: pointer;
+            background: rgba(255,255,255,0.1);
+            border-radius: 2px;
+        }
+
+        /* Phase Content Styling */
+        .phase-content {
+            display: none;
+            animation: fadeIn 0.4s ease-in-out forwards;
+        }
+        .phase-content.active { display: block; }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .timestep-badge {
+            font-size: 0.5rem;
+            letter-spacing: 0.15em;
+            text-transform: uppercase;
+            padding: 0.2rem 0.5rem;
+            border-radius: 9999px;
+            font-weight: 800;
+            margin-bottom: 0.5rem;
+            display: inline-block;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        #loader {
+            position: absolute;
+            top: 0; left: 0; width: 100vw; height: 100vh;
+            z-index: 50;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            transition: opacity 0.5s ease;
+        }
+        
+        /* Nav Links */
+        .academy-link {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            z-index: 20;
+        }
+    </style>
+</head>
+<body class="bg-lightbg dark:bg-darkbg text-slate-800 dark:text-slate-300">
+
+    <!-- Global Navigation -->
+    <div class="academy-link flex gap-3">
+        <a href="index.html" class="glass-panel text-primary text-[10px] uppercase tracking-widest px-4 py-2 rounded font-bold hover:bg-primary/20 transition-colors border-primary/40">
+            Exit Sim
+        </a>
+    </div>
+
+    <!-- Loading Screen -->
+    <div id="loader" class="bg-lightbg dark:bg-darkbg">
+        <div class="w-12 h-12 border-2 border-primary/20 border-t-primary rounded-full animate-spin mb-4"></div>
+        <div class="font-mono text-primary tracking-widest text-xs animate-pulse">RENDERING KINEMATICS</div>
+    </div>
+
+    <!-- 3D Canvas -->
+    <div id="canvas-container"></div>
+
+    <!-- Interactive UI Panel -->
+    <div id="ui-panel" class="glass-panel">
+        
+        <!-- Academy Breadcrumbs -->
+        <div class="mb-4">
+            <span class="text-[9px] text-gray-500 uppercase tracking-widest font-mono">Dept III: Metaphysical Mechanics</span>
+            <h1 class="text-2xl font-bold text-primary mystical-font mt-1 tracking-wider">Kinematic <span class="text-white">Lattice</span></h1>
+        </div>
+
+        <div class="bg-black/30 rounded p-4 mb-6 border border-white/10">
+            <div class="slider-container mb-0">
+                <div class="flex justify-between text-xs font-mono mb-3">
+                    <span class="text-primary uppercase tracking-widest font-bold">Time-Step Expansion</span>
+                    <span id="phase-val" class="text-white font-bold bg-primary/20 px-2 py-1 rounded">Step 1/6</span>
+                </div>
+                <input type="range" id="phase-slider" min="1" max="6" value="1" step="0.01">
+            </div>
+        </div>
+
+        <!-- Dynamic Phase Descriptions -->
+        <div id="phase-descriptions" class="min-h-[250px]">
+            
+            <!-- Step 1 -->
+            <div class="phase-content active" id="desc-1">
+                <span class="timestep-badge bg-blue-900/40 text-blue-300 border border-blue-500/30">Phase 1 • Quadrance Base</span>
+                <h2 class="text-base font-bold text-white mb-2 mystical-font">1. Tri-Vector Projection</h2>
+                <p class="text-xs text-gray-400 mb-3 leading-relaxed">
+                    The sequence establishes foundational volume. The system scales from 2 to 3 dimensions using <strong>Quadrance</strong> (squared distance), projecting out into three orthogonal dimensions.
+                </p>
+                <div class="bg-black/50 p-2 rounded border border-white/5 font-mono text-[10px] text-center text-primary/80">
+                    $$ \mathcal{Q}(x, y, z) = x^2 + y^2 + z^2 $$
+                </div>
+            </div>
+
+            <!-- Step 2 -->
+            <div class="phase-content" id="desc-2">
+                <span class="timestep-badge bg-emerald-900/40 text-emerald-300 border border-emerald-500/30">Phase 1 • Quadrance Base</span>
+                <h2 class="text-base font-bold text-white mb-2 mystical-font">2. The 4th Emergent Point</h2>
+                <p class="text-xs text-gray-400 mb-3 leading-relaxed">
+                    Using the 3 initial triangular projections as triangulation anchors, the system generates an implied intersection.
+                </p>
+                <p class="text-xs text-gray-400 mb-3 leading-relaxed">
+                    The vectors converge to create a <strong>4th emergent point</strong>, completing the fundamental tetrahedral/orthogonal frame and giving the manifold structural volume.
+                </p>
+                <div class="bg-black/50 p-2 rounded border border-white/5 font-mono text-[10px] text-center text-primary/80">
+                    $$ P_4 = \sum_{i=1}^{3} P_i = \langle L, L, L \rangle $$
+                </div>
+            </div>
+
+            <!-- Step 3 -->
+            <div class="phase-content" id="desc-3">
+                <span class="timestep-badge bg-amber-900/40 text-amber-300 border border-amber-500/30">Phase 1 • Quadrance Base</span>
+                <h2 class="text-base font-bold text-white mb-2 mystical-font">3. Fibonacci Inverse Projection</h2>
+                <p class="text-xs text-gray-400 mb-3 leading-relaxed">
+                    To uniformly expand without breaking topological equilibrium, the system finds the <strong>projection inverse</strong>.
+                </p>
+                <p class="text-xs text-gray-400 mb-3 leading-relaxed">
+                    Applying the Fibonacci expansion ($\phi \approx 1.618$) creates a <strong>5th point in both directions</strong> (forward and inverse), forcing a massive rectangular expansion.
+                </p>
+                <div class="bg-black/50 p-2 rounded border border-white/5 font-mono text-[10px] text-center text-primary/80">
+                    $$ P_{5} = \pm \phi \cdot P_4 \quad (\phi = \frac{1+\sqrt{5}}{2}) $$
+                </div>
+            </div>
+
+            <!-- Step 4 -->
+            <div class="phase-content" id="desc-4">
+                <span class="timestep-badge bg-fuchsia-900/40 text-fuchsia-300 border border-fuchsia-500/30">Phase 2 • Convergence</span>
+                <h2 class="text-base font-bold text-white mb-2 mystical-font">4. 6 Square Matrix Fields</h2>
+                <p class="text-xs text-gray-400 mb-3 leading-relaxed">
+                    The second time step collapses the perspectives. The rectangular expansion solidifies its outer shell.
+                </p>
+                <p class="text-xs text-gray-400 mb-3 leading-relaxed">
+                    It animates outward to create <strong>6 square matrix fields of perspective</strong> acting as flat 2D observational planes (top, bottom, north, south, east, west).
+                </p>
+                <div class="bg-black/50 p-2 rounded border border-white/5 font-mono text-[10px] text-center text-primary/80">
+                    $$ M_{face} \in \mathbb{R}^{4 \times 4}_{ortho} \times 6 $$
+                </div>
+            </div>
+
+            <!-- Step 5 -->
+            <div class="phase-content" id="desc-5">
+                <span class="timestep-badge bg-indigo-900/40 text-indigo-300 border border-indigo-500/30">Phase 2 • Convergence</span>
+                <h2 class="text-base font-bold text-white mb-2 mystical-font">5. Inward Synthesis</h2>
+                <p class="text-xs text-gray-400 mb-3 leading-relaxed">
+                    The system synthesizes the 6 flat perspectives into individual 3D structural volumes.
+                </p>
+                <p class="text-xs text-gray-400 mb-3 leading-relaxed">
+                    These 6 cubes are directed to move inward, crashing into the exact center of the structure in perfect unison.
+                </p>
+                <div class="bg-black/50 p-2 rounded border border-white/5 font-mono text-[10px] text-center text-primary/80">
+                    $$ \vec{v}_{syn} = \sum_{i=1}^6 C_{volume}^{(i)} \rightarrow \text{Center} $$
+                </div>
+            </div>
+
+            <!-- Step 6 -->
+            <div class="phase-content" id="desc-6">
+                <span class="timestep-badge bg-slate-700/50 text-white border border-slate-500/50">Phase 2 • Convergence</span>
+                <h2 class="text-base font-bold text-white mb-2 mystical-font">6. The 7th Compression</h2>
+                <p class="text-xs text-gray-400 mb-3 leading-relaxed">
+                    The cubes perfectly align and overlap at the center, synthesizing into the <strong>1 final 7's compression</strong>.
+                </p>
+                <p class="text-xs text-gray-400 mb-3 leading-relaxed">
+                    This results in a glowing <strong>4x4x4 volumetric matrix</strong> (64 voxels) representing the completed Genesis Block architecture.
+                </p>
+                <div class="bg-black/50 p-2 rounded border border-white/5 font-mono text-[10px] text-center text-primary/80">
+                    $$ \mathcal{H}_{64} = \bigotimes_{i=1}^6 \left[ C_{volume}^{(i)} \right] \rightarrow \text{7th State} $$
+                </div>
+            </div>
+
+        </div>
+
+        <button id="auto-play-btn" class="w-full mt-4 bg-primary/10 hover:bg-primary/30 border border-primary/30 text-primary text-[10px] font-bold py-3 rounded transition-all duration-300 uppercase tracking-widest font-mono">
+            Execute Full Projection
+        </button>
+
+    </div>
+
+    <!-- 3D Engine Script -->
+    <script>
+        // --- System Variables ---
+        let currentPhase = 1;
+        let targetPhase = 1;
+        let autoPlayInterval = null;
+
+        // Constants for Math
+        const L = 15; // Base unit length scaled up for better visibility
+        const PHI = 1.61803398875; // Golden Ratio
+
+        // Derived Coordinates
+        const pO = new THREE.Vector3(0,0,0);
+        const pX = new THREE.Vector3(L,0,0);
+        const pY = new THREE.Vector3(0,L,0);
+        const pZ = new THREE.Vector3(0,0,L);
+        const p4 = new THREE.Vector3(L, L, L);
+        const p5_fwd = new THREE.Vector3(L*PHI, L*PHI, L*PHI);
+        const p5_inv = new THREE.Vector3(-L/PHI, -L/PHI, -L/PHI);
+        const C = new THREE.Vector3().addVectors(p5_fwd, p5_inv).multiplyScalar(0.5); // Exact geometric center
+        
+        const W = p5_fwd.x - p5_inv.x;
+        const H = p5_fwd.y - p5_inv.y;
+        const D = p5_fwd.z - p5_inv.z;
+
+        // --- Three.js Setup ---
+        const container = document.getElementById('canvas-container');
+        const scene = new THREE.Scene();
+        // Force Owl Academy Dark Void colors
+        scene.background = new THREE.Color(0x05030a);
+        scene.fog = new THREE.FogExp2(0x05030a, 0.008);
+
+        const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.set(60, 45, 80);
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        container.appendChild(renderer.domElement);
+
+        const controls = new THREE.OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.05;
+        controls.target.copy(C);
+        controls.autoRotate = true;
+        controls.autoRotateSpeed = 0.8;
+
+        // --- Lighting ---
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.4);
+        scene.add(ambientLight);
+        const dirLight = new THREE.DirectionalLight(0xffffff, 1.2);
+        dirLight.position.set(40, 80, 60);
+        scene.add(dirLight);
+        const backLight = new THREE.DirectionalLight(0xD4AF37, 0.8); // Gold backlight
+        backLight.position.set(-40, -40, -40);
+        scene.add(backLight);
+
+        // --- Geometric Groups for Steps ---
+        const step1Group = new THREE.Group();
+        const step2Group = new THREE.Group();
+        const step3Group = new THREE.Group();
+        const step4Group = new THREE.Group();
+        const step5Group = new THREE.Group();
+        const step6Group = new THREE.Group(); // 7th state
+
+        scene.add(step1Group, step2Group, step3Group, step4Group, step5Group, step6Group);
+
+        // --- Helper Functions for Thick Geometry ---
+        function setOpacity(obj, opacity) {
+            if(obj.material) {
+                const baseOpacity = obj.userData.baseOpacity !== undefined ? obj.userData.baseOpacity : 1.0;
+                obj.material.opacity = opacity * baseOpacity;
+                obj.visible = (opacity * baseOpacity) > 0.01;
+            }
+            if(obj.children) {
+                obj.children.forEach(c => setOpacity(c, opacity));
+            }
+        }
+
+        function createThickLine(p1, p2, color, radius=0.3, baseOp=1.0) {
+            const path = new THREE.LineCurve3(p1, p2);
+            const geometry = new THREE.TubeGeometry(path, 4, radius, 8, false);
+            const material = new THREE.MeshLambertMaterial({ color: color, transparent: true, emissive: color, emissiveIntensity: 0.2 });
+            material.userData = { baseOpacity: baseOp };
+            const mesh = new THREE.Mesh(geometry, material);
+            return mesh;
+        }
+
+        function createThickPoint(p, color, radius=0.6, baseOp=1.0) {
+            const geo = new THREE.SphereGeometry(radius, 16, 16);
+            const mat = new THREE.MeshLambertMaterial({ color: color, transparent: true, emissive: color, emissiveIntensity: 0.5 });
+            mat.userData = { baseOpacity: baseOp };
+            const mesh = new THREE.Mesh(geo, mat);
+            mesh.position.copy(p);
+            return mesh;
+        }
+
+        // --- Build Step 1: 3 Triangular Projections ---
+        const c1 = 0x00d4ff; // Holo Blue
+        step1Group.add(createThickPoint(pO, c1, 0.8));
+        step1Group.add(createThickPoint(pX, c1));
+        step1Group.add(createThickPoint(pY, c1));
+        step1Group.add(createThickPoint(pZ, c1));
+        
+        step1Group.add(createThickLine(pO, pX, c1));
+        step1Group.add(createThickLine(pO, pY, c1));
+        step1Group.add(createThickLine(pO, pZ, c1));
+        step1Group.add(createThickLine(pX, pY, c1));
+        step1Group.add(createThickLine(pY, pZ, c1));
+        step1Group.add(createThickLine(pZ, pX, c1));
+
+        // Add translucent fill
+        const geoTri1 = new THREE.BufferGeometry();
+        geoTri1.setAttribute('position', new THREE.BufferAttribute(new Float32Array([
+            0,0,0, L,0,0, 0,L,0,  0,0,0, 0,L,0, 0,0,L,  0,0,0, 0,0,L, L,0,0
+        ]), 3));
+        const matTri1 = new THREE.MeshBasicMaterial({ color: c1, transparent: true, side: THREE.DoubleSide, blending: THREE.AdditiveBlending });
+        matTri1.userData = { baseOpacity: 0.15 };
+        step1Group.add(new THREE.Mesh(geoTri1, matTri1));
+
+        // --- Build Step 2: 4th Emergent Point ---
+        const c2 = 0x10b981; // Emerald
+        step2Group.add(createThickPoint(p4, c2, 0.8));
+        step2Group.add(createThickLine(pX, p4, c2));
+        step2Group.add(createThickLine(pY, p4, c2));
+        step2Group.add(createThickLine(pZ, p4, c2));
+
+        // --- Build Step 3: Fibonacci Inverse Projection ---
+        const c3 = 0xf59e0b; // Amber
+        step3Group.add(createThickPoint(p5_fwd, c3, 0.8));
+        step3Group.add(createThickPoint(p5_inv, c3, 0.8));
+        step3Group.add(createThickLine(p5_inv, pO, c3, 0.2));
+        step3Group.add(createThickLine(p4, p5_fwd, c3, 0.2));
+
+        // Outline Box for phase 3
+        const boxGeo3 = new THREE.BoxGeometry(W, H, D);
+        const edges3 = new THREE.EdgesGeometry(boxGeo3);
+        const matBox3 = new THREE.LineBasicMaterial({ color: c3, transparent: true });
+        matBox3.userData = { baseOpacity: 0.3 };
+        const meshBox3 = new THREE.LineSegments(edges3, matBox3);
+        meshBox3.position.copy(C);
+        step3Group.add(meshBox3);
+
+        // --- Grid Builders for Steps 4, 5, and 6 ---
+        function buildFaceGrid(sizeU, sizeV, color) {
+            const group = new THREE.Group();
+            const mat = new THREE.LineBasicMaterial({ color: color, transparent: true, linewidth: 2 });
+            mat.userData = { baseOpacity: 0.8 };
+            const pts = [];
+            const steps = 4;
+            const stepU = sizeU / steps;
+            const stepV = sizeV / steps;
+            const startU = -sizeU/2, startV = -sizeV/2;
+
+            for(let i=0; i<=steps; i++) {
+                let u = startU + i*stepU;
+                pts.push(new THREE.Vector3(u, startV, 0), new THREE.Vector3(u, -startV, 0));
+            }
+            for(let i=0; i<=steps; i++) {
+                let v = startV + i*stepV;
+                pts.push(new THREE.Vector3(startU, v, 0), new THREE.Vector3(-startU, v, 0));
+            }
+            const lines = new THREE.LineSegments(new THREE.BufferGeometry().setFromPoints(pts), mat);
+            group.add(lines);
+
+            const fillMat = new THREE.MeshBasicMaterial({ color: color, transparent: true, side: THREE.DoubleSide, blending: THREE.AdditiveBlending });
+            fillMat.userData = { baseOpacity: 0.1 };
+            group.add(new THREE.Mesh(new THREE.PlaneGeometry(sizeU, sizeV), fillMat));
+            return group;
+        }
+
+        function buildVolumeGrid(sizeX, sizeY, sizeZ, color, opacity=0.4) {
+            const group = new THREE.Group();
+            const mat = new THREE.LineBasicMaterial({ color: color, transparent: true });
+            mat.userData = { baseOpacity: opacity };
+            const ptsMat = new THREE.PointsMaterial({ color: color, size: 0.6, transparent: true });
+            ptsMat.userData = { baseOpacity: opacity * 1.5 };
+            
+            const pts = [], vPts = [];
+            const steps = 4; // 4x4x4 voxels
+            const sX = sizeX/steps, sY = sizeY/steps, sZ = sizeZ/steps;
+            const startX = -sizeX/2, startY = -sizeY/2, startZ = -sizeZ/2;
+
+            for(let x=0; x<=steps; x++) {
+                for(let y=0; y<=steps; y++) {
+                    for(let z=0; z<=steps; z++) {
+                        let px = startX + x*sX, py = startY + y*sY, pz = startZ + z*sZ;
+                        let p = new THREE.Vector3(px, py, pz);
+                        vPts.push(p);
+                        if(x < steps) pts.push(p, new THREE.Vector3(px+sX, py, pz));
+                        if(y < steps) pts.push(p, new THREE.Vector3(px, py+sY, pz));
+                        if(z < steps) pts.push(p, new THREE.Vector3(px, py, pz+sZ));
+                    }
+                }
+            }
+            group.add(new THREE.LineSegments(new THREE.BufferGeometry().setFromPoints(pts), mat));
+            group.add(new THREE.Points(new THREE.BufferGeometry().setFromPoints(vPts), ptsMat));
+            return group;
+        }
+
+        // --- Build Step 4: 6 Square Matrix Fields ---
+        const c4 = 0xc084fc; // Fuchsia
+        const p4Faces = [];
+        
+        const fTop = buildFaceGrid(W, D, c4); fTop.rotation.x = Math.PI/2; fTop.dir = new THREE.Vector3(0,1,0); p4Faces.push(fTop);
+        const fBot = buildFaceGrid(W, D, c4); fBot.rotation.x = Math.PI/2; fBot.dir = new THREE.Vector3(0,-1,0); p4Faces.push(fBot);
+        const fRig = buildFaceGrid(D, H, c4); fRig.rotation.y = Math.PI/2; fRig.dir = new THREE.Vector3(1,0,0); p4Faces.push(fRig);
+        const fLef = buildFaceGrid(D, H, c4); fLef.rotation.y = Math.PI/2; fLef.dir = new THREE.Vector3(-1,0,0); p4Faces.push(fLef);
+        const fFro = buildFaceGrid(W, H, c4); fFro.dir = new THREE.Vector3(0,0,1); p4Faces.push(fFro);
+        const fBac = buildFaceGrid(W, H, c4); fBac.dir = new THREE.Vector3(0,0,-1); p4Faces.push(fBac);
+
+        p4Faces.forEach(face => {
+            face.basePos = new THREE.Vector3().copy(C).addScaledVector(face.dir, W/2); 
+            step4Group.add(face);
+        });
+
+        // --- Build Step 5: The 6 Volumetric Cubes ---
+        const c5 = 0x6366f1; // Indigo
+        const p5Cubes = [];
+        const dirs = [
+            new THREE.Vector3(0,1,0), new THREE.Vector3(0,-1,0),
+            new THREE.Vector3(1,0,0), new THREE.Vector3(-1,0,0),
+            new THREE.Vector3(0,0,1), new THREE.Vector3(0,0,-1)
+        ];
+        
+        dirs.forEach(dir => {
+            const cube = buildVolumeGrid(W, H, D, c5, 0.2);
+            cube.dir = dir;
+            p5Cubes.push(cube);
+            step5Group.add(cube);
+        });
+
+        // --- Build Step 6: The 7th State Genesis Block ---
+        const centerCube = buildVolumeGrid(W, H, D, 0xffffff, 0.8); // Pure white energy
+        centerCube.position.copy(C);
+        step6Group.add(centerCube);
+
+
+        // --- UI & Interaction Logic ---
+        const phaseSlider = document.getElementById('phase-slider');
+        const phaseValText = document.getElementById('phase-val');
+        const descriptions = document.querySelectorAll('.phase-content');
+        const autoPlayBtn = document.getElementById('auto-play-btn');
+
+        function updateUI(newPhase) {
+            targetPhase = parseFloat(newPhase);
+            phaseSlider.value = targetPhase;
+            phaseValText.innerText = `Step ${Math.floor(targetPhase)}/6`;
+            
+            // Toggle Descriptions
+            let activeIdx = Math.max(1, Math.min(6, Math.round(targetPhase))) - 1;
+            descriptions.forEach((el, idx) => {
+                if(idx === activeIdx) el.classList.add('active');
+                else el.classList.remove('active');
+            });
+        }
+
+        phaseSlider.addEventListener('input', (e) => {
+            if(autoPlayInterval) {
+                clearInterval(autoPlayInterval);
+                autoPlayInterval = null;
+                autoPlayBtn.innerText = 'Execute Full Projection';
+            }
+            updateUI(e.target.value);
+        });
+
+        autoPlayBtn.addEventListener('click', () => {
+            if(autoPlayInterval) {
+                clearInterval(autoPlayInterval);
+                autoPlayInterval = null;
+                autoPlayBtn.innerText = 'Execute Full Projection';
+            } else {
+                autoPlayBtn.innerText = 'Halt Projection';
+                updateUI(1); 
+                autoPlayInterval = setInterval(() => {
+                    let next = targetPhase + 0.05; // smooth step increments
+                    if(next > 6.5) { // Hold at 6 for a bit
+                        clearInterval(autoPlayInterval);
+                        autoPlayInterval = null;
+                        autoPlayBtn.innerText = 'Execute Full Projection';
+                        updateUI(6);
+                    } else {
+                        updateUI(Math.min(6, next));
+                    }
+                }, 50);
+            }
+        });
+
+        // --- Render & Animation Loop ---
+        function EASE(t) { return t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t; }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            controls.update();
+
+            // Smooth interpolation for currentPhase (Physics smoothing)
+            currentPhase += (targetPhase - currentPhase) * 0.08;
+
+            // Opacity & Mathematics (6 Distinct Steps)
+            let t1 = Math.max(0, Math.min(1, currentPhase));
+            let t2 = Math.max(0, Math.min(1, currentPhase - 1));
+            let t3 = Math.max(0, Math.min(1, currentPhase - 2));
+            let t4 = Math.max(0, Math.min(1, currentPhase - 3));
+            let t5 = Math.max(0, Math.min(1, currentPhase - 4));
+            let t6 = Math.max(0, Math.min(1, currentPhase - 5));
+
+            // Apply Basic Opacities
+            setOpacity(step1Group, t1);
+            setOpacity(step2Group, t2);
+            setOpacity(step3Group, t3);
+            setOpacity(step4Group, t4);
+            
+            // Step 4 Animation: Faces flying OUT from center
+            const flyDist4 = 20 * (1 - EASE(t4));
+            p4Faces.forEach(face => {
+                face.position.copy(face.basePos).addScaledVector(face.dir, -flyDist4);
+            });
+
+            // Step 5 Animation: Cubes flying IN to center
+            setOpacity(step5Group, t5);
+            const flyDist5 = 50 * (1 - EASE(t5));
+            p5Cubes.forEach(cube => {
+                cube.position.copy(C).addScaledVector(cube.dir, flyDist5);
+            });
+
+            // Step 6 Animation: 7th State Genesis Compression Glow
+            // Fades in over Step 6, replacing Step 5 cubes
+            let glowLevel = Math.pow(t6, 2); 
+            setOpacity(step6Group, glowLevel);
+            
+            // Fade out individual cubes to prevent z-fighting during synthesis
+            if (glowLevel > 0) {
+                setOpacity(step5Group, 1 - glowLevel);
+            }
+
+            renderer.render(scene, camera);
+        }
+
+        // Handle Resizing
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        // Initialize Loading sequence
+        window.onload = () => {
+            setTimeout(() => {
+                document.getElementById('loader').style.opacity = '0';
+                setTimeout(() => {
+                    document.getElementById('loader').style.display = 'none';
+                    updateUI(1);
+                }, 500);
+            }, 1000);
+            animate();
+        };
+
+    </script>
+</body>
+</html>
