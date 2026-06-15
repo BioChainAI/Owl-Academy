@@ -546,6 +546,16 @@ function verifyGeometricSeed(uint64 seed) {<br>
                 outSpan.innerText = `0x${currentSeed.toString(16).toUpperCase()}...`;
             }, 800);
         }
+
+        // Handle explicit severance of connection
+        window.globalLogout = function() {
+            // Clear standard local/session storage tokens used by the academy
+            localStorage.clear();
+            sessionStorage.clear();
+            
+            // Redirect to the absolute Academy Monad login
+            window.location.href = "https://biochain.github.io/owl-academy/login.html";
+        };
     </script>
 </body>
 </html>
