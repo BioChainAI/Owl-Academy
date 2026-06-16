@@ -1,0 +1,964 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Owl Academy | Quadrance Scaling Tutorial</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        darkbg: '#050505',
+                        lightbg: '#e2e8f0',
+                        enochian: { green: '#22c55e', cyan: '#06b6d4', red: '#ef4444', darkred: '#7f1d1d' },
+                        owl: { gold: '#D4AF37', lightgold: '#FFF8DC', darkgold: '#aa771c' }
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <!-- MathJax -->
+    <script>
+        window.MathJax = {
+            tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']] }
+        };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+    <!-- Three.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Inter:wght@300;400;600&family=JetBrains+Mono:wght@400;700&display=swap');
+        
+        body { margin: 0; font-family: 'Inter', sans-serif; background: #050505; color: #e2e8f0; min-height: 100vh; overflow-x: hidden; }
+        .font-mono { font-family: 'JetBrains Mono', monospace; }
+        .font-mystical { font-family: 'Cinzel', serif; }
+
+        .starfield {
+            position: fixed; inset: 0;
+            background-image:
+                radial-gradient(2px 2px at 20px 30px, #D4AF37, rgba(0,0,0,0)),
+                radial-gradient(2px 2px at 40px 70px, #fff, rgba(0,0,0,0)),
+                radial-gradient(2px 2px at 50px 160px, rgba(255,255,255,0.8), rgba(0,0,0,0)),
+                radial-gradient(2px 2px at 90px 40px, #fff, rgba(0,0,0,0)),
+                radial-gradient(2px 2px at 130px 80px, #D4AF37, rgba(0,0,0,0));
+            background-repeat: repeat; background-size: 250px 250px;
+            animation: twinkle 8s infinite alternate;
+            opacity: 0.15; z-index: -2; pointer-events: none;
+        }
+        @keyframes twinkle { 0% { opacity: 0.05; } 100% { opacity: 0.2; } }
+
+        .glass-panel {
+            background: rgba(10, 15, 30, 0.75);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(212, 175, 55, 0.2);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5);
+            border-radius: 1rem;
+        }
+
+        .gold-gradient {
+            background: linear-gradient(to right, #D4AF37, #FFF8DC, #D4AF37);
+            -webkit-background-clip: text; background-clip: text;
+            color: transparent; text-shadow: 0 0 15px rgba(212, 175, 55, 0.3);
+        }
+
+        /* Timeline Styles */
+        .step-node { display: flex; align-items: flex-start; gap: 1rem; position: relative; opacity: 0.5; transition: all 0.4s; cursor: pointer; }
+        .step-node:hover { opacity: 0.8; }
+        .step-node.active { opacity: 1; }
+        .step-node:not(:last-child)::after {
+            content: ''; position: absolute; left: 15px; top: 32px; bottom: -24px;
+            width: 2px; background: rgba(212, 175, 55, 0.15);
+        }
+        .step-node.active:not(:last-child)::after { background: rgba(212, 175, 55, 0.5); }
+        
+        .step-indicator {
+            width: 32px; height: 32px; border-radius: 50%;
+            background: #050505; border: 2px solid rgba(212, 175, 55, 0.3);
+            display: flex; align-items: center; justify-content: center;
+            font-family: 'Cinzel', serif; font-size: 14px; color: #D4AF37;
+            transition: all 0.3s ease; z-index: 5; flex-shrink: 0;
+        }
+        .step-node.active .step-indicator {
+            background: #D4AF37; color: #050505;
+            box-shadow: 0 0 12px #D4AF37; border-color: #FFF8DC;
+        }
+
+        .lore-callout {
+            margin: 1.5rem 0; padding: 1rem 1.5rem;
+            background: linear-gradient(90deg, rgba(212, 175, 55, 0.1), transparent);
+            border-left: 3px solid #D4AF37;
+            position: relative;
+            border-radius: 0 8px 8px 0;
+        }
+        
+        #canvas-container {
+            width: 100%; height: 100%;
+            min-height: 500px;
+            border-radius: 1rem;
+            overflow: hidden;
+            position: relative;
+        }
+        #canvas-container canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100% !important;
+            height: 100% !important;
+            outline: none;
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: rgba(0,0,0,0.3); }
+        ::-webkit-scrollbar-thumb { background: rgba(212, 175, 55, 0.4); border-radius: 10px; }
+    </style>
+</head>
+<body class="antialiased">
+
+    <div class="starfield"></div>
+
+    <header class="w-full pt-10 pb-6 px-6 flex flex-col items-center justify-center relative border-b border-owl-gold/20 bg-[#05030a]/80 backdrop-blur-md shadow-xl z-20">
+        
+        <!-- Cross-Linking to Grand Archives -->
+        <a href="https://biochainai.github.io/Owl-Academy/Library/Grand_Archives.html" class="absolute top-6 left-6 text-[11px] font-mono text-owl-gold/60 hover:text-owl-gold transition-colors flex items-center gap-2 tracking-widest uppercase">
+            <span class="text-lg leading-none mb-1">←</span> Return to Grand Archives
+        </a>
+        
+        <!-- Department Breadcrumbs -->
+        <div class="text-[10px] text-owl-gold/50 tracking-[0.25em] uppercase font-mono mb-3 text-center w-full">
+            Department 1: Sacred Geometry <span class="mx-2 text-owl-gold/30">|</span> Mathematical Breakdowns
+        </div>
+
+        <h1 class="text-3xl md:text-4xl font-bold tracking-[0.2em] gold-gradient mb-2 text-center font-mystical">OWL ACADEMY</h1>
+        
+        <div class="text-xs md:text-sm text-owl-gold/80 tracking-[0.3em] uppercase font-mono text-center flex items-center justify-center">
+            <span class="w-8 h-[1px] bg-owl-gold/40 mr-4 hidden md:block"></span>
+            Quadrance Scaling in Lattice Systems
+            <span class="w-8 h-[1px] bg-owl-gold/40 ml-4 hidden md:block"></span>
+        </div>
+    </header>
+
+    <div class="w-full px-4 md:px-8 py-8 grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 relative z-10">
+        
+        <!-- Left Sidebar: Timeline & Content -->
+        <aside class="lg:col-span-5 flex flex-col gap-6 h-[calc(100vh-160px)]">
+            
+            <!-- Navigation Timeline -->
+            <div class="glass-panel p-6 flex-shrink-0">
+                <h3 class="text-xs text-owl-gold font-bold uppercase tracking-widest mb-5 font-mono border-b border-owl-gold/20 pb-2">Tutorial Modules</h3>
+                <div class="space-y-5">
+                    <div class="step-node active" data-step="1" onclick="goToStep(1)">
+                        <div class="step-indicator">I</div>
+                        <div>
+                            <h4 class="text-sm font-bold text-white font-mystical">The Quadrance Basis</h4>
+                            <p class="text-[11px] text-slate-400 mt-1">Proofing vector displacement into squared areas.</p>
+                        </div>
+                    </div>
+                    <div class="step-node" data-step="2" onclick="goToStep(2)">
+                        <div class="step-indicator">II</div>
+                        <div>
+                            <h4 class="text-sm font-bold text-white font-mystical">3D Lattice Coordinates</h4>
+                            <p class="text-[11px] text-slate-400 mt-1">Mapping vectors to the emergent 4th measurement.</p>
+                        </div>
+                    </div>
+                    <div class="step-node" data-step="3" onclick="goToStep(3)">
+                        <div class="step-indicator">III</div>
+                        <div>
+                            <h4 class="text-sm font-bold text-white font-mystical">The Scaling Rule</h4>
+                            <p class="text-[11px] text-slate-400 mt-1">Preserving pattern metrics via $p^2/4$.</p>
+                        </div>
+                    </div>
+                    <div class="step-node" data-step="4" onclick="goToStep(4)">
+                        <div class="step-indicator">IV</div>
+                        <div>
+                            <h4 class="text-sm font-bold text-white font-mystical">Dimensional Lifting</h4>
+                            <p class="text-[11px] text-slate-400 mt-1">From Toda structures to 5-Layer Kogame-Toda.</p>
+                        </div>
+                    </div>
+                    <div class="step-node" data-step="5" onclick="goToStep(5)">
+                        <div class="step-indicator">V</div>
+                        <div>
+                            <h4 class="text-sm font-bold text-white font-mystical">Symmetric Tessellation</h4>
+                            <p class="text-[11px] text-slate-400 mt-1">Quadrance web folding into the origin seed.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Dynamic Explanatory Content -->
+            <div class="glass-panel p-6 flex-1 overflow-y-auto" id="content-panel">
+                <!-- Content injected via JS based on step -->
+            </div>
+            
+            <!-- Global Controls -->
+            <div class="flex gap-4">
+                <button id="btn-prev" onclick="prevStep()" class="flex-1 bg-black/50 hover:bg-black/80 border border-owl-gold/30 text-owl-gold text-xs font-bold py-3 rounded-lg transition-all uppercase tracking-widest disabled:opacity-30 disabled:cursor-not-allowed">
+                    ← Previous
+                </button>
+                <button id="btn-next" onclick="nextStep()" class="flex-1 bg-owl-gold/10 hover:bg-owl-gold/20 border border-owl-gold/50 text-owl-gold text-xs font-bold py-3 rounded-lg transition-all uppercase tracking-widest">
+                    Next Step →
+                </button>
+            </div>
+
+        </aside>
+
+        <!-- Right Main: 3D Visualization -->
+        <main class="lg:col-span-7 flex flex-col relative z-30 h-[500px] lg:h-[calc(100vh-160px)]">
+            <div class="w-full h-full glass-panel border border-owl-gold/20 relative shadow-[0_0_30px_rgba(212,175,55,0.05)_inset]" id="canvas-container">
+                <div class="absolute top-4 left-4 z-20 font-mono text-[10px] bg-black/60 px-3 py-1.5 rounded border border-owl-gold/30 text-slate-300">
+                    <span class="text-owl-gold">Left-Click:</span> Rotate | <span class="text-owl-gold">Scroll:</span> Zoom
+                </div>
+                
+                <!-- Live Telemetry Box -->
+                <div class="absolute bottom-4 left-4 z-20 font-mono text-[10px] bg-black/80 px-4 py-3 rounded border border-white/10 text-slate-300 w-48 shadow-lg">
+                    <div class="text-xs text-white border-b border-white/20 pb-1 mb-2">SYSTEM TELEMETRY</div>
+                    <div class="flex justify-between mb-1"><span class="text-slate-500">Tension (P):</span><span id="tel-tension" class="text-red-400">0.00</span></div>
+                    <div class="flex justify-between mb-1"><span class="text-slate-500">Quadrance (Q):</span><span id="tel-current" class="text-emerald-400">0.00</span></div>
+                    <div class="flex justify-between"><span class="text-slate-500">Fold Phase:</span><span id="tel-sync" class="text-fuchsia-400">0.0%</span></div>
+                </div>
+
+                <button id="fullscreen-btn" class="absolute top-4 right-4 z-20 bg-black/60 hover:bg-black/80 border border-owl-gold/30 text-owl-gold p-1.5 rounded transition-colors" title="Toggle Fullscreen">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path>
+                    </svg>
+                </button>
+            </div>
+        </main>
+    </div>
+
+    <!-- Data & Text Content Templates -->
+    <script>
+        const contentTemplates = {
+            1: `
+                <h2 class="text-xl font-bold text-cyan-400 mb-3 font-mystical">The Quadrance Basis</h2>
+                <p class="text-sm text-slate-300 font-light mb-3 leading-relaxed">
+                    To construct our lattice, we begin with the <strong>forward steps</strong> of calculating relative spatial displacements. We define origin position vectors $A_1$ (Red) and $A_2$ (Blue), and algebraically subtract them to find the displacement vector $\\mathbf{V}_{12}$ (Purple).
+                </p>
+                <div class="bg-black/40 p-3 rounded border border-white/5 font-mono text-xs text-center text-purple-400 mb-3 shadow-inner">
+                    $$ \\mathbf{V}_{12} = \\mathbf{A}_2 - \\mathbf{A}_1 = \\langle x_2 - x_1, y_2 - y_1, z_2 - z_1 \\rangle $$
+                </div>
+                <p class="text-sm text-slate-300 font-light mb-3 leading-relaxed">
+                    This relationship is visually <strong>proofed</strong> geometrically via the Triangle Law of Vector Addition, verifying our closed structural loops:
+                </p>
+                <div class="bg-black/40 p-3 rounded border border-white/5 font-mono text-xs text-center text-amber-500 mb-3 shadow-inner">
+                    $$ \\mathbf{V}_{13} = \\mathbf{V}_{12} + \\mathbf{V}_{23} $$
+                </div>
+                <p class="text-sm text-slate-300 font-light mb-3 leading-relaxed">
+                    Finally, we take the crucial <strong>backward step</strong>. Instead of using standard Euclidean distance—which introduces irrational, lossy square roots—we square the components to isolate the pristine integer <strong>Quadrance</strong> ($Q$).
+                </p>
+                <div class="bg-black/40 p-3 rounded border border-white/5 font-mono text-xs text-center text-cyan-300 mb-4 shadow-inner">
+                    $$ Q(A_1, A_2) = (x_2 - x_1)^2 + (y_2 - y_1)^2 + (z_2 - z_1)^2 $$
+                </div>
+                <div class="lore-callout">
+                    <span class="text-sm text-slate-300 italic">"By recording the algebraic subtraction of coordinates strictly as a squared area, the lattice perfectly preserves its exact grid geometry across all dimensional bounds."</span>
+                </div>
+            `,
+            2: `
+                <h2 class="text-xl font-bold text-emerald-400 mb-3 font-mystical">3D Lattice Coordinates</h2>
+                <p class="text-sm text-slate-300 font-light mb-4 leading-relaxed">
+                    This logic extends seamlessly into higher dimensions within our $4 \\times 4 \\times 4$ framework. By retaining the exact <strong>color coordination</strong> from our initial proof, we trace the precise displacement paths mapping the lattice.
+                </p>
+                <ul class="text-sm text-slate-300 font-light mb-4 space-y-2 list-disc pl-5">
+                    <li><strong class="text-red-400">Origin Point</strong> $\\rightarrow$ <strong style="color:#f59e0b">Amber Path (X)</strong> $\\rightarrow$ <strong class="text-green-500">First Measurement</strong></li>
+                    <li><strong class="text-green-500">First Measurement</strong> $\\rightarrow$ <strong style="color:#14b8a6">Teal Path (Y)</strong> $\\rightarrow$ <strong class="text-blue-500">Second Measurement</strong></li>
+                    <li><strong class="text-blue-500">Second Measurement</strong> $\\rightarrow$ <strong style="color:#9333ea">Purple Path (Z)</strong> $\\rightarrow$ <strong class="text-yellow-400">Emergent 4th Target</strong></li>
+                </ul>
+                <div class="bg-black/40 p-4 rounded border border-white/5 font-mono text-xs text-center text-yellow-400 mb-4 shadow-inner">
+                    $$ Q = x^2 + y^2 + z^2 $$
+                </div>
+                <p class="text-sm text-slate-300 font-light mb-4 leading-relaxed">
+                    Every vertex, culminating in the glowing <strong>4th emergent measurement</strong>, is mapped not by a floating-point distance, but by exact integer quadrance. This ensures structural purity when scaling the matrix outward.
+                </p>
+            `,
+            3: `
+                <h2 class="text-xl font-bold text-amber-400 mb-3 font-mystical">The Scaling Rule</h2>
+                <p class="text-sm text-slate-300 font-light mb-4 leading-relaxed">
+                    What happens to our measurements when the lattice expands? The foundational function dictates that a length $x$ becomes an area-like value $x^2$.
+                </p>
+                <div class="bg-black/40 p-4 rounded border border-white/5 font-mono text-xs text-center text-amber-300 mb-4 shadow-inner">
+                    $$ f(x) = x^2 $$
+                </div>
+                <p class="text-sm text-slate-300 font-light mb-4 leading-relaxed">
+                    If the lattice is scaled such that $p$ represents a doubled version of length $x$ ($p = 2x$), then substituting $x = p/2$ gives us the scaled rule:
+                </p>
+                <div class="bg-black/40 p-4 rounded border border-white/5 font-mono text-sm text-center text-amber-400 mb-4 shadow-inner">
+                    $$ f(p) = \\frac{p^2}{4} $$
+                </div>
+                <div class="lore-callout">
+                    <span class="text-sm text-slate-300 italic">"Squaring a doubled length multiplies the measurement by four. To preserve the original pattern geometrically, we must undo this by dividing by four."</span>
+                </div>
+            `,
+            4: `
+                <h2 class="text-xl font-bold text-indigo-400 mb-3 font-mystical">Dimensional Lifting</h2>
+                <p class="text-sm text-slate-300 font-light mb-4 leading-relaxed">
+                    When the mathematical boundaries of standard scaling rules are reached, we resolve the spatial tension artistically through <strong>Dimensional Lifting</strong>.
+                </p>
+                <p class="text-sm text-slate-300 font-light mb-4 leading-relaxed">
+                    We begin with two flat, 2D <strong>Toda lattice structures</strong>. As they are elevated along the Z-axis, the spatial void generates localized 3D manifolds, spawning three intermediate, offset geometric layers.
+                </p>
+                <div class="bg-black/40 p-3 rounded border border-white/5 font-mono text-[11px] text-center text-indigo-300 mb-4 shadow-inner">
+                    $$ \\mathcal{L}_{toda}^{(1)} \\oplus \\mathcal{L}_{toda}^{(2)} \\xrightarrow{\\text{Lift}} \\bigotimes_{k=1}^{5} \\mathcal{K}_{layer}(k) $$
+                </div>
+                <p class="text-sm text-slate-300 font-light mb-4 leading-relaxed">
+                    The two flat planes effortlessly interweave into a <strong>Kogame-Toda 5-layer lattice</strong>, locking the expanded quadrance values into a highly stable, interwoven harmonic phase state.
+                </p>
+            `,
+            5: `
+                <h2 class="text-xl font-bold text-fuchsia-400 mb-3 font-mystical">Symmetric Tessellation</h2>
+                <p class="text-sm text-slate-300 font-light mb-4 leading-relaxed">
+                    With our dual Kogame phase states suspended, we can mathematically calculate the exact <strong>Quadrance</strong> (squared distance) between the two separated 5-layer manifolds.
+                </p>
+                <p class="text-sm text-slate-300 font-light mb-4 leading-relaxed">
+                    As these <strong>quadrance tethers</strong> are mapped and drawn, the opposing structures are mathematically forced to fold back into each other, collapsing the Z-axis entirely.
+                </p>
+                <div class="bg-black/40 p-4 rounded border border-white/5 font-mono text-xs text-center text-fuchsia-300 mb-4 shadow-inner">
+                    $$ \\mathcal{Q}_{web} \\xrightarrow{\\text{Fold}} \\text{Tessellation Seed} $$
+                </div>
+                <p class="text-sm text-slate-300 font-light">
+                    From this dense, interwoven matrix, a highly compressed 1/16th sample (the deterministic seed) is extracted at the centroid. Through precise geometric symmetry, this seed mirrors outwards to tile the entire final dimensional grid without overlap.
+                </p>
+            `
+        };
+
+        // --- Core Engine Variables ---
+        let currentStep = 1;
+        let currentPhase = 1; // Smooth floating point phase (1.0 to 5.0)
+        let targetPhase = 1;
+        const totalSteps = 5;
+        
+        // Three.js Globals
+        let scene, camera, renderer, controls;
+        let group1, group2, group3, group4, group5;
+        let animationTime = 0;
+
+        // Shared Palettes
+        const C_CYAN = 0x06b6d4;
+        const C_EMERALD = 0x10b981;
+        const C_AMBER = 0xf59e0b;
+        const C_FUCHSIA = 0xd946ef;
+        const C_GRID = 0x334155;
+        
+        // Step 1 & 2 Vector Colors
+        const C_A1 = 0xef4444; 
+        const C_A2 = 0x3b82f6; 
+        const C_A3 = 0x22c55e; 
+        const C_V12 = 0x9333ea; 
+        const C_V23 = 0x14b8a6; 
+        const C_V13 = 0xf59e0b; 
+        const C_A4 = 0xD4AF37; 
+
+        // Telemetry DOM
+        let domTension, domCurrent, domSync;
+
+        // --- Initialization ---
+        function init() {
+            domTension = document.getElementById('tel-tension');
+            domCurrent = document.getElementById('tel-current');
+            domSync = document.getElementById('tel-sync');
+
+            const container = document.getElementById('canvas-container');
+            scene = new THREE.Scene();
+            scene.fog = new THREE.FogExp2(0x050505, 0.02);
+
+            camera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1, 1000);
+            camera.position.set(10, 10, 15);
+
+            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+            renderer.setSize(container.clientWidth, container.clientHeight);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            container.appendChild(renderer.domElement);
+
+            controls = new THREE.OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true;
+            controls.dampingFactor = 0.05;
+
+            // Lights
+            scene.add(new THREE.AmbientLight(0xffffff, 0.3));
+            const dLight = new THREE.DirectionalLight(0xfff8dc, 1.0);
+            dLight.position.set(10, 20, 15);
+            scene.add(dLight);
+            
+            const bLight = new THREE.DirectionalLight(0x06b6d4, 0.8);
+            bLight.position.set(-15, -10, -15);
+            scene.add(bLight);
+
+            // Build Scene Groups
+            buildStep1();
+            buildStep2();
+            buildStep3();
+            buildStep4();
+            buildStep5();
+
+            // Set initial target phase for smooth loading
+            targetPhase = currentStep;
+            
+            // Generate DOM and Camera logic after all geometries are defined
+            updateDOM();
+
+            // Native Fullscreen Toggle Logic
+            document.getElementById('fullscreen-btn').addEventListener('click', () => {
+                if (!document.fullscreenElement) {
+                    if (container.requestFullscreen) container.requestFullscreen();
+                    else if (container.webkitRequestFullscreen) container.webkitRequestFullscreen();
+                } else {
+                    if (document.exitFullscreen) document.exitFullscreen();
+                    else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
+                }
+            });
+
+            // Use ResizeObserver for true modular container scaling
+            const resizeObserver = new ResizeObserver(entries => {
+                for (let entry of entries) {
+                    const width = entry.contentRect.width;
+                    const height = entry.contentRect.height;
+                    if (width > 0 && height > 0) {
+                        camera.aspect = width / height;
+                        camera.updateProjectionMatrix();
+                        renderer.setSize(width, height, false); 
+                    }
+                }
+            });
+            resizeObserver.observe(container);
+
+            animate();
+        }
+
+        // --- Continuous Visibility Engine ---
+        function applyOpacity(obj, weight) {
+            if (obj && obj.material) {
+                // Handle multiple materials
+                if (Array.isArray(obj.material)) {
+                    obj.material.forEach(m => {
+                        if (m && m.userData && m.userData.baseOpacity !== undefined) {
+                            m.opacity = m.userData.baseOpacity * weight;
+                            m.transparent = true;
+                        }
+                    });
+                } else {
+                    if (obj.material.userData && obj.material.userData.baseOpacity !== undefined) {
+                        obj.material.opacity = obj.material.userData.baseOpacity * weight;
+                        obj.material.transparent = true;
+                    }
+                }
+                obj.visible = weight > 0.01;
+            } else if (obj && (obj.type === 'Group' || obj.type === 'Scene' || obj.type === 'LineSegments')) {
+                obj.visible = weight > 0.01;
+            }
+            if (obj && obj.children) {
+                obj.children.forEach(c => applyOpacity(c, weight));
+            }
+        }
+
+        // Returns a weight (0.0 to 1.0) based on how close the current floating phase is to the target step
+        function getPhaseWeight(stepIndex) {
+            return Math.max(0, 1.0 - Math.abs(currentPhase - stepIndex));
+        }
+
+        // --- Scene Builders ---
+        function createSquareMesh(w, h, color, opacity=0.3) {
+            const geo = new THREE.PlaneGeometry(w, h);
+            const mat = new THREE.MeshBasicMaterial({ color, transparent: true, opacity, side: THREE.DoubleSide });
+            mat.userData = { baseOpacity: opacity };
+            const mesh = new THREE.Mesh(geo, mat);
+            
+            const edgeMat = new THREE.LineBasicMaterial({ color, transparent: true, opacity: Math.min(1.0, opacity * 1.5) });
+            edgeMat.userData = { baseOpacity: Math.min(1.0, opacity * 1.5) };
+            const edges = new THREE.LineSegments(new THREE.EdgesGeometry(geo), edgeMat);
+            mesh.add(edges);
+            
+            return mesh;
+        }
+
+        function createLine(p1, p2, color) {
+            const geo = new THREE.BufferGeometry().setFromPoints([p1, p2]);
+            const mat = new THREE.LineBasicMaterial({ color, linewidth: 2, transparent: true, opacity: 1.0 });
+            mat.userData = { baseOpacity: 1.0 };
+            return new THREE.Line(geo, mat);
+        }
+
+        function createPoint(p, color, radius=0.25) {
+            const geo = new THREE.SphereGeometry(radius, 16, 16);
+            const mat = new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 1.0 });
+            mat.userData = { baseOpacity: 1.0 };
+            const mesh = new THREE.Mesh(geo, mat);
+            mesh.position.copy(p);
+            return mesh;
+        }
+
+        // Step 1: Vector Displacement Proofing -> Quadrance
+        function buildStep1() {
+            group1 = new THREE.Group();
+            scene.add(group1);
+
+            const A1 = new THREE.Vector3(0,0,0);
+            const A2 = new THREE.Vector3(3,4,0);
+            const A3 = new THREE.Vector3(3,0,0);
+
+            group1.add(createPoint(A1, C_A1));
+            group1.add(createPoint(A2, C_A2));
+            group1.add(createPoint(A3, C_A3));
+
+            group1.add(createLine(A1, A2, C_V12)); 
+            group1.add(createLine(A2, A3, C_V23)); 
+            group1.add(createLine(A1, A3, C_V13)); 
+
+            const sq13Group = new THREE.Group();
+            sq13Group.position.set(1.5, 0, 0); 
+            const sq13 = createSquareMesh(3, 3, C_V13, 0.2);
+            sq13.position.y = -1.5; 
+            sq13Group.add(sq13);
+            group1.add(sq13Group);
+
+            const sq23Group = new THREE.Group();
+            sq23Group.position.set(3, 2, 0); 
+            sq23Group.rotation.z = -Math.PI / 2;
+            const sq23 = createSquareMesh(4, 4, C_V23, 0.2);
+            sq23.position.y = -2; 
+            sq23Group.add(sq23);
+            group1.add(sq23Group);
+
+            const sq12Group = new THREE.Group();
+            sq12Group.position.set(1.5, 2, 0); 
+            sq12Group.rotation.z = Math.atan2(4, 3); 
+            const sq12 = createSquareMesh(5, 5, C_V12, 0.2);
+            sq12.position.y = 2.5; 
+            sq12Group.add(sq12);
+            group1.add(sq12Group);
+            
+            group1.position.set(-1.5, -0.5, 0);
+        }
+
+        // Step 2: 3D Lattice Coordinates (Color Mapped)
+        function buildStep2() {
+            group2 = new THREE.Group();
+            scene.add(group2);
+
+            const gridSize = 4;
+            const spacing = 1.5;
+            const offset = (gridSize * spacing) / 2;
+
+            const ptsGeo = new THREE.BufferGeometry();
+            const positions = [];
+            for(let x=0; x<=gridSize; x++) {
+                for(let y=0; y<=gridSize; y++) {
+                    for(let z=0; z<=gridSize; z++) {
+                        positions.push(x*spacing - offset, y*spacing - offset, z*spacing - offset);
+                    }
+                }
+            }
+            ptsGeo.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+            const gridMat = new THREE.PointsMaterial({ color: C_GRID, size: 0.15, transparent: true, opacity: 1.0 });
+            gridMat.userData = { baseOpacity: 1.0 };
+            group2.add(new THREE.Points(ptsGeo, gridMat));
+
+            const pA1 = new THREE.Vector3(-offset, -offset, -offset);
+            const pA4 = new THREE.Vector3(3*spacing - offset, 2*spacing - offset, 4*spacing - offset);
+            const pA3 = new THREE.Vector3(pA4.x, pA1.y, pA1.z);
+            const pA2 = new THREE.Vector3(pA4.x, pA4.y, pA1.z);
+
+            group2.add(createPoint(pA1, C_A1, 0.3));
+            group2.add(createPoint(pA3, C_A3, 0.2));
+            group2.add(createPoint(pA2, C_A2, 0.2));
+            
+            const targetMesh = createPoint(pA4, C_A4, 0.4);
+            const glowMat = new THREE.MeshBasicMaterial({color: C_A4, transparent:true, opacity:0.3, blending: THREE.AdditiveBlending});
+            glowMat.userData = { baseOpacity: 0.3 };
+            const glow = new THREE.Mesh(new THREE.SphereGeometry(0.7, 16, 16), glowMat);
+            targetMesh.add(glow);
+            group2.add(targetMesh);
+
+            group2.add(createLine(pA1, pA3, C_V13));
+            group2.add(createLine(pA3, pA2, C_V23));
+            group2.add(createLine(pA2, pA4, C_V12));
+            
+            const hypLine = createLine(pA1, pA4, 0xffffff);
+            hypLine.material.opacity = 0.4;
+            hypLine.material.userData.baseOpacity = 0.4;
+            hypLine.material.dashSize = 0.2;
+            hypLine.material.gapSize = 0.1;
+            hypLine.computeLineDistances();
+            group2.add(hypLine);
+        }
+
+        // Step 3: Scaling Rule (x^2 to p^2/4)
+        let sqBase3, sqScaled3, grid4x4_3;
+        function buildStep3() {
+            group3 = new THREE.Group();
+            scene.add(group3);
+
+            sqBase3 = createSquareMesh(2, 2, C_CYAN, 0.4);
+            group3.add(sqBase3);
+
+            sqScaled3 = createSquareMesh(4, 4, C_AMBER, 0.1);
+            sqScaled3.position.z = -0.1; 
+            group3.add(sqScaled3);
+
+            const gridPts = [
+                new THREE.Vector3(-2, 0, 0), new THREE.Vector3(2, 0, 0),
+                new THREE.Vector3(0, -2, 0), new THREE.Vector3(0, 2, 0)
+            ];
+            grid4x4_3 = new THREE.LineSegments(new THREE.BufferGeometry().setFromPoints(gridPts), new THREE.LineBasicMaterial({ color: C_AMBER, transparent: true, opacity: 0 }));
+            grid4x4_3.material.userData = { baseOpacity: 1.0 }; // Handled specially in animate loop
+            grid4x4_3.position.z = 0.05;
+            group3.add(grid4x4_3);
+        }
+
+        // --- Helper for Steps 4 and 5 ---
+        const tSize = 8;
+        const tDivs = 8;
+
+        function createTodaLayer(color, opacity) {
+            const geo = new THREE.PlaneGeometry(tSize, tSize, tDivs, tDivs);
+            const edgeMat = new THREE.LineBasicMaterial({ color, transparent: true, opacity });
+            edgeMat.userData = { baseOpacity: opacity };
+            const edges = new THREE.LineSegments(new THREE.EdgesGeometry(geo), edgeMat);
+            
+            const meshMat = new THREE.MeshBasicMaterial({ color, transparent: true, opacity: opacity * 0.2, side: THREE.DoubleSide });
+            meshMat.userData = { baseOpacity: opacity * 0.2 };
+            const mesh = new THREE.Mesh(geo, meshMat);
+            
+            edges.rotation.x = -Math.PI / 2;
+            mesh.rotation.x = -Math.PI / 2;
+            
+            const group = new THREE.Group();
+            group.add(edges, mesh);
+            return group;
+        }
+
+        function createKogameLayer(color) {
+            const group = new THREE.Group();
+            const pts = [];
+            for(let i=0; i<=tDivs; i++) {
+                for(let j=0; j<=tDivs; j++) {
+                    if ((i+j)%2 === 0) {
+                        let x = (i - tDivs/2) * (tSize/tDivs);
+                        let z = (j - tDivs/2) * (tSize/tDivs);
+                        pts.push(new THREE.Vector3(x, 0, z));
+                    }
+                }
+            }
+            const ptGeo = new THREE.BufferGeometry().setFromPoints(pts);
+            const ptMat = new THREE.PointsMaterial({color, size: 0.15, transparent:true, opacity:0.8});
+            ptMat.userData = { baseOpacity: 0.8 };
+            group.add(new THREE.Points(ptGeo, ptMat));
+            
+            const lines = [];
+            pts.forEach(p1 => {
+                pts.forEach(p2 => {
+                    const dist = p1.distanceTo(p2);
+                    if(dist > 0 && dist < (tSize/tDivs)*1.5) lines.push(p1, p2);
+                });
+            });
+            const lineMat = new THREE.LineBasicMaterial({color, transparent:true, opacity:0.4});
+            lineMat.userData = { baseOpacity: 0.4 };
+            group.add(new THREE.LineSegments(new THREE.BufferGeometry().setFromPoints(lines), lineMat));
+            
+            return group;
+        }
+
+        function buildHyperTodaStructure() {
+            const hGroup = new THREE.Group();
+            const t1 = createTodaLayer(C_CYAN, 0.6); 
+            const t5 = createTodaLayer(C_FUCHSIA, 0.6); 
+            const k2 = createKogameLayer(0x8b5cf6);
+            const k3 = createKogameLayer(0x10b981);
+            const k4 = createKogameLayer(0xf59e0b);
+
+            const h = 4;
+            t1.position.y = -h/2;
+            k2.position.y = -h/4;
+            k3.position.y = 0;
+            k4.position.y = h/4;
+            t5.position.y = h/2;
+
+            hGroup.add(t1, k2, k3, k4, t5);
+            return { group: hGroup, layers: { t1, t5, k2, k3, k4 } };
+        }
+
+
+        // Step 4: Dimensional Lifting (Toda -> Kogame 5-layer)
+        let step4Struct;
+        function buildStep4() {
+            group4 = new THREE.Group();
+            scene.add(group4);
+
+            step4Struct = buildHyperTodaStructure();
+            group4.add(step4Struct.group);
+        }
+
+        // Step 5: Symmetric Tessellation (Folding & Quadrance Web)
+        let hyperToda5_1, hyperToda5_2;
+        let quadranceWeb, tessellationSeed;
+        const webPointsLocal = [];
+        
+        function buildStep5() {
+            group5 = new THREE.Group();
+            scene.add(group5);
+
+            // Rebuild the two structures for Step 5 to manipulate freely
+            const h1 = buildHyperTodaStructure();
+            hyperToda5_1 = h1.group;
+            
+            const h2 = buildHyperTodaStructure();
+            hyperToda5_2 = h2.group;
+            hyperToda5_2.rotation.z = Math.PI; 
+            
+            hyperToda5_2.children.forEach(c => {
+                c.children.forEach(mesh => {
+                    if (mesh && mesh.material && mesh.material.color) {
+                        mesh.material.color.lerp(new THREE.Color(0xef4444), 0.5); 
+                    }
+                });
+            });
+
+            group5.add(hyperToda5_1, hyperToda5_2);
+
+            // Define points to connect via Quadrance tethers (Top layer is at y=2 local)
+            for(let x=-4; x<=4; x+=2) {
+                for(let z=-4; z<=4; z+=2) {
+                    webPointsLocal.push(new THREE.Vector3(x, 2, z));
+                }
+            }
+
+            // Quadrance Web (Connecting lines)
+            const webGeo = new THREE.BufferGeometry();
+            webGeo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(webPointsLocal.length * 6), 3));
+            const webMat = new THREE.LineBasicMaterial({ 
+                color: C_FUCHSIA, transparent: true, opacity: 0, 
+                blending: THREE.AdditiveBlending, linewidth: 2 
+            });
+            webMat.userData = { baseOpacity: 0.8 };
+            quadranceWeb = new THREE.LineSegments(webGeo, webMat);
+            group5.add(quadranceWeb);
+
+            // Central Tessellation Seed (Dense Block)
+            const seedGeo = new THREE.BoxGeometry(4, 4, 4);
+            const seedMat = new THREE.MeshPhysicalMaterial({ 
+                color: C_FUCHSIA, emissive: C_FUCHSIA, emissiveIntensity: 0.5,
+                transparent: true, opacity: 0, transmission: 0.5, roughness: 0.1, metalness: 0.8 
+            });
+            seedMat.userData = { baseOpacity: 0.9 };
+            tessellationSeed = new THREE.Mesh(seedGeo, seedMat);
+            
+            const seedWire = new THREE.LineSegments(
+                new THREE.EdgesGeometry(seedGeo), 
+                new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0 })
+            );
+            if(seedWire.material) seedWire.material.userData = { baseOpacity: 0.8 };
+            tessellationSeed.add(seedWire);
+            
+            group5.add(tessellationSeed);
+        }
+
+        // --- Navigation Logic ---
+        function updateDOM() {
+            document.querySelectorAll('.step-node').forEach(node => {
+                if (parseInt(node.getAttribute('data-step')) === currentStep) {
+                    node.classList.add('active');
+                } else {
+                    node.classList.remove('active');
+                }
+            });
+
+            const contentPanel = document.getElementById('content-panel');
+            contentPanel.innerHTML = contentTemplates[currentStep];
+            
+            if (window.MathJax) {
+                MathJax.typesetPromise([contentPanel]).catch((err) => console.log(err));
+            }
+
+            document.getElementById('btn-prev').disabled = currentStep === 1;
+            document.getElementById('btn-next').disabled = currentStep === totalSteps;
+
+            // Trigger smooth camera adjustments and phase targeting
+            targetPhase = currentStep;
+            
+            // Only update camera if initialized
+            if (camera && controls) {
+                // Dynamic Camera Pan Logic per phase
+                if(currentStep === 1) { camera.position.set(0, 0, 14); controls.target.set(0,0,0); }
+                if(currentStep === 2) { camera.position.set(8, 8, 12); controls.target.set(0,0,0); }
+                if(currentStep === 3) { camera.position.set(0, 0, 10); controls.target.set(0,0,0); }
+                if(currentStep === 4) { camera.position.set(8, 8, 12); controls.target.set(0,0,0); }
+                if(currentStep === 5) { camera.position.set(8, 8, 12); controls.target.set(0,0,0); }
+            }
+            
+            // Reset specific animations
+            animationTime = 0;
+            if(currentStep === 3 && sqBase3 && sqBase3.scale) {
+                sqBase3.scale.setScalar(1);
+                if(sqScaled3 && sqScaled3.scale) sqScaled3.scale.setScalar(0.5); 
+                if(grid4x4_3 && grid4x4_3.material) grid4x4_3.material.opacity = 0;
+            }
+        }
+
+        function nextStep() { if (currentStep < totalSteps) { currentStep++; updateDOM(); } }
+        function prevStep() { if (currentStep > 1) { currentStep--; updateDOM(); } }
+        function goToStep(step) { currentStep = step; updateDOM(); }
+
+        // --- Master Continuous Animation Loop ---
+        function animate() {
+            requestAnimationFrame(animate);
+            animationTime += 0.02;
+            controls.update();
+
+            // 1. Fluid Phase Engine (Calculates 0 to 1 weight per group)
+            currentPhase += (targetPhase - currentPhase) * 0.1;
+            
+            const w1 = getPhaseWeight(1);
+            const w2 = getPhaseWeight(2);
+            const w3 = getPhaseWeight(3);
+            const w4 = getPhaseWeight(4);
+            const w5 = getPhaseWeight(5);
+
+            // Apply calculated weights smoothly to each group
+            applyOpacity(group1, w1);
+            applyOpacity(group2, w2);
+            applyOpacity(group3, w3);
+            applyOpacity(group4, w4);
+            applyOpacity(group5, w5);
+
+            // Telemetry Logic
+            let tVal = 0, cVal = 0, sVal = 0;
+
+            // --- Sub-Animations that run continuously depending on group weight ---
+
+            // Step 1: Subtle breathing
+            if (w1 > 0.01) {
+                const s = 1.0 + Math.sin(animationTime * 2) * 0.02;
+                if (group1 && group1.scale) group1.scale.setScalar(s);
+            }
+
+            // Step 2: Gentle rotation
+            if (w2 > 0.01) {
+                if (group2) {
+                    group2.rotation.y = Math.sin(animationTime * 0.5) * 0.2;
+                    group2.rotation.x = Math.cos(animationTime * 0.5) * 0.1;
+                }
+            }
+
+            // Step 3: Scaling Box logic
+            if (w3 > 0.01) {
+                let phase = (Math.sin(animationTime) + 1) / 2; 
+                let scaleVal = 0.5 + (phase * 0.5); 
+                if (sqScaled3 && sqScaled3.scale) sqScaled3.scale.setScalar(scaleVal);
+                if (grid4x4_3 && grid4x4_3.material) grid4x4_3.material.opacity = Math.pow(phase, 4) * w3; 
+            }
+
+            // Step 4 Shared Lifting Math (Actively breathing)
+            if (w4 > 0.01 && step4Struct && step4Struct.layers) {
+                let lift = (Math.sin(animationTime * 1.5) + 1) / 2; // 0 to 1
+                let h = lift * 4;
+                
+                if(step4Struct.layers.t1 && step4Struct.layers.t1.position) step4Struct.layers.t1.position.y = -h/2;
+                if(step4Struct.layers.t5 && step4Struct.layers.t5.position) step4Struct.layers.t5.position.y = h/2;
+                if(step4Struct.layers.k2 && step4Struct.layers.k2.position) step4Struct.layers.k2.position.y = -h/4;
+                if(step4Struct.layers.k3 && step4Struct.layers.k3.position) step4Struct.layers.k3.position.y = 0;
+                if(step4Struct.layers.k4 && step4Struct.layers.k4.position) step4Struct.layers.k4.position.y = h/4;
+
+                let fade = Math.pow(lift, 2) * 0.8 * w4;
+                [step4Struct.layers.k2, step4Struct.layers.k3, step4Struct.layers.k4].forEach(l => {
+                    if(l && l.children) {
+                        l.children.forEach(c => {
+                            if(c && c.material) c.material.opacity = fade;
+                        });
+                    }
+                });
+                if (group4) group4.rotation.y += 0.005;
+            }
+
+            // Step 5: Symmetric Tessellation & Folding 
+            if (w5 > 0.01) {
+                // Folding Phase (0 to 1 repeatedly for demonstration)
+                let foldPhase = (Math.sin(animationTime * 0.8) + 1) / 2; // 0 to 1
+                
+                // Rotates from 0 to 90 degrees (PI/2) clamping shut
+                let foldAngle = foldPhase * (Math.PI / 2);
+                
+                if (hyperToda5_1 && hyperToda5_1.rotation) hyperToda5_1.rotation.x = foldAngle;
+                if (hyperToda5_2 && hyperToda5_2.rotation) hyperToda5_2.rotation.x = -foldAngle;
+                
+                // Also pull them closer to the center as they fold
+                if (hyperToda5_1 && hyperToda5_1.position) {
+                    hyperToda5_1.position.y = -3.0 * (1.0 - foldPhase);
+                    hyperToda5_1.position.z = -2.0 * foldPhase;
+                }
+                
+                if (hyperToda5_2 && hyperToda5_2.position) {
+                    hyperToda5_2.position.y = 3.0 * (1.0 - foldPhase);
+                    hyperToda5_2.position.z = 2.0 * foldPhase;
+                }
+
+                // Update Quadrance Web drawing lines between the structures
+                if(quadranceWeb && quadranceWeb.geometry && quadranceWeb.geometry.attributes && quadranceWeb.geometry.attributes.position) {
+                    const posArray = quadranceWeb.geometry.attributes.position.array;
+                    let idx = 0;
+                    
+                    if (hyperToda5_1 && hyperToda5_1.matrix && hyperToda5_2 && hyperToda5_2.matrix) {
+                        // Force update world matrices so we get precise bridging coordinates
+                        hyperToda5_1.updateMatrixWorld(true);
+                        hyperToda5_2.updateMatrixWorld(true);
+
+                        webPointsLocal.forEach(lp => {
+                            let p1 = lp.clone().applyMatrix4(hyperToda5_1.matrix);
+                            let p2 = lp.clone().applyMatrix4(hyperToda5_2.matrix);
+                            
+                            posArray[idx++] = p1.x; posArray[idx++] = p1.y; posArray[idx++] = p1.z;
+                            posArray[idx++] = p2.x; posArray[idx++] = p2.y; posArray[idx++] = p2.z;
+                        });
+                        
+                        quadranceWeb.geometry.attributes.position.needsUpdate = true;
+                        quadranceWeb.geometry.computeBoundingSphere();
+                    }
+                    
+                    // Web gets brighter as it compresses
+                    if (quadranceWeb.material) {
+                        quadranceWeb.material.opacity = foldPhase * (quadranceWeb.material.userData?.baseOpacity || 0.8) * w5;
+                    }
+                }
+
+                // Tessellation Seed grows at the singularity
+                if(tessellationSeed && tessellationSeed.scale) {
+                    let seedScale = Math.pow(foldPhase, 3); // Sharp pop in at the end
+                    tessellationSeed.scale.setScalar(Math.max(0.001, seedScale));
+                }
+
+                // Slow constellation orbit
+                if (group5 && group5.rotation) {
+                    group5.rotation.y = animationTime * 0.1;
+                }
+
+                tVal = "0.00 (Equilibrium)";
+                cVal = "∞ (Tessellating)";
+                sVal = (100 * foldPhase).toFixed(1) + "%";
+            }
+
+            if(tVal === 0) tVal = "0.00";
+            if(cVal === 0) cVal = "0.00";
+            if(sVal === 0) sVal = "0.0%";
+
+            domTension = document.getElementById('tel-tension');
+            domCurrent = document.getElementById('tel-current');
+            domSync = document.getElementById('tel-sync');
+
+            if(domTension) domTension.innerText = tVal;
+            if(domCurrent) domCurrent.innerText = cVal;
+            if(domSync) domSync.innerText = sVal;
+
+            renderer.render(scene, camera);
+        }
+
+        window.onload = init;
+
+    </script>
+</body>
+</html>
