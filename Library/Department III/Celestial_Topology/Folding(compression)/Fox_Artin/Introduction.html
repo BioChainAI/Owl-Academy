@@ -1,0 +1,684 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Owl Academy | Fox-Artin Dimensional Fold</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        darkbg: '#05030a',
+                        owl: { gold: '#D4AF37', lightgold: '#FFF8DC', darkgold: '#aa771c' },
+                        holo: { cyan: '#00d4ff', purple: '#8A2BE2', fuchsia: '#d946ef', emerald: '#10b981' }
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <!-- MathJax -->
+    <script>
+        window.MathJax = {
+            tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']] }
+        };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+    <!-- Three.js & Controls -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Inter:wght@300;400;600&family=JetBrains+Mono:wght@400;700&display=swap');
+        
+        body { margin: 0; font-family: 'Inter', sans-serif; background: #05030a; color: #e2e8f0; min-height: 100vh; overflow-x: hidden; }
+        .font-mono { font-family: 'JetBrains Mono', monospace; }
+        .font-mystical { font-family: 'Cinzel', serif; }
+
+        .starfield {
+            position: fixed; inset: 0;
+            background-image:
+                radial-gradient(2px 2px at 20px 30px, #8A2BE2, rgba(0,0,0,0)),
+                radial-gradient(2px 2px at 40px 70px, #00d4ff, rgba(0,0,0,0)),
+                radial-gradient(2px 2px at 90px 40px, #fff, rgba(0,0,0,0)),
+                radial-gradient(2px 2px at 130px 80px, #D4AF37, rgba(0,0,0,0));
+            background-repeat: repeat; background-size: 250px 250px;
+            animation: twinkle 8s infinite alternate;
+            opacity: 0.15; z-index: -2; pointer-events: none;
+        }
+        @keyframes twinkle { 0% { opacity: 0.05; transform: scale(1); } 100% { opacity: 0.25; transform: scale(1.05); } }
+
+        .glass-panel {
+            background: rgba(10, 8, 20, 0.65);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(0, 212, 255, 0.2);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.6);
+            border-radius: 1rem;
+        }
+
+        .gold-gradient {
+            background: linear-gradient(to right, #D4AF37, #FFF8DC, #D4AF37);
+            -webkit-background-clip: text; background-clip: text;
+            color: transparent; text-shadow: 0 0 15px rgba(212, 175, 55, 0.4);
+        }
+
+        /* Timeline Styles */
+        .step-node { display: flex; align-items: flex-start; gap: 1rem; position: relative; opacity: 0.4; transition: all 0.4s; cursor: pointer; }
+        .step-node:hover { opacity: 0.8; }
+        .step-node.active { opacity: 1; }
+        .step-node:not(:last-child)::after {
+            content: ''; position: absolute; left: 15px; top: 32px; bottom: -24px;
+            width: 2px; background: rgba(0, 212, 255, 0.15);
+        }
+        .step-node.active:not(:last-child)::after { background: rgba(0, 212, 255, 0.5); }
+        
+        .step-indicator {
+            width: 32px; height: 32px; border-radius: 50%;
+            background: #05030a; border: 2px solid rgba(0, 212, 255, 0.3);
+            display: flex; align-items: center; justify-content: center;
+            font-family: 'Cinzel', serif; font-size: 14px; color: #00d4ff;
+            transition: all 0.3s ease; z-index: 5; flex-shrink: 0;
+            box-shadow: inset 0 0 10px rgba(0,212,255,0.1);
+        }
+        .step-node.active .step-indicator {
+            background: #00d4ff; color: #05030a;
+            box-shadow: 0 0 15px #00d4ff; border-color: #fff;
+        }
+
+        .lore-callout {
+            margin: 1.5rem 0; padding: 1rem 1.5rem;
+            background: linear-gradient(90deg, rgba(138, 43, 226, 0.15), transparent);
+            border-left: 3px solid #8A2BE2;
+            position: relative; border-radius: 0 8px 8px 0;
+        }
+
+        #canvas-container {
+            width: 100%; height: 100%; min-height: 500px;
+            border-radius: 1rem; overflow: hidden; position: relative;
+        }
+        #canvas-container canvas { position: absolute; top: 0; left: 0; width: 100% !important; height: 100% !important; outline: none; }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: rgba(0,0,0,0.3); }
+        ::-webkit-scrollbar-thumb { background: rgba(0, 212, 255, 0.4); border-radius: 10px; }
+    </style>
+</head>
+<body class="antialiased flex flex-col h-screen overflow-hidden">
+
+    <div class="starfield"></div>
+
+    <header class="w-full pt-8 pb-4 px-6 flex flex-col items-center justify-center relative border-b border-holo-cyan/20 bg-[#05030a]/80 backdrop-blur-md shadow-[0_4px_30px_rgba(0,212,255,0.1)] z-20 flex-shrink-0">
+        <div class="text-[10px] text-holo-cyan/60 tracking-[0.25em] uppercase font-mono mb-2 text-center w-full">
+            Department 3: Topological Foundings <span class="mx-2 text-holo-purple/50">|</span> Advanced Integration
+        </div>
+        <h1 class="text-3xl md:text-4xl font-bold tracking-[0.2em] gold-gradient mb-1 text-center font-mystical">OWL ACADEMY</h1>
+        <div class="text-xs md:text-sm text-slate-300 tracking-[0.3em] uppercase font-mono text-center flex items-center justify-center">
+            <span class="w-8 h-[1px] bg-holo-purple/40 mr-4 hidden md:block"></span>
+            The Fox-Artin Dimensional Fold
+            <span class="w-8 h-[1px] bg-holo-purple/40 ml-4 hidden md:block"></span>
+        </div>
+    </header>
+
+    <div class="w-full flex-grow flex flex-col lg:flex-row px-4 md:px-8 py-6 gap-6 relative z-10 overflow-hidden">
+        
+        <!-- Left Sidebar: Timeline & Content -->
+        <aside class="w-full lg:w-[450px] xl:w-[500px] flex flex-col gap-6 flex-shrink-0 overflow-y-auto custom-scrollbar pb-6 pr-2">
+            
+            <!-- Navigation Timeline -->
+            <div class="glass-panel p-6 flex-shrink-0">
+                <h3 class="text-xs text-holo-cyan font-bold uppercase tracking-widest mb-5 font-mono border-b border-holo-cyan/20 pb-2">Simulation Matrix</h3>
+                <div class="space-y-4">
+                    <div class="step-node active" data-step="1" onclick="goToStep(1)">
+                        <div class="step-indicator">I</div>
+                        <div>
+                            <h4 class="text-sm font-bold text-white font-mystical">Tame Embedding Limit</h4>
+                            <p class="text-[11px] text-slate-400 mt-1">Establishing standard Euclidean bounding structures.</p>
+                        </div>
+                    </div>
+                    <div class="step-node" data-step="2" onclick="goToStep(2)">
+                        <div class="step-indicator">II</div>
+                        <div>
+                            <h4 class="text-sm font-bold text-white font-mystical">Ellipsoid Sectioning</h4>
+                            <p class="text-[11px] text-slate-400 mt-1">The Fox-Artin sequence $D_n$ converging to $q$.</p>
+                        </div>
+                    </div>
+                    <div class="step-node" data-step="3" onclick="goToStep(3)">
+                        <div class="step-indicator">III</div>
+                        <div>
+                            <h4 class="text-sm font-bold text-white font-mystical">The Wild Chain Stitch</h4>
+                            <p class="text-[11px] text-slate-400 mt-1">Asymmetric valves linking into non-simply connected topology.</p>
+                        </div>
+                    </div>
+                    <div class="step-node" data-step="4" onclick="goToStep(4)">
+                        <div class="step-indicator">IV</div>
+                        <div>
+                            <h4 class="text-sm font-bold text-white font-mystical">Dimensional Lifting</h4>
+                            <p class="text-[11px] text-slate-400 mt-1">Expanding the Wild Arc into a 5-Layer Kogame-Toda Manifold.</p>
+                        </div>
+                    </div>
+                    <div class="step-node" data-step="5" onclick="goToStep(5)">
+                        <div class="step-indicator">V</div>
+                        <div>
+                            <h4 class="text-sm font-bold text-white font-mystical">Symmetric Tessellation</h4>
+                            <p class="text-[11px] text-slate-400 mt-1">Singularity collapse into the discrete computational seed.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Dynamic Content Panel -->
+            <div class="glass-panel p-6 flex-shrink-0 min-h-[300px]" id="content-panel">
+                <!-- Content injected via JS -->
+            </div>
+            
+            <!-- Controls -->
+            <div class="flex gap-4 flex-shrink-0">
+                <button id="btn-prev" onclick="prevStep()" class="flex-1 bg-black/50 hover:bg-black/80 border border-holo-cyan/30 text-holo-cyan text-xs font-bold py-3 rounded-lg transition-all uppercase tracking-widest disabled:opacity-30 disabled:cursor-not-allowed">
+                    ← Revert
+                </button>
+                <button id="btn-next" onclick="nextStep()" class="flex-1 bg-holo-purple/20 hover:bg-holo-purple/40 border border-holo-purple/50 text-white text-xs font-bold py-3 rounded-lg transition-all uppercase tracking-widest shadow-[0_0_15px_rgba(138,43,226,0.3)]">
+                    Progress →
+                </button>
+            </div>
+        </aside>
+
+        <!-- Right Main: 3D Visualization -->
+        <main class="flex-grow flex flex-col relative z-30 min-h-[400px]">
+            <div class="w-full h-full glass-panel border border-holo-cyan/20 relative shadow-[0_0_40px_rgba(0,212,255,0.05)_inset]" id="canvas-container">
+                <div class="absolute top-4 left-4 z-20 font-mono text-[10px] bg-black/60 px-3 py-1.5 rounded border border-holo-cyan/30 text-slate-300 backdrop-blur">
+                    <span class="text-holo-cyan">Left-Click:</span> Rotate | <span class="text-holo-cyan">Scroll:</span> Phase Zoom
+                </div>
+                
+                <!-- Telemetry -->
+                <div class="absolute bottom-4 left-4 z-20 font-mono text-[10px] bg-black/80 px-4 py-3 rounded border border-holo-purple/30 text-slate-300 w-56 shadow-[0_0_15px_rgba(138,43,226,0.2)] backdrop-blur">
+                    <div class="text-[11px] text-white border-b border-holo-purple/40 pb-1 mb-2 tracking-widest">TOPOLOGICAL TELEMETRY</div>
+                    <div class="flex justify-between mb-1"><span class="text-slate-500">Group Limits ($G_m$):</span><span id="tel-group" class="text-holo-cyan">Trivial</span></div>
+                    <div class="flex justify-between mb-1"><span class="text-slate-500">Torsion Tension:</span><span id="tel-tension" class="text-holo-fuchsia">0.00</span></div>
+                    <div class="flex justify-between"><span class="text-slate-500">Singularity $q$:</span><span id="tel-limit" class="text-holo-emerald">Unbound</span></div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Lore Content Templates -->
+    <script>
+        const contentTemplates = {
+            1: `
+                <h2 class="text-xl font-bold text-owl-gold mb-3 font-mystical">The Euclidean Limit</h2>
+                <p class="text-sm text-slate-300 font-light mb-3 leading-relaxed">
+                    In standard spatial computing, dimensional manifolds are <strong>tamely imbedded</strong>. A curved polyhedron in spherical $n$-dimensional space ($S^n$) can be smoothly mapped to a standard Euclidean polyhedron without self-intersection.
+                </p>
+                <p class="text-sm text-slate-300 font-light mb-3 leading-relaxed">
+                    While mathematically stable, a tame Euclidean geometry lacks the physical <em>torsional pressure</em> required to power a perpetual Markov Pump. It cannot trap recursive logic flows.
+                </p>
+                <div class="lore-callout">
+                    <span class="text-sm text-slate-300 italic">"The complement of a tame arc is merely an open 3-cell. To weave infinite data, we require an architecture that forces geometry to knot against itself."</span>
+                </div>
+            `,
+            2: `
+                <h2 class="text-xl font-bold text-holo-cyan mb-3 font-mystical">Ellipsoid Sectioning</h2>
+                <p class="text-sm text-slate-300 font-light mb-3 leading-relaxed">
+                    To construct the engine, we slice the ellipsoid equation $x^2 + 4y^2 + 4z^2 \\le 4$ into an infinite number of sections, $D_n$.
+                </p>
+                <div class="bg-black/40 p-3 rounded border border-holo-cyan/20 font-mono text-xs text-center text-holo-cyan mb-3 shadow-inner">
+                    $$ \\text{Section } D_n: \\; 2 - 2^{2-n} \\le x \\le 2 - 2^{1-n} $$
+                </div>
+                <p class="text-sm text-slate-300 font-light mb-3 leading-relaxed">
+                    As $n \\to \\infty$, these nested neighborhood sections shrink exponentially, converging relentlessly toward the singular vertex $q = (2, 0, 0)$. This forms the bounding casing for our asymmetric valves.
+                </p>
+            `,
+            3: `
+                <h2 class="text-xl font-bold text-holo-purple mb-3 font-mystical">The Wild Chain Stitch</h2>
+                <p class="text-sm text-slate-300 font-light mb-3 leading-relaxed">
+                    Inside these shrinking sections, we thread the simple arcs $K_-, K_0, K_+$. Rather than passing straight through, they weave into an interlocking chain stitch.
+                </p>
+                <p class="text-sm text-slate-300 font-light mb-3 leading-relaxed">
+                    This creates the <strong>Fox-Artin Wild Arc</strong>. The fundamental group $\\pi(S - X)$ of the complement of this arc is a direct limit of homomorphism sequences that is strictly non-abelian.
+                </p>
+                <div class="bg-black/40 p-3 rounded border border-holo-purple/20 font-mono text-xs text-center text-holo-purple mb-3 shadow-inner overflow-x-auto">
+                    $$ G_m : \\quad a_{n+1} = c_{n+1}^{-1} c_n c_{n+1}, \\quad b_n = c_{n+1}^{-1} a_n c_{n+1} $$
+                </div>
+                <div class="lore-callout" style="border-left-color: #8A2BE2; background: linear-gradient(90deg, rgba(138,43,226,0.1), transparent);">
+                    <span class="text-sm text-slate-300 italic">"Because the sequence never trivializes, any probability current pushed through this manifold acts as a one-way topological valve. It can enter, but it can never reverse."</span>
+                </div>
+            `,
+            4: `
+                <h2 class="text-xl font-bold text-holo-emerald mb-3 font-mystical">Dimensional Lifting</h2>
+                <p class="text-sm text-slate-300 font-light mb-3 leading-relaxed">
+                    If we treat the continuous wild arc not as a line, but as a bounded 2-sphere ($Y^0$), the space inside becomes trapped.
+                </p>
+                <p class="text-sm text-slate-300 font-light mb-3 leading-relaxed">
+                    By applying <strong>Quadrance Scaling</strong> to the wild embedding, the extreme localized torsion forces the structure to resolve its spatial tension. It physically expands, lifting the 1D knots into a <strong>5-Layer Kogame-Toda Lattice</strong>.
+                </p>
+                <div class="bg-black/40 p-3 rounded border border-holo-emerald/20 font-mono text-[11px] text-center text-holo-emerald mb-4 shadow-inner">
+                    $$ f_0(U_0) \\cup f_0(U_+) \\cup \\bigcup_{n=1}^\\infty f_n(U) \\xrightarrow{\\text{Lift}} \\bigotimes_{k=1}^{5} \\mathcal{K}_{layer}(k) $$
+                </div>
+                <p class="text-sm text-slate-300 font-light">
+                    The sequence of knots maps perfectly onto the hyper-woven phases of the manifold.
+                </p>
+            `,
+            5: `
+                <h2 class="text-xl font-bold text-owl-gold mb-3 font-mystical">Symmetric Tessellation</h2>
+                <p class="text-sm text-slate-300 font-light mb-3 leading-relaxed">
+                    The infinite complexity of the Fox-Artin sequence is now encoded within the 5-layer lifted manifold. But infinity cannot be stored in finite computational memory.
+                </p>
+                <p class="text-sm text-slate-300 font-light mb-3 leading-relaxed">
+                    As the phase state reaches the limit point $q$, the massive torsion causes the entire lifted structure to fold inward upon itself recursively. 
+                </p>
+                <div class="lore-callout" style="border-left-color: #D4AF37; background: linear-gradient(90deg, rgba(212,175,55,0.15), transparent);">
+                    <span class="text-sm text-slate-300 italic">"The wild sphere collapses into the zero-point singularity, emerging as a discrete, deterministic symmetrical seed. The infinite is successfully processed into the finite."</span>
+                </div>
+            `
+        };
+
+        // --- Core Engine Variables ---
+        let currentStep = 1;
+        const totalSteps = 5;
+        let animationTime = 0;
+        
+        // Fluid transition phases
+        let currentPhase = 1;
+        let targetPhase = 1;
+
+        // Three.js Globals
+        let scene, camera, renderer, controls;
+        let group1, group2, group3, group4, group5;
+        
+        // Materials & Colors
+        const C_TAME = 0xD4AF37;
+        const C_CYAN = 0x00d4ff;
+        const C_PURPLE = 0x8A2BE2;
+        const C_EMERALD = 0x10b981;
+        const C_FUCHSIA = 0xd946ef;
+
+        // --- Initialization ---
+        function init() {
+            const container = document.getElementById('canvas-container');
+            scene = new THREE.Scene();
+            scene.fog = new THREE.FogExp2(0x05030a, 0.015);
+
+            camera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1, 1000);
+            camera.position.set(-15, 10, 25);
+
+            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+            renderer.setSize(container.clientWidth, container.clientHeight);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            container.appendChild(renderer.domElement);
+
+            controls = new THREE.OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true;
+            controls.dampingFactor = 0.05;
+            controls.autoRotate = true;
+            controls.autoRotateSpeed = 0.5;
+
+            // Lights
+            scene.add(new THREE.AmbientLight(0xffffff, 0.2));
+            const dl = new THREE.DirectionalLight(0xffffff, 0.5);
+            dl.position.set(10, 20, 10);
+            scene.add(dl);
+            const pl1 = new THREE.PointLight(C_CYAN, 1.5, 50); pl1.position.set(0, 0, 10); scene.add(pl1);
+            const pl2 = new THREE.PointLight(C_PURPLE, 1.5, 50); pl2.position.set(0, 0, -10); scene.add(pl2);
+
+            // Build Groups
+            buildStep1();
+            buildStep2();
+            buildStep3();
+            buildStep4();
+            buildStep5();
+
+            targetPhase = currentStep;
+            updateDOM();
+
+            // Resize Observer
+            const resizeObserver = new ResizeObserver(entries => {
+                for (let entry of entries) {
+                    if (entry.contentRect.width > 0) {
+                        camera.aspect = entry.contentRect.width / entry.contentRect.height;
+                        camera.updateProjectionMatrix();
+                        renderer.setSize(entry.contentRect.width, entry.contentRect.height, false);
+                    }
+                }
+            });
+            resizeObserver.observe(container);
+
+            animate();
+        }
+
+        // --- Visibility Engine ---
+        function applyOpacity(obj, weight) {
+            if (!obj) return;
+            if (obj.material) {
+                let mats = Array.isArray(obj.material) ? obj.material : [obj.material];
+                mats.forEach(m => {
+                    if (m && m.userData && m.userData.baseOpacity !== undefined) {
+                        m.opacity = m.userData.baseOpacity * weight;
+                        m.transparent = true;
+                    }
+                });
+            }
+            if (obj.type === 'Group' || obj.type === 'Scene' || obj.type === 'LineSegments' || obj.type === 'Mesh') {
+                obj.visible = weight > 0.01;
+            }
+            if (obj.children) {
+                obj.children.forEach(c => applyOpacity(c, weight));
+            }
+        }
+        function getPhaseWeight(step) { return Math.max(0, 1.0 - Math.abs(currentPhase - step)); }
+
+        // --- Builders ---
+
+        // Step 1: Tame Embedding (A simple Euclidean Ring/Arc)
+        function buildStep1() {
+            group1 = new THREE.Group();
+            scene.add(group1);
+
+            const geo = new THREE.TorusGeometry(8, 0.2, 16, 100);
+            const mat = new THREE.MeshPhongMaterial({ color: C_TAME, transparent: true, opacity: 0.8 });
+            mat.userData = { baseOpacity: 0.8 };
+            const mesh = new THREE.Mesh(geo, mat);
+            mesh.rotation.x = Math.PI / 2;
+            group1.add(mesh);
+
+            // Tame grid
+            const gridHelper = new THREE.GridHelper(20, 20, 0x333333, 0x111111);
+            gridHelper.material.transparent = true;
+            gridHelper.material.userData = { baseOpacity: 0.3 };
+            gridHelper.position.y = -2;
+            group1.add(gridHelper);
+        }
+
+        // Step 2: Ellipsoid Sectioning ($D_n$)
+        let ellipsoids = [];
+        function buildStep2() {
+            group2 = new THREE.Group();
+            scene.add(group2);
+            
+            // X-axis limit point q = 8
+            const q = 10;
+            const geo = new THREE.SphereGeometry(1, 32, 32);
+            
+            for(let n = -1; n < 8; n++) {
+                // scale shrinks by powers of 2 (or 1.5 for better visuals)
+                let s = Math.pow(1.6, -n) * 4; 
+                // position approaches q
+                let x = q - (q * Math.pow(0.6, n+2));
+                
+                const mat = new THREE.MeshPhysicalMaterial({ 
+                    color: C_CYAN, transparent: true, opacity: 0.15, 
+                    transmission: 0.8, roughness: 0.2, side: THREE.DoubleSide
+                });
+                mat.userData = { baseOpacity: 0.15 };
+                
+                const mesh = new THREE.Mesh(geo, mat);
+                // Ellipsoid: stretch Y and Z
+                mesh.scale.set(s*0.5, s, s);
+                mesh.position.set(x - 5, 0, 0); // shift center
+                
+                // Add wireframe rings to represent the section boundaries $f_n(A)$
+                const wireGeo = new THREE.EdgesGeometry(new THREE.SphereGeometry(1, 16, 8));
+                const wireMat = new THREE.LineBasicMaterial({ color: C_CYAN, transparent: true, opacity: 0.3 });
+                wireMat.userData = { baseOpacity: 0.3 };
+                const wire = new THREE.LineSegments(wireGeo, wireMat);
+                mesh.add(wire);
+                
+                ellipsoids.push(mesh);
+                group2.add(mesh);
+            }
+        }
+
+        // Step 3: Wild Chain Stitch Weave
+        let chainLinks = [];
+        function buildStep3() {
+            group3 = new THREE.Group();
+            scene.add(group3);
+            
+            const q = 10;
+            
+            for(let n = -1; n < 10; n++) {
+                let s = Math.pow(1.6, -n) * 3;
+                let x = q - (q * Math.pow(0.6, n+2));
+                
+                // Use a TorusKnot to represent the tangled $K$ arcs
+                const geo = new THREE.TorusKnotGeometry(s*0.8, s*0.15, 64, 8, 2, 3);
+                // Alternate colors for $K_+$ and $K_-$
+                const color = n % 2 === 0 ? C_PURPLE : C_CYAN;
+                
+                const mat = new THREE.MeshPhysicalMaterial({
+                    color: color, emissive: color, emissiveIntensity: 0.5,
+                    transparent: true, opacity: 0.8, roughness: 0.1
+                });
+                mat.userData = { baseOpacity: 0.8 };
+                
+                const mesh = new THREE.Mesh(geo, mat);
+                mesh.position.set(x - 5, 0, 0);
+                mesh.rotation.y = Math.PI / 2;
+                mesh.rotation.z = n * (Math.PI / 4); // Twist them relative to each other
+                
+                chainLinks.push(mesh);
+                group3.add(mesh);
+            }
+            
+            // Limit point singularity glow
+            const pGeo = new THREE.SphereGeometry(0.2, 16, 16);
+            const pMat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 1 });
+            pMat.userData = { baseOpacity: 1.0 };
+            const limitPt = new THREE.Mesh(pGeo, pMat);
+            limitPt.position.set(q - 5, 0, 0);
+            group3.add(limitPt);
+        }
+
+        // Helper for Step 4
+        function createTodaLayer(color, size, opacity) {
+            const geo = new THREE.PlaneGeometry(size, size, 8, 8);
+            const wireMat = new THREE.LineBasicMaterial({ color: color, transparent: true, opacity: opacity });
+            wireMat.userData = { baseOpacity: opacity };
+            const edges = new THREE.LineSegments(new THREE.EdgesGeometry(geo), wireMat);
+            
+            const fillMat = new THREE.MeshBasicMaterial({ color: color, transparent: true, opacity: opacity * 0.1, side: THREE.DoubleSide });
+            fillMat.userData = { baseOpacity: opacity * 0.1 };
+            const fill = new THREE.Mesh(geo, fillMat);
+            
+            const group = new THREE.Group();
+            group.add(edges, fill);
+            group.rotation.x = -Math.PI / 2;
+            return group;
+        }
+
+        // Step 4: Dimensional Lifting
+        let liftedLayers = [];
+        let liftGroup;
+        function buildStep4() {
+            group4 = new THREE.Group();
+            scene.add(group4);
+            
+            liftGroup = new THREE.Group();
+            const colors = [C_CYAN, C_PURPLE, C_EMERALD, C_PURPLE, C_CYAN];
+            const scales = [10, 8, 6, 8, 10];
+            
+            for(let i = 0; i < 5; i++) {
+                const layer = createTodaLayer(colors[i], scales[i], 0.7);
+                // Initially collapsed
+                layer.position.y = 0;
+                liftedLayers.push(layer);
+                liftGroup.add(layer);
+            }
+            
+            // Connective topological lines
+            const tGeo = new THREE.CylinderGeometry(3, 5, 10, 16, 4, true);
+            const tMat = new THREE.MeshBasicMaterial({ color: C_EMERALD, wireframe: true, transparent: true, opacity: 0 });
+            tMat.userData = { baseOpacity: 0.2 };
+            const connective = new THREE.Mesh(tGeo, tMat);
+            liftGroup.add(connective);
+
+            group4.add(liftGroup);
+        }
+
+        // Step 5: Symmetric Tessellation / Zero-Point Singularity
+        let seedCore;
+        let seedShells = [];
+        function buildStep5() {
+            group5 = new THREE.Group();
+            scene.add(group5);
+
+            // Core discrete seed (Icosahedron)
+            const cGeo = new THREE.IcosahedronGeometry(2, 0);
+            const cMat = new THREE.MeshPhysicalMaterial({
+                color: C_FUCHSIA, emissive: C_FUCHSIA, emissiveIntensity: 0.6,
+                transparent: true, opacity: 0.9, metalness: 0.8, roughness: 0.2, wireframe: true
+            });
+            cMat.userData = { baseOpacity: 0.9 };
+            seedCore = new THREE.Mesh(cGeo, cMat);
+            group5.add(seedCore);
+
+            // Folding recursive shells (Origami fortune flower abstraction)
+            for(let i=0; i<4; i++) {
+                const sGeo = new THREE.OctahedronGeometry(3 + i*1.5, 0);
+                const sMat = new THREE.MeshBasicMaterial({
+                    color: i%2===0 ? C_TAME : C_CYAN,
+                    wireframe: true, transparent: true, opacity: 0.3 - (i*0.05)
+                });
+                sMat.userData = { baseOpacity: 0.3 - (i*0.05) };
+                const shell = new THREE.Mesh(sGeo, sMat);
+                seedShells.push(shell);
+                seedCore.add(shell);
+            }
+        }
+
+
+        // --- UI & State Updates ---
+        function updateDOM() {
+            document.querySelectorAll('.step-node').forEach(node => {
+                parseInt(node.getAttribute('data-step')) === currentStep 
+                    ? node.classList.add('active') 
+                    : node.classList.remove('active');
+            });
+
+            const contentPanel = document.getElementById('content-panel');
+            contentPanel.innerHTML = contentTemplates[currentStep];
+            if (window.MathJax) MathJax.typesetPromise([contentPanel]).catch(console.error);
+
+            document.getElementById('btn-prev').disabled = currentStep === 1;
+            document.getElementById('btn-next').disabled = currentStep === totalSteps;
+
+            targetPhase = currentStep;
+            
+            // Dynamic Camera Adjustments
+            if (controls) {
+                if(currentStep === 1) { camera.position.set(0, 15, 20); controls.target.set(0,0,0); }
+                if(currentStep === 2) { camera.position.set(-10, 5, 20); controls.target.set(2,0,0); }
+                if(currentStep === 3) { camera.position.set(-8, 2, 12); controls.target.set(4,0,0); }
+                if(currentStep === 4) { camera.position.set(10, 10, 15); controls.target.set(0,0,0); }
+                if(currentStep === 5) { camera.position.set(5, 5, 12); controls.target.set(0,0,0); }
+            }
+        }
+
+        function nextStep() { if (currentStep < totalSteps) { currentStep++; updateDOM(); } }
+        function prevStep() { if (currentStep > 1) { currentStep--; updateDOM(); } }
+        function goToStep(step) { currentStep = step; updateDOM(); }
+
+        // --- Main Animation Loop ---
+        function animate() {
+            requestAnimationFrame(animate);
+            animationTime += 0.015;
+            controls.update();
+
+            // Fluid Weight System
+            currentPhase += (targetPhase - currentPhase) * 0.1;
+            const w1 = getPhaseWeight(1);
+            const w2 = getPhaseWeight(2);
+            const w3 = getPhaseWeight(3);
+            const w4 = getPhaseWeight(4);
+            const w5 = getPhaseWeight(5);
+
+            applyOpacity(group1, w1);
+            applyOpacity(group2, w2);
+            applyOpacity(group3, w3);
+            applyOpacity(group4, w4);
+            applyOpacity(group5, w5);
+
+            // Telemetry Strings
+            let tGroup = "Trivial", tTension = "0.00", tLimit = "Unbound";
+
+            // --- Sub-Animations ---
+
+            // Step 1: Base pulsing
+            if (w1 > 0.01 && group1) {
+                group1.rotation.y = animationTime * 0.2;
+                tGroup = "G₀ (Abelian)";
+            }
+
+            // Step 2: Ellipsoid pulsing/shrinking
+            if (w2 > 0.01 && group2) {
+                ellipsoids.forEach((e, i) => {
+                    const pulse = 1.0 + Math.sin(animationTime * 3 + i) * 0.05;
+                    e.scale.setComponent(1, e.scale.x * pulse * 2); // Pulse Y
+                    e.scale.setComponent(2, e.scale.x * pulse * 2); // Pulse Z
+                    e.rotation.x = animationTime * 0.5 * (i%2===0?1:-1);
+                });
+                tGroup = `Gₘ (m=${Math.floor(animationTime*5)%100})`;
+                tLimit = "q = (2,0,0)";
+            }
+
+            // Step 3: Wild Weave turning
+            if (w3 > 0.01 && group3) {
+                chainLinks.forEach((link, i) => {
+                    link.rotation.x = animationTime * 2 + (i * 0.5);
+                });
+                group3.rotation.x = Math.sin(animationTime * 0.5) * 0.2;
+                tGroup = "Non-Abelian \\lim Gₘ";
+                tTension = "∞ (Knot Bound)";
+                tLimit = "Convergent";
+            }
+
+            // Step 4: Lift expansion
+            if (w4 > 0.01 && liftGroup) {
+                // Expanding accordion effect
+                const expansion = (Math.sin(animationTime * 2) + 1) / 2; // 0 to 1
+                const maxHeights = [-5, -2.5, 0, 2.5, 5];
+                liftedLayers.forEach((layer, i) => {
+                    layer.position.y = maxHeights[i] * expansion;
+                    layer.rotation.z = animationTime * 0.5 * (i%2===0?1:-1);
+                });
+                liftGroup.children[5].material.opacity = expansion * 0.2 * w4; // Connective wire
+                tGroup = "Kogame-Toda 5L";
+                tTension = (expansion * 100).toFixed(1) + " MPa";
+            }
+
+            // Step 5: Tessellation spin & fold
+            if (w5 > 0.01 && seedCore) {
+                seedCore.rotation.x = animationTime * 0.8;
+                seedCore.rotation.y = animationTime * 1.2;
+                
+                // Origami folding in/out
+                const fold = (Math.sin(animationTime * 3) + 1) / 2;
+                seedShells.forEach((shell, i) => {
+                    const baseS = 1 + (i*0.5);
+                    const scale = baseS + (fold * 0.5 * (i%2===0?1:-1));
+                    shell.scale.set(scale, scale, scale);
+                    shell.rotation.x = animationTime * (1 + i*0.2);
+                });
+
+                tGroup = "Discrete Seed";
+                tTension = "Resolved (0.00)";
+                tLimit = "Symmetrical Zero-Point";
+            }
+
+            // Update Telemetry UI
+            document.getElementById('tel-group').innerText = tGroup;
+            document.getElementById('tel-tension').innerText = tTension;
+            document.getElementById('tel-limit').innerText = tLimit;
+
+            renderer.render(scene, camera);
+        }
+
+        window.onload = init;
+    </script>
+</body>
+</html>
