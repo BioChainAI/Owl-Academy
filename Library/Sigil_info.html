@@ -365,11 +365,11 @@
         // --- DATA LORE ---
         const sigilLayers = [
             { id: "layer-1a", title: "Layer 1: The Outer Ring", subtitle: "The Earthly Boundary", type: "2d", description: `<strong>The Border Text:</strong> Features ancient text: <em>SIGILLVM ACADEMIAE VLULAE</em> and <em>FUNDAMENTA CAELI IN TERRA</em>. Maintains geometric balance.`, renderFn: drawOuterRing },
-            { id: "layer-1b", title: "Layer 1b: The 24 Points", subtitle: "Male & Female Syzygies", type: "2d", description: `<strong>The 24 Points:</strong> Interlocking 12-pointed stars representing active (Solar) and receptive (Lunar) disciples, mirroring the 24 Elders.`, renderFn: draw24Points },
-            { id: "layer-2", title: "Layer 2: The Middle Geometry", subtitle: "The Trinity & Reflection", type: "2d", description: `<strong>The Father's Trinity:</strong> An upward triangle (The Father) reflects downwards to form the Hexagram—"As Above, So Below."`, renderFn: drawMiddleGeometry },
-            { id: "layer-3a", title: "Layer 3a: The Inner Sanctum", subtitle: "The Mother Plenum", type: "2d", description: `<strong>The Plenum Void:</strong> A perfect hexagon inscribed as the Mother Plenum—the womb of creation within the Father's framework.`, renderFn: drawMotherPlenum },
-            { id: "layer-3b", title: "Layer 3b: The 7-Star", subtitle: "The Spiritual Goal", type: "2d", description: `<strong>The 7-Star:</strong> A continuous Heptagram. The Star of Babalon, representing the ultimate spiritual goal.`, renderFn: draw7Star },
-            { id: "layer-4", title: "Layer 4: The Core Cipher", subtitle: "The Authentic Chi-Rho", type: "2d", description: `<strong>Chi-Rho (☧):</strong> The ancient monogram for Yeshua, flanked by Alpha and Omega. Divine Wisdom in perfect symmetry.`, renderFn: drawCoreCipher },
+            { id: "layer-1b", title: "Layer 1b: The 24 Points", subtitle: "Male & Female Syzygies", type: "2d", description: `<strong>The 24 Points:</strong> The 24 interlocking points represent the 12 forward and 12 inverse solar 'collapse fields' of the folding fractal, allowing active solar and receptive lunar disciples to mirror the 24 interlocking principles of equilibrium.`, renderFn: draw24Points },
+            { id: "layer-2", title: "Layer 2: The Middle Geometry", subtitle: "The Trinity & Reflection", type: "2d", description: `<strong>The Father's Trinity:</strong> An upward triangle (The Father) reflects downwards to form the Hexagram. "As Above, So Below." <span class="inline-flex items-center gap-1.5 ml-1 px-2 py-0.5 rounded border border-cyan-500/40 bg-cyan-900/30 shadow-[0_0_10px_rgba(0,212,255,0.4)] align-middle"><span class="text-cyan-100 text-[10px] tracking-widest uppercase font-mono drop-shadow-[0_0_4px_rgba(0,212,255,0.8)]">יהוה</span><svg class="w-3.5 h-3.5 text-cyan-400 animate-[spin_8s_linear_infinite] drop-shadow-[0_0_5px_rgba(0,212,255,0.8)]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polygon points="12,2 14.5,9.5 22,12 14.5,14.5 12,22 9.5,14.5 2,12 9.5,9.5"/><circle cx="12" cy="12" r="2"/></svg></span>`, renderFn: drawMiddleGeometry },
+            { id: "layer-3a", title: "Layer 3a: The Inner Sanctum", subtitle: "The Mother Plenum", type: "2d", description: `<strong>The Mother Plenum:</strong> Contains a structured weave flowing into the middle with two reflections on each side, establishing one full perspective observation in the absolute center, flanked by two halve inverses.`, renderFn: drawMotherPlenum },
+            { id: "layer-3b", title: "Layer 3b: The 7-Star", subtitle: "The Arbiter of Reality", type: "2d", description: `<strong>The 7-Star:</strong> A continuous Heptagram. It provides the unique embeddings of 'reality' known as the arbiter of reality geometry because of its ability to record non-equilibrium states that will rise above the resonance escape function called the Riemann zeta function.`, renderFn: draw7Star },
+            { id: "layer-4", title: "Layer 4: The Core Cipher", subtitle: "The Authentic Chi-Rho", type: "2d", description: `<strong>Chi-Rho (☧):</strong> The ancient monogram for Yeshua, flanked by Alpha and Omega. Divine Wisdom in perfect symmetry. It acts as the Monad with only positive direction of light. 'The guidepost'.`, renderFn: drawCoreCipher },
             { id: "layer-5", title: "Cryptographic Matrix", subtitle: "The 888 & 24 Constant", type: "2d", description: `Maps integers: <strong>8, 8, 8, 12, 12, 3, 7</strong> matching Gematria and geometric structures.`, renderFn: drawCryptography },
             { id: "layer-6", title: "4D Strassen Projection", subtitle: "Golden Clifford Toroid", type: "3d", className: "btn-4d", description: `<strong>The Nested Toroid:</strong> The entire 2D sigil mathematically projected into 4D Euclidean space ($\\mathbb{R}^{4}$).` }
         ];
@@ -521,11 +521,70 @@
             const group = document.createElementNS(svgNS, "g");
             group.setAttribute("id", "layer-3a"); group.classList.add("sigil-layer");
 
+            // Base boundary of the Plenum
             const pc = document.createElementNS(svgNS, "circle");
             pc.setAttribute("cx", SVGCenter); pc.setAttribute("cy", SVGCenter); pc.setAttribute("r", R_Plenum);
-            pc.style.fill = "color-mix(in srgb, var(--color-void) 90%, transparent)"; pc.style.stroke = "var(--color-primary)"; pc.style.strokeWidth = "1.5"; pc.style.strokeDasharray = "4 4";
+            pc.style.fill = "color-mix(in srgb, var(--color-void) 90%, transparent)"; pc.style.stroke = "var(--color-primary)"; pc.style.strokeWidth = "1"; pc.style.strokeDasharray = "4 4";
+            group.appendChild(pc);
+
+            // --- The Weave & Perspectives ---
+            const weaveGroup = document.createElementNS(svgNS, "g");
+            weaveGroup.style.fill = "none";
+            weaveGroup.style.strokeWidth = "1.5";
+
+            // 1. Central Full Perspective Observation (The complete eye/lens)
+            const centralObs = document.createElementNS(svgNS, "path");
+            centralObs.setAttribute("d", `M ${SVGCenter - 40} ${SVGCenter} Q ${SVGCenter} ${SVGCenter - 45} ${SVGCenter + 40} ${SVGCenter} Q ${SVGCenter} ${SVGCenter + 45} ${SVGCenter - 40} ${SVGCenter}`);
+            centralObs.style.stroke = "var(--color-holo1)";
+            centralObs.classList.add('cipher-element');
+            weaveGroup.appendChild(centralObs);
+
+            // Resonance point / Pupil
+            const centralPupil = document.createElementNS(svgNS, "circle");
+            centralPupil.setAttribute("cx", SVGCenter); centralPupil.setAttribute("cy", SVGCenter); centralPupil.setAttribute("r", "6");
+            centralPupil.style.stroke = "var(--color-holo1)";
+            centralPupil.style.fill = "color-mix(in srgb, var(--color-holo1) 40%, transparent)";
+            weaveGroup.appendChild(centralPupil);
+
+            // 2. Two Halve Inverses (Left and Right Reflections facing outward)
+            const leftInverse = document.createElementNS(svgNS, "path");
+            leftInverse.setAttribute("d", `M ${SVGCenter - 48} ${SVGCenter - 32} Q ${SVGCenter - 86} ${SVGCenter} ${SVGCenter - 48} ${SVGCenter + 32}`);
+            leftInverse.style.stroke = "var(--color-secondary)";
+            leftInverse.style.strokeDasharray = "3 3";
+            weaveGroup.appendChild(leftInverse);
+
+            const rightInverse = document.createElementNS(svgNS, "path");
+            rightInverse.setAttribute("d", `M ${SVGCenter + 48} ${SVGCenter - 32} Q ${SVGCenter + 86} ${SVGCenter} ${SVGCenter + 48} ${SVGCenter + 32}`);
+            rightInverse.style.stroke = "var(--color-secondary)";
+            rightInverse.style.strokeDasharray = "3 3";
+            weaveGroup.appendChild(rightInverse);
+
+            // 3. The Flowing Weave (lines pulling from the halves perfectly into the absolute center)
+            const weaveFlow = document.createElementNS(svgNS, "path");
+            weaveFlow.setAttribute("d", `
+                M ${SVGCenter - 48} ${SVGCenter - 32} C ${SVGCenter - 25} ${SVGCenter - 32}, ${SVGCenter - 20} ${SVGCenter}, ${SVGCenter} ${SVGCenter}
+                M ${SVGCenter - 48} ${SVGCenter + 32} C ${SVGCenter - 25} ${SVGCenter + 32}, ${SVGCenter - 20} ${SVGCenter}, ${SVGCenter} ${SVGCenter}
+                M ${SVGCenter + 48} ${SVGCenter - 32} C ${SVGCenter + 25} ${SVGCenter - 32}, ${SVGCenter + 20} ${SVGCenter}, ${SVGCenter} ${SVGCenter}
+                M ${SVGCenter + 48} ${SVGCenter + 32} C ${SVGCenter + 25} ${SVGCenter + 32}, ${SVGCenter + 20} ${SVGCenter}, ${SVGCenter} ${SVGCenter}
+            `);
+            weaveFlow.style.stroke = "color-mix(in srgb, var(--color-primary) 70%, transparent)";
+            weaveFlow.style.strokeWidth = "1";
+            weaveGroup.appendChild(weaveFlow);
             
-            group.appendChild(pc); svg.appendChild(group);
+            // Secondary criss-cross weave lines to finalize the woven funnel aesthetic
+            const weaveFlowCross = document.createElementNS(svgNS, "path");
+            weaveFlowCross.setAttribute("d", `
+                M ${SVGCenter - 48} ${SVGCenter - 16} C ${SVGCenter - 25} ${SVGCenter + 16}, ${SVGCenter - 20} ${SVGCenter}, ${SVGCenter} ${SVGCenter}
+                M ${SVGCenter - 48} ${SVGCenter + 16} C ${SVGCenter - 25} ${SVGCenter - 16}, ${SVGCenter - 20} ${SVGCenter}, ${SVGCenter} ${SVGCenter}
+                M ${SVGCenter + 48} ${SVGCenter - 16} C ${SVGCenter + 25} ${SVGCenter + 16}, ${SVGCenter + 20} ${SVGCenter}, ${SVGCenter} ${SVGCenter}
+                M ${SVGCenter + 48} ${SVGCenter + 16} C ${SVGCenter + 25} ${SVGCenter - 16}, ${SVGCenter + 20} ${SVGCenter}, ${SVGCenter} ${SVGCenter}
+            `);
+            weaveFlowCross.style.stroke = "color-mix(in srgb, var(--color-primary) 30%, transparent)";
+            weaveFlowCross.style.strokeWidth = "0.75";
+            weaveGroup.appendChild(weaveFlowCross);
+
+            group.appendChild(weaveGroup);
+            svg.appendChild(group);
         }
 
         function draw7Star(svg) {
