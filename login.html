@@ -8,53 +8,56 @@
     <!-- External Libraries -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <script src="https://accounts.google.com/gsi/client" async defer></script>
     
-    <!-- SECURITY GUARD (Inlined to resolve reference errors) -->
-    <script>
-        const TOKEN_KEY = "owl_academy_session_token";
+    <!-- Firebase Auth — handles sign-in and auto-redirect if already authenticated -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-app.js";
+        import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-auth.js";
 
-        function enforceSecurity() {
-            const token = localStorage.getItem(TOKEN_KEY);
-            const isLoginPage = window.location.pathname.endsWith("login.html") || 
-                                window.location.pathname === "/" || 
-                                window.location.pathname.includes("scf.usercontent.goog") ||
-                                window.location.pathname.endsWith("github.io/");
+        const firebaseConfig = {
+            apiKey: "AIzaSyDTcxIO9w3cvXDPrNP7mmdCMKLGNAPf4SA",
+            authDomain: "owl-academy-6bce2.firebaseapp.com",
+            projectId: "owl-academy-6bce2",
+            storageBucket: "owl-academy-6bce2.firebasestorage.app",
+            messagingSenderId: "337762500287",
+            appId: "1:337762500287:web:d024052bf39876947c100a"
+        };
 
-            if (!token && !isLoginPage) {
-                // Prevent redirection loop in preview sandbox
-                // window.location.replace("login.html");
-            } else if (token && isLoginPage) {
-                window.addEventListener('DOMContentLoaded', () => {
-                    if (typeof unlockMainPlatform === "function") {
-                        unlockMainPlatform();
-                    }
-                });
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const provider = new GoogleAuthProvider();
+
+        // Where to go after a successful sign-in
+        const params = new URLSearchParams(window.location.search);
+        const redirectTo = params.get("redirect") || "index.html";
+
+        // If already signed in, skip the login screen entirely
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                window.location.replace(redirectTo);
             }
-        }
+        });
 
-        window.handleCredentialResponse = function(response) {
-            localStorage.setItem(TOKEN_KEY, response.credential);
-            if (typeof unlockMainPlatform === "function") {
-                unlockMainPlatform();
-                if (typeof showToast === "function") showToast("Google Resonance Verified. Initializing Monad.");
+        // Google Sign-In button handler (called from HTML)
+        window.signInWithGoogle = async function() {
+            const btn = document.getElementById("btn-google-signin");
+            if (btn) { btn.disabled = true; btn.textContent = "Verifying Resonance..."; }
+            try {
+                await signInWithPopup(auth, provider);
+                // onAuthStateChanged fires → redirect handled above
+            } catch (err) {
+                console.error(err);
+                if (btn) { btn.disabled = false; btn.textContent = "Sign in with Google"; }
+                if (typeof showToast === "function") showToast("Authentication failed. Try again.", true);
             }
         };
 
-        window.engageDevBypass = function() {
-            localStorage.setItem(TOKEN_KEY, "dev_override_token_777");
-            if (typeof unlockMainPlatform === "function") {
-                unlockMainPlatform();
-                if (typeof showToast === "function") showToast("Local Override Engaged. Welcome.");
-            }
-        };
-
-        window.globalLogout = function() {
-            localStorage.removeItem(TOKEN_KEY);
+        // Keep global logout wired to Firebase
+        window.globalLogout = async function() {
+            const { signOut } = await import("https://www.gstatic.com/firebasejs/12.15.0/firebase-auth.js");
+            await signOut(auth);
             location.reload();
         };
-
-        enforceSecurity();
     </script>
 
     <!-- MathJax Configuration -->
@@ -141,31 +144,22 @@
                     Awaiting Cryptographic Signature...
                 </p>
                 
-                <div class="relative z-10 flex flex-col items-center gap-4">
-                    <!-- Google Sign In API -->
-                    <div id="g_id_onload"
-                         data-client_id="YOUR_CLIENT_ID.apps.googleusercontent.com"
-                         data-callback="handleCredentialResponse"
-                         data-auto_prompt="false">
-                    </div>
-                    <div class="g_id_signin"
-                         data-type="standard"
-                         data-size="large"
-                         data-theme="filled_black"
-                         data-text="sign_in_with"
-                         data-shape="rectangular"
-                         data-logo_alignment="left">
-                    </div>
-
-                    <div class="w-full flex items-center gap-4 my-2">
-                        <div class="h-px bg-mystic-700 flex-1"></div>
-                        <span class="font-mono text-xs text-gray-500">OR</span>
-                        <div class="h-px bg-mystic-700 flex-1"></div>
-                    </div>
-
-                    <!-- Development Bypass Button -->
-                    <button onclick="engageDevBypass()" class="w-full py-3 bg-cyan-900/20 text-cyan-400 font-mono text-sm border border-cyan-500/50 hover:bg-cyan-900/50 transition rounded shadow-[0_0_10px_rgba(0,255,255,0.1)]">
-                        Initialize Local Bypass (Dev Mode)
+                <div class="relative z-10 flex flex-col items-center gap-4 w-full">
+                    <!-- Firebase Google Sign-In -->
+                    <button id="btn-google-signin"
+                            onclick="signInWithGoogle()"
+                            class="w-full flex items-center justify-center gap-3 py-3 px-6
+                                   bg-white/5 hover:bg-white/10 border border-white/20
+                                   text-white font-mono text-sm rounded transition-all duration-200
+                                   shadow-[0_0_20px_rgba(212,175,55,0.1)] hover:shadow-[0_0_20px_rgba(212,175,55,0.3)]
+                                   cursor-pointer">
+                        <svg class="w-5 h-5 flex-shrink-0" viewBox="0 0 48 48">
+                            <path fill="#FFC107" d="M43.6 20H24v8h11.3C33.7 33.6 29.3 37 24 37c-7.2 0-13-5.8-13-13s5.8-13 13-13c3.1 0 6 1.1 8.2 3l5.7-5.7C34.5 5.1 29.5 3 24 3 12.4 3 3 12.4 3 24s9.4 21 21 21c10.6 0 20-7.7 20-21 0-1.3-.2-2.7-.4-4z"/>
+                            <path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.6 15.1 18.9 12 24 12c3.1 0 6 1.1 8.2 3l5.7-5.7C34.5 5.1 29.5 3 24 3 16.3 3 9.7 7.9 6.3 14.7z"/>
+                            <path fill="#4CAF50" d="M24 45c5.2 0 9.9-1.9 13.5-5l-6.2-5.2C29.4 36.5 26.8 37 24 37c-5.2 0-9.6-3.4-11.2-8l-6.6 5.1C9.8 41.1 16.4 45 24 45z"/>
+                            <path fill="#1976D2" d="M43.6 20H24v8h11.3c-.8 2.3-2.3 4.2-4.3 5.6l6.2 5.2C41.1 35.4 44 30.1 44 24c0-1.3-.2-2.7-.4-4z"/>
+                        </svg>
+                        Sign in with Google
                     </button>
                 </div>
             </div>
@@ -396,10 +390,11 @@
         }
 
         // --- PLATFORM UNLOCK LOGIC ---
+        // Kept for any legacy calls — Firebase module handles the real redirect
         window.unlockMainPlatform = function() {
-            document.getElementById('auth-status-text').innerText = "Authentication Successful.";
-            document.getElementById('main-header').classList.remove('hidden');
-            switchView('landing');
+            document.getElementById('auth-status-text').innerText = "Authentication Successful. Redirecting...";
+            const params = new URLSearchParams(window.location.search);
+            window.location.replace(params.get("redirect") || "index.html");
         };
 
         // --- Enrollment & Admin Logic ---

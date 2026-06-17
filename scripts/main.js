@@ -45,14 +45,8 @@ onAuthChange(async (user) => {
   if (user) {
     await initHub(user);
   } else {
-    // Not signed in — show sign-in prompt if button exists
-    const signinBtn = document.getElementById("btn-google-signin");
-    if (signinBtn) {
-      signinBtn.classList.remove("hidden");
-      signinBtn.addEventListener("click", () => signInWithGoogle(), { once: true });
-    } else {
-      // No sign-in button on this page — redirect to login
-      window.location.replace("login.html");
-    }
+    // Not signed in — redirect to login preserving destination
+    const destination = encodeURIComponent(window.location.pathname + window.location.search);
+    window.location.replace(`login.html?redirect=${destination}`);
   }
 });
