@@ -1,0 +1,887 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Owl Academy | Multi-Dimensional Saturn Parity Explainer</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        darkbg: '#040208',
+                        owl: { gold: '#D4AF37', lightgold: '#FFF8DC', darkgold: '#aa771c' },
+                        holo: { cyan: '#00d4ff', purple: '#8A2BE2', emerald: '#10b981', alert: '#ef4444' }
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <!-- MathJax -->
+    <script>
+        window.MathJax = {
+            tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']] }
+        };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+    <!-- Three.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Inter:wght@300;400;600&family=JetBrains+Mono:wght@400;700&display=swap');
+        
+        body { margin: 0; font-family: 'Inter', sans-serif; background: #040208; color: #e2e8f0; overflow: hidden; user-select: none; }
+        .font-mono { font-family: 'JetBrains Mono', monospace; }
+        .font-mystical { font-family: 'Cinzel', serif; }
+
+        #canvas-container { position: absolute; inset: 0; z-index: 1; cursor: crosshair; }
+        .grabbing #canvas-container { cursor: grabbing !important; }
+        
+        #ui-layer { position: absolute; inset: 0; z-index: 10; pointer-events: none; display: flex; padding: 1.5rem; gap: 1.5rem; }
+
+        .glass-panel {
+            background: rgba(10, 8, 20, 0.7);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(212, 175, 55, 0.2);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.8);
+            border-radius: 0.75rem;
+            pointer-events: auto;
+        }
+
+        .gold-gradient {
+            background: linear-gradient(to right, #D4AF37, #FFF8DC, #D4AF37);
+            -webkit-background-clip: text; background-clip: text;
+            color: transparent;
+        }
+
+        /* Timeline Styles */
+        .step-node { display: flex; align-items: flex-start; gap: 1rem; position: relative; opacity: 0.4; transition: all 0.4s; cursor: pointer; }
+        .step-node:hover { opacity: 0.8; }
+        .step-node.active { opacity: 1; }
+        .step-node:not(:last-child)::after {
+            content: ''; position: absolute; left: 15px; top: 32px; bottom: -24px;
+            width: 2px; background: rgba(0, 212, 255, 0.2);
+        }
+        .step-node.active:not(:last-child)::after { background: rgba(212, 175, 55, 0.6); }
+        
+        .step-indicator {
+            width: 32px; height: 32px; border-radius: 50%;
+            background: #040208; border: 2px solid rgba(0, 212, 255, 0.4);
+            display: flex; align-items: center; justify-content: center;
+            font-family: 'Cinzel', serif; font-size: 14px; color: #00d4ff;
+            transition: all 0.3s ease; z-index: 5; flex-shrink: 0;
+        }
+        .step-node.active .step-indicator {
+            background: #D4AF37; color: #040208;
+            box-shadow: 0 0 15px #D4AF37; border-color: #FFF8DC;
+        }
+
+        .lore-callout {
+            margin: 1rem 0; padding: 1rem 1.5rem;
+            background: linear-gradient(90deg, rgba(212, 175, 55, 0.1), transparent);
+            border-left: 3px solid #D4AF37;
+            position: relative; border-radius: 0 8px 8px 0;
+        }
+
+        #log-container { max-height: 100px; overflow-y: hidden; display: flex; flex-direction: column-reverse; }
+        .log-entry { font-family: 'JetBrains Mono', monospace; font-size: 10px; margin-bottom: 4px; animation: fadein 0.3s ease-out; }
+        @keyframes fadein { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* Custom Slider */
+        input[type=range] { -webkit-appearance: none; width: 100%; background: transparent; }
+        input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; height: 12px; width: 12px; border-radius: 50%; background: #D4AF37; cursor: pointer; margin-top: -4px; box-shadow: 0 0 10px rgba(212,175,55,0.8); }
+        input[type=range]::-webkit-slider-runnable-track { width: 100%; height: 3px; cursor: pointer; background: rgba(212,175,55,0.3); border-radius: 2px; }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: rgba(0,0,0,0.3); }
+        ::-webkit-scrollbar-thumb { background: rgba(212, 175, 55, 0.4); border-radius: 10px; }
+    </style>
+</head>
+<body>
+
+    <!-- 3D Canvas -->
+    <div id="canvas-container"></div>
+
+    <!-- UI Overlay -->
+    <div id="ui-layer" class="flex-col md:flex-row">
+        
+        <!-- Left Panel: Curriculum Timeline -->
+        <aside class="w-full md:w-[420px] flex flex-col gap-4 flex-shrink-0 overflow-y-auto custom-scrollbar pr-2 h-full">
+            
+            <!-- Header -->
+            <div class="glass-panel p-5 flex-shrink-0">
+                <div class="text-[9px] text-holo-cyan/60 tracking-[0.2em] uppercase font-mono mb-1 text-center w-full">
+                    Department 5: Cryptotopology
+                </div>
+                <h1 class="text-2xl font-bold tracking-widest gold-gradient font-mystical mb-1 text-center">Multi-Dimensional Parity</h1>
+                <p class="text-[10px] text-slate-400 font-mono uppercase tracking-wider text-center">Telemetry Explanation Engine</p>
+            </div>
+
+            <!-- Timeline -->
+            <div class="glass-panel p-5 flex-shrink-0">
+                <h3 class="text-[11px] text-holo-cyan font-bold uppercase tracking-widest mb-4 font-mono border-b border-holo-cyan/20 pb-2">Manifold Analysis</h3>
+                <div class="space-y-4">
+                    <div class="step-node active" data-step="1" onclick="goToStep(1)">
+                        <div class="step-indicator">I</div>
+                        <div>
+                            <h4 class="text-xs font-bold text-white font-mystical">Hyperbolic Scalar Field</h4>
+                            <p class="text-[10px] text-slate-400 mt-1">The outermost volumetric geometry.</p>
+                        </div>
+                    </div>
+                    <div class="step-node" data-step="2" onclick="goToStep(2)">
+                        <div class="step-indicator">II</div>
+                        <div>
+                            <h4 class="text-xs font-bold text-white font-mystical">Dimensional Warping</h4>
+                            <p class="text-[10px] text-slate-400 mt-1">Gravitational lenses & chiral keys.</p>
+                        </div>
+                    </div>
+                    <div class="step-node" data-step="3" onclick="goToStep(3)">
+                        <div class="step-indicator">III</div>
+                        <div>
+                            <h4 class="text-xs font-bold text-white font-mystical">Interlocking Gyroscope</h4>
+                            <p class="text-[10px] text-slate-400 mt-1">Saturn's 3D Parity Sieve.</p>
+                        </div>
+                    </div>
+                    <div class="step-node" data-step="4" onclick="goToStep(4)">
+                        <div class="step-indicator">IV</div>
+                        <div>
+                            <h4 class="text-xs font-bold text-white font-mystical">Fox-Artin 3D Knot</h4>
+                            <p class="text-[10px] text-slate-400 mt-1">Earth's fluctuating core bound by the Moon.</p>
+                        </div>
+                    </div>
+                    <div class="step-node" data-step="5" onclick="goToStep(5)">
+                        <div class="step-indicator">V</div>
+                        <div>
+                            <h4 class="text-xs font-bold text-white font-mystical">Telemetry Handshake</h4>
+                            <p class="text-[10px] text-slate-400 mt-1">Routing data via gravitational physics.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Dynamic Content Panel -->
+            <div class="glass-panel p-5 flex-shrink-0 flex-grow" id="content-panel">
+                <!-- Content injected via JS -->
+            </div>
+            
+            <!-- Controls -->
+            <div class="flex gap-3 flex-shrink-0 mt-auto">
+                <button id="btn-prev" onclick="prevStep()" class="flex-1 bg-black/50 border border-holo-cyan/30 text-holo-cyan text-[10px] font-bold py-2 rounded transition-all uppercase tracking-widest disabled:opacity-30 disabled:cursor-not-allowed hover:bg-black">
+                    ← Outer
+                </button>
+                <button id="btn-next" onclick="nextStep()" class="flex-1 bg-owl-gold/10 border border-owl-gold/50 text-owl-gold text-[10px] font-bold py-2 rounded transition-all uppercase tracking-widest shadow-[0_0_10px_rgba(212,175,55,0.2)] hover:bg-owl-gold/20">
+                    Inner →
+                </button>
+            </div>
+        </aside>
+
+        <!-- Right Panel: Variables & Telemetry (Hidden on small screens) -->
+        <aside class="hidden md:flex w-[280px] flex-col gap-4 ml-auto h-full pointer-events-none">
+            
+            <!-- Toggles -->
+            <div class="flex gap-2 pointer-events-auto">
+                <button onclick="toggleSieve()" class="flex-1 py-1.5 rounded bg-black/60 border border-holo-purple/40 text-[9px] font-mono text-holo-purple hover:bg-black backdrop-blur">
+                    SIEVE: <span class="sieve-txt text-white">ON</span>
+                </button>
+                <button onclick="toggleAutoFire()" class="flex-1 py-1.5 rounded bg-black/60 border border-owl-gold/40 text-[9px] font-mono text-owl-gold hover:bg-black backdrop-blur">
+                    FIRE: <span class="fire-txt text-white">ON</span>
+                </button>
+                <button onclick="controls.autoRotate = !controls.autoRotate;" class="flex-1 py-1.5 rounded bg-black/60 border border-holo-cyan/40 text-[9px] font-mono text-holo-cyan hover:bg-black backdrop-blur">
+                    AUTO-PAN
+                </button>
+            </div>
+
+            <div class="glass-panel p-4 pointer-events-auto">
+                <div class="text-[10px] text-owl-gold font-mono uppercase tracking-wider mb-2 border-b border-owl-gold/20 pb-2">Lensing Energy Limits</div>
+                <p class="text-[9px] text-slate-400 font-mono mb-3 leading-tight">Controls the carrying capacity of each dimensionally specific gravity well.</p>
+                
+                <div class="mb-3">
+                    <div class="flex justify-between text-[10px] font-mono text-owl-gold mb-1">
+                        <span>Gold Cap: <span id="cap-val-gold">9</span></span>
+                        <span id="hold-val-gold" class="text-white">0/9</span>
+                    </div>
+                    <input type="range" id="cap-gold" min="1" max="15" value="9" oninput="updateCapacity('Gold', this.value)">
+                </div>
+                <div class="mb-3">
+                    <div class="flex justify-between text-[10px] font-mono text-holo-purple mb-1">
+                        <span>Purple Cap: <span id="cap-val-purple">6</span></span>
+                        <span id="hold-val-purple" class="text-white">0/6</span>
+                    </div>
+                    <input type="range" id="cap-purple" min="1" max="15" value="6" oninput="updateCapacity('Purple', this.value)">
+                </div>
+                <div class="mb-1">
+                    <div class="flex justify-between text-[10px] font-mono text-holo-emerald mb-1">
+                        <span>Green Cap: <span id="cap-val-green">3</span></span>
+                        <span id="hold-val-green" class="text-white">0/3</span>
+                    </div>
+                    <input type="range" id="cap-green" min="1" max="15" value="3" oninput="updateCapacity('Green', this.value)">
+                </div>
+            </div>
+
+            <div class="glass-panel p-4 pointer-events-auto mt-auto mb-0" id="log-panel">
+                <div class="text-[10px] text-holo-cyan font-mono uppercase tracking-wider mb-2 border-b border-holo-cyan/20 pb-1">Telemetry Logs</div>
+                <div id="log-container">
+                    <div class="log-entry text-slate-400">Initialize topological handshake array...</div>
+                    <div class="log-entry text-holo-cyan">Manifold analysis mode engaged.</div>
+                </div>
+            </div>
+        </aside>
+    </div>
+
+    <!-- Explainer Content Templates -->
+    <script>
+        const contentTemplates = {
+            1: `
+                <h2 class="text-lg font-bold text-holo-cyan mb-2 font-mystical">The Hyperbolic Field</h2>
+                <p class="text-xs text-slate-300 font-light mb-2 leading-relaxed">
+                    We begin with the outermost macroscopic layer: the universal background.
+                </p>
+                <p class="text-xs text-slate-300 font-light mb-2 leading-relaxed">
+                    Unlike standard Euclidean space where data travels in straight lines, this manifold exists within a <strong>volumetric hyperbolic scalar field</strong> (visualized by the cyan and purple wireframe boundaries). 
+                </p>
+                <div class="bg-black/40 p-2 rounded border border-holo-cyan/20 font-mono text-[10px] text-center text-holo-cyan mb-2 shadow-inner">
+                    $$ds^2 = \\frac{dx^2 + dy^2 + dz^2}{z^2}$$
+                </div>
+                <p class="text-xs text-slate-300 font-light leading-relaxed">
+                    In this geometry, parallel paths diverge. Telemetry pings fired inward cannot reach the center directly; they will naturally scatter into the void unless actively routed by gravitational forces.
+                </p>
+            `,
+            2: `
+                <h2 class="text-lg font-bold text-holo-purple mb-2 font-mystical">Dimensional Warping</h2>
+                <p class="text-xs text-slate-300 font-light mb-2 leading-relaxed">
+                    Moving inward, we encounter the <strong>Gravitational Warp Zones</strong> (the colored black holes).
+                </p>
+                <p class="text-xs text-slate-300 font-light mb-2 leading-relaxed">
+                    Because telemetry naturally diverges in hyperbolic space, we use these incredibly dense masses to forcefully route data inward. Each core operates on a specific dimensional frequency (Gold, Purple, Green).
+                </p>
+                <div class="lore-callout text-[11px] mb-2">
+                    "When a particle enters a core's aura, it absorbs a <strong>Chiral Key</strong>. The core acts as a capacitor, carrying the particle in an orbital parity handshake."
+                </div>
+                <p class="text-xs text-slate-300 font-light leading-relaxed">
+                    Crucially, these lenses have <strong>Energy Limits</strong>. If a shell reaches its carrying capacity (e.g., 9 for Gold) and receives another particle, it forcefully ejects the oldest particle 180° backward while cloning it forward. You can drag these cores to modify the gravitational topography.
+                </p>
+            `,
+            3: `
+                <h2 class="text-lg font-bold text-owl-gold mb-2 font-mystical">The Interlocking Sieve</h2>
+                <p class="text-xs text-slate-300 font-light mb-2 leading-relaxed">
+                    Further in, Saturn's rings manifest not as flat discs, but as a completely articulated <strong>3D Interlocking Gyroscope</strong>.
+                </p>
+                <p class="text-xs text-slate-300 font-light mb-2 leading-relaxed">
+                    This is the Parity Sieve. It is segmented into varying dimensions of complexity (12 sections, 6 sections, 3 sections). It rotates across multiple axes simultaneously, creating a cryptographic array of moving gaps.
+                </p>
+                <p class="text-xs text-slate-300 font-light leading-relaxed">
+                    To penetrate this sieve, telemetry must either miraculously thread through the 3D gaps mathematically, or it must have absorbed the matching Chiral Key from a Warp Core to safely phase through the solid barrier of that specific layer.
+                </p>
+            `,
+            4: `
+                <h2 class="text-lg font-bold text-holo-cyan mb-2 font-mystical">Fox-Artin 3D Knot</h2>
+                <p class="text-xs text-slate-300 font-light mb-2 leading-relaxed">
+                    At the absolute center of the manifold, Earth is experiencing severe 'emerging' topological fluctuations.
+                </p>
+                <p class="text-xs text-slate-300 font-light mb-2 leading-relaxed">
+                    To contain this, the Moon acts as a celestial needle, weaving an infinitely dense <strong>3D Fox-Artin knot</strong> entirely around the Earth. 
+                </p>
+                <div class="bg-black/40 p-2 rounded border border-holo-cyan/20 font-mono text-[10px] text-center text-holo-cyan mb-2 shadow-inner">
+                    $$\\pi_1(S^3 \\setminus X) \\cong \\text{Non-Abelian Limit}$$
+                </div>
+                <p class="text-xs text-slate-300 font-light leading-relaxed">
+                    This creates a strictly non-abelian boundary—a topological trap. The ultimate goal of the telemetry stream is to strike the Earth directly, which systematically unwinds the Moon's mathematical wrap.
+                </p>
+            `,
+            5: `
+                <h2 class="text-lg font-bold text-holo-emerald mb-2 font-mystical">Telemetry Handshake</h2>
+                <p class="text-xs text-slate-300 font-light mb-2 leading-relaxed">
+                    <strong>Auto-Telemetry Sequence Initiated.</strong>
+                </p>
+                <p class="text-xs text-slate-300 font-light mb-2 leading-relaxed">
+                    Watch as gravitational pings are automatically fired from the outer boundaries inward. Observe how the hyperbolic space curves their paths, and how the Warp Cores pull them into orbital handshakes.
+                </p>
+                <div class="lore-callout text-[11px] mb-2" style="border-left-color: #10b981; background: linear-gradient(90deg, rgba(16,185,129,0.1), transparent);">
+                    "Drag the colored warp cores to intercept the automated stream. Watch what happens when a core's capacity is exceeded: the dual 180° ejection vividly demonstrates non-linear routing."
+                </div>
+                <p class="text-xs text-slate-300 font-light leading-relaxed">
+                    Only data that navigates the gravity wells, secures the chiral keys, and pierces the gyroscopic sieve will reach the Earth to resolve the parity protocol.
+                </p>
+            `
+        };
+
+        // --- Explainer State & Physics Constants ---
+        let currentStep = 1;
+        const totalSteps = 5;
+        let sieveActive = true;
+        let autoFireInterval = null;
+        let autoFireEnabled = true;
+        
+        const PING_SPEED = 0.25; 
+        const PING_MAX_SPEED = 0.45;
+        const GRAVITY_CONSTANT = 0.12;
+
+        const COLOR_MAP = {
+            'Gold': 'text-owl-gold',
+            'Purple': 'text-holo-purple',
+            'Green': 'text-holo-emerald'
+        };
+
+        // --- Three.js Setup (Fully 3D Perspective) ---
+        const container = document.getElementById('canvas-container');
+        const scene = new THREE.Scene();
+        scene.fog = new THREE.FogExp2(0x040208, 0.015);
+        
+        const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.set(0, 30, 80);
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        container.appendChild(renderer.domElement);
+
+        const controls = new THREE.OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.05;
+        controls.maxDistance = 120;
+        controls.minDistance = 10;
+        controls.autoRotate = true;
+        controls.autoRotateSpeed = 0.5;
+
+        // --- Environment ---
+        scene.add(new THREE.AmbientLight(0xffffff, 0.3));
+        const pointLight = new THREE.PointLight(0xffaa00, 1.5, 100);
+        scene.add(pointLight);
+
+        // Sun's Scalar Field
+        const sunGeo = new THREE.SphereGeometry(80, 64, 64);
+        const sunMat = new THREE.MeshBasicMaterial({ color: 0xD4AF37, transparent: true, opacity: 0.05, side: THREE.BackSide, blending: THREE.AdditiveBlending });
+        const sunMesh = new THREE.Mesh(sunGeo, sunMat);
+        scene.add(sunMesh);
+
+        // Hyperbolic Wireframe
+        const hyperGroup = new THREE.Group();
+        scene.add(hyperGroup);
+        function createHyperboloid(color, twistAngle, radius, height, opac) {
+            const group = new THREE.Group();
+            const numLines = 60;
+            const lineMat = new THREE.LineBasicMaterial({ color: color, transparent: true, opacity: opac, blending: THREE.AdditiveBlending });
+            for (let i = 0; i < numLines; i++) {
+                const angle1 = (i / numLines) * Math.PI * 2;
+                const angle2 = angle1 + twistAngle;
+                const p1 = new THREE.Vector3(Math.cos(angle1) * radius, height / 2, Math.sin(angle1) * radius);
+                const p2 = new THREE.Vector3(Math.cos(angle2) * radius, -height / 2, Math.sin(angle2) * radius);
+                group.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints([p1, p2]), lineMat));
+            }
+            return group;
+        }
+        const hyp1 = createHyperboloid(0x00d4ff, Math.PI / 1.5, 45, 120, 0.15);
+        const hyp2 = createHyperboloid(0x8A2BE2, -Math.PI / 1.5, 45, 120, 0.15);
+        hyperGroup.add(hyp1); hyperGroup.add(hyp2);
+
+        // --- Geometry Engine ---
+
+        // 1. Earth & Fox-Artin Knot
+        const earthGroup = new THREE.Group();
+        scene.add(earthGroup);
+        const earthMesh = new THREE.Mesh(new THREE.SphereGeometry(1.5, 32, 32), new THREE.MeshPhongMaterial({ color: 0x004488, wireframe: true, transparent: true, opacity: 0.8 }));
+        const earthCore = new THREE.Mesh(new THREE.SphereGeometry(1.5, 32, 32), new THREE.MeshPhongMaterial({ color: 0x00d4ff, transparent: true, opacity: 0.4, shininess: 100 }));
+        earthGroup.add(earthMesh); earthGroup.add(earthCore);
+
+        const moonRadius = 3.5;
+        const moonMesh = new THREE.Mesh(new THREE.SphereGeometry(0.4, 16, 16), new THREE.MeshBasicMaterial({ color: 0xffffff }));
+        scene.add(moonMesh);
+
+        // Persistent wrap
+        const wrapMaterial = new THREE.LineBasicMaterial({ color: 0x00d4ff, transparent: true, opacity: 0.6, blending: THREE.AdditiveBlending });
+        const wrapGeometry = new THREE.BufferGeometry();
+        const MAX_POINTS = 800;
+        const positions = new Float32Array(MAX_POINTS * 3);
+        wrapGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+        const wrapLine = new THREE.Line(wrapGeometry, wrapMaterial);
+        scene.add(wrapLine);
+        let moonAngle = 0; let wrapPointsCount = 0;
+
+        // 2. 3D Gyroscope Rings
+        const rings = [];
+        const ringConfig = [
+            { radius: 17.5, speed: 0.005, sections: 3, color: 0xD4AF37, name: 'Gold', tiltX: Math.PI/3, tiltY: 0 },
+            { radius: 14.0, speed: -0.008, sections: 6, color: 0x8A2BE2, name: 'Purple', tiltX: 0, tiltY: Math.PI/3 },
+            { radius: 10.5, speed: 0.012, sections: 12, color: 0x10b981, name: 'Green', tiltX: -Math.PI/4, tiltY: -Math.PI/4 }
+        ];
+
+        function buildRings() {
+            rings.forEach(r => scene.remove(r.masterGroup));
+            rings.length = 0;
+            const fillRatio = 0.55; // Fixed complexity for explainer
+
+            ringConfig.forEach(data => {
+                const masterGroup = new THREE.Group(); 
+                const group = new THREE.Group();       
+                masterGroup.rotation.set(data.tiltX, data.tiltY, 0);
+                masterGroup.add(group);
+
+                const sliceAngle = (Math.PI * 2) / data.sections;
+                const solidArc = sliceAngle * fillRatio;
+
+                for (let i = 0; i < data.sections; i++) {
+                    const startAngle = i * sliceAngle;
+                    const segments = Math.max(3, Math.floor(60 / data.sections));
+                    
+                    const geo = new THREE.TorusGeometry(data.radius, 0.4, 8, segments, solidArc);
+                    const mat = new THREE.MeshBasicMaterial({ color: data.color, wireframe: true, transparent: true, opacity: 0.6 });
+                    const mesh = new THREE.Mesh(geo, mat); mesh.rotation.z = startAngle; group.add(mesh);
+
+                    const glowGeo = new THREE.TorusGeometry(data.radius, 0.8, 8, segments, solidArc);
+                    const glowMat = new THREE.MeshBasicMaterial({ color: data.color, transparent: true, opacity: 0.15, blending: THREE.AdditiveBlending });
+                    const glowMesh = new THREE.Mesh(glowGeo, glowMat); glowMesh.rotation.z = startAngle; group.add(glowMesh);
+
+                    const mMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+                    const m1 = new THREE.Mesh(new THREE.SphereGeometry(0.5, 8, 8), mMat); m1.position.set(Math.cos(startAngle)*data.radius, Math.sin(startAngle)*data.radius, 0);
+                    const m2 = new THREE.Mesh(new THREE.SphereGeometry(0.5, 8, 8), mMat); m2.position.set(Math.cos(startAngle+solidArc)*data.radius, Math.sin(startAngle+solidArc)*data.radius, 0);
+                    group.add(m1); group.add(m2);
+                }
+
+                masterGroup.visible = sieveActive;
+                scene.add(masterGroup);
+
+                rings.push({
+                    masterGroup: masterGroup, group: group, radius: data.radius, speed: data.speed,
+                    sliceAngle: sliceAngle, solidArc: solidArc, color: data.color, name: data.name
+                });
+            });
+        }
+        buildRings();
+
+        // 3. Gravitational Warp Cores
+        const warpCores = [];
+        const corePositions = [
+            { x: -14, y: 10, z: 8, color: 0xD4AF37, name: 'Gold', cap: 9 },
+            { x: 12, y: 0, z: -12, color: 0x8A2BE2, name: 'Purple', cap: 6 },
+            { x: 2, y: -15, z: 10, color: 0x10b981, name: 'Green', cap: 3 }
+        ];
+
+        corePositions.forEach(data => {
+            const group = new THREE.Group();
+            const ehRadius = 1.0;
+            const auraRadius = 4.5;
+            
+            const ehMesh = new THREE.Mesh(new THREE.SphereGeometry(ehRadius, 32, 32), new THREE.MeshBasicMaterial({ color: 0x000000 }));
+            const auraMesh = new THREE.Mesh(new THREE.SphereGeometry(auraRadius, 32, 32), new THREE.MeshBasicMaterial({ color: data.color, transparent: true, opacity: 0.15, blending: THREE.AdditiveBlending, wireframe: true }));
+            const innerGlow = new THREE.Mesh(new THREE.SphereGeometry(1.8, 32, 32), new THREE.MeshBasicMaterial({ color: data.color, transparent: true, opacity: 0.4, blending: THREE.AdditiveBlending}));
+            
+            group.add(ehMesh); group.add(auraMesh); group.add(innerGlow);
+            group.position.set(data.x, data.y, data.z);
+            scene.add(group);
+            
+            warpCores.push({ 
+                mesh: group, auraMesh: auraMesh, name: data.name, color: data.color, mass: 1.5, 
+                ehRadius: ehRadius, auraRadius: auraRadius, maxCapacity: data.cap, carriedPings: []
+            });
+        });
+
+        // 4. Projectiles (Telemetry)
+        let activePings = [];
+        const pingGeo = new THREE.SphereGeometry(0.5, 16, 16);
+        const pingMat = new THREE.MeshBasicMaterial({ color: 0xffdd00 });
+        const pingGlowMat = new THREE.MeshBasicMaterial({ color: 0xffaa00, transparent: true, opacity: 0.5, blending: THREE.AdditiveBlending });
+
+        // --- Logic Functions ---
+
+        function startAutoFire() {
+            if (autoFireInterval) return;
+            autoFireInterval = setInterval(() => {
+                const theta = Math.random() * Math.PI * 2;
+                const phi = Math.acos(2 * Math.random() - 1);
+                const radius = 50;
+                const origin = new THREE.Vector3(
+                    radius * Math.sin(phi) * Math.cos(theta),
+                    radius * Math.sin(phi) * Math.sin(theta),
+                    radius * Math.cos(phi)
+                );
+                const target = new THREE.Vector3((Math.random()-0.5)*10, (Math.random()-0.5)*10, (Math.random()-0.5)*10);
+                const dir = target.sub(origin).normalize();
+                firePing(origin, dir, true);
+            }, 1200);
+        }
+
+        function updateDOM() {
+            document.querySelectorAll('.step-node').forEach(node => {
+                parseInt(node.getAttribute('data-step')) === currentStep ? node.classList.add('active') : node.classList.remove('active');
+            });
+            const contentPanel = document.getElementById('content-panel');
+            contentPanel.innerHTML = contentTemplates[currentStep];
+            
+            if (window.MathJax && typeof window.MathJax.typesetPromise === 'function') {
+                window.MathJax.typesetPromise([contentPanel]).catch(console.error);
+            }
+
+            document.getElementById('btn-prev').disabled = currentStep === 1;
+            document.getElementById('btn-next').disabled = currentStep === totalSteps;
+
+            if (controls) {
+                if(currentStep === 1) { camera.position.set(0, 30, 80); controls.target.set(0,0,0); }
+                if(currentStep === 2) { camera.position.set(20, 20, 40); controls.target.set(0,0,0); }
+                if(currentStep === 3) { camera.position.set(0, 40, 20); controls.target.set(0,0,0); }
+                if(currentStep === 4) { camera.position.set(0, 5, 15); controls.target.set(0,0,0); }
+                if(currentStep === 5) { camera.position.set(10, 20, 65); controls.target.set(0,0,0); }
+            }
+
+            if(currentStep === 5) {
+                if(autoFireEnabled && !autoFireInterval) {
+                    logMessage("Automated telemetry stream engaged.", "text-holo-emerald");
+                    startAutoFire();
+                }
+            } else {
+                if(autoFireInterval) { clearInterval(autoFireInterval); autoFireInterval = null; }
+            }
+        }
+
+        function nextStep() { if (currentStep < totalSteps) { currentStep++; updateDOM(); } }
+        function prevStep() { if (currentStep > 1) { currentStep--; updateDOM(); } }
+        function goToStep(step) { currentStep = step; updateDOM(); }
+
+        function toggleAutoFire() {
+            autoFireEnabled = !autoFireEnabled;
+            document.querySelectorAll('.fire-txt').forEach(el => {
+                el.innerText = autoFireEnabled ? 'ON' : 'OFF';
+                el.className = `fire-txt ${autoFireEnabled ? 'text-white' : 'text-slate-500'}`;
+            });
+            
+            if (autoFireEnabled && currentStep === 5 && !autoFireInterval) {
+                logMessage("Automated telemetry stream engaged.", "text-holo-emerald");
+                startAutoFire();
+            } else if (!autoFireEnabled && autoFireInterval) {
+                clearInterval(autoFireInterval);
+                autoFireInterval = null;
+                logMessage("Automated telemetry stream paused.", "text-slate-500");
+            }
+        }
+
+        function updateCapacity(color, val) {
+            const core = warpCores.find(c => c.name === color);
+            if (core) {
+                core.maxCapacity = parseInt(val);
+                document.getElementById(`cap-val-${color.toLowerCase()}`).innerText = val;
+                while (core.carriedPings.length > core.maxCapacity) { ejectOldestPing(core); }
+            }
+        }
+
+        function toggleSieve() {
+            sieveActive = !sieveActive;
+            document.querySelectorAll('.sieve-txt').forEach(el => {
+                el.innerText = sieveActive ? 'ON' : 'OFF';
+                el.className = `sieve-txt ${sieveActive ? 'text-white' : 'text-slate-500'}`;
+            });
+            
+            // Note: rings array is guaranteed to be initialized here because buildRings is called synchronously
+            // before this function could ever be invoked by a user.
+            rings.forEach(r => { r.masterGroup.visible = sieveActive; });
+            logMessage(`3D Field Sieve ${sieveActive ? 'Engaged' : 'Disengaged'}.`, sieveActive ? "text-holo-purple" : "text-slate-500");
+        }
+
+        function logMessage(msg, colorClass = "text-slate-300") {
+            const container = document.getElementById('log-container');
+            const el = document.createElement('div');
+            el.className = `log-entry ${colorClass}`;
+            el.innerText = `> ${msg}`;
+            container.prepend(el);
+            if(container.children.length > 8) container.removeChild(container.lastChild);
+        }
+
+        function createExplosion(pos, color) {
+            const geo = new THREE.IcosahedronGeometry(1.0, 1);
+            const mat = new THREE.MeshBasicMaterial({ color: color, transparent: true, opacity: 1, wireframe: true });
+            const mesh = new THREE.Mesh(geo, mat);
+            mesh.position.copy(pos);
+            mesh.rotation.set(Math.random(), Math.random(), Math.random());
+            scene.add(mesh);
+            mesh.userData = { scale: 1, opacity: 1 };
+            if(!window.explosions) window.explosions = [];
+            window.explosions.push(mesh);
+        }
+
+        function grantKey(ping, core) {
+            ping.keys.add(core.name);
+            logMessage(`Telemetry acquired [${core.name}] Chiral Key.`, COLOR_MAP[core.name]);
+            const kMesh = new THREE.Mesh(new THREE.OctahedronGeometry(0.4, 0), new THREE.MeshBasicMaterial({ color: core.color, wireframe: true }));
+            ping.mesh.add(kMesh);
+            ping.keyMeshes.push(kMesh);
+        }
+
+        function ejectOldestPing(core) {
+            if (core.carriedPings.length === 0) return;
+            const ejected = core.carriedPings.shift();
+            ejected.isCarried = false; ejected.carriedBy = null;
+            
+            // Backward Ejection
+            ejected.velocity.copy(ejected.entranceVelocity).multiplyScalar(-1);
+            ejected.ejectedFrom = core; ejected.ejectTime = Date.now();
+            const escapeDirB = ejected.velocity.clone().normalize();
+            ejected.mesh.position.copy(core.mesh.position).add(escapeDirB.multiplyScalar(core.auraRadius + 0.5));
+            for(let j=0; j<50; j++) { ejected.trailPts[j*3] = ejected.mesh.position.x; ejected.trailPts[j*3+1] = ejected.mesh.position.y; ejected.trailPts[j*3+2] = ejected.mesh.position.z; }
+            ejected.trail.geometry.attributes.position.needsUpdate = true;
+            createExplosion(ejected.mesh.position, core.color);
+
+            // Forward Clone Ejection
+            const groupF = new THREE.Group();
+            groupF.add(new THREE.Mesh(pingGeo, pingMat)); groupF.add(new THREE.Mesh(new THREE.SphereGeometry(1.0, 16, 16), pingGlowMat));
+            const escapeDirF = ejected.entranceVelocity.clone().normalize();
+            groupF.position.copy(core.mesh.position).add(escapeDirF.multiplyScalar(core.auraRadius + 0.5));
+            scene.add(groupF);
+
+            const trailPtsF = new Float32Array(50 * 3);
+            for(let j=0; j<50; j++) { trailPtsF[j*3] = groupF.position.x; trailPtsF[j*3+1] = groupF.position.y; trailPtsF[j*3+2] = groupF.position.z; }
+            const trailLineF = new THREE.Line(new THREE.BufferGeometry().setAttribute('position', new THREE.BufferAttribute(trailPtsF, 3)), new THREE.LineBasicMaterial({ color: 0xffdd00, transparent: true, opacity: 0.4 }));
+            scene.add(trailLineF);
+
+            const clonedKeyMeshes = [];
+            ejected.keyMeshes.forEach(km => {
+                const newKm = new THREE.Mesh(new THREE.OctahedronGeometry(0.4, 0), new THREE.MeshBasicMaterial({ color: km.material.color.getHex(), wireframe: true }));
+                groupF.add(newKm); clonedKeyMeshes.push(newKm);
+            });
+
+            activePings.push({
+                mesh: groupF, velocity: ejected.entranceVelocity.clone(), passedRings: new Set(ejected.passedRings),
+                keys: new Set(ejected.keys), keyMeshes: clonedKeyMeshes, interactedCores: new Set(ejected.interactedCores),
+                trail: trailLineF, trailPts: trailPtsF, trailIdx: 0, isCarried: false, carriedBy: null, carriedAngle: 0,
+                entranceVelocity: new THREE.Vector3(), ejectedFrom: core, ejectTime: Date.now()
+            });
+
+            createExplosion(groupF.position, core.color);
+            logMessage(`Capacity Overload! Dual 180° ejection from ${core.name}.`, "text-holo-alert");
+        }
+
+        function firePing(originVec, directionVec, isAuto = false) {
+            const group = new THREE.Group();
+            group.add(new THREE.Mesh(pingGeo, pingMat)); group.add(new THREE.Mesh(new THREE.SphereGeometry(1.2, 16, 16), pingGlowMat));
+            group.position.copy(originVec);
+            scene.add(group);
+
+            const trailPts = new Float32Array(50 * 3);
+            for(let j=0; j<50; j++) { trailPts[j*3] = originVec.x; trailPts[j*3+1] = originVec.y; trailPts[j*3+2] = originVec.z; }
+            const trailLine = new THREE.Line(new THREE.BufferGeometry().setAttribute('position', new THREE.BufferAttribute(trailPts, 3)), new THREE.LineBasicMaterial({ color: 0xffdd00, transparent: true, opacity: 0.6 }));
+            scene.add(trailLine);
+
+            activePings.push({
+                mesh: group, velocity: directionVec.normalize().multiplyScalar(PING_SPEED), passedRings: new Set(), keys: new Set(),
+                keyMeshes: [], interactedCores: new Set(), trail: trailLine, trailPts: trailPts, trailIdx: 0,
+                isCarried: false, carriedBy: null, carriedAngle: 0, entranceVelocity: new THREE.Vector3(), ejectedFrom: null, ejectTime: 0
+            });
+
+            if(!isAuto) logMessage("Manual ping injected into manifold.", "text-owl-gold");
+        }
+
+        function normalizeAngle(a) { a = a % (Math.PI * 2); if (a < 0) a += Math.PI * 2; return a; }
+
+        // --- Interaction (Dragging Cores) ---
+        const raycaster = new THREE.Raycaster();
+        const mouse = new THREE.Vector2();
+        let draggedCore = null;
+
+        window.addEventListener('mousedown', (e) => {
+            mouse.x = (e.clientX / window.innerWidth) * 2 - 1; mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
+            raycaster.setFromCamera(mouse, camera);
+            
+            // Check Warp Cores
+            const intersects = raycaster.intersectObjects(warpCores.map(c => c.auraMesh));
+            if (intersects.length > 0) {
+                draggedCore = warpCores.find(c => c.auraMesh === intersects[0].object);
+                document.body.classList.add('grabbing');
+                controls.enabled = false;
+                draggedCore.orbitalRadius = draggedCore.mesh.position.length();
+                logMessage(`Modifying 3D Gravitational Warp Zone [${draggedCore.name}].`, "text-holo-purple");
+            } else {
+                // Manual fire
+                const origin = camera.position.clone();
+                origin.add(camera.getWorldDirection(new THREE.Vector3()).multiplyScalar(2));
+                const dir = new THREE.Vector3(0,0,0).sub(origin).normalize();
+                firePing(origin, dir);
+            }
+        });
+
+        window.addEventListener('mousemove', (e) => {
+            if (draggedCore) {
+                mouse.x = (e.clientX / window.innerWidth) * 2 - 1; mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
+                raycaster.setFromCamera(mouse, camera);
+                const virtualSphere = new THREE.Sphere(new THREE.Vector3(0,0,0), draggedCore.orbitalRadius);
+                const intersectPoint = new THREE.Vector3();
+                raycaster.ray.intersectSphere(virtualSphere, intersectPoint);
+                if(intersectPoint) draggedCore.mesh.position.copy(intersectPoint);
+            }
+        });
+
+        window.addEventListener('mouseup', () => {
+            if (draggedCore) { draggedCore = null; document.body.classList.remove('grabbing'); controls.enabled = true; }
+        });
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        // Initialize DOM
+        updateDOM();
+
+        // --- Main Animation Loop ---
+        function animate() {
+            requestAnimationFrame(animate);
+            controls.update();
+
+            // Background Spin
+            hyperGroup.rotation.y += 0.0005; hyperGroup.rotation.x += 0.0002;
+
+            // UI Capacity Updates
+            warpCores.forEach(core => { document.getElementById(`hold-val-${core.name.toLowerCase()}`).innerText = `${core.carriedPings.length}/${core.maxCapacity}`; });
+
+            // Rotate Sieve
+            rings.forEach((ring) => { ring.group.rotation.z += ring.speed; });
+
+            // Animate Moon Wrap (3D Knot builds up to MAX)
+            moonAngle += 0.06;
+            const mRadius = moonRadius + Math.sin(moonAngle * 4) * 0.5;
+            moonMesh.position.set( Math.cos(moonAngle) * mRadius, Math.sin(moonAngle) * Math.cos(moonAngle * 0.5) * mRadius, Math.sin(moonAngle * 0.5) * mRadius );
+            
+            if (wrapPointsCount < MAX_POINTS) {
+                positions[wrapPointsCount * 3] = moonMesh.position.x;
+                positions[wrapPointsCount * 3 + 1] = moonMesh.position.y;
+                positions[wrapPointsCount * 3 + 2] = moonMesh.position.z;
+                wrapPointsCount++;
+                wrapGeometry.setDrawRange(0, wrapPointsCount);
+                wrapGeometry.attributes.position.needsUpdate = true;
+            }
+
+            earthMesh.rotation.y += 0.01; earthMesh.rotation.z += 0.005;
+
+            // Update Pings
+            for (let i = activePings.length - 1; i >= 0; i--) {
+                const p = activePings[i];
+                let pingDestroyed = false;
+
+                // Animate keys
+                p.keyMeshes.forEach((km, idx) => {
+                    km.rotation.x += 0.05; km.rotation.y += 0.05;
+                    const angle = (Date.now() * 0.005) + (idx * Math.PI * 2 / p.keyMeshes.length);
+                    km.position.set(Math.cos(angle)*1.0, Math.sin(angle)*1.0, Math.cos(angle*0.5)*0.5);
+                });
+
+                if (p.isCarried) {
+                    p.carriedAngle += 0.04;
+                    const orbitRadius = p.carriedBy.auraRadius * 0.7;
+                    const localOrbit = new THREE.Vector3(Math.cos(p.carriedAngle) * orbitRadius, Math.sin(p.carriedAngle) * orbitRadius, 0);
+                    localOrbit.applyAxisAngle(new THREE.Vector3(1, 1, 0).normalize(), p.carriedBy.mesh.position.length() * 0.1);
+                    p.mesh.position.copy(p.carriedBy.mesh.position).add(localOrbit);
+                    
+                    p.trailPts[p.trailIdx * 3] = p.mesh.position.x; p.trailPts[p.trailIdx * 3 + 1] = p.mesh.position.y; p.trailPts[p.trailIdx * 3 + 2] = p.mesh.position.z;
+                    p.trailIdx = (p.trailIdx + 1) % 50; p.trail.geometry.attributes.position.needsUpdate = true;
+                    continue; 
+                }
+
+                // Gravity & Collisions
+                warpCores.forEach(core => {
+                    const distToCore = p.mesh.position.distanceTo(core.mesh.position);
+                    const recentlyEjected = (p.ejectedFrom === core && Date.now() - p.ejectTime < 1000);
+                    
+                    if (distToCore < core.ehRadius && !recentlyEjected) {
+                        createExplosion(p.mesh.position, 0x8A2BE2); logMessage("Telemetry lost in Warp Zone singularity.", "text-holo-purple");
+                        scene.remove(p.mesh); scene.remove(p.trail); activePings.splice(i, 1); pingDestroyed = true;
+                    } 
+                    else if (distToCore < core.auraRadius && !recentlyEjected) {
+                        if (!p.interactedCores.has(core.name)) {
+                            p.interactedCores.add(core.name);
+                            if (!p.keys.has(core.name)) grantKey(p, core);
+                            
+                            if (core.carriedPings.length < core.maxCapacity) {
+                                p.isCarried = true; p.carriedBy = core; p.entranceVelocity = p.velocity.clone();
+                                p.carriedAngle = Math.random() * Math.PI * 2; core.carriedPings.push(p);
+                                logMessage(`Telemetry bound to 3D ${core.name} parity shell.`, COLOR_MAP[core.name]);
+                                createExplosion(p.mesh.position, core.color); 
+                            } else {
+                                ejectOldestPing(core);
+                                logMessage(`Shell full! Telemetry pierced ${core.name} warp.`, "text-holo-cyan");
+                                createExplosion(p.mesh.position, 0xffffff); 
+                            }
+                        }
+                        if (!p.isCarried) p.velocity.add(core.mesh.position.clone().sub(p.mesh.position).normalize().multiplyScalar((GRAVITY_CONSTANT * core.mass) / (distToCore * distToCore + 0.5)));
+                    } else {
+                        if (!p.isCarried) p.velocity.add(core.mesh.position.clone().sub(p.mesh.position).normalize().multiplyScalar((GRAVITY_CONSTANT * core.mass) / (distToCore * distToCore + 0.5)));
+                    }
+                });
+
+                if (pingDestroyed) continue;
+
+                p.velocity.clampLength(0, PING_MAX_SPEED);
+                p.mesh.position.add(p.velocity);
+
+                p.trailPts[p.trailIdx * 3] = p.mesh.position.x; p.trailPts[p.trailIdx * 3 + 1] = p.mesh.position.y; p.trailPts[p.trailIdx * 3 + 2] = p.mesh.position.z;
+                p.trailIdx = (p.trailIdx + 1) % 50; p.trail.geometry.setDrawRange(0, 50); p.trail.geometry.attributes.position.needsUpdate = true;
+
+                const distToEarth = p.mesh.position.length();
+
+                if (distToEarth < 1.6) {
+                    scene.remove(p.mesh); scene.remove(p.trail); activePings.splice(i, 1);
+                    createExplosion(new THREE.Vector3(0,0,0), 0x00d4ff);
+                    logMessage("Telemetry successfully hit Core. Protocol validated.", "text-holo-cyan");
+                    continue;
+                }
+
+                // Sieve Collisions
+                if (sieveActive) {
+                    rings.forEach((ring, ringIdx) => {
+                        if (!p.passedRings.has(ringIdx)) {
+                            // Convert world coordinates to the ring's local coordinates.
+                            // Fixes the applyMatrix4 TypeError.
+                            const localPos = p.mesh.position.clone();
+                            ring.masterGroup.worldToLocal(localPos);
+
+                            const dist2D = Math.sqrt(localPos.x * localPos.x + localPos.y * localPos.y);
+                            const distToTube = Math.sqrt(Math.pow(dist2D - ring.radius, 2) + localPos.z * localPos.z);
+
+                            if (distToTube < 0.7) {
+                                const pingAngle = Math.atan2(localPos.y, localPos.x);
+                                const localAngle = normalizeAngle(pingAngle - ring.group.rotation.z);
+                                const isSolidHit = (localAngle % ring.sliceAngle) < ring.solidArc;
+
+                                if (isSolidHit) {
+                                    if (p.keys.has(ring.name)) {
+                                        p.passedRings.add(ringIdx);
+                                        createExplosion(p.mesh.position, ring.color);
+                                    } else {
+                                        createExplosion(p.mesh.position, 0xef4444);
+                                        logMessage(`Telemetry lost: Blocked by ${ring.name} Sieve layer.`, "text-holo-alert");
+                                        scene.remove(p.mesh); scene.remove(p.trail); activePings.splice(i, 1);
+                                    }
+                                } else {
+                                    p.passedRings.add(ringIdx);
+                                    createExplosion(p.mesh.position, 0x00d4ff);
+                                    p.velocity.applyAxisAngle(new THREE.Vector3(Math.random()-0.5, Math.random()-0.5, Math.random()-0.5).normalize(), 0.15);
+                                }
+                            }
+                        }
+                    });
+                } else {
+                    if (p.passedRings.size < rings.length) rings.forEach((_, idx) => p.passedRings.add(idx));
+                }
+            }
+
+            // Process Explosions
+            if (window.explosions) {
+                for (let i = window.explosions.length - 1; i >= 0; i--) {
+                    const exp = window.explosions[i];
+                    exp.userData.scale += 0.2; exp.userData.opacity -= 0.05;
+                    exp.scale.setScalar(exp.userData.scale); exp.material.opacity = exp.userData.opacity;
+                    if (exp.userData.opacity <= 0) { scene.remove(exp); window.explosions.splice(i, 1); }
+                }
+            }
+
+            renderer.render(scene, camera);
+        }
+
+        animate();
+    </script>
+</body>
+</html>
