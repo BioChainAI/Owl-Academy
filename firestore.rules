@@ -1,0 +1,29 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Users can only read/write their own data
+    match /users/{uid}/{document=**} {
+      allow read, write: if request.auth != null && request.auth.uid == uid;
+    }
+
+    // Chronicle is write-only for authenticated users, read by none (server-side only)
+    match /chronicles/{entry} {
+      allow create: if request.auth != null;
+      allow read:   if false;
+    }
+
+    // Guilds: any authenticated user can read, only members can write
+    match /guilds/{guildId} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null &&
+        get(/databases/$(database)/documents/guilds/$(guildId)).data.members.hasAny([request.auth.uid]);
+    }
+
+    match /guilds/{guildId}/chronicle/{entry} {
+      allow read:   if request.auth != null;
+      allow create: if request.auth != null &&
+        get(/databases/$(database)/documents/guilds/$(guildId)).data.members.hasAny([request.auth.uid]);
+    }
+  }
+}

@@ -352,8 +352,17 @@
         </a>
     </header>
 
+    <!-- Profile Bar (rendered by hub.ui.js after auth) -->
+    <div id="hub-profile-bar"
+         class="relative z-20 max-w-7xl mx-auto px-4 md:px-8 pt-6 pointer-events-auto">
+      <!-- Skeleton shown before Firebase loads -->
+      <div class="glass-panel rounded-xl px-6 py-3 border border-yellow-600/20 animate-pulse">
+        <div class="h-4 bg-yellow-600/10 rounded w-48"></div>
+      </div>
+    </div>
+
     <!-- Information Container (Toggleable) -->
-    <div id="info-panel" class="max-w-7xl mx-auto px-4 md:px-8 py-12 flex flex-col lg:flex-row gap-10 relative z-10 pointer-events-auto fade-transition opacity-100">
+    <div id="info-panel" class="max-w-7xl mx-auto px-4 md:px-8 py-8 flex flex-col lg:flex-row gap-10 relative z-10 pointer-events-auto fade-transition opacity-100">
         
         <!-- Left Sidebar Navigation -->
         <aside class="w-full lg:w-64 flex-shrink-0">
@@ -376,10 +385,20 @@
                     <li><a href="#learning-modules" class="block hover:text-white transition-colors">4.2. Learning Modules</a></li>
                     <li><a href="#community-research" class="block hover:text-white transition-colors">4.3. Community & Research</a></li>
                     <li class="pt-4 mt-4 border-t border-white/5">
-                        <a href="#" class="block text-gray-500 hover:text-white transition-colors">← Back to Ecosystem Hub</a>
+                        <a href="index.html" class="block text-gray-500 hover:text-white transition-colors">← Back to Ecosystem Hub</a>
                     </li>
                 </ul>
             </nav>
+
+            <!-- Active Quests Panel -->
+            <div class="glass-panel rounded-xl p-5 mt-4 border border-yellow-600/20">
+              <h3 class="text-xs text-yellow-500 tracking-[0.2em] font-bold uppercase mb-4 border-b border-yellow-600/20 pb-2 mystical-font">
+                Active Quests
+              </h3>
+              <div id="hub-quest-panel" class="space-y-1">
+                <p class="text-xs text-slate-500 animate-pulse">Consulting the oracle...</p>
+              </div>
+            </div>
         </aside>
 
         <!-- Main Content Area -->
@@ -476,6 +495,9 @@
             © 2026 Owl Academy Archives. All rights reserved.
         </p>
     </footer>
+
+    <!-- Firebase + Hub Logic (ES Module entry point) -->
+    <script type="module" src="scripts/main.js"></script>
 
     <!-- Interactive Logic & Visual Engine -->
     <script>
