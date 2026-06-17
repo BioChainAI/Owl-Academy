@@ -3,6 +3,8 @@ import { getOrCreateProfile, watchProfile } from "./services/user.service.js";
 import { getActiveQuests } from "./services/quest.service.js";
 import { renderHubProfile, renderQuestPanel, showToast } from "./ui/hub.ui.js";
 import { promptSchoolSelection } from "./ui/profile.ui.js";
+import { renderSanctum, renderAthenaeumFull, renderAtelierFull } from "./ui/sanctum.ui.js";
+import { initHubTabs } from "./ui/tabs.ui.js";
 
 let profileUnsubscribe = null;
 
@@ -15,17 +17,26 @@ const initHub = async (user) => {
     promptSchoolSelection(user.uid);
   }
 
-  // Render initial state
+  // Render initial state across all panels
   renderHubProfile(user, profile);
+  renderSanctum(user, profile);
+  renderAthenaeumFull();
+  renderAtelierFull();
+
+  // Initialize tab navigation (Sanctum is default)
+  initHubTabs("sanctum");
 
   // Load active quests
   const quests = await getActiveQuests(user.uid);
   renderQuestPanel(quests);
 
-  // Live-sync profile changes (rank-ups, XP, Vis) without page reload
+  // Live-sync profile changes (rank-ups, XP, Vis) across all panels without reload
   if (profileUnsubscribe) profileUnsubscribe();
   profileUnsubscribe = watchProfile(user.uid, (updatedProfile) => {
-    if (updatedProfile) renderHubProfile(user, updatedProfile);
+    if (updatedProfile) {
+      renderHubProfile(user, updatedProfile);
+      renderSanctum(user, updatedProfile);
+    }
   });
 
   // Wire sign-out (button rendered inside hub.ui.js, so listen via delegation)
