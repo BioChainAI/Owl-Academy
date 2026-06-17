@@ -14,7 +14,7 @@ import {
   onSnapshot,
   serverTimestamp,
   increment
-} from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+} from "https://www.gstatic.com/firebasejs/12.15.0/firebase-firestore.js";
 
 // Splits "users/uid/profile/main" into path segments for doc()
 const toRef = (path) => doc(db, ...path.split("/"));
