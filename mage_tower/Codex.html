@@ -200,7 +200,8 @@
         import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-auth.js";
         import { db } from "../scripts/firebase/config.js";
         import { collection, getDocs, query, where } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-firestore.js";
-        import { getDocument } from "../scripts/firebase/firestore.js";
+        import { getDocument, setDocument } from "../scripts/firebase/firestore.js";
+        import { getTotalXP, getRank } from "../scripts/services/user.service.js";
         import { readRegistrar, renderSigil, saveLocalBackup, exportLocalBackup } from "../scripts/spire-registrar.js";
         import { resolveTier, applyCertificate, tierRingOverlay, GENESIS_MASTER_UIDS } from "../scripts/genesis-registrar.js";
 
@@ -294,6 +295,56 @@
             loadMinorTomes(user.uid).catch(()=>{});
         });
 
+        // Maps module/video subjects to arts categories
+        const SUBJECT_TO_ART = {
+            "linear-algebra":  "mathematics",
+            "discrete-math":   "mathematics",
+            "algebra":         "mathematics",
+            "calculus":        "mathematics",
+            "number-theory":   "mathematics",
+            "geometry":        "geometry",
+            "topology":        "geometry",
+            "sacred-geometry": "sacred_sciences",
+            "sacred-sciences": "sacred_sciences",
+            "cryptography":    "computation",
+            "computation":     "computation",
+            "programming":     "computation",
+            "biochain":        "biochain",
+        };
+
+        async function syncStampXP(uid, tomes, totalStampXP) {
+            try {
+                const profilePath = `users/${uid}/profile/main`;
+                const profile = await getDocument(profilePath);
+                if (!profile) return;
+
+                const lastSynced = profile.stampXPSynced || 0;
+                const delta = totalStampXP - lastSynced;
+                if (delta <= 0) return; // nothing new to award
+
+                // Distribute the delta across arts by the subject of each newly-stamped tome
+                // Build a weight map: art → total new stamp XP attributed to it
+                const artWeights = {};
+                for (const t of tomes) {
+                    const art = SUBJECT_TO_ART[t.subject] || "mathematics";
+                    artWeights[art] = (artWeights[art] || 0) + (t.stampCount || 0);
+                }
+                const weightTotal = Object.values(artWeights).reduce((s,v) => s+v, 0) || 1;
+
+                const arts = { ...(profile.arts || {}) };
+                for (const [art, weight] of Object.entries(artWeights)) {
+                    const share = Math.round((weight / weightTotal) * delta);
+                    if (share > 0) arts[art] = (arts[art] || 0) + share;
+                }
+
+                const totalXP = getTotalXP(arts);
+                const rank    = getRank(totalXP);
+                await setDocument(profilePath, { arts, rank, stampXPSynced: totalStampXP });
+            } catch(e) {
+                console.warn("[Codex] syncStampXP failed:", e);
+            }
+        }
+
         async function loadMinorTomes(uid) {
             try {
                 const snap = await getDocs(query(collection(db,"tomes"), where("creatorUid","==",uid)));
@@ -304,6 +355,9 @@
                 document.getElementById("mt-count").textContent = tomes.length;
                 document.getElementById("mt-stamps").textContent = totalStamps;
                 document.getElementById("mt-xp").textContent = stampXP.toLocaleString();
+
+                // Sync new stamp XP into the arts profile (pull-based award on Codex load)
+                await syncStampXP(uid, tomes, stampXP);
                 if (tomes.length === 0) {
                     document.getElementById("mt-list").innerHTML =
                         `<div class="text-[10px] text-gray-700 mono text-center py-2">No minor tomes yet.</div>`;
