@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Owl Academy | Instructor Console — Tome Authoring</title>
+
+    <script type="module" src="scripts/auth-guard.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+
+    <style>
+        body {
+            background-color: #05030a; color: #e2e8f0;
+            font-family: 'Inter', sans-serif;
+            background: radial-gradient(circle at 50% 10%, rgba(0,212,255,0.08), #05030a 80%);
+            min-height: 100vh; margin: 0;
+        }
+        h1, h2, h3, .mystical { font-family: 'Cinzel', serif; }
+        .mono { font-family: 'JetBrains Mono', monospace; }
+        .cyan-gradient {
+            background: linear-gradient(to right, #00d4ff, #FFF8DC, #D4AF37);
+            -webkit-background-clip: text; background-clip: text; color: transparent;
+        }
+        .glass {
+            background: rgba(8, 12, 22, 0.65); backdrop-filter: blur(16px);
+            border: 1px solid rgba(0, 212, 255, 0.22);
+        }
+        input, textarea, select {
+            background: #060e1a; color: #FFF8DC;
+            border: 1px solid rgba(0,212,255,0.25);
+        }
+        input:focus, textarea:focus, select:focus {
+            outline: none; border-color: #00d4ff;
+            box-shadow: 0 0 0 2px rgba(0,212,255,0.15);
+        }
+        .priority-canonical { color: #D4AF37; border-color: rgba(212,175,55,0.4); }
+        .priority-validated { color: #00d4ff; border-color: rgba(0,212,255,0.4); }
+        .priority-experimental { color: #e81cff; border-color: rgba(232,28,255,0.4); }
+        .tab-active { background: rgba(0,212,255,0.15); color: #00d4ff; border-color: rgba(0,212,255,0.4); }
+    </style>
+</head>
+<body class="antialiased">
+
+    <main class="max-w-6xl mx-auto px-4 md:px-8 py-12">
+
+        <header class="text-center mb-10">
+            <div class="inline-flex items-center gap-2 px-3 py-1 border border-cyan-500/30 rounded-full bg-cyan-950/40 text-cyan-300 text-[10px] tracking-[0.2em] uppercase mono mb-4">
+                ⬢ Instructor Console
+            </div>
+            <h1 class="text-3xl md:text-5xl font-bold tracking-[0.15em] mystical">
+                <span class="cyan-gradient">TOME AUTHORING</span>
+            </h1>
+        </header>
+
+        <!-- Access denied -->
+        <div id="access-denied" class="hidden glass rounded-xl p-10 text-center border-rose-500/40">
+            <h2 class="mystical text-xl text-rose-300">Insufficient Authority</h2>
+            <p class="text-sm text-gray-400 mt-2 max-w-md mx-auto">
+                Your tier is <span id="current-tier" class="text-fuchsia-400 font-bold mono">—</span>.
+                Tome authorship requires an Instructor or Archon Genesis certificate.
+            </p>
+            <div class="mt-5 space-y-2">
+                <p class="text-[11px] text-gray-500 mono">Apply a certificate you've received from an Archon:</p>
+                <textarea id="apply-cert-input" rows="6" placeholder="Paste certificate JSON here…" class="w-full mono text-[10px] p-3 rounded max-w-md mx-auto"></textarea>
+                <button id="apply-cert-btn" class="px-5 py-2 rounded bg-cyan-500/20 border border-cyan-400/40 text-cyan-300 mono text-[10px] uppercase tracking-widest hover:bg-cyan-500/30">⬢ Apply Certificate</button>
+            </div>
+        </div>
+
+        <!-- Authoring UI -->
+        <div id="console-body" class="hidden space-y-6">
+
+            <!-- Identity banner -->
+            <div class="glass rounded-xl p-5 flex items-center justify-between gap-4">
+                <div class="flex items-center gap-4">
+                    <div id="tier-badge" class="w-12 h-12 rounded-full border-2 flex items-center justify-center text-xl"></div>
+                    <div>
+                        <div id="tier-label" class="text-[10px] mono tracking-widest uppercase"></div>
+                        <div id="genesis-id" class="mono text-sm text-cyan-300 mt-1"></div>
+                        <div id="planes-label" class="text-[10px] text-gray-500 mono mt-1"></div>
+                    </div>
+                </div>
+                <a href="Codex.html" class="text-[10px] mono text-gray-500 hover:text-cyan-300 uppercase tracking-widest">→ Codex</a>
+            </div>
+
+            <!-- Tabs -->
+            <div class="flex gap-2 border-b border-cyan-900/30 pb-2">
+                <button data-tab="new-tome" class="tab-btn px-4 py-2 rounded mono text-xs uppercase tracking-widest border tab-active">+ New Tome</button>
+                <button data-tab="my-tomes" class="tab-btn px-4 py-2 rounded mono text-xs uppercase tracking-widest border border-transparent text-gray-400 hover:text-white">My Tomes</button>
+                <button data-tab="new-artifact" class="tab-btn px-4 py-2 rounded mono text-xs uppercase tracking-widest border border-transparent text-gray-400 hover:text-white">+ New Artifact</button>
+            </div>
+
+            <!-- Tab: New Tome -->
+            <section id="tab-new-tome" class="tab-panel glass rounded-xl p-6 md:p-8 space-y-5">
+                <div>
+                    <div class="text-[10px] mono text-cyan-400 tracking-wider">AUTHOR · TOME</div>
+                    <h2 class="text-xl text-white mystical mt-1">Crystallize a New Tome</h2>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs mono text-gray-400 uppercase tracking-wider mb-1">Title</label>
+                        <input id="t-title" type="text" class="w-full mono text-xs p-3 rounded" placeholder="e.g. The Lattice of Sevenfold Resonance">
+                    </div>
+                    <div>
+                        <label class="block text-xs mono text-gray-400 uppercase tracking-wider mb-1">Department / Plane</label>
+                        <select id="t-plane" class="w-full mono text-xs p-2.5 rounded"></select>
+                    </div>
+                    <div class="md:col-span-2">
+                        <label class="block text-xs mono text-gray-400 uppercase tracking-wider mb-1">Short Description</label>
+                        <input id="t-desc" type="text" class="w-full mono text-xs p-3 rounded">
+                    </div>
+                    <div class="md:col-span-2">
+                        <label class="block text-xs mono text-gray-400 uppercase tracking-wider mb-1">Body (Markdown / HTML)</label>
+                        <textarea id="t-body" rows="8" class="w-full mono text-[11px] p-3 rounded"></textarea>
+                    </div>
+                    <div>
+                        <label class="block text-xs mono text-gray-400 uppercase tracking-wider mb-1">Status</label>
+                        <select id="t-status" class="w-full mono text-xs p-2.5 rounded">
+                            <option value="manuscript">Manuscript (in progress, no XP)</option>
+                            <option value="active">Active (publishable, XP-eligible)</option>
+                            <option value="sealed">Sealed (locked / draft)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs mono text-gray-400 uppercase tracking-wider mb-1">Priority Stamp (auto)</label>
+                        <div id="priority-preview" class="border rounded px-3 py-2.5 mono text-xs">—</div>
+                    </div>
+                </div>
+
+                <button id="create-tome-btn" class="w-full py-3 rounded bg-gradient-to-r from-cyan-600 to-blue-500 text-white mono tracking-widest text-xs uppercase font-bold hover:opacity-90">
+                    ⬢ Inscribe Tome to Ledger
+                </button>
+                <div id="tome-create-result" class="hidden bg-emerald-950/30 border border-emerald-500/30 rounded p-3 text-[11px] mono text-emerald-300"></div>
+            </section>
+
+            <!-- Tab: My Tomes -->
+            <section id="tab-my-tomes" class="tab-panel glass rounded-xl p-6 md:p-8 space-y-4 hidden">
+                <h2 class="text-xl text-white mystical">Your Inscribed Tomes</h2>
+                <div id="my-tomes-list" class="space-y-3">
+                    <div class="text-xs text-gray-500 mono">Loading…</div>
+                </div>
+            </section>
+
+            <!-- Tab: New Artifact -->
+            <section id="tab-new-artifact" class="tab-panel glass rounded-xl p-6 md:p-8 space-y-5 hidden">
+                <div>
+                    <div class="text-[10px] mono text-yellow-400 tracking-wider">AUTHOR · ARTIFACT</div>
+                    <h2 class="text-xl text-white mystical mt-1">Forge an Artifact</h2>
+                    <p class="text-xs text-gray-500 mt-1">An Artifact requires a set of tomes to be completed. Bind 9 (or 16 for Dept X) tome IDs below.</p>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs mono text-gray-400 uppercase tracking-wider mb-1">Artifact Name</label>
+                        <input id="a-name" type="text" class="w-full mono text-xs p-3 rounded">
+                    </div>
+                    <div>
+                        <label class="block text-xs mono text-gray-400 uppercase tracking-wider mb-1">Plane</label>
+                        <select id="a-plane" class="w-full mono text-xs p-2.5 rounded"></select>
+                    </div>
+                    <div class="md:col-span-2">
+                        <label class="block text-xs mono text-gray-400 uppercase tracking-wider mb-1">Domain Description</label>
+                        <input id="a-domain" type="text" class="w-full mono text-xs p-3 rounded" placeholder="e.g. Codon-Hashing & Sequenced Reasoning">
+                    </div>
+                    <div class="md:col-span-2">
+                        <label class="block text-xs mono text-gray-400 uppercase tracking-wider mb-1">Required Tome IDs (comma-separated)</label>
+                        <textarea id="a-tomes" rows="3" class="w-full mono text-[11px] p-3 rounded" placeholder="tome-abc123, tome-def456, …"></textarea>
+                    </div>
+                </div>
+
+                <button id="create-artifact-btn" class="w-full py-3 rounded bg-gradient-to-r from-yellow-500 to-amber-400 text-black mono tracking-widest text-xs uppercase font-bold hover:opacity-90">
+                    ✦ Mint Artifact
+                </button>
+                <div id="artifact-create-result" class="hidden bg-amber-950/30 border border-amber-500/30 rounded p-3 text-[11px] mono text-amber-300"></div>
+            </section>
+
+        </div>
+
+        <div class="text-center mt-12">
+            <a href="Learning-Hub.html" class="text-[10px] mono text-gray-500 hover:text-gray-300 uppercase tracking-[0.3em]">← Return to Grand Hall</a>
+        </div>
+    </main>
+
+    <script type="module">
+        import { auth } from "./scripts/firebase/config.js";
+        import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-auth.js";
+        import { readRegistrar } from "./scripts/spire-registrar.js";
+        import { resolveTier, applyCertificate, TIERS, stampPriority } from "./scripts/genesis-registrar.js";
+        import { createTome, listMyTomes, createArtifact, DEPARTMENT_PLANES, PRIORITY_LABELS } from "./scripts/tome-authoring.js";
+
+        let currentUser = null;
+        let currentRegistrar = null;
+        let currentTier = "ACOLYTE";
+
+        // Populate plane selectors
+        const planeOptions = DEPARTMENT_PLANES.map(p => `<option value="${p.plane}">${p.plane} — ${p.name}</option>`).join("");
+        document.getElementById("t-plane").innerHTML = planeOptions;
+        document.getElementById("a-plane").innerHTML = planeOptions;
+
+        onAuthStateChanged(auth, async (user) => {
+            if (!user) return;
+            currentUser = user;
+            currentRegistrar = await readRegistrar(user.uid);
+
+            if (!currentRegistrar) {
+                document.getElementById("access-denied").classList.remove("hidden");
+                document.getElementById("current-tier").innerText = "UNREGISTERED";
+                return;
+            }
+
+            currentTier = await resolveTier(user.uid);
+            if (currentTier === "ACOLYTE") {
+                document.getElementById("access-denied").classList.remove("hidden");
+                document.getElementById("current-tier").innerText = currentTier;
+                return;
+            }
+
+            document.getElementById("console-body").classList.remove("hidden");
+            renderIdentityBanner();
+            updatePriorityPreview();
+        });
+
+        function renderIdentityBanner() {
+            const badge = document.getElementById("tier-badge");
+            const label = document.getElementById("tier-label");
+            const planes = document.getElementById("planes-label");
+            if (currentTier === "ARCHON") {
+                badge.style.borderColor = "#e81cff"; badge.style.background = "rgba(232,28,255,0.15)";
+                badge.innerText = "♛"; badge.style.color = "#e81cff";
+                label.innerText = "ARCHON"; label.style.color = "#e81cff";
+            } else {
+                badge.style.borderColor = "#00d4ff"; badge.style.background = "rgba(0,212,255,0.15)";
+                badge.innerText = "⬢"; badge.style.color = "#00d4ff";
+                label.innerText = "INSTRUCTOR"; label.style.color = "#00d4ff";
+            }
+            document.getElementById("genesis-id").innerText = currentRegistrar.cosmologicalId;
+            const certified = (currentRegistrar.certifiedPlanes || []).join(", ");
+            planes.innerText = "Certified planes: " + (certified || "—");
+        }
+
+        function updatePriorityPreview() {
+            const priority = stampPriority(currentTier);
+            const info = PRIORITY_LABELS[priority];
+            const el = document.getElementById("priority-preview");
+            el.innerText = info.label + " — " + info.desc;
+            el.style.color = info.color;
+            el.style.borderColor = info.color + "55";
+        }
+
+        // Tab switching
+        document.querySelectorAll(".tab-btn").forEach(btn => {
+            btn.addEventListener("click", () => {
+                const target = btn.dataset.tab;
+                document.querySelectorAll(".tab-btn").forEach(b => {
+                    b.classList.remove("tab-active");
+                    b.classList.add("text-gray-400", "border-transparent");
+                });
+                btn.classList.add("tab-active");
+                btn.classList.remove("text-gray-400", "border-transparent");
+                document.querySelectorAll(".tab-panel").forEach(p => p.classList.add("hidden"));
+                document.getElementById("tab-" + target).classList.remove("hidden");
+                if (target === "my-tomes") loadMyTomes();
+            });
+        });
+
+        // Apply certificate flow
+        document.getElementById("apply-cert-btn").addEventListener("click", async () => {
+            try {
+                const raw = document.getElementById("apply-cert-input").value.trim();
+                const cert = JSON.parse(raw);
+                await applyCertificate(currentUser.uid, cert);
+                alert("Certificate applied. Reloading…");
+                window.location.reload();
+            } catch (err) {
+                alert("Apply failed: " + err.message);
+            }
+        });
+
+        // Create tome
+        document.getElementById("create-tome-btn").addEventListener("click", async () => {
+            try {
+                const tome = {
+                    title:       document.getElementById("t-title").value.trim(),
+                    description: document.getElementById("t-desc").value.trim(),
+                    body:        document.getElementById("t-body").value,
+                    plane:       document.getElementById("t-plane").value,
+                    status:      document.getElementById("t-status").value,
+                    dept:        parseInt(document.getElementById("t-plane").value.replace("dept-", "").replace("custom", "0"), 10) || 0
+                };
+                if (!tome.title) { alert("Title is required."); return; }
+                const result = await createTome(currentUser.uid, tome);
+                const out = document.getElementById("tome-create-result");
+                out.classList.remove("hidden");
+                out.innerText = `Tome inscribed: ${result.id} — priority ${result.priority}`;
+                document.getElementById("t-title").value = "";
+                document.getElementById("t-desc").value = "";
+                document.getElementById("t-body").value = "";
+            } catch (err) {
+                alert("Inscription failed: " + err.message);
+            }
+        });
+
+        // Create artifact
+        document.getElementById("create-artifact-btn").addEventListener("click", async () => {
+            try {
+                const required = document.getElementById("a-tomes").value.split(",").map(s => s.trim()).filter(Boolean);
+                const artifact = {
+                    name: document.getElementById("a-name").value.trim(),
+                    domain: document.getElementById("a-domain").value.trim(),
+                    plane: document.getElementById("a-plane").value,
+                    dept: parseInt(document.getElementById("a-plane").value.replace("dept-", "").replace("custom", "0"), 10) || 0,
+                    requiredTomes: required
+                };
+                if (!artifact.name) { alert("Name is required."); return; }
+                const result = await createArtifact(currentUser.uid, artifact);
+                const out = document.getElementById("artifact-create-result");
+                out.classList.remove("hidden");
+                out.innerText = `Artifact minted: ${result.id} — priority ${result.priority}`;
+            } catch (err) {
+                alert("Minting failed: " + err.message);
+            }
+        });
+
+        async function loadMyTomes() {
+            const container = document.getElementById("my-tomes-list");
+            container.innerHTML = `<div class="text-xs text-gray-500 mono">Loading…</div>`;
+            try {
+                const tomes = await listMyTomes(currentUser.uid);
+                if (!tomes.length) {
+                    container.innerHTML = `<div class="text-xs text-gray-500 mono">No tomes inscribed yet.</div>`;
+                    return;
+                }
+                container.innerHTML = tomes.map(t => {
+                    const p = PRIORITY_LABELS[t.priority] || PRIORITY_LABELS.experimental;
+                    return `
+                    <div class="bg-black/40 rounded-lg p-4 border priority-${t.priority}">
+                        <div class="flex justify-between items-start gap-3">
+                            <div>
+                                <div class="text-[10px] mono uppercase tracking-widest" style="color:${p.color}">${p.label} · ${t.plane} · ${t.status}</div>
+                                <h4 class="mystical text-white text-base mt-1">${escapeHtml(t.title)}</h4>
+                                <p class="text-xs text-gray-400 mt-1">${escapeHtml(t.description || "")}</p>
+                            </div>
+                            <div class="text-[9px] mono text-gray-600 whitespace-nowrap">${t.id.slice(0, 8)}…</div>
+                        </div>
+                    </div>`;
+                }).join("");
+            } catch (err) {
+                container.innerHTML = `<div class="text-xs text-rose-400 mono">Load failed: ${escapeHtml(err.message)}</div>`;
+            }
+        }
+
+        function escapeHtml(s) {
+            return (s || "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c]));
+        }
+    </script>
+</body>
+</html>

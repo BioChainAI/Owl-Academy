@@ -57,13 +57,41 @@
             <!-- Left: Sigil + ID card -->
             <div class="glass rounded-xl p-6 lg:col-span-1 text-center">
                 <div class="text-[9px] mono text-gray-500 tracking-[0.25em] uppercase">Cosmological ID</div>
-                <div id="codex-sigil" class="w-48 h-48 mx-auto my-5 pulse-ring"></div>
+                <div id="tier-banner" class="mt-2 text-[10px] mono tracking-widest uppercase hidden"></div>
+                <div id="codex-sigil" class="w-48 h-48 mx-auto my-5 pulse-ring relative"></div>
                 <div id="codex-id" class="mono text-sm text-cyan-400 tracking-wider break-all"></div>
                 <div class="mt-4 space-y-1.5 text-[10px] mono text-gray-400 text-left bg-black/40 p-3 rounded border border-gray-800">
+                    <div class="flex justify-between"><span class="text-gray-500">TIER:</span><span id="codex-tier" class="text-gray-300">Acolyte</span></div>
                     <div class="flex justify-between"><span class="text-gray-500">COORDS:</span><span id="codex-coords" class="text-purple-400"></span></div>
                     <div class="flex justify-between"><span class="text-gray-500">LATTICE:</span><span id="codex-lattice" class="text-emerald-400"></span></div>
                     <div class="flex justify-between"><span class="text-gray-500">SEALED:</span><span id="codex-sealed" class="text-yellow-400"></span></div>
                 </div>
+
+                <!-- Certificate block (visible only if tier > ACOLYTE) -->
+                <div id="codex-cert" class="hidden mt-3 bg-black/40 p-3 rounded border border-cyan-500/30 text-left">
+                    <div class="text-[9px] mono text-cyan-400 tracking-widest uppercase mb-2">⬢ Genesis Certificate</div>
+                    <div class="text-[9px] mono text-gray-400 space-y-1 break-all">
+                        <div><span class="text-gray-600">issuer:</span> <span id="cert-issuer" class="text-fuchsia-400"></span></div>
+                        <div><span class="text-gray-600">plane:</span> <span id="cert-plane" class="text-yellow-400"></span></div>
+                        <div><span class="text-gray-600">issued:</span> <span id="cert-issued" class="text-emerald-400"></span></div>
+                    </div>
+                </div>
+
+                <!-- Authoring tools shortcut -->
+                <div id="codex-tools" class="hidden mt-3 space-y-2">
+                    <a href="Instructor_Console.html" class="block w-full py-2 rounded bg-cyan-500/15 border border-cyan-400/40 text-cyan-300 mono text-[10px] uppercase tracking-widest hover:bg-cyan-500/25">→ Instructor Console</a>
+                    <a id="forge-link" href="Genesis_Forge.html" class="hidden block w-full py-2 rounded bg-fuchsia-500/15 border border-fuchsia-400/40 text-fuchsia-300 mono text-[10px] uppercase tracking-widest hover:bg-fuchsia-500/25">♛ Genesis Forge</a>
+                </div>
+
+                <!-- Apply certificate (Acolyte only) -->
+                <div id="codex-apply" class="hidden mt-3">
+                    <details class="bg-black/40 p-3 rounded border border-gray-800 text-left">
+                        <summary class="text-[10px] mono text-amber-300 tracking-widest uppercase cursor-pointer">Apply Genesis Certificate</summary>
+                        <textarea id="apply-cert-input" rows="5" placeholder="Paste certificate JSON…" class="w-full mt-2 mono text-[10px] p-2 rounded bg-[#060e1a] border border-cyan-700/30 text-cyan-200"></textarea>
+                        <button id="apply-cert-btn" class="mt-2 w-full py-2 rounded bg-cyan-500/15 border border-cyan-400/40 text-cyan-300 mono text-[10px] uppercase tracking-widest hover:bg-cyan-500/25">⬢ Apply</button>
+                    </details>
+                </div>
+
                 <button id="export-btn" class="w-full mt-4 py-2 rounded border border-cyan-500/40 text-cyan-300 mono text-[10px] uppercase tracking-widest hover:bg-cyan-500/15">⬇ Export Local Backup</button>
             </div>
 
@@ -135,20 +163,67 @@
         import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-auth.js";
         import { getDocument } from "./scripts/firebase/firestore.js";
         import { readRegistrar, renderSigil, saveLocalBackup, exportLocalBackup } from "./scripts/spire-registrar.js";
+        import { resolveTier, applyCertificate, tierRingOverlay, GENESIS_MASTER_UIDS } from "./scripts/genesis-registrar.js";
+
+        let currentUid = null;
 
         onAuthStateChanged(auth, async (user) => {
             if (!user) return;
+            currentUid = user.uid;
             const registrar = await readRegistrar(user.uid);
             if (!registrar || !registrar.sealed) {
                 document.getElementById("no-registrar").classList.remove("hidden");
                 return;
             }
 
+            const tier = await resolveTier(user.uid);
             const codex = (await getDocument(`users/${user.uid}/codex/main`)) || { rank: "Initiate", xp: 0, tomes: {}, artifacts: [] };
             saveLocalBackup(user.uid, registrar, codex);
 
             document.getElementById("codex-body").classList.remove("hidden");
-            document.getElementById("codex-sigil").innerHTML = renderSigil(registrar.cosmologicalId, 192);
+
+            // Render sigil with tier ring overlay
+            const baseSigil = renderSigil(registrar.cosmologicalId, 192);
+            const ring = tierRingOverlay(tier, 192);
+            // Inject the overlay into the SVG
+            const sigilWithRing = baseSigil.replace("</svg>", ring + "</svg>");
+            document.getElementById("codex-sigil").innerHTML = sigilWithRing;
+
+            // Tier banner
+            const tierBanner = document.getElementById("tier-banner");
+            const tierEl = document.getElementById("codex-tier");
+            if (tier === "ARCHON") {
+                tierBanner.classList.remove("hidden");
+                tierBanner.style.color = "#e81cff";
+                tierBanner.innerText = "♛ Archon";
+                tierEl.innerText = "Archon"; tierEl.style.color = "#e81cff";
+                document.getElementById("codex-tools").classList.remove("hidden");
+                document.getElementById("forge-link").classList.remove("hidden");
+            } else if (tier === "INSTRUCTOR") {
+                tierBanner.classList.remove("hidden");
+                tierBanner.style.color = "#00d4ff";
+                tierBanner.innerText = "⬢ Instructor";
+                tierEl.innerText = "Instructor"; tierEl.style.color = "#00d4ff";
+                document.getElementById("codex-tools").classList.remove("hidden");
+            } else {
+                tierEl.innerText = "Acolyte";
+                document.getElementById("codex-apply").classList.remove("hidden");
+                if (GENESIS_MASTER_UIDS.includes(user.uid)) {
+                    // Master Key holder pre-bootstrap: show forge link as bootstrap path
+                    document.getElementById("codex-tools").classList.remove("hidden");
+                    document.getElementById("forge-link").classList.remove("hidden");
+                }
+            }
+
+            // Certificate display
+            if (registrar.certificate) {
+                document.getElementById("codex-cert").classList.remove("hidden");
+                const cert = registrar.certificate;
+                document.getElementById("cert-issuer").innerText = cert.selfSigned ? "★ self-signed (Master Key)" : cert.issuer;
+                document.getElementById("cert-plane").innerText = cert.plane;
+                document.getElementById("cert-issued").innerText = new Date(cert.issuedAt).toISOString().split("T")[0];
+            }
+
             document.getElementById("codex-id").innerText = registrar.cosmologicalId;
             document.getElementById("codex-coords").innerText = `(${registrar.coords.x}, ${registrar.coords.y}, ${registrar.coords.z})`;
             document.getElementById("codex-lattice").innerText = registrar.latticeSpace;
@@ -176,6 +251,18 @@
         });
 
         document.getElementById("export-btn").addEventListener("click", () => exportLocalBackup());
+
+        document.getElementById("apply-cert-btn").addEventListener("click", async () => {
+            try {
+                const raw = document.getElementById("apply-cert-input").value.trim();
+                const cert = JSON.parse(raw);
+                await applyCertificate(currentUid, cert);
+                alert("Certificate applied. Reloading…");
+                window.location.reload();
+            } catch (err) {
+                alert("Apply failed: " + err.message);
+            }
+        });
     </script>
 </body>
 </html>

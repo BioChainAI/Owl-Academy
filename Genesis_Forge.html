@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Owl Academy | Genesis Forge — Archon Console</title>
+
+    <script type="module" src="scripts/auth-guard.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+
+    <style>
+        body {
+            background-color: #05030a; color: #e2e8f0;
+            font-family: 'Inter', sans-serif;
+            background: radial-gradient(circle at 50% 10%, rgba(232,28,255,0.10), #05030a 80%);
+            min-height: 100vh; margin: 0;
+        }
+        h1, h2, h3, .mystical { font-family: 'Cinzel', serif; }
+        .mono { font-family: 'JetBrains Mono', monospace; }
+        .archon-gradient {
+            background: linear-gradient(to right, #D4AF37, #e81cff, #00d4ff);
+            -webkit-background-clip: text; background-clip: text; color: transparent;
+        }
+        .glass {
+            background: rgba(15, 5, 25, 0.65); backdrop-filter: blur(16px);
+            border: 1px solid rgba(232, 28, 255, 0.22);
+            box-shadow: 0 10px 40px -10px rgba(0,0,0,0.85);
+        }
+        .crown-glow { animation: crownPulse 4s ease-in-out infinite; }
+        @keyframes crownPulse {
+            0%, 100% { filter: drop-shadow(0 0 8px rgba(232,28,255,0.4)); }
+            50% { filter: drop-shadow(0 0 20px rgba(212,175,55,0.8)); }
+        }
+        input, textarea, select {
+            background: #100618; color: #FFF8DC;
+            border: 1px solid rgba(232,28,255,0.25);
+        }
+        input:focus, textarea:focus, select:focus {
+            outline: none; border-color: #e81cff;
+            box-shadow: 0 0 0 2px rgba(232,28,255,0.15);
+        }
+        .denied {
+            background: rgba(5, 3, 10, 0.95);
+            color: #f43f5e;
+        }
+    </style>
+</head>
+<body class="antialiased">
+
+    <main class="relative z-10 max-w-5xl mx-auto px-4 md:px-8 py-12">
+
+        <header class="text-center mb-10">
+            <div class="inline-flex items-center gap-2 px-3 py-1 border border-fuchsia-500/30 rounded-full bg-fuchsia-950/40 text-fuchsia-300 text-[10px] tracking-[0.2em] uppercase mono mb-4 crown-glow">
+                ♛ Archon-Only Console
+            </div>
+            <h1 class="text-3xl md:text-5xl font-bold tracking-[0.15em] mystical">
+                <span class="archon-gradient">GENESIS FORGE</span>
+            </h1>
+            <p class="text-sm text-gray-400 max-w-2xl mx-auto mt-4 leading-relaxed">
+                Mint Instructor and Archon Genesis Seeds. Each certificate signed here grants
+                validated authorship rights on a specified dimensional plane.
+            </p>
+        </header>
+
+        <!-- Access denied for non-Archons -->
+        <div id="access-denied" class="hidden glass rounded-xl p-10 text-center border-rose-500/40">
+            <svg class="w-16 h-16 mx-auto text-rose-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+            <h2 class="mystical text-xl text-rose-300">Insufficient Authority</h2>
+            <p class="text-sm text-gray-400 mt-2 max-w-md mx-auto">
+                The Genesis Forge is reserved for Archons. Your current tier is
+                <span id="current-tier" class="text-fuchsia-400 font-bold mono">—</span>.
+            </p>
+            <p class="text-[11px] text-gray-600 mt-3 max-w-md mx-auto">
+                Root Archons are designated via the <span class="mono text-fuchsia-400">GENESIS_MASTER_UIDS</span>
+                list in <span class="mono">scripts/genesis-registrar.js</span>. Once your Firebase UID is
+                added, you can self-bootstrap your Archon certificate below.
+            </p>
+            <div id="bootstrap-section" class="hidden mt-6 pt-6 border-t border-fuchsia-500/20">
+                <p class="text-sm text-yellow-400 mystical mb-3">You are listed in the Master Key. Bootstrap Archon tier?</p>
+                <button id="bootstrap-btn" class="px-6 py-2.5 rounded bg-gradient-to-r from-yellow-500 via-fuchsia-500 to-cyan-500 text-black mono text-xs uppercase tracking-widest font-bold hover:opacity-90">
+                    ♛ Self-Sign Archon Certificate
+                </button>
+            </div>
+        </div>
+
+        <!-- Forge UI (visible to Archons) -->
+        <div id="forge-body" class="hidden space-y-8">
+
+            <!-- Active Archon banner -->
+            <div class="glass rounded-xl p-5 border-fuchsia-500/30 flex items-center gap-4">
+                <div class="w-12 h-12 rounded-full bg-fuchsia-900/40 border-2 border-fuchsia-400 flex items-center justify-center crown-glow text-2xl">♛</div>
+                <div>
+                    <div class="text-[10px] mono text-fuchsia-400 tracking-widest uppercase">Authenticated Archon</div>
+                    <div id="archon-id" class="mono text-sm text-cyan-300 mt-1"></div>
+                </div>
+            </div>
+
+            <!-- Mint a new certificate -->
+            <div class="glass rounded-xl p-6 md:p-8 space-y-5">
+                <div class="border-b border-fuchsia-500/20 pb-3">
+                    <div class="text-[10px] mono text-fuchsia-400 tracking-wider">CERTIFICATE FORGE</div>
+                    <h2 class="text-xl text-white mystical mt-1">Mint Genesis Seed</h2>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                    <div class="space-y-2">
+                        <label class="block text-xs mono text-gray-400 uppercase tracking-wider">Subject Cosmological ID</label>
+                        <input id="subject-id" type="text" class="w-full mono text-xs p-3 rounded-lg" placeholder="0x...">
+                        <div class="text-[10px] text-gray-500 mono">The recipient's Cosmological ID. Find it on their Codex page.</div>
+                    </div>
+                    <div class="space-y-2">
+                        <label class="block text-xs mono text-gray-400 uppercase tracking-wider">Target Tier</label>
+                        <select id="target-tier" class="w-full mono text-xs p-2.5 rounded">
+                            <option value="INSTRUCTOR">Instructor — Plane-restricted authorship</option>
+                            <option value="ARCHON">Archon — Full forge access (rare)</option>
+                        </select>
+                    </div>
+                    <div class="space-y-2 md:col-span-2">
+                        <label class="block text-xs mono text-gray-400 uppercase tracking-wider">Dimensional Plane</label>
+                        <select id="plane-select" class="w-full mono text-xs p-2.5 rounded">
+                            <option value="*">★ Universal (all planes)</option>
+                            <option value="dept-I">Dept I — Sacred Geometry & Topology</option>
+                            <option value="dept-II">Dept II — Cryptography & Sigils</option>
+                            <option value="dept-III">Dept III — Celestial Topology</option>
+                            <option value="dept-IV">Dept IV — Hyperbolic Systems</option>
+                            <option value="dept-V">Dept V — Fractal Processing</option>
+                            <option value="dept-VI">Dept VI — Seed Protocols</option>
+                            <option value="dept-VII">Dept VII — Human Consciousness</option>
+                            <option value="dept-VIII">Dept VIII — Soul-Mind Projection</option>
+                            <option value="dept-IX">Dept IX — AI-Human Integration</option>
+                            <option value="dept-X">Dept X — BioChain Substrate</option>
+                            <option value="custom">Custom Parallel Plane</option>
+                        </select>
+                    </div>
+                </div>
+
+                <button id="mint-btn" class="w-full py-3 rounded bg-gradient-to-r from-fuchsia-600 via-purple-500 to-cyan-500 text-white font-bold mono tracking-widest text-xs uppercase shadow-lg hover:opacity-90 transition-all">
+                    ⬢ Forge Certificate ⬢
+                </button>
+
+                <div id="forge-result" class="hidden bg-black/60 border border-cyan-500/30 rounded-lg p-4 space-y-3">
+                    <div class="text-[10px] mono text-cyan-400 tracking-widest uppercase">Certificate Minted</div>
+                    <pre id="cert-json" class="text-[10px] mono text-gray-300 bg-[#040208] p-3 rounded border border-gray-800 overflow-x-auto whitespace-pre-wrap break-all"></pre>
+                    <div class="flex gap-2">
+                        <button id="copy-cert-btn" class="flex-1 py-2 rounded border border-cyan-400/40 text-cyan-300 mono text-[10px] uppercase tracking-widest hover:bg-cyan-500/15">Copy to Clipboard</button>
+                        <button id="download-cert-btn" class="flex-1 py-2 rounded border border-fuchsia-400/40 text-fuchsia-300 mono text-[10px] uppercase tracking-widest hover:bg-fuchsia-500/15">Download .json</button>
+                    </div>
+                    <div class="text-[10px] text-amber-300/80 mono bg-amber-950/30 p-2 rounded">
+                        Deliver this certificate to the recipient. They paste it into their Codex to activate the new tier.
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick links -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <a href="Instructor_Console.html" class="glass rounded-xl p-5 hover:border-cyan-400/40 transition-all block">
+                    <div class="text-[9px] mono text-cyan-400 tracking-widest uppercase">Authoring Tools</div>
+                    <h3 class="mystical text-lg text-white mt-1">→ Instructor Console</h3>
+                    <p class="text-xs text-gray-500 mt-1">Author tomes and artifacts on your certified planes.</p>
+                </a>
+                <a href="Codex.html" class="glass rounded-xl p-5 hover:border-yellow-400/40 transition-all block">
+                    <div class="text-[9px] mono text-yellow-400 tracking-widest uppercase">Your Lineage</div>
+                    <h3 class="mystical text-lg text-white mt-1">→ Codex</h3>
+                    <p class="text-xs text-gray-500 mt-1">View your sigil, tier, and certificate.</p>
+                </a>
+            </div>
+        </div>
+
+        <div class="text-center mt-12">
+            <a href="Learning-Hub.html" class="text-[10px] mono text-gray-500 hover:text-gray-300 uppercase tracking-[0.3em]">← Return to Grand Hall</a>
+        </div>
+    </main>
+
+    <script type="module">
+        import { auth } from "./scripts/firebase/config.js";
+        import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-auth.js";
+        import { readRegistrar } from "./scripts/spire-registrar.js";
+        import {
+            resolveTier, issueCertificate, bootstrapArchonCertificate,
+            applyCertificate, GENESIS_MASTER_UIDS
+        } from "./scripts/genesis-registrar.js";
+
+        let currentUser = null;
+        let currentRegistrar = null;
+        let lastCert = null;
+
+        onAuthStateChanged(auth, async (user) => {
+            if (!user) return;
+            currentUser = user;
+            currentRegistrar = await readRegistrar(user.uid);
+
+            if (!currentRegistrar) {
+                document.getElementById("access-denied").classList.remove("hidden");
+                document.getElementById("current-tier") .innerText = "UNREGISTERED";
+                return;
+            }
+
+            const tier = await resolveTier(user.uid);
+            if (tier === "ARCHON") {
+                document.getElementById("forge-body").classList.remove("hidden");
+                document.getElementById("archon-id").innerText = currentRegistrar.cosmologicalId;
+            } else {
+                document.getElementById("access-denied").classList.remove("hidden");
+                document.getElementById("current-tier").innerText = tier;
+                if (GENESIS_MASTER_UIDS.includes(user.uid)) {
+                    document.getElementById("bootstrap-section").classList.remove("hidden");
+                }
+            }
+        });
+
+        document.getElementById("bootstrap-btn")?.addEventListener("click", async () => {
+            try {
+                const cert = await bootstrapArchonCertificate(currentUser.uid, currentRegistrar);
+                await applyCertificate(currentUser.uid, cert);
+                alert("Archon tier sealed. Reloading…");
+                window.location.reload();
+            } catch (err) {
+                alert("Bootstrap failed: " + err.message);
+            }
+        });
+
+        document.getElementById("mint-btn")?.addEventListener("click", async () => {
+            const subject = document.getElementById("subject-id").value.trim();
+            const tier = document.getElementById("target-tier").value;
+            const plane = document.getElementById("plane-select").value;
+            if (!subject.startsWith("0x")) { alert("Subject ID must start with 0x"); return; }
+            try {
+                const issuerReg = { ...currentRegistrar, tier: "ARCHON" };
+                lastCert = await issueCertificate(issuerReg, subject, tier, plane);
+                document.getElementById("forge-result").classList.remove("hidden");
+                document.getElementById("cert-json").innerText = JSON.stringify(lastCert, null, 2);
+            } catch (err) {
+                alert("Forge failed: " + err.message);
+            }
+        });
+
+        document.getElementById("copy-cert-btn")?.addEventListener("click", async () => {
+            if (!lastCert) return;
+            await navigator.clipboard.writeText(JSON.stringify(lastCert, null, 2));
+            alert("Certificate copied to clipboard.");
+        });
+
+        document.getElementById("download-cert-btn")?.addEventListener("click", () => {
+            if (!lastCert) return;
+            const blob = new Blob([JSON.stringify(lastCert, null, 2)], { type: "application/json" });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = `genesis-cert-${lastCert.subject.slice(2, 10)}.json`;
+            document.body.appendChild(a); a.click(); a.remove();
+            URL.revokeObjectURL(url);
+        });
+    </script>
+</body>
+</html>
