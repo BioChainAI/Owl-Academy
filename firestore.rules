@@ -2,63 +2,83 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Users can read/write their own data — except the Registrar, which is write-once.
-    match /users/{uid} {
-      allow read, write: if request.auth != null && request.auth.uid == uid;
+    // ─── Helpers ──────────────────────────────────────────────────────
+    function isSignedIn() {
+      return request.auth != null;
+    }
+    function myTier() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)/registrar/main).data.tier;
+    }
+    function isInstructorOrArchon() {
+      return isSignedIn() &&
+        exists(/databases/$(database)/documents/users/$(request.auth.uid)/registrar/main) &&
+        (myTier() == "INSTRUCTOR" || myTier() == "ARCHON");
+    }
+    function isArchon() {
+      return isSignedIn() &&
+        exists(/databases/$(database)/documents/users/$(request.auth.uid)/registrar/main) &&
+        myTier() == "ARCHON";
     }
 
-    // Registrar: cosmologicalId and ledgerSeed are write-once. Tier-upgrade
-    // updates are permitted but must preserve the core identity fields.
+    // ─── User-private space ───────────────────────────────────────────
+    match /users/{uid} {
+      allow read, write: if isSignedIn() && request.auth.uid == uid;
+    }
+
+    // Registrar: write-once identity, tier/certificate fields may be appended.
     match /users/{uid}/registrar/{doc} {
-      allow read: if request.auth != null && request.auth.uid == uid;
-      allow create: if request.auth != null && request.auth.uid == uid;
-      allow update: if request.auth != null && request.auth.uid == uid
+      allow read: if isSignedIn() && (request.auth.uid == uid || isArchon());
+      allow create: if isSignedIn() && request.auth.uid == uid;
+      allow update: if isSignedIn() && request.auth.uid == uid
         && request.resource.data.cosmologicalId == resource.data.cosmologicalId
         && request.resource.data.ledgerSeed == resource.data.ledgerSeed
         && request.resource.data.geoVector == resource.data.geoVector;
       allow delete: if false;
     }
 
-    // Codex and everything else under /users/{uid}/ is freely mutable by owner
+    // Codex and other per-user subcollections: owner-only
     match /users/{uid}/{collection}/{doc=**} {
-      allow read, write: if request.auth != null && request.auth.uid == uid
+      allow read, write: if isSignedIn() && request.auth.uid == uid
         && collection != "registrar";
     }
 
-    // Tomes: globally readable, creator-owned writes
+    // ─── Tomes ────────────────────────────────────────────────────────
     match /tomes/{tomeId} {
-      allow read: if request.auth != null;
-      allow create: if request.auth != null
+      allow read: if isSignedIn();
+      allow create: if isSignedIn()
         && request.resource.data.creatorUid == request.auth.uid;
-      allow update, delete: if request.auth != null
-        && resource.data.creatorUid == request.auth.uid;
+      allow update: if isSignedIn()
+        && (resource.data.creatorUid == request.auth.uid || isInstructorOrArchon());
+      allow delete: if isSignedIn()
+        && (resource.data.creatorUid == request.auth.uid || isArchon());
     }
 
-    // Artifacts: same pattern as tomes
+    // ─── Artifacts ────────────────────────────────────────────────────
     match /artifacts/{artifactId} {
-      allow read: if request.auth != null;
-      allow create: if request.auth != null
-        && request.resource.data.creatorUid == request.auth.uid;
-      allow update, delete: if request.auth != null
-        && resource.data.creatorUid == request.auth.uid;
+      allow read: if isSignedIn();
+      allow create: if isSignedIn()
+        && request.resource.data.creatorUid == request.auth.uid
+        && isInstructorOrArchon();
+      allow update: if isSignedIn()
+        && (resource.data.creatorUid == request.auth.uid || isInstructorOrArchon());
+      allow delete: if isArchon();
     }
 
-    // Chronicle is write-only for authenticated users, read by none (server-side only)
+    // ─── Chronicle (audit log, server-side reads only) ────────────────
     match /chronicles/{entry} {
-      allow create: if request.auth != null;
+      allow create: if isSignedIn();
       allow read:   if false;
     }
 
-    // Guilds: any authenticated user can read, only members can write
+    // ─── Guilds ───────────────────────────────────────────────────────
     match /guilds/{guildId} {
-      allow read: if request.auth != null;
-      allow write: if request.auth != null &&
+      allow read: if isSignedIn();
+      allow write: if isSignedIn() &&
         get(/databases/$(database)/documents/guilds/$(guildId)).data.members.hasAny([request.auth.uid]);
     }
-
     match /guilds/{guildId}/chronicle/{entry} {
-      allow read:   if request.auth != null;
-      allow create: if request.auth != null &&
+      allow read:   if isSignedIn();
+      allow create: if isSignedIn() &&
         get(/databases/$(database)/documents/guilds/$(guildId)).data.members.hasAny([request.auth.uid]);
     }
   }
