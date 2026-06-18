@@ -5,7 +5,8 @@
 import { getRankProgress } from "../services/arts.service.js";
 import { getTotalXP } from "../services/user.service.js";
 import { resolveTier } from "../genesis-registrar.js";
-import { getFamiliarFromCosmologicalId, renderUserSigil } from "../sigil-renderer.js";
+import { renderUserSigil } from "../sigil-renderer.js";
+import { getDocument } from "../firebase/firestore.js";
 
 const GENESIS_TIER_META = {
   ARCHON:     { symbol: "♛", label: "Archon",     color: "#D4AF37", glow: "rgba(212,175,55,0.55)" },
@@ -134,21 +135,23 @@ const renderWelcome = (profile, user) => {
 
       // Async: load cosmologicalId and replace placeholder with real sigil
       try {
-        const { getDocument } = await import("../firebase/firestore.js");
-        const registrar = await getDocument("registrar/main");
+        const [registrar, constDoc] = await Promise.all([
+          getDocument(`users/${user.uid}/registrar/main`),
+          getDocument(`constellations/${user.uid}`).catch(() => null),
+        ]);
         const cosmologicalId = registrar?.cosmologicalId || user.uid;
-        const orbitals = {};
-        try {
-          const constDoc = await getDocument(`constellations/${user.uid}`);
-          Object.assign(orbitals, constDoc?.orbitals || {});
-        } catch(_) {}
+        const orbitals = constDoc?.orbitals || {};
         const guilds = profile?.guilds || [];
         const sigilSvg = renderUserSigil({ cosmologicalId, tier, guilds, orbitals, size: 96 });
         const wrap = document.getElementById("sanctum-sigil-wrap");
         if (wrap) wrap.innerHTML = `
-          <a href="mage_tower/Familiars.html" title="View your familiar" style="display:block;border-radius:50%;overflow:hidden;line-height:0;">
+          <a href="mage_tower/Familiars.html" title="View your familiar" style="display:block;line-height:0;">
             ${sigilSvg}
-          </a>`;
+          </a>
+          <div class="absolute -bottom-1 -right-1 w-7 h-7 rounded-full bg-[#05030a] border border-yellow-500
+                      flex items-center justify-center text-[10px] text-yellow-400 font-mono">
+            ${totalXP > 999 ? Math.floor(totalXP/1000) + "k" : totalXP}
+          </div>`;
       } catch(_) {}
     }).catch(() => {});
   }
