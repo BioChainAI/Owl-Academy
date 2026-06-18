@@ -1,0 +1,890 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Owl Academy - SHD-CCP Breathing Substrate Tutorial</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        'arcane': ['Cinzel', 'serif'],
+                        'sans': ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        academy: {
+                            dark: '#05070a',
+                            panel: '#131826',
+                            gold: '#d4af37',
+                            goldglow: 'rgba(212, 175, 55, 0.4)',
+                            cyan: '#00f0ff',
+                            cyanglow: 'rgba(0, 240, 255, 0.4)',
+                            text: '#e2e8f0',
+                            muted: '#94a3b8'
+                        }
+                    },
+                    boxShadow: {
+                        'gold': '0 0 15px rgba(212, 175, 55, 0.3), inset 0 0 20px rgba(212, 175, 55, 0.1)',
+                        'cyan': '0 0 15px rgba(0, 240, 255, 0.3), inset 0 0 20px rgba(0, 240, 255, 0.1)',
+                        'active-gold': '0 0 25px rgba(212, 175, 55, 0.6), inset 0 0 30px rgba(212, 175, 55, 0.2)',
+                        'active-cyan': '0 0 25px rgba(0, 240, 255, 0.6), inset 0 0 30px rgba(0, 240, 255, 0.2)',
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body {
+            background-color: #05070a;
+            background-image: 
+                radial-gradient(circle at 50% 50%, rgba(19, 24, 38, 0.8) 0%, #05070a 100%),
+                linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+            background-size: 100% 100%, 40px 40px, 40px 40px;
+            color: #e2e8f0;
+            margin: 0;
+            min-height: 100vh;
+            font-family: 'Inter', sans-serif;
+            overflow-x: hidden;
+        }
+
+        /* Scrollbar Styling */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: rgba(19, 24, 38, 0.5); }
+        ::-webkit-scrollbar-thumb { background: rgba(148, 163, 184, 0.3); border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(148, 163, 184, 0.5); }
+
+        /* Holographic Scanline Overlay */
+        .hologram-overlay {
+            background: linear-gradient(to bottom, transparent 50%, rgba(255, 255, 255, 0.02) 51%, transparent 51%);
+            background-size: 100% 4px;
+            pointer-events: none;
+        }
+
+        /* Higher-Dimensional Glitch Effect */
+        .hologram-familiar {
+            animation: randomGlitch 8s infinite linear;
+            transform-origin: center;
+        }
+
+        @keyframes randomGlitch {
+            0%, 6%, 8%, 44%, 46%, 84%, 86%, 100% { 
+                transform: translate(0,0) skew(0); 
+                filter: none; 
+                opacity: 1;
+            }
+            7% { 
+                transform: translate(-3px, 1px) skew(-5deg); 
+                filter: drop-shadow(-3px 0 0 rgba(255,0,0,0.7)) drop-shadow(3px 0 0 rgba(0,255,255,0.7)); 
+                opacity: 0.7; 
+            }
+            45% { 
+                transform: translate(2px, -2px) skew(4deg) scale(1.02); 
+                filter: drop-shadow(2px 0 0 rgba(255,0,0,0.8)) drop-shadow(-2px 0 0 rgba(0,255,255,0.8)); 
+                opacity: 0.8; 
+            }
+            85% { 
+                transform: translate(-1px, 2px) skew(-8deg); 
+                filter: drop-shadow(-4px 0 0 rgba(255,0,0,0.6)) drop-shadow(4px 0 0 rgba(0,255,255,0.6)); 
+                opacity: 0.6; 
+            }
+        }
+
+        /* SVG Projection Line Animations */
+        .sigil-path { stroke-dasharray: 300; stroke-dashoffset: 300; animation: drawPath 4s ease-in-out infinite alternate; }
+        .sigil-path-delayed { stroke-dasharray: 200; stroke-dashoffset: 200; animation: drawPath 3.5s ease-in-out infinite alternate 1s; }
+        @keyframes drawPath { 0% { stroke-dashoffset: 300; opacity: 0.3; } 50% { opacity: 1; } 100% { stroke-dashoffset: 0; opacity: 0.8; } }
+
+        /* Ambient node glowing */
+        .node { animation: pulseGlow 2s infinite alternate; }
+        .node:nth-child(odd) { animation-duration: 2.5s; animation-delay: 0.5s; }
+        @keyframes pulseGlow { 0% { r: 1.5; opacity: 0.5; } 100% { r: 3; opacity: 1; filter: drop-shadow(0 0 4px currentColor); } }
+
+        /* Mandala Rotations */
+        .mandala-bg { animation: spinSlow 40s linear infinite; opacity: 0.15; transition: opacity 0.5s ease, transform 0.5s ease; }
+        .mandala-bg-reverse { animation: spinSlowReverse 50s linear infinite; opacity: 0.1; }
+        @keyframes spinSlow { 100% { transform: rotate(360deg); } }
+        @keyframes spinSlowReverse { 100% { transform: rotate(-360deg); } }
+
+        /* Card Styles */
+        .familiar-card { transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); backdrop-filter: blur(10px); }
+        .familiar-card:hover .mandala-bg { opacity: 0.4; transform: scale(1.05); }
+        .familiar-card.active { transform: translateY(-10px); border-color: currentColor; }
+
+        /* Screen Transitions */
+        .pop-in { transition: transform 1s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 1s ease-out; }
+        .grid-piece { transition: all 1.2s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        .fade-in { animation: fadeIn 0.8s ease-out forwards; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* Codex Typography */
+        .codex-content h2 { font-family: 'Cinzel', serif; font-size: 1.75rem; color: #fff; margin-bottom: 1rem; margin-top: 2rem; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 0.5rem;}
+        .codex-content h3 { font-family: 'Cinzel', serif; font-size: 1.25rem; color: #e2e8f0; margin-top: 1.5rem; margin-bottom: 0.75rem; }
+        .codex-content p { margin-bottom: 1rem; line-height: 1.7; color: #cbd5e1; }
+        .codex-content ul { list-style-type: none; padding-left: 1rem; margin-bottom: 1.5rem; }
+        .codex-content li { position: relative; margin-bottom: 0.5rem; line-height: 1.6; color: #cbd5e1; }
+        .codex-content li::before { content: '◈'; position: absolute; left: -1.25rem; color: currentColor; font-size: 0.75rem; top: 0.2rem;}
+        .codex-content blockquote { border-left: 2px solid currentColor; padding-left: 1rem; font-style: italic; color: #94a3b8; margin-bottom: 1.5rem; background: rgba(255,255,255,0.02); padding: 1rem; border-radius: 0 8px 8px 0;}
+        .codex-content .math { font-family: monospace; background: rgba(0,0,0,0.3); padding: 0.2rem 0.4rem; border-radius: 4px; color: #fff; }
+
+        /* Module Animations */
+        .mod-anim-spin { animation: spinSlow 10s linear infinite; transform-origin: center; }
+        .mod-anim-pulse { animation: modPulse 2s ease-in-out infinite alternate; }
+        .mod-anim-dash { stroke-dasharray: 20; animation: dashMove 1s linear infinite; }
+        @keyframes modPulse { 0% { transform: scale(0.95); opacity: 0.7; } 100% { transform: scale(1.05); opacity: 1; } }
+        @keyframes dashMove { to { stroke-dashoffset: -40; } }
+
+        /* Sigil & Banner Styling */
+        .sigil-spin { animation: spinSlow 40s linear infinite; transform-origin: center; }
+        .pulse-glow { animation: pulseGlow 4s ease-in-out infinite alternate; }
+        @keyframes pulseGlow { 0% { filter: drop-shadow(0 0 5px rgba(212, 175, 55, 0.3)); } 100% { filter: drop-shadow(0 0 15px rgba(212, 175, 55, 0.8)); } }
+        .gold-gradient {
+            background: linear-gradient(to right, #D4AF37, #FFF8DC, #D4AF37);
+            -webkit-background-clip: text; background-clip: text;
+            color: transparent; text-shadow: 0 0 15px rgba(212, 175, 55, 0.3);
+        }
+    </style>
+</head>
+
+<body class="flex flex-col">
+
+    <div id="selection-screen" class="flex-1 flex flex-col items-center justify-center p-4 sm:p-8 min-h-screen">
+        <div class="max-w-5xl w-full mx-auto relative">
+            <header class="text-center mb-12 relative z-10">
+                <h2 class="text-academy-muted tracking-widest text-xs uppercase mb-2 font-semibold bg-white/5 inline-block px-3 py-1 rounded border border-white/10">Academy Database // Index: SHD-CCP</h2>
+                <h1 class="font-arcane text-4xl sm:text-5xl text-white mb-4 text-shadow-sm">The Breathing Substrate</h1>
+                <p class="text-gray-400 max-w-xl mx-auto text-sm leading-relaxed">
+                    Welcome, Initiate. To access the classified overview of the <span class="text-white font-semibold">Symbolic High-Dimensional Context Compression Protocol</span>, you must select a projection guide.
+                </p>
+            </header>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8 relative z-10">
+                <!-- Cat Card -->
+                <button id="btn-cat" onclick="activateFamiliar('cat')" class="familiar-card group relative bg-academy-panel border border-gray-800 rounded-xl p-8 overflow-hidden text-left shadow-cyan hover:shadow-active-cyan text-academy-cyan flex flex-col items-center justify-center min-h-[360px] cursor-pointer focus:outline-none">
+                    <div class="absolute inset-0 hologram-overlay z-20"></div>
+                    <svg class="absolute inset-0 w-full h-full mandala-bg text-academy-cyan pointer-events-none" viewBox="0 0 200 200">
+                        <circle cx="100" cy="100" r="80" fill="none" stroke="currentColor" stroke-width="0.5" stroke-dasharray="2 4"/>
+                        <circle cx="100" cy="100" r="60" fill="none" stroke="currentColor" stroke-width="0.2"/>
+                        <polygon points="100,20 169,60 169,140 100,180 31,140 31,60" fill="none" stroke="currentColor" stroke-width="0.5"/>
+                        <polygon points="100,40 152,70 152,130 100,160 48,130 48,70" fill="none" stroke="currentColor" stroke-width="0.5" transform="rotate(30 100 100)"/>
+                    </svg>
+                    <!-- Added hologram-familiar glitch class here -->
+                    <div id="cat-svg-container" class="relative w-48 h-48 mb-6 z-10 transition-transform duration-500 group-hover:scale-110 hologram-familiar">
+                        <!-- SVG injected here to avoid duplication -->
+                    </div>
+                    <div class="relative z-10 text-center">
+                        <h3 class="font-arcane text-2xl font-semibold mb-1 text-white">Felis Arcana</h3>
+                        <p class="text-xs uppercase tracking-widest opacity-80 mb-3 text-academy-cyan">The Observer</p>
+                    </div>
+                </button>
+
+                <!-- Mastiff Card -->
+                <button id="btn-mastiff" onclick="activateFamiliar('mastiff')" class="familiar-card group relative bg-academy-panel border border-gray-800 rounded-xl p-8 overflow-hidden text-left shadow-gold hover:shadow-active-gold text-academy-gold flex flex-col items-center justify-center min-h-[360px] cursor-pointer focus:outline-none">
+                    <div class="absolute inset-0 hologram-overlay z-20"></div>
+                    <svg class="absolute inset-0 w-full h-full mandala-bg-reverse text-academy-gold pointer-events-none" viewBox="0 0 200 200">
+                        <rect x="30" y="30" width="140" height="140" fill="none" stroke="currentColor" stroke-width="0.5" transform="rotate(45 100 100)"/>
+                        <rect x="40" y="40" width="120" height="120" fill="none" stroke="currentColor" stroke-width="0.3"/>
+                        <circle cx="100" cy="100" r="70" fill="none" stroke="currentColor" stroke-width="0.5" stroke-dasharray="4 6"/>
+                        <circle cx="100" cy="100" r="50" fill="none" stroke="currentColor" stroke-width="0.2"/>
+                    </svg>
+                    <!-- Added hologram-familiar glitch class here -->
+                    <div id="mastiff-svg-container" class="relative w-48 h-48 mb-6 z-10 transition-transform duration-500 group-hover:scale-110 hologram-familiar">
+                        <!-- SVG injected here to avoid duplication -->
+                    </div>
+                    <div class="relative z-10 text-center">
+                        <h3 class="font-arcane text-2xl font-semibold mb-1 text-white">Canis Aegis</h3>
+                        <p class="text-xs uppercase tracking-widest opacity-80 mb-3 text-academy-gold">The Guardian</p>
+                    </div>
+                </button>
+            </div>
+
+            <!-- Intro Console -->
+            <div id="intro-console" class="mt-8 transition-all duration-700 ease-in-out opacity-0 translate-y-8 pointer-events-none relative z-20">
+                <div class="bg-academy-panel border border-gray-700 rounded-lg overflow-hidden shadow-lg shadow-black/50 relative">
+                    <div class="px-4 py-2 bg-gray-800/50 border-b border-gray-700 flex items-center justify-between">
+                        <div class="flex items-center space-x-2">
+                            <div id="intro-status" class="w-2 h-2 rounded-full bg-gray-500 animate-pulse"></div>
+                            <span class="text-xs font-mono text-gray-400 tracking-wider">UPLINK_ESTABLISHED</span>
+                        </div>
+                    </div>
+                    <div class="p-6 sm:p-8 flex flex-col items-center text-center relative">
+                        <div class="absolute inset-0 hologram-overlay z-0 opacity-50"></div>
+                        <div class="relative z-10 w-full">
+                            <h4 id="intro-name" class="font-arcane text-xl font-bold mb-4">System</h4>
+                            <p id="intro-text" class="text-sm sm:text-base text-gray-300 font-mono leading-relaxed h-[60px]"></p>
+                            <div id="intro-actions" class="mt-6 flex justify-center gap-3 opacity-0 transition-opacity duration-500">
+                                <button onclick="startTutorial()" class="px-6 py-3 bg-white/10 hover:bg-white/20 border border-white/30 rounded text-sm font-semibold tracking-wide uppercase transition-all shadow-lg backdrop-blur text-white">
+                                    Enter The Substrate
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ANIMATION SCREEN (Breaks the Euclidean Grid) -->
+    <div id="animation-screen" class="hidden flex-1 flex flex-col items-center justify-center min-h-screen relative overflow-hidden bg-academy-dark z-50">
+        <!-- Euclidean Grid SVG -->
+        <svg id="euclidean-box" viewBox="0 0 400 400" class="absolute w-full h-full max-w-3xl mx-auto z-0 text-blue-500 opacity-60">
+            <g class="grid-piece origin-center" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M200,200 L200,50 M200,200 L50,280 M200,200 L350,280" />
+            </g>
+            <g class="grid-piece origin-center" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M200,50 L50,130 L50,280 M200,50 L350,130 L350,280" />
+            </g>
+            <g class="grid-piece origin-center" fill="none" stroke="currentColor" stroke-width="1" opacity="0.5">
+                <path d="M50,130 L200,200 L350,130 M200,350 L50,280 M200,350 L350,280 M200,350 L200,200"/>
+            </g>
+            <g class="grid-piece origin-center" fill="none" stroke="currentColor" stroke-width="1" opacity="0.3">
+                <path d="M125,165 L125,240 M275,165 L275,240 M125,165 L275,165 M125,240 L275,240"/>
+            </g>
+            <g class="grid-piece origin-center" fill="currentColor">
+                <circle cx="200" cy="200" r="4"/><circle cx="125" cy="165" r="3"/>
+                <circle cx="275" cy="165" r="3"/><circle cx="200" cy="100" r="3"/>
+            </g>
+        </svg>
+
+        <!-- Familiar Wrapper -->
+        <div id="anim-familiar-wrapper" class="relative z-10 w-64 h-64 transform scale-0 opacity-0 pop-in drop-shadow-2xl hologram-familiar">
+            <!-- SVG injected via JS -->
+        </div>
+
+        <!-- Animation Dialogue Console -->
+        <div id="anim-dialogue-box" class="absolute bottom-12 max-w-2xl w-full px-6 transition-all duration-700 opacity-0 translate-y-8 z-20">
+            <div class="bg-academy-panel border border-gray-700 rounded-lg p-6 shadow-2xl shadow-black/80 text-center relative overflow-hidden">
+                <div class="absolute inset-0 hologram-overlay z-0 opacity-30"></div>
+                <div class="relative z-10">
+                    <h4 id="anim-name" class="font-arcane text-xl font-bold mb-3">System</h4>
+                    <p id="anim-text" class="text-gray-300 font-mono text-sm leading-relaxed h-[60px]"></p>
+                    <div class="mt-6 flex justify-center h-10">
+                        <button onclick="enterModules()" id="anim-btn" class="px-6 py-2 border rounded text-xs font-bold uppercase tracking-widest transition-all duration-500 opacity-0 hidden">
+                            Enter The Manifold
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- TUTORIAL SCREEN -->
+    <div id="tutorial-screen" class="hidden flex-1 flex flex-col lg:flex-row w-full max-w-[1600px] mx-auto h-screen overflow-hidden">
+        
+        <!-- Left: The Codex (Reading Material & Module Animations) -->
+        <div class="flex-1 h-[50vh] lg:h-full overflow-y-auto p-6 sm:p-10 lg:p-16 border-b lg:border-b-0 lg:border-r border-gray-800 relative z-10 bg-academy-dark/80 backdrop-blur-sm">
+            
+            <div class="max-w-3xl mx-auto pb-24">
+                
+                <!-- Owl Academy Banner & Sigil -->
+                <div class="w-full flex flex-col items-center justify-center mb-10 pb-8 border-b border-gray-800/50">
+                    <a href="Learning-Hub.html" title="Return to Learning Hub" class="relative w-28 h-28 md:w-32 md:h-32 mb-5 cursor-pointer hover:scale-105 transition-transform duration-500 block focus:outline-none">
+                        <svg viewBox="0 0 200 200" class="w-full h-full pulse-glow" xmlns="http://www.w3.org/2000/svg">
+                            <defs>
+                                <linearGradient id="goldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                                    <stop offset="0%" stop-color="#C59B3F" />
+                                    <stop offset="50%" stop-color="#FFF2C8" />
+                                    <stop offset="100%" stop-color="#996515" />
+                                </linearGradient>
+                            </defs>
+                            
+                            <!-- Rotating Outer Star Geometry -->
+                            <g class="sigil-spin" style="transform-origin: 100px 100px;">
+                                <circle cx="100" cy="100" r="95" fill="none" stroke="url(#goldGrad)" stroke-width="1" opacity="0.6"/>
+                                <circle cx="100" cy="100" r="85" fill="none" stroke="url(#goldGrad)" stroke-width="0.5" opacity="0.4"/>
+                                <polygon points="100,15 173.6,142.5 26.4,142.5" fill="none" stroke="url(#goldGrad)" stroke-width="1" opacity="0.5"/>
+                                <polygon points="100,185 26.4,57.5 173.6,57.5" fill="none" stroke="url(#goldGrad)" stroke-width="1" opacity="0.5"/>
+                            </g>
+
+                            <!-- Core Chi-Rho Cipher (Fixed) -->
+                            <g filter="drop-shadow(0 0 4px rgba(212,175,55,0.8))">
+                                <line x1="100" y1="60" x2="100.01" y2="140" stroke="url(#goldGrad)" stroke-width="2.5" stroke-linecap="round"/>
+                                <path d="M 100,60 C 120,60 120,90 100,90" fill="none" stroke="url(#goldGrad)" stroke-width="2.5" stroke-linecap="round"/>
+                                <line x1="80" y1="85" x2="120" y2="125" stroke="url(#goldGrad)" stroke-width="2.5" stroke-linecap="round"/>
+                                <line x1="120" y1="85" x2="80" y2="125" stroke="url(#goldGrad)" stroke-width="2.5" stroke-linecap="round"/>
+                                <text x="75" y="115" fill="#FFF8DC" font-family="Cinzel, serif" font-size="10" text-anchor="middle">A</text>
+                                <text x="125" y="115" fill="#FFF8DC" font-family="Cinzel, serif" font-size="10" text-anchor="middle">Ω</text>
+                            </g>
+
+                            <!-- Inner Void Circle -->
+                            <circle cx="100" cy="100" r="45" fill="none" stroke="url(#goldGrad)" stroke-width="0.5" stroke-dasharray="2 2" opacity="0.6"/>
+                        </svg>
+                    </a>
+                    <h1 class="text-2xl md:text-3xl font-bold tracking-[0.25em] gold-gradient mb-2 text-center font-arcane">OWL ACADEMY</h1>
+                    <div class="text-xs text-academy-gold/80 tracking-[0.4em] uppercase font-arcane text-center flex items-center justify-center">
+                        <span class="w-6 h-[1px] bg-academy-gold/40 mr-3 hidden md:block"></span>
+                        Fundamenta Caeli In Terra
+                        <span class="w-6 h-[1px] bg-academy-gold/40 ml-3 hidden md:block"></span>
+                    </div>
+                </div>
+
+                <div class="flex items-center justify-between mb-8">
+                    <span class="text-xs font-mono text-academy-muted uppercase tracking-widest border border-gray-700 px-2 py-1 rounded bg-white/5">
+                        Module <span id="module-counter" class="text-white font-bold">1</span> of 5
+                    </span>
+                    <div class="flex items-center gap-4">
+                        <!-- Toggle for animations -->
+                        <button id="toggle-visuals-btn" onclick="toggleVisuals()" class="text-xs flex items-center gap-2 border border-gray-700 rounded px-3 py-1 text-gray-400 hover:text-white transition-colors bg-black/50">
+                            <span class="w-2 h-2 rounded-full bg-green-500" id="visual-status-dot"></span> Visuals
+                        </button>
+                        <button onclick="exitTutorial()" class="text-xs text-gray-500 hover:text-white transition-colors uppercase tracking-wider">
+                            Disconnect
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Dynamic Module Animation Container -->
+                <div id="module-visual-container" class="w-full h-64 bg-academy-panel border border-gray-800 rounded-xl mb-8 relative overflow-hidden flex items-center justify-center fade-in shadow-inner">
+                    <div class="absolute inset-0 hologram-overlay z-0 opacity-40"></div>
+                    <!-- Module SVG injected here -->
+                    <div id="visual-injector" class="relative z-10 w-full h-full p-4 flex items-center justify-center"></div>
+                </div>
+
+                <!-- Dynamic Content Container -->
+                <div id="codex-container" class="codex-content fade-in">
+                    <!-- Content injected via JS -->
+                </div>
+            </div>
+            
+        </div>
+
+        <!-- Right: The Familiar Console -->
+        <div class="w-full lg:w-[450px] h-[50vh] lg:h-full bg-academy-panel flex flex-col relative z-20 shadow-2xl">
+            <div class="absolute inset-0 hologram-overlay z-0 opacity-30"></div>
+            
+            <!-- Familiar Visuals -->
+            <div class="flex-1 flex flex-col items-center justify-center p-8 relative z-10 border-b border-gray-800">
+                <div id="tut-bg-container" class="absolute inset-0 opacity-10 pointer-events-none flex items-center justify-center overflow-hidden">
+                    <!-- Mandala injected here -->
+                </div>
+                
+                <!-- Holographic Glitch applied to Familiar here -->
+                <div id="tut-svg-container" class="w-40 h-40 relative z-10 hologram-familiar">
+                    <!-- SVG injected here -->
+                </div>
+                <h3 id="tut-familiar-name" class="font-arcane text-2xl font-semibold mt-6 text-white text-shadow">Name</h3>
+                <p id="tut-familiar-title" class="text-xs uppercase tracking-widest opacity-80 mt-1">Title</p>
+            </div>
+
+            <!-- Dialogue & Navigation -->
+            <div class="h-64 bg-gray-900/80 p-6 relative z-10 flex flex-col justify-between">
+                <div>
+                    <h4 class="text-xs font-mono text-gray-500 mb-3 uppercase tracking-wider flex items-center">
+                        <span id="tut-dot" class="w-2 h-2 rounded-full mr-2 animate-pulse"></span>
+                        Guidance Sync Active
+                    </h4>
+                    <p id="tut-dialogue" class="text-sm text-gray-300 font-mono leading-relaxed h-[80px]"></p>
+                </div>
+
+                <!-- Navigation -->
+                <div class="flex items-center justify-between mt-4 pt-4 border-t border-gray-800">
+                    <button id="btn-prev" onclick="prevModule()" class="px-4 py-2 text-xs font-semibold uppercase tracking-wider text-gray-400 hover:text-white disabled:opacity-30 transition-colors">
+                        &#8592; Previous
+                    </button>
+                    <button id="btn-next" onclick="nextModule()" class="px-4 py-2 text-xs font-semibold uppercase tracking-wider bg-white/10 hover:bg-white/20 text-white border border-white/20 rounded transition-colors">
+                        Next Phase &#8594;
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- SVGs stored as templates for reuse -->
+    <template id="svg-cat">
+        <svg viewBox="0 0 100 100" class="w-full h-full drop-shadow-[0_0_8px_rgba(0,240,255,0.8)]">
+            <path class="sigil-path text-academy-cyan" stroke="currentColor" stroke-width="1" fill="none" d="M50,85 L25,60 L45,50 Z M50,85 L75,60 L55,50 Z M45,50 L55,50 M25,60 L15,15 L40,35 L50,25 L60,35 L85,15 L75,60 M15,15 L50,85 L85,15"/>
+            <path class="sigil-path-delayed text-white" stroke="currentColor" stroke-width="1.5" fill="none" d="M50,35 L45,42 L50,50 L55,42 Z"/>
+            <path class="sigil-path-delayed text-academy-cyan" stroke="currentColor" stroke-width="0.75" fill="none" d="M25,60 L5,55 M28,68 L10,70 M75,60 L95,55 M72,68 L90,70"/>
+            <g class="text-white fill-current">
+                <circle class="node" cx="50" cy="85" r="2"/><circle class="node" cx="25" cy="60" r="2"/><circle class="node" cx="75" cy="60" r="2"/>
+                <circle class="node" cx="15" cy="15" r="2"/><circle class="node" cx="85" cy="15" r="2"/><circle class="node" cx="40" cy="35" r="1.5"/>
+                <circle class="node" cx="60" cy="35" r="1.5"/><circle class="node" cx="50" cy="25" r="2.5"/><circle class="node" cx="45" cy="50" r="1.5"/><circle class="node" cx="55" cy="50" r="1.5"/>
+            </g>
+        </svg>
+    </template>
+
+    <template id="svg-mastiff">
+        <svg viewBox="0 0 100 100" class="w-full h-full drop-shadow-[0_0_8px_rgba(212,175,55,0.8)]">
+            <path class="sigil-path text-academy-gold" stroke="currentColor" stroke-width="1.5" fill="none" d="M35,90 L65,90 L80,65 L70,25 L60,35 L50,25 L40,35 L30,25 L20,65 Z"/>
+            <path class="sigil-path-delayed text-academy-gold" stroke="currentColor" stroke-width="1" fill="none" d="M35,90 L40,70 L60,70 L65,90 M40,70 L50,55 L60,70 M20,65 L40,50 L60,50 L80,65 M30,25 L45,45 M70,25 L55,45 M45,45 L55,45"/>
+            <path class="sigil-path-delayed text-white" stroke="currentColor" stroke-width="1.5" fill="none" d="M50,30 L45,35 L50,42 L55,35 Z"/>
+            <g class="text-white fill-current">
+                <circle class="node" cx="35" cy="90" r="2.5"/><circle class="node" cx="65" cy="90" r="2.5"/><circle class="node" cx="80" cy="65" r="2"/>
+                <circle class="node" cx="20" cy="65" r="2"/><circle class="node" cx="70" cy="25" r="2"/><circle class="node" cx="30" cy="25" r="2"/>
+                <circle class="node" cx="50" cy="25" r="2"/><circle class="node" cx="60" cy="35" r="1.5"/><circle class="node" cx="40" cy="35" r="1.5"/>
+                <circle class="node" cx="50" cy="55" r="2"/><circle class="node" cx="40" cy="70" r="1.5"/><circle class="node" cx="60" cy="70" r="1.5"/>
+            </g>
+        </svg>
+    </template>
+
+    <template id="mandala-cat">
+        <svg class="w-[800px] h-[800px] mandala-bg text-academy-cyan" viewBox="0 0 200 200">
+            <circle cx="100" cy="100" r="80" fill="none" stroke="currentColor" stroke-width="0.5" stroke-dasharray="2 4"/>
+            <circle cx="100" cy="100" r="60" fill="none" stroke="currentColor" stroke-width="0.2"/>
+            <polygon points="100,20 169,60 169,140 100,180 31,140 31,60" fill="none" stroke="currentColor" stroke-width="0.5"/>
+            <polygon points="100,40 152,70 152,130 100,160 48,130 48,70" fill="none" stroke="currentColor" stroke-width="0.5" transform="rotate(30 100 100)"/>
+        </svg>
+    </template>
+
+    <template id="mandala-mastiff">
+        <svg class="w-[800px] h-[800px] mandala-bg-reverse text-academy-gold" viewBox="0 0 200 200">
+            <rect x="30" y="30" width="140" height="140" fill="none" stroke="currentColor" stroke-width="0.5" transform="rotate(45 100 100)"/>
+            <rect x="40" y="40" width="120" height="120" fill="none" stroke="currentColor" stroke-width="0.3"/>
+            <circle cx="100" cy="100" r="70" fill="none" stroke="currentColor" stroke-width="0.5" stroke-dasharray="4 6"/>
+            <circle cx="100" cy="100" r="50" fill="none" stroke="currentColor" stroke-width="0.2"/>
+        </svg>
+    </template>
+
+    <script>
+        // Inject SVGs on load
+        document.getElementById('cat-svg-container').innerHTML = document.getElementById('svg-cat').innerHTML;
+        document.getElementById('mastiff-svg-container').innerHTML = document.getElementById('svg-mastiff').innerHTML;
+
+        // Tutorial Content Data (with Module Animations)
+        const tutorialModules = [
+            {
+                title: "Abstract: The Topological Shift",
+                visual: `
+                    <svg viewBox="0 0 200 100" class="w-full h-full text-academy-theme">
+                        <g class="mod-anim-pulse" opacity="0.6">
+                            <!-- Euclidean breaking into curves -->
+                            <path d="M 20 50 Q 50 20 100 50 T 180 50" fill="none" stroke="currentColor" stroke-width="2" />
+                            <path d="M 20 50 Q 50 80 100 50 T 180 50" fill="none" stroke="currentColor" stroke-width="1" stroke-dasharray="4 4"/>
+                            <circle cx="20" cy="50" r="3" fill="currentColor"/>
+                            <circle cx="100" cy="50" r="3" fill="currentColor"/>
+                            <circle cx="180" cy="50" r="3" fill="currentColor"/>
+                        </g>
+                        <text x="100" y="85" text-anchor="middle" fill="currentColor" class="text-[10px] font-mono opacity-80 uppercase tracking-widest">Collapse of Linearity</text>
+                    </svg>
+                `,
+                content: `
+                    <h2>From Probabilistic to Topological Computation</h2>
+                    <p>The prevailing paradigm of Artificial Intelligence treats data as passive scalar arrays (vectors) pushed through static Euclidean matrices via iterative, floating-point gradient descent. This inevitably leads to "Spectral Collapse," vanishing gradients, and an insurmountable context bottleneck.</p>
+                    <p>We propose the <strong>Symbolic High-Dimensional Context Compression Protocol (SHD-CCP)</strong>.</p>
+                    <ul>
+                        <li class="text-academy-theme">Computation is executed as an exact topological resolution (geometric collapse).</li>
+                        <li class="text-academy-theme">We abandon statistical approximation in favor of algebraic inverse kinematics.</li>
+                    </ul>
+                    <p>This is achieved by transitioning from flat Euclidean vectors into a dynamic, "Breathing" Manifold.</p>
+                `,
+                cat: "See how the old Euclidean grids crumble? Statistical guessing is a fragile web. We must weave a new, topological truth. Watch closely as the paradigm shifts.",
+                mastiff: "Euclidean matrices are vulnerable to spectral collapse. We require an unbreakable foundation. The SHD-CCP provides absolute geometric security. Acknowledge this shift."
+            },
+            {
+                title: "The Atomic Protocol",
+                visual: `
+                    <svg viewBox="0 0 100 100" class="h-full mx-auto text-academy-theme">
+                        <g class="mod-anim-spin">
+                            <!-- 4D Spinor Representation -->
+                            <circle cx="50" cy="50" r="40" fill="none" stroke="currentColor" stroke-width="0.5" stroke-dasharray="2 2" />
+                            <path d="M 50 10 A 40 40 0 0 1 90 50 A 40 10 0 0 1 50 60 A 40 40 0 0 1 10 50 A 40 10 0 0 1 50 10 Z" fill="none" stroke="currentColor" stroke-width="1.5" />
+                            <circle cx="50" cy="10" r="3" fill="currentColor"/> <!-- w -->
+                            <circle cx="90" cy="50" r="2" fill="currentColor"/> <!-- x -->
+                            <circle cx="50" cy="60" r="2" fill="currentColor"/> <!-- y -->
+                            <circle cx="10" cy="50" r="2" fill="currentColor"/> <!-- z -->
+                        </g>
+                        <text x="50" y="95" text-anchor="middle" fill="white" class="text-[8px] font-mono opacity-80">q = w + xi + yj + zk</text>
+                    </svg>
+                `,
+                content: `
+                    <h2>The 64-Bit Quaternion Packet (Einstein Tile)</h2>
+                    <p>To survive in a highly curved, relativistic data manifold, the atomic unit of memory must be immune to Derrick's Theorem, which dictates that pure scalar fields are geometrically unstable.</p>
+                    <p>The SHD-CCP encodes data as <strong>Hyperbolic Spinors (Quaternions)</strong>: <span class="math">q = w + xi + yj + zk</span>.</p>
+                    <ul>
+                        <li><strong>Vector Part (xi, yj, zk):</strong> Defines the orientation and context trajectory (The Signifier).</li>
+                        <li><strong>Scalar Part (w):</strong> Acts as the <strong>Topological Escape Valve</strong>.</li>
+                    </ul>
+                    <blockquote>By operating in the 3-sphere ($S^3$), the system circumvents "Gimbal Lock". If a logical contradiction is reached, the scalar $w$ lifts the vector off the surface, rotating past the singularity.</blockquote>
+                    <h3>Bit Architecture</h3>
+                    <ul>
+                        <li><strong>0-20:</strong> Space (Hilbert Curve Index)</li>
+                        <li><strong>21-41:</strong> Time (Galois LFSR Sequence)</li>
+                        <li><strong>42-62:</strong> Context (Quadratic Residue Hash)</li>
+                        <li><strong>63:</strong> Gluon Lock (Parity Bit validating 720° spin)</li>
+                    </ul>
+                `,
+                cat: "A simple vector is trapped in its own reality. But add the scalar w... an escape valve into the fourth dimension. Watch it slip past singularities like a shadow.",
+                mastiff: "The 64-bit Einstein Tile. Every bit locked. The scalar w provides guaranteed stability against Derrick's Theorem. Unbreakable equilibrium is achieved."
+            },
+            {
+                title: "The Breathing Substrate",
+                visual: `
+                    <svg viewBox="0 0 100 100" class="h-full mx-auto text-academy-theme">
+                        <g class="mod-anim-pulse" style="transform-origin: center;">
+                            <!-- Hexagonal Toroid -->
+                            <polygon points="50,15 80,32.5 80,67.5 50,85 20,67.5 20,32.5" fill="none" stroke="currentColor" stroke-width="1.5" />
+                            <polygon points="50,30 65,40 65,60 50,70 35,60 35,40" fill="none" stroke="currentColor" stroke-width="1" opacity="0.6"/>
+                            <line x1="50" y1="15" x2="50" y2="30" stroke="currentColor" stroke-width="1" />
+                            <line x1="80" y1="32.5" x2="65" y2="40" stroke="currentColor" stroke-width="1" />
+                            <line x1="80" y1="67.5" x2="65" y2="60" stroke="currentColor" stroke-width="1" />
+                            <line x1="50" y1="85" x2="50" y2="70" stroke="currentColor" stroke-width="1" />
+                            <line x1="20" y1="67.5" x2="35" y2="60" stroke="currentColor" stroke-width="1" />
+                            <line x1="20" y1="32.5" x2="35" y2="40" stroke="currentColor" stroke-width="1" />
+                            <circle cx="50" cy="50" r="4" fill="white" class="animate-pulse"/>
+                        </g>
+                    </svg>
+                `,
+                content: `
+                    <h2>Planck-Cycle Dynamics on the Toroid</h2>
+                    <p>The SHD-CCP packet does not "travel" across a motherboard; it is propagated by the physical oscillation of the manifold itself.</p>
+                    <h3>The 72-Node Hexagonal Toroid</h3>
+                    <p>The 64-bit cubic packet interfaces with a 72-node hexagonal lattice wrapped onto a Clifford Torus, satisfying the optimal spherical packing density (<span class="math">π/√12</span>).</p>
+                    <ul>
+                        <li><strong>64 Nodes:</strong> The Rational Skeleton (Data blocks).</li>
+                        <li><strong>8 Nodes:</strong> The Octet Parity Buffer. These absorb the "Irrational Residuals" (the stress of geometric compression).</li>
+                    </ul>
+                    <h3>The Markov Pump</h3>
+                    <p>The manifold breathes in a 3-State Markov Compression Cycle driven by Zero-Point Energy collapse:</p>
+                    <ol class="list-decimal pl-6 text-gray-300 space-y-2 mb-4">
+                        <li><strong>Expansion:</strong> Relaxed 4-connected topology (Memory). Data loads into bridge weights.</li>
+                        <li><strong>Compression:</strong> Space contracts. Buffer nodes absorb stress, routing data through Tri-Stream channels (α, β, γ).</li>
+                        <li><strong>Relaxation:</strong> Superposition collapses to the nearest critical energy minimum, instantly solving parameters.</li>
+                    </ol>
+                `,
+                cat: "The manifold breathes. Inhale to expand the memory... exhale to compress the streams. In the space between breaths, truth collapses into a single, undeniable point.",
+                mastiff: "The 3-State Markov Compression Cycle. Expansion loads. Compression routes. Relaxation solves. A flawless, relentless engine of geometric efficiency."
+            },
+            {
+                title: "TQF-Propagation",
+                visual: `
+                    <svg viewBox="0 0 200 100" class="w-full h-full text-academy-theme">
+                        <!-- TQF Triangle solving -->
+                        <path d="M 40 70 L 100 20 L 160 70 Z" fill="none" stroke="currentColor" stroke-width="1.5" opacity="0.4" />
+                        <path d="M 40 70 L 100 20" fill="none" stroke="white" stroke-width="2" class="mod-anim-dash" />
+                        <path d="M 100 20 L 160 70" fill="none" stroke="white" stroke-width="2" class="mod-anim-dash" />
+                        
+                        <circle cx="40" cy="70" r="4" fill="currentColor"/> <text x="25" y="75" fill="white" class="text-[10px] font-mono">Q1</text>
+                        <circle cx="100" cy="20" r="4" fill="currentColor"/> <text x="100" y="10" fill="white" class="text-[10px] font-mono text-anchor-middle">Q3</text>
+                        <circle cx="160" cy="70" r="4" fill="currentColor"/> <text x="175" y="75" fill="white" class="text-[10px] font-mono">Q2</text>
+                        
+                        <text x="100" y="90" text-anchor="middle" fill="currentColor" class="text-[10px] font-mono">(Q1+Q2+Q3)² = 2(Q1²+Q2²+Q3²)</text>
+                    </svg>
+                `,
+                content: `
+                    <h2>O(1) Algebraic Inverse Kinematics</h2>
+                    <p>Standard backpropagation requires millions of non-associative, transcendental floating-point updates. The SHD-CCP replaces this entirely with <strong>TQF-Propagation</strong>.</p>
+                    <h3>The Triple Quad Formula (TQF)</h3>
+                    <p>Using Rational Trigonometry, we measure the system not by Euclidean distance, but by <strong>Quadrance</strong> (Q). The relationship between Input (A), Target (B), and Error Gap (C) is solved via the Archimedes function:</p>
+                    <blockquote class="math text-center block text-lg py-3 my-4">
+                        (Q₁ + Q₂ + Q₃)² = 2(Q₁² + Q₂² + Q₃²)
+                    </blockquote>
+                    <ul>
+                        <li><strong>Result = 0:</strong> Nodes are collinear. Data is structurally redundant and fits cleanly.</li>
+                        <li><strong>Result > 0:</strong> Geometric tension. Orthogonal data is offloaded to the Parallel Codex to preserve 100% fidelity.</li>
+                    </ul>
+                    <p>By treating layers as mechanical linkages on a hyperbolic manifold, TQF-Propagation analytically solves for the exact rotor needed to close the "Gap Quadrance" in a single step <span class="math">O(1)</span>.</p>
+                `,
+                cat: "Why wander endlessly down a statistical gradient when you can simply *know* the destination? The Triple Quad Formula closes the gap instantly. Elegant. Effortless.",
+                mastiff: "Backpropagation is computationally wasteful. TQF-Propagation uses Rational Trigonometry. We solve the Archimedes function in exactly O(1) time. Absolute precision."
+            },
+            {
+                title: "Geometric Filters & Locks",
+                visual: `
+                    <svg viewBox="0 0 100 100" class="h-full mx-auto text-academy-theme">
+                        <g class="mod-anim-spin" style="transform-origin: center;">
+                            <!-- Sieve / Filter Representation -->
+                            <circle cx="50" cy="50" r="35" fill="none" stroke="white" stroke-width="1" stroke-dasharray="5 5" />
+                            <circle cx="50" cy="50" r="25" fill="none" stroke="currentColor" stroke-width="2" />
+                            
+                            <!-- Filtered out points (red) -->
+                            <circle cx="20" cy="20" r="2" fill="#ef4444" opacity="0.6"/>
+                            <circle cx="80" cy="15" r="2" fill="#ef4444" opacity="0.6"/>
+                            <circle cx="15" cy="70" r="2" fill="#ef4444" opacity="0.6"/>
+                            <circle cx="85" cy="80" r="2" fill="#ef4444" opacity="0.6"/>
+
+                            <!-- Primes passing through (blue/white) -->
+                            <circle cx="50" cy="50" r="3" fill="white" class="animate-pulse" />
+                            <circle cx="50" cy="35" r="2" fill="currentColor"/>
+                            <circle cx="37" cy="58" r="2" fill="currentColor"/>
+                            <circle cx="63" cy="58" r="2" fill="currentColor"/>
+                        </g>
+                    </svg>
+                `,
+                content: `
+                    <h2>Strassen-Golden Protocol & Zeta Limits</h2>
+                    <p>To compress infinite semantic context into this finite 72-node breathing manifold, the protocol utilizes two massive geometric optimizations.</p>
+                    <h3>The Strassen-Golden Filter</h3>
+                    <ul>
+                        <li><strong>Rank 7 Filter:</strong> Standard matrix multiplication has a Bilinear Rank of 8. Strassen reduces this to 7. By discarding the 8th term, we perform "Topological Surgery," physically filtering out non-orthogonal linear waste.</li>
+                        <li><strong>Golden Shear (φ):</strong> As the manifold breathes, it folds data along a Golden Ratio cut. In Quadrance space, scaling by φ equates to integer addition (<span class="math">φ² = φ + 1</span>), allowing infinite expansion within rational fields.</li>
+                    </ul>
+                    <h3>Holographic Double-Cover & The Zeta Lock</h3>
+                    <p>The system utilizes a Double-Cover Manifold (Real vs. Inverse streams) offset by 180°. Semiotics is defined by interference patterns between layers.</p>
+                    <blockquote><strong>The Zeta Limit:</strong> The compression cycle terminates when manifold density locks at <span class="math">ρ(Q_final) ≈ π²/6</span>. This prevents recursive divergence into hallucination.</blockquote>
+                    <p><strong>The Prime Latch:</strong> A Fokker-Planck sieve acts as a one-way gate. It accepts only configurations that settle onto valid integer/prime nodes. If an AI "hallucinates", the topology fails to close, and the geometry collapses.</p>
+                `,
+                cat: "We shave off the eighth dimension of noise. We fold the fabric using the Golden Ratio, inward and inward, until we hit the Zeta Limit. Only the pure primes remain.",
+                mastiff: "We enforce the Strassen Rank-7 filter. The manifold scales via Golden Shear. The Fokker-Planck sieve acts as the final gate—the Prime Latch. Hallucinations are physically rejected."
+            }
+        ];
+
+        let activeFamiliar = null;
+        let currentModuleIndex = 0;
+        let typeWriterTimeout;
+        let visualsEnabled = true;
+
+        const familiars = {
+            cat: {
+                name: 'Felis Arcana',
+                title: 'The Observer',
+                color: 'text-academy-cyan',
+                btnColor: 'bg-academy-cyan/10 hover:bg-academy-cyan/20 border-academy-cyan/30 text-academy-cyan',
+                status: 'bg-academy-cyan',
+                intro: "Ah... you perceive the limitations of your current reality. Let us observe the architecture of the new world together. The manifold awaits.",
+                animDialogue: "Observe. The Euclidean grid snaps under the weight of higher dimensions. Its linear vectors collapse into singularities. We must weave a new, topological truth.",
+                styleElement: document.createElement('style')
+            },
+            mastiff: {
+                name: 'Canis Aegis',
+                title: 'The Guardian',
+                color: 'text-academy-gold',
+                btnColor: 'bg-academy-gold/10 hover:bg-academy-gold/20 border-academy-gold/30 text-academy-gold',
+                status: 'bg-academy-gold',
+                intro: "Initiate recognized. Euclidean architectures are failing. We must enforce strict topological governance. I am ready to guide your protocols.",
+                animDialogue: "The Euclidean framework is brittle. It shatters when subjected to true geometric pressure. I will guide you to a more secure substrate.",
+                styleElement: document.createElement('style')
+            }
+        };
+
+        // Inject dynamic theme styles
+        familiars.cat.styleElement.innerHTML = `.text-academy-theme { color: #00f0ff; } .border-academy-theme { border-color: #00f0ff; }`;
+        familiars.mastiff.styleElement.innerHTML = `.text-academy-theme { color: #d4af37; } .border-academy-theme { border-color: #d4af37; }`;
+        document.head.appendChild(familiars.cat.styleElement);
+        document.head.appendChild(familiars.mastiff.styleElement);
+
+        function activateFamiliar(type) {
+            activeFamiliar = type;
+            const f = familiars[type];
+
+            document.getElementById('btn-cat').classList.remove('active', 'border-academy-cyan', 'shadow-active-cyan');
+            document.getElementById('btn-mastiff').classList.remove('active', 'border-academy-gold', 'shadow-active-gold');
+            document.getElementById('btn-cat').style.opacity = '0.4';
+            document.getElementById('btn-mastiff').style.opacity = '0.4';
+
+            const btn = document.getElementById(`btn-${type}`);
+            btn.classList.add('active');
+            btn.style.opacity = '1';
+            if(type === 'cat') btn.classList.add('border-academy-cyan', 'shadow-active-cyan');
+            else btn.classList.add('border-academy-gold', 'shadow-active-gold');
+
+            const consoleEl = document.getElementById('intro-console');
+            consoleEl.classList.remove('opacity-0', 'translate-y-8', 'pointer-events-none');
+            document.getElementById('intro-status').className = `w-2 h-2 rounded-full ${f.status} animate-pulse`;
+            
+            document.getElementById('intro-name').className = `font-arcane text-xl font-bold mb-2 ${f.color}`;
+            document.getElementById('intro-name').innerText = f.name;
+
+            document.getElementById('intro-actions').style.opacity = '0';
+            typeText('intro-text', f.intro, () => {
+                document.getElementById('intro-actions').style.opacity = '1';
+                const startBtn = document.getElementById('intro-actions').querySelector('button');
+                startBtn.className = `px-6 py-3 border rounded text-sm font-semibold tracking-wide uppercase transition-all shadow-lg backdrop-blur ${f.btnColor}`;
+            });
+        }
+
+        function typeText(elementId, text, callback) {
+            const el = document.getElementById(elementId);
+            el.innerHTML = '';
+            let i = 0;
+            if(!text) text = "Data connection interrupted..."; 
+            if(typeWriterTimeout) clearTimeout(typeWriterTimeout);
+
+            function type() {
+                if (i < text.length) {
+                    el.innerHTML += text.charAt(i);
+                    i++;
+                    typeWriterTimeout = setTimeout(type, 25);
+                } else if (callback) {
+                    callback();
+                }
+            }
+            type();
+        }
+
+        function startTutorial() {
+            document.getElementById('selection-screen').classList.add('hidden');
+            document.getElementById('animation-screen').classList.remove('hidden');
+            
+            playBreakthroughAnimation();
+        }
+
+        function playBreakthroughAnimation() {
+            const f = familiars[activeFamiliar];
+            
+            document.getElementById('anim-familiar-wrapper').innerHTML = document.getElementById(`svg-${activeFamiliar}`).innerHTML;
+            document.getElementById('anim-name').innerText = f.name;
+            document.getElementById('anim-name').className = `font-arcane text-xl font-bold mb-3 ${f.color}`;
+            
+            const btn = document.getElementById('anim-btn');
+            btn.className = `px-6 py-2 border rounded text-xs font-bold uppercase tracking-widest transition-all duration-500 opacity-0 hidden ${f.btnColor}`;
+
+            setTimeout(() => {
+                const gridPieces = document.querySelectorAll('.grid-piece');
+                
+                gridPieces[0].style.transform = 'translate(-150px, -150px) rotate(-45deg) scale(1.5)';
+                gridPieces[0].style.opacity = '0';
+                gridPieces[0].style.stroke = '#ff3c3c';
+
+                gridPieces[1].style.transform = 'translate(150px, -150px) rotate(45deg) scale(1.5)';
+                gridPieces[1].style.opacity = '0';
+                gridPieces[1].style.stroke = '#ff3c3c';
+
+                gridPieces[2].style.transform = 'translate(0, 200px) rotate(90deg) scale(2)';
+                gridPieces[2].style.opacity = '0';
+                gridPieces[2].style.stroke = '#ff3c3c';
+
+                gridPieces[3].style.transform = 'scale(3) rotate(-20deg)';
+                gridPieces[3].style.opacity = '0';
+                gridPieces[3].style.stroke = '#ff3c3c';
+
+                gridPieces[4].style.transform = 'scale(0)';
+                gridPieces[4].style.opacity = '0';
+                gridPieces[4].style.color = '#ff3c3c';
+
+                const familiarWrapper = document.getElementById('anim-familiar-wrapper');
+                familiarWrapper.classList.remove('scale-0', 'opacity-0');
+                familiarWrapper.classList.add('scale-125', 'opacity-100');
+                
+                setTimeout(() => { familiarWrapper.classList.add('animate-pulse'); }, 1000);
+
+            }, 800);
+
+            setTimeout(() => {
+                const dialogueBox = document.getElementById('anim-dialogue-box');
+                dialogueBox.classList.remove('opacity-0', 'translate-y-8');
+                
+                typeText('anim-text', f.animDialogue, () => {
+                    btn.classList.remove('hidden');
+                    setTimeout(() => { btn.style.opacity = '1'; }, 50);
+                });
+            }, 2500); 
+        }
+
+        function enterModules() {
+            document.getElementById('animation-screen').classList.add('hidden');
+            document.getElementById('tutorial-screen').classList.remove('hidden');
+            
+            const f = familiars[activeFamiliar];
+            document.getElementById('tut-familiar-name').innerText = f.name;
+            document.getElementById('tut-familiar-name').className = `font-arcane text-2xl font-semibold mt-6 text-shadow ${f.color}`;
+            document.getElementById('tut-familiar-title').innerText = f.title;
+            document.getElementById('tut-familiar-title').className = `text-xs uppercase tracking-widest opacity-80 mt-1 ${f.color}`;
+            document.getElementById('tut-dot').className = `w-2 h-2 rounded-full mr-2 animate-pulse ${f.status}`;
+
+            document.getElementById('tut-svg-container').innerHTML = document.getElementById(`svg-${activeFamiliar}`).innerHTML;
+            document.getElementById('tut-bg-container').innerHTML = document.getElementById(`mandala-${activeFamiliar}`).innerHTML;
+
+            if(activeFamiliar === 'cat') {
+                familiars.cat.styleElement.disabled = false;
+                familiars.mastiff.styleElement.disabled = true;
+            } else {
+                familiars.cat.styleElement.disabled = true;
+                familiars.mastiff.styleElement.disabled = false;
+            }
+
+            currentModuleIndex = 0;
+            renderModule();
+        }
+
+        function toggleVisuals() {
+            visualsEnabled = !visualsEnabled;
+            const container = document.getElementById('module-visual-container');
+            const dot = document.getElementById('visual-status-dot');
+            const btn = document.getElementById('toggle-visuals-btn');
+            
+            if(visualsEnabled) {
+                container.style.display = 'flex';
+                dot.className = 'w-2 h-2 rounded-full bg-green-500';
+                btn.classList.remove('text-gray-600');
+                btn.classList.add('text-gray-400');
+            } else {
+                container.style.display = 'none';
+                dot.className = 'w-2 h-2 rounded-full bg-red-500';
+                btn.classList.remove('text-gray-400');
+                btn.classList.add('text-gray-600');
+            }
+        }
+
+        function renderModule() {
+            const mod = tutorialModules[currentModuleIndex];
+            const f = familiars[activeFamiliar];
+
+            document.getElementById('module-counter').innerText = currentModuleIndex + 1;
+            
+            // Handle Visuals Injection
+            const visualInjector = document.getElementById('visual-injector');
+            visualInjector.innerHTML = mod.visual;
+            
+            // Re-trigger fade-in for visual container
+            const visualContainer = document.getElementById('module-visual-container');
+            visualContainer.classList.remove('fade-in');
+            void visualContainer.offsetWidth; 
+            visualContainer.classList.add('fade-in');
+
+            // Update Codex Content
+            const codexEl = document.getElementById('codex-container');
+            codexEl.classList.remove('fade-in');
+            void codexEl.offsetWidth; 
+            codexEl.classList.add('fade-in');
+            
+            codexEl.innerHTML = `
+                <h1 class="font-arcane text-3xl sm:text-4xl text-white mb-2 ${f.color}">${mod.title}</h1>
+                ${mod.content}
+            `;
+
+            // Handle Dialogue
+            const dialogueText = mod[activeFamiliar];
+            typeText('tut-dialogue', dialogueText);
+
+            // Update Buttons
+            document.getElementById('btn-prev').disabled = currentModuleIndex === 0;
+            
+            const nextBtn = document.getElementById('btn-next');
+            if (currentModuleIndex === tutorialModules.length - 1) {
+                nextBtn.innerHTML = "Complete Protocol";
+                nextBtn.onclick = exitTutorial;
+            } else {
+                nextBtn.innerHTML = "Next Phase &#8594;";
+                nextBtn.onclick = nextModule;
+            }
+        }
+
+        function nextModule() {
+            if (currentModuleIndex < tutorialModules.length - 1) {
+                currentModuleIndex++;
+                renderModule();
+            }
+        }
+
+        function prevModule() {
+            if (currentModuleIndex > 0) {
+                currentModuleIndex--;
+                renderModule();
+            }
+        }
+
+        function exitTutorial() {
+            document.getElementById('tutorial-screen').classList.add('hidden');
+            document.getElementById('selection-screen').classList.remove('hidden');
+            document.getElementById('intro-console').classList.add('opacity-0', 'translate-y-8', 'pointer-events-none');
+            
+            document.getElementById('btn-cat').classList.remove('active', 'border-academy-cyan', 'shadow-active-cyan');
+            document.getElementById('btn-mastiff').classList.remove('active', 'border-academy-gold', 'shadow-active-gold');
+            document.getElementById('btn-cat').style.opacity = '1';
+            document.getElementById('btn-mastiff').style.opacity = '1';
+            activeFamiliar = null;
+            
+            // Reset grid
+            const gridPieces = document.querySelectorAll('.grid-piece');
+            gridPieces.forEach(p => {
+                p.style = '';
+            });
+        }
+    </script>
+</body>
+</html>
