@@ -5,6 +5,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Owl Academy | The Education Portal</title>
     
+    <!-- Immediate logout fallback (runs synchronously before any module loads) -->
+    <script>
+      window.globalLogout = function () {
+        // Best-effort: redirect to login. The module override below replaces this
+        // with a proper Firebase signOut() once auth-guard.js loads.
+        window.location.replace("login.html");
+      };
+    </script>
+
     <!-- 1. SECURITY GUARD — Firebase auth check, redirects to login.html if not signed in -->
     <script type="module" src="scripts/auth-guard.js"></script>
     
