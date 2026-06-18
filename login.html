@@ -28,8 +28,10 @@
         const provider = new GoogleAuthProvider();
 
         // Where to go after a successful sign-in
+        // Default destination is the Mage Tower (Learning-Hub) — index.html is reachable
+        // via explicit deep-link only.
         const params = new URLSearchParams(window.location.search);
-        const redirectTo = params.get("redirect") || "index.html";
+        const redirectTo = params.get("redirect") || "Learning-Hub.html";
 
         // If already signed in, skip the login screen entirely
         onAuthStateChanged(auth, (user) => {

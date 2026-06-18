@@ -144,6 +144,52 @@
             transition: opacity 0.5s ease-in-out, transform 0.5s ease-in-out;
         }
 
+        /* Hub Tab Navigation */
+        .hub-tab-btn {
+            color: rgba(226, 232, 240, 0.55);
+            font-family: 'Cinzel', serif;
+            font-size: 0.72rem;
+            letter-spacing: 0.2em;
+            text-transform: uppercase;
+            padding: 0.75rem 1.25rem;
+            background: transparent;
+            border: none;
+            border-bottom: 2px solid transparent;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: all 0.25s ease;
+            position: relative;
+        }
+        .hub-tab-btn:hover {
+            color: rgba(212, 175, 55, 0.9);
+        }
+        .hub-tab-btn.active-tab {
+            color: var(--color-primary);
+            border-bottom-color: var(--color-primary);
+            text-shadow: 0 0 12px rgba(212, 175, 55, 0.6);
+        }
+        .hub-tab-btn.active-tab::before {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 6px; height: 6px;
+            background: var(--color-primary);
+            border-radius: 50%;
+            box-shadow: 0 0 8px var(--color-primary);
+        }
+        .hub-section h3.panel-title {
+            font-family: 'Cinzel', serif;
+            color: var(--color-primary);
+            font-size: 0.72rem;
+            letter-spacing: 0.2em;
+            text-transform: uppercase;
+            padding-bottom: 0.5rem;
+            margin-bottom: 1rem;
+            border-bottom: 1px solid color-mix(in srgb, var(--color-primary) 20%, transparent);
+        }
+
         /* Custom Range Sliders for Visual Controls */
         input[type="range"]::-webkit-slider-thumb {
             -webkit-appearance: none;
@@ -365,8 +411,8 @@
     <div id="info-panel" class="max-w-7xl mx-auto px-4 md:px-8 py-8 flex flex-col lg:flex-row gap-10 relative z-10 pointer-events-auto fade-transition opacity-100">
         
         <!-- Left Sidebar Navigation -->
-        <aside class="w-full lg:w-64 flex-shrink-0">
-            <nav class="glass-panel rounded-xl p-6 sticky top-8">
+        <aside class="w-full lg:w-64 flex-shrink-0 space-y-4">
+            <nav data-sidebar-tab="curriculum" class="glass-panel rounded-xl p-6 sticky top-8 hidden">
                 <h3 class="text-xs text-yellow-500 tracking-[0.2em] font-bold uppercase mb-6 border-b border-yellow-600/20 pb-2 mystical-font">
                     Curriculum Index
                 </h3>
@@ -402,7 +448,57 @@
         </aside>
 
         <!-- Main Content Area -->
-        <main class="flex-1 glass-panel rounded-xl p-8 md:p-12">
+        <main class="flex-1 glass-panel rounded-xl p-6 md:p-10">
+
+            <!-- ═══ Hub Tab Navigation ═══════════════════════════════════════ -->
+            <nav class="flex gap-0 mb-8 border-b border-yellow-600/20 overflow-x-auto -mx-2 px-2">
+                <button data-hub-tab="sanctum"    class="hub-tab-btn active-tab">⬡ Sanctum</button>
+                <button data-hub-tab="curriculum" class="hub-tab-btn">⌬ Curriculum</button>
+                <button data-hub-tab="athenaeum"  class="hub-tab-btn">❖ Athenaeum</button>
+                <button data-hub-tab="atelier"    class="hub-tab-btn">⚙ Atelier</button>
+            </nav>
+
+            <!-- ═══ SANCTUM (Mage Tower Dashboard — default view) ════════════ -->
+            <section data-hub-content="sanctum" class="hub-section">
+
+                <!-- Welcome Banner -->
+                <div id="sanctum-welcome" class="glass-panel rounded-xl p-6 md:p-8 mb-6 border border-yellow-600/30">
+                    <div class="animate-pulse h-20 bg-yellow-600/5 rounded"></div>
+                </div>
+
+                <!-- Top Grid: Orrery (stats) + Chronicle (activity) -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-5 mb-5">
+                    <div class="glass-panel rounded-xl p-6 border border-white/5">
+                        <h3 class="panel-title">⊛ The Orrery · Arts Resonance</h3>
+                        <div id="sanctum-orrery"></div>
+                    </div>
+                    <div class="glass-panel rounded-xl p-6 border border-white/5">
+                        <h3 class="panel-title">✦ The Chronicle</h3>
+                        <div id="sanctum-chronicle"></div>
+                    </div>
+                </div>
+
+                <!-- Active Grimoires -->
+                <div class="glass-panel rounded-xl p-6 mb-5 border border-white/5">
+                    <h3 class="panel-title">⬡ Active Grimoires</h3>
+                    <div id="sanctum-grimoires"></div>
+                </div>
+
+                <!-- The Athenaeum (Library Departments tile grid) -->
+                <div class="glass-panel rounded-xl p-6 mb-5 border border-white/5">
+                    <h3 class="panel-title">❖ The Athenaeum · Library Departments</h3>
+                    <div id="sanctum-athenaeum" class="grid grid-cols-2 md:grid-cols-3 gap-3"></div>
+                </div>
+
+                <!-- The Atelier (Tools tile grid) -->
+                <div class="glass-panel rounded-xl p-6 border border-white/5">
+                    <h3 class="panel-title">⚙ The Atelier · Tools & Protocols</h3>
+                    <div id="sanctum-atelier" class="grid grid-cols-1 md:grid-cols-2 gap-3"></div>
+                </div>
+            </section>
+
+            <!-- ═══ CURRICULUM (existing tier content) ═══════════════════════ -->
+            <section data-hub-content="curriculum" class="hub-section hidden">
             <article class="tutorial-content">
                 <header class="mb-10 text-center lg:text-left">
                     <div class="inline-block px-3 py-1 border border-purple-500/30 rounded-full bg-purple-900/20 text-purple-300 text-[10px] tracking-widest uppercase mb-4 font-mono">
@@ -480,6 +576,17 @@
                     </a>
                 </div>
             </article>
+            </section>
+
+            <!-- ═══ ATHENAEUM (full Library access) ══════════════════════════ -->
+            <section data-hub-content="athenaeum" class="hub-section hidden">
+                <div id="athenaeum-full"></div>
+            </section>
+
+            <!-- ═══ ATELIER (tools and protocols) ════════════════════════════ -->
+            <section data-hub-content="atelier" class="hub-section hidden">
+                <div id="atelier-full"></div>
+            </section>
         </main>
     </div>
 
