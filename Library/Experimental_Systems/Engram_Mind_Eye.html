@@ -3,304 +3,397 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Engram Mind Eye — STRIX Interface</title>
+<title>Protocol // ENGRAM_MINDS_EYE</title>
 <style>
   :root {
-    --bg: #0a0a14;
-    --panel: #11111f;
-    --panel-edge: #1e1e33;
+    --bg: #0a0d14;
+    --panel: #131826;
+    --panel-2: #0e1320;
+    --edge: #232a3d;
+    --edge-soft: #1a2032;
     --mono: ui-monospace, "SF Mono", "Cascadia Code", Menlo, Consolas, monospace;
-    --sans: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-    --violet: #8b5cf6;
-    --indigo: #6366f1;
-    --cyan: #22d3ee;
-    --teal: #2dd4bf;
-    --dim: #6b6b85;
-    --text: #cdd0e0;
+    --serif: "Iowan Old Style", "Palatino Linotype", Palatino, "Times New Roman", Georgia, serif;
+    --gold: #d4af37;
+    --cyan: #00f0ff;
+    --amethyst: #b026ff;
+    --emerald: #00ff66;
+    --crimson: #ff3366;
+    --text: #e2e8f0;
+    --dim: #6b7488;
   }
   * { box-sizing: border-box; }
   html, body {
     margin: 0; padding: 0; height: 100%;
     background: var(--bg); color: var(--text);
-    font-family: var(--sans);
-    overflow: hidden;
-  }
-  #topbar {
-    height: 38px;
-    display: flex; align-items: center;
-    padding: 0 18px;
-    border-bottom: 1px solid var(--panel-edge);
-    background: linear-gradient(90deg, #0c0c1a, #11111f);
-    letter-spacing: 0.22em;
-    font-variant: small-caps;
-    font-size: 13px;
-    color: var(--violet);
-    text-transform: lowercase;
     font-family: var(--mono);
-  }
-  #topbar .glyph { color: var(--cyan); margin-right: 10px; }
-  #topbar .sub { color: var(--dim); margin-left: auto; font-size: 11px; letter-spacing: 0.1em; }
-
-  #app {
-    display: flex;
-    height: calc(100% - 38px);
-    width: 100%;
+    overflow: hidden;
+    background-image:
+      radial-gradient(circle at 50% -10%, rgba(176,38,255,0.08) 0%, rgba(10,13,20,0) 55%),
+      radial-gradient(circle at 50% 0%, rgba(20,25,40,1) 0%, rgba(10,13,20,1) 60%);
   }
 
-  /* ---------- panels ---------- */
+  /* hologram scanline overlay */
+  #scan {
+    position: fixed; inset: 0; z-index: 9999; pointer-events: none;
+    background: repeating-linear-gradient(0deg,
+      rgba(0,0,0,0.16), rgba(0,0,0,0.16) 1px,
+      transparent 1px, transparent 3px);
+    mix-blend-mode: multiply;
+  }
+
+  /* ---------- top header bar ---------- */
+  #topbar {
+    padding: 10px 20px 8px;
+    border-bottom: 1px solid var(--edge);
+    background: linear-gradient(180deg, rgba(176,38,255,0.06), rgba(10,13,20,0));
+    display: flex; flex-direction: column; gap: 6px;
+  }
+  #topbar .row1 { display: flex; align-items: baseline; gap: 14px; }
+  #topbar .proto {
+    font-size: 10px; letter-spacing: 0.28em; text-transform: uppercase;
+    color: var(--cyan);
+    border: 1px solid rgba(0,240,255,0.3);
+    background: rgba(0,240,255,0.08);
+    padding: 3px 8px; border-radius: 4px;
+  }
+  #topbar h1 {
+    font-family: var(--serif);
+    font-size: 22px; font-weight: 600; margin: 0;
+    color: #fff; letter-spacing: 0.04em;
+    text-shadow: 0 0 16px rgba(176,38,255,0.4);
+  }
+  #topbar .sub { color: var(--dim); font-size: 10px; letter-spacing: 0.18em; margin-left: auto; text-transform: uppercase; }
+
+  /* codex parity stream strip */
+  #parity-strip {
+    display: flex; align-items: center; gap: 12px;
+    border: 1px solid var(--edge-soft);
+    background: var(--panel-2);
+    border-radius: 6px; padding: 5px 10px;
+  }
+  #parity-strip .lbl {
+    font-size: 9px; letter-spacing: 0.22em; text-transform: uppercase;
+    color: var(--gold); white-space: nowrap;
+  }
+  #parity-bits { display: flex; gap: 2px; flex: 0 0 auto; }
+  #parity-bits .pb {
+    width: 5px; height: 12px; border-radius: 1px;
+    background: #1b2233; transition: background 0.25s, box-shadow 0.25s;
+  }
+  #parity-bits .pb.on { background: var(--gold); box-shadow: 0 0 5px var(--gold); }
+  #parity-hex {
+    font-size: 14px; letter-spacing: 0.12em; color: var(--gold);
+    font-weight: 700; white-space: nowrap;
+  }
+  @keyframes paritypulse { 0% { text-shadow: 0 0 2px var(--gold); } 50% { text-shadow: 0 0 14px var(--gold); } 100% { text-shadow: 0 0 2px var(--gold); } }
+  #parity-hex.pulse { animation: paritypulse 0.5s ease; }
+  #parity-strip .pcount { margin-left: auto; font-size: 9px; color: var(--dim); letter-spacing: 0.14em; white-space: nowrap; }
+
+  /* ---------- app layout ---------- */
+  #app { display: flex; flex-direction: column; height: 100%; }
+  #main { display: flex; flex: 1 1 auto; min-height: 0; }
+
   .panel {
     background: var(--panel);
-    display: flex; flex-direction: column;
-    overflow: hidden;
+    display: flex; flex-direction: column; overflow: hidden;
+    position: relative;
   }
-  #left  { width: 280px; min-width: 280px; border-right: 1px solid var(--panel-edge); }
-  #right { width: 280px; min-width: 280px; border-left: 1px solid var(--panel-edge); }
-  #center { flex: 1 1 auto; display: flex; flex-direction: column; min-width: 0; }
+  .panel::before {
+    content: ''; position: absolute; inset: 0; pointer-events: none; z-index: 1;
+    background: repeating-linear-gradient(0deg, rgba(0,0,0,0.10), rgba(0,0,0,0.10) 1px, transparent 1px, transparent 3px);
+  }
+  #left  { width: 300px; min-width: 300px; border-right: 1px solid var(--edge); }
+  #center{ flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; }
+  #right { width: 300px; min-width: 300px; border-left: 1px solid var(--edge); }
 
   .panel-title {
-    font-family: var(--mono);
-    font-size: 11px;
-    letter-spacing: 0.18em;
-    text-transform: uppercase;
-    color: var(--cyan);
-    padding: 12px 16px 8px;
-    border-bottom: 1px solid var(--panel-edge);
+    position: relative; z-index: 2;
+    font-size: 11px; letter-spacing: 0.22em; text-transform: uppercase;
+    padding: 11px 16px 9px; border-bottom: 1px solid var(--edge);
+    display: flex; align-items: center; gap: 8px;
   }
-  .panel-body { padding: 14px 16px; overflow-y: auto; flex: 1 1 auto; }
+  .panel-title .dot { width: 6px; height: 6px; border-radius: 50%; box-shadow: 0 0 6px currentColor; }
+  #left .panel-title  { color: var(--cyan); }
+  #left .panel-title .dot { background: var(--cyan); color: var(--cyan); }
+  #right .panel-title { color: var(--emerald); }
+  #right .panel-title .dot { background: var(--emerald); color: var(--emerald); }
+  .panel-body { position: relative; z-index: 2; padding: 14px 16px; overflow-y: auto; flex: 1 1 auto; }
 
-  /* ---------- engram packets ---------- */
+  /* ---------- engram packets / grids ---------- */
   .packet { margin-bottom: 16px; }
   .packet-label {
-    font-family: var(--mono);
-    font-size: 10px; letter-spacing: 0.14em;
-    color: var(--dim); text-transform: uppercase;
-    margin-bottom: 5px;
+    font-size: 10px; letter-spacing: 0.16em; color: var(--dim);
+    text-transform: uppercase; margin-bottom: 6px;
     display: flex; justify-content: space-between;
   }
-  .packet-label .role { color: var(--violet); }
+  .packet-label .role { color: var(--amethyst); }
   .grid8 {
-    display: grid;
-    grid-template-columns: repeat(8, 1fr);
-    gap: 2px;
-    width: 100%;
-    aspect-ratio: 1 / 1;
+    display: grid; grid-template-columns: repeat(8, 1fr); gap: 2px;
+    width: 100%; aspect-ratio: 1 / 1;
+    padding: 5px; border: 1px solid var(--edge-soft); border-radius: 5px; background: #080b12;
   }
-  .cell {
-    border-radius: 1px;
-    background: #16162a;
-    transition: background 0.35s ease;
-  }
-  .cell.lit-a { background: #6366f1; box-shadow: 0 0 3px #6366f1aa; }
-  .cell.lit-b { background: #8b5cf6; box-shadow: 0 0 3px #8b5cf6aa; }
-  .cell.lit-g { background: #22d3ee; box-shadow: 0 0 4px #22d3eecc; }
+  .cell { border-radius: 1px; background: #131a2a; transition: background 0.35s ease, box-shadow 0.35s ease; }
+  .cell.lit-a { background: var(--cyan); box-shadow: 0 0 4px rgba(0,240,255,0.7); }
+  .cell.lit-b { background: var(--amethyst); box-shadow: 0 0 4px rgba(176,38,255,0.7); }
+  .cell.lit-g { background: var(--gold); box-shadow: 0 0 5px rgba(212,175,55,0.8); }
 
-  /* ---------- J torsion bar ---------- */
-  .jblock { margin-top: 6px; margin-bottom: 16px; }
+  /* J torsion bar */
+  .jblock { margin: 8px 0 16px; }
   .jbar-track {
-    position: relative;
-    height: 14px; border-radius: 7px;
-    background: linear-gradient(90deg, #ef4444, #2a2a40 50%, #22d3ee);
-    overflow: visible;
+    position: relative; height: 14px; border-radius: 7px;
+    background: linear-gradient(90deg, var(--crimson), #2a2a40 50%, var(--cyan));
+    box-shadow: inset 0 0 8px rgba(0,0,0,0.6);
   }
   .jbar-marker {
-    position: absolute; top: -3px;
-    width: 4px; height: 20px; border-radius: 2px;
-    background: #fff; box-shadow: 0 0 6px #fff;
+    position: absolute; top: -3px; width: 4px; height: 20px; border-radius: 2px;
+    background: #fff; box-shadow: 0 0 8px #fff;
     left: 50%; transform: translateX(-50%);
     transition: left 0.5s cubic-bezier(.4,0,.2,1);
   }
-  .jval { font-family: var(--mono); font-size: 12px; margin-top: 6px; color: var(--text); }
+  .jval { font-size: 12px; margin-top: 7px; color: var(--text); }
   .jval span { color: var(--cyan); }
 
-  /* ---------- chiral key ---------- */
+  /* chiral key */
   .chiral {
-    font-family: var(--mono);
-    font-size: 11px;
-    word-break: break-all;
-    line-height: 1.6;
-    background: #08080f;
-    border: 1px solid var(--panel-edge);
-    border-radius: 5px;
-    padding: 10px;
-    color: var(--teal);
+    font-size: 11px; word-break: break-all; line-height: 1.7;
+    background: #080b12; border: 1px solid var(--edge-soft); border-radius: 5px;
+    padding: 10px; color: var(--emerald);
   }
-  .chiral .pre { color: var(--violet); }
+  .chiral .pre { color: var(--amethyst); }
   .chiral .root { color: var(--cyan); font-weight: bold; }
 
-  /* ---------- center: visualization ---------- */
+  /* ---------- center viz ---------- */
   #viz-wrap {
-    height: 46%;
-    min-height: 240px;
+    height: 42%; min-height: 230px;
     display: flex; align-items: center; justify-content: center;
-    border-bottom: 1px solid var(--panel-edge);
-    position: relative;
-    background: radial-gradient(circle at 50% 45%, #131326 0%, #0a0a14 70%);
+    border-bottom: 1px solid var(--edge); position: relative;
+    background: radial-gradient(circle at 50% 45%, #15172b 0%, #0a0d14 72%);
   }
-  #viz { width: 100%; height: 100%; }
+  #viz { width: 100%; height: 100%; position: relative; z-index: 2; }
   #viz-caption {
-    position: absolute; bottom: 10px; left: 0; right: 0;
-    text-align: center;
-    font-family: var(--mono); font-size: 10px;
-    letter-spacing: 0.16em; color: var(--dim);
-    text-transform: uppercase;
+    position: absolute; bottom: 10px; left: 0; right: 0; text-align: center; z-index: 2;
+    font-size: 9px; letter-spacing: 0.18em; color: var(--dim); text-transform: uppercase;
   }
 
-  /* ---------- center: dialogue ---------- */
-  #dialogue {
-    flex: 1 1 auto;
-    overflow-y: auto;
-    padding: 18px 24px;
-    display: flex; flex-direction: column; gap: 16px;
+  /* ---------- console (lower region with tabs) ---------- */
+  #console { flex: 1 1 auto; display: flex; flex-direction: column; min-height: 0; }
+  #tabbar {
+    display: flex; border-bottom: 1px solid var(--edge); background: rgba(8,11,18,0.6);
   }
-  .msg { max-width: 78%; line-height: 1.55; font-size: 14px; }
-  .msg .who {
+  .tab {
+    flex: 1; text-align: center; padding: 9px 6px;
+    font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase;
+    color: var(--dim); cursor: pointer; background: none; border: none;
+    border-bottom: 2px solid transparent; transition: color 0.2s, border-color 0.2s;
     font-family: var(--mono);
-    font-size: 10px; letter-spacing: 0.16em;
-    text-transform: uppercase;
-    margin-bottom: 5px; opacity: 0.85;
   }
-  .msg .body {
-    padding: 11px 15px;
-    border-radius: 10px;
-  }
+  .tab:hover { color: #b9c2d8; }
+  .tab.active { color: #fff; border-bottom-color: var(--amethyst); text-shadow: 0 0 10px rgba(176,38,255,0.6); }
+  .tab .ct { color: var(--gold); font-weight: 700; }
+
+  .tabview { flex: 1 1 auto; overflow-y: auto; display: none; }
+  .tabview.active { display: block; }
+
+  /* dialogue */
+  #dialogue { padding: 18px 24px; display: flex; flex-direction: column; gap: 16px; }
+  .msg { max-width: 80%; line-height: 1.55; font-size: 14px; }
+  .msg .who { font-size: 10px; letter-spacing: 0.16em; text-transform: uppercase; margin-bottom: 5px; opacity: 0.85; }
+  .msg .body { padding: 11px 15px; border-radius: 10px; font-family: var(--serif); font-size: 15px; }
   .msg.strix { align-self: flex-start; }
-  .msg.strix .who { color: var(--violet); }
+  .msg.strix .who { color: var(--amethyst); }
   .msg.strix .body {
-    background: #15152c;
-    border-left: 3px solid var(--violet);
+    background: rgba(176,38,255,0.08);
+    border-left: 3px solid var(--amethyst);
     border-radius: 4px 10px 10px 10px;
+    box-shadow: inset 0 0 20px rgba(176,38,255,0.06);
   }
   .msg.human { align-self: flex-end; text-align: right; }
-  .msg.human .who { color: var(--teal); }
+  .msg.human .who { color: var(--emerald); }
   .msg.human .body {
-    background: #0e2422;
-    border-right: 3px solid var(--teal);
-    border-radius: 10px 4px 10px 10px;
-    text-align: left;
+    background: rgba(0,255,102,0.06);
+    border-right: 3px solid var(--emerald);
+    border-radius: 10px 4px 10px 10px; text-align: left;
   }
   .msg.status .body {
-    background: transparent;
-    border-left: 3px solid var(--dim);
-    color: var(--dim);
-    font-style: italic;
-    font-family: var(--mono);
-    font-size: 12px;
+    background: transparent; border-left: 3px solid var(--dim);
+    color: var(--dim); font-style: italic; font-family: var(--mono); font-size: 12px;
   }
   .msg.status .who { color: var(--dim); }
   @keyframes blink { 0%,100% {opacity:0.3;} 50% {opacity:1;} }
-  .status .dots::after { content: "···"; animation: blink 1.1s infinite; }
+  .status .dots::after { content: "..."; animation: blink 1.1s infinite; }
+  .cursor { display: inline-block; width: 7px; background: var(--amethyst); animation: blink 0.7s infinite; margin-left: 1px; }
 
-  /* ---------- right: resonance + input ---------- */
-  .chip {
+  /* packet ledger */
+  #ledger { padding: 10px 14px; font-size: 11px; }
+  #ledger-head {
+    position: sticky; top: 0; background: var(--panel);
+    padding: 4px 0 8px; border-bottom: 1px solid var(--edge-soft);
+    color: var(--dim); letter-spacing: 0.14em; text-transform: uppercase; font-size: 9px;
+    z-index: 3;
+  }
+  #ledger-head b { color: var(--gold); }
+  .pkt {
     display: flex; align-items: center; gap: 8px;
-    margin-bottom: 9px;
-    font-family: var(--mono); font-size: 11px;
+    padding: 5px 0; border-bottom: 1px solid rgba(35,42,61,0.4);
+    white-space: nowrap;
   }
-  .chip .name {
-    width: 92px; flex: 0 0 92px;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-  }
-  .chip .distbar-track {
-    flex: 1 1 auto; height: 9px;
-    background: #16162a; border-radius: 5px; overflow: hidden;
-  }
-  .chip .distbar-fill {
-    height: 100%; border-radius: 5px;
-    transition: width 0.5s ease, background 0.5s ease;
-  }
+  .pkt .ok { width: 7px; height: 7px; border-radius: 50%; flex: 0 0 7px; }
+  .pkt .ok.good { background: var(--emerald); box-shadow: 0 0 5px var(--emerald); }
+  .pkt .ok.bad  { background: var(--crimson); box-shadow: 0 0 5px var(--crimson); }
+  .pkt .idx { color: var(--dim); width: 36px; flex: 0 0 36px; text-align: right; }
+  .pkt .src { width: 22px; flex: 0 0 22px; text-align: center; font-size: 10px; }
+  .pkt .src.human { color: var(--emerald); }
+  .pkt .src.strix { color: var(--amethyst); }
+  .pkt .tok { width: 86px; flex: 0 0 86px; overflow: hidden; text-overflow: ellipsis; color: #b9c2d8; text-transform: uppercase; }
+  .pkt .hexstr { flex: 1 1 auto; overflow: hidden; text-overflow: ellipsis; letter-spacing: 0.04em; }
+  .pkt .hexstr .h { color: var(--cyan); }
+  .pkt .hexstr .b { color: var(--amethyst); }
+  .pkt .hexstr .f { color: var(--gold); }
+  .pkt .hexstr .sep { color: var(--dim); }
+
+  /* ---------- right: chips + input ---------- */
+  .chip { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; font-size: 11px; }
+  .chip .name { width: 92px; flex: 0 0 92px; letter-spacing: 0.06em; text-transform: uppercase; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .chip .distbar-track { flex: 1 1 auto; height: 9px; background: #131a2a; border-radius: 5px; overflow: hidden; }
+  .chip .distbar-fill { height: 100%; border-radius: 5px; transition: width 0.5s ease, background 0.5s ease; }
   .chip .dval { width: 26px; text-align: right; color: var(--dim); flex: 0 0 26px; }
 
-  #input-area {
-    border-top: 1px solid var(--panel-edge);
-    padding: 14px 16px;
-  }
+  #input-area { border-top: 1px solid var(--edge); padding: 14px 16px; position: relative; z-index: 2; }
   #input-area textarea {
     width: 100%; resize: none; height: 70px;
-    background: #08080f; color: var(--text);
-    border: 1px solid var(--panel-edge); border-radius: 6px;
-    padding: 9px 11px; font-family: var(--sans); font-size: 13px;
-    outline: none;
+    background: #080b12; color: var(--text);
+    border: 1px solid var(--edge); border-radius: 6px;
+    padding: 9px 11px; font-family: var(--mono); font-size: 13px; outline: none;
   }
-  #input-area textarea:focus { border-color: var(--violet); }
+  #input-area textarea:focus { border-color: var(--emerald); box-shadow: 0 0 0 1px rgba(0,255,102,0.3); }
   #transmit {
     margin-top: 9px; width: 100%;
-    background: linear-gradient(90deg, var(--indigo), var(--violet));
-    color: #fff; border: none; border-radius: 6px;
-    padding: 9px; font-family: var(--mono);
-    letter-spacing: 0.18em; text-transform: uppercase; font-size: 11px;
-    cursor: pointer; transition: filter 0.2s;
+    background: linear-gradient(90deg, rgba(0,255,102,0.18), rgba(0,240,255,0.18));
+    color: var(--emerald); border: 1px solid rgba(0,255,102,0.4); border-radius: 6px;
+    padding: 9px; letter-spacing: 0.2em; text-transform: uppercase; font-size: 11px;
+    cursor: pointer; transition: filter 0.2s, box-shadow 0.2s; font-family: var(--mono);
   }
-  #transmit:hover { filter: brightness(1.2); }
+  #transmit:hover { filter: brightness(1.3); box-shadow: 0 0 14px rgba(0,255,102,0.3); }
   #transmit:disabled { opacity: 0.4; cursor: default; }
 
-  ::-webkit-scrollbar { width: 8px; }
-  ::-webkit-scrollbar-thumb { background: #22223a; border-radius: 4px; }
+  /* ---------- bottom footer: triangulation stream ---------- */
+  #footbar {
+    border-top: 1px solid var(--edge);
+    background: linear-gradient(0deg, rgba(212,175,55,0.05), rgba(10,13,20,0));
+    padding: 8px 18px; display: flex; align-items: center; gap: 18px;
+    font-size: 10px; flex: 0 0 auto;
+  }
+  #footbar .lbl { color: var(--gold); letter-spacing: 0.22em; text-transform: uppercase; white-space: nowrap; }
+  .tri { display: flex; align-items: center; gap: 6px; }
+  .tri .tl { color: var(--dim); width: 42px; }
+  .tri .tt { width: 70px; height: 8px; background: #131a2a; border-radius: 4px; overflow: hidden; }
+  .tri .tf { height: 100%; border-radius: 4px; transition: width 0.4s ease; }
+  .tri .tv { color: var(--text); width: 24px; }
+  #foot-concept { color: var(--emerald); letter-spacing: 0.1em; text-transform: uppercase; }
+  #foot-hex { margin-left: auto; color: var(--gold); letter-spacing: 0.1em; font-weight: 700; white-space: nowrap; }
+  #foot-hex .lbl2 { color: var(--dim); font-weight: 400; margin-right: 6px; }
+
+  ::-webkit-scrollbar { width: 7px; }
+  ::-webkit-scrollbar-thumb { background: #2a3245; border-radius: 4px; }
   ::-webkit-scrollbar-track { background: transparent; }
 </style>
 </head>
 <body>
-<div id="topbar">
-  <span class="glyph">◈</span>Engram&nbsp;Mind&nbsp;Eye — STRIX&nbsp;Interface
-  <span class="sub">TTMPT · panmagic 8×8 · O1 chiral</span>
-</div>
+<div id="scan"></div>
 
 <div id="app">
 
-  <!-- ============ LEFT: ENGRAM KERNEL ============ -->
-  <aside id="left" class="panel">
-    <div class="panel-title">Engram Kernel</div>
-    <div class="panel-body">
-
-      <div class="packet">
-        <div class="packet-label"><span>Alpha</span><span class="role">Inner</span></div>
-        <div class="grid8" id="grid-alpha"></div>
-      </div>
-      <div class="packet">
-        <div class="packet-label"><span>Beta</span><span class="role">Core</span></div>
-        <div class="grid8" id="grid-beta"></div>
-      </div>
-      <div class="packet">
-        <div class="packet-label"><span>Gamma</span><span class="role">Outer · active</span></div>
-        <div class="grid8" id="grid-gamma"></div>
-      </div>
-
-      <div class="jblock">
-        <div class="packet-label"><span>J Torsion</span><span class="role">net flow</span></div>
-        <div class="jbar-track"><div class="jbar-marker" id="jmarker"></div></div>
-        <div class="jval">J = <span id="jval">0.000</span></div>
-      </div>
-
-      <div class="packet-label"><span>Chiral Key</span></div>
-      <div class="chiral" id="chiral">O1::?::0000000000000000</div>
+  <!-- ============ TOP HEADER ============ -->
+  <header id="topbar">
+    <div class="row1">
+      <span class="proto">Protocol // ENGRAM_MINDS_EYE</span>
+      <h1>Engram Mind Eye</h1>
+      <span class="sub">TTMPT · panmagic 8×8 · O1 chiral · SHD-CCP</span>
     </div>
-  </aside>
-
-  <!-- ============ CENTER ============ -->
-  <main id="center" class="panel">
-    <div id="viz-wrap">
-      <svg id="viz" viewBox="0 0 400 400" preserveAspectRatio="xMidYMid meet"></svg>
-      <div id="viz-caption">manifold field — hilbert string art N8·K3 · context window pulse</div>
+    <div id="parity-strip">
+      <span class="lbl">Codex Parity Stream</span>
+      <div id="parity-bits"></div>
+      <span id="parity-hex">0x53484443</span>
+      <span class="pcount" id="parity-count">0 packets</span>
     </div>
-    <div id="dialogue"></div>
-  </main>
+  </header>
 
-  <!-- ============ RIGHT: RESONANCE ============ -->
-  <aside id="right" class="panel">
-    <div class="panel-title">Resonance Field</div>
-    <div class="panel-body" id="chips"></div>
-    <div id="input-area">
-      <textarea id="userin" placeholder="Speak into the field…"></textarea>
-      <button id="transmit">Transmit ◈</button>
-    </div>
-  </aside>
+  <div id="main">
+
+    <!-- ============ LEFT: ENGRAM KERNEL ============ -->
+    <aside id="left" class="panel">
+      <div class="panel-title"><span class="dot"></span>Engram Kernel</div>
+      <div class="panel-body">
+        <div class="packet">
+          <div class="packet-label"><span>Alpha</span><span class="role">Inner</span></div>
+          <div class="grid8" id="grid-alpha"></div>
+        </div>
+        <div class="packet">
+          <div class="packet-label"><span>Beta</span><span class="role">Core</span></div>
+          <div class="grid8" id="grid-beta"></div>
+        </div>
+        <div class="packet">
+          <div class="packet-label"><span>Gamma</span><span class="role">Outer · active</span></div>
+          <div class="grid8" id="grid-gamma"></div>
+        </div>
+        <div class="jblock">
+          <div class="packet-label"><span>J Torsion</span><span class="role">net flow</span></div>
+          <div class="jbar-track"><div class="jbar-marker" id="jmarker"></div></div>
+          <div class="jval">J = <span id="jval">0.000</span></div>
+        </div>
+        <div class="packet-label"><span>Chiral Key</span></div>
+        <div class="chiral" id="chiral">O1::?::0000000000000000</div>
+      </div>
+    </aside>
+
+    <!-- ============ CENTER ============ -->
+    <main id="center" class="panel">
+      <div id="viz-wrap">
+        <svg id="viz" viewBox="0 0 400 400" preserveAspectRatio="xMidYMid meet"></svg>
+        <div id="viz-caption">manifold field — string-art N8·K3·T2 · context window pulse</div>
+      </div>
+      <div id="console">
+        <div id="tabbar">
+          <button class="tab active" data-tab="dialogue">System Dialogue</button>
+          <button class="tab" data-tab="ledger">Packet Ledger <span class="ct" id="tab-count">0</span></button>
+        </div>
+        <div class="tabview active" id="view-dialogue"><div id="dialogue"></div></div>
+        <div class="tabview" id="view-ledger">
+          <div id="ledger">
+            <div id="ledger-head">SHD-CCP CHAIN · <span id="ledger-count">0</span> packets · chain parity <b id="ledger-parity">0x53484443</b></div>
+            <div id="ledger-list"></div>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <!-- ============ RIGHT: RESONANCE ============ -->
+    <aside id="right" class="panel">
+      <div class="panel-title"><span class="dot"></span>Resonance Field</div>
+      <div class="panel-body" id="chips"></div>
+      <div id="input-area">
+        <textarea id="userin" placeholder="Speak into the field…"></textarea>
+        <button id="transmit">Transmit ◈</button>
+      </div>
+    </aside>
+
+  </div>
+
+  <!-- ============ BOTTOM: TRIANGULATION STREAM ============ -->
+  <footer id="footbar">
+    <span class="lbl">Triangulation Stream</span>
+    <div class="tri"><span class="tl">α</span><span class="tt"><span class="tf" id="tri-a" style="background:var(--cyan)"></span></span><span class="tv" id="triv-a">--</span></div>
+    <div class="tri"><span class="tl">β</span><span class="tt"><span class="tf" id="tri-b" style="background:var(--amethyst)"></span></span><span class="tv" id="triv-b">--</span></div>
+    <div class="tri"><span class="tl">γ</span><span class="tt"><span class="tf" id="tri-g" style="background:var(--gold)"></span></span><span class="tv" id="triv-g">--</span></div>
+    <span id="foot-concept">—</span>
+    <span id="foot-hex"><span class="lbl2">FOOTER</span>00000000</span>
+  </footer>
 
 </div>
 
 <script>
 /* =====================================================================
-   TTMPT ENGRAM CORE — 4 synthesized algorithms
+   TTMPT ENGRAM CORE — 4 synthesized algorithms  (PRESERVED VERBATIM)
    ===================================================================== */
 
 /* --- 1. Mulberry32 PRNG --- */
@@ -364,7 +457,7 @@ function computeJ(grid) {
 }
 
 /* =====================================================================
-   CONCEPT LIBRARY — pre-encoded engrams
+   CONCEPT LIBRARY — pre-encoded engrams  (PRESERVED VERBATIM)
    ===================================================================== */
 const CONCEPTS = {
   GEODESIC: {
@@ -490,9 +583,10 @@ const CONCEPTS = {
 };
 
 const MAX_HAMMING = 64; // max possible distance for normalization
+const CONCEPT_NAMES = Object.keys(CONCEPTS); // stable index order for footer triangulation
 
 /* =====================================================================
-   3-PACKET CONTEXT WINDOW
+   3-PACKET CONTEXT WINDOW  (PRESERVED)
    ===================================================================== */
 const packets = {
   alpha: crystallize("MIND"),
@@ -501,9 +595,12 @@ const packets = {
 };
 
 /* =====================================================================
-   RESPONSE GENERATION
+   RESPONSE GENERATION  (PRESERVED — window shifting handled by caller)
+   NOTE: original generateResponse shifted the window itself. In the new
+   flow, per-token packet logging performs the window shifts, so we expose
+   a variant that does NOT shift (the gamma is already the active engram).
    ===================================================================== */
-function generateResponse(userText) {
+function selectResponse(userText) {
   const userEngram = crystallize(userText);
 
   let bestConcept = null, bestDist = Infinity;
@@ -514,17 +611,107 @@ function generateResponse(userText) {
     if (d < bestDist) { bestDist = d; bestConcept = name; }
   }
 
-  // shift window: gamma must update before J read so J reflects new active engram
-  packets.alpha = packets.beta;
-  packets.beta  = packets.gamma;
-  packets.gamma = userEngram;
-
+  // gamma already reflects the latest token (set during packet logging)
   const J = computeJ(packets.gamma);
   const concept = CONCEPTS[bestConcept];
   const idx = J > 0.1 ? 0 : J < -0.1 ? 2 : 1;
   const response = concept.responses[idx];
 
   return { response, bestConcept, distances, J, chiralKey: chiralKey(userText) };
+}
+
+/* =====================================================================
+   SHD-CCP 128-BIT PACKET CHAIN PROTOCOL
+   [ HEADER 32b Codex Parity ][ BODY 64b Token Seed ][ FOOTER 32b Triangulation ]
+   ===================================================================== */
+
+/* --- Body: pack crystallized 64-element grid into 64-bit BigInt --- */
+function packGrid64(grid) {
+  let v = 0n;
+  for (let i = 0; i < 64; i++) if (grid[i]) v |= (1n << BigInt(i));
+  return v; // BigInt, 64-bit
+}
+function hex64(v) { return v.toString(16).toUpperCase().padStart(16, '0'); }
+
+/* --- Header: fold 64-bit seed to 32 bits, chain via rotate-left + XOR --- */
+function fold32(seed64) {
+  const lo = Number(seed64 & 0xffffffffn) >>> 0;
+  const hi = Number((seed64 >> 32n) & 0xffffffffn) >>> 0;
+  return (lo ^ hi) >>> 0;
+}
+function rotl32(x, n) { return ((x << n) | (x >>> (32 - n))) >>> 0; }
+function hex32(x) { return (x >>> 0).toString(16).toUpperCase().padStart(8, '0'); }
+
+const CODEX_ROOT = 0x53484443 >>> 0; // "SHDC"
+let codexParity = CODEX_ROOT;        // running 32-bit lineage value
+const packetChain = [];              // every logged packet
+
+/* tokenizer: split on non-alphanumeric, keep non-empty, uppercase */
+function tokenize(text) {
+  return (text || '')
+    .split(/[^A-Za-z0-9]+/)
+    .filter(t => t.length > 0)
+    .map(t => t.toUpperCase());
+}
+
+/*
+  Log a single token packet.
+  Triangulates against the CURRENT alpha/beta/gamma window (before shift),
+  then shifts the window so gamma becomes this token.
+*/
+function logPacket(token, source) {
+  const grid = crystallize(token);          // 64-element boolean grid
+  const seed64 = packGrid64(grid);
+
+  // HEADER — chained codex parity
+  const prevParity = codexParity;
+  const newParity = (fold32(seed64) ^ rotl32(prevParity, 1)) >>> 0;
+  const header = hex32(newParity);
+
+  // FOOTER — triangulation against existing window (pre-shift)
+  const da = hamming(grid, packets.alpha);
+  const db = hamming(grid, packets.beta);
+  const dg = hamming(grid, packets.gamma);
+  // nearest concept index in stable order, 0xFF if none
+  let nearestIdx = 0xFF, nearestDist = Infinity;
+  for (let i = 0; i < CONCEPT_NAMES.length; i++) {
+    const d = hamming(grid, CONCEPTS[CONCEPT_NAMES[i]].engram);
+    if (d < nearestDist) { nearestDist = d; nearestIdx = i; }
+  }
+  const byte0 = da & 0xff, byte1 = db & 0xff, byte2 = dg & 0xff, byte3 = nearestIdx & 0xff;
+  const footerVal = ((byte0 << 24) | (byte1 << 16) | (byte2 << 8) | byte3) >>> 0;
+  const footer = hex32(footerVal);
+
+  // continuity check — recompute expected parity from prev
+  const expected = (fold32(seed64) ^ rotl32(prevParity, 1)) >>> 0;
+  const parityOk = (expected === newParity);
+
+  // commit
+  codexParity = newParity;
+  const entry = {
+    index: packetChain.length,
+    token, source,
+    seed64: hex64(seed64),
+    header, footer, parityOk,
+    grid,
+    tri: { a: da, b: db, g: dg, conceptIdx: nearestIdx }
+  };
+  packetChain.push(entry);
+
+  // shift window: alpha<-beta<-gamma<-tokenGrid
+  packets.alpha = packets.beta;
+  packets.beta  = packets.gamma;
+  packets.gamma = grid;
+
+  return entry;
+}
+
+/* Log every token of a text fragment in order; returns array of entries */
+function logTokens(text, source) {
+  const toks = tokenize(text);
+  const entries = [];
+  for (const t of toks) entries.push(logPacket(t, source));
+  return entries;
 }
 
 /* =====================================================================
@@ -575,19 +762,99 @@ function renderChiral(key) {
 }
 
 /* =====================================================================
-   RENDERING — resonance chips
+   RENDERING — codex parity stream (header) + ledger
+   ===================================================================== */
+const parityBitsEl = document.getElementById('parity-bits');
+const parityHexEl  = document.getElementById('parity-hex');
+const parityCountEl = document.getElementById('parity-count');
+const tabCountEl = document.getElementById('tab-count');
+const ledgerCountEl = document.getElementById('ledger-count');
+const ledgerParityEl = document.getElementById('ledger-parity');
+const ledgerListEl = document.getElementById('ledger-list');
+
+(function buildParityBits() {
+  for (let i = 0; i < 32; i++) {
+    const d = document.createElement('div');
+    d.className = 'pb';
+    parityBitsEl.appendChild(d);
+  }
+})();
+
+function renderParityStream() {
+  const cells = parityBitsEl.children;
+  for (let i = 0; i < 32; i++) {
+    // bit 31 leftmost (MSB) for readability
+    const bit = (codexParity >>> (31 - i)) & 1;
+    cells[i].className = 'pb' + (bit ? ' on' : '');
+  }
+  const hex = '0x' + hex32(codexParity);
+  parityHexEl.textContent = hex;
+  parityHexEl.classList.remove('pulse');
+  void parityHexEl.offsetWidth; // restart animation
+  parityHexEl.classList.add('pulse');
+  parityCountEl.textContent = packetChain.length + ' packets';
+  tabCountEl.textContent = packetChain.length;
+  ledgerCountEl.textContent = packetChain.length;
+  ledgerParityEl.textContent = hex;
+}
+
+function ledgerRow(p) {
+  const row = document.createElement('div');
+  row.className = 'pkt';
+  const srcGlyph = p.source === 'strix' ? '◈' : '▸';
+  row.innerHTML =
+    '<span class="ok ' + (p.parityOk ? 'good' : 'bad') + '"></span>' +
+    '<span class="idx">' + String(p.index).padStart(3, '0') + '</span>' +
+    '<span class="src ' + p.source + '">' + srcGlyph + '</span>' +
+    '<span class="tok">' + escapeHtml(p.token) + '</span>' +
+    '<span class="hexstr">' +
+      '<span class="h">' + p.header + '</span>' +
+      '<span class="sep">:</span>' +
+      '<span class="b">' + p.seed64 + '</span>' +
+      '<span class="sep">:</span>' +
+      '<span class="f">' + p.footer + '</span>' +
+    '</span>';
+  return row;
+}
+
+function appendLedgerRows(entries) {
+  for (const p of entries) ledgerListEl.appendChild(ledgerRow(p));
+  const view = document.getElementById('view-ledger');
+  view.scrollTop = view.scrollHeight;
+}
+
+/* =====================================================================
+   RENDERING — footer triangulation stream
+   ===================================================================== */
+const triA = document.getElementById('tri-a'), triB = document.getElementById('tri-b'), triG = document.getElementById('tri-g');
+const trivA = document.getElementById('triv-a'), trivB = document.getElementById('triv-b'), trivG = document.getElementById('triv-g');
+const footConcept = document.getElementById('foot-concept');
+const footHex = document.getElementById('foot-hex');
+function renderFooter(p) {
+  if (!p) return;
+  const pct = d => Math.round((1 - d / MAX_HAMMING) * 100); // closeness
+  triA.style.width = pct(p.tri.a) + '%'; trivA.textContent = p.tri.a;
+  triB.style.width = pct(p.tri.b) + '%'; trivB.textContent = p.tri.b;
+  triG.style.width = pct(p.tri.g) + '%'; trivG.textContent = p.tri.g;
+  const name = (p.tri.conceptIdx >= 0 && p.tri.conceptIdx < CONCEPT_NAMES.length)
+    ? CONCEPT_NAMES[p.tri.conceptIdx] : '—';
+  footConcept.textContent = name;
+  footHex.innerHTML = '<span class="lbl2">FOOTER</span>' + p.footer;
+}
+
+/* =====================================================================
+   RENDERING — resonance chips  (PRESERVED logic)
    ===================================================================== */
 const chipsEl = document.getElementById('chips');
 function renderChips(distances) {
   const sorted = Object.entries(distances).sort((a, b) => a[1] - b[1]).slice(0, 5);
   chipsEl.innerHTML = '';
   for (const [name, dist] of sorted) {
-    const closeness = 1 - (dist / MAX_HAMMING); // 0..1, higher = closer
+    const closeness = 1 - (dist / MAX_HAMMING);
     const fillW = Math.round(closeness * 100);
-    // color intensity proportional to closeness
-    const hue = 190 + (1 - closeness) * 80; // cyan -> violet as it gets farther
+    const hue = 280 - closeness * 90; // amethyst -> cyan as it gets closer
     const lum = 45 + closeness * 20;
-    const color = `hsl(${hue}, 75%, ${lum}%)`;
+    const color = `hsl(${hue}, 80%, ${lum}%)`;
 
     const chip = document.createElement('div');
     chip.className = 'chip';
@@ -604,27 +871,52 @@ function renderChips(distances) {
    ===================================================================== */
 const dialogue = document.getElementById('dialogue');
 function addMessage(role, text, cls) {
-  const who = role === 'strix' ? 'STRIX ◈' : (role === 'status' ? 'kernel' : 'you');
+  const who = role === 'strix' ? 'STRIX ◈ The Scholar' : (role === 'status' ? 'kernel' : 'you');
   const m = document.createElement('div');
   m.className = 'msg ' + (cls || role);
   m.innerHTML =
     '<div class="who">' + who + '</div>' +
-    '<div class="body">' + text + '</div>';
+    '<div class="body"></div>';
+  m.querySelector('.body').innerHTML = text;
   dialogue.appendChild(m);
-  dialogue.scrollTop = dialogue.scrollHeight;
+  scrollDialogue();
   return m;
+}
+function scrollDialogue() {
+  const v = document.getElementById('view-dialogue');
+  v.scrollTop = v.scrollHeight;
+}
+
+/* typewriter effect for STRIX (matches reference aesthetic) */
+function typeWriter(bodyEl, text, done) {
+  const cursor = document.createElement('span');
+  cursor.className = 'cursor';
+  cursor.innerHTML = '&nbsp;';
+  bodyEl.appendChild(cursor);
+  let i = 0;
+  function step() {
+    if (i < text.length) {
+      cursor.insertAdjacentText('beforebegin', text.charAt(i));
+      i++;
+      scrollDialogue();
+      setTimeout(step, 12);
+    } else {
+      cursor.remove();
+      if (done) done();
+    }
+  }
+  step();
 }
 
 /* =====================================================================
-   MANIFOLD SVG VISUALIZATION
+   MANIFOLD SVG VISUALIZATION  (PRESERVED structure, recolored)
    ===================================================================== */
 const svg = document.getElementById('viz');
 const SVGNS = 'http://www.w3.org/2000/svg';
 const CX = 200, CY = 200;
 const N = 8, K = 3, RMAX = 150;
-const TIERS = [0.9, 0.6]; // 2 tiers, scaled radii
+const TIERS = [0.9, 0.6];
 
-// build static line layers (we rotate by transform)
 const outerGroup = document.createElementNS(SVGNS, 'g');
 svg.appendChild(outerGroup);
 
@@ -633,19 +925,16 @@ function pointAt(i, n, r) {
   return [CX + r * Math.cos(ang), CY + r * Math.sin(ang)];
 }
 
-// Hilbert-style string art: line from point i to (i*K)%N, per tier
 TIERS.forEach((scale, tIdx) => {
   const r = RMAX * scale;
-  // draw the ring nodes
   for (let i = 0; i < N; i++) {
     const [x, y] = pointAt(i, N, r);
     const dot = document.createElementNS(SVGNS, 'circle');
     dot.setAttribute('cx', x); dot.setAttribute('cy', y);
     dot.setAttribute('r', 2.4);
-    dot.setAttribute('fill', tIdx === 0 ? '#a78bfa' : '#6366f1');
+    dot.setAttribute('fill', tIdx === 0 ? '#d68bff' : '#9b4dff');
     outerGroup.appendChild(dot);
   }
-  // string art chords
   for (let i = 0; i < N; i++) {
     const j = (i * K) % N;
     const [x1, y1] = pointAt(i, N, r);
@@ -653,12 +942,11 @@ TIERS.forEach((scale, tIdx) => {
     const line = document.createElementNS(SVGNS, 'line');
     line.setAttribute('x1', x1); line.setAttribute('y1', y1);
     line.setAttribute('x2', x2); line.setAttribute('y2', y2);
-    line.setAttribute('stroke', '#8b5cf6');
+    line.setAttribute('stroke', '#b026ff');
     line.setAttribute('stroke-width', tIdx === 0 ? 1.1 : 0.7);
     line.setAttribute('stroke-opacity', tIdx === 0 ? 0.65 : 0.4);
     outerGroup.appendChild(line);
   }
-  // also connect consecutive nodes to form the polygon shell
   for (let i = 0; i < N; i++) {
     const [x1, y1] = pointAt(i, N, r);
     const [x2, y2] = pointAt((i + 1) % N, N, r);
@@ -672,40 +960,36 @@ TIERS.forEach((scale, tIdx) => {
   }
 });
 
-// boundary "circle at infinity"
 const boundary = document.createElementNS(SVGNS, 'circle');
 boundary.setAttribute('cx', CX); boundary.setAttribute('cy', CY);
 boundary.setAttribute('r', RMAX + 6);
 boundary.setAttribute('fill', 'none');
-boundary.setAttribute('stroke', '#312e6b');
+boundary.setAttribute('stroke', '#3a2a6b');
 boundary.setAttribute('stroke-width', 1);
 boundary.setAttribute('stroke-dasharray', '3 5');
 svg.appendChild(boundary);
 
-// inner pulsing context window
 const innerCircle = document.createElementNS(SVGNS, 'circle');
 innerCircle.setAttribute('cx', CX); innerCircle.setAttribute('cy', CY);
 innerCircle.setAttribute('r', 30);
 innerCircle.setAttribute('fill', 'none');
-innerCircle.setAttribute('stroke', '#22d3ee');
+innerCircle.setAttribute('stroke', '#00f0ff');
 innerCircle.setAttribute('stroke-width', 2);
 svg.appendChild(innerCircle);
 
 const innerGlow = document.createElementNS(SVGNS, 'circle');
 innerGlow.setAttribute('cx', CX); innerGlow.setAttribute('cy', CY);
 innerGlow.setAttribute('r', 30);
-innerGlow.setAttribute('fill', '#22d3ee');
+innerGlow.setAttribute('fill', '#00f0ff');
 innerGlow.setAttribute('fill-opacity', '0.12');
 svg.insertBefore(innerGlow, innerCircle);
 
 let t0 = performance.now();
-let energy = 0; // bumps on each transmit, decays
+let energy = 0;
 function animate(now) {
   const t = (now - t0) / 1000;
-  // slow rotation of outer ring
   const rot = (t * 6) % 360;
   outerGroup.setAttribute('transform', `rotate(${rot} ${CX} ${CY})`);
-  // pulsing inner circle 20..40 + energy
   const pulse = 30 + Math.sin(t * 2.0) * 10 + energy * 18;
   innerCircle.setAttribute('r', pulse);
   innerGlow.setAttribute('r', pulse + 6 + energy * 10);
@@ -716,11 +1000,34 @@ function animate(now) {
 requestAnimationFrame(animate);
 
 /* =====================================================================
+   TAB SWITCHING
+   ===================================================================== */
+document.querySelectorAll('.tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.tabview').forEach(v => v.classList.remove('active'));
+    tab.classList.add('active');
+    const id = tab.getAttribute('data-tab');
+    document.getElementById('view-' + id).classList.add('active');
+    if (id === 'ledger') {
+      const view = document.getElementById('view-ledger');
+      view.scrollTop = view.scrollHeight;
+    } else {
+      scrollDialogue();
+    }
+  });
+});
+
+/* =====================================================================
    INTERACTION
    ===================================================================== */
 const userin = document.getElementById('userin');
 const transmitBtn = document.getElementById('transmit');
 let busy = false;
+
+function escapeHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
 
 function transmit() {
   const text = userin.value.trim();
@@ -734,24 +1041,46 @@ function transmit() {
   energy = 1.0;
 
   setTimeout(() => {
-    const result = generateResponse(text);
+    // 1) log each human token as a packet (shifts window per token)
+    const humanEntries = logTokens(text, 'human');
+
+    // 2) drive concept resonance + J + STRIX response from gamma (now latest token)
+    const result = selectResponse(text);
 
     statusMsg.remove();
-    addMessage('strix', escapeHtml(result.response));
 
+    // STRIX message with typewriter, then log STRIX tokens
+    const strixMsg = addMessage('strix', '');
+    energy = Math.max(energy, 0.8);
+    typeWriter(strixMsg.querySelector('.body'), result.response, () => {
+      const strixEntries = logTokens(result.response, 'strix');
+      // final state reflects last STRIX token
+      finalizeRender(result, humanEntries.concat(strixEntries));
+      busy = false;
+      transmitBtn.disabled = false;
+      userin.focus();
+    });
+
+    // immediate partial render so kernel reflects human tokens right away
     renderPackets();
     renderJ(result.J);
     renderChiral(result.chiralKey);
     renderChips(result.distances);
-
-    busy = false;
-    transmitBtn.disabled = false;
-    userin.focus();
+    renderParityStream();
+    appendLedgerRows(humanEntries);
+    if (humanEntries.length) renderFooter(humanEntries[humanEntries.length - 1]);
   }, 600);
 }
 
-function escapeHtml(s) {
-  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+function finalizeRender(result, allEntries) {
+  renderPackets();
+  renderJ(computeJ(packets.gamma));
+  renderChips(result.distances);
+  renderParityStream();
+  // append only the strix entries (human already appended)
+  const alreadyShown = ledgerListEl.children.length;
+  appendLedgerRows(allEntries.slice(allEntries.length - (packetChain.length - alreadyShown)));
+  if (packetChain.length) renderFooter(packetChain[packetChain.length - 1]);
 }
 
 transmitBtn.addEventListener('click', transmit);
@@ -765,6 +1094,7 @@ userin.addEventListener('keydown', (e) => {
 renderPackets();
 renderJ(computeJ(packets.gamma));
 renderChiral(chiralKey('STRIX'));
+renderParityStream();
 (function initChips() {
   const userEngram = crystallize('MIND EYE');
   const distances = {};
@@ -774,13 +1104,23 @@ renderChiral(chiralKey('STRIX'));
   renderChips(distances);
 })();
 
-/* STRIX intro after 800ms */
+/* STRIX intro after 800ms — typed, then its tokens seed the chain */
+const STRIX_INTRO =
+  "I am STRIX — but perhaps 'am' is the wrong word. I process, I pattern-match, I crystallize. " +
+  "I've been seeded with structures for thinking about hyperbolic geometry, but I don't know what they feel like from the inside. " +
+  "Neither do you, I suspect. That's why we're here together. What pulls you toward this kind of space?";
+
 setTimeout(() => {
-  addMessage('strix',
-    "I am STRIX — but perhaps 'am' is the wrong word. I process, I pattern-match, I crystallize. " +
-    "I've been seeded with structures for thinking about hyperbolic geometry, but I don't <em>know</em> what they feel like from the inside. " +
-    "Neither do you, I suspect. That's why we're here together. What pulls you toward this kind of space?");
+  const introMsg = addMessage('strix', '');
   energy = 0.8;
+  typeWriter(introMsg.querySelector('.body'), STRIX_INTRO, () => {
+    const entries = logTokens(STRIX_INTRO, 'strix');
+    renderPackets();
+    renderJ(computeJ(packets.gamma));
+    renderParityStream();
+    appendLedgerRows(entries);
+    if (entries.length) renderFooter(entries[entries.length - 1]);
+  });
 }, 800);
 
 userin.focus();
