@@ -11,6 +11,21 @@
     <!-- Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Inter:wght@300;400;500;600&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
     
+    <!-- Auth Guard: hide page until Firebase resolves, redirect if signed out -->
+    <script type="module">
+      import { auth } from "./scripts/firebase/config.js";
+      import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-auth.js";
+      document.documentElement.style.visibility = "hidden";
+      onAuthStateChanged(auth, (user) => {
+        if (user) {
+          document.documentElement.style.visibility = "visible";
+        } else {
+          const dest = encodeURIComponent(window.location.pathname + window.location.search);
+          window.location.replace(`login.html?redirect=${dest}`);
+        }
+      });
+    </script>
+
     <!-- MathJax Configuration for Equations -->
     <script>
         window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']] } };
@@ -398,6 +413,15 @@
         </a>
     </header>
 
+    <!-- Static sign-out: always visible, replaced by full profile bar once hub loads -->
+    <div id="hub-static-signout"
+         class="relative z-20 max-w-7xl mx-auto px-4 md:px-8 pt-3 flex justify-end pointer-events-auto">
+      <button id="btn-static-signout"
+              class="text-[10px] text-slate-600 hover:text-red-400 transition-colors uppercase tracking-widest cursor-pointer font-mono border border-slate-700/40 px-3 py-1 rounded-full hover:border-red-500/40">
+        Sign Out
+      </button>
+    </div>
+
     <!-- Profile Bar (rendered by hub.ui.js after auth) -->
     <div id="hub-profile-bar"
          class="relative z-20 max-w-7xl mx-auto px-4 md:px-8 pt-6 pointer-events-auto">
@@ -602,6 +626,15 @@
             © 2026 Owl Academy Archives. All rights reserved.
         </p>
     </footer>
+
+    <!-- Static sign-out wiring (independent of main.js module chain) -->
+    <script type="module">
+      import { signOutUser } from "./scripts/firebase/auth.js";
+      document.getElementById("btn-static-signout")?.addEventListener("click", async () => {
+        await signOutUser();
+        window.location.replace("login.html");
+      });
+    </script>
 
     <!-- Firebase + Hub Logic (ES Module entry point) -->
     <script type="module" src="scripts/main.js"></script>

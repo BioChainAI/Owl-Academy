@@ -19,6 +19,8 @@ const ART_COLORS = {
 export const renderHubProfile = (user, profile) => {
   const bar = document.getElementById("hub-profile-bar");
   if (!bar) return;
+  // Hide the static fallback sign-out once the full profile bar renders
+  document.getElementById("hub-static-signout")?.remove();
 
   const totalXP = getTotalXP(profile.arts);
   const progress = getRankProgress(profile.arts);
