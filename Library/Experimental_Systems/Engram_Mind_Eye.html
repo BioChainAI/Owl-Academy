@@ -311,6 +311,45 @@
   #foot-hex { margin-left: auto; color: var(--gold); letter-spacing: 0.1em; font-weight: 700; white-space: nowrap; }
   #foot-hex .lbl2 { color: var(--dim); font-weight: 400; margin-right: 6px; }
 
+  /* ---------- active manifold control ---------- */
+  #manifold-status {
+    font-size: 9px; letter-spacing: 0.1em; margin: 4px 0 6px;
+    color: var(--dim); line-height: 1.4;
+  }
+  #manifold-status.bound { color: var(--amethyst); }
+  #manifold-ctrl {
+    display: flex; align-items: center; gap: 8px; margin-bottom: 14px;
+    border: 1px solid var(--edge-soft); border-radius: 5px;
+    background: #080b12; padding: 7px 9px;
+  }
+  #manifold-ctrl .nkt {
+    display: flex; flex-direction: column; align-items: center; gap: 2px;
+  }
+  #manifold-ctrl .nkt label {
+    font-size: 8px; letter-spacing: 0.14em; color: var(--gold); text-transform: uppercase;
+  }
+  #manifold-ctrl .nkt input {
+    width: 40px; text-align: center; background: #131a2a; color: var(--cyan);
+    border: 1px solid var(--edge); border-radius: 4px; padding: 3px 2px;
+    font-family: var(--mono); font-size: 12px; outline: none;
+  }
+  #manifold-ctrl .nkt input:focus { border-color: var(--amethyst); }
+  #manifold-ctrl .mlabel {
+    font-size: 9px; letter-spacing: 0.16em; color: var(--dim);
+    text-transform: uppercase; margin-right: auto;
+  }
+  /* text crystal grid uses same .grid8/.cell styling; lit class */
+  .cell.lit-x { background: var(--emerald); box-shadow: 0 0 5px rgba(0,255,102,0.8); }
+  /* segmented export buttons */
+  .export-seg {
+    background: rgba(176,38,255,0.1); color: var(--amethyst);
+    border: 1px solid rgba(176,38,255,0.4); border-radius: 4px;
+    padding: 3px 9px; font-size: 9px; letter-spacing: 0.14em; text-transform: uppercase;
+    cursor: pointer; font-family: var(--mono); transition: filter 0.2s, box-shadow 0.2s;
+  }
+  .export-seg:hover { filter: brightness(1.3); box-shadow: 0 0 10px rgba(176,38,255,0.3); }
+  #export-msg { font-size: 9px; color: var(--crimson); letter-spacing: 0.1em; margin-left: 6px; }
+
   ::-webkit-scrollbar { width: 7px; }
   ::-webkit-scrollbar-thumb { background: #2a3245; border-radius: 4px; }
   ::-webkit-scrollbar-track { background: transparent; }
@@ -342,6 +381,13 @@
     <aside id="left" class="panel">
       <div class="panel-title"><span class="dot"></span>Engram Kernel</div>
       <div class="panel-body">
+        <div id="manifold-status">⬡ Manual manifold (sign in to bind your familiar)</div>
+        <div id="manifold-ctrl">
+          <span class="mlabel">Active Manifold</span>
+          <div class="nkt"><label>N</label><input type="number" id="mf-n" min="3" max="24" value="8"></div>
+          <div class="nkt"><label>K</label><input type="number" id="mf-k" min="1" max="24" value="3"></div>
+          <div class="nkt"><label>T</label><input type="number" id="mf-t" min="1" max="4" value="2"></div>
+        </div>
         <div class="packet">
           <div class="packet-label"><span>Alpha</span><span class="role">Inner</span></div>
           <div class="grid8" id="grid-alpha"></div>
@@ -361,6 +407,11 @@
         </div>
         <div class="packet-label"><span>Chiral Key</span></div>
         <div class="chiral" id="chiral">O1::?::0000000000000000</div>
+        <div class="packet" style="margin-top:16px;">
+          <div class="packet-label"><span>Text Crystal</span><span class="role">master engram</span></div>
+          <div class="grid8" id="grid-crystal"></div>
+        </div>
+        <div class="chiral" id="crystal-key" style="margin-top:8px;">O1::?::0000000000000000</div>
       </div>
     </aside>
 
@@ -382,6 +433,9 @@
               <div style="display:flex;align-items:center;gap:8px;">
                 <span>SHD-CCP CHAIN · <span id="ledger-count">0</span> packets (Hum: <span id="ledger-hum">0</span> · STX: <span id="ledger-stx">0</span>) · chain parity <b id="ledger-parity">0x53484443</b></span>
                 <button id="export-chain">Export Chain ↓</button>
+                <button id="export-72" class="export-seg">Export ⬡72</button>
+                <button id="export-720" class="export-seg">Export ⬡720</button>
+                <span id="export-msg"></span>
               </div>
               <div id="ledger-schema">schema: system_header{chiral_key, seed_state[64], topology_constants} · packet_meta{source, token, parity, triangulation}</div>
             </div>
@@ -793,6 +847,40 @@ function renderChiral(key) {
 }
 
 /* =====================================================================
+   TEXT CRYSTAL — master crystallized engram of the whole chain
+   ===================================================================== */
+const gridCrystalEl = document.getElementById('grid-crystal');
+const crystalKeyEl = document.getElementById('crystal-key');
+buildGrid(gridCrystalEl);
+
+/* XOR-crystallize the manifold anchor with every packet's grid in chain order */
+function computeTextCrystal() {
+  let acc = crystallize(window.MANIFOLD_TOKEN || '');
+  for (const p of packetChain) {
+    const g = p.gridArray || crystallize(p.token);
+    acc = acc.map((b, i) => b ^ g[i]);
+  }
+  return acc;
+}
+
+function renderTextCrystal() {
+  const grid = computeTextCrystal();
+  renderGrid(gridCrystalEl, grid, 'lit-x');
+  // chiral key for crystal = O1::{firstTokenRoot|manifold}::{hex16ofCrystal}
+  const root = packetChain.length
+    ? ((packetChain[0].token || '').replace(/[^A-Za-z]/g, '')[0] || 'D')
+    : (manifoldN + '');
+  const hex16 = hex64(packGrid64(grid));
+  const key = 'O1::' + root + '::' + hex16;
+  const parts = key.split('::');
+  crystalKeyEl.innerHTML =
+    '<span class="pre">' + parts[0] + '</span>::' +
+    '<span class="root">' + parts[1] + '</span>::' + parts[2];
+  return key;
+}
+window.renderTextCrystal = renderTextCrystal;
+
+/* =====================================================================
    RENDERING — codex parity stream (header) + ledger
    ===================================================================== */
 const parityBitsEl = document.getElementById('parity-bits');
@@ -867,6 +955,93 @@ function exportChain() {
   URL.revokeObjectURL(url);
 }
 document.getElementById('export-chain').addEventListener('click', exportChain);
+
+/* =====================================================================
+   SEGMENTED EXPORT — Blackwell/O1-compatible (72 or 720 sections)
+   ===================================================================== */
+function crystalChiralKey(grid, root) {
+  const hex16 = hex64(packGrid64(grid));
+  return 'O1::' + root + '::' + hex16;
+}
+
+function exportSegmented(sections) {
+  const msgEl = document.getElementById('export-msg');
+  msgEl.textContent = '';
+  const N = packetChain.length;
+  if (N === 0) { msgEl.textContent = 'No packets to crystallize yet'; return; }
+
+  // distribute packet i to slot floor(i * sections / N)
+  const slots = Array.from({ length: sections }, () => ({
+    seedGrid: null, tokens: [], token_count: 0, source_mix: { human: 0, strix: 0 }
+  }));
+  for (let i = 0; i < N; i++) {
+    const s = Math.floor(i * sections / N);
+    const slot = slots[s];
+    const g = packetChain[i].gridArray || crystallize(packetChain[i].token);
+    slot.seedGrid = slot.seedGrid ? slot.seedGrid.map((b, k) => b ^ g[k]) : g.slice();
+    slot.tokens.push(packetChain[i].token);
+    slot.token_count++;
+    if (packetChain[i].source === 'human') slot.source_mix.human++;
+    else slot.source_mix.strix++;
+  }
+  // carry forward continuity for empty slots; slot 0 empty => zeros
+  let prev = new Array(64).fill(0);
+  for (let s = 0; s < sections; s++) {
+    if (slots[s].seedGrid === null) slots[s].seedGrid = prev.slice();
+    prev = slots[s].seedGrid;
+  }
+
+  // master crystal = full text crystal
+  const master = computeTextCrystal();
+  const masterRoot = packetChain.length
+    ? ((packetChain[0].token || '').replace(/[^A-Za-z]/g, '')[0] || 'D')
+    : (manifoldN + '');
+  const masterKey = crystalChiralKey(master, masterRoot);
+
+  const quaternion_chain = slots.map((slot, n_id) => {
+    const root = slot.tokens.length
+      ? ((slot.tokens[0] || '').replace(/[^A-Za-z]/g, '')[0] || 'D')
+      : masterRoot;
+    return {
+      n_id,
+      t_param: n_id / sections,
+      seed_state: slot.seedGrid.map(b => b ? 1 : 0),
+      chiral_key: crystalChiralKey(slot.seedGrid, root),
+      token_count: slot.token_count,
+      tokens: slot.tokens,
+      source_mix: slot.source_mix,
+      collisions: []
+    };
+  });
+
+  const data = {
+    format: 'engram_text_chain',
+    version: 1,
+    sections,
+    generated_at: new Date().toISOString(),
+    manifold: { n: manifoldN, k: manifoldK, t: manifoldT, anchor: window.MANIFOLD_TOKEN },
+    master_crystal: {
+      seed_state: master.map(b => b ? 1 : 0),
+      chiral_key: masterKey
+    },
+    system_header: {
+      chiral_key: masterKey,
+      seed_state: master.map(b => b ? 1 : 0),
+      topology_constants: { major_R: 35.0, minor_R: 12.0, total_frames: 720, node_count: sections }
+    },
+    quaternion_chain
+  };
+
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `engram_crystal_S${sections}_N${N}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+document.getElementById('export-72').addEventListener('click', () => exportSegmented(72));
+document.getElementById('export-720').addEventListener('click', () => exportSegmented(720));
 
 function ledgerRow(p) {
   const row = document.createElement('div');
@@ -986,8 +1161,12 @@ function typeWriter(bodyEl, text, done) {
 const svg = document.getElementById('viz');
 const SVGNS = 'http://www.w3.org/2000/svg';
 const CX = 200, CY = 200;
-const N = 8, K = 3, RMAX = 150;
-const TIERS = [0.9, 0.6];
+const RMAX = 150;
+const TIER_SCALES = [0.9, 0.6, 0.4, 0.28]; // up to T=4 tiers
+
+/* manifold N/K/T are module-level vars the animation loop reads each frame */
+let manifoldN = 8, manifoldK = 3, manifoldT = 2;
+window.MANIFOLD_TOKEN = 'D' + manifoldN + 'K' + manifoldK + 'T' + manifoldT;
 
 const outerGroup = document.createElementNS(SVGNS, 'g');
 svg.appendChild(outerGroup);
@@ -997,40 +1176,90 @@ function pointAt(i, n, r) {
   return [CX + r * Math.cos(ang), CY + r * Math.sin(ang)];
 }
 
-TIERS.forEach((scale, tIdx) => {
-  const r = RMAX * scale;
-  for (let i = 0; i < N; i++) {
-    const [x, y] = pointAt(i, N, r);
-    const dot = document.createElementNS(SVGNS, 'circle');
-    dot.setAttribute('cx', x); dot.setAttribute('cy', y);
-    dot.setAttribute('r', 2.4);
-    dot.setAttribute('fill', tIdx === 0 ? '#d68bff' : '#9b4dff');
-    outerGroup.appendChild(dot);
+/* (re)build the string-art manifold from current manifoldN/K/T */
+function buildManifold() {
+  outerGroup.innerHTML = '';
+  const N = manifoldN, K = manifoldK;
+  for (let tIdx = 0; tIdx < manifoldT; tIdx++) {
+    const r = RMAX * (TIER_SCALES[tIdx] ?? 0.4);
+    for (let i = 0; i < N; i++) {
+      const [x, y] = pointAt(i, N, r);
+      const dot = document.createElementNS(SVGNS, 'circle');
+      dot.setAttribute('cx', x); dot.setAttribute('cy', y);
+      dot.setAttribute('r', 2.4);
+      dot.setAttribute('fill', tIdx === 0 ? '#d68bff' : '#9b4dff');
+      outerGroup.appendChild(dot);
+    }
+    for (let i = 0; i < N; i++) {
+      const j = (i * K) % N;
+      const [x1, y1] = pointAt(i, N, r);
+      const [x2, y2] = pointAt(j, N, r);
+      const line = document.createElementNS(SVGNS, 'line');
+      line.setAttribute('x1', x1); line.setAttribute('y1', y1);
+      line.setAttribute('x2', x2); line.setAttribute('y2', y2);
+      line.setAttribute('stroke', '#b026ff');
+      line.setAttribute('stroke-width', tIdx === 0 ? 1.1 : 0.7);
+      line.setAttribute('stroke-opacity', tIdx === 0 ? 0.65 : 0.4);
+      outerGroup.appendChild(line);
+    }
+    for (let i = 0; i < N; i++) {
+      const [x1, y1] = pointAt(i, N, r);
+      const [x2, y2] = pointAt((i + 1) % N, N, r);
+      const line = document.createElementNS(SVGNS, 'line');
+      line.setAttribute('x1', x1); line.setAttribute('y1', y1);
+      line.setAttribute('x2', x2); line.setAttribute('y2', y2);
+      line.setAttribute('stroke', '#6d28d9');
+      line.setAttribute('stroke-width', 0.6);
+      line.setAttribute('stroke-opacity', 0.3);
+      outerGroup.appendChild(line);
+    }
   }
-  for (let i = 0; i < N; i++) {
-    const j = (i * K) % N;
-    const [x1, y1] = pointAt(i, N, r);
-    const [x2, y2] = pointAt(j, N, r);
-    const line = document.createElementNS(SVGNS, 'line');
-    line.setAttribute('x1', x1); line.setAttribute('y1', y1);
-    line.setAttribute('x2', x2); line.setAttribute('y2', y2);
-    line.setAttribute('stroke', '#b026ff');
-    line.setAttribute('stroke-width', tIdx === 0 ? 1.1 : 0.7);
-    line.setAttribute('stroke-opacity', tIdx === 0 ? 0.65 : 0.4);
-    outerGroup.appendChild(line);
+}
+buildManifold();
+
+/* manifold control wiring + readout + exposed setter */
+const mfN = document.getElementById('mf-n');
+const mfK = document.getElementById('mf-k');
+const mfT = document.getElementById('mf-t');
+const mfStatus = document.getElementById('manifold-status');
+const vizCaption = document.getElementById('viz-caption');
+
+function clampInt(v, lo, hi, dflt) {
+  v = parseInt(v, 10);
+  if (!Number.isFinite(v)) return dflt;
+  return Math.max(lo, Math.min(hi, v));
+}
+
+function setEngramManifold(n, k, t) {
+  manifoldN = clampInt(n, 3, 24, 8);
+  manifoldK = clampInt(k, 1, 24, 3);
+  manifoldT = clampInt(t, 1, 4, 2);
+  window.MANIFOLD_TOKEN = 'D' + manifoldN + 'K' + manifoldK + 'T' + manifoldT;
+  mfN.value = manifoldN; mfK.value = manifoldK; mfT.value = manifoldT;
+  buildManifold();
+  vizCaption.textContent =
+    'manifold field — string-art N' + manifoldN + '·K' + manifoldK + '·T' + manifoldT + ' · context window pulse';
+  // refresh the master text crystal so its anchor follows the manifold
+  if (typeof renderTextCrystal === 'function') renderTextCrystal();
+}
+window.setEngramManifold = setEngramManifold;
+
+function onManifoldInput() { setEngramManifold(mfN.value, mfK.value, mfT.value); }
+mfN.addEventListener('change', onManifoldInput);
+mfK.addEventListener('change', onManifoldInput);
+mfT.addEventListener('change', onManifoldInput);
+
+/* called by firebase module to update the bound-status readout */
+window.setManifoldStatus = function(bound, slot) {
+  if (bound) {
+    mfStatus.className = 'bound';
+    mfStatus.textContent = '⬡ Bound to Familiar Slot ' + slot +
+      ' · manifold ' + manifoldN + '/' + manifoldK + '/' + manifoldT;
+  } else {
+    mfStatus.className = '';
+    mfStatus.textContent = '⬡ Manual manifold (sign in to bind your familiar)';
   }
-  for (let i = 0; i < N; i++) {
-    const [x1, y1] = pointAt(i, N, r);
-    const [x2, y2] = pointAt((i + 1) % N, N, r);
-    const line = document.createElementNS(SVGNS, 'line');
-    line.setAttribute('x1', x1); line.setAttribute('y1', y1);
-    line.setAttribute('x2', x2); line.setAttribute('y2', y2);
-    line.setAttribute('stroke', '#6d28d9');
-    line.setAttribute('stroke-width', 0.6);
-    line.setAttribute('stroke-opacity', 0.3);
-    outerGroup.appendChild(line);
-  }
-});
+};
 
 const boundary = document.createElementNS(SVGNS, 'circle');
 boundary.setAttribute('cx', CX); boundary.setAttribute('cy', CY);
@@ -1139,6 +1368,7 @@ function transmit() {
     renderChiral(result.chiralKey);
     renderChips(result.distances);
     renderParityStream();
+    renderTextCrystal();
     appendLedgerRows(humanEntries);
     if (humanEntries.length) renderFooter(humanEntries[humanEntries.length - 1]);
   }, 600);
@@ -1149,6 +1379,7 @@ function finalizeRender(result, allEntries) {
   renderJ(computeJ(packets.gamma));
   renderChips(result.distances);
   renderParityStream();
+  renderTextCrystal();
   // append only the strix entries (human already appended)
   const alreadyShown = ledgerListEl.children.length;
   appendLedgerRows(allEntries.slice(allEntries.length - (packetChain.length - alreadyShown)));
@@ -1167,6 +1398,7 @@ renderPackets();
 renderJ(computeJ(packets.gamma));
 renderChiral(chiralKey('STRIX'));
 renderParityStream();
+renderTextCrystal();
 (function initChips() {
   const userEngram = crystallize('MIND EYE');
   const distances = {};
@@ -1190,12 +1422,44 @@ setTimeout(() => {
     renderPackets();
     renderJ(computeJ(packets.gamma));
     renderParityStream();
+    renderTextCrystal();
     appendLedgerRows(entries);
     if (entries.length) renderFooter(entries[entries.length - 1]);
   });
 }, 800);
 
 userin.focus();
+</script>
+
+<!-- ============ FIREBASE: bind manifold to active familiar ============ -->
+<script type="module">
+import { auth, db } from '../../scripts/firebase/config.js';
+import { onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/12.15.0/firebase-auth.js';
+import { doc, getDoc } from 'https://www.gstatic.com/firebasejs/12.15.0/firebase-firestore.js';
+
+onAuthStateChanged(auth, async (user) => {
+  if (!user) {
+    // signed out — manual fallback, leave defaults
+    if (window.setManifoldStatus) window.setManifoldStatus(false);
+    return;
+  }
+  try {
+    const snap = await getDoc(doc(db, 'users', user.uid, 'profile', 'main'));
+    const profile = snap.exists() ? snap.data() : {};
+    const activeSlot = profile.activeFamiliarSlot ?? 0;
+    const manifoldConfig = (profile.familiarManifolds ?? {})[String(activeSlot)] ?? null;
+    if (manifoldConfig &&
+        manifoldConfig.n != null && manifoldConfig.k != null && manifoldConfig.t != null) {
+      window.setEngramManifold(manifoldConfig.n, manifoldConfig.k, manifoldConfig.t);
+    } else {
+      window.setEngramManifold(8, 3, 2);
+    }
+    if (window.setManifoldStatus) window.setManifoldStatus(true, activeSlot);
+  } catch (e) {
+    console.warn('Engram familiar bind failed:', e);
+    if (window.setManifoldStatus) window.setManifoldStatus(false);
+  }
+});
 </script>
 </body>
 </html>
