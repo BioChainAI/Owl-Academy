@@ -1,0 +1,1299 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Owl Academy | Triple Quad Function on 3 Folded Packets</title>
+    
+    <!-- External Libraries -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Inter:wght@300;400;500;600&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+    
+    <!-- MathJax Configuration -->
+    <script>
+        window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']] } };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+    <style>
+        :root {
+            --color-void: #05030a;
+            --color-primary: #D4AF37;
+            --color-primary-light: #FFF8DC;
+            --color-holo-cyan: #00d4ff;
+            --color-holo-purple: #8A2BE2;
+            --color-holo-emerald: #10b981;
+            --color-holo-rose: #f43f5e;
+        }
+
+        body {
+            background-color: var(--color-void);
+            color: #e2e8f0;
+            font-family: 'Inter', sans-serif;
+            background: radial-gradient(circle at 50% 0%, color-mix(in srgb, var(--color-holo-cyan) 10%, var(--color-void)), var(--color-void) 80%);
+            min-height: 100vh;
+            margin: 0;
+            overflow-x: hidden;
+            line-height: 1.6;
+        }
+
+        .starfield {
+            position: fixed; inset: 0;
+            background-image:
+                radial-gradient(2px 2px at 20px 30px, var(--color-holo-cyan), rgba(0,0,0,0)),
+                radial-gradient(2px 2px at 40px 70px, #fff, rgba(0,0,0,0)),
+                radial-gradient(2px 2px at 50px 160px, rgba(255,255,255,0.8), rgba(0,0,0,0)),
+                radial-gradient(2px 2px at 90px 40px, #fff, rgba(0,0,0,0)),
+                radial-gradient(2px 2px at 130px 80px, var(--color-holo-cyan), rgba(0,0,0,0));
+            background-repeat: repeat; background-size: 250px 250px;
+            animation: twinkle 8s infinite alternate;
+            opacity: 0.15; z-index: -2; pointer-events: none;
+        }
+
+        @keyframes twinkle { 0% { opacity: 0.05; } 100% { opacity: 0.2; } }
+
+        h1, h2, h3, h4, h5, .mystical-font { font-family: 'Cinzel', serif; }
+
+        .gold-gradient {
+            background: linear-gradient(to right, var(--color-holo-cyan), var(--color-primary-light), var(--color-holo-cyan));
+            -webkit-background-clip: text; background-clip: text;
+            color: transparent; text-shadow: 0 0 15px color-mix(in srgb, var(--color-holo-cyan) 30%, transparent);
+        }
+
+        .glass-panel {
+            background: rgba(10, 8, 20, 0.65);
+            backdrop-filter: blur(16px);
+            border: 1px solid color-mix(in srgb, var(--color-holo-cyan) 15%, transparent);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5);
+        }
+
+        /* Sidebar Nav Styles */
+        .nav-item {
+            transition: all 0.3s ease;
+            border-left: 2px solid transparent;
+        }
+        .nav-item.active {
+            background: linear-gradient(90deg, rgba(0, 212, 255, 0.15) 0%, transparent 100%);
+            border-left-color: var(--color-holo-cyan);
+            color: var(--color-holo-cyan);
+        }
+        .nav-item:hover:not(.active) {
+            background: rgba(255,255,255,0.05);
+            border-left-color: rgba(0, 212, 255, 0.4);
+        }
+
+        /* Content Scrollbar */
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-track { background: rgba(0,0,0,0.3); }
+        ::-webkit-scrollbar-thumb { background: color-mix(in srgb, var(--color-holo-cyan) 40%, transparent); border-radius: 10px; }
+    </style>
+</head>
+<body class="antialiased flex flex-col h-screen overflow-hidden">
+
+    <!-- Atmospheric Background -->
+    <div class="starfield"></div>
+
+    <!-- Header -->
+    <header class="flex-shrink-0 w-full py-4 px-6 relative border-b border-cyan-600/20 bg-[#05030a]/80 backdrop-blur-md z-[100] flex justify-between items-center shadow-lg">
+        <div>
+            <div class="text-[10px] text-cyan-500/80 tracking-[0.3em] uppercase font-mono mb-1">
+                Community & Research &gt; Independent Learning
+            </div>
+            <h1 class="text-xl md:text-2xl font-bold tracking-[0.2em] gold-gradient">OWL ACADEMY</h1>
+        </div>
+        
+        <div class="flex items-center gap-3">
+            <div class="relative">
+                <button id="video-toggle" class="font-mono text-xs text-yellow-400 hover:text-yellow-300 border border-yellow-500/30 px-3 py-1.5 rounded bg-yellow-900/20 hover:bg-yellow-900/40 transition-colors flex items-center gap-2">
+                    <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                    REFERENCE MATERIAL
+                </button>
+                
+                <!-- Resizable Dropdown Panel -->
+                <div id="video-dropdown" class="absolute right-0 top-full mt-3 w-[85vw] md:w-[500px] h-[350px] min-w-[300px] min-h-[200px] glass-panel border border-yellow-500/30 rounded-xl p-3 hidden shadow-[0_0_30px_rgba(212,175,55,0.15)] origin-top-right transition-opacity duration-200 resize overflow-hidden flex flex-col z-[100]">
+                    <div class="flex justify-between items-center mb-3 px-1 flex-shrink-0">
+                        <div class="flex items-center gap-4">
+                            <span class="text-[10px] font-bold text-yellow-500 uppercase tracking-widest font-mono flex items-center gap-2">
+                                <span class="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span>
+                                Reference
+                            </span>
+                            
+                            <!-- Tabs for Video vs PDF -->
+                            <div class="flex bg-black/50 rounded overflow-hidden border border-white/10">
+                                <button id="tab-video" class="px-3 py-1 text-[9px] font-mono font-bold bg-yellow-500/20 text-yellow-300 transition-colors">VIDEO</button>
+                                <button id="tab-pdf" class="px-3 py-1 text-[9px] font-mono font-bold text-slate-400 hover:text-white transition-colors">PDF PAPER</button>
+                            </div>
+                        </div>
+
+                        <button id="video-close" class="text-slate-400 hover:text-white transition-colors p-1 bg-black/50 rounded hover:bg-white/10">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                        </button>
+                    </div>
+                    
+                    <!-- Content Area -->
+                    <div class="w-full flex-1 rounded-lg border border-white/10 overflow-hidden bg-black shadow-inner relative">
+                        <iframe id="ref-video" class="absolute inset-0 w-full h-full" src="https://www.youtube.com/embed/TRIPLE_QUAD_VIDEO_ID" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+                        <iframe id="ref-pdf" class="absolute inset-0 w-full h-full hidden" src="https://biochainai.github.io/Owl-Academy/Library/Community%20&%20Research/Independent_Learning/Quaternionic_Delta-Encoding/Quaternionic%20Delta%20Encoding%20on%20Golden%20Strassen-Clifford%20Toroids.pdf" title="PDF Reference Paper" frameborder="0"></iframe>
+                    </div>
+                </div>
+            </div>
+
+            <div class="font-mono text-xs text-cyan-400 border border-cyan-500/30 px-3 py-1.5 rounded bg-cyan-900/20 hidden md:block">
+                MODULE: <span class="text-white">TRIPLE QUAD ON 3 FOLDED PACKETS</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Application Area -->
+    <div class="flex-1 flex overflow-hidden relative z-10 p-4 gap-4">
+        
+        <!-- Sidebar Navigation -->
+        <aside class="w-1/4 max-w-[300px] glass-panel rounded-xl flex flex-col overflow-hidden h-full">
+            <div class="p-4 border-b border-white/10">
+                <h2 class="text-sm font-bold text-white tracking-widest mystical-font">Module Phases</h2>
+            </div>
+            <nav class="flex-1 overflow-y-auto py-2" id="nav-container">
+                <!-- Nav items generated via JS -->
+            </nav>
+            
+            <!-- Related Departments Links -->
+            <div class="p-4 border-t border-white/10 bg-black/20 flex-shrink-0">
+                <h3 class="text-[10px] font-bold text-slate-400 uppercase tracking-widest font-mono mb-3">Related Departments</h3>
+                <ul class="space-y-2">
+                    <li>
+                        <a href="../../kinematics/index.html" class="text-[10px] font-mono text-emerald-400 hover:text-emerald-200 transition-colors flex items-center gap-2">
+                            <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 shadow-[0_0_5px_#10b981]"></span> 
+                            Dept. of Kinematics
+                        </a>
+                    </li>
+                    <li>
+                        <a href="../../quantum_topology/index.html" class="text-[10px] font-mono text-fuchsia-400 hover:text-fuchsia-200 transition-colors flex items-center gap-2">
+                            <span class="w-1.5 h-1.5 rounded-full bg-fuchsia-400 shadow-[0_0_5px_#f43f5e]"></span> 
+                            Quantum Topology
+                        </a>
+                    </li>
+                    <li>
+                        <a href="../../applied_robotics/index.html" class="text-[10px] font-mono text-yellow-400 hover:text-yellow-200 transition-colors flex items-center gap-2">
+                            <span class="w-1.5 h-1.5 rounded-full bg-yellow-400 shadow-[0_0_5px_#D4AF37]"></span> 
+                            Applied Robotics
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </aside>
+
+        <!-- Content Area -->
+        <main class="flex-1 flex flex-col gap-4 h-full overflow-hidden">
+            
+            <!-- Interactive Visualization Panel -->
+            <div class="w-full h-1/2 lg:h-[55%] min-h-[250px] glass-panel rounded-xl relative overflow-hidden shadow-[0_0_40px_rgba(0,212,255,0.1)_inset] flex-shrink-0">
+                <!-- 3D Canvas -->
+                <div id="canvas-container" class="w-full h-full"></div>
+                
+                <!-- Vis HUD -->
+                <div class="absolute top-4 left-4 z-20 font-mono text-[10px] bg-black/60 px-3 py-1.5 rounded border border-white/10 text-slate-300 backdrop-blur-md">
+                    <span class="text-white font-bold" id="vis-title">Live Visualization</span><br>
+                    <span class="text-slate-500">Interact with mouse to rotate/zoom</span>
+                </div>
+                
+                <div id="vis-overlay-data" class="absolute bottom-4 right-4 z-20 font-mono text-[10px] bg-black/80 px-3 py-2 rounded border border-cyan-500/30 text-right backdrop-blur-md text-cyan-300">
+                    <!-- Dynamic HUD data per phase -->
+                </div>
+            </div>
+
+            <!-- Explainer Text Panel -->
+            <div class="w-full flex-1 glass-panel rounded-xl flex flex-col overflow-hidden">
+                <div class="p-4 md:p-6 border-b border-white/10 bg-black/40 flex-shrink-0">
+                    <div id="phase-badge" class="inline-block px-2 py-0.5 border border-cyan-500/30 rounded text-cyan-400 text-[9px] tracking-widest uppercase mb-2 font-mono">Phase 0</div>
+                    <h2 id="phase-title" class="text-xl md:text-2xl font-bold text-white mystical-font leading-tight">Concept Title</h2>
+                    <p id="phase-objective" class="text-xs md:text-sm text-slate-400 mt-2 italic border-l-2 border-cyan-600/50 pl-3">Objective description here.</p>
+                </div>
+                
+                <div class="p-4 md:p-6 overflow-y-auto flex-1 custom-scrollbar" id="phase-content">
+                    <!-- Content generated via JS -->
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <!-- Application Script -->
+    <script>
+        // ==========================================
+        // 1. DATA: Phase Content Definitions
+        // ==========================================
+        const phasesData = [
+            {
+                id: "phase-0",
+                badge: "Phase 0",
+                badgeColor: "cyan",
+                title: "From Four Folds to Three Folds",
+                objective: "Understand the layer stacking and planar footprint of a 3-Folded Packet.",
+                content: `
+                    <div class="space-y-4 text-sm text-slate-300 leading-relaxed">
+                        <p>Previously, a four-fold packet gave $2^4 = 16$ layers and a planar footprint ratio of $(\\frac{1}{2})^4 = \\frac{1}{16}$. Now suppose we stop after <strong>three folds</strong>.</p>
+                        
+                        <p>If each fold halves the planar footprint and doubles the layer count, then after three folds we get:</p>
+                        
+                        <div class="bg-black/40 border border-white/10 rounded p-4 mt-4">
+                            <h3 class="text-white font-bold border-b border-cyan-500/30 pb-2 mb-3 tracking-wide">The 3-Folded Packet Structure</h3>
+                            <div class="text-center font-mono text-cyan-300 text-sm mb-3">
+                                $$A_3 = \\frac{A_0}{2^3} = \\frac{A_0}{8}, \\quad L_3 = 2^3 = 8$$
+                            </div>
+                            <ul class="space-y-2 text-xs text-slate-400 list-disc pl-5">
+                                <li>A planar footprint ratio of $1/8$.</li>
+                                <li>Exactly $8$ stacked layers at any specific $(i,j)$ coordinate.</li>
+                                <li>Dyadic layer symmetry.</li>
+                                <li>Enough internal structure to encode higher-order topological interactions.</li>
+                            </ul>
+                            <p class="mt-3 text-xs italic">Thus, the 3-folded packet is the natural intermediate object between the original flat square and the fully stabilized 16-layer packet.</p>
+                        </div>
+                    </div>
+                `,
+                visTitle: "The 8-Layer Folded Stack",
+                initScene: initPhase0
+            },
+            {
+                id: "phase-1",
+                badge: "Phase 1",
+                badgeColor: "yellow",
+                title: "Defining the Triple-Quad Function",
+                objective: "Construct a three-channel quadratic measurement system on the folded packet.",
+                content: `
+                    <div class="space-y-4 text-sm text-slate-300 leading-relaxed">
+                        <p>After three folds, each visible projected coordinate $(i,j)$ contains exactly $8$ stacked layer values: $x_1, x_2, \\dots, x_8$.</p>
+                        
+                        <p>A <strong>quad function</strong> measures a quadratic interaction among four related data sites. A <strong>triple-quad function</strong> combines three overlapping quad interactions to allow information to propagate between the layers.</p>
+                        
+                        <div class="bg-black/40 border border-white/10 rounded p-4 mt-4">
+                            <h3 class="text-white font-bold border-b border-yellow-500/30 pb-2 mb-3 tracking-wide">The Triple-Quad Functional</h3>
+                            <div class="text-center font-mono text-yellow-300 text-sm mb-3 overflow-x-auto">
+                                $$\\mathcal{TQ}(x_1,\\dots,x_8) = Q_1(x_1,x_2,x_3,x_4) + Q_2(x_3,x_4,x_5,x_6) + Q_3(x_5,x_6,x_7,x_8)$$
+                            </div>
+                            <p class="text-xs text-slate-400 mb-2">Here, each $Q_k$ is a local quad functional representing quadratic energy-like interactions (e.g., $Q(a,b,c,d) = \\alpha_1 a^2 + \\beta_{12} ab + \\dots$).</p>
+                            <p class="text-xs text-slate-400">Notice the <strong>overlaps</strong> ($x_3, x_4$ and $x_5, x_6$). These overlaps act as the glue binding the $8$ layers together into a measurable, cohesive unit.</p>
+                        </div>
+                    </div>
+                `,
+                visTitle: "Overlapping Quad Interactions",
+                initScene: initPhase1
+            },
+            {
+                id: "phase-2",
+                badge: "Phase 2",
+                badgeColor: "fuchsia",
+                title: "Projective Geometry & Cubic Scaling",
+                objective: "Observe how planar data and depth index combine to produce O(n³) structure.",
+                content: `
+                    <div class="space-y-4 text-sm text-slate-300 leading-relaxed">
+                        <p>A square data manifold has $n^2$ sites. A purely planar analysis sees only $O(n^2)$ structure. To obtain $O(n^3)$, we need an additional effective dimension.</p>
+                        
+                        <p>The 3-folded packet acts as a <strong>projective bundle</strong> $\\pi: \\mathcal{P} \\to S$. For each base point $(i,j)$, the fiber contains the $8$ layer representatives: $\\pi^{-1}(i,j) = \\{x_1,\\dots,x_8\\}$.</p>
+                        
+                        <div class="bg-black/40 border border-white/10 rounded p-4 mt-4">
+                            <h3 class="text-white font-bold border-b border-fuchsia-500/30 pb-2 mb-3 tracking-wide">Emergence of the Cubic Field</h3>
+                            <p class="text-xs text-slate-400 mb-3">The three structural levels are defined by:</p>
+                            <ul class="space-y-2 text-xs text-slate-400 list-disc pl-5 mb-3">
+                                <li>Planar index $i = 1,\\dots,n$</li>
+                                <li>Planar index $j = 1,\\dots,n$</li>
+                                <li>Depth, mode, or projection index $k = 1,\\dots,n$</li>
+                            </ul>
+                            <div class="text-center font-mono text-fuchsia-300 text-sm mb-3">
+                                $$\\text{Planar Data} \\times \\text{Depth Parameter} = O(n^2) \\cdot O(n) = O(n^3)$$
+                            </div>
+                            <p class="text-xs text-slate-400">At each depth level $k$, we evaluate a triple-quad measurement $\\mathcal{TQ}_{i,j,k}$. The total number of indexed measurements over the projection filtration is $n \\times n \\times n = n^3$.</p>
+                        </div>
+                    </div>
+                `,
+                visTitle: "The O(n³) Cubic Interaction Field",
+                initScene: initPhase2
+            },
+            {
+                id: "phase-3",
+                badge: "Phase 3",
+                badgeColor: "emerald",
+                title: "Topological Data Analytics (TDA)",
+                objective: "Build a filtration complex to extract persistent topological signatures.",
+                content: `
+                    <div class="space-y-4 text-sm text-slate-300 leading-relaxed">
+                        <p>Topological data analysis (TDA) studies how structure persists across scales. We introduce a filtration parameter $\\epsilon$.</p>
+                        
+                        <div class="bg-black/40 border border-white/10 rounded p-4 mt-4">
+                            <h3 class="text-white font-bold border-b border-emerald-500/30 pb-2 mb-3 tracking-wide">Filtration & Betti Numbers</h3>
+                            <p class="text-xs text-slate-400 mb-3">At each scale $\\epsilon$, we build a complex $K_\\epsilon$ (such as a Vietoris-Rips complex) from the folded packet. As $\\epsilon$ increases, the topology changes:</p>
+                            
+                            <div class="text-center font-mono text-emerald-300 text-sm mb-3">
+                                $$K_{\\epsilon_1} \\subseteq K_{\\epsilon_2} \\subseteq K_{\\epsilon_3} \\subseteq \\dots$$
+                            </div>
+
+                            <p class="text-xs text-slate-400 mb-2">Persistent homology measures features tracked by Betti numbers:</p>
+                            <ul class="space-y-1 text-xs text-slate-400 list-disc pl-5">
+                                <li>$\\beta_0$: Number of connected components.</li>
+                                <li>$\\beta_1$: Number of independent loops.</li>
+                                <li>$\\beta_2$: Number of enclosed voids or cavities.</li>
+                            </ul>
+                            
+                            <div class="text-center font-mono text-emerald-200 text-xs mt-3 bg-black/50 py-2 rounded">
+                                Signature: $\\mathcal{B}(\\epsilon) = (\\beta_0(\\epsilon), \\beta_1(\\epsilon), \\beta_2(\\epsilon))$
+                            </div>
+                        </div>
+                    </div>
+                `,
+                visTitle: "Vietoris-Rips Filtration Complex",
+                initScene: initPhase3
+            },
+            {
+                id: "phase-4",
+                badge: "Phase 4",
+                badgeColor: "purple",
+                title: "Reverse Engineering the Cubic Value",
+                objective: "Solve the inverse optimization problem using Golden Regularization.",
+                content: `
+                    <div class="space-y-4 text-sm text-slate-300 leading-relaxed">
+                        <p>We do not observe the hidden value field $V(i,j,k)$ directly. Instead, we observe the projected planar data, folded layer interactions, triple-quad measurements, and persistent topological signatures ($Y$).</p>
+                        
+                        <div class="bg-black/40 border border-white/10 rounded p-4 mt-4">
+                            <h3 class="text-white font-bold border-b border-purple-500/30 pb-2 mb-3 tracking-wide">The Inverse Problem</h3>
+                            <p class="text-xs text-slate-400 mb-3">Reverse engineering means solving the optimization problem to reconstruct the value $V^*$:</p>
+                            
+                            <div class="text-center font-mono text-purple-300 text-xs mb-3 overflow-x-auto py-2 bg-black/50 rounded">
+                                $$V^* = \\arg\\min_V \\left[ \\|\\mathcal{F}(V)-Y\\|^2 + \\lambda_1 R_{\\text{smooth}}(V) + \\lambda_2 G_\\phi(V) + \\lambda_3 R_{\\text{top}}(V) \\right]$$
+                            </div>
+
+                            <ul class="space-y-2 text-[10px] text-slate-400 list-disc pl-5">
+                                <li><strong>$R_{\\text{smooth}}$:</strong> Enforces geometric smoothness.</li>
+                                <li><strong>$R_{\\text{top}}$:</strong> Enforces consistency with topological signatures via bottleneck distance.</li>
+                                <li><strong class="text-purple-300">Golden Regularizer $G_\\phi(V)$:</strong> Suppresses resonant rational periodic alignments by penalizing configurations where modes align near rational resonances, preserving the Golden Subdivision integrity.</li>
+                            </ul>
+                        </div>
+                        
+                        <div id="unlock-container" class="mt-8 pt-6 border-t border-purple-500/30 text-center">
+                            <h4 class="text-white font-bold mb-3 font-mono tracking-widest text-sm">ADVANCED DATA UNLOCKED</h4>
+                            <p class="text-xs text-slate-400 mb-4">Connect the Triple Quad function to the Golden Matrix Subdivision and Strassen-Clifford Topology.</p>
+                            <button onclick="window.unlockAdvanced()" class="px-6 py-2 bg-gradient-to-r from-yellow-600 to-rose-600 hover:from-yellow-500 hover:to-rose-500 text-white font-mono text-xs font-bold rounded shadow-[0_0_20px_rgba(212,175,55,0.5)] transition-all transform hover:scale-105 border border-white/20">
+                                LOAD PART TWO: GOLDEN TOPOLOGY
+                            </button>
+                        </div>
+                    </div>
+                `,
+                visTitle: "Inverse Reconstruction Convergence",
+                initScene: initPhase4
+            },
+            // --- PART TWO ---
+            {
+                id: "phase-5",
+                badge: "Phase 5",
+                badgeColor: "yellow",
+                title: "Golden Matrix Subdivision",
+                objective: "Understand how the matrix blocks keep the golden-ratio relationship.",
+                content: `
+                    <div class="space-y-4 text-sm text-slate-300 leading-relaxed">
+                        <p>To understand why the 3-Folded Packet's Triple Quad function maps to $O(n^3)$ complexity, we must view a square matrix as a flat geometric layout. We partition this layout using the <strong>Golden Ratio ($\\phi \\approx 1.618$)</strong>.</p>
+                        
+                        <div class="bg-black/40 border border-white/10 rounded p-4 mt-4">
+                            <h3 class="text-white font-bold border-b border-yellow-500/30 pb-2 mb-3 tracking-wide">The $n \\rightarrow m + r$ Split</h3>
+                            <p class="text-xs text-slate-400 mb-3">We split the side length $n$ into a larger part $m$ and a smaller part $r$ such that they obey the golden ratio: $m/r = \\phi$.</p>
+                            
+                            <div class="text-center font-mono text-yellow-300 text-sm mb-3">
+                                $$m \\approx \\frac{n}{\\phi}, \\quad r \\approx \\frac{n}{\\phi^2}$$
+                            </div>
+
+                            <p class="text-xs text-slate-400 mb-3">This divides the matrix into 4 unequal blocks: a large square ($m \\times m$), a small square ($r \\times r$), and two rectangles ($m \\times r$ and $r \\times m$).</p>
+                            
+                            <p class="text-xs text-slate-400">Because rectangular matrix multiplication requires entry-by-entry interactions ($m \\times r$ interacting with $r \\times m$), the work is proportional to $m^2r$. Substituting the golden estimates, we find the work is still strictly proportional to $O(n^3)$, perfectly aligning with our cubic projection field!</p>
+                        </div>
+                    </div>
+                `,
+                visTitle: "Golden Ratio Matrix Partitioning",
+                initScene: initPhase5
+            },
+            {
+                id: "phase-6",
+                badge: "Phase 6",
+                badgeColor: "fuchsia",
+                title: "The Golden Clifford Toroid",
+                objective: "Project the subdivided grid onto an irrational topological manifold.",
+                content: `
+                    <div class="space-y-4 text-sm text-slate-300 leading-relaxed">
+                        <p>A flat, planar calculation of $O(n^3)$ interactions quickly saturates memory. To resolve this, the SHD-CCP protocol projects the structured data streams onto a <strong>Clifford Torus</strong> embedded in $S^3$ space.</p>
+                        
+                        <div class="bg-black/40 border border-white/10 rounded p-4 mt-4">
+                            <h3 class="text-white font-bold border-b border-fuchsia-500/30 pb-2 mb-3 tracking-wide">Parametric Ergodic Covering</h3>
+                            <p class="text-xs text-slate-400 mb-3">We map the Golden Subdivision directly onto the radii of the Toroid. Setting the ratio of the major and minor radii to the Golden Ratio ($r_1/r_2 = \\phi$) creates an asymmetric, irrational manifold.</p>
+                            
+                            <div class="text-center font-mono text-fuchsia-300 text-sm mb-3">
+                                $$r_1^2 = \\frac{\\phi^2}{1+\\phi^2}, \\quad r_2^2 = \\frac{1}{1+\\phi^2}$$
+                            </div>
+
+                            <p class="text-xs text-slate-400">Because this ratio is irrational, the trajectory of a continuous data stream (the Triple Quad measurement tracking through depth $k$) acts as an <strong>Ergodic Covering</strong>. It wraps around the torus infinitely without perfectly closing a loop.</p>
+                        </div>
+                    </div>
+                `,
+                visTitle: "Ergodic Flow on the Golden Toroid",
+                initScene: initPhase6
+            },
+            {
+                id: "phase-7",
+                badge: "Phase 7",
+                badgeColor: "emerald",
+                title: "Phase Angle Encoding & Solitons",
+                objective: "Encode change via phase shifts and observe Soliton generation at prime nodes.",
+                content: `
+                    <div class="space-y-4 text-sm text-slate-300 leading-relaxed">
+                        <p>Rather than tracking absolute spatial coordinates on the toroid, the protocol utilizes <strong>Quaternionic Delta Encoding ($\\Delta q$)</strong>. This calculates only the transformational change between states.</p>
+                        
+                        <div class="bg-black/40 border border-white/10 rounded p-4 mt-4">
+                            <h3 class="text-white font-bold border-b border-emerald-500/30 pb-2 mb-3 tracking-wide">Soliton Collisions via Prime Sieve</h3>
+                            <p class="text-xs text-slate-400 mb-3">The delta shift is applied purely as a phase angle multiplier ($\\Delta q = e^{i\\Delta\\theta_1} \\cdot e^{j\\Delta\\theta_2}$), bounding the state to the surface of the $S^3$ sphere to prevent drift.</p>
+                            
+                            <p class="text-xs text-slate-400 mb-3">As the Fokker-Planck probability waves navigate the geodesic flow, the three data streams (from our Triple Quad function) overlap. When their phase angles resonate at a "Prime Quadrance" ($Q = p_0$), the diffusion tensor drops to zero.</p>
+                            
+                            <p class="italic text-emerald-400 text-xs mt-4">The wave packet "freezes" into a stable geometric vertex—a Golden Soliton.</p>
+                        </div>
+                    </div>
+                `,
+                visTitle: "Wave Collisions at Prime Quadrances",
+                initScene: initPhase7
+            },
+            {
+                id: "phase-8",
+                badge: "Phase 8",
+                badgeColor: "cyan",
+                title: "Sub-Cubic Strassen Optimization",
+                objective: "Optimize the O(n³) tensor matrices for high-throughput FPGA hardware.",
+                content: `
+                    <div class="space-y-4 text-sm text-slate-300 leading-relaxed">
+                        <p>Calculating the complex $4 \\times 4$ Quaternionic Delta matrices continuously across an infinite 4D manifold incurs significant computational overhead. We must optimize the $O(n^3)$ interactions for physical hardware.</p>
+                        
+                        <div class="bg-black/40 border border-white/10 rounded p-4 mt-4">
+                            <h3 class="text-white font-bold border-b border-cyan-500/30 pb-2 mb-3 tracking-wide">The DAG Tensor Core</h3>
+                            <p class="text-xs text-slate-400 mb-3">Standard multiplication of two $4 \\times 4$ matrices requires 64 multiply-accumulate (MAC) operations. However, because our Golden Toroid matrix is highly structured (skew-symmetric and orthogonal), we don't perform full matrix multiplication.</p>
+                            
+                            <p class="text-xs text-slate-400 mb-3">The hardware executes a reduced, <strong>Strassen-like Directed Acyclic Graph (DAG)</strong>. By exploiting the algebraic symmetries of the folded packets, the protocol drops the workload to just <strong>16 core MAC operations</strong> per state step.</p>
+                            
+                            <p class="text-xs font-mono text-cyan-300 mb-2">Hardware Yield:</p>
+                            <ul class="text-xs text-slate-400 list-disc pl-5">
+                                <li><strong>75% Reduction</strong> in total logic gate latency.</li>
+                                <li><strong>$O(1)$ Constant Time Generation</strong> via Trefoil BRAM folding.</li>
+                            </ul>
+                        </div>
+                    </div>
+                `,
+                visTitle: "16-Node MAC Operation DAG",
+                initScene: initPhase8
+            }
+        ];
+
+        let activePhaseIndex = 0;
+        let advancedUnlocked = false; 
+
+        // ==========================================
+        // 2. THREE.JS GLOBAL SETUP
+        // ==========================================
+        const canvasContainer = document.getElementById('canvas-container');
+        const scene = new THREE.Scene();
+        scene.fog = new THREE.FogExp2(0x05030a, 0.015);
+
+        const camera = new THREE.PerspectiveCamera(45, canvasContainer.clientWidth / canvasContainer.clientHeight, 0.1, 1000);
+        camera.position.set(0, 10, 25);
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        renderer.setSize(canvasContainer.clientWidth, canvasContainer.clientHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        canvasContainer.appendChild(renderer.domElement);
+
+        const controls = new THREE.OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.05;
+        controls.autoRotate = false;
+
+        // Global Lighting
+        const ambLight = new THREE.AmbientLight(0xffffff, 0.4);
+        const dirLight = new THREE.DirectionalLight(0xfff2c8, 1.2);
+        dirLight.position.set(10, 20, 15);
+        const rimLight = new THREE.DirectionalLight(0x00d4ff, 2.0);
+        rimLight.position.set(-15, -10, -15);
+        scene.add(ambLight, dirLight, rimLight);
+
+        const phaseGroup = new THREE.Group();
+        scene.add(phaseGroup);
+
+        let animationFrameId;
+        let clock = new THREE.Clock();
+        let currentCustomAnimate = null; 
+
+        // ==========================================
+        // 3. PHASE SCENE INITIALIZERS
+        // ==========================================
+
+        function clearPhaseGroup() {
+            while(phaseGroup.children.length > 0){ 
+                const child = phaseGroup.children[0];
+                phaseGroup.remove(child); 
+                child.traverse((node) => {
+                    if (node.isMesh || node.isLine || node.isPoints) {
+                        if(node.geometry) node.geometry.dispose();
+                        if(node.material) {
+                            if(Array.isArray(node.material)) node.material.forEach(m => m.dispose());
+                            else node.material.dispose();
+                        }
+                    }
+                });
+            }
+            currentCustomAnimate = null;
+        }
+
+        // Phase 0: 8-Layer Stack
+        function initPhase0(group) {
+            const layers = [];
+            const layerCount = 8;
+            const size = 6;
+            const spacing = 1.2;
+
+            const gridGeo = new THREE.PlaneGeometry(size, size, 8, 8);
+            
+            for(let i=0; i<layerCount; i++) {
+                const color = new THREE.Color().setHSL(0.55 + (i * 0.02), 1.0, 0.5); 
+                const mat = new THREE.MeshBasicMaterial({ 
+                    color: color, wireframe: true, transparent: true, opacity: 0.3 
+                });
+                const mesh = new THREE.Mesh(gridGeo, mat);
+                mesh.rotation.x = -Math.PI / 2;
+                mesh.position.y = (i - (layerCount/2)) * spacing;
+                group.add(mesh);
+                layers.push({ mesh, baseY: mesh.position.y });
+            }
+
+            const laserGeo = new THREE.CylinderGeometry(0.1, 0.1, layerCount * spacing + 2, 16);
+            const laserMat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.8 });
+            const laser = new THREE.Mesh(laserGeo, laserMat);
+            group.add(laser);
+
+            const hudData = document.getElementById('vis-overlay-data');
+
+            currentCustomAnimate = (elapsed) => {
+                group.rotation.y = elapsed * 0.2;
+                group.rotation.x = Math.sin(elapsed * 0.3) * 0.1 + 0.2;
+
+                const sweepX = Math.sin(elapsed * 1.5) * (size/2 - 0.5);
+                const sweepZ = Math.cos(elapsed * 1.1) * (size/2 - 0.5);
+                laser.position.set(sweepX, 0, sweepZ);
+
+                layers.forEach((l, i) => {
+                    l.mesh.position.y = l.baseY + Math.sin(elapsed * 2 + i) * 0.1;
+                    l.mesh.material.opacity = 0.3 + (Math.sin(elapsed * 3 + i) * 0.2);
+                });
+
+                hudData.innerHTML = `
+                    PACKET FOLDS: <span class="text-white">3</span><br>
+                    GENERATED LAYERS: <span class="text-cyan-400">8</span><br>
+                    FIBER: π⁻¹(${sweepX.toFixed(1)}, ${sweepZ.toFixed(1)})
+                `;
+            };
+        }
+
+        // Phase 1: Triple Quad Function
+        function initPhase1(group) {
+            const nodeCount = 8;
+            const nodes = [];
+            const spacing = 1.5;
+            
+            for(let i=0; i<nodeCount; i++) {
+                const geo = new THREE.SphereGeometry(0.3, 16, 16);
+                const mat = new THREE.MeshPhysicalMaterial({ color: 0xffffff, emissive: 0x444444 });
+                const mesh = new THREE.Mesh(geo, mat);
+                mesh.position.y = (i - (nodeCount/2)) * spacing + (spacing/2);
+                group.add(mesh);
+                nodes.push(mesh);
+            }
+
+            const quads = [
+                { start: 0, end: 3, color: 0x00d4ff, label: 'Q1' }, 
+                { start: 2, end: 5, color: 0xf43f5e, label: 'Q2' }, 
+                { start: 4, end: 7, color: 0xD4AF37, label: 'Q3' }  
+            ];
+
+            const quadMeshes = [];
+
+            quads.forEach((q, idx) => {
+                const height = (q.end - q.start) * spacing + 1;
+                const centerY = ((q.start + q.end) / 2 - (nodeCount/2)) * spacing + (spacing/2);
+                
+                const boxGeo = new THREE.CylinderGeometry(1.2 + (idx*0.3), 1.2 + (idx*0.3), height, 32, 1, true);
+                const boxMat = new THREE.MeshBasicMaterial({ 
+                    color: q.color, transparent: true, opacity: 0.2, side: THREE.DoubleSide, wireframe: true
+                });
+                const box = new THREE.Mesh(boxGeo, boxMat);
+                box.position.y = centerY;
+                group.add(box);
+                quadMeshes.push({ mesh: box, data: q });
+            });
+
+            const hudData = document.getElementById('vis-overlay-data');
+
+            currentCustomAnimate = (elapsed) => {
+                group.rotation.y = elapsed * 0.5;
+
+                nodes.forEach((n, i) => {
+                    n.scale.setScalar(1 + Math.sin(elapsed * 3 + i) * 0.2);
+                });
+
+                quadMeshes.forEach((qObj, i) => {
+                    qObj.mesh.rotation.y = -elapsed * (0.2 + i*0.1);
+                    const cycle = (elapsed * 0.5 + (i * 0.33)) % 1.0;
+                    qObj.mesh.material.opacity = cycle < 0.2 ? 0.6 : 0.15;
+                    
+                    if(cycle < 0.2) {
+                        for(let j=qObj.data.start; j<=qObj.data.end; j++) {
+                            nodes[j].material.emissive.setHex(qObj.data.color);
+                        }
+                    } else if (cycle > 0.3 && cycle < 0.4) {
+                        for(let j=qObj.data.start; j<=qObj.data.end; j++) {
+                            nodes[j].material.emissive.setHex(0x444444);
+                        }
+                    }
+                });
+
+                hudData.innerHTML = `
+                    OPERATOR: <span class="text-yellow-400">𝓣Q(X) = Q₁(A)+Q₂(B)+Q₃(C)</span><br>
+                    FIBER: x₁ → x₈<br>
+                    OVERLAPS: (x₃,x₄) & (x₅,x₆)
+                `;
+            };
+        }
+
+        // Phase 2: Cubic Field O(n^3)
+        function initPhase2(group) {
+            const n = 6;
+            const spacing = 1.5;
+            const offset = (n * spacing) / 2 - (spacing / 2);
+            
+            const pointsGeo = new THREE.BufferGeometry();
+            const positions = new Float32Array(n * n * n * 3);
+            let idx = 0;
+            
+            for(let i=0; i<n; i++) {
+                for(let j=0; j<n; j++) {
+                    for(let k=0; k<n; k++) {
+                        positions[idx++] = (i * spacing) - offset;
+                        positions[idx++] = (k * spacing) - offset; 
+                        positions[idx++] = (j * spacing) - offset;
+                    }
+                }
+            }
+            
+            pointsGeo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+            const pointsMat = new THREE.PointsMaterial({ color: 0x3b82f6, size: 0.15, transparent: true, opacity: 0.4 });
+            const pointCloud = new THREE.Points(pointsGeo, pointsMat);
+            group.add(pointCloud);
+
+            const colMat = new THREE.MeshBasicMaterial({ color: 0xf43f5e });
+            const colSpheres = [];
+            for(let k=0; k<n; k++) {
+                const s = new THREE.Mesh(new THREE.SphereGeometry(0.25, 16, 16), colMat);
+                group.add(s);
+                colSpheres.push(s);
+            }
+
+            let targetI = 2, targetJ = 3;
+            const hudData = document.getElementById('vis-overlay-data');
+
+            currentCustomAnimate = (elapsed) => {
+                group.rotation.y = elapsed * 0.15;
+                group.rotation.x = Math.sin(elapsed * 0.1) * 0.2 + 0.2;
+
+                if(Math.floor(elapsed * 2) % 10 === 0) {
+                    targetI = Math.floor(Math.random() * n);
+                    targetJ = Math.floor(Math.random() * n);
+                }
+
+                const targetX = (targetI * spacing) - offset;
+                const targetZ = (targetJ * spacing) - offset;
+
+                colSpheres.forEach((s, k) => {
+                    const targetY = (k * spacing) - offset;
+                    s.position.x += (targetX - s.position.x) * 0.1;
+                    s.position.z += (targetZ - s.position.z) * 0.1;
+                    s.position.y = targetY;
+                    s.scale.setScalar(1 + Math.sin(elapsed * 5 + k) * 0.4);
+                });
+
+                hudData.innerHTML = `
+                    COMPLEXITY: <span class="text-fuchsia-400">O(n³)</span><br>
+                    MEASUREMENT: 𝓣Q(i, j, k)<br>
+                    INDEX: i=${targetI}, j=${targetJ}, k=1→${n}
+                `;
+            };
+        }
+
+        // Phase 3: Topological Data Analytics (Filtration)
+        function initPhase3(group) {
+            const pCount = 12;
+            const points = [];
+            
+            for(let i=0; i<pCount; i++) {
+                points.push(new THREE.Vector3(
+                    (Math.random() - 0.5) * 8,
+                    (Math.random() - 0.5) * 8,
+                    (Math.random() - 0.5) * 8
+                ));
+            }
+
+            const nodeGeo = new THREE.SphereGeometry(0.15, 16, 16);
+            const nodeMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+            points.forEach(p => {
+                const mesh = new THREE.Mesh(nodeGeo, nodeMat);
+                mesh.position.copy(p);
+                group.add(mesh);
+            });
+
+            const epsMat = new THREE.MeshBasicMaterial({ color: 0x10b981, transparent: true, opacity: 0.15, wireframe: true });
+            const epsSpheres = [];
+            points.forEach(p => {
+                const mesh = new THREE.Mesh(nodeGeo, epsMat);
+                mesh.position.copy(p);
+                group.add(mesh);
+                epsSpheres.push(mesh);
+            });
+
+            const edgesGroup = new THREE.Group();
+            group.add(edgesGroup);
+            const hudData = document.getElementById('vis-overlay-data');
+
+            currentCustomAnimate = (elapsed) => {
+                group.rotation.y = elapsed * 0.1;
+
+                const epsilon = (elapsed % 6) * 1.5; 
+                
+                epsSpheres.forEach(s => {
+                    s.scale.setScalar(epsilon / 0.15);
+                });
+
+                while(edgesGroup.children.length > 0) edgesGroup.remove(edgesGroup.children[0]); 
+
+                let beta0 = pCount;
+                let beta1 = 0; 
+                let edgeCount = 0;
+                const lineMat = new THREE.LineBasicMaterial({ color: 0x10b981, transparent: true, opacity: 0.6 });
+
+                for(let i=0; i<pCount; i++) {
+                    for(let j=i+1; j<pCount; j++) {
+                        const dist = points[i].distanceTo(points[j]);
+                        if(dist < epsilon * 2) { 
+                            edgeCount++;
+                            beta0--; 
+                            const geo = new THREE.BufferGeometry().setFromPoints([points[i], points[j]]);
+                            const line = new THREE.Line(geo, lineMat);
+                            edgesGroup.add(line);
+                        }
+                    }
+                }
+                
+                beta0 = Math.max(1, beta0);
+                if (edgeCount > pCount - beta0) beta1 = edgeCount - (pCount - beta0);
+
+                hudData.innerHTML = `
+                    FILTRATION (ε): <span class="text-emerald-400">${epsilon.toFixed(2)}</span><br>
+                    β₀ (Components): ${beta0}<br>
+                    β₁ (Loops): ${beta1}
+                `;
+            };
+        }
+
+        // Phase 4: Reverse Engineering / Inverse Problem
+        function initPhase4(group) {
+            const count = 500;
+            const particlesGeo = new THREE.BufferGeometry();
+            const posArray = new Float32Array(count * 3);
+            const targets = [];
+            const starts = [];
+            const r1 = 4, r2 = 1.5;
+
+            for(let i=0; i<count; i++) {
+                starts.push(new THREE.Vector3(
+                    (Math.random() - 0.5) * 20, (Math.random() - 0.5) * 20, (Math.random() - 0.5) * 20
+                ));
+
+                const u = Math.random() * Math.PI * 2;
+                const v = Math.random() * Math.PI * 2;
+                targets.push(new THREE.Vector3(
+                    (r1 + r2 * Math.cos(v)) * Math.cos(u),
+                    r2 * Math.sin(v),
+                    (r1 + r2 * Math.cos(v)) * Math.sin(u)
+                ));
+
+                posArray[i*3] = starts[i].x; posArray[i*3+1] = starts[i].y; posArray[i*3+2] = starts[i].z;
+            }
+
+            particlesGeo.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
+            const pMat = new THREE.PointsMaterial({ color: 0x8A2BE2, size: 0.2, transparent: true, opacity: 0.8, blending: THREE.AdditiveBlending });
+            const particles = new THREE.Points(particlesGeo, pMat);
+            group.add(particles);
+
+            const hudData = document.getElementById('vis-overlay-data');
+
+            currentCustomAnimate = (elapsed) => {
+                group.rotation.y = elapsed * 0.2;
+                group.rotation.x = Math.sin(elapsed * 0.2) * 0.1;
+
+                const cycle = (Math.sin(elapsed * 0.5) + 1) / 2;
+                const progress = Math.pow(cycle, 3); 
+
+                const pArr = particlesGeo.attributes.position.array;
+                let errorSum = 0;
+
+                for(let i=0; i<count; i++) {
+                    const cx = THREE.MathUtils.lerp(starts[i].x, targets[i].x, progress);
+                    const cy = THREE.MathUtils.lerp(starts[i].y, targets[i].y, progress);
+                    const cz = THREE.MathUtils.lerp(starts[i].z, targets[i].z, progress);
+
+                    pArr[i*3] = cx; pArr[i*3+1] = cy; pArr[i*3+2] = cz;
+                    errorSum += Math.abs(targets[i].x - cx) + Math.abs(targets[i].y - cy) + Math.abs(targets[i].z - cz);
+                }
+                particlesGeo.attributes.position.needsUpdate = true;
+                pMat.color.setHSL(0.7 - (progress * 0.2), 1.0, 0.5);
+
+                const loss = (errorSum / count).toFixed(4);
+
+                hudData.innerHTML = `
+                    OPTIMIZATION: <span class="text-purple-400">arg min V*</span><br>
+                    LOSS ||𝓕(V)-Y||²: <span class="text-white">${loss}</span><br>
+                    GOLDEN REGULARIZATION: ${progress > 0.9 ? 'Active' : 'Pending'}
+                `;
+            };
+        }
+
+        // Phase 5: Golden Matrix Subdivision
+        function initPhase5(group) {
+            const phi = 1.61803398875;
+            const n = 10; 
+            const m = n / phi;
+            const r = n / (phi * phi);
+            
+            // Create a flat representation of the matrix
+            const baseZ = 0;
+            const offset = n / 2;
+            
+            // We have 4 blocks: m x m (A11), m x r (A12), r x m (A21), r x r (A22)
+            const blocks = [
+                { w: m, h: m, x: m/2 - offset, y: m/2 - offset, color: 0x3b82f6, label: "m × m" }, // Large Square (Blue)
+                { w: r, h: m, x: m + r/2 - offset, y: m/2 - offset, color: 0x00d4ff, label: "r × m" }, // Rect 1 (Cyan)
+                { w: m, h: r, x: m/2 - offset, y: m + r/2 - offset, color: 0x00d4ff, label: "m × r" }, // Rect 2 (Cyan)
+                { w: r, h: r, x: m + r/2 - offset, y: m + r/2 - offset, color: 0xD4AF37, label: "r × r" }  // Small Square (Gold)
+            ];
+
+            const blockMeshes = [];
+
+            blocks.forEach((b, idx) => {
+                const geo = new THREE.PlaneGeometry(b.w - 0.2, b.h - 0.2); // slight gap for visual clarity
+                const mat = new THREE.MeshBasicMaterial({ color: b.color, transparent: true, opacity: 0.6, side: THREE.DoubleSide });
+                const mesh = new THREE.Mesh(geo, mat);
+                mesh.position.set(b.x, -b.y, baseZ); // -y so it builds top-down
+                
+                // Add wireframe
+                const edges = new THREE.EdgesGeometry(geo);
+                const line = new THREE.LineSegments(edges, new THREE.LineBasicMaterial({ color: 0xffffff, opacity: 0.8 }));
+                mesh.add(line);
+
+                group.add(mesh);
+                blockMeshes.push(mesh);
+            });
+
+            const hudData = document.getElementById('vis-overlay-data');
+
+            currentCustomAnimate = (elapsed) => {
+                // Animate to show they belong to a single whole 'n'
+                const scaleCycle = Math.sin(elapsed * 2) * 0.05 + 1.0;
+                group.scale.set(scaleCycle, scaleCycle, 1);
+                
+                // Slight float effect
+                group.rotation.x = Math.sin(elapsed * 0.5) * 0.1;
+                group.rotation.y = Math.cos(elapsed * 0.3) * 0.1;
+
+                hudData.innerHTML = `
+                    PARTITION: <span class="text-yellow-400">n → m + r</span><br>
+                    RATIO (m/r): <span class="text-white">φ ≈ 1.618</span><br>
+                    WORK ∝ m²r → <span class="text-cyan-400">O(n³)</span>
+                `;
+            };
+        }
+
+        // Phase 6: Golden Clifford Toroid
+        function initPhase6(group) {
+            const phi = 1.6180339;
+            const r2 = 3;
+            const r1 = r2 * phi; // Map the m/r split to the radii!
+
+            const torusGeo = new THREE.TorusGeometry(r1, r2, 32, 100);
+            const torusMat = new THREE.MeshPhysicalMaterial({
+                color: 0x8A2BE2, transmission: 0.9, opacity: 0.2, transparent: true, wireframe: true, side: THREE.DoubleSide
+            });
+            const torusMesh = new THREE.Mesh(torusGeo, torusMat);
+            group.add(torusMesh);
+
+            const maxPoints = 5000;
+            const flowGeo = new THREE.BufferGeometry();
+            const flowPos = new Float32Array(maxPoints * 3);
+            flowGeo.setAttribute('position', new THREE.BufferAttribute(flowPos, 3));
+            
+            const flowMat = new THREE.LineBasicMaterial({
+                color: 0xf43f5e, transparent: true, opacity: 0.8, blending: THREE.AdditiveBlending
+            });
+            const flowLine = new THREE.Line(flowGeo, flowMat);
+            flowGeo.setDrawRange(0, 0);
+            group.add(flowLine);
+
+            const hudData = document.getElementById('vis-overlay-data');
+
+            currentCustomAnimate = (elapsed) => {
+                torusMesh.rotation.x = Math.sin(elapsed * 0.2) * 0.3 + Math.PI / 2;
+                torusMesh.rotation.y = elapsed * 0.1;
+                flowLine.rotation.copy(torusMesh.rotation);
+
+                const drawCount = Math.min(maxPoints, Math.floor(elapsed * 150));
+                
+                for(let i=0; i<drawCount; i++) {
+                    const t = i * 0.05;
+                    const theta1 = t;
+                    const theta2 = t * phi; // Irrational wrapping
+
+                    const x = (r1 + r2 * Math.cos(theta2)) * Math.cos(theta1);
+                    const y = (r1 + r2 * Math.cos(theta2)) * Math.sin(theta1);
+                    const z = r2 * Math.sin(theta2);
+
+                    flowPos[i*3] = x; flowPos[i*3+1] = y; flowPos[i*3+2] = z;
+                }
+                
+                flowGeo.attributes.position.needsUpdate = true;
+                flowGeo.setDrawRange(0, drawCount);
+
+                hudData.innerHTML = `
+                    TOPOLOGY: <span class="text-fuchsia-400">Golden Clifford Toroid</span><br>
+                    RADII: <span class="text-white">r₁ / r₂ = φ (1.618)</span><br>
+                    ERGODIC NODES: ${drawCount}
+                `;
+            };
+        }
+
+        // Phase 7: Phase Angle Encoding & Solitons
+        function initPhase7(group) {
+            const r1 = 6;
+            const r2 = 2;
+            const torusGeo = new THREE.TorusGeometry(r1, r2, 32, 64);
+            const torusMat = new THREE.LineBasicMaterial({ color: 0x334155, transparent: true, opacity: 0.3 });
+            const torusWire = new THREE.LineSegments(new THREE.EdgesGeometry(torusGeo), torusMat);
+            torusWire.rotation.x = Math.PI / 2;
+            group.add(torusWire);
+
+            // Probability Streams (TQF)
+            const streamCount = 3; // Triple Quad 3-folds
+            const particlesPerStream = 20;
+            const streams = [];
+            const partGeo = new THREE.SphereGeometry(0.15, 8, 8);
+            const partMat = new THREE.MeshBasicMaterial({color: 0x00d4ff, transparent:true, opacity: 0.6});
+
+            for(let s=0; s<streamCount; s++) {
+                const streamGroup = new THREE.Group();
+                for(let p=0; p<particlesPerStream; p++) {
+                    const mesh = new THREE.Mesh(partGeo, partMat);
+                    streamGroup.add(mesh);
+                }
+                group.add(streamGroup);
+                streams.push({ group: streamGroup, speedBase: 1 + (s * 0.3), offset: s * (Math.PI*2/3) });
+            }
+
+            // Solitons 
+            const solitons = [];
+            const solitonMat = new THREE.MeshPhysicalMaterial({ color: 0xD4AF37, emissive: 0xD4AF37, emissiveIntensity: 0.8, transmission: 0.5 });
+            const solitonGeo = new THREE.IcosahedronGeometry(0.6, 0);
+
+            const hudData = document.getElementById('vis-overlay-data');
+
+            currentCustomAnimate = (elapsed) => {
+                const time = elapsed * 2;
+                
+                streams.forEach((stream, sIdx) => {
+                    stream.group.children.forEach((mesh, pIdx) => {
+                        const t = time * stream.speedBase + (pIdx * 0.1) + stream.offset;
+                        const theta1 = t;
+                        const theta2 = t * 1.618; // Delta phase angle shift mapping
+
+                        mesh.position.set(
+                            (r1 + r2 * Math.cos(theta2)) * Math.cos(theta1),
+                            r2 * Math.sin(theta2),
+                            (r1 + r2 * Math.cos(theta2)) * Math.sin(theta1)
+                        );
+                    });
+                });
+
+                // Spawn Solitons on arbitrary Prime intersections
+                if (Math.floor(elapsed * 10) % 31 === 0 && Math.random() > 0.5 && solitons.length < 15) {
+                    const sol = new THREE.Mesh(solitonGeo, solitonMat);
+                    sol.position.copy(streams[0].group.children[0].position);
+                    sol.rotation.set(Math.random(), Math.random(), Math.random());
+                    sol.scale.setScalar(0.01); 
+                    group.add(sol);
+                    solitons.push({ mesh: sol, life: 0 });
+                }
+
+                solitons.forEach(sol => {
+                    sol.life += 0.05;
+                    if(sol.life < 1.0) {
+                        const s = 1.0 + Math.sin(sol.life * Math.PI) * 0.5;
+                        sol.mesh.scale.setScalar(s);
+                    }
+                    sol.mesh.rotation.y += 0.05;
+                });
+
+                group.rotation.x = Math.sin(elapsed * 0.1) * 0.2 + 0.2;
+                group.rotation.y = elapsed * 0.05;
+
+                hudData.innerHTML = `
+                    OPERATOR: <span class="text-cyan-400">Δq = e^(iΔθ₁) · e^(jΔθ₂)</span><br>
+                    INTERSECTIONS: <span class="text-emerald-400">Prime Quadrance</span><br>
+                    SOLITONS FORMED: ${solitons.length}
+                `;
+            };
+        }
+
+        // Phase 8: Sub-Cubic Tensor Execution DAG
+        function initPhase8(group) {
+            const nodes = [];
+            const edges = [];
+            
+            const nodeGeo = new THREE.SphereGeometry(0.2, 16, 16);
+            const inMat = new THREE.MeshBasicMaterial({color: 0x3b82f6});
+            const macMat = new THREE.MeshBasicMaterial({color: 0xD4AF37});
+            const outMat = new THREE.MeshBasicMaterial({color: 0x10b981});
+
+            const createLayer = (xOffset, yOffset, mat, count) => {
+                const layerNodes = [];
+                for(let i=0; i<count; i++) {
+                    const mesh = new THREE.Mesh(nodeGeo, mat);
+                    const y = (Math.floor(i/4) - 1.5) * 1.5 + yOffset;
+                    const z = ((i%4) - 1.5) * 1.5;
+                    mesh.position.set(xOffset, y, z);
+                    group.add(mesh);
+                    layerNodes.push(mesh);
+                    nodes.push(mesh);
+                }
+                return layerNodes;
+            };
+
+            const inputs = createLayer(-8, 0, inMat, 16);
+            const macs = createLayer(0, 0, macMat, 16); // The 16 Strassen-like core MACs
+            const outputs = createLayer(8, 0, outMat, 16);
+
+            const edgeGeo = new THREE.BufferGeometry();
+            const maxEdges = 16 * 4 * 2; 
+            const edgePos = new Float32Array(maxEdges * 6);
+            let eIdx = 0;
+
+            const addEdge = (n1, n2) => {
+                edgePos[eIdx++] = n1.position.x; edgePos[eIdx++] = n1.position.y; edgePos[eIdx++] = n1.position.z;
+                edgePos[eIdx++] = n2.position.x; edgePos[eIdx++] = n2.position.y; edgePos[eIdx++] = n2.position.z;
+                edges.push({ start: n1.position, end: n2.position, progress: Math.random() });
+            };
+
+            for(let i=0; i<16; i++) {
+                addEdge(inputs[i], macs[Math.floor(Math.random()*16)]);
+                addEdge(inputs[i], macs[Math.floor(Math.random()*16)]);
+                addEdge(macs[i], outputs[Math.floor(Math.random()*16)]);
+                addEdge(macs[i], outputs[Math.floor(Math.random()*16)]);
+            }
+
+            edgeGeo.setAttribute('position', new THREE.BufferAttribute(edgePos, 3));
+            const wireMat = new THREE.LineBasicMaterial({color: 0x334155, transparent:true, opacity:0.3});
+            group.add(new THREE.LineSegments(edgeGeo, wireMat));
+
+            const pulseGeo = new THREE.BufferGeometry();
+            const pulsePos = new Float32Array(edges.length * 3);
+            pulseGeo.setAttribute('position', new THREE.BufferAttribute(pulsePos, 3));
+            const pulseMat = new THREE.PointsMaterial({color: 0xffffff, size: 0.3, transparent:true, opacity:0.8, blending: THREE.AdditiveBlending});
+            const pulses = new THREE.Points(pulseGeo, pulseMat);
+            group.add(pulses);
+
+            const hudData = document.getElementById('vis-overlay-data');
+
+            currentCustomAnimate = (elapsed) => {
+                const pArr = pulseGeo.attributes.position.array;
+                
+                edges.forEach((edge, i) => {
+                    edge.progress += 0.02; 
+                    if (edge.progress > 1) edge.progress = 0;
+                    
+                    pArr[i*3] = THREE.MathUtils.lerp(edge.start.x, edge.end.x, edge.progress);
+                    pArr[i*3+1] = THREE.MathUtils.lerp(edge.start.y, edge.end.y, edge.progress);
+                    pArr[i*3+2] = THREE.MathUtils.lerp(edge.start.z, edge.end.z, edge.progress);
+                });
+                pulseGeo.attributes.position.needsUpdate = true;
+
+                group.rotation.x = Math.sin(elapsed * 0.2) * 0.2;
+                group.rotation.y = elapsed * 0.1;
+
+                macs.forEach((mac, i) => {
+                    mac.scale.setScalar(1.0 + Math.sin(elapsed * 10 + i) * 0.3);
+                });
+
+                hudData.innerHTML = `
+                    ARCHITECTURE: <span class="text-cyan-400">Strassen-like DAG</span><br>
+                    MAC OPERATIONS: <span class="text-white">16 (Reduced from 64)</span><br>
+                    LATENCY: <span class="text-emerald-400">O(1) Constant Time</span>
+                `;
+            };
+        }
+
+
+        // ==========================================
+        // 4. UI & LOGIC INTEGRATION
+        // ==========================================
+        const navContainer = document.getElementById('nav-container');
+        const phaseTitle = document.getElementById('phase-title');
+        const phaseObjective = document.getElementById('phase-objective');
+        const phaseBadge = document.getElementById('phase-badge');
+        const phaseContent = document.getElementById('phase-content');
+        const visTitle = document.getElementById('vis-title');
+
+        const colorMap = {
+            'cyan': 'text-cyan-400 border-cyan-500/30',
+            'yellow': 'text-yellow-400 border-yellow-500/30',
+            'fuchsia': 'text-fuchsia-400 border-fuchsia-500/30',
+            'emerald': 'text-emerald-400 border-emerald-500/30',
+            'purple': 'text-purple-400 border-purple-500/30'
+        };
+
+        window.unlockAdvanced = function() {
+            advancedUnlocked = true;
+            loadPhase(5); // Transition to Phase 5 (Index 5)
+        };
+
+        function renderNav() {
+            navContainer.innerHTML = '';
+
+            // Part 1 Header
+            const p1Header = document.createElement('div');
+            p1Header.className = "px-4 py-2 text-[9px] font-bold text-slate-500 uppercase tracking-widest font-mono mt-2 mb-1";
+            p1Header.innerText = "Part I: Framework";
+            navContainer.appendChild(p1Header);
+
+            phasesData.forEach((phase, index) => {
+                if (index === 5) {
+                    const p2Header = document.createElement('div');
+                    p2Header.className = "px-4 py-2 text-[9px] font-bold text-slate-500 uppercase tracking-widest font-mono mt-4 mb-1 flex items-center justify-between";
+                    
+                    const lockIcon = !advancedUnlocked ? '<svg class="w-3 h-3 text-red-500" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clip-rule="evenodd"></path></svg>' : '';
+                    p2Header.innerHTML = `<span class="${advancedUnlocked ? 'text-yellow-400' : ''}">Part II: Topology & Hardware</span> ${lockIcon}`;
+                    navContainer.appendChild(p2Header);
+                }
+
+                const isLocked = index >= 5 && !advancedUnlocked;
+                const btn = document.createElement('button');
+                
+                let btnStyle = 'text-slate-400';
+                if (index === activePhaseIndex) {
+                    btnStyle = 'active';
+                } else if (isLocked) {
+                    btnStyle = 'text-slate-600 cursor-not-allowed opacity-50 border-transparent';
+                }
+
+                btn.className = `nav-item w-full text-left px-4 py-3 text-sm font-mono tracking-wide ${btnStyle}`;
+                btn.innerHTML = `<span class="font-bold opacity-50 mr-2">0${index}</span> ${phase.badge}`;
+                
+                if (!isLocked) {
+                    btn.onclick = () => loadPhase(index);
+                }
+                
+                navContainer.appendChild(btn);
+            });
+        }
+
+        function loadPhase(index) {
+            activePhaseIndex = index;
+            const phase = phasesData[index];
+            
+            phaseTitle.innerText = phase.title;
+            phaseObjective.innerText = phase.objective;
+            phaseContent.innerHTML = phase.content;
+            visTitle.innerText = phase.visTitle;
+            
+            phaseBadge.innerText = phase.badge;
+            phaseBadge.className = `inline-block px-2 py-0.5 border rounded text-[9px] tracking-widest uppercase mb-2 font-mono ${colorMap[phase.badgeColor]}`;
+
+            renderNav();
+            
+            if(window.MathJax && typeof MathJax.typesetPromise === 'function') {
+                MathJax.typesetPromise([phaseContent]).catch((err) => console.log(err.message));
+            }
+
+            clearPhaseGroup();
+            phase.initScene(phaseGroup);
+            
+            controls.reset();
+            camera.position.set(0, 15, 30);
+            clock.start();
+        }
+
+        // ==========================================
+        // 5. MAIN RENDER LOOP & UI EVENTS
+        // ==========================================
+        function animate() {
+            animationFrameId = requestAnimationFrame(animate);
+            const elapsed = clock.getElapsedTime();
+            
+            if (currentCustomAnimate) {
+                currentCustomAnimate(elapsed);
+            }
+
+            controls.update();
+            renderer.render(scene, camera);
+        }
+
+        window.addEventListener('resize', () => {
+            camera.aspect = canvasContainer.clientWidth / canvasContainer.clientHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(canvasContainer.clientWidth, canvasContainer.clientHeight);
+        });
+
+        // Reference Panel Logic
+        const videoToggle = document.getElementById('video-toggle');
+        const videoDropdown = document.getElementById('video-dropdown');
+        const videoClose = document.getElementById('video-close');
+        const tabVideo = document.getElementById('tab-video');
+        const tabPdf = document.getElementById('tab-pdf');
+        const refVideo = document.getElementById('ref-video');
+        const refPdf = document.getElementById('ref-pdf');
+
+        if(videoToggle && videoDropdown && videoClose) {
+            videoToggle.addEventListener('click', () => {
+                videoDropdown.classList.toggle('hidden');
+            });
+            videoClose.addEventListener('click', () => {
+                videoDropdown.classList.add('hidden');
+            });
+            
+            tabVideo.addEventListener('click', () => {
+                refVideo.classList.remove('hidden');
+                refPdf.classList.add('hidden');
+                tabVideo.className = "px-3 py-1 text-[9px] font-mono font-bold bg-yellow-500/20 text-yellow-300 transition-colors";
+                tabPdf.className = "px-3 py-1 text-[9px] font-mono font-bold text-slate-400 hover:text-white transition-colors";
+            });
+
+            tabPdf.addEventListener('click', () => {
+                refPdf.classList.remove('hidden');
+                refVideo.classList.add('hidden');
+                tabPdf.className = "px-3 py-1 text-[9px] font-mono font-bold bg-yellow-500/20 text-yellow-300 transition-colors";
+                tabVideo.className = "px-3 py-1 text-[9px] font-mono font-bold text-slate-400 hover:text-white transition-colors";
+            });
+        }
+
+        // Initialize App
+        loadPhase(0);
+        animate();
+
+    </script>
+</body>
+</html>
