@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Owl Academy | Admin Console</title>
 
-    <script type="module" src="scripts/auth-guard.js"></script>
+    <script type="module" src="../scripts/auth-guard.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
 
@@ -402,16 +402,16 @@
 </div>
 
 <script type="module">
-import { auth } from "./scripts/firebase/config.js";
+import { auth } from "../scripts/firebase/config.js";
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-auth.js";
-import { db } from "./scripts/firebase/config.js";
+import { db } from "../scripts/firebase/config.js";
 import {
     collection, getDocs, doc, getDoc, updateDoc, addDoc, query, where, orderBy, serverTimestamp
 } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-firestore.js";
 
-import { resolveTier, issueCertificate, TIERS, GENESIS_MASTER_UIDS } from "./scripts/genesis-registrar.js";
-import { readRegistrar } from "./scripts/spire-registrar.js";
-import { DEPARTMENT_PLANES, PRIORITY_LABELS, createArtifact, listArtifactsByPlane } from "./scripts/tome-authoring.js";
+import { resolveTier, issueCertificate, TIERS, GENESIS_MASTER_UIDS } from "../scripts/genesis-registrar.js";
+import { readRegistrar } from "../scripts/spire-registrar.js";
+import { DEPARTMENT_PLANES, PRIORITY_LABELS, createArtifact, listArtifactsByPlane } from "../scripts/tome-authoring.js";
 
 // ── State ────────────────────────────────────────────────────────
 let currentUser = null;
@@ -457,7 +457,7 @@ window.switchTab = function(tab, btn) {
 onAuthStateChanged(auth, async (user) => {
     document.getElementById("loadingState").classList.add("hidden");
 
-    if (!user) { window.location.href = "login.html"; return; }
+    if (!user) { window.location.href = "../login.html"; return; }
     currentUser = user;
 
     currentRegistrar = await readRegistrar(user.uid);
@@ -838,7 +838,7 @@ window.mintArtifact = async function() {
 
     msg.textContent = "Minting…"; msg.style.color = "#D4AF37";
     try {
-        const { createArtifact: ca } = await import("./scripts/tome-authoring.js");
+        const { createArtifact: ca } = await import("../scripts/tome-authoring.js");
         const result = await ca(currentUser.uid, {
             name, plane, description: desc,
             domain: plane, dept: plane.replace("dept-", ""),
@@ -937,7 +937,7 @@ window.applyDeniedCert = async function() {
     if (!raw) { msg.textContent = "Paste your certificate JSON first."; msg.style.color = "#fca5a5"; return; }
     msg.textContent = "Applying…"; msg.style.color = "#D4AF37";
     try {
-        const { applyCertificate } = await import("./scripts/genesis-registrar.js");
+        const { applyCertificate } = await import("../scripts/genesis-registrar.js");
         const cert = JSON.parse(raw);
         await applyCertificate(currentUser.uid, cert);
         msg.textContent = "Applied! Reloading…"; msg.style.color = "#86efac";

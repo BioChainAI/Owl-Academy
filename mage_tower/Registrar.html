@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Owl Academy | Geometric Registrar — Cosmological ID</title>
 
-    <script type="module" src="scripts/auth-guard.js"></script>
+    <script type="module" src="../scripts/auth-guard.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
 
@@ -186,7 +186,7 @@
     </main>
 
     <script type="module">
-        import { auth } from "./scripts/firebase/config.js";
+        import { auth } from "../scripts/firebase/config.js";
         import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-auth.js";
         import {
             computeCosmologicalId,
@@ -194,7 +194,7 @@
             readRegistrar,
             renderSigil,
             exportLocalBackup
-        } from "./scripts/spire-registrar.js";
+        } from "../scripts/spire-registrar.js";
 
         let currentUser = null;
         let previewedId = null;

@@ -13,7 +13,7 @@ window.globalLogout = async () => {
   } catch (err) {
     console.error("[Owl Academy] signOut failed:", err);
   }
-  window.location.replace("login.html");
+  window.location.replace("/login.html");
 };
 
 // Immediately hide body to prevent flash of protected content
@@ -26,6 +26,6 @@ onAuthStateChanged(auth, (user) => {
   } else {
     // Not authenticated — send to login, preserving intended destination
     const destination = encodeURIComponent(window.location.pathname + window.location.search);
-    window.location.replace(`login.html?redirect=${destination}`);
+    window.location.replace(`/login.html?redirect=${destination}`);
   }
 });

@@ -102,18 +102,18 @@ const renderWelcome = (profile, user) => {
           <span style="font-size:14px;line-height:1;">${meta.symbol}</span> ${meta.label}
         </span>
         ${isAdmin ? `
-          <a href="Admin_Console.html"
+          <a href="../mage_tower/Admin_Console.html"
              class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-mono uppercase tracking-widest transition hover:opacity-80"
              style="border:1px solid #D4AF3755; background:#D4AF3712; color:#D4AF37; text-shadow:0 0 8px rgba(212,175,55,0.45);">
             ♛ Open Admin Console →
           </a>
-          <a href="Instructor_Console.html"
+          <a href="../mage_tower/Instructor_Console.html"
              class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-mono uppercase tracking-widest transition hover:opacity-80"
              style="border:1px solid #00d4ff55; background:#00d4ff12; color:#00d4ff;">
             ⬢ Authoring
           </a>
         ` : `
-          <a href="Codex.html"
+          <a href="../mage_tower/Codex.html"
              class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-mono uppercase tracking-widest transition hover:opacity-80"
              style="border:1px solid #94a3b855; background:#94a3b812; color:#cbd5e1;">
             View Codex →
