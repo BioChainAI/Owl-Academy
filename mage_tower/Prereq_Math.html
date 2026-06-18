@@ -97,6 +97,17 @@
                 <option value="dept">⬢ Department Certified</option>
                 <option value="none">Uncertified</option>
             </select>
+            <select id="browseStamps" class="rounded-lg px-3 py-2 text-xs mono" onchange="renderBrowse()">
+                <option value="">All Stamps</option>
+                <option value="high">★★★ High (5+)</option>
+                <option value="med">★★ Medium (2–4)</option>
+                <option value="low">★ Low (1)</option>
+                <option value="none">⬡ Unstamped</option>
+            </select>
+            <select id="browseSort" class="rounded-lg px-3 py-2 text-xs mono" onchange="renderBrowse()">
+                <option value="newest">Newest First</option>
+                <option value="stamps">Most Stamped</option>
+            </select>
             <span id="browseCount" class="text-xs text-slate-500 mono">—</span>
         </div>
         <div id="browseGrid" class="grid md:grid-cols-2 xl:grid-cols-3 gap-4">
@@ -208,7 +219,7 @@ import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.15.0/f
 import { db } from "../scripts/firebase/config.js";
 import {
     collection, getDocs, doc, addDoc, updateDoc,
-    query, where, orderBy, increment, serverTimestamp
+    query, where, orderBy, increment, arrayUnion, serverTimestamp
 } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-firestore.js";
 import { readRegistrar } from "../scripts/spire-registrar.js";
 import { resolveTier } from "../scripts/genesis-registrar.js";
@@ -334,7 +345,7 @@ async function loadModules() {
                     creatorUid: currentUser.uid,
                     creatorGenesisId: currentReg?.cosmologicalId || null,
                     creatorTier: currentTier,
-                    viewCount: 0,
+                    viewCount: 0, stampCount: 0, stampedBy: [],
                     createdAt: serverTimestamp(), updatedAt: serverTimestamp()
                 };
                 const ref = await addDoc(collection(db,"tomes"), payload);
@@ -357,13 +368,18 @@ window.switchTab = function(tab, btn) {
 };
 
 // ── Filter helper ─────────────────────────────────────────────────
-function applyContentFilters(items, {search="", subj="", cert="", typeFilter=""} = {}) {
+function applyContentFilters(items, {search="", subj="", cert="", stamps="", typeFilter=""} = {}) {
     return items.filter(v => {
         if (typeFilter && v.type !== typeFilter) return false;
         if (subj && v.subject !== subj) return false;
         if (cert === "owl" && !v.owlCertified) return false;
         if (cert === "dept" && !v.deptCertified) return false;
         if (cert === "none" && (v.owlCertified || v.deptCertified)) return false;
+        const sc = v.stampCount || 0;
+        if (stamps === "high" && sc < 5) return false;
+        if (stamps === "med" && (sc < 2 || sc > 4)) return false;
+        if (stamps === "low" && sc !== 1) return false;
+        if (stamps === "none" && sc > 0) return false;
         if (search) {
             const hay = [v.title, v.description, v.lessonNotes, v.subject, ...(v.tags||[])].join(" ").toLowerCase();
             if (!hay.includes(search)) return false;
@@ -377,7 +393,14 @@ window.renderBrowse = function() {
     const search = document.getElementById("browseSearch")?.value.toLowerCase().trim() || "";
     const subj   = document.getElementById("browseSubject")?.value || "";
     const cert   = document.getElementById("browseCert")?.value || "";
-    const filtered = applyContentFilters(allContent, {search, subj, cert});
+    const stamps = document.getElementById("browseStamps")?.value || "";
+    const sort   = document.getElementById("browseSort")?.value || "newest";
+    let filtered = applyContentFilters(allContent, {search, subj, cert, stamps});
+
+    if (sort === "stamps") {
+        filtered = [...filtered].sort((a,b) => (b.stampCount||0) - (a.stampCount||0));
+    }
+
     const modules = filtered.filter(v => v.type === "module");
     const videos  = filtered.filter(v => v.type === "video");
 
@@ -424,6 +447,27 @@ window.renderCertify = function() {
         : filtered.map(v => certRowHtml(v)).join("");
 };
 
+// ── Stamp bar helper ──────────────────────────────────────────────
+function stampBarHtml(v) {
+    const sc = v.stampCount || 0;
+    const alreadyStamped = currentUser && (v.stampedBy||[]).includes(currentUser.uid);
+    const isMine = currentUser && v.creatorUid === currentUser.uid;
+    const stampLabel = sc > 0
+        ? `<span class="text-[10px] mono" style="color:#fbbf24">★ ${sc} useful${sc===1?"":" stamps"}</span>`
+        : `<span class="text-[10px] mono text-slate-700">⬡ no stamps yet</span>`;
+    let stampBtn = "";
+    if (!isMine) {
+        if (alreadyStamped) {
+            stampBtn = `<span class="text-[10px] mono px-2 py-0.5 rounded" style="color:#34d399;background:rgba(52,211,153,0.08);border:1px solid rgba(52,211,153,0.2)">✓ Stamped</span>`;
+        } else {
+            stampBtn = `<button onclick="stampMinorTome('${escHtml(v.id)}')" title="Mark as useful"
+                class="text-[10px] mono px-2 py-0.5 rounded transition-all hover:opacity-90"
+                style="color:#fbbf24;background:rgba(251,191,36,0.08);border:1px solid rgba(251,191,36,0.22)">★ Useful</button>`;
+        }
+    }
+    return `<div class="flex items-center gap-2">${stampLabel}${stampBtn}</div>`;
+}
+
 // ── HTML Module card ──────────────────────────────────────────────
 function moduleCardHtml(m) {
     const certBadges = [
@@ -449,12 +493,13 @@ function moduleCardHtml(m) {
                 ${certBadges}
             </div>
             <div class="flex items-center justify-between mt-3 flex-wrap gap-2">
-                ${m.creatorGenesisId ? `<span class="text-[10px] text-yellow-600/70 mono truncate max-w-[130px]">${escHtml(m.creatorGenesisId.slice(0,16))}…</span>` : `<span class="text-[10px] text-slate-700 mono">system module</span>`}
+                ${stampBarHtml(m)}
                 <a href="${escHtml(lessonUrl)}" target="_blank" onclick="trackModuleView('${escHtml(m.id)}')"
                    class="btn-ghost px-3 py-1 rounded-lg text-xs" style="border-color:rgba(148,130,255,0.3);color:#a78bfa">
                     Open Lesson →
                 </a>
             </div>
+            ${m.creatorGenesisId && m.creatorGenesisId !== "system" ? `<div class="mt-2 text-[10px] text-yellow-600/60 mono truncate">${escHtml(m.creatorGenesisId.slice(0,20))}…</div>` : ""}
         </div>
     </div>`;
 }
@@ -479,10 +524,11 @@ function videoCardHtml(v, showCreator) {
         </div>
         <div class="p-4">
             <h3 class="font-semibold text-slate-200 text-sm flex-1 line-clamp-2 cursor-pointer hover:text-blue-300 transition-colors mb-2" onclick="openModal('${escHtml(v.id)}')">${escHtml(v.title||"Untitled")}</h3>
-            <div class="flex items-center justify-between flex-wrap gap-1">
+            <div class="flex items-center justify-between flex-wrap gap-2">
                 <span class="tag px-2 py-0.5 rounded-full text-[10px]">${escHtml(SUBJECT_MAP[v.subject]||v.subject||"—")}</span>
                 ${showCreator && v.creatorGenesisId ? `<span class="text-[10px] text-yellow-600 mono truncate max-w-[120px]">${escHtml(v.creatorGenesisId.slice(0,16))}…</span>` : ""}
             </div>
+            <div class="mt-3">${stampBarHtml(v)}</div>
         </div>
     </div>`;
 }
@@ -570,6 +616,29 @@ function patchLocal(id, patch) {
     const idx = allContent.findIndex(v=>v.id===id);
     if (idx >= 0) allContent[idx] = {...allContent[idx], ...patch};
 }
+
+// ── Stamp a minor tome as useful ──────────────────────────────────
+const XP_PER_STAMP = 5;
+window.stampMinorTome = async function(tomeId) {
+    if (!currentUser) return;
+    const v = allContent.find(x=>x.id===tomeId);
+    if (!v) return;
+    if (v.creatorUid === currentUser.uid) { showToast("You can't stamp your own tome.", false); return; }
+    if ((v.stampedBy||[]).includes(currentUser.uid)) { showToast("Already stamped.", false); return; }
+    try {
+        await updateDoc(doc(db,"tomes",tomeId), {
+            stampCount: increment(1),
+            stampedBy: arrayUnion(currentUser.uid),
+            updatedAt: serverTimestamp()
+        });
+        patchLocal(tomeId, {
+            stampCount: (v.stampCount||0) + 1,
+            stampedBy: [...(v.stampedBy||[]), currentUser.uid]
+        });
+        showToast(`★ Stamped as useful! +${XP_PER_STAMP} XP → contributor`);
+        renderBrowse(); renderMine();
+    } catch(e) { showToast("Error: "+e.message, false); }
+};
 
 // Track module views
 window.trackModuleView = function(id) {
@@ -664,6 +733,7 @@ window.submitTome = async function() {
             deptCertified:false, deptCertifiedBy:null, deptCertifiedAt:null, deptCertifiedPlane:null,
             creatorUid:currentUser.uid, creatorGenesisId:currentReg?.cosmologicalId||null,
             creatorTier:currentTier, enrolledCount:0, viewCount:0,
+            stampCount:0, stampedBy:[],
             createdAt:serverTimestamp(), updatedAt:serverTimestamp()
         });
         document.getElementById("submitForm").classList.add("hidden");

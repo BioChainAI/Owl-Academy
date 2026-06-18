@@ -145,6 +145,43 @@
                     </div>
                 </div>
 
+                <!-- Minor Tomes Panel -->
+                <div class="glass rounded-xl p-6" style="border-color:rgba(52,211,153,0.18)">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-sm mono uppercase tracking-widest" style="color:#34d399">◯ Minor Tomes</h3>
+                        <a href="Prereq_Math.html" class="text-[10px] mono px-2 py-1 rounded transition-colors hover:opacity-80"
+                           style="background:rgba(52,211,153,0.08);border:1px solid rgba(52,211,153,0.22);color:#34d399">+ Submit →</a>
+                    </div>
+                    <!-- Stats row -->
+                    <div class="grid grid-cols-3 gap-3 mb-4 text-center">
+                        <div class="bg-black/30 rounded-lg p-2" style="border:1px solid rgba(52,211,153,0.1)">
+                            <div id="mt-count" class="text-lg mono font-bold" style="color:#34d399">—</div>
+                            <div class="text-[9px] mono text-gray-600 uppercase tracking-widest mt-0.5">Submitted</div>
+                        </div>
+                        <div class="bg-black/30 rounded-lg p-2" style="border:1px solid rgba(251,191,36,0.12)">
+                            <div id="mt-stamps" class="text-lg mono font-bold text-yellow-400">—</div>
+                            <div class="text-[9px] mono text-gray-600 uppercase tracking-widest mt-0.5">Total Stamps</div>
+                        </div>
+                        <div class="bg-black/30 rounded-lg p-2" style="border:1px solid rgba(96,165,250,0.1)">
+                            <div id="mt-xp" class="text-lg mono font-bold text-cyan-300">—</div>
+                            <div class="text-[9px] mono text-gray-600 uppercase tracking-widest mt-0.5">Stamp XP</div>
+                        </div>
+                    </div>
+                    <!-- Submitted tomes list -->
+                    <div id="mt-list" class="space-y-2 mb-4 max-h-48 overflow-y-auto pr-1">
+                        <div class="text-[10px] text-gray-700 mono text-center py-2">Loading…</div>
+                    </div>
+                    <!-- How-to guide -->
+                    <details class="mt-2">
+                        <summary class="text-[10px] mono text-slate-500 cursor-pointer hover:text-slate-300 uppercase tracking-widest">How to add a minor tome</summary>
+                        <div class="mt-3 space-y-2 text-[11px] text-gray-400 leading-relaxed">
+                            <p><span class="text-emerald-400 font-semibold">▶ Video Tome</span> — Go to <a href="Prereq_Math.html" class="text-cyan-400 underline">Prereq Math Hub</a> → Submit Video. Paste any YouTube, Vimeo, or direct URL. It is immediately signed to your Genesis ID and visible to the community.</p>
+                            <p><span class="text-purple-400 font-semibold">📄 HTML Lesson</span> — Create an HTML file under <span class="mono text-slate-300">Library/Community &amp; Research/Independent_Learning/</span>, then add a single entry to <span class="mono text-slate-300">modules.json</span> in that same folder with its <span class="mono">id</span>, <span class="mono">title</span>, <span class="mono">subject</span>, <span class="mono">path</span>, and <span class="mono">difficulty</span>. On next page load it auto-registers and appears in the hub.</p>
+                            <p class="text-slate-600">Minor tomes carry no negative consequence — they are either useful or not. Each ★ useful stamp a peer gives earns you +5 XP. Archons and Instructors can further certify exceptional tomes for departmental recognition.</p>
+                        </div>
+                    </details>
+                </div>
+
                 <div class="glass rounded-xl p-6">
                     <h3 class="text-sm mono text-yellow-500 uppercase tracking-widest mb-3">Ledger Seed</h3>
                     <div id="codex-seed" class="mono text-xs text-gray-400 bg-black/40 p-3 rounded border border-gray-800 break-all"></div>
@@ -161,9 +198,13 @@
     <script type="module">
         import { auth } from "../scripts/firebase/config.js";
         import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-auth.js";
+        import { db } from "../scripts/firebase/config.js";
+        import { collection, getDocs, query, where } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-firestore.js";
         import { getDocument } from "../scripts/firebase/firestore.js";
         import { readRegistrar, renderSigil, saveLocalBackup, exportLocalBackup } from "../scripts/spire-registrar.js";
         import { resolveTier, applyCertificate, tierRingOverlay, GENESIS_MASTER_UIDS } from "../scripts/genesis-registrar.js";
+
+        const XP_PER_STAMP = 5;
 
         let currentUid = null;
 
@@ -248,7 +289,47 @@
             document.getElementById("prog-triad").innerText = `${triadCount} / 81`;
             document.getElementById("bar-triad").style.width = `${(triadCount / 81) * 100}%`;
             document.getElementById("prog-total").innerText = `${total} / 145`;
+
+            // Load minor tomes (fire-and-forget — doesn't block main codex render)
+            loadMinorTomes(user.uid).catch(()=>{});
         });
+
+        async function loadMinorTomes(uid) {
+            try {
+                const snap = await getDocs(query(collection(db,"tomes"), where("creatorUid","==",uid)));
+                const tomes = snap.docs.map(d=>({id:d.id,...d.data()}))
+                    .filter(t => t.type === "video" || t.type === "module");
+                const totalStamps = tomes.reduce((s,t)=>s+(t.stampCount||0),0);
+                const stampXP = totalStamps * XP_PER_STAMP;
+                document.getElementById("mt-count").textContent = tomes.length;
+                document.getElementById("mt-stamps").textContent = totalStamps;
+                document.getElementById("mt-xp").textContent = stampXP.toLocaleString();
+                if (tomes.length === 0) {
+                    document.getElementById("mt-list").innerHTML =
+                        `<div class="text-[10px] text-gray-700 mono text-center py-2">No minor tomes yet.</div>`;
+                } else {
+                    const sorted = [...tomes].sort((a,b)=>(b.stampCount||0)-(a.stampCount||0));
+                    document.getElementById("mt-list").innerHTML = sorted.map(t => {
+                        const sc = t.stampCount||0;
+                        const stars = sc >= 5 ? "★★★" : sc >= 2 ? "★★" : sc === 1 ? "★" : "⬡";
+                        const typeIcon = t.type === "module" ? "📄" : "▶";
+                        const certBadge = t.owlCertified
+                            ? `<span class="text-[9px] mono" style="color:#D4AF37">♛</span>`
+                            : t.deptCertified
+                            ? `<span class="text-[9px] mono" style="color:#a78bfa">⬢</span>` : "";
+                        return `<div class="flex items-center gap-2 px-2 py-1.5 rounded text-[10px] bg-black/20 border border-white/5">
+                            <span class="opacity-60">${typeIcon}</span>
+                            <span class="flex-1 truncate text-gray-300">${t.title||"Untitled"}</span>
+                            ${certBadge}
+                            <span class="mono shrink-0" style="color:${sc>0?'#fbbf24':'#475569'}">${stars} ${sc}</span>
+                        </div>`;
+                    }).join("");
+                }
+            } catch(e) {
+                document.getElementById("mt-list").innerHTML =
+                    `<div class="text-[10px] text-red-500/60 mono text-center py-2">Could not load tomes.</div>`;
+            }
+        }
 
         document.getElementById("export-btn").addEventListener("click", () => exportLocalBackup());
 
