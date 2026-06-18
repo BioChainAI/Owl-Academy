@@ -210,6 +210,7 @@
   import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-firestore.js";
   import { firebaseConfig } from "../scripts/firebase/config.js";
   import { FAMILIARS, getFamiliarFromCosmologicalId, renderUserSigil } from "../scripts/sigil-renderer.js";
+  import { resolveTier } from "../scripts/genesis-registrar.js";
 
   const app = initializeApp(firebaseConfig);
   const auth = getAuth(app);
@@ -233,24 +234,19 @@
 
   // ── Render my familiar section ─────────────────────────────────────────────
   async function renderMyFamiliar(user) {
-    // Fetch registrar for cosmologicalId
-    const regSnap = await getDoc(doc(db, 'registrar', 'main'));
+    // Fetch all data in parallel
+    const [regSnap, profSnap, constSnap] = await Promise.all([
+      getDoc(doc(db, 'users', user.uid, 'registrar', 'main')),
+      getDoc(doc(db, 'users', user.uid, 'profile', 'main')),
+      getDoc(doc(db, 'constellations', user.uid)),
+    ]);
+
     const cosmologicalId = regSnap.exists() ? (regSnap.data().cosmologicalId || user.uid) : user.uid;
-
-    // Fetch profile for tier, guilds
-    const profSnap = await getDoc(doc(db, 'users', user.uid, 'profile', 'main'));
     const profile = profSnap.exists() ? profSnap.data() : {};
-
-    // Fetch constellation data for orbitals
-    const constSnap = await getDoc(doc(db, 'constellations', user.uid));
     const orbitals = constSnap.exists() ? (constSnap.data().orbitals || {}) : {};
 
-    // Fetch tier from genesis registrar
     let tier = 'ACOLYTE';
-    try {
-      const { resolveTier } = await import('../scripts/genesis-registrar.js');
-      tier = await resolveTier(user.uid);
-    } catch(_) {}
+    try { tier = await resolveTier(user.uid); } catch(_) {}
 
     const guilds = profile.guilds || [];
     const { familiar } = getFamiliarFromCosmologicalId(cosmologicalId);
