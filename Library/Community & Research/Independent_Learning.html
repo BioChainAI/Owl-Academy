@@ -217,16 +217,28 @@ async function loadModules() {
         const existing = new Map(mSnap.docs.map(d=>[d.data().moduleId,{id:d.id,...d.data()}]));
         const result = [];
         for (const entry of (manifest.modules||[])) {
+            const manifestCreator = entry.creatorUid || null;
             if (existing.has(entry.id)) {
-                result.push(existing.get(entry.id));
+                const existingDoc = existing.get(entry.id);
+                // Heal docs that were registered with creatorUid:"system" when manifest now provides a real UID
+                if (manifestCreator && existingDoc.creatorUid === "system") {
+                    await updateDoc(doc(db,"tomes",existingDoc.id), {
+                        creatorUid: manifestCreator,
+                        updatedAt: serverTimestamp()
+                    });
+                    existingDoc.creatorUid = manifestCreator;
+                }
+                result.push(existingDoc);
             } else {
                 const payload = {
                     type:"module", moduleId:entry.id, title:entry.title,
                     subject:entry.subject, description:entry.description,
                     path:entry.path, modulePath:entry.path, tags:entry.tags||[], difficulty:entry.difficulty||"beginner",
                     plane:"prereq", tier:"sovereign",
-                    creatorUid:"system", creatorGenesisId:"system",
-                    creatorTier:"SYSTEM", viewCount:0, enrolledCount:0,
+                    creatorUid: manifestCreator || "system",
+                    creatorGenesisId: manifestCreator ? null : "system",
+                    creatorTier: manifestCreator ? null : "SYSTEM",
+                    viewCount:0, enrolledCount:0, stampCount:0, stampedBy:[],
                     createdAt:serverTimestamp(), updatedAt:serverTimestamp()
                 };
                 const ref = await addDoc(collection(db,"tomes"), payload);

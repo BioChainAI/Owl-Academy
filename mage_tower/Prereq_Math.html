@@ -322,9 +322,22 @@ async function loadModules() {
 
     const result = [];
     for (const entry of (manifest.modules || [])) {
+        // Prefer the manifest's explicit creatorUid; fall back to the logged-in user
+        const manifestCreator = entry.creatorUid || currentUser.uid;
         if (existing.has(entry.id)) {
             // Already registered — use the Firestore doc (has cert state)
-            result.push(existing.get(entry.id));
+            const existingDoc = existing.get(entry.id);
+            // Heal any docs registered with creatorUid:"system" when manifest now has a real UID
+            if (existingDoc.creatorUid === "system" || existingDoc.creatorUid === "SYSTEM") {
+                try {
+                    await updateDoc(doc(db,"tomes",existingDoc.id), {
+                        creatorUid: manifestCreator,
+                        updatedAt: serverTimestamp()
+                    });
+                    existingDoc.creatorUid = manifestCreator;
+                } catch(e3) { console.warn("[Prereq_Math] Could not heal creatorUid:", e3); }
+            }
+            result.push(existingDoc);
         } else {
             // New entry — register it in Firestore automatically
             try {
@@ -342,7 +355,7 @@ async function loadModules() {
                     status: "active",
                     owlCertified: false, owlCertifiedBy: null, owlCertifiedAt: null,
                     deptCertified: false, deptCertifiedBy: null, deptCertifiedAt: null, deptCertifiedPlane: null,
-                    creatorUid: currentUser.uid,
+                    creatorUid: manifestCreator,
                     creatorGenesisId: currentReg?.cosmologicalId || null,
                     creatorTier: currentTier,
                     viewCount: 0, stampCount: 0, stampedBy: [],
