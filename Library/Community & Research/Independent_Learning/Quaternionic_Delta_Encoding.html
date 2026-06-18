@@ -108,15 +108,42 @@
     <div class="starfield"></div>
 
     <!-- Header -->
-    <header class="flex-shrink-0 w-full py-4 px-6 relative border-b border-cyan-600/20 bg-[#05030a]/80 backdrop-blur-md z-20 flex justify-between items-center shadow-lg">
+    <header class="flex-shrink-0 w-full py-4 px-6 relative border-b border-cyan-600/20 bg-[#05030a]/80 backdrop-blur-md z-50 flex justify-between items-center shadow-lg">
         <div>
             <div class="text-[10px] text-cyan-500/80 tracking-[0.3em] uppercase font-mono mb-1">
                 Community & Research &gt; Independent Learning
             </div>
             <h1 class="text-xl md:text-2xl font-bold tracking-[0.2em] gold-gradient">OWL ACADEMY</h1>
         </div>
-        <div class="font-mono text-xs text-cyan-400 border border-cyan-500/30 px-3 py-1 rounded bg-cyan-900/20 hidden md:block">
-            MODULE: <span class="text-white">PRELIMINARY MATH</span>
+        
+        <div class="flex items-center gap-3">
+            <!-- Video Dropdown Container -->
+            <div class="relative">
+                <button id="video-toggle" class="font-mono text-xs text-yellow-400 hover:text-yellow-300 border border-yellow-500/30 px-3 py-1.5 rounded bg-yellow-900/20 hover:bg-yellow-900/40 transition-colors flex items-center gap-2">
+                    <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                    EXPLAINER VIDEO
+                </button>
+                
+                <!-- Video Dropdown Panel -->
+                <div id="video-dropdown" class="absolute right-0 top-full mt-3 w-[85vw] md:w-[450px] glass-panel border border-yellow-500/30 rounded-xl p-3 hidden shadow-[0_0_30px_rgba(212,175,55,0.15)] origin-top-right transition-all">
+                    <div class="flex justify-between items-center mb-2 px-1">
+                        <span class="text-[10px] font-bold text-yellow-500 uppercase tracking-widest font-mono flex items-center gap-2">
+                            <span class="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span>
+                            Reference Material
+                        </span>
+                        <button id="video-close" class="text-slate-400 hover:text-white transition-colors p-1">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                        </button>
+                    </div>
+                    <div class="w-full aspect-video rounded-lg border border-white/10 overflow-hidden bg-black shadow-inner">
+                        <iframe width="100%" height="100%" src="https://www.youtube.com/embed/H8sCWs9jgJA" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+                    </div>
+                </div>
+            </div>
+
+            <div class="font-mono text-xs text-cyan-400 border border-cyan-500/30 px-3 py-1.5 rounded bg-cyan-900/20 hidden md:block">
+                MODULE: <span class="text-white">PRELIMINARY MATH</span>
+            </div>
         </div>
     </header>
 
@@ -777,7 +804,7 @@
         }
 
         // ==========================================
-        // 5. MAIN RENDER LOOP
+        // 5. MAIN RENDER LOOP & EVENT LISTENERS
         // ==========================================
         function animate() {
             animationFrameId = requestAnimationFrame(animate);
@@ -797,6 +824,20 @@
             camera.updateProjectionMatrix();
             renderer.setSize(canvasContainer.clientWidth, canvasContainer.clientHeight);
         });
+
+        // Video Dropdown Logic
+        const videoToggle = document.getElementById('video-toggle');
+        const videoDropdown = document.getElementById('video-dropdown');
+        const videoClose = document.getElementById('video-close');
+
+        if(videoToggle && videoDropdown && videoClose) {
+            videoToggle.addEventListener('click', () => {
+                videoDropdown.classList.toggle('hidden');
+            });
+            videoClose.addEventListener('click', () => {
+                videoDropdown.classList.add('hidden');
+            });
+        }
 
         // Initialize App
         loadPhase(0);
