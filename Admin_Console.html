@@ -1,0 +1,953 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Owl Academy | Admin Console</title>
+
+    <script type="module" src="scripts/auth-guard.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+
+    <style>
+        body {
+            background-color: #05030a; color: #e2e8f0;
+            font-family: 'Inter', sans-serif;
+            background: radial-gradient(circle at 50% 10%, rgba(212,175,55,0.07), #05030a 80%);
+            min-height: 100vh; margin: 0;
+        }
+        h1, h2, h3, .mystical { font-family: 'Cinzel', serif; }
+        .mono { font-family: 'JetBrains Mono', monospace; }
+        .gold-gradient {
+            background: linear-gradient(to right, #D4AF37, #FFF8DC, #D4AF37);
+            -webkit-background-clip: text; background-clip: text; color: transparent;
+        }
+        .glass {
+            background: rgba(8, 12, 22, 0.70); backdrop-filter: blur(16px);
+            border: 1px solid rgba(212,175,55,0.22);
+        }
+        .glass-cyan {
+            background: rgba(8, 12, 22, 0.65); backdrop-filter: blur(12px);
+            border: 1px solid rgba(0,212,255,0.22);
+        }
+        input, textarea, select {
+            background: #060e1a; color: #FFF8DC;
+            border: 1px solid rgba(212,175,55,0.25);
+        }
+        input:focus, textarea:focus, select:focus {
+            outline: none; border-color: #D4AF37;
+            box-shadow: 0 0 0 2px rgba(212,175,55,0.15);
+        }
+        .tab-btn { transition: all 0.2s; }
+        .tab-btn.active { background: rgba(212,175,55,0.15); color: #D4AF37; border-color: rgba(212,175,55,0.4); }
+        .tab-panel { display: none; }
+        .tab-panel.active { display: block; }
+
+        /* Status badges */
+        .badge-active    { background: rgba(0,255,120,0.15); color: #00ff78; border: 1px solid rgba(0,255,120,0.35); }
+        .badge-manuscript{ background: rgba(0,212,255,0.12); color: #00d4ff; border: 1px solid rgba(0,212,255,0.3); }
+        .badge-reference { background: rgba(148,130,255,0.12); color: #9482ff; border: 1px solid rgba(148,130,255,0.3); }
+        .badge-sealed    { background: rgba(255,60,60,0.10); color: #ff5f5f; border: 1px solid rgba(255,60,60,0.25); }
+
+        .dept-card {
+            background: rgba(8,12,22,0.7); border: 1px solid rgba(212,175,55,0.15);
+            border-radius: 0.75rem; transition: border-color 0.2s;
+        }
+        .dept-card:hover { border-color: rgba(212,175,55,0.35); }
+        .dept-header { cursor: pointer; }
+
+        .tome-row { border-bottom: 1px solid rgba(255,255,255,0.06); }
+        .tome-row:last-child { border-bottom: none; }
+
+        .btn-gold {
+            background: linear-gradient(135deg, #b8922a, #D4AF37);
+            color: #05030a; font-weight: 600;
+            transition: opacity 0.2s;
+        }
+        .btn-gold:hover { opacity: 0.85; }
+        .btn-ghost {
+            border: 1px solid rgba(212,175,55,0.35); color: #D4AF37;
+            background: transparent; transition: background 0.2s;
+        }
+        .btn-ghost:hover { background: rgba(212,175,55,0.1); }
+        .btn-cyan {
+            background: linear-gradient(135deg, #007a99, #00d4ff);
+            color: #05030a; font-weight: 600;
+            transition: opacity 0.2s;
+        }
+        .btn-cyan:hover { opacity: 0.85; }
+        .btn-danger {
+            border: 1px solid rgba(255,80,80,0.4); color: #ff6060;
+            background: transparent; transition: background 0.2s;
+        }
+        .btn-danger:hover { background: rgba(255,80,80,0.1); }
+
+        .spinner {
+            border: 2px solid rgba(212,175,55,0.2);
+            border-top-color: #D4AF37;
+            border-radius: 50%; width: 20px; height: 20px;
+            animation: spin 0.7s linear infinite; display: inline-block;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .artifact-badge {
+            background: linear-gradient(135deg, rgba(212,175,55,0.2), rgba(212,175,55,0.05));
+            border: 1px solid rgba(212,175,55,0.4);
+        }
+        .progress-bar-bg { background: rgba(255,255,255,0.06); border-radius: 9999px; height: 6px; }
+        .progress-bar-fill { background: linear-gradient(to right, #b8922a, #D4AF37); border-radius: 9999px; height: 6px; transition: width 0.5s; }
+    </style>
+</head>
+<body class="antialiased">
+
+<main class="max-w-7xl mx-auto px-4 md:px-8 py-10">
+
+    <!-- Header -->
+    <header class="text-center mb-10">
+        <div class="inline-flex items-center gap-2 px-3 py-1 border border-yellow-600/40 rounded-full bg-yellow-950/30 text-yellow-400 text-[10px] tracking-[0.2em] uppercase mono mb-4">
+            ♛ Admin Console
+        </div>
+        <h1 class="text-4xl md:text-5xl font-bold gold-gradient mb-3">Archon Admin Console</h1>
+        <p class="text-slate-400 text-sm max-w-xl mx-auto">
+            Manage departments, release tomes, configure artifacts, and elect Instructors.
+            Access restricted to verified Instructors and Archons.
+        </p>
+    </header>
+
+    <!-- Access Denied Panel (hidden by default, shown if not instructor) -->
+    <div id="accessDenied" class="hidden max-w-xl mx-auto glass rounded-xl p-8 text-center mb-10">
+        <div class="text-5xl mb-4">⛔</div>
+        <h2 class="mystical text-xl text-red-400 mb-3">Access Restricted</h2>
+        <p class="text-slate-400 text-sm mb-6">
+            This console is reserved for Instructors and Archons. Your current tier is
+            <span id="deniedTierLabel" class="font-semibold text-slate-200">Acolyte</span>.
+        </p>
+        <p class="text-slate-500 text-xs mb-6">
+            To receive a Genesis Certificate, contact an Archon with your Cosmological ID from
+            <a href="Codex.html" class="text-yellow-400 underline">your Codex</a>.
+        </p>
+        <div class="text-left">
+            <label class="block text-xs text-slate-400 mb-2 mystical">Apply a Received Certificate</label>
+            <textarea id="deniedCertInput" rows="5" placeholder='{"issuer":"0x...","subject":"0x...","tier":"INSTRUCTOR",...}'
+                class="w-full rounded-lg p-3 text-xs mono resize-none"></textarea>
+            <button onclick="applyDeniedCert()" class="mt-3 w-full btn-cyan px-4 py-2 rounded-lg text-sm">
+                Apply Certificate
+            </button>
+            <p id="deniedCertMsg" class="mt-2 text-xs text-center"></p>
+        </div>
+    </div>
+
+    <!-- Loading state -->
+    <div id="loadingState" class="text-center py-24">
+        <div class="spinner mx-auto mb-4"></div>
+        <p class="text-slate-500 text-sm">Verifying Genesis authority…</p>
+    </div>
+
+    <!-- Main console (shown only if instructor+) -->
+    <div id="adminConsole" class="hidden">
+
+        <!-- Identity Banner -->
+        <div id="identityBanner" class="glass rounded-xl p-4 mb-8 flex flex-wrap items-center gap-4">
+            <div>
+                <span class="text-xs text-slate-500 uppercase tracking-widest mono">Tier</span>
+                <div id="bannerTier" class="text-xl font-bold gold-gradient mystical">—</div>
+            </div>
+            <div class="flex-1">
+                <span class="text-xs text-slate-500 uppercase tracking-widest mono">Genesis ID</span>
+                <div id="bannerGenesisId" class="mono text-sm text-yellow-300 truncate">—</div>
+            </div>
+            <div>
+                <span class="text-xs text-slate-500 uppercase tracking-widest mono">Planes</span>
+                <div id="bannerPlanes" class="text-sm text-slate-300">—</div>
+            </div>
+            <div class="flex gap-2 ml-auto">
+                <a href="Instructor_Console.html" class="btn-ghost px-3 py-1.5 rounded-lg text-xs mono">⬢ Authoring</a>
+                <a href="Genesis_Forge.html" id="forgeLink" class="hidden btn-gold px-3 py-1.5 rounded-lg text-xs mono">♛ Genesis Forge</a>
+                <a href="Codex.html" class="btn-ghost px-3 py-1.5 rounded-lg text-xs mono">Codex</a>
+            </div>
+        </div>
+
+        <!-- Tabs -->
+        <div class="flex flex-wrap gap-2 mb-8" role="tablist">
+            <button class="tab-btn active px-4 py-2 rounded-lg text-sm border border-yellow-600/30 mono" data-tab="departments" onclick="switchTab('departments', this)">📚 Departments</button>
+            <button class="tab-btn px-4 py-2 rounded-lg text-sm border border-yellow-600/30 mono text-slate-400" data-tab="artifacts" onclick="switchTab('artifacts', this)">⬡ Artifacts</button>
+            <button class="tab-btn px-4 py-2 rounded-lg text-sm border border-yellow-600/30 mono text-slate-400" data-tab="tomes-db" onclick="switchTab('tomes-db', this)">📖 Tome Registry</button>
+            <button class="tab-btn px-4 py-2 rounded-lg text-sm border border-yellow-600/30 mono text-slate-400" data-tab="elect" onclick="switchTab('elect', this)">♛ Elect Instructors</button>
+        </div>
+
+        <!-- ═══════════════════════════════════════════
+             TAB: DEPARTMENTS
+        ═══════════════════════════════════════════ -->
+        <div id="tab-departments" class="tab-panel active">
+
+            <div class="flex items-center justify-between mb-6">
+                <h2 class="mystical text-xl text-yellow-300">Department Overview</h2>
+                <div class="flex items-center gap-3">
+                    <span class="text-xs text-slate-500">Filter:</span>
+                    <select id="deptFilterStatus" onchange="renderDepartments()" class="rounded-lg px-3 py-1.5 text-xs mono">
+                        <option value="">All Statuses</option>
+                        <option value="active">Active (XP)</option>
+                        <option value="manuscript">Manuscript</option>
+                        <option value="reference">Reference</option>
+                        <option value="sealed">Sealed</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Legend -->
+            <div class="flex flex-wrap gap-3 mb-6 text-xs mono">
+                <span class="badge-active px-2 py-0.5 rounded-full">Active — awards XP</span>
+                <span class="badge-manuscript px-2 py-0.5 rounded-full">Manuscript — visible, no XP</span>
+                <span class="badge-reference px-2 py-0.5 rounded-full">Reference — visible, no XP</span>
+                <span class="badge-sealed px-2 py-0.5 rounded-full">Sealed — hidden to Acolytes</span>
+            </div>
+
+            <div id="deptList" class="space-y-4">
+                <div class="text-center py-10"><div class="spinner mx-auto"></div></div>
+            </div>
+        </div>
+
+        <!-- ═══════════════════════════════════════════
+             TAB: ARTIFACTS
+        ═══════════════════════════════════════════ -->
+        <div id="tab-artifacts" class="tab-panel">
+            <h2 class="mystical text-xl text-yellow-300 mb-6">Artifact Configuration</h2>
+
+            <div class="grid md:grid-cols-2 gap-6 mb-8">
+                <!-- Artifact Rule Explanation -->
+                <div class="glass rounded-xl p-5">
+                    <h3 class="mystical text-base text-yellow-200 mb-3">How Artifacts Form</h3>
+                    <div class="space-y-2 text-sm text-slate-400">
+                        <p>Each department has one or more <strong class="text-slate-200">Artifacts</strong> formed by completing a set of tomes.</p>
+                        <ul class="list-disc list-inside space-y-1 text-xs mt-3">
+                            <li>Depts I–IX: <span class="text-yellow-300 font-semibold">9 tomes → 1 Artifact</span></li>
+                            <li>Dept X (BioChain Substrate): <span class="text-yellow-300 font-semibold">16 tomes → 1 Artifact</span></li>
+                            <li>Dept X has 4 Artifacts total (64 tomes ÷ 16)</li>
+                        </ul>
+                        <p class="mt-3 text-xs">Only <span class="text-green-300">Active</span> tomes count toward artifact completion.</p>
+                    </div>
+                </div>
+
+                <!-- Mint New Artifact -->
+                <div class="glass-cyan rounded-xl p-5">
+                    <h3 class="mystical text-base text-cyan-300 mb-4">Mint New Artifact</h3>
+                    <div class="space-y-3">
+                        <div>
+                            <label class="block text-xs text-slate-400 mb-1">Artifact Name</label>
+                            <input id="artName" type="text" class="w-full rounded-lg px-3 py-2 text-sm" placeholder="e.g. Clifford Torus Mastery">
+                        </div>
+                        <div>
+                            <label class="block text-xs text-slate-400 mb-1">Department Plane</label>
+                            <select id="artPlane" class="w-full rounded-lg px-3 py-2 text-sm">
+                                <option value="">— select —</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs text-slate-400 mb-1">Description</label>
+                            <textarea id="artDesc" rows="2" class="w-full rounded-lg px-3 py-2 text-sm resize-none" placeholder="Short description…"></textarea>
+                        </div>
+                        <div>
+                            <label class="block text-xs text-slate-400 mb-1">Required Tome IDs <span class="text-slate-600">(comma-separated Firestore IDs)</span></label>
+                            <textarea id="artTomeIds" rows="3" class="w-full rounded-lg px-3 py-2 text-xs mono resize-none" placeholder="abc123, def456, ghi789, …"></textarea>
+                        </div>
+                        <button onclick="mintArtifact()" class="w-full btn-gold px-4 py-2.5 rounded-lg text-sm">
+                            ⬡ Mint Artifact
+                        </button>
+                        <p id="artMsg" class="text-xs text-center"></p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Existing Artifacts -->
+            <h3 class="mystical text-base text-yellow-200 mb-4">Existing Artifacts</h3>
+            <div id="artifactList" class="space-y-3">
+                <div class="text-center py-10"><div class="spinner mx-auto"></div></div>
+            </div>
+        </div>
+
+        <!-- ═══════════════════════════════════════════
+             TAB: TOME REGISTRY
+        ═══════════════════════════════════════════ -->
+        <div id="tab-tomes-db" class="tab-panel">
+            <div class="flex flex-wrap items-center justify-between gap-4 mb-6">
+                <h2 class="mystical text-xl text-yellow-300">Tome Registry</h2>
+                <div class="flex flex-wrap gap-3">
+                    <select id="tomeFilterDept" onchange="loadTomeRegistry()" class="rounded-lg px-3 py-1.5 text-xs mono">
+                        <option value="">All Departments</option>
+                    </select>
+                    <select id="tomeFilterStatus" onchange="loadTomeRegistry()" class="rounded-lg px-3 py-1.5 text-xs mono">
+                        <option value="">All Statuses</option>
+                        <option value="active">Active</option>
+                        <option value="manuscript">Manuscript</option>
+                        <option value="reference">Reference</option>
+                        <option value="sealed">Sealed</option>
+                    </select>
+                </div>
+            </div>
+
+            <div id="tomeRegistryStats" class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6"></div>
+
+            <div id="tomeRegistryList" class="space-y-2">
+                <div class="text-center py-10"><div class="spinner mx-auto"></div></div>
+            </div>
+        </div>
+
+        <!-- ═══════════════════════════════════════════
+             TAB: ELECT INSTRUCTORS
+        ═══════════════════════════════════════════ -->
+        <div id="tab-elect" class="tab-panel">
+            <h2 class="mystical text-xl text-yellow-300 mb-2">Elect Instructors & Archons</h2>
+            <p class="text-slate-400 text-sm mb-6">
+                Issue a Genesis Certificate to elevate a registered user to Instructor or Archon rank.
+                This ensures the admin panel always has active attendees.
+            </p>
+
+            <div class="grid md:grid-cols-2 gap-6">
+                <!-- Issue Certificate -->
+                <div class="glass rounded-xl p-6">
+                    <h3 class="mystical text-base text-yellow-200 mb-4">♛ Issue Certificate</h3>
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-xs text-slate-400 mb-1">Subject Cosmological ID</label>
+                            <input id="electSubjectId" type="text" class="w-full rounded-lg px-3 py-2 text-sm mono" placeholder="0xD4AF37F00BA4C0DE">
+                        </div>
+                        <div>
+                            <label class="block text-xs text-slate-400 mb-1">Target Tier</label>
+                            <select id="electTier" class="w-full rounded-lg px-3 py-2 text-sm">
+                                <option value="INSTRUCTOR">Instructor ⬢</option>
+                                <option value="ARCHON">Archon ♛</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs text-slate-400 mb-1">Dimensional Plane</label>
+                            <select id="electPlane" class="w-full rounded-lg px-3 py-2 text-sm">
+                                <option value="*">* Universal (all planes)</option>
+                            </select>
+                        </div>
+                        <button onclick="issueCertFromAdmin()" class="w-full btn-gold px-4 py-2.5 rounded-lg text-sm">
+                            ♛ Forge Certificate
+                        </button>
+                        <p id="electMsg" class="text-xs text-center"></p>
+                    </div>
+                </div>
+
+                <!-- Issued Certificate Output -->
+                <div class="glass-cyan rounded-xl p-6">
+                    <h3 class="mystical text-base text-cyan-300 mb-4">Certificate Output</h3>
+                    <p class="text-xs text-slate-500 mb-3">
+                        After forging, the certificate JSON appears below. Deliver it to the recipient
+                        via a secure channel (Signal, encrypted email, etc.). They apply it in their Codex.
+                    </p>
+                    <textarea id="electCertOutput" rows="12" readonly
+                        class="w-full rounded-lg px-3 py-2 text-xs mono resize-none text-slate-400"
+                        placeholder="Certificate JSON will appear here…"></textarea>
+                    <div class="flex gap-2 mt-3">
+                        <button onclick="copyCert()" class="flex-1 btn-ghost px-3 py-2 rounded-lg text-xs">
+                            📋 Copy
+                        </button>
+                        <button onclick="downloadCert()" class="flex-1 btn-ghost px-3 py-2 rounded-lg text-xs">
+                            ⬇ Download
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Current Instructors List -->
+            <div class="mt-8">
+                <h3 class="mystical text-base text-yellow-200 mb-4">Current Instructors & Archons</h3>
+                <p class="text-xs text-slate-500 mb-4">
+                    Note: This lists users who have self-reported their tier via their registrar document.
+                    Firestore does not allow cross-user reads — each user's registrar is private.
+                    Use the Genesis Forge to manage certificates directly.
+                </p>
+                <div class="glass rounded-xl p-4 text-center text-slate-500 text-sm">
+                    <a href="Genesis_Forge.html" class="text-yellow-400 underline">Open Genesis Forge</a>
+                    for the full authority management interface.
+                </div>
+            </div>
+        </div>
+
+    </div><!-- /adminConsole -->
+
+</main>
+
+<!-- Status toast -->
+<div id="toast" class="fixed bottom-6 right-6 z-50 hidden">
+    <div id="toastInner" class="glass px-5 py-3 rounded-xl text-sm font-medium shadow-xl"></div>
+</div>
+
+<!-- Tome Status Edit Modal -->
+<div id="tomeModal" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="glass rounded-2xl p-6 max-w-md w-full">
+        <h3 class="mystical text-lg text-yellow-300 mb-4">Edit Tome Status</h3>
+        <div class="mb-4">
+            <p class="text-sm text-slate-300 mb-1" id="modalTomeTitle">—</p>
+            <p class="text-xs text-slate-500 mono" id="modalTomeId">—</p>
+        </div>
+        <div class="mb-4">
+            <label class="block text-xs text-slate-400 mb-2">New Status</label>
+            <select id="modalStatusSelect" class="w-full rounded-lg px-3 py-2 text-sm">
+                <option value="active">Active — awards XP to students</option>
+                <option value="manuscript">Manuscript — visible but no XP</option>
+                <option value="reference">Reference — visible, reference material</option>
+                <option value="sealed">Sealed — hidden to Acolytes</option>
+            </select>
+        </div>
+        <div class="flex gap-3">
+            <button onclick="closeTomeModal()" class="flex-1 btn-ghost px-4 py-2 rounded-lg text-sm">Cancel</button>
+            <button onclick="saveTomeStatus()" class="flex-1 btn-gold px-4 py-2 rounded-lg text-sm">Save</button>
+        </div>
+        <p id="modalMsg" class="mt-2 text-xs text-center"></p>
+    </div>
+</div>
+
+<script type="module">
+import { auth } from "./scripts/firebase/config.js";
+import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-auth.js";
+import { db } from "./scripts/firebase/config.js";
+import {
+    collection, getDocs, doc, getDoc, updateDoc, addDoc, query, where, orderBy, serverTimestamp
+} from "https://www.gstatic.com/firebasejs/12.15.0/firebase-firestore.js";
+
+import { resolveTier, issueCertificate, TIERS, GENESIS_MASTER_UIDS } from "./scripts/genesis-registrar.js";
+import { readRegistrar } from "./scripts/spire-registrar.js";
+import { DEPARTMENT_PLANES, PRIORITY_LABELS, createArtifact, listArtifactsByPlane } from "./scripts/tome-authoring.js";
+
+// ── State ────────────────────────────────────────────────────────
+let currentUser = null;
+let currentRegistrar = null;
+let currentTier = "ACOLYTE";
+let editingTomeId = null;
+
+// ── Helpers ──────────────────────────────────────────────────────
+function escapeHtml(s) {
+    return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+}
+function showToast(msg, ok = true) {
+    const t = document.getElementById("toast");
+    const ti = document.getElementById("toastInner");
+    ti.textContent = msg;
+    ti.style.color = ok ? "#86efac" : "#fca5a5";
+    t.classList.remove("hidden");
+    setTimeout(() => t.classList.add("hidden"), 3500);
+}
+function badgeHtml(status) {
+    const classes = {
+        active: "badge-active", manuscript: "badge-manuscript",
+        reference: "badge-reference", sealed: "badge-sealed"
+    };
+    const labels = { active: "Active ★", manuscript: "Manuscript", reference: "Reference", sealed: "Sealed" };
+    const cls = classes[status] || "badge-manuscript";
+    const lbl = labels[status] || status;
+    return `<span class="${cls} px-2 py-0.5 rounded-full text-[10px] mono">${escapeHtml(lbl)}</span>`;
+}
+
+// ── Tab switching ────────────────────────────────────────────────
+window.switchTab = function(tab, btn) {
+    document.querySelectorAll(".tab-panel").forEach(p => p.classList.remove("active"));
+    document.querySelectorAll(".tab-btn").forEach(b => { b.classList.remove("active"); b.classList.add("text-slate-400"); });
+    document.getElementById("tab-" + tab).classList.add("active");
+    btn.classList.add("active"); btn.classList.remove("text-slate-400");
+
+    if (tab === "tomes-db") loadTomeRegistry();
+    if (tab === "artifacts") loadArtifacts();
+};
+
+// ── Auth ─────────────────────────────────────────────────────────
+onAuthStateChanged(auth, async (user) => {
+    document.getElementById("loadingState").classList.add("hidden");
+
+    if (!user) { window.location.href = "login.html"; return; }
+    currentUser = user;
+
+    currentRegistrar = await readRegistrar(user.uid);
+    currentTier = await resolveTier(user.uid);
+
+    if (currentTier === "ACOLYTE") {
+        document.getElementById("accessDenied").classList.remove("hidden");
+        document.getElementById("deniedTierLabel").textContent = "Acolyte";
+        return;
+    }
+
+    // Show console
+    document.getElementById("adminConsole").classList.remove("hidden");
+
+    // Identity banner
+    document.getElementById("bannerTier").textContent =
+        (currentTier === "ARCHON" ? "♛ " : "⬢ ") + currentTier.charAt(0) + currentTier.slice(1).toLowerCase();
+    document.getElementById("bannerGenesisId").textContent =
+        currentRegistrar?.cosmologicalId || "—";
+    document.getElementById("bannerPlanes").textContent =
+        (currentRegistrar?.certifiedPlanes || []).join(", ") || "none";
+
+    if (currentTier === "ARCHON") {
+        document.getElementById("forgeLink").classList.remove("hidden");
+    }
+
+    // Populate plane selectors
+    populatePlaneSelects();
+
+    // Load department data
+    renderDepartments();
+});
+
+// ── Populate plane <select> elements ────────────────────────────
+function populatePlaneSelects() {
+    const planes = DEPARTMENT_PLANES;
+    ["artPlane", "electPlane"].forEach(id => {
+        const sel = document.getElementById(id);
+        const existing = sel.innerHTML;
+        planes.forEach(p => {
+            const opt = document.createElement("option");
+            opt.value = p.plane;
+            opt.textContent = `${p.plane} — ${p.name}`;
+            sel.appendChild(opt);
+        });
+    });
+
+    // Also populate the dept filter for tome registry
+    const deptFilter = document.getElementById("tomeFilterDept");
+    DEPARTMENT_PLANES.forEach(p => {
+        const opt = document.createElement("option");
+        opt.value = p.plane;
+        opt.textContent = p.name;
+        deptFilter.appendChild(opt);
+    });
+}
+
+// ── DEPARTMENTS TAB ──────────────────────────────────────────────
+
+// Static curriculum data (planes → tomes)
+// This maps the known curriculum structure to department display
+const CURRICULUM = [
+    {
+        plane: "dept-I", color: "#D4AF37", icon: "✦",
+        name: "Sacred Geometry & Topology",
+        courses: [
+            { title: "Sacred Geometry Overview", file: "SG_Main.html", status: "reference", xp: false },
+            { title: "Clifford Torus Proof", file: "Celestial_Topology/Clifford_Torus/Proof.html", status: "active", xp: true },
+            { title: "Triple Trefoil Engine", file: "Celestial_Topology/Triple_Trefoil/SimulationTTE.html", status: "active", xp: true },
+            { title: "Saturn Parity Protocol", file: "Celestial_Topology/Saturn/Saturn_Parity_Protocol.html", status: "active", xp: true },
+            { title: "Hyperbolic Weaving", file: "Sacred_Geometry/Hyperbolic_weaving.html", status: "active", xp: true },
+            { title: "Golden Ratio Projections", file: "Sacred_Geometry/Golden_Ratio_Projections.html", status: "manuscript", xp: false },
+            { title: "Hyper-Spheres S3", file: "Sacred_Geometry/Hyper_Spheres_S3.html", status: "manuscript", xp: false },
+            { title: "Quadrance Scaling", file: "Library/Quadrance_Scaling_Tutorial.html", status: "active", xp: true },
+        ],
+        artifactThreshold: 9, artifactName: "Sacred Geometry Mastery"
+    },
+    {
+        plane: "dept-II", color: "#9482ff", icon: "⬡",
+        name: "Cryptography & Sigils",
+        courses: [
+            { title: "Cryptography Foundations", file: "DepartmentII/index.html", status: "active", xp: true },
+        ],
+        artifactThreshold: 9, artifactName: "Sigil Cryptographer"
+    },
+    {
+        plane: "dept-III", color: "#00d4ff", icon: "✧",
+        name: "Celestial Topology",
+        courses: [
+            { title: "Celestial Topology Hub", file: "DepartmentI/Celestial_Topology/index.html", status: "active", xp: true },
+        ],
+        artifactThreshold: 9, artifactName: "Celestial Navigator"
+    },
+    {
+        plane: "dept-IV", color: "#ff9500", icon: "⊕",
+        name: "Hyperbolic Systems",
+        courses: [
+            { title: "Hyperbolic Systems Hub", file: "DepartmentIV/index.html", status: "active", xp: true },
+        ],
+        artifactThreshold: 9, artifactName: "Hyperbolic Architect"
+    },
+    {
+        plane: "dept-V", color: "#00ff88", icon: "∞",
+        name: "Fractal Processing",
+        courses: [
+            { title: "Fractal Processing Hub", file: "DepartmentV/index.html", status: "active", xp: true },
+        ],
+        artifactThreshold: 9, artifactName: "Fractal Processor"
+    },
+    {
+        plane: "dept-VI", color: "#66d9e8", icon: "⬤",
+        name: "Seed Protocols",
+        courses: [
+            { title: "Seed Protocols Hub", file: "DepartmentVI/index.html", status: "active", xp: true },
+        ],
+        artifactThreshold: 9, artifactName: "Seed Architect"
+    },
+    {
+        plane: "dept-VII", color: "#cc44ff", icon: "☽",
+        name: "Human Consciousness",
+        courses: [
+            { title: "Human Consciousness Hub", file: "Department VII/Access_Restricted.html", status: "sealed", xp: false, locked: true },
+        ],
+        artifactThreshold: 9, artifactName: "Consciousness Weaver",
+        locked: true, lockNote: "Synced at Biostrata Level 3 (27 active tomes)"
+    },
+    {
+        plane: "dept-VIII", color: "#00d4a0", icon: "≋",
+        name: "Soul-Mind Projection",
+        courses: [
+            { title: "Soul-Mind Projection Hub", file: "Department VIII/Access_Restricted.html", status: "sealed", xp: false, locked: true },
+        ],
+        artifactThreshold: 9, artifactName: "Soul-Mind Architect",
+        locked: true, lockNote: "Synced at Biostrata Level 3 (27 active tomes)"
+    },
+    {
+        plane: "dept-IX", color: "#4488ff", icon: "⚡",
+        name: "AI-Human Integration",
+        courses: [
+            { title: "AI-Human Integration Hub", file: "Department IX/Access_Restricted.html", status: "sealed", xp: false, locked: true },
+        ],
+        artifactThreshold: 9, artifactName: "Integration Sage",
+        locked: true, lockNote: "Synced at Biostrata Level 3 (27 active tomes)"
+    },
+    {
+        plane: "dept-X", color: "#ff4488", icon: "⬡⬡",
+        name: "BioChain Substrate",
+        courses: [
+            { title: "BioChain Substrate Hub", file: "DepartmentX/index.html", status: "sealed", xp: false, locked: true },
+        ],
+        artifactThreshold: 16, artifactName: "BioChain Node (×4)",
+        locked: true, lockNote: "Requires 27-Tome Triad + all 9 dept artifacts"
+    },
+];
+
+window.renderDepartments = function() {
+    const filterStatus = document.getElementById("deptFilterStatus").value;
+    const container = document.getElementById("deptList");
+
+    let html = "";
+    CURRICULUM.forEach((dept, dIdx) => {
+        const courses = filterStatus
+            ? dept.courses.filter(c => c.status === filterStatus)
+            : dept.courses;
+        if (filterStatus && courses.length === 0) return;
+
+        const activeCount = dept.courses.filter(c => c.status === "active").length;
+        const totalCount = dept.courses.length;
+        const pct = totalCount > 0 ? Math.round((activeCount / dept.artifactThreshold) * 100) : 0;
+        const cappedPct = Math.min(pct, 100);
+
+        html += `
+        <div class="dept-card rounded-xl overflow-hidden">
+            <div class="dept-header p-4 flex items-center gap-3" onclick="toggleDept('dept-body-${dIdx}')">
+                <span class="text-2xl" style="color:${escapeHtml(dept.color)}">${escapeHtml(dept.icon)}</span>
+                <div class="flex-1">
+                    <div class="flex items-center gap-2 flex-wrap">
+                        <span class="font-semibold text-slate-200 mystical text-sm">${escapeHtml(dept.name)}</span>
+                        <span class="mono text-[10px] text-slate-500">${escapeHtml(dept.plane)}</span>
+                        ${dept.locked ? `<span class="badge-sealed px-2 py-0.5 rounded-full text-[10px] mono">🔒 ${escapeHtml(dept.lockNote)}</span>` : ""}
+                    </div>
+                    <div class="flex items-center gap-4 mt-2">
+                        <div class="flex-1 progress-bar-bg">
+                            <div class="progress-bar-fill" style="width:${cappedPct}%; background: linear-gradient(to right, ${escapeHtml(dept.color)}88, ${escapeHtml(dept.color)});"></div>
+                        </div>
+                        <span class="text-xs mono text-slate-400">${activeCount} / ${dept.artifactThreshold} for artifact</span>
+                    </div>
+                </div>
+                <svg class="w-4 h-4 text-slate-500 transition-transform" id="chevron-${dIdx}" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z"/>
+                </svg>
+            </div>
+
+            <div id="dept-body-${dIdx}" class="hidden border-t border-white/5">
+                <div class="p-4">
+                    <table class="w-full text-sm">
+                        <thead>
+                            <tr class="text-left text-xs text-slate-500 mono border-b border-white/10">
+                                <th class="pb-2 pr-4">Course / Tome</th>
+                                <th class="pb-2 pr-4">Status</th>
+                                <th class="pb-2 pr-4">XP</th>
+                                <th class="pb-2 text-right">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${courses.map(c => `
+                            <tr class="tome-row">
+                                <td class="py-2 pr-4 text-slate-300 text-xs">${escapeHtml(c.title)}</td>
+                                <td class="py-2 pr-4">${badgeHtml(c.status)}</td>
+                                <td class="py-2 pr-4 text-xs ${c.xp ? "text-green-400" : "text-slate-600"}">${c.xp ? "★ XP" : "—"}</td>
+                                <td class="py-2 text-right">
+                                    ${!c.locked ? `
+                                    <div class="flex gap-1 justify-end">
+                                        <button onclick="quickStatus('${escapeHtml(dept.plane)}','${escapeHtml(c.title)}','active')" class="px-2 py-0.5 rounded text-[10px] badge-active hover:opacity-80">Active</button>
+                                        <button onclick="quickStatus('${escapeHtml(dept.plane)}','${escapeHtml(c.title)}','manuscript')" class="px-2 py-0.5 rounded text-[10px] badge-manuscript hover:opacity-80">MS</button>
+                                        <button onclick="quickStatus('${escapeHtml(dept.plane)}','${escapeHtml(c.title)}','sealed')" class="px-2 py-0.5 rounded text-[10px] badge-sealed hover:opacity-80">Seal</button>
+                                    </div>` : `<span class="text-[10px] text-slate-600 mono">locked</span>`}
+                                </td>
+                            </tr>`).join("")}
+                        </tbody>
+                    </table>
+
+                    <div class="mt-4 pt-4 border-t border-white/5 flex items-center justify-between">
+                        <div class="artifact-badge px-3 py-1.5 rounded-lg text-xs">
+                            <span class="text-yellow-300 font-semibold">⬡ ${escapeHtml(dept.artifactName)}</span>
+                            <span class="text-slate-400 ml-2">requires ${dept.artifactThreshold} active tomes</span>
+                        </div>
+                        <button onclick="switchTab('tomes-db', document.querySelector('[data-tab=tomes-db]')); filterDept('${escapeHtml(dept.plane)}')"
+                            class="text-xs btn-ghost px-3 py-1.5 rounded-lg">
+                            View in Registry →
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>`;
+    });
+
+    container.innerHTML = html || `<p class="text-slate-500 text-sm text-center py-8">No courses match this filter.</p>`;
+};
+
+window.toggleDept = function(id) {
+    const el = document.getElementById(id);
+    const idx = id.split("-").pop();
+    const chevron = document.getElementById("chevron-" + idx);
+    el.classList.toggle("hidden");
+    if (chevron) chevron.style.transform = el.classList.contains("hidden") ? "" : "rotate(180deg)";
+};
+
+// Quick status change for static curriculum items — updates Firestore tomes matching title+plane
+window.quickStatus = async function(plane, title, newStatus) {
+    try {
+        const q = query(collection(db, "tomes"), where("plane", "==", plane), where("title", "==", title));
+        const snap = await getDocs(q);
+        if (snap.empty) {
+            showToast(`No Firestore tome found for "${title}". Create it first via the Instructor Console.`, false);
+            return;
+        }
+        for (const d of snap.docs) {
+            await updateDoc(doc(db, "tomes", d.id), { status: newStatus, updatedAt: serverTimestamp() });
+        }
+        showToast(`Status → ${newStatus}`);
+    } catch (e) {
+        showToast("Error: " + e.message, false);
+    }
+};
+
+// ── TOME REGISTRY TAB ────────────────────────────────────────────
+window.loadTomeRegistry = async function() {
+    const container = document.getElementById("tomeRegistryList");
+    const statsEl = document.getElementById("tomeRegistryStats");
+    container.innerHTML = `<div class="text-center py-10"><div class="spinner mx-auto"></div></div>`;
+
+    try {
+        const deptFilter = document.getElementById("tomeFilterDept").value;
+        const statusFilter = document.getElementById("tomeFilterStatus").value;
+
+        let q;
+        if (deptFilter && statusFilter) {
+            q = query(collection(db, "tomes"), where("plane","==",deptFilter), where("status","==",statusFilter), orderBy("createdAt","desc"));
+        } else if (deptFilter) {
+            q = query(collection(db, "tomes"), where("plane","==",deptFilter), orderBy("createdAt","desc"));
+        } else if (statusFilter) {
+            q = query(collection(db, "tomes"), where("status","==",statusFilter), orderBy("createdAt","desc"));
+        } else {
+            q = query(collection(db, "tomes"), orderBy("createdAt","desc"));
+        }
+
+        const snap = await getDocs(q);
+        const tomes = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+
+        // Stats
+        const counts = { active: 0, manuscript: 0, reference: 0, sealed: 0 };
+        tomes.forEach(t => { if (counts[t.status] !== undefined) counts[t.status]++; else counts.manuscript++; });
+        const statColors = { active: "#00ff78", manuscript: "#00d4ff", reference: "#9482ff", sealed: "#ff5f5f" };
+        statsEl.innerHTML = Object.entries(counts).map(([k, v]) => `
+            <div class="glass rounded-xl p-3 text-center">
+                <div class="text-2xl font-bold mono" style="color:${statColors[k]}">${v}</div>
+                <div class="text-xs text-slate-400 capitalize mt-1">${k}</div>
+            </div>`).join("");
+
+        if (tomes.length === 0) {
+            container.innerHTML = `<p class="text-slate-500 text-sm text-center py-8">No tomes found. Create them via the Instructor Console.</p>`;
+            return;
+        }
+
+        container.innerHTML = tomes.map(t => `
+        <div class="glass rounded-xl p-4 flex flex-wrap items-center gap-3">
+            <div class="flex-1 min-w-0">
+                <div class="flex items-center gap-2 flex-wrap">
+                    <span class="text-sm font-semibold text-slate-200">${escapeHtml(t.title || "Untitled")}</span>
+                    ${badgeHtml(t.status || "manuscript")}
+                    <span class="text-[10px] mono text-slate-500">${escapeHtml(t.plane || "—")}</span>
+                </div>
+                <div class="text-xs text-slate-500 mt-1 mono truncate">ID: ${escapeHtml(t.id)}</div>
+                ${t.description ? `<div class="text-xs text-slate-400 mt-1 truncate">${escapeHtml(t.description)}</div>` : ""}
+            </div>
+            <div class="flex items-center gap-2">
+                <span class="text-xs px-2 py-0.5 rounded-full border mono"
+                    style="color:${PRIORITY_LABELS[t.priority]?.color || "#aaa"}; border-color:${PRIORITY_LABELS[t.priority]?.color || "#aaa"}44;">
+                    ${escapeHtml(PRIORITY_LABELS[t.priority]?.label || t.priority || "—")}
+                </span>
+                <button onclick="openTomeModal('${escapeHtml(t.id)}','${escapeHtml((t.title||"").replace(/'/g,"\\\'"))}','${escapeHtml(t.status||"manuscript")}')"
+                    class="btn-ghost px-3 py-1.5 rounded-lg text-xs">Edit Status</button>
+            </div>
+        </div>`).join("");
+
+    } catch (e) {
+        container.innerHTML = `<p class="text-red-400 text-sm text-center py-8">Error: ${escapeHtml(e.message)}</p>`;
+    }
+};
+
+window.filterDept = function(plane) {
+    document.getElementById("tomeFilterDept").value = plane;
+    loadTomeRegistry();
+};
+
+// ── TOME MODAL ────────────────────────────────────────────────────
+window.openTomeModal = function(id, title, status) {
+    editingTomeId = id;
+    document.getElementById("modalTomeTitle").textContent = title;
+    document.getElementById("modalTomeId").textContent = "ID: " + id;
+    document.getElementById("modalStatusSelect").value = status;
+    document.getElementById("modalMsg").textContent = "";
+    document.getElementById("tomeModal").classList.remove("hidden");
+};
+window.closeTomeModal = function() {
+    document.getElementById("tomeModal").classList.add("hidden");
+    editingTomeId = null;
+};
+window.saveTomeStatus = async function() {
+    if (!editingTomeId) return;
+    const status = document.getElementById("modalStatusSelect").value;
+    document.getElementById("modalMsg").textContent = "Saving…";
+    try {
+        await updateDoc(doc(db, "tomes", editingTomeId), { status, updatedAt: serverTimestamp() });
+        showToast("Tome status updated → " + status);
+        closeTomeModal();
+        loadTomeRegistry();
+    } catch (e) {
+        document.getElementById("modalMsg").textContent = "Error: " + e.message;
+        document.getElementById("modalMsg").style.color = "#fca5a5";
+    }
+};
+
+// ── ARTIFACTS TAB ─────────────────────────────────────────────────
+window.mintArtifact = async function() {
+    const name = document.getElementById("artName").value.trim();
+    const plane = document.getElementById("artPlane").value;
+    const desc = document.getElementById("artDesc").value.trim();
+    const rawIds = document.getElementById("artTomeIds").value;
+    const tomeIds = rawIds.split(",").map(s => s.trim()).filter(Boolean);
+    const msg = document.getElementById("artMsg");
+
+    if (!name || !plane || tomeIds.length === 0) {
+        msg.textContent = "Name, plane, and at least one tome ID are required.";
+        msg.style.color = "#fca5a5"; return;
+    }
+
+    msg.textContent = "Minting…"; msg.style.color = "#D4AF37";
+    try {
+        const { createArtifact: ca } = await import("./scripts/tome-authoring.js");
+        const result = await ca(currentUser.uid, {
+            name, plane, description: desc,
+            domain: plane, dept: plane.replace("dept-", ""),
+            requiredTomes: tomeIds
+        });
+        msg.textContent = "⬡ Artifact minted: " + result.id;
+        msg.style.color = "#86efac";
+        document.getElementById("artName").value = "";
+        document.getElementById("artTomeIds").value = "";
+        loadArtifacts();
+    } catch (e) {
+        msg.textContent = "Error: " + e.message;
+        msg.style.color = "#fca5a5";
+    }
+};
+
+window.loadArtifacts = async function() {
+    const container = document.getElementById("artifactList");
+    container.innerHTML = `<div class="text-center py-10"><div class="spinner mx-auto"></div></div>`;
+    try {
+        const snap = await getDocs(query(collection(db, "artifacts"), orderBy("createdAt", "desc")));
+        const arts = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        if (arts.length === 0) {
+            container.innerHTML = `<p class="text-slate-500 text-sm text-center py-8">No artifacts minted yet.</p>`;
+            return;
+        }
+        container.innerHTML = arts.map(a => `
+        <div class="artifact-badge rounded-xl p-4 flex items-start gap-3">
+            <span class="text-2xl mt-0.5">⬡</span>
+            <div class="flex-1">
+                <div class="flex items-center gap-2 flex-wrap">
+                    <span class="font-semibold text-yellow-300 mystical text-sm">${escapeHtml(a.name)}</span>
+                    <span class="mono text-[10px] text-slate-500">${escapeHtml(a.plane || "—")}</span>
+                </div>
+                ${a.description ? `<p class="text-xs text-slate-400 mt-1">${escapeHtml(a.description)}</p>` : ""}
+                <div class="mt-2">
+                    <span class="text-[10px] text-slate-500 mono">Required tomes (${(a.requiredTomes||[]).length}):</span>
+                    <div class="flex flex-wrap gap-1 mt-1">
+                        ${(a.requiredTomes||[]).map(id => `<span class="mono text-[10px] bg-white/5 px-1.5 py-0.5 rounded">${escapeHtml(id)}</span>`).join("")}
+                    </div>
+                </div>
+            </div>
+            <div class="text-[10px] mono text-slate-500">ID: ${escapeHtml(a.id)}</div>
+        </div>`).join("");
+    } catch (e) {
+        container.innerHTML = `<p class="text-red-400 text-sm text-center py-8">Error: ${escapeHtml(e.message)}</p>`;
+    }
+};
+
+// ── ELECT TAB ─────────────────────────────────────────────────────
+window.issueCertFromAdmin = async function() {
+    const subjectId = document.getElementById("electSubjectId").value.trim();
+    const tier = document.getElementById("electTier").value;
+    const plane = document.getElementById("electPlane").value;
+    const msg = document.getElementById("electMsg");
+    const output = document.getElementById("electCertOutput");
+
+    if (!subjectId.startsWith("0x")) {
+        msg.textContent = "Subject ID must start with 0x"; msg.style.color = "#fca5a5"; return;
+    }
+    if (!plane) { msg.textContent = "Select a plane."; msg.style.color = "#fca5a5"; return; }
+
+    msg.textContent = "Forging…"; msg.style.color = "#D4AF37";
+    try {
+        const cert = await issueCertificate(currentRegistrar, subjectId, tier, plane);
+        output.value = JSON.stringify(cert, null, 2);
+        msg.textContent = "Certificate forged. Deliver securely to recipient.";
+        msg.style.color = "#86efac";
+        window._lastCert = cert;
+    } catch (e) {
+        msg.textContent = "Error: " + e.message;
+        msg.style.color = "#fca5a5";
+    }
+};
+
+window.copyCert = function() {
+    const val = document.getElementById("electCertOutput").value;
+    if (!val.trim()) return;
+    navigator.clipboard.writeText(val).then(() => showToast("Copied to clipboard"));
+};
+
+window.downloadCert = function() {
+    const val = document.getElementById("electCertOutput").value;
+    if (!val.trim()) return;
+    const blob = new Blob([val], { type: "application/json" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "genesis-certificate.json";
+    a.click();
+};
+
+// ── ACCESS DENIED — apply cert ────────────────────────────────────
+window.applyDeniedCert = async function() {
+    const raw = document.getElementById("deniedCertInput").value.trim();
+    const msg = document.getElementById("deniedCertMsg");
+    if (!raw) { msg.textContent = "Paste your certificate JSON first."; msg.style.color = "#fca5a5"; return; }
+    msg.textContent = "Applying…"; msg.style.color = "#D4AF37";
+    try {
+        const { applyCertificate } = await import("./scripts/genesis-registrar.js");
+        const cert = JSON.parse(raw);
+        await applyCertificate(currentUser.uid, cert);
+        msg.textContent = "Applied! Reloading…"; msg.style.color = "#86efac";
+        setTimeout(() => location.reload(), 1500);
+    } catch (e) {
+        msg.textContent = "Error: " + e.message;
+        msg.style.color = "#fca5a5";
+    }
+};
+</script>
+
+</body>
+</html>
