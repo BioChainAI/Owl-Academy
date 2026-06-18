@@ -63,10 +63,10 @@ const renderWelcome = (profile, user) => {
   const progress = getRankProgress(profile.arts);
 
   // Placeholder sigil using initial letter — replaced async once cosmologicalId loads
-  const placeholderSigil = `<div class="w-20 h-20 md:w-24 md:h-24 rounded-full border-2 border-yellow-500/60
-                    flex items-center justify-center text-3xl mystical-font text-yellow-300
+  const placeholderSigil = `<div class="rounded-full border-2 border-yellow-500/60
+                    flex items-center justify-center text-4xl mystical-font text-yellow-300
                     bg-gradient-to-br from-yellow-500/10 to-purple-500/10"
-             style="text-shadow: 0 0 18px rgba(212,175,55,0.6); box-shadow: inset 0 0 18px rgba(212,175,55,0.15)">
+             style="width:192px;height:192px;text-shadow: 0 0 18px rgba(212,175,55,0.6); box-shadow: inset 0 0 18px rgba(212,175,55,0.15)">
           ${initial}
         </div>`;
 
@@ -134,16 +134,19 @@ const renderWelcome = (profile, user) => {
         </a>
       `;
 
-      // Async: load cosmologicalId and replace placeholder with real sigil
+      // Async: load cosmologicalId + profile familiar data and replace placeholder with real sigil
       try {
-        const [registrar, constDoc] = await Promise.all([
+        const [registrar, constDoc, profDoc] = await Promise.all([
           getDocument(`users/${user.uid}/registrar/main`),
           getDocument(`constellations/${user.uid}`).catch(() => null),
+          getDocument(`users/${user.uid}/profile/main`).catch(() => null),
         ]);
         const cosmologicalId = registrar?.cosmologicalId || user.uid;
         const orbitals = constDoc?.orbitals || {};
         const guilds = profile?.guilds || [];
-        const sigilSvg = renderUserSigil({ cosmologicalId, tier, guilds, orbitals, size: 96 });
+        const activeSlot = profDoc?.activeFamiliarSlot ?? 0;
+        const manifoldConfig = (profDoc?.familiarManifolds ?? {})[String(activeSlot)] ?? null;
+        const sigilSvg = renderUserSigil({ cosmologicalId, activeSlot, manifoldConfig, tier, guilds, orbitals, size: 192 });
         const wrap = document.getElementById("sanctum-sigil-wrap");
         if (wrap) wrap.innerHTML = `
           <a href="mage_tower/Familiars.html" title="View your familiar" style="display:block;line-height:0;">

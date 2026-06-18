@@ -333,7 +333,7 @@
 
 <script type="module">
   import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-auth.js";
-  import { doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-firestore.js";
+  import { doc, getDoc, setDoc, collection, getDocs } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-firestore.js";
   import { auth, db } from "../scripts/firebase/config.js";
   import {
     FAMILIARS, MAX_FAMILIAR_SLOTS,
@@ -612,9 +612,29 @@
     _profile = profSnap.exists() ? profSnap.data() : {};
     _orbitals = constSnap?.exists() ? (constSnap.data().orbitals || {}) : {};
     _guilds = _profile.guilds || [];
-    _familiarSlots = _profile.familiarSlots ?? [0];
+
+    // Recovery: if profile.familiarSlots is missing but the user purchased echo familiars
+    // (old Store.html only wrote to inventory, not to profile), rebuild from inventory.
+    if (_profile.familiarSlots) {
+      _familiarSlots = _profile.familiarSlots;
+    } else {
+      const invSnap = await getDocs(collection(db, 'users', user.uid, 'inventory'));
+      const echoCount = invSnap.docs.filter(d => d.data().itemId === 'familiar-echo').length;
+      _familiarSlots = Array.from({ length: echoCount + 1 }, (_, i) => i);
+      if (echoCount > 0) {
+        // Persist the recovered slots so future loads skip this step
+        const profRef = doc(db, 'users', user.uid, 'profile', 'main');
+        await setDoc(profRef, {
+          familiarSlots: _familiarSlots,
+          totalFamiliarsPurchased: echoCount,
+        }, { merge: true });
+        Object.assign(_profile, { familiarSlots: _familiarSlots, totalFamiliarsPurchased: echoCount });
+      }
+    }
+
     _activeSlot = _profile.activeFamiliarSlot ?? 0;
     _manifolds = _profile.familiarManifolds ?? {};
+
 
     try { _tier = await resolveTier(user.uid); } catch(_) {}
 
