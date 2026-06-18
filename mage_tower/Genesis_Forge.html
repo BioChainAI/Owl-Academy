@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Owl Academy | Genesis Forge — Archon Console</title>
 
-    <script type="module" src="scripts/auth-guard.js"></script>
+    <script type="module" src="../scripts/auth-guard.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
 
@@ -173,13 +173,13 @@
     </main>
 
     <script type="module">
-        import { auth } from "./scripts/firebase/config.js";
+        import { auth } from "../scripts/firebase/config.js";
         import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-auth.js";
-        import { readRegistrar } from "./scripts/spire-registrar.js";
+        import { readRegistrar } from "../scripts/spire-registrar.js";
         import {
             resolveTier, issueCertificate, bootstrapArchonCertificate,
             applyCertificate, GENESIS_MASTER_UIDS
-        } from "./scripts/genesis-registrar.js";
+        } from "../scripts/genesis-registrar.js";
 
         let currentUser = null;
         let currentRegistrar = null;
