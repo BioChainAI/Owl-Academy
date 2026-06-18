@@ -1,4 +1,5 @@
-import { getRankProgress, getTotalXP } from "../services/arts.service.js";
+import { getRankProgress } from "../services/arts.service.js";
+import { getTotalXP } from "../services/user.service.js";
 
 const ART_LABELS = {
   mathematics:    "Mathematics",
