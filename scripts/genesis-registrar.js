@@ -18,6 +18,7 @@ import { computeCosmologicalId, readRegistrar } from "./spire-registrar.js";
 // Root Archons — Firebase UIDs that self-validate at the genesis layer.
 // Edit this list to designate site administrators.
 export const GENESIS_MASTER_UIDS = [
+  "k1E2ylvBlJPMYaCq9SY8muJQx8a2",  // Garrett Hoard — Root Archon
   // Add Firebase UIDs of root admins here. Example:
   // "abc123def456ghi789",
 ];
