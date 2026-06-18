@@ -4,7 +4,17 @@
  * reveals the page (logged in) or redirects to login.html (not logged in).
  */
 import { auth } from "./firebase/config.js";
-import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-auth.js";
+import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-auth.js";
+
+// Expose a global logout for inline `onclick="globalLogout()"` buttons across legacy pages
+window.globalLogout = async () => {
+  try {
+    await signOut(auth);
+  } catch (err) {
+    console.error("[Owl Academy] signOut failed:", err);
+  }
+  window.location.replace("login.html");
+};
 
 // Immediately hide body to prevent flash of protected content
 document.documentElement.style.visibility = "hidden";
