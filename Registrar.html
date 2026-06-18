@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Owl Academy | Geometric Registrar — Cosmological ID</title>
+
+    <script type="module" src="scripts/auth-guard.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --void: #05030a;
+            --gold: #D4AF37;
+            --gold-light: #FFF8DC;
+            --cyan: #00d4ff;
+            --magenta: #e81cff;
+        }
+        body {
+            background-color: var(--void); color: #e2e8f0;
+            font-family: 'Inter', sans-serif;
+            background: radial-gradient(circle at 50% 10%, rgba(138,43,226,0.08), var(--void) 80%);
+            min-height: 100vh; margin: 0;
+        }
+        h1, h2, h3, .mystical { font-family: 'Cinzel', serif; }
+        .mono { font-family: 'JetBrains Mono', monospace; }
+        .gold-gradient {
+            background: linear-gradient(to right, var(--gold), var(--gold-light), var(--gold));
+            -webkit-background-clip: text; background-clip: text; color: transparent;
+        }
+        .glass {
+            background: rgba(10, 6, 22, 0.6); backdrop-filter: blur(16px);
+            border: 1px solid rgba(212, 175, 55, 0.18);
+            box-shadow: 0 10px 40px -10px rgba(0,0,0,0.8);
+        }
+        .sigil-svg { filter: drop-shadow(0 0 12px rgba(212,175,55,0.4)); }
+        .pulse-ring { animation: pulse 3s ease-in-out infinite; }
+        @keyframes pulse {
+            0%, 100% { filter: drop-shadow(0 0 8px rgba(212,175,55,0.3)); }
+            50% { filter: drop-shadow(0 0 20px rgba(212,175,55,0.7)); }
+        }
+        .starfield {
+            position: fixed; inset: 0; pointer-events: none; z-index: 0;
+            background-image:
+                radial-gradient(1.5px 1.5px at 30px 50px, var(--gold), transparent),
+                radial-gradient(2px 2px at 90px 120px, #fff, transparent),
+                radial-gradient(1.5px 1.5px at 160px 80px, var(--gold-light), transparent);
+            background-size: 250px 250px; opacity: 0.2;
+        }
+        input[type=text], textarea, select {
+            background: #0d091a; color: var(--gold-light);
+            border: 1px solid rgba(212,175,55,0.2);
+        }
+        input:focus, textarea:focus, select:focus {
+            outline: none; border-color: var(--cyan);
+            box-shadow: 0 0 0 2px rgba(0,212,255,0.15);
+        }
+    </style>
+</head>
+<body class="antialiased">
+    <div class="starfield"></div>
+
+    <main class="relative z-10 max-w-5xl mx-auto px-4 md:px-8 py-12">
+
+        <header class="text-center mb-10">
+            <div class="inline-flex items-center gap-2 px-3 py-1 border border-cyan-500/30 rounded-full bg-cyan-950/40 text-cyan-300 text-[10px] tracking-[0.2em] uppercase mono mb-4">
+                <span class="w-1.5 h-1.5 bg-cyan-400 rounded-full animate-ping"></span>
+                S.P.I.R.E. Geometric Registrar
+            </div>
+            <h1 class="text-3xl md:text-5xl font-bold tracking-[0.15em] mystical">
+                FORGE YOUR <span class="gold-gradient">COSMOLOGICAL ID</span>
+            </h1>
+            <p class="text-sm text-gray-400 max-w-2xl mx-auto mt-4 leading-relaxed">
+                Submit a ledger seed — a phrase, sigil string, or constant — to crystallize your immutable
+                geometric fingerprint. This Cosmological ID will sign every tome, artifact, and rank you
+                accrue across the Academy. <span class="text-yellow-400 font-semibold">It can only be set once.</span>
+            </p>
+        </header>
+
+        <!-- Already-registered banner (hidden by default) -->
+        <div id="already-sealed" class="hidden glass rounded-xl p-6 mb-8 border-cyan-500/40">
+            <div class="flex items-start gap-4">
+                <svg class="w-6 h-6 text-cyan-400 flex-shrink-0 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                <div class="flex-grow">
+                    <h3 class="mystical text-lg text-cyan-300">Registrar Already Sealed</h3>
+                    <p class="text-xs text-gray-400 mt-1">Your Cosmological ID has been forged. Visit the Codex to view your geometric lineage.</p>
+                    <a href="Codex.html" class="inline-block mt-3 px-4 py-2 rounded bg-cyan-500/20 border border-cyan-400/50 text-cyan-300 text-xs mono uppercase tracking-widest hover:bg-cyan-500/30">
+                        → Enter Codex
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Registration form -->
+        <div id="registration-form" class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+
+            <!-- Left: Input panel -->
+            <div class="glass rounded-xl p-6 md:p-8 space-y-6">
+                <div class="border-b border-yellow-600/20 pb-3">
+                    <div class="text-[10px] mono text-cyan-400 tracking-wider">STEP 1 · SEED SUBMISSION</div>
+                    <h2 class="text-xl text-white mystical mt-1">Inscribe the Ledger Seed</h2>
+                </div>
+
+                <div class="space-y-2">
+                    <label class="block text-xs mono text-gray-400 uppercase tracking-wider">Ledger Seed Phrase</label>
+                    <textarea id="seed-input" rows="3" class="w-full mono text-xs p-3 rounded-lg" placeholder="A sacred phrase, sigil string, or constant…"></textarea>
+                    <div class="text-[10px] text-gray-500 mono">Recommended: 16+ characters. Anything entered here is hashed before storage — but the raw seed is also kept so you can verify your ID later. Choose carefully.</div>
+                </div>
+
+                <div class="space-y-2">
+                    <label class="block text-xs mono text-gray-400 uppercase tracking-wider">Target Lattice Space</label>
+                    <select id="lattice-select" class="w-full mono text-xs p-2.5 rounded">
+                        <option value="E8">E8 Lie Algebra (φ = 1.618)</option>
+                        <option value="R8">ℝ⁸ Octonionic (φ² = 2.618)</option>
+                        <option value="R24" selected>ℝ²⁴ Leech Grid (φ³ = 4.236)</option>
+                    </select>
+                </div>
+
+                <button id="preview-btn" class="w-full py-3 rounded bg-gradient-to-r from-yellow-600 to-amber-500 text-black font-bold mono tracking-widest text-xs uppercase hover:from-yellow-500 hover:to-amber-400 transition-all">
+                    Preview Cosmological ID
+                </button>
+
+                <div class="bg-amber-950/30 border border-amber-700/30 rounded-lg p-3 text-[11px] text-amber-200/80 leading-relaxed">
+                    <strong class="text-amber-400">Immutable Seal:</strong> Once committed, your ledger seed and Cosmological ID can never be changed. They are written once to the Registrar and locked.
+                </div>
+            </div>
+
+            <!-- Right: Preview panel -->
+            <div class="glass rounded-xl p-6 md:p-8 space-y-6">
+                <div class="border-b border-yellow-600/20 pb-3">
+                    <div class="text-[10px] mono text-yellow-500 tracking-wider">STEP 2 · GEOMETRIC PREVIEW</div>
+                    <h2 class="text-xl text-white mystical mt-1">Witness the Sigil</h2>
+                </div>
+
+                <div class="flex justify-center items-center min-h-[220px] bg-black/40 rounded-lg border border-gray-800 relative overflow-hidden">
+                    <div id="sigil-container" class="w-52 h-52 pulse-ring">
+                        <svg viewBox="0 0 200 200" class="w-full h-full opacity-30">
+                            <circle cx="100" cy="100" r="80" fill="none" stroke="#D4AF37" stroke-width="0.5" stroke-dasharray="3 3"/>
+                            <text x="100" y="105" text-anchor="middle" fill="#D4AF37" font-size="9" font-family="JetBrains Mono">AWAITING SEED</text>
+                        </svg>
+                    </div>
+                </div>
+
+                <div id="preview-stats" class="space-y-2 mono text-[11px] hidden">
+                    <div class="flex justify-between bg-black/40 p-2 rounded border border-gray-800">
+                        <span class="text-gray-500">COSMOLOGICAL ID:</span>
+                        <span id="stat-id" class="text-cyan-400">—</span>
+                    </div>
+                    <div class="flex justify-between bg-black/40 p-2 rounded border border-gray-800">
+                        <span class="text-gray-500">HYPERBOLIC COORDS:</span>
+                        <span id="stat-coords" class="text-purple-400">—</span>
+                    </div>
+                    <div class="flex justify-between bg-black/40 p-2 rounded border border-gray-800">
+                        <span class="text-gray-500">TOPOLOGICAL ENTROPY:</span>
+                        <span id="stat-entropy" class="text-yellow-400">—</span>
+                    </div>
+                    <div class="flex justify-between bg-black/40 p-2 rounded border border-gray-800">
+                        <span class="text-gray-500">LATTICE SPACE:</span>
+                        <span id="stat-lattice" class="text-emerald-400">—</span>
+                    </div>
+                </div>
+
+                <button id="seal-btn" class="w-full py-3 rounded border-2 border-cyan-500/50 bg-cyan-500/10 text-cyan-300 hover:bg-cyan-500/25 hover:text-white transition-all mono tracking-widest text-xs uppercase font-bold disabled:opacity-30 disabled:cursor-not-allowed" disabled>
+                    ⬢ Seal & Commit to Registrar ⬢
+                </button>
+            </div>
+        </div>
+
+        <!-- Result panel (post-commit) -->
+        <div id="result-panel" class="hidden mt-10 glass rounded-xl p-8 text-center border-yellow-500/40">
+            <div class="text-[10px] mono text-yellow-400 tracking-[0.3em] uppercase">Registrar Sealed</div>
+            <h2 class="text-2xl mystical text-white mt-2">Cosmological ID Forged</h2>
+            <div id="result-sigil" class="w-48 h-48 mx-auto my-6 pulse-ring"></div>
+            <div id="result-id" class="mono text-cyan-400 text-sm tracking-wider"></div>
+            <div class="flex justify-center gap-3 mt-6">
+                <a href="Codex.html" class="px-6 py-2.5 rounded bg-yellow-500 text-black mono text-xs uppercase tracking-widest font-bold hover:bg-yellow-400">Enter Codex →</a>
+                <button id="export-btn" class="px-6 py-2.5 rounded border border-cyan-500/50 text-cyan-300 mono text-xs uppercase tracking-widest hover:bg-cyan-500/20">Download Local Backup</button>
+            </div>
+        </div>
+
+        <div class="text-center mt-12">
+            <a href="Learning-Hub.html" class="text-[10px] mono text-gray-500 hover:text-gray-300 uppercase tracking-[0.3em]">← Return to Grand Hall</a>
+        </div>
+
+    </main>
+
+    <script type="module">
+        import { auth } from "./scripts/firebase/config.js";
+        import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-auth.js";
+        import {
+            computeCosmologicalId,
+            writeRegistrar,
+            readRegistrar,
+            renderSigil,
+            exportLocalBackup
+        } from "./scripts/spire-registrar.js";
+
+        let currentUser = null;
+        let previewedId = null;
+
+        onAuthStateChanged(auth, async (user) => {
+            if (!user) return;
+            currentUser = user;
+            const existing = await readRegistrar(user.uid);
+            if (existing && existing.sealed) {
+                document.getElementById("already-sealed").classList.remove("hidden");
+                document.getElementById("registration-form").classList.add("opacity-30", "pointer-events-none");
+            }
+        });
+
+        document.getElementById("preview-btn").addEventListener("click", async () => {
+            const seed = document.getElementById("seed-input").value.trim();
+            const lattice = document.getElementById("lattice-select").value;
+            if (!seed) { alert("Inscribe a ledger seed first."); return; }
+            if (!currentUser) { alert("Authentication still resolving. Try again in a moment."); return; }
+            try {
+                const { cosmologicalId, geoVector } = await computeCosmologicalId(seed, currentUser.uid, lattice);
+                previewedId = { cosmologicalId, geoVector, seed, lattice };
+                document.getElementById("sigil-container").innerHTML = renderSigil(cosmologicalId, 200);
+                document.getElementById("preview-stats").classList.remove("hidden");
+                document.getElementById("stat-id").innerText = cosmologicalId;
+                document.getElementById("stat-coords").innerText = `(${geoVector.coords.x}, ${geoVector.coords.y}, ${geoVector.coords.z})`;
+                document.getElementById("stat-entropy").innerText = `${geoVector.entropy} bits`;
+                document.getElementById("stat-lattice").innerText = geoVector.lattice;
+                document.getElementById("seal-btn").disabled = false;
+            } catch (err) {
+                alert("Preview failed: " + err.message);
+            }
+        });
+
+        document.getElementById("seal-btn").addEventListener("click", async () => {
+            if (!previewedId || !currentUser) return;
+            const confirmed = confirm(
+                "SEAL WARNING\n\n" +
+                "Your Cosmological ID will be permanently inscribed and can never be changed.\n\n" +
+                "ID: " + previewedId.cosmologicalId + "\n\n" +
+                "Proceed?"
+            );
+            if (!confirmed) return;
+            try {
+                const sealed = await writeRegistrar(currentUser.uid, previewedId.seed, previewedId.lattice);
+                document.getElementById("registration-form").classList.add("hidden");
+                document.getElementById("result-panel").classList.remove("hidden");
+                document.getElementById("result-sigil").innerHTML = renderSigil(sealed.cosmologicalId, 192);
+                document.getElementById("result-id").innerText = sealed.cosmologicalId;
+            } catch (err) {
+                alert("Sealing failed: " + err.message);
+            }
+        });
+
+        document.getElementById("export-btn").addEventListener("click", () => {
+            exportLocalBackup();
+        });
+    </script>
+</body>
+</html>
