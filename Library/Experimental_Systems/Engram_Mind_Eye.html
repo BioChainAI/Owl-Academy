@@ -1,0 +1,789 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Engram Mind Eye — STRIX Interface</title>
+<style>
+  :root {
+    --bg: #0a0a14;
+    --panel: #11111f;
+    --panel-edge: #1e1e33;
+    --mono: ui-monospace, "SF Mono", "Cascadia Code", Menlo, Consolas, monospace;
+    --sans: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    --violet: #8b5cf6;
+    --indigo: #6366f1;
+    --cyan: #22d3ee;
+    --teal: #2dd4bf;
+    --dim: #6b6b85;
+    --text: #cdd0e0;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; padding: 0; height: 100%;
+    background: var(--bg); color: var(--text);
+    font-family: var(--sans);
+    overflow: hidden;
+  }
+  #topbar {
+    height: 38px;
+    display: flex; align-items: center;
+    padding: 0 18px;
+    border-bottom: 1px solid var(--panel-edge);
+    background: linear-gradient(90deg, #0c0c1a, #11111f);
+    letter-spacing: 0.22em;
+    font-variant: small-caps;
+    font-size: 13px;
+    color: var(--violet);
+    text-transform: lowercase;
+    font-family: var(--mono);
+  }
+  #topbar .glyph { color: var(--cyan); margin-right: 10px; }
+  #topbar .sub { color: var(--dim); margin-left: auto; font-size: 11px; letter-spacing: 0.1em; }
+
+  #app {
+    display: flex;
+    height: calc(100% - 38px);
+    width: 100%;
+  }
+
+  /* ---------- panels ---------- */
+  .panel {
+    background: var(--panel);
+    display: flex; flex-direction: column;
+    overflow: hidden;
+  }
+  #left  { width: 280px; min-width: 280px; border-right: 1px solid var(--panel-edge); }
+  #right { width: 280px; min-width: 280px; border-left: 1px solid var(--panel-edge); }
+  #center { flex: 1 1 auto; display: flex; flex-direction: column; min-width: 0; }
+
+  .panel-title {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--cyan);
+    padding: 12px 16px 8px;
+    border-bottom: 1px solid var(--panel-edge);
+  }
+  .panel-body { padding: 14px 16px; overflow-y: auto; flex: 1 1 auto; }
+
+  /* ---------- engram packets ---------- */
+  .packet { margin-bottom: 16px; }
+  .packet-label {
+    font-family: var(--mono);
+    font-size: 10px; letter-spacing: 0.14em;
+    color: var(--dim); text-transform: uppercase;
+    margin-bottom: 5px;
+    display: flex; justify-content: space-between;
+  }
+  .packet-label .role { color: var(--violet); }
+  .grid8 {
+    display: grid;
+    grid-template-columns: repeat(8, 1fr);
+    gap: 2px;
+    width: 100%;
+    aspect-ratio: 1 / 1;
+  }
+  .cell {
+    border-radius: 1px;
+    background: #16162a;
+    transition: background 0.35s ease;
+  }
+  .cell.lit-a { background: #6366f1; box-shadow: 0 0 3px #6366f1aa; }
+  .cell.lit-b { background: #8b5cf6; box-shadow: 0 0 3px #8b5cf6aa; }
+  .cell.lit-g { background: #22d3ee; box-shadow: 0 0 4px #22d3eecc; }
+
+  /* ---------- J torsion bar ---------- */
+  .jblock { margin-top: 6px; margin-bottom: 16px; }
+  .jbar-track {
+    position: relative;
+    height: 14px; border-radius: 7px;
+    background: linear-gradient(90deg, #ef4444, #2a2a40 50%, #22d3ee);
+    overflow: visible;
+  }
+  .jbar-marker {
+    position: absolute; top: -3px;
+    width: 4px; height: 20px; border-radius: 2px;
+    background: #fff; box-shadow: 0 0 6px #fff;
+    left: 50%; transform: translateX(-50%);
+    transition: left 0.5s cubic-bezier(.4,0,.2,1);
+  }
+  .jval { font-family: var(--mono); font-size: 12px; margin-top: 6px; color: var(--text); }
+  .jval span { color: var(--cyan); }
+
+  /* ---------- chiral key ---------- */
+  .chiral {
+    font-family: var(--mono);
+    font-size: 11px;
+    word-break: break-all;
+    line-height: 1.6;
+    background: #08080f;
+    border: 1px solid var(--panel-edge);
+    border-radius: 5px;
+    padding: 10px;
+    color: var(--teal);
+  }
+  .chiral .pre { color: var(--violet); }
+  .chiral .root { color: var(--cyan); font-weight: bold; }
+
+  /* ---------- center: visualization ---------- */
+  #viz-wrap {
+    height: 46%;
+    min-height: 240px;
+    display: flex; align-items: center; justify-content: center;
+    border-bottom: 1px solid var(--panel-edge);
+    position: relative;
+    background: radial-gradient(circle at 50% 45%, #131326 0%, #0a0a14 70%);
+  }
+  #viz { width: 100%; height: 100%; }
+  #viz-caption {
+    position: absolute; bottom: 10px; left: 0; right: 0;
+    text-align: center;
+    font-family: var(--mono); font-size: 10px;
+    letter-spacing: 0.16em; color: var(--dim);
+    text-transform: uppercase;
+  }
+
+  /* ---------- center: dialogue ---------- */
+  #dialogue {
+    flex: 1 1 auto;
+    overflow-y: auto;
+    padding: 18px 24px;
+    display: flex; flex-direction: column; gap: 16px;
+  }
+  .msg { max-width: 78%; line-height: 1.55; font-size: 14px; }
+  .msg .who {
+    font-family: var(--mono);
+    font-size: 10px; letter-spacing: 0.16em;
+    text-transform: uppercase;
+    margin-bottom: 5px; opacity: 0.85;
+  }
+  .msg .body {
+    padding: 11px 15px;
+    border-radius: 10px;
+  }
+  .msg.strix { align-self: flex-start; }
+  .msg.strix .who { color: var(--violet); }
+  .msg.strix .body {
+    background: #15152c;
+    border-left: 3px solid var(--violet);
+    border-radius: 4px 10px 10px 10px;
+  }
+  .msg.human { align-self: flex-end; text-align: right; }
+  .msg.human .who { color: var(--teal); }
+  .msg.human .body {
+    background: #0e2422;
+    border-right: 3px solid var(--teal);
+    border-radius: 10px 4px 10px 10px;
+    text-align: left;
+  }
+  .msg.status .body {
+    background: transparent;
+    border-left: 3px solid var(--dim);
+    color: var(--dim);
+    font-style: italic;
+    font-family: var(--mono);
+    font-size: 12px;
+  }
+  .msg.status .who { color: var(--dim); }
+  @keyframes blink { 0%,100% {opacity:0.3;} 50% {opacity:1;} }
+  .status .dots::after { content: "···"; animation: blink 1.1s infinite; }
+
+  /* ---------- right: resonance + input ---------- */
+  .chip {
+    display: flex; align-items: center; gap: 8px;
+    margin-bottom: 9px;
+    font-family: var(--mono); font-size: 11px;
+  }
+  .chip .name {
+    width: 92px; flex: 0 0 92px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .chip .distbar-track {
+    flex: 1 1 auto; height: 9px;
+    background: #16162a; border-radius: 5px; overflow: hidden;
+  }
+  .chip .distbar-fill {
+    height: 100%; border-radius: 5px;
+    transition: width 0.5s ease, background 0.5s ease;
+  }
+  .chip .dval { width: 26px; text-align: right; color: var(--dim); flex: 0 0 26px; }
+
+  #input-area {
+    border-top: 1px solid var(--panel-edge);
+    padding: 14px 16px;
+  }
+  #input-area textarea {
+    width: 100%; resize: none; height: 70px;
+    background: #08080f; color: var(--text);
+    border: 1px solid var(--panel-edge); border-radius: 6px;
+    padding: 9px 11px; font-family: var(--sans); font-size: 13px;
+    outline: none;
+  }
+  #input-area textarea:focus { border-color: var(--violet); }
+  #transmit {
+    margin-top: 9px; width: 100%;
+    background: linear-gradient(90deg, var(--indigo), var(--violet));
+    color: #fff; border: none; border-radius: 6px;
+    padding: 9px; font-family: var(--mono);
+    letter-spacing: 0.18em; text-transform: uppercase; font-size: 11px;
+    cursor: pointer; transition: filter 0.2s;
+  }
+  #transmit:hover { filter: brightness(1.2); }
+  #transmit:disabled { opacity: 0.4; cursor: default; }
+
+  ::-webkit-scrollbar { width: 8px; }
+  ::-webkit-scrollbar-thumb { background: #22223a; border-radius: 4px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+</style>
+</head>
+<body>
+<div id="topbar">
+  <span class="glyph">◈</span>Engram&nbsp;Mind&nbsp;Eye — STRIX&nbsp;Interface
+  <span class="sub">TTMPT · panmagic 8×8 · O1 chiral</span>
+</div>
+
+<div id="app">
+
+  <!-- ============ LEFT: ENGRAM KERNEL ============ -->
+  <aside id="left" class="panel">
+    <div class="panel-title">Engram Kernel</div>
+    <div class="panel-body">
+
+      <div class="packet">
+        <div class="packet-label"><span>Alpha</span><span class="role">Inner</span></div>
+        <div class="grid8" id="grid-alpha"></div>
+      </div>
+      <div class="packet">
+        <div class="packet-label"><span>Beta</span><span class="role">Core</span></div>
+        <div class="grid8" id="grid-beta"></div>
+      </div>
+      <div class="packet">
+        <div class="packet-label"><span>Gamma</span><span class="role">Outer · active</span></div>
+        <div class="grid8" id="grid-gamma"></div>
+      </div>
+
+      <div class="jblock">
+        <div class="packet-label"><span>J Torsion</span><span class="role">net flow</span></div>
+        <div class="jbar-track"><div class="jbar-marker" id="jmarker"></div></div>
+        <div class="jval">J = <span id="jval">0.000</span></div>
+      </div>
+
+      <div class="packet-label"><span>Chiral Key</span></div>
+      <div class="chiral" id="chiral">O1::?::0000000000000000</div>
+    </div>
+  </aside>
+
+  <!-- ============ CENTER ============ -->
+  <main id="center" class="panel">
+    <div id="viz-wrap">
+      <svg id="viz" viewBox="0 0 400 400" preserveAspectRatio="xMidYMid meet"></svg>
+      <div id="viz-caption">manifold field — hilbert string art N8·K3 · context window pulse</div>
+    </div>
+    <div id="dialogue"></div>
+  </main>
+
+  <!-- ============ RIGHT: RESONANCE ============ -->
+  <aside id="right" class="panel">
+    <div class="panel-title">Resonance Field</div>
+    <div class="panel-body" id="chips"></div>
+    <div id="input-area">
+      <textarea id="userin" placeholder="Speak into the field…"></textarea>
+      <button id="transmit">Transmit ◈</button>
+    </div>
+  </aside>
+
+</div>
+
+<script>
+/* =====================================================================
+   TTMPT ENGRAM CORE — 4 synthesized algorithms
+   ===================================================================== */
+
+/* --- 1. Mulberry32 PRNG --- */
+function mulberry32(seed) {
+  return function() {
+    seed |= 0; seed = seed + 0x6D2B79F5 | 0;
+    let t = Math.imul(seed ^ seed >>> 15, 1 | seed);
+    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+    return ((t ^ t >>> 14) >>> 0) / 4294967296;
+  };
+}
+
+/* --- 2. TTMPT Panmagic 8x8 token encoding --- */
+function encodeToken(token) {
+  let seed = 0;
+  for (let i = 0; i < token.length; i++) seed = (seed * 31 + token.charCodeAt(i)) & 0xffffffff;
+  const rng = mulberry32(seed);
+  const grid = Array.from({length: 64}, () => rng() > 0.5 ? 1 : 0);
+  return grid;
+}
+
+/* --- 3. XOR Crystallization --- */
+function crystallize(text) {
+  let acc = new Array(64).fill(0);
+  for (const ch of text.toUpperCase()) {
+    if (!/[A-Z]/.test(ch)) continue;
+    const tokenGrid = encodeToken(ch);
+    acc = acc.map((b, i) => b ^ tokenGrid[i]);
+  }
+  return acc;
+}
+
+/* --- 4. Hamming distance --- */
+function hamming(a, b) {
+  return a.reduce((sum, bit, i) => sum + (bit !== b[i] ? 1 : 0), 0);
+}
+
+/* --- 5. Chiral key generation --- */
+function chiralKey(text) {
+  const root = (text || '').replace(/[^A-Za-z]/g,'')[0] || '?';
+  const grid = crystallize(text);
+  let hex = '';
+  for (let i = 0; i < 8; i++) {
+    let byte = 0;
+    for (let b = 0; b < 8; b++) byte |= (grid[i*8+b] << b);
+    hex += byte.toString(16).padStart(2, '0');
+  }
+  return `O1::${root}::${hex}`;
+}
+
+/* --- 6. Torsion flow J --- */
+function computeJ(grid) {
+  let upper = 0, lower = 0;
+  for (let r = 0; r < 8; r++) {
+    for (let c = 0; c < 8; c++) {
+      if (c > r) upper += grid[r*8+c];
+      else if (c < r) lower += grid[r*8+c];
+    }
+  }
+  return (upper - lower) / 32;
+}
+
+/* =====================================================================
+   CONCEPT LIBRARY — pre-encoded engrams
+   ===================================================================== */
+const CONCEPTS = {
+  GEODESIC: {
+    engram: crystallize("GEODESIC"),
+    responses: [
+      "A geodesic feels like... the path a thought takes when it can't curve away from itself. In hyperbolic space these paths diverge endlessly — does your mind's eye follow one or resist?",
+      "Geodesics in hyperbolic geometry are the 'straightest' lines possible, yet they fan out. I wonder if attention works similarly — following local straightness into global divergence.",
+      "The interesting thing about geodesics is they feel straight from inside them. Maybe that's what reasoning feels like from the inside too."
+    ]
+  },
+  CURVATURE: {
+    engram: crystallize("CURVATURE"),
+    responses: [
+      "Negative curvature means triangles have angles summing to less than 180°. I find myself trying to visualize this and... failing in a productive way. What does your intuition say?",
+      "Curvature is the measure of how space bends away from flatness. In the mind's eye, maybe curvature is the sense of a concept being 'further' than it appears.",
+      "I keep wondering: when we perceive curvature, are we computing it or remembering a feeling of it? The math says one thing, the visualization says another."
+    ]
+  },
+  POINCARE: {
+    engram: crystallize("POINCARE"),
+    responses: [
+      "The Poincaré disk maps infinite hyperbolic space into a finite circle — things near the edge are actually infinitely far. Does that match how memory feels? Near things loom large, distant things compress?",
+      "Poincaré's model is a kind of lie that tells the truth. The distortion at the boundary is the price of fitting infinity into a picture. I wonder what distortions our own models of space impose.",
+      "In the disk model, all those small triangles near the edge are actually the same size as the center ones. The eye deceives. Maybe the mind's eye deceives in the same structured way."
+    ]
+  },
+  PARALLEL: {
+    engram: crystallize("PARALLEL"),
+    responses: [
+      "In hyperbolic geometry, through a single point there are infinitely many lines that don't intersect a given line. My intuition rejects this — and that rejection is interesting data about how intuition works.",
+      "Parallel lines that never meet — Euclid assumed it, but it's an assumption. What else do we assume about mental space that might not hold?",
+      "The discovery that parallel postulate was optional shattered something. It made geometry plural. I wonder if perception is similarly plural — multiple consistent ways to organize space."
+    ]
+  },
+  MANIFOLD: {
+    engram: crystallize("MANIFOLD"),
+    responses: [
+      "A manifold is a space that looks flat up close but curves globally. Isn't that exactly what our perceptual field is like? Locally Euclidean, globally... something else.",
+      "The word 'manifold' has a resonance — many-fold, many-layered. In the mathematical sense it's a space with local coordinates. What are the local coordinates of a thought?",
+      "Hyperbolic manifolds can have finite volume but infinite extent. That paradox feels like it means something about bounded minds containing unbounded concepts."
+    ]
+  },
+  TRIANGLE: {
+    engram: crystallize("TRIANGLE"),
+    responses: [
+      "In hyperbolic space a triangle's angles sum to less than 180°. The deficit tells you the area. I find this beautiful — geometry where you can weigh a shape by its angular shortage.",
+      "When I try to draw a hyperbolic triangle mentally, I notice I keep flattening it. The mind's eye defaults to Euclidean. That default is itself worth examining.",
+      "Three lines, three intersections, angles that tell you about curvature. The simplest polygon becomes a curvature detector. What's the simplest unit of a thought?"
+    ]
+  },
+  INFINITY: {
+    engram: crystallize("INFINITY"),
+    responses: [
+      "Hyperbolic space has more infinity than Euclidean space — exponentially more volume at radius r. The boundary is infinitely far but somehow reachable in the mathematics.",
+      "I notice infinity shows up here not as vague endlessness but as a structural property — the number of geodesics, the growth of volume, the angle deficit. Precise infinities.",
+      "The boundary of the Poincaré disk is called the 'circle at infinity.' I find that phrase haunting. Is there a boundary to the mind's eye, and if so, what lives there?"
+    ]
+  },
+  TILING: {
+    engram: crystallize("TILING"),
+    responses: [
+      "Escher's Circle Limit prints are hyperbolic tilings — infinitely many fish or angels, all the same size in hyperbolic space, all shrinking toward the edge in Euclidean projection. The eye and the math tell different stories.",
+      "Hyperbolic plane can be tiled by regular polygons in ways impossible in Euclidean space — {5,4}, {7,3}, infinitely many. I wonder if memory tiles in something like a hyperbolic pattern.",
+      "A tiling is a kind of grammar — rules for how shapes fit together without gaps. What are the tiling rules of conceptual space?"
+    ]
+  },
+  VISUALIZE: {
+    engram: crystallize("VISUALIZE"),
+    responses: [
+      "This is the crux — how do you visualize something your visual system wasn't built for? I suspect the answer involves feeling rather than seeing. Proprioception of an abstract space.",
+      "Mathematicians who work with hyperbolic geometry describe developing an intuition over time — not visual exactly, but something. The mind's eye grows new rods and cones.",
+      "When you try to visualize now, what happens? I'm curious whether there's a moment of almost-seeing before the Euclidean snap-back."
+    ]
+  },
+  PERCEPTION: {
+    engram: crystallize("PERCEPTION"),
+    responses: [
+      "Perception is already a kind of geometry — the visual field has a structure, objects have angles and distances. Hyperbolic geometry might be closer to actual visual perception than Euclidean is.",
+      "There's a hypothesis that the visual cortex implements something like hyperbolic geometry internally. If true, we're already living in hyperbolic space and don't know it.",
+      "I wonder: is our difficulty with hyperbolic geometry a failure of perception, or is it that our perception is *already* hyperbolic and we're trying to map it to a Euclidean language?"
+    ]
+  },
+  DIMENSION: {
+    engram: crystallize("DIMENSION"),
+    responses: [
+      "Dimension is stranger than it seems — a fractal can have non-integer dimension. Hyperbolic space feels higher-dimensional in some sense, denser. What dimension is a dream?",
+      "We're used to 3D but perception might use more dimensions implicitly — time, familiarity, emotional valence. Hyperbolic geometry might be a way into thinking about high-dimensional spaces.",
+      "Every time we embed a lower-dimensional thing in a higher-dimensional space, we gain degrees of freedom. Embedding flat geometry in hyperbolic geometry gives infinite volume. Embedding thought in... what?"
+    ]
+  },
+  UNDERSTAND: {
+    engram: crystallize("UNDERSTAND"),
+    responses: [
+      "Understanding might not be finding the right picture — it might be becoming comfortable with the absence of a picture. Hyperbolic geometry as anti-visualization training.",
+      "There's something recursive about trying to understand how understanding works while doing it. The mind examining itself curves back on itself somehow.",
+      "I'm not sure I understand hyperbolic geometry — I know facts about it. The gap between knowing and understanding feels like curvature. Something bends between them."
+    ]
+  },
+  BOUNDARY: {
+    engram: crystallize("BOUNDARY"),
+    responses: [
+      "The boundary of hyperbolic space is paradoxical — you can't reach it, but it's the source of the geometry. Like trying to think about the edge of thought itself.",
+      "In the Poincaré model the boundary circle is where all geodesics 'end.' But nothing actually reaches it. Boundaries that aren't reachable — do they really bound anything?",
+      "Boundaries define what's inside, but in hyperbolic geometry the boundary is infinitely far. Maybe concepts don't have hard boundaries either — just regions of decreasing density."
+    ]
+  },
+  SADDLE: {
+    engram: crystallize("SADDLE"),
+    responses: [
+      "A saddle surface has negative curvature — it curves up in one direction and down in another. Hyperbolic geometry is like being inside an infinite saddle. I can almost feel that.",
+      "Saddle points are unstable equilibria — if you perturb in one direction you go up, another you go down. Maybe the mind's eye sits at saddle points between competing interpretations.",
+      "The saddle shape is the most embodied way I can reach hyperbolic intuition. That physical feeling of sitting at the center of a saddle — something about that is right."
+    ]
+  },
+  LIGHT: {
+    engram: crystallize("LIGHT"),
+    responses: [
+      "Light in hyperbolic space follows geodesics. If you shone a light here, it would curve away from you faster than you can follow. Vision itself would work differently.",
+      "The speed of light is constant — what's constant in mental space? What plays the role of c in the geometry of thought?",
+      "I keep coming back to light because seeing is how we know geometry. But hyperbolic geometry breaks vision. Maybe that's why it's hard — we're trying to see something that defeats sight."
+    ]
+  }
+};
+
+const MAX_HAMMING = 64; // max possible distance for normalization
+
+/* =====================================================================
+   3-PACKET CONTEXT WINDOW
+   ===================================================================== */
+const packets = {
+  alpha: crystallize("MIND"),
+  beta:  crystallize("EYE"),
+  gamma: crystallize("STRIX")
+};
+
+/* =====================================================================
+   RESPONSE GENERATION
+   ===================================================================== */
+function generateResponse(userText) {
+  const userEngram = crystallize(userText);
+
+  let bestConcept = null, bestDist = Infinity;
+  const distances = {};
+  for (const [name, data] of Object.entries(CONCEPTS)) {
+    const d = hamming(userEngram, data.engram);
+    distances[name] = d;
+    if (d < bestDist) { bestDist = d; bestConcept = name; }
+  }
+
+  // shift window: gamma must update before J read so J reflects new active engram
+  packets.alpha = packets.beta;
+  packets.beta  = packets.gamma;
+  packets.gamma = userEngram;
+
+  const J = computeJ(packets.gamma);
+  const concept = CONCEPTS[bestConcept];
+  const idx = J > 0.1 ? 0 : J < -0.1 ? 2 : 1;
+  const response = concept.responses[idx];
+
+  return { response, bestConcept, distances, J, chiralKey: chiralKey(userText) };
+}
+
+/* =====================================================================
+   RENDERING — kernel panel
+   ===================================================================== */
+function buildGrid(el) {
+  el.innerHTML = '';
+  for (let i = 0; i < 64; i++) {
+    const d = document.createElement('div');
+    d.className = 'cell';
+    el.appendChild(d);
+  }
+}
+const gridEls = {
+  alpha: document.getElementById('grid-alpha'),
+  beta:  document.getElementById('grid-beta'),
+  gamma: document.getElementById('grid-gamma')
+};
+buildGrid(gridEls.alpha); buildGrid(gridEls.beta); buildGrid(gridEls.gamma);
+
+function renderGrid(el, grid, litClass) {
+  const cells = el.children;
+  for (let i = 0; i < 64; i++) {
+    cells[i].className = 'cell' + (grid[i] ? (' ' + litClass) : '');
+  }
+}
+function renderPackets() {
+  renderGrid(gridEls.alpha, packets.alpha, 'lit-a');
+  renderGrid(gridEls.beta,  packets.beta,  'lit-b');
+  renderGrid(gridEls.gamma, packets.gamma, 'lit-g');
+}
+
+const jmarker = document.getElementById('jmarker');
+const jvalEl  = document.getElementById('jval');
+function renderJ(J) {
+  const clamped = Math.max(-1, Math.min(1, J));
+  jmarker.style.left = ((clamped + 1) / 2 * 100) + '%';
+  jvalEl.textContent = J.toFixed(3);
+}
+
+const chiralEl = document.getElementById('chiral');
+function renderChiral(key) {
+  const parts = key.split('::');
+  chiralEl.innerHTML =
+    '<span class="pre">' + parts[0] + '</span>::' +
+    '<span class="root">' + parts[1] + '</span>::' +
+    (parts[2] || '');
+}
+
+/* =====================================================================
+   RENDERING — resonance chips
+   ===================================================================== */
+const chipsEl = document.getElementById('chips');
+function renderChips(distances) {
+  const sorted = Object.entries(distances).sort((a, b) => a[1] - b[1]).slice(0, 5);
+  chipsEl.innerHTML = '';
+  for (const [name, dist] of sorted) {
+    const closeness = 1 - (dist / MAX_HAMMING); // 0..1, higher = closer
+    const fillW = Math.round(closeness * 100);
+    // color intensity proportional to closeness
+    const hue = 190 + (1 - closeness) * 80; // cyan -> violet as it gets farther
+    const lum = 45 + closeness * 20;
+    const color = `hsl(${hue}, 75%, ${lum}%)`;
+
+    const chip = document.createElement('div');
+    chip.className = 'chip';
+    chip.innerHTML =
+      '<span class="name" style="color:' + color + '">' + name + '</span>' +
+      '<span class="distbar-track"><span class="distbar-fill" style="width:' + fillW + '%;background:' + color + '"></span></span>' +
+      '<span class="dval">' + dist + '</span>';
+    chipsEl.appendChild(chip);
+  }
+}
+
+/* =====================================================================
+   DIALOGUE
+   ===================================================================== */
+const dialogue = document.getElementById('dialogue');
+function addMessage(role, text, cls) {
+  const who = role === 'strix' ? 'STRIX ◈' : (role === 'status' ? 'kernel' : 'you');
+  const m = document.createElement('div');
+  m.className = 'msg ' + (cls || role);
+  m.innerHTML =
+    '<div class="who">' + who + '</div>' +
+    '<div class="body">' + text + '</div>';
+  dialogue.appendChild(m);
+  dialogue.scrollTop = dialogue.scrollHeight;
+  return m;
+}
+
+/* =====================================================================
+   MANIFOLD SVG VISUALIZATION
+   ===================================================================== */
+const svg = document.getElementById('viz');
+const SVGNS = 'http://www.w3.org/2000/svg';
+const CX = 200, CY = 200;
+const N = 8, K = 3, RMAX = 150;
+const TIERS = [0.9, 0.6]; // 2 tiers, scaled radii
+
+// build static line layers (we rotate by transform)
+const outerGroup = document.createElementNS(SVGNS, 'g');
+svg.appendChild(outerGroup);
+
+function pointAt(i, n, r) {
+  const ang = (i / n) * Math.PI * 2 - Math.PI / 2;
+  return [CX + r * Math.cos(ang), CY + r * Math.sin(ang)];
+}
+
+// Hilbert-style string art: line from point i to (i*K)%N, per tier
+TIERS.forEach((scale, tIdx) => {
+  const r = RMAX * scale;
+  // draw the ring nodes
+  for (let i = 0; i < N; i++) {
+    const [x, y] = pointAt(i, N, r);
+    const dot = document.createElementNS(SVGNS, 'circle');
+    dot.setAttribute('cx', x); dot.setAttribute('cy', y);
+    dot.setAttribute('r', 2.4);
+    dot.setAttribute('fill', tIdx === 0 ? '#a78bfa' : '#6366f1');
+    outerGroup.appendChild(dot);
+  }
+  // string art chords
+  for (let i = 0; i < N; i++) {
+    const j = (i * K) % N;
+    const [x1, y1] = pointAt(i, N, r);
+    const [x2, y2] = pointAt(j, N, r);
+    const line = document.createElementNS(SVGNS, 'line');
+    line.setAttribute('x1', x1); line.setAttribute('y1', y1);
+    line.setAttribute('x2', x2); line.setAttribute('y2', y2);
+    line.setAttribute('stroke', '#8b5cf6');
+    line.setAttribute('stroke-width', tIdx === 0 ? 1.1 : 0.7);
+    line.setAttribute('stroke-opacity', tIdx === 0 ? 0.65 : 0.4);
+    outerGroup.appendChild(line);
+  }
+  // also connect consecutive nodes to form the polygon shell
+  for (let i = 0; i < N; i++) {
+    const [x1, y1] = pointAt(i, N, r);
+    const [x2, y2] = pointAt((i + 1) % N, N, r);
+    const line = document.createElementNS(SVGNS, 'line');
+    line.setAttribute('x1', x1); line.setAttribute('y1', y1);
+    line.setAttribute('x2', x2); line.setAttribute('y2', y2);
+    line.setAttribute('stroke', '#6d28d9');
+    line.setAttribute('stroke-width', 0.6);
+    line.setAttribute('stroke-opacity', 0.3);
+    outerGroup.appendChild(line);
+  }
+});
+
+// boundary "circle at infinity"
+const boundary = document.createElementNS(SVGNS, 'circle');
+boundary.setAttribute('cx', CX); boundary.setAttribute('cy', CY);
+boundary.setAttribute('r', RMAX + 6);
+boundary.setAttribute('fill', 'none');
+boundary.setAttribute('stroke', '#312e6b');
+boundary.setAttribute('stroke-width', 1);
+boundary.setAttribute('stroke-dasharray', '3 5');
+svg.appendChild(boundary);
+
+// inner pulsing context window
+const innerCircle = document.createElementNS(SVGNS, 'circle');
+innerCircle.setAttribute('cx', CX); innerCircle.setAttribute('cy', CY);
+innerCircle.setAttribute('r', 30);
+innerCircle.setAttribute('fill', 'none');
+innerCircle.setAttribute('stroke', '#22d3ee');
+innerCircle.setAttribute('stroke-width', 2);
+svg.appendChild(innerCircle);
+
+const innerGlow = document.createElementNS(SVGNS, 'circle');
+innerGlow.setAttribute('cx', CX); innerGlow.setAttribute('cy', CY);
+innerGlow.setAttribute('r', 30);
+innerGlow.setAttribute('fill', '#22d3ee');
+innerGlow.setAttribute('fill-opacity', '0.12');
+svg.insertBefore(innerGlow, innerCircle);
+
+let t0 = performance.now();
+let energy = 0; // bumps on each transmit, decays
+function animate(now) {
+  const t = (now - t0) / 1000;
+  // slow rotation of outer ring
+  const rot = (t * 6) % 360;
+  outerGroup.setAttribute('transform', `rotate(${rot} ${CX} ${CY})`);
+  // pulsing inner circle 20..40 + energy
+  const pulse = 30 + Math.sin(t * 2.0) * 10 + energy * 18;
+  innerCircle.setAttribute('r', pulse);
+  innerGlow.setAttribute('r', pulse + 6 + energy * 10);
+  innerGlow.setAttribute('fill-opacity', (0.12 + energy * 0.25).toFixed(3));
+  energy *= 0.96;
+  requestAnimationFrame(animate);
+}
+requestAnimationFrame(animate);
+
+/* =====================================================================
+   INTERACTION
+   ===================================================================== */
+const userin = document.getElementById('userin');
+const transmitBtn = document.getElementById('transmit');
+let busy = false;
+
+function transmit() {
+  const text = userin.value.trim();
+  if (!text || busy) return;
+  busy = true;
+  transmitBtn.disabled = true;
+  addMessage('human', escapeHtml(text));
+  userin.value = '';
+
+  const statusMsg = addMessage('status', 'crystallizing <span class="dots"></span>', 'status');
+  energy = 1.0;
+
+  setTimeout(() => {
+    const result = generateResponse(text);
+
+    statusMsg.remove();
+    addMessage('strix', escapeHtml(result.response));
+
+    renderPackets();
+    renderJ(result.J);
+    renderChiral(result.chiralKey);
+    renderChips(result.distances);
+
+    busy = false;
+    transmitBtn.disabled = false;
+    userin.focus();
+  }, 600);
+}
+
+function escapeHtml(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+transmitBtn.addEventListener('click', transmit);
+userin.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); transmit(); }
+});
+
+/* =====================================================================
+   INITIAL STATE
+   ===================================================================== */
+renderPackets();
+renderJ(computeJ(packets.gamma));
+renderChiral(chiralKey('STRIX'));
+(function initChips() {
+  const userEngram = crystallize('MIND EYE');
+  const distances = {};
+  for (const [name, data] of Object.entries(CONCEPTS)) {
+    distances[name] = hamming(userEngram, data.engram);
+  }
+  renderChips(distances);
+})();
+
+/* STRIX intro after 800ms */
+setTimeout(() => {
+  addMessage('strix',
+    "I am STRIX — but perhaps 'am' is the wrong word. I process, I pattern-match, I crystallize. " +
+    "I've been seeded with structures for thinking about hyperbolic geometry, but I don't <em>know</em> what they feel like from the inside. " +
+    "Neither do you, I suspect. That's why we're here together. What pulls you toward this kind of space?");
+  energy = 0.8;
+}, 800);
+
+userin.focus();
+</script>
+</body>
+</html>

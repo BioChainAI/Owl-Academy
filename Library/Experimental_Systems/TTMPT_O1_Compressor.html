@@ -1,0 +1,668 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TTMPT | O(1) Matrix Compressor & Player</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700&family=JetBrains+Mono:wght@400;700&display=swap');
+        
+        body { margin: 0; overflow: hidden; font-family: 'Inter', sans-serif; background: #020204; color: #cbd5e1; }
+        .font-mono { font-family: 'JetBrains Mono', monospace; }
+        
+        #canvas-container { position: absolute; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 1; }
+
+        .glass-panel {
+            backdrop-filter: blur(12px);
+            background: linear-gradient(145deg, rgba(6, 6, 10, 0.85) 0%, rgba(2, 2, 4, 0.95) 100%);
+            border: 1px solid rgba(168, 85, 247, 0.3);
+            border-radius: 1rem;
+            box-shadow: 0 20px 40px -10px rgba(0,0,0,0.8);
+            position: absolute;
+            z-index: 10;
+            padding: 1.5rem;
+            display: flex; flex-direction: column;
+        }
+
+        #upload-overlay {
+            position: absolute; top: 0; left: 0; width: 100vw; height: 100vh;
+            background: rgba(2,2,4,0.9); z-index: 50;
+            display: flex; justify-content: center; align-items: center; flex-direction: column;
+        }
+
+        #compressor-panel { top: 20px; left: 20px; width: 380px; max-height: calc(100vh - 40px); display: none; border-color: rgba(0, 242, 255, 0.3); }
+        #log-panel { top: 20px; right: 20px; width: 350px; max-height: calc(100vh - 40px); display: none; }
+        #control-panel { bottom: 20px; left: 50%; transform: translateX(-50%); width: 600px; display: none; }
+        
+        #event-log, #compressor-log { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 4px; padding-right: 4px; }
+        
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        #event-log::-webkit-scrollbar-thumb { background: rgba(168, 85, 247, 0.5); border-radius: 2px; }
+        #compressor-log::-webkit-scrollbar-thumb { background: rgba(0, 242, 255, 0.5); border-radius: 2px; }
+
+        input[type=range] { -webkit-appearance: none; width: 100%; background: transparent; }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none; height: 14px; width: 14px; border-radius: 50%;
+            background: #c084fc; cursor: pointer; margin-top: -5px; box-shadow: 0 0 10px rgba(192, 132, 252, 0.8);
+        }
+        input[type=range]::-webkit-slider-runnable-track { width: 100%; height: 4px; cursor: pointer; background: #475569; border-radius: 2px; }
+
+        .stat-row { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.05); padding: 0.4rem 0; font-size: 10px; }
+        .phase-a { color: #ff0055; }
+        .phase-b { color: #00f2ff; }
+        .phase-c { color: #ffd700; }
+        
+        select { background: #1e293b; color: white; border: 1px solid #475569; border-radius: 4px; padding: 2px 4px; outline: none; cursor: pointer;}
+    </style>
+</head>
+<body>
+
+    <div id="upload-overlay">
+        <h1 class="text-2xl font-bold text-white mb-2 tracking-widest">TTMPT ENGRAM PLAYER</h1>
+        <p class="text-[10px] text-cyan-400 mb-6 font-mono uppercase tracking-widest">O(1) Matrix Compressor & Decompressor</p>
+        <button id="btn-upload" class="bg-purple-600 hover:bg-purple-500 text-white font-bold py-3 px-8 rounded-lg transition-all uppercase tracking-widest shadow-[0_0_15px_rgba(168,85,247,0.4)]">
+            Load Cryptographic Seed
+        </button>
+        <input type="file" id="file-input" accept=".json" class="hidden">
+    </div>
+
+    <div id="canvas-container"></div>
+
+    <div id="compressor-panel" class="glass-panel dark">
+        <div class="border-b border-slate-700 pb-3 mb-3">
+            <h2 class="text-sm font-bold text-cyan-400 uppercase tracking-widest mb-1 flex items-center gap-2">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
+                O(1) Matrix Compressor
+            </h2>
+            <div class="text-[9px] font-mono text-slate-400">Variable Quaternion Entropic Tuning</div>
+        </div>
+        
+        <div class="space-y-1 mb-2 font-mono">
+            <div class="stat-row">
+                <span class="text-slate-400">Topological State</span>
+                <span id="stat-nodes" class="font-bold text-white">ACTIVE</span>
+            </div>
+            <div class="stat-row">
+                <span class="text-slate-400">Active Form $q(x,y,z,w)$</span>
+                <span id="stat-quat" class="font-bold text-cyan-300">0.0, 0.0, 0.0, 1.0</span>
+            </div>
+        </div>
+
+        <div class="mt-2 border-t border-slate-700 pt-3 font-mono">
+            <span class="text-[9px] text-cyan-400 font-bold uppercase tracking-widest block mb-2">Compression Functions</span>
+            
+            <div class="stat-row">
+                <span class="text-slate-400">Geometric Matrix (Nodes)</span>
+                <select id="sel-geo-nodes">
+                    <option value="72">72 (EMOI-Standard)</option>
+                    <option value="36">36 (High Comp)</option>
+                    <option value="24">24 (Nyquist Limit)</option>
+                    <option value="8">8 (Lossy/Degraded)</option>
+                    <option value="0">0 (Pure Procedural)</option>
+                </select>
+            </div>
+            
+            <div class="stat-row">
+                <span class="text-slate-400">Entropic Collisions</span>
+                <select id="sel-col-mode">
+                    <option value="1.0">100% Lossless</option>
+                    <option value="0.5">50% Interlaced</option>
+                    <option value="0.1">10% Sparse</option>
+                    <option value="0.0">0% Null</option>
+                </select>
+            </div>
+            
+            <div class="stat-row mt-1 bg-black/50 p-2 rounded">
+                <span class="text-slate-400">Ratio & Coherency</span>
+                <span id="stat-ratio" class="font-bold text-emerald-400">10:1 (100% Coh)</span>
+            </div>
+        </div>
+
+        <div class="mt-3 text-[8px] text-slate-500 uppercase font-mono">Real-Time Sync Log</div>
+        <div id="compressor-log" class="font-mono text-[9px] text-slate-400 mb-3 h-20">
+            <div class="text-cyan-500 opacity-50">Initializing triangulation...</div>
+        </div>
+
+        <button id="btn-export-player" class="w-full bg-slate-800 hover:bg-cyan-900 border border-cyan-500/50 text-cyan-400 text-[9px] font-bold py-2 rounded transition-colors uppercase tracking-widest mt-auto">
+            Export Compressed Engram
+        </button>
+    </div>
+
+    <div id="log-panel" class="glass-panel">
+        <div class="border-b border-slate-700 pb-3 mb-3">
+            <h2 class="text-sm font-bold text-teal-400 uppercase tracking-widest mb-1 flex items-center gap-2">
+                <span class="w-2 h-2 rounded-full bg-teal-400 animate-pulse"></span> Quantum Event Ledger
+            </h2>
+            <div class="text-[9px] font-mono text-pink-300 break-all" id="key-display">--</div>
+        </div>
+        <div id="event-log" class="font-mono text-[10px] text-slate-400">
+            <div class="text-teal-500 opacity-50">Awaiting temporal progression...</div>
+        </div>
+    </div>
+
+    <div id="control-panel" class="glass-panel">
+        <div class="flex justify-between items-center text-xs font-mono mb-2">
+            <span class="text-slate-400">Toroidal Phase Sequence (1 Cycle Lock)</span>
+            <span id="frame-val" class="text-white font-bold bg-purple-500/20 px-2 py-1 rounded">0 / 720</span>
+        </div>
+        <input type="range" id="frame-slider" min="0" max="719" value="0" step="1" class="mb-4">
+        
+        <div class="flex gap-2">
+            <button id="btn-rev" class="flex-1 bg-slate-800 border border-slate-600 hover:border-indigo-400 text-indigo-300 text-[10px] font-bold py-2 rounded-lg transition-all uppercase tracking-widest">
+                ◀ Reverse
+            </button>
+            <button id="btn-play" class="flex-[2] bg-purple-600 hover:bg-purple-500 text-white text-[10px] font-bold py-2 rounded-lg transition-all uppercase tracking-widest shadow-[0_0_15px_rgba(168,85,247,0.4)]">
+                ⏯ Play
+            </button>
+            <button id="btn-fwd" class="flex-1 bg-slate-800 border border-slate-600 hover:border-teal-400 text-teal-300 text-[10px] font-bold py-2 rounded-lg transition-all uppercase tracking-widest">
+                Forward ▶
+            </button>
+        </div>
+    </div>
+
+    <script>
+        let engramData = null;
+        let currentFrame = 0;
+        let targetFrame = 0;
+        const TOTAL_FRAMES = 720;
+        let isPlaying = false;
+        let isReversed = false;
+        let lastProcessedFrame = -1;
+
+        // --- Compression Settings ---
+        let NODE_COUNT = 72;
+        let FRAMES_PER_NODE = 10;
+        let COLLISION_RATIO = 1.0;
+        let qChain = []; 
+        let R = 35.0; 
+        let minorR = 12.0; 
+        
+        const localA = new THREE.Vector3();
+        const localB = new THREE.Vector3();
+        const localC = new THREE.Vector3();
+
+        function updateBaseTriangle() {
+            localA.set(minorR, 0, 0);
+            localB.set(minorR * Math.cos(Math.PI*2/3), 0, minorR * Math.sin(Math.PI*2/3));
+            localC.set(minorR * Math.cos(Math.PI*4/3), 0, minorR * Math.sin(Math.PI*4/3));
+        }
+        updateBaseTriangle();
+
+        function updateCompressionStats() {
+            NODE_COUNT = parseInt(document.getElementById('sel-geo-nodes').value);
+            COLLISION_RATIO = parseFloat(document.getElementById('sel-col-mode').value);
+            FRAMES_PER_NODE = NODE_COUNT > 0 ? TOTAL_FRAMES / NODE_COUNT : TOTAL_FRAMES;
+
+            let geoRatio = NODE_COUNT === 0 ? "∞" : Math.round(TOTAL_FRAMES / NODE_COUNT);
+            let coherency = 100;
+            if (NODE_COUNT === 36) coherency = 98;
+            if (NODE_COUNT === 24) coherency = 95;
+            if (NODE_COUNT === 8) coherency = 60; // Degraded state
+            if (NODE_COUNT === 0) coherency = 100; // Perfect procedural compute
+            
+            let colText = Math.round(COLLISION_RATIO * 100) + "%";
+            const statRatio = document.getElementById('stat-ratio');
+            statRatio.innerText = `${geoRatio}:1 GEO | ${colText} ENT`;
+            
+            if(coherency < 90) statRatio.className = "font-bold text-red-400";
+            else if(coherency < 100) statRatio.className = "font-bold text-yellow-400";
+            else statRatio.className = "font-bold text-emerald-400";
+
+            if (engramData) {
+                // Instantly re-build the geometric matrix to demonstrate the new compression setting
+                initO1CompressorSystem(engramData);
+                logCompressor(`[MATRIX] Recompiled at ${NODE_COUNT} Nodes (${geoRatio}:1). Coherency: ${coherency}%`);
+            }
+        }
+
+        document.getElementById('sel-geo-nodes').addEventListener('change', updateCompressionStats);
+        document.getElementById('sel-col-mode').addEventListener('change', updateCompressionStats);
+
+        // --- Three.js Setup ---
+        const container = document.getElementById('canvas-container');
+        const scene = new THREE.Scene();
+        scene.fog = new THREE.FogExp2('#020204', 0.003);
+
+        const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.set(90, 75, 105); 
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        container.appendChild(renderer.domElement);
+
+        const controls = new THREE.OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.05;
+        controls.autoRotate = true;
+        controls.autoRotateSpeed = 0.8;
+
+        const weaveGroup = new THREE.Group();
+        const compressorGroup = new THREE.Group();
+        scene.add(weaveGroup);
+        scene.add(compressorGroup);
+        
+        const collisionSparks = [];
+        const sparkGeo = new THREE.SphereGeometry(1.5, 8, 8);
+        const sparkMat = new THREE.MeshBasicMaterial({color: 0xffffff});
+
+        let activeTriangulationMesh;
+
+        // --- Core O(1) Engine ---
+        function initO1CompressorSystem(parsedData = null) {
+            compressorGroup.clear();
+            weaveGroup.clear();
+            qChain = [];
+
+            if (NODE_COUNT > 0) {
+                // Generate the compressed memory chain
+                for (let n = 0; n < NODE_COUNT; n++) {
+                    const f = n * FRAMES_PER_NODE;
+                    const t = (f / TOTAL_FRAMES) * Math.PI * 2; 
+                    
+                    const centroid = new THREE.Vector3(R * Math.cos(2*t), R * Math.sin(2*t), 0);
+                    const qTorus = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0,0,1), 2*t);
+                    const qTwist = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0,1,0), -3*t);
+                    const q = qTorus.multiply(qTwist);
+
+                    qChain[n] = { n_id: n, f, centroid, q };
+
+                    const pA = localA.clone().applyQuaternion(q).add(centroid);
+                    const pB = localB.clone().applyQuaternion(q).add(centroid);
+                    const pC = localC.clone().applyQuaternion(q).add(centroid);
+
+                    const tGeo = new THREE.BufferGeometry().setFromPoints([
+                        pA, pB, pB, pC, pC, pA, 
+                        pA, centroid, pB, centroid, pC, centroid 
+                    ]);
+                    const tMat = new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.05 });
+                    const tMesh = new THREE.LineSegments(tGeo, tMat);
+                    
+                    const cMesh = new THREE.Mesh(
+                        new THREE.SphereGeometry(0.6, 8, 8),
+                        new THREE.MeshBasicMaterial({ color: 0x00f2ff, transparent: true, opacity: 0.2 })
+                    );
+                    cMesh.position.copy(centroid);
+                    compressorGroup.add(tMesh, cMesh);
+                }
+            }
+
+            // Real-Time Active Triangulation Mesh
+            const activeGeo = new THREE.BufferGeometry().setFromPoints(new Array(12).fill(new THREE.Vector3()));
+            const activeMat = new THREE.LineBasicMaterial({ color: 0x00f2ff, transparent: true, opacity: 0.9, linewidth: 2 });
+            activeTriangulationMesh = new THREE.LineSegments(activeGeo, activeMat);
+            compressorGroup.add(activeTriangulationMesh);
+
+            // Generate continuous weave lines to PROVE the compression coherency visually
+            const ptsA = new Float32Array(TOTAL_FRAMES * 3);
+            const ptsB = new Float32Array(TOTAL_FRAMES * 3);
+            const ptsC = new Float32Array(TOTAL_FRAMES * 3);
+            const ptsE = new Float32Array(TOTAL_FRAMES * 3);
+            
+            for(let f = 0; f < TOTAL_FRAMES; f++) {
+                let curC = new THREE.Vector3();
+                let curQ = new THREE.Quaternion();
+
+                if (NODE_COUNT > 0) {
+                    const idx = Math.floor(f / FRAMES_PER_NODE) % NODE_COUNT;
+                    const nextIdx = (idx + 1) % NODE_COUNT;
+                    const lerpFactor = (f % FRAMES_PER_NODE) / FRAMES_PER_NODE;
+
+                    curC.lerpVectors(qChain[idx].centroid, qChain[nextIdx].centroid, lerpFactor);
+                    curQ.copy(qChain[idx].q).slerp(qChain[nextIdx].q, lerpFactor);
+                } else {
+                    // Procedural Fallback (0 Nodes = Perfect Coherency)
+                    const t = (f / TOTAL_FRAMES) * Math.PI * 2; 
+                    curC.set(R * Math.cos(2*t), R * Math.sin(2*t), 0);
+                    const qTorus = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0,0,1), 2*t);
+                    const qTwist = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0,1,0), -3*t);
+                    curQ.copy(qTorus.multiply(qTwist));
+                }
+
+                const pA = localA.clone().applyQuaternion(curQ).add(curC);
+                const pB = localB.clone().applyQuaternion(curQ).add(curC);
+                const pC = localC.clone().applyQuaternion(curQ).add(curC);
+
+                ptsA[f*3] = pA.x; ptsA[f*3+1] = pA.y; ptsA[f*3+2] = pA.z;
+                ptsB[f*3] = pB.x; ptsB[f*3+1] = pB.y; ptsB[f*3+2] = pB.z;
+                ptsC[f*3] = pC.x; ptsC[f*3+1] = pC.y; ptsC[f*3+2] = pC.z;
+                ptsE[f*3] = curC.x; ptsE[f*3+1] = curC.y; ptsE[f*3+2] = curC.z;
+            }
+
+            const createLine = (pts, color, op) => {
+                const geo = new THREE.BufferGeometry();
+                geo.setAttribute('position', new THREE.BufferAttribute(pts, 3));
+                const mat = new THREE.LineBasicMaterial({ color, transparent: true, opacity: op, blending: THREE.AdditiveBlending });
+                const line = new THREE.Line(geo, mat);
+                weaveGroup.add(line);
+                return line;
+            };
+
+            createLine(ptsA, 0xff0055, 0.2); 
+            createLine(ptsB, 0x00f2ff, 0.2); 
+            createLine(ptsC, 0xffd700, 0.2); 
+            createLine(ptsE, 0xffffff, 0.4); 
+            
+            document.getElementById('stat-nodes').innerText = NODE_COUNT > 0 ? `${NODE_COUNT} Active SLERP Nodes` : "Procedural (0 Nodes)";
+        }
+
+        function logEvent(msg) {
+            const logPanel = document.getElementById('event-log');
+            const el = document.createElement('div');
+            el.innerHTML = `<span class="text-pink-400">></span> ${msg}`;
+            logPanel.appendChild(el);
+            if(logPanel.children.length > 50) logPanel.removeChild(logPanel.children[1]);
+            logPanel.scrollTop = logPanel.scrollHeight;
+        }
+
+        function logCompressor(msg) {
+            const logPanel = document.getElementById('compressor-log');
+            const el = document.createElement('div');
+            el.innerHTML = `<span class="text-cyan-400">></span> ${msg}`;
+            logPanel.appendChild(el);
+            if(logPanel.children.length > 30) logPanel.removeChild(logPanel.children[1]);
+            logPanel.scrollTop = logPanel.scrollHeight;
+        }
+
+        // --- File Export/Decompress Logic ---
+        document.getElementById('btn-export-player').addEventListener('click', () => {
+            const exportFormat = {
+                system_header: engramData.system_header || { chiral_key: "DYNAMIC", topology_constants: { major_R: R, minor_R: minorR, total_frames: TOTAL_FRAMES, node_count: NODE_COUNT } },
+                quaternion_chain: []
+            };
+            exportFormat.system_header.topology_constants.node_count = NODE_COUNT;
+
+            if (NODE_COUNT > 0) {
+                exportFormat.quaternion_chain = qChain.map(n => ({
+                    n_id: n.n_id,
+                    t_param: n.f / TOTAL_FRAMES,
+                    q: [n.q.x, n.q.y, n.q.z, n.q.w],
+                    centroid: [n.centroid.x, n.centroid.y, n.centroid.z],
+                    collisions: [] 
+                }));
+
+                // Prune Entropic Collisions based on settings
+                if (engramData && engramData.ledger && COLLISION_RATIO > 0) {
+                    exportFormat.quaternion_chain.forEach(node => {
+                        const baseFrame = node.n_id * FRAMES_PER_NODE;
+                        for (let i = 0; i < FRAMES_PER_NODE; i++) {
+                            const f = baseFrame + i;
+                            if (engramData.ledger[f]) {
+                                engramData.ledger[f].forEach((col, cIdx) => {
+                                    // Deterministic dropping for stable re-creation
+                                    if ((f + cIdx) % Math.round(1/COLLISION_RATIO) === 0) {
+                                        col.frame_offset = i;
+                                        node.collisions.push(col);
+                                    }
+                                });
+                            }
+                        }
+                    });
+                }
+            } else {
+                // Procedural export (0 Nodes, just dump remaining valid collisions sequentially)
+                exportFormat.entropic_ledger = [];
+                if(engramData && engramData.ledger && COLLISION_RATIO > 0) {
+                    for(let f=0; f<TOTAL_FRAMES; f++) {
+                        if(engramData.ledger[f]) {
+                            engramData.ledger[f].forEach((col, cIdx) => {
+                                if ((f + cIdx) % Math.round(1/COLLISION_RATIO) === 0) {
+                                    exportFormat.entropic_ledger.push({ f: f, ...col });
+                                }
+                            });
+                        }
+                    }
+                }
+            }
+
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(exportFormat));
+            const dlAnchorElem = document.createElement('a');
+            dlAnchorElem.setAttribute("href", dataStr);
+            dlAnchorElem.setAttribute("download", `custom_engram_N${NODE_COUNT}_C${COLLISION_RATIO*100}.json`);
+            document.body.appendChild(dlAnchorElem);
+            dlAnchorElem.click();
+            dlAnchorElem.remove();
+            logCompressor(`[EXPORT] Engram compressed. Nodes: ${NODE_COUNT}, Entropy: ${COLLISION_RATIO*100}%`);
+        });
+
+        // --- File Upload Logic ---
+        document.getElementById('btn-upload').addEventListener('click', () => document.getElementById('file-input').click());
+        document.getElementById('file-input').addEventListener('change', e => {
+            const file = e.target.files[0];
+            if(!file) return;
+            const reader = new FileReader();
+            reader.onload = ev => {
+                try {
+                    engramData = null; 
+                    const rawData = JSON.parse(ev.target.result);
+                    
+                    if (rawData.system_header && rawData.system_header.topology_constants) {
+                        R = rawData.system_header.topology_constants.major_R || 35.0;
+                        minorR = rawData.system_header.topology_constants.minor_R || 12.0;
+                        
+                        // Adapt UI to imported node count
+                        let importedNodes = rawData.system_header.topology_constants.node_count;
+                        if(importedNodes === undefined && rawData.quaternion_chain) importedNodes = rawData.quaternion_chain.length;
+                        if(importedNodes !== undefined) {
+                            const sel = document.getElementById('sel-geo-nodes');
+                            if(Array.from(sel.options).some(o => parseInt(o.value) === importedNodes)) {
+                                sel.value = importedNodes.toString();
+                            } else {
+                                sel.value = "72"; // fallback
+                            }
+                        }
+                        updateBaseTriangle();
+                        updateCompressionStats();
+                    }
+
+                    rawData.ledger = Array.from({length: TOTAL_FRAMES}, () => []);
+                    
+                    if (rawData.quaternion_chain && NODE_COUNT > 0) {
+                        rawData.quaternion_chain.forEach(node => {
+                            const baseFrame = node.n_id * FRAMES_PER_NODE;
+                            if(node.collisions) {
+                                node.collisions.forEach(col => {
+                                    rawData.ledger[baseFrame + (col.frame_offset || 0)].push(col);
+                                });
+                            }
+                        });
+                        document.getElementById('key-display').innerText = rawData.system_header.chiral_key || 'UNKNOWN KEY';
+                    } else if (rawData.entropic_ledger) {
+                        // Handle procedural import
+                        rawData.entropic_ledger.forEach(col => {
+                            if(rawData.ledger[col.f]) rawData.ledger[col.f].push(col);
+                        });
+                        document.getElementById('key-display').innerText = rawData.system_header.chiral_key || 'UNKNOWN KEY';
+                    } else {
+                        document.getElementById('key-display').innerText = rawData.key || 'UNKNOWN KEY';
+                    }
+                    
+                    engramData = rawData;
+                    initO1CompressorSystem(rawData);
+                    
+                    document.getElementById('upload-overlay').style.display = 'none';
+                    document.getElementById('log-panel').style.display = 'flex';
+                    document.getElementById('compressor-panel').style.display = 'flex';
+                    document.getElementById('control-panel').style.display = 'block';
+                    
+                    logCompressor("[EMOI-001] O(1) Matrix Initialized.");
+                    isPlaying = true;
+                    btnPlay.innerHTML = '⏸ Pause';
+                } catch(err) {
+                    console.error("Engram Parse Error:", err);
+                    alert("Invalid JSON format or runtime error: " + err.message);
+                }
+            };
+            reader.readAsText(file);
+        });
+
+        // --- UI Controls ---
+        const slider = document.getElementById('frame-slider');
+        const frameVal = document.getElementById('frame-val');
+        const btnPlay = document.getElementById('btn-play');
+        const btnRev = document.getElementById('btn-rev');
+        const btnFwd = document.getElementById('btn-fwd');
+
+        function syncUI() {
+            slider.value = Math.floor(targetFrame);
+            frameVal.innerText = `${Math.floor(targetFrame)} / 719`;
+            
+            btnRev.style.backgroundColor = isReversed ? '#312e81' : ''; 
+            btnFwd.style.backgroundColor = !isReversed ? '#134e4a' : ''; 
+        }
+
+        slider.addEventListener('input', e => {
+            isPlaying = false;
+            btnPlay.innerHTML = '⏯ Play';
+            targetFrame = parseFloat(e.target.value);
+            currentFrame = targetFrame;
+            syncUI();
+        });
+
+        btnPlay.addEventListener('click', () => {
+            if (!isPlaying) {
+                if (!isReversed && targetFrame >= TOTAL_FRAMES - 1) { targetFrame = 0; currentFrame = 0; } 
+                else if (isReversed && targetFrame <= 0) { targetFrame = TOTAL_FRAMES - 1; currentFrame = TOTAL_FRAMES - 1; }
+            }
+            isPlaying = !isPlaying;
+            btnPlay.innerHTML = isPlaying ? '⏸ Pause' : '⏯ Play';
+        });
+
+        btnRev.addEventListener('click', () => { isReversed = true; syncUI(); });
+        btnFwd.addEventListener('click', () => { isReversed = false; syncUI(); });
+
+        // --- O(1) Animation Loop ---
+        function animate() {
+            requestAnimationFrame(animate);
+            controls.update();
+
+            if (isPlaying && engramData) {
+                if (isReversed) {
+                    targetFrame -= 1.0;
+                    if (targetFrame <= 0) {
+                        targetFrame = 0;
+                        currentFrame = 0;
+                        isPlaying = false;
+                        btnPlay.innerHTML = '⏯ Play';
+                        logEvent("[SYSTEM] Playback reached topological origin (0).");
+                    }
+                } else {
+                    targetFrame += 1.0;
+                    if (targetFrame >= TOTAL_FRAMES - 1) {
+                        targetFrame = TOTAL_FRAMES - 1;
+                        currentFrame = TOTAL_FRAMES - 1;
+                        isPlaying = false;
+                        btnPlay.innerHTML = '⏯ Play';
+                        logEvent("[SYSTEM] 720 frames rendered. Sequence complete.");
+                    }
+                }
+                syncUI();
+            }
+
+            if (engramData) {
+                currentFrame += (targetFrame - currentFrame) * 0.3;
+
+                let safeFrame = currentFrame;
+                if (isNaN(safeFrame)) safeFrame = 0;
+                if (safeFrame < 0) safeFrame = 0;
+                if (safeFrame > TOTAL_FRAMES - 1) safeFrame = TOTAL_FRAMES - 1;
+
+                let curC = new THREE.Vector3();
+                let curQ = new THREE.Quaternion();
+
+                if (NODE_COUNT > 0) {
+                    const idx = Math.floor(safeFrame / FRAMES_PER_NODE) % NODE_COUNT;
+                    const nextIdx = (idx + 1) % NODE_COUNT;
+                    const lerpFactor = (safeFrame % FRAMES_PER_NODE) / FRAMES_PER_NODE;
+
+                    const n1 = qChain[idx];
+                    const n2 = qChain[nextIdx];
+
+                    if (n1 && n2 && n1.q && n2.q) {
+                        curC.lerpVectors(n1.centroid, n2.centroid, lerpFactor);
+                        curQ.copy(n1.q).slerp(n2.q, lerpFactor);
+                    }
+                } else {
+                    const t = (safeFrame / TOTAL_FRAMES) * Math.PI * 2; 
+                    curC.set(R * Math.cos(2*t), R * Math.sin(2*t), 0);
+                    const qTorus = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0,0,1), 2*t);
+                    const qTwist = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0,1,0), -3*t);
+                    curQ.copy(qTorus.multiply(qTwist));
+                }
+
+                const pA = localA.clone().applyQuaternion(curQ).add(curC);
+                const pB = localB.clone().applyQuaternion(curQ).add(curC);
+                const pC = localC.clone().applyQuaternion(curQ).add(curC);
+
+                if (activeTriangulationMesh) {
+                    activeTriangulationMesh.geometry.setFromPoints([
+                        pA, pB, pB, pC, pC, pA,
+                        pA, curC, pB, curC, pC, curC
+                    ]);
+                }
+
+                document.getElementById('stat-quat').innerText = `${curQ.x.toFixed(2)}, ${curQ.y.toFixed(2)}, ${curQ.z.toFixed(2)}, ${curQ.w.toFixed(2)}`;
+
+                const frameIdx = Math.floor(safeFrame);
+                
+                weaveGroup.children.forEach(line => line.geometry.setDrawRange(0, frameIdx));
+
+                // Process filtered collisions
+                if (frameIdx !== lastProcessedFrame && engramData.ledger) {
+                    const events = engramData.ledger[frameIdx];
+                    if (events && events.length > 0) {
+                        events.forEach((ev, cIdx) => {
+                            if ((frameIdx + cIdx) % Math.round(1/COLLISION_RATIO) === 0) {
+                                const spark = new THREE.Mesh(sparkGeo, sparkMat);
+                                spark.position.set(ev.pos[0], ev.pos[1], ev.pos[2]);
+                                scene.add(spark);
+                                collisionSparks.push({mesh: spark, life: 1.0});
+                                
+                                logEvent(`[F-${frameIdx.toString().padStart(3,'0')}] Seed:${ev.seed} ⚡ Face:${ev.face}`);
+                            }
+                        });
+                    }
+                    
+                    if (NODE_COUNT > 0 && frameIdx % FRAMES_PER_NODE === 0 && lastProcessedFrame !== -1) {
+                        // logCompressor(`[SYNC] Node ${Math.floor(frameIdx/FRAMES_PER_NODE)} interpolated.`);
+                    }
+
+                    lastProcessedFrame = frameIdx;
+                }
+                
+                const globalRot = (isReversed ? -0.002 : 0.002);
+                weaveGroup.rotation.y += globalRot;
+                compressorGroup.rotation.y += globalRot;
+            }
+
+            for(let i=collisionSparks.length-1; i>=0; i--) {
+                const sp = collisionSparks[i];
+                sp.life -= 0.04;
+                sp.mesh.scale.setScalar(sp.life);
+                if(sp.life <= 0) {
+                    scene.remove(sp.mesh);
+                    collisionSparks.splice(i, 1);
+                }
+            }
+
+            renderer.render(scene, camera);
+        }
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        // Init base UI on load
+        updateCompressionStats();
+        animate();
+    </script>
+</body>
+</html>

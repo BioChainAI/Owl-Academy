@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Experimental Systems — Owl Academy</title>
+    <style>
+        :root {
+            --void: #06040f;
+            --purple: #8b5cf6;
+            --cyan: #22d3ee;
+            --gold: #D4AF37;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            background: var(--void);
+            color: #e2e8f0;
+            font-family: system-ui, sans-serif;
+            min-height: 100vh;
+            background: radial-gradient(ellipse at top, rgba(139,92,246,0.08) 0%, var(--void) 60%);
+        }
+        header {
+            padding: 3rem 2rem 2rem;
+            text-align: center;
+            border-bottom: 1px solid rgba(139,92,246,0.15);
+        }
+        .eyemark {
+            width: 48px; height: 48px; margin: 0 auto 1rem;
+            border: 2px solid rgba(139,92,246,0.5);
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            background: rgba(139,92,246,0.08);
+        }
+        h1 {
+            font-size: 1.8rem;
+            font-weight: 300;
+            letter-spacing: 0.3em;
+            text-transform: uppercase;
+            color: var(--purple);
+            text-shadow: 0 0 20px rgba(139,92,246,0.4);
+        }
+        .subtitle {
+            margin-top: 0.5rem;
+            font-size: 0.75rem;
+            letter-spacing: 0.25em;
+            text-transform: uppercase;
+            color: rgba(139,92,246,0.5);
+        }
+        .back-link {
+            display: inline-block;
+            margin-top: 1.5rem;
+            font-size: 0.7rem;
+            letter-spacing: 0.2em;
+            text-transform: uppercase;
+            color: rgba(139,92,246,0.4);
+            text-decoration: none;
+            transition: color 0.2s;
+        }
+        .back-link:hover { color: var(--purple); }
+
+        main { max-width: 900px; margin: 3rem auto; padding: 0 2rem; }
+
+        .section-label {
+            font-size: 0.65rem;
+            letter-spacing: 0.3em;
+            text-transform: uppercase;
+            color: rgba(139,92,246,0.5);
+            margin-bottom: 1rem;
+        }
+
+        .featured-card {
+            display: block;
+            text-decoration: none;
+            background: rgba(139,92,246,0.07);
+            border: 1px solid rgba(139,92,246,0.3);
+            border-radius: 12px;
+            padding: 2rem;
+            margin-bottom: 3rem;
+            transition: all 0.25s;
+            position: relative;
+            overflow: hidden;
+        }
+        .featured-card::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(ellipse at top left, rgba(139,92,246,0.08), transparent 60%);
+            pointer-events: none;
+        }
+        .featured-card:hover {
+            border-color: rgba(139,92,246,0.55);
+            box-shadow: 0 0 40px rgba(139,92,246,0.12);
+            transform: translateY(-2px);
+        }
+        .featured-title {
+            font-size: 1.4rem;
+            font-weight: 400;
+            letter-spacing: 0.1em;
+            color: #fff;
+            margin-bottom: 0.4rem;
+        }
+        .featured-tag {
+            display: inline-block;
+            font-size: 0.6rem;
+            letter-spacing: 0.25em;
+            text-transform: uppercase;
+            padding: 0.2em 0.7em;
+            border-radius: 999px;
+            background: rgba(139,92,246,0.12);
+            border: 1px solid rgba(139,92,246,0.3);
+            color: var(--purple);
+            margin-bottom: 1rem;
+        }
+        .featured-desc {
+            font-size: 0.9rem;
+            color: rgba(255,255,255,0.55);
+            line-height: 1.7;
+            max-width: 600px;
+        }
+        .featured-enter {
+            display: inline-block;
+            margin-top: 1.5rem;
+            font-size: 0.7rem;
+            letter-spacing: 0.25em;
+            text-transform: uppercase;
+            color: var(--purple);
+        }
+
+        .source-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 3rem;
+        }
+        .source-card {
+            display: block;
+            text-decoration: none;
+            background: rgba(10,8,20,0.6);
+            border: 1px solid rgba(139,92,246,0.14);
+            border-radius: 8px;
+            padding: 1.2rem;
+            transition: all 0.2s;
+        }
+        .source-card:hover {
+            border-color: rgba(139,92,246,0.35);
+            background: rgba(139,92,246,0.05);
+        }
+        .source-icon {
+            font-size: 1.2rem;
+            opacity: 0.5;
+            margin-bottom: 0.6rem;
+            color: var(--purple);
+        }
+        .source-name {
+            font-size: 0.85rem;
+            color: #e2e8f0;
+            margin-bottom: 0.25rem;
+        }
+        .source-desc {
+            font-size: 0.7rem;
+            color: rgba(255,255,255,0.35);
+            line-height: 1.5;
+        }
+
+        .protocol-box {
+            background: rgba(0,0,0,0.4);
+            border: 1px solid rgba(139,92,246,0.12);
+            border-radius: 8px;
+            padding: 1.5rem;
+            font-size: 0.78rem;
+            color: rgba(255,255,255,0.4);
+            line-height: 1.8;
+        }
+        .protocol-box strong { color: rgba(139,92,246,0.8); }
+        .protocol-box code {
+            font-family: ui-monospace, monospace;
+            font-size: 0.72rem;
+            color: var(--cyan);
+            background: rgba(34,211,238,0.06);
+            padding: 0.1em 0.35em;
+            border-radius: 3px;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="eyemark">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#8b5cf6" stroke-width="1.5">
+                <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                <circle cx="12" cy="12" r="3"/>
+            </svg>
+        </div>
+        <h1>Experimental Systems</h1>
+        <div class="subtitle">TTMPT · Engram Architecture · SHD-CCP Integration</div>
+        <a href="../Grand_Archives.html" class="back-link">← Grand Archives</a>
+    </header>
+
+    <main>
+        <div class="section-label">Synthesized Experience</div>
+
+        <a href="Engram_Mind_Eye.html" class="featured-card">
+            <div class="featured-tag">Synthesis · Primary Interface</div>
+            <div class="featured-title">Engram Mind Eye</div>
+            <div class="featured-desc">
+                A conversational interface where <strong style="color:#8b5cf6;">STRIX</strong> — an AI familiar woven from TTMPT engram memory — and a human
+                explore hyperbolic geometry together. Neither is teacher. Both are trying to figure out how the mind's eye works.
+                The system crystallizes language into 64-bit boolean tensors, tracks a 3-packet torsional context window (Alpha/Beta/Gamma),
+                and computes Hamming resonance against 15 pre-seeded geometric concepts to generate responses modulated by J torsion flow.
+            </div>
+            <div class="featured-enter">Enter the Interface →</div>
+        </a>
+
+        <div class="section-label">Source Material</div>
+
+        <div class="source-grid">
+            <a href="TTMPT_Bulk_Trainer.html" class="source-card">
+                <div class="source-icon">⬡</div>
+                <div class="source-name">TTMPT Bulk Trainer</div>
+                <div class="source-desc">Panmagic 8×8 boolean tensor encoding with Mulberry32 PRNG seeded from character hashes.</div>
+            </a>
+            <a href="TTMPT_Lexical_Encoder.html" class="source-card">
+                <div class="source-icon">⬡</div>
+                <div class="source-name">TTMPT Lexical Encoder</div>
+                <div class="source-desc">XOR crystallization letter-by-letter with collision detection and O(1) chiral key generation.</div>
+            </a>
+            <a href="TTMPT_O1_Compressor.html" class="source-card">
+                <div class="source-icon">⬡</div>
+                <div class="source-name">TTMPT O1 Compressor</div>
+                <div class="source-desc">3-packet sliding window playback, Hamming resonance, torsional Markov flow mechanics.</div>
+            </a>
+            <a href="TTMPT_Blackwell_Architect.html" class="source-card">
+                <div class="source-icon">⬡</div>
+                <div class="source-name">TTMPT Blackwell Architect</div>
+                <div class="source-desc">72-node quaternion chains, Clifford toroid rings, Hilbert space envelope at N/K/T polygon string art.</div>
+            </a>
+        </div>
+
+        <div class="section-label">Protocol Notes</div>
+
+        <div class="protocol-box">
+            <strong>SHD-CCP Seed Schema</strong> — Each engram is seeded by a 64-bit integer packed from bit fields:
+            <code>ST/PA/CO/FR/SP/AM</code>. The Mulberry32 PRNG streams these into panmagic 8×8 boolean grids.<br><br>
+
+            <strong>XOR Crystallization</strong> — Text is tokenized character-by-character; each character grid is XOR'd
+            into an accumulator, building a unique topological fingerprint ("knot") for any sequence.<br><br>
+
+            <strong>Chiral Key Format</strong> — <code>O1::rootChar::hexhash</code> where hexhash is the 8-byte
+            little-endian pack of the final 64-bit crystallized state.<br><br>
+
+            <strong>Torsion Flow J</strong> — Computed as <code>(upper_triangle_sum − lower_triangle_sum) / 32</code>
+            from the active Gamma packet grid. Positive J → exploratory tone; negative J → grounded tone; near-zero → balanced.<br><br>
+
+            <strong>3-Packet Window</strong> — Alpha (oldest context), Beta (mid), Gamma (newest, active for resonance).
+            On each utterance: Alpha ← Beta ← Gamma ← new crystallized engram.
+        </div>
+    </main>
+</body>
+</html>

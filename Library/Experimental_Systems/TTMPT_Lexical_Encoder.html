@@ -1,0 +1,671 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TTMPT | Genesis Lexical Encoder & Collision Memory</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&family=JetBrains+Mono:wght@400;700&display=swap');
+        
+        body { margin: 0; overflow: hidden; font-family: 'Inter', sans-serif; background: #020204; color: #cbd5e1; user-select: none;}
+        .font-mono { font-family: 'JetBrains Mono', monospace; }
+        
+        #canvas-container { position: absolute; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 1; }
+
+        .glass-panel {
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            background: linear-gradient(145deg, rgba(6, 6, 10, 0.85) 0%, rgba(2, 2, 4, 0.95) 100%);
+            border: 1px solid rgba(168, 85, 247, 0.3);
+            border-radius: 1.25rem;
+            box-shadow: 0 30px 60px -12px rgba(0, 0, 0, 0.9);
+            position: absolute;
+            z-index: 10;
+            padding: 1.5rem;
+            display: flex; flex-direction: column;
+        }
+
+        #encoder-panel { top: 20px; left: 20px; width: 440px; max-height: calc(100vh - 40px); overflow-y: auto; }
+        #lexicon-panel { top: 20px; right: 20px; width: 400px; max-height: calc(100vh - 40px); display: flex; border-color: rgba(45, 212, 191, 0.4); }
+        #compare-panel { bottom: 20px; left: 50%; transform: translateX(-50%); width: 600px; display: none; border-color: rgba(56, 189, 248, 0.4); }
+        
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(168, 85, 247, 0.5); border-radius: 2px; }
+
+        .magic-square-grid {
+            display: grid; grid-template-columns: repeat(8, 1fr); gap: 2px;
+            background: rgba(0,0,0,0.5); padding: 4px; border-radius: 0.5rem;
+            border: 1px solid rgba(168, 85, 247, 0.3);
+        }
+
+        .seed-cell {
+            aspect-ratio: 1;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 7px; font-weight: bold; font-family: 'JetBrains Mono', monospace;
+            border-radius: 2px; transition: all 0.3s ease;
+        }
+
+        .cell-0 { background: #1e293b; color: #475569; opacity: 0.4; }
+        .cell-1 { background: #c084fc; color: #fff; box-shadow: 0 0 8px rgba(192, 132, 252, 0.6); transform: scale(1.05); z-index: 2;}
+
+        input[type="text"] {
+            background: rgba(0,0,0,0.6); border: 1px solid rgba(168, 85, 247, 0.5);
+            color: #fff; padding: 10px 15px; border-radius: 0.5rem; outline: none;
+            font-family: 'JetBrains Mono', monospace; font-size: 1.2rem; width: 100%;
+            text-transform: uppercase; text-align: center; letter-spacing: 4px;
+            transition: all 0.2s;
+        }
+        input[type="text"]:focus { border-color: #2dd4bf; box-shadow: 0 0 15px rgba(45, 212, 191, 0.3); }
+
+        .stat-row { display: flex; justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,0.05); padding: 0.4rem 0; font-size: 11px;}
+        
+        .lexicon-item { cursor: pointer; border: 1px solid transparent; transition: all 0.2s; }
+        .lexicon-item:hover { background: rgba(56, 189, 248, 0.2); border-color: rgba(56, 189, 248, 0.5); }
+        .lexicon-item.active-ref { background: rgba(56, 189, 248, 0.3); border-color: #38bdf8; box-shadow: 0 0 10px rgba(56, 189, 248, 0.4); }
+    </style>
+</head>
+<body>
+
+    <div id="canvas-container"></div>
+
+    <!-- Genesis Encoder Panel -->
+    <div id="encoder-panel" class="glass-panel">
+        <div class="flex items-center gap-3 border-b border-slate-700 pb-3 mb-4">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#c084fc" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>
+            <h1 class="text-lg font-bold text-white tracking-tight">Genesis <span class="text-purple-400">Lexical Encoder</span></h1>
+        </div>
+
+        <div class="mb-4">
+            <span class="text-[9px] text-slate-400 font-mono uppercase tracking-widest block mb-2 text-center">Input Word Token</span>
+            <input type="text" id="word-input" placeholder="TYPE TOKEN..." autocomplete="off" spellcheck="false" maxlength="16">
+        </div>
+
+        <div class="grid grid-cols-2 gap-4 mb-4">
+            <!-- Root Seed -->
+            <div class="flex flex-col items-center">
+                <span class="text-[9px] text-teal-400 font-mono uppercase tracking-widest mb-1 flex items-center gap-1">
+                    <span class="w-1.5 h-1.5 rounded-full bg-teal-400"></span> Genesis Root
+                </span>
+                <span id="root-char" class="text-2xl font-bold text-white mb-1 font-mono">_</span>
+                <div id="root-grid" class="magic-square-grid w-full"></div>
+            </div>
+
+            <!-- Crystallized Seed -->
+            <div class="flex flex-col items-center">
+                <span class="text-[9px] text-purple-400 font-mono uppercase tracking-widest mb-1 flex items-center gap-1">
+                    <span class="w-1.5 h-1.5 rounded-full bg-purple-400 animate-pulse"></span> Crystallized
+                </span>
+                <span id="word-len" class="text-2xl font-bold text-slate-500 mb-1 font-mono">0<span class="text-sm">B</span></span>
+                <div id="cryst-grid" class="magic-square-grid w-full"></div>
+            </div>
+        </div>
+
+        <div class="bg-black/60 p-3 rounded border border-slate-700 mb-2">
+            <span class="text-[8px] text-slate-500 uppercase font-mono block mb-1">Chiral Conceptual Key [ O(1) Address ]</span>
+            <span id="chiral-key" class="text-[11px] text-emerald-300 font-mono break-all font-bold">AWAITING_TOKEN...</span>
+        </div>
+        
+        <!-- NEW: Collision Ledger -->
+        <div class="bg-pink-900/20 p-3 rounded border border-pink-500/30 mb-2">
+            <div class="flex justify-between items-center mb-2">
+                <span class="text-[8px] text-pink-400 uppercase font-mono font-bold flex items-center gap-1">
+                    <span class="w-1.5 h-1.5 rounded-full bg-pink-500"></span> Topological Collisions
+                </span>
+                <span id="col-count" class="text-[9px] text-white font-mono bg-pink-500/40 px-1.5 rounded">0</span>
+            </div>
+            <div id="collision-list" class="text-[9px] text-pink-200 font-mono h-12 overflow-y-auto space-y-1">
+                <span class="text-slate-500 opacity-50">No knots formed.</span>
+            </div>
+        </div>
+
+        <div class="space-y-1 font-mono mt-1">
+            <div class="stat-row">
+                <span class="text-slate-400">Memory Structure</span>
+                <span class="font-bold text-white">XOR-Annihilation Knots</span>
+            </div>
+            <div class="stat-row">
+                <span class="text-slate-400">Seed Symmetry Pattern</span>
+                <span class="font-bold text-cyan-300">1/16 M.C. Escher</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- O(1) Lexical Lookup Ledger -->
+    <div id="lexicon-panel" class="glass-panel">
+        <div class="border-b border-slate-700 pb-3 mb-3 flex justify-between items-center">
+            <h2 class="text-sm font-bold text-teal-400 uppercase tracking-widest flex items-center gap-2">
+                O(1) Lexical Ledger
+            </h2>
+            <span class="bg-teal-900/50 text-teal-300 px-2 py-1 rounded border border-teal-500/30 text-[9px] font-mono">MEMORY BANK</span>
+        </div>
+        
+        <p class="text-[10px] text-slate-400 font-mono mb-3 leading-relaxed">
+            Click any saved word to set it as the <b>Active Reference</b>. Typing a new word will instantly calculate structural resonance and reveal overlapping topological memory nodes.
+        </p>
+
+        <div id="ledger-container" class="flex-1 overflow-y-auto space-y-3 pr-2">
+            <!-- Dynamically populated O(1) Hash Map visual -->
+        </div>
+
+        <button id="btn-clear" class="mt-4 w-full bg-slate-800 hover:bg-red-900/50 border border-slate-600 hover:border-red-500/50 text-slate-400 hover:text-red-400 text-[9px] font-bold py-2 rounded transition-colors uppercase tracking-widest">
+            Purge Lexicon Memory
+        </button>
+    </div>
+
+    <!-- NEW: O(1) Comparison HUD -->
+    <div id="compare-panel" class="glass-panel flex flex-col justify-between">
+        <div class="flex justify-between items-center border-b border-slate-700 pb-2 mb-3">
+            <h2 class="text-sm font-bold text-sky-400 uppercase tracking-widest flex items-center gap-2">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 3h5v5M4 20L21 3M21 16v5h-5M15 15l6 6M4 4l5 5"></path></svg>
+                O(1) Engram Resonance
+            </h2>
+            <button id="btn-clear-ref" class="text-[9px] bg-red-900/30 border border-red-500/30 hover:bg-red-500 hover:text-white text-red-400 px-2 py-1 rounded transition-colors">CLEAR REF</button>
+        </div>
+        
+        <div class="flex justify-between items-center font-mono text-xs px-4">
+            <div class="text-center">
+                <span class="block text-slate-400 text-[9px] mb-1">REFERENCE ENGRAM</span>
+                <span id="ref-word" class="font-bold text-sky-400 text-xl tracking-widest">--</span>
+            </div>
+            
+            <div class="text-center flex flex-col items-center">
+                <span class="block text-slate-400 text-[9px] mb-1">STRUCTURAL MATCH</span>
+                <div class="relative flex items-center justify-center w-16 h-16 rounded-full border-4 border-slate-700">
+                    <span id="match-percent" class="font-bold text-white text-xl">0%</span>
+                </div>
+            </div>
+            
+            <div class="text-center">
+                <span class="block text-slate-400 text-[9px] mb-1">ACTIVE TOKEN</span>
+                <span id="active-word" class="font-bold text-purple-400 text-xl tracking-widest">--</span>
+            </div>
+        </div>
+        
+        <div class="mt-4 pt-3 border-t border-slate-700/50 flex justify-between px-4">
+            <div class="flex flex-col">
+                <span class="text-[8px] text-slate-500 uppercase font-mono">Hamming Distance</span>
+                <span id="hamming-dist" class="text-xs text-white font-mono font-bold">-- Bits</span>
+            </div>
+            <div class="flex flex-col text-right">
+                <span class="text-[8px] text-slate-500 uppercase font-mono">Shared Collisions</span>
+                <span id="shared-col" class="text-xs text-pink-400 font-mono font-bold">-- Nodes</span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- TTMPT Mathematical Core for Letters ---
+
+        let Lexicon = {};
+        let referenceEngram = null;
+        let activeEngramData = null;
+
+        function generateLetterSeed(char) {
+            const charCode = char.charCodeAt(0);
+            const grid = new Array(64).fill(0);
+            
+            const quadrant = [];
+            for (let i = 0; i < 16; i++) {
+                const val = Math.sin(charCode * 13.37 + i * 1.618); 
+                quadrant.push(val > 0 ? 1 : 0);
+            }
+
+            for (let y = 0; y < 4; y++) {
+                for (let x = 0; x < 4; x++) {
+                    const val = quadrant[y * 4 + x];
+                    grid[y * 8 + x] = val;               
+                    grid[y * 8 + (7 - x)] = val;         
+                    grid[(7 - y) * 8 + x] = val;         
+                    grid[(7 - y) * 8 + (7 - x)] = val;   
+                }
+            }
+            return grid;
+        }
+
+        // Compress word and isolate collisions (Higher Order Memory Knots)
+        function compressWordToSeed(word) {
+            if (!word) return null;
+            
+            const rootChar = word[0];
+            const rootSeed = generateLetterSeed(rootChar);
+            let crystallizedSeed = [...rootSeed];
+            let collisions = []; // Store annihilation events
+
+            for (let i = 1; i < word.length; i++) {
+                const charSeed = generateLetterSeed(word[i]);
+                const shift = i % 8; 
+                for (let j = 0; j < 64; j++) {
+                    const shiftedIndex = (j + shift) % 64;
+                    
+                    // COLLISION DETECTION: If the node is currently active (1), and the incoming shifted character seed 
+                    // is ALSO active (1), they annihilate via XOR. We capture this event as a topological knot.
+                    if (crystallizedSeed[j] === 1 && charSeed[shiftedIndex] === 1) {
+                        collisions.push({
+                            node: j,
+                            layer: i,
+                            char: word[i]
+                        });
+                    }
+                    
+                    crystallizedSeed[j] = crystallizedSeed[j] ^ charSeed[shiftedIndex];
+                }
+            }
+
+            let hexHash = '';
+            for (let i = 0; i < 64; i += 4) {
+                const nibble = (crystallizedSeed[i]<<3) | (crystallizedSeed[i+1]<<2) | (crystallizedSeed[i+2]<<1) | crystallizedSeed[i+3];
+                hexHash += nibble.toString(16).toUpperCase();
+            }
+
+            const chiralKey = `O1::${rootChar}::${hexHash.substring(0,4)}-${hexHash.substring(4,8)}-${hexHash.substring(8,16)}`;
+
+            return {
+                word: word,
+                rootChar: rootChar,
+                rootSeed: rootSeed,
+                crystallizedSeed: crystallizedSeed,
+                collisions: collisions,
+                chiralKey: chiralKey
+            };
+        }
+
+        // Calculate Resonance between two engrams in O(1) proportional time
+        function compareEngrams(engram1, engram2) {
+            if (!engram1 || !engram2) return null;
+
+            let hammingDist = 0;
+            for (let i = 0; i < 64; i++) {
+                if (engram1.crystallizedSeed[i] !== engram2.crystallizedSeed[i]) {
+                    hammingDist++;
+                }
+            }
+
+            // Resonance is percentage of matching bits
+            const resonance = ((64 - hammingDist) / 64) * 100;
+
+            // Find overlapping collision nodes
+            const col1 = engram1.collisions.map(c => c.node);
+            const col2 = engram2.collisions.map(c => c.node);
+            const sharedCols = col1.filter(value => col2.includes(value));
+
+            return {
+                resonance: resonance.toFixed(1),
+                hamming: hammingDist,
+                sharedCollisions: sharedCols.length
+            };
+        }
+
+        // --- UI Rendering ---
+
+        function renderGrid(containerId, seedArray) {
+            const container = document.getElementById(containerId);
+            container.innerHTML = '';
+            if (!seedArray) {
+                for(let i=0; i<64; i++) {
+                    const cell = document.createElement('div');
+                    cell.className = 'seed-cell cell-0';
+                    container.appendChild(cell);
+                }
+                return;
+            }
+
+            for(let i=0; i<64; i++) {
+                const cell = document.createElement('div');
+                const val = seedArray[i];
+                cell.className = `seed-cell cell-${val}`;
+                container.appendChild(cell);
+            }
+        }
+
+        function updateCollisionUI(collisions) {
+            const list = document.getElementById('collision-list');
+            const count = document.getElementById('col-count');
+            
+            list.innerHTML = '';
+            if (!collisions || collisions.length === 0) {
+                count.innerText = "0";
+                list.innerHTML = '<span class="text-slate-500 opacity-50">No knots formed.</span>';
+                return;
+            }
+
+            count.innerText = collisions.length;
+            collisions.forEach(c => {
+                const el = document.createElement('div');
+                el.className = "flex justify-between items-center bg-pink-900/30 px-1 rounded";
+                el.innerHTML = `<span>Node <span class="text-white">${c.node.toString().padStart(2,'0')}</span></span> <span class="text-pink-300">↳ Ext:[${c.char}]</span>`;
+                list.appendChild(el);
+            });
+        }
+
+        function updateLexiconUI() {
+            const container = document.getElementById('ledger-container');
+            container.innerHTML = '';
+
+            const roots = Object.keys(Lexicon).sort();
+            
+            if (roots.length === 0) {
+                container.innerHTML = `<div class="text-[10px] text-slate-500 font-mono text-center mt-10">Memory Bank Empty.</div>`;
+                return;
+            }
+
+            roots.forEach(root => {
+                const group = document.createElement('div');
+                group.className = 'bg-black/40 border border-slate-700/50 rounded-lg p-2';
+                
+                const header = document.createElement('div');
+                header.className = 'flex items-center gap-2 border-b border-slate-700/50 pb-1 mb-2';
+                header.innerHTML = `<span class="text-lg font-bold text-teal-400 font-mono">${root}</span> <span class="text-[9px] text-slate-500 uppercase tracking-widest">Genesis Root</span>`;
+                group.appendChild(header);
+
+                Lexicon[root].forEach(entry => {
+                    const item = document.createElement('div');
+                    const isActiveRef = referenceEngram && referenceEngram.word === entry.word;
+                    item.className = `lexicon-item flex justify-between items-center bg-slate-800/50 p-1.5 rounded mb-1 ${isActiveRef ? 'active-ref' : ''}`;
+                    item.innerHTML = `
+                        <span class="text-[10px] font-bold text-white font-mono tracking-widest">${entry.word}</span>
+                        <span class="text-[8px] text-purple-300 font-mono">${entry.chiralKey.split('::')[2]}</span>
+                    `;
+                    
+                    item.onclick = () => {
+                        referenceEngram = entry;
+                        document.getElementById('compare-panel').style.display = 'flex';
+                        updateLexiconUI(); // Re-render to show active state
+                        if (activeEngramData) updateComparisonUI(activeEngramData);
+                        else update3DConstellation(null, null, referenceEngram.crystallizedSeed);
+                    };
+
+                    group.appendChild(item);
+                });
+
+                container.appendChild(group);
+            });
+        }
+
+        function updateComparisonUI(activeData) {
+            if (!referenceEngram) return;
+            
+            document.getElementById('ref-word').innerText = referenceEngram.word;
+            document.getElementById('active-word').innerText = activeData ? activeData.word : '--';
+
+            if (activeData) {
+                const stats = compareEngrams(referenceEngram, activeData);
+                document.getElementById('match-percent').innerText = `${stats.resonance}%`;
+                document.getElementById('hamming-dist').innerText = `${stats.hamming} Bits`;
+                document.getElementById('shared-col').innerText = `${stats.sharedCollisions} Nodes`;
+                
+                const borderRing = document.getElementById('match-percent').parentElement;
+                if (stats.resonance > 90) borderRing.style.borderColor = '#10b981'; // Green
+                else if (stats.resonance > 50) borderRing.style.borderColor = '#38bdf8'; // Sky
+                else borderRing.style.borderColor = '#475569'; // Slate
+            } else {
+                document.getElementById('match-percent').innerText = `0%`;
+                document.getElementById('hamming-dist').innerText = `-- Bits`;
+                document.getElementById('shared-col').innerText = `-- Nodes`;
+                document.getElementById('match-percent').parentElement.style.borderColor = '#475569';
+            }
+        }
+
+        document.getElementById('btn-clear-ref').addEventListener('click', () => {
+            referenceEngram = null;
+            document.getElementById('compare-panel').style.display = 'none';
+            updateLexiconUI();
+            if (activeEngramData) {
+                update3DConstellation(activeEngramData.crystallizedSeed, activeEngramData.collisions, null);
+            } else {
+                update3DConstellation(null, null, null);
+            }
+        });
+
+        // --- Three.js 3D Visualization ---
+        const sceneContainer = document.getElementById('canvas-container');
+        const scene = new THREE.Scene();
+        scene.fog = new THREE.FogExp2('#020204', 0.003);
+
+        const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.set(0, -20, 100);
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        sceneContainer.appendChild(renderer.domElement);
+
+        const controls = new THREE.OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.05;
+        controls.autoRotate = true;
+        controls.autoRotateSpeed = 1.0;
+
+        const constellationGroup = new THREE.Group();
+        const collisionGroup = new THREE.Group();
+        scene.add(constellationGroup);
+        scene.add(collisionGroup);
+
+        const nodes = [];
+        const links = [];
+        
+        // Materials
+        const matOff = new THREE.MeshBasicMaterial({ color: 0x1e293b, transparent: true, opacity: 0.3 });
+        const matPurple = new THREE.MeshBasicMaterial({ color: 0xc084fc, transparent: true, opacity: 0.9 }); // Active only
+        const matBlue = new THREE.MeshBasicMaterial({ color: 0x38bdf8, transparent: true, opacity: 0.7 }); // Reference only
+        const matWhite = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 1.0 }); // Resonance (Both)
+        
+        const linePurple = new THREE.LineBasicMaterial({ color: 0xc084fc, transparent: true, opacity: 0.4, blending: THREE.AdditiveBlending });
+        const lineBlue = new THREE.LineBasicMaterial({ color: 0x38bdf8, transparent: true, opacity: 0.3, blending: THREE.AdditiveBlending });
+        const lineWhite = new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.6, blending: THREE.AdditiveBlending });
+
+        function init3DConstellation() {
+            const sphereGeo = new THREE.SphereGeometry(0.8, 16, 16);
+            for (let i = 0; i < 64; i++) {
+                const t = (i / 64) * Math.PI * 2;
+                const x = (15 + 6 * Math.cos(3 * t)) * Math.cos(2 * t);
+                const y = (15 + 6 * Math.cos(3 * t)) * Math.sin(2 * t);
+                const z = 6 * Math.sin(3 * t);
+
+                const mesh = new THREE.Mesh(sphereGeo, matOff.clone());
+                mesh.position.set(x, y, z);
+                
+                nodes.push({ mesh, pos: mesh.position });
+                constellationGroup.add(mesh);
+            }
+        }
+        init3DConstellation();
+
+        function update3DConstellation(seedArray, collisions, refArray) {
+            links.forEach(l => constellationGroup.remove(l));
+            links.length = 0;
+            collisionGroup.clear();
+
+            if (!seedArray && !refArray) {
+                nodes.forEach(n => { n.mesh.material = matOff; n.mesh.scale.setScalar(1.0); });
+                return;
+            }
+
+            const activeIndices = [];
+            const refIndices = [];
+            const resonanceIndices = [];
+
+            for (let i = 0; i < 64; i++) {
+                const isActive = seedArray && seedArray[i] === 1;
+                const isRef = refArray && refArray[i] === 1;
+
+                if (isActive && isRef) {
+                    nodes[i].mesh.material = matWhite;
+                    nodes[i].mesh.scale.setScalar(2.0);
+                    resonanceIndices.push(i);
+                } else if (isActive) {
+                    nodes[i].mesh.material = matPurple;
+                    nodes[i].mesh.scale.setScalar(1.5);
+                    activeIndices.push(i);
+                } else if (isRef) {
+                    nodes[i].mesh.material = matBlue;
+                    nodes[i].mesh.scale.setScalar(1.2);
+                    refIndices.push(i);
+                } else {
+                    nodes[i].mesh.material = matOff;
+                    nodes[i].mesh.scale.setScalar(1.0);
+                }
+            }
+
+            // Draw connective lines
+            const drawLinks = (indices, material) => {
+                const positions = [];
+                for (let i = 0; i < indices.length; i++) {
+                    for (let j = i + 1; j < indices.length; j++) {
+                        const d1 = indices[i];
+                        const d2 = indices[j];
+                        if (Math.abs(d1 - d2) <= 4 || Math.abs(d1 - d2) >= 60) {
+                            positions.push(nodes[d1].pos.x, nodes[d1].pos.y, nodes[d1].pos.z, nodes[d2].pos.x, nodes[d2].pos.y, nodes[d2].pos.z);
+                        }
+                    }
+                }
+                if(positions.length > 0) {
+                    const geo = new THREE.BufferGeometry().setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+                    const line = new THREE.LineSegments(geo, material);
+                    links.push(line);
+                    constellationGroup.add(line);
+                }
+            };
+
+            drawLinks(activeIndices, linePurple);
+            drawLinks(refIndices, lineBlue);
+            drawLinks(resonanceIndices, lineWhite);
+
+            // Draw Collision Sparks (Annihilation Knots)
+            if (collisions && collisions.length > 0) {
+                const sparkGeo = new THREE.TetrahedronGeometry(1.5);
+                const sparkMat = new THREE.MeshBasicMaterial({ color: 0xf43f5e, wireframe: true });
+                const solidMat = new THREE.MeshBasicMaterial({ color: 0xf43f5e, transparent: true, opacity: 0.5 });
+                
+                collisions.forEach(c => {
+                    const nodePos = nodes[c.node].pos;
+                    const mesh = new THREE.Mesh(sparkGeo, sparkMat);
+                    const inner = new THREE.Mesh(sparkGeo, solidMat);
+                    mesh.add(inner);
+                    mesh.position.copy(nodePos);
+                    
+                    // Offset slightly outwards from center
+                    mesh.position.add(nodePos.clone().normalize().multiplyScalar(2));
+                    
+                    mesh.userData = { rotSpeed: Math.random() * 0.05 + 0.02 };
+                    collisionGroup.add(mesh);
+                });
+            }
+        }
+
+        // --- Event Listeners ---
+
+        const inputEl = document.getElementById('word-input');
+        
+        inputEl.addEventListener('input', (e) => {
+            let val = e.target.value.toUpperCase().replace(/[^A-Z]/g, '');
+            e.target.value = val;
+
+            if (val.length === 0) {
+                activeEngramData = null;
+                document.getElementById('root-char').innerText = '_';
+                document.getElementById('word-len').innerHTML = `0<span class="text-sm">B</span>`;
+                document.getElementById('chiral-key').innerText = 'AWAITING_TOKEN...';
+                document.getElementById('chiral-key').className = "text-[11px] text-slate-500 font-mono break-all font-bold";
+                renderGrid('root-grid', null);
+                renderGrid('cryst-grid', null);
+                updateCollisionUI(null);
+                
+                updateComparisonUI(null);
+                update3DConstellation(null, null, referenceEngram ? referenceEngram.crystallizedSeed : null);
+                return;
+            }
+
+            activeEngramData = compressWordToSeed(val);
+            
+            // Update UI
+            document.getElementById('root-char').innerText = activeEngramData.rootChar;
+            document.getElementById('word-len').innerHTML = `${val.length * 8}<span class="text-sm">B</span>`;
+            
+            document.getElementById('chiral-key').innerText = activeEngramData.chiralKey;
+            document.getElementById('chiral-key').className = "text-[11px] text-emerald-300 font-mono break-all font-bold shadow-emerald";
+
+            renderGrid('root-grid', activeEngramData.rootSeed);
+            renderGrid('cryst-grid', activeEngramData.crystallizedSeed);
+            updateCollisionUI(activeEngramData.collisions);
+
+            updateComparisonUI(activeEngramData);
+            update3DConstellation(
+                activeEngramData.crystallizedSeed, 
+                activeEngramData.collisions, 
+                referenceEngram ? referenceEngram.crystallizedSeed : null
+            );
+        });
+
+        inputEl.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                const val = e.target.value;
+                if (val.length > 0 && activeEngramData) {
+                    
+                    if (!Lexicon[activeEngramData.rootChar]) {
+                        Lexicon[activeEngramData.rootChar] = [];
+                    }
+                    
+                    if (!Lexicon[activeEngramData.rootChar].some(entry => entry.word === val)) {
+                        // Deep clone to save to memory
+                        Lexicon[activeEngramData.rootChar].push(JSON.parse(JSON.stringify(activeEngramData)));
+                        updateLexiconUI();
+                    }
+                    
+                    inputEl.style.borderColor = '#10b981';
+                    setTimeout(() => inputEl.style.borderColor = 'rgba(168, 85, 247, 0.5)', 300);
+                    
+                    e.target.value = '';
+                    inputEl.dispatchEvent(new Event('input')); 
+                }
+            }
+        });
+
+        document.getElementById('btn-clear').addEventListener('click', () => {
+            Lexicon = {};
+            referenceEngram = null;
+            document.getElementById('compare-panel').style.display = 'none';
+            updateLexiconUI();
+            inputEl.dispatchEvent(new Event('input')); 
+        });
+
+        // --- Animation Loop ---
+        function animate() {
+            requestAnimationFrame(animate);
+            controls.update();
+
+            const time = Date.now() * 0.001;
+            const scale = 1.0 + Math.sin(time * 2) * 0.02;
+            constellationGroup.scale.setScalar(scale);
+            constellationGroup.rotation.x = Math.sin(time) * 0.1;
+            constellationGroup.rotation.y += 0.005;
+            
+            collisionGroup.scale.setScalar(scale);
+            collisionGroup.rotation.x = Math.sin(time) * 0.1;
+            collisionGroup.rotation.y += 0.005;
+
+            // Spin collision sparks individually
+            collisionGroup.children.forEach(spark => {
+                spark.rotation.x += spark.userData.rotSpeed;
+                spark.rotation.y += spark.userData.rotSpeed;
+            });
+
+            renderer.render(scene, camera);
+        }
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        updateLexiconUI();
+        animate();
+    </script>
+</body>
+</html>
