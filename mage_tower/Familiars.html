@@ -205,16 +205,11 @@
 </main>
 
 <script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-app.js";
-  import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-auth.js";
-  import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-firestore.js";
-  import { firebaseConfig } from "../scripts/firebase/config.js";
+  import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-auth.js";
+  import { doc, getDoc } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-firestore.js";
+  import { auth, db } from "../scripts/firebase/config.js";
   import { FAMILIARS, getFamiliarFromCosmologicalId, renderUserSigil } from "../scripts/sigil-renderer.js";
   import { resolveTier } from "../scripts/genesis-registrar.js";
-
-  const app = initializeApp(firebaseConfig);
-  const auth = getAuth(app);
-  const db = getFirestore(app);
 
   // ── Archetype browser ─────────────────────────────────────────────────────
   function populateArchetypeGrid(activeFamiliar) {
