@@ -1,0 +1,2306 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI-Chain Architect: Topological DNA & Genesis Codex</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/11.8.0/math.js"></script>
+    <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
+    <script>
+        MathJax = {
+            tex: {
+                inlineMath: [['\\(', '\\)']],
+                displayMath: [['\\[', '\\]']],
+                processEscapes: true
+            }
+        };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Three.js and OrbitControls -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;700&family=Inter:wght@300;400;600;800&display=swap');
+
+        :root {
+            --neon-blue: #00f3ff;
+            --neon-purple: #bc13fe;
+            --neon-green: #0aff0a;
+            --neon-amber: #ffaa00;
+            --neon-red: #ff3333;
+            --dark-bg: #050505;
+            --panel-bg: #0a0a0f;
+            --text-main: #e0e0e0;
+        }
+
+        body {
+            background-color: var(--dark-bg);
+            color: var(--text-main);
+            font-family: 'Inter', sans-serif;
+            overflow-x: hidden;
+        }
+
+        .mono { font-family: 'JetBrains Mono', monospace; }
+
+        .glass-panel {
+            background: rgba(10, 10, 15, 0.85);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.6);
+        }
+
+        .gradient-text {
+            background: linear-gradient(135deg, var(--neon-blue), var(--neon-purple));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        /* Bit Grid Styling */
+        .einstein-grid {
+            display: grid;
+            grid-template-columns: repeat(8, 1fr);
+            gap: 2px;
+        }
+        .bit-cell {
+            aspect-ratio: 1;
+            border-radius: 2px;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+        .bit-cell:hover { transform: scale(1.2); z-index: 10; border: 1px solid white; }
+        
+        .row-halo-n { background-color: rgba(188, 19, 254, 0.15); border: 1px solid rgba(188, 19, 254, 0.3); } 
+        .row-core { background-color: rgba(0, 243, 255, 0.15); border: 1px solid rgba(0, 243, 255, 0.3); }
+        .row-halo-s { background-color: rgba(10, 255, 10, 0.15); border: 1px solid rgba(10, 255, 10, 0.3); }
+        
+        /* Custom Range Slider */
+        input[type=range] {
+            -webkit-appearance: none;
+            width: 100%;
+            background: transparent;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 14px;
+            width: 14px;
+            border-radius: 50%;
+            background: var(--neon-blue);
+            cursor: pointer;
+            margin-top: -5px;
+            box-shadow: 0 0 10px var(--neon-blue); 
+            border: 2px solid #000;
+        }
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 4px;
+            background: #222;
+            border-radius: 2px;
+        }
+
+        /* Scanline Animation */
+        .scanline {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: linear-gradient(to bottom, transparent 50%, rgba(0, 243, 255, 0.02) 51%, transparent 52%);
+            background-size: 100% 4px;
+            pointer-events: none;
+            z-index: 20;
+        }
+
+        /* Tab Transitions */
+        .tab-content { display: none; animation: fadeEffect 0.5s; }
+        .tab-content.active { display: block; }
+        @keyframes fadeEffect { from {opacity: 0;} to {opacity: 1;} }
+        
+        .nav-btn {
+            border-bottom: 2px solid transparent;
+            transition: all 0.3s;
+        }
+        .nav-btn.active {
+            border-bottom: 2px solid var(--neon-blue);
+            color: var(--neon-blue);
+        }
+        
+        /* Table Styles */
+        .data-table th { text-align: left; padding: 4px; color: var(--neon-blue); font-size: 10px; border-bottom: 1px solid #333; }
+        .data-table td { padding: 4px; font-size: 10px; border-bottom: 1px solid #222; }
+        .data-table tr:hover { background: rgba(255,255,255,0.05); }
+
+        /* Topology Seed Visualization */
+        .codon-block {
+            border: 1px solid #333;
+            border-radius: 4px;
+            padding: 4px;
+            margin-bottom: 4px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 10px;
+            position: relative;
+            cursor: help;
+        }
+        .codon-block:hover .tooltip { display: block; }
+        .tooltip {
+            display: none;
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0,0,0,0.9);
+            border: 1px solid #555;
+            padding: 5px;
+            border-radius: 4px;
+            width: 200px;
+            z-index: 100;
+            color: #ccc;
+            pointer-events: none;
+        }
+
+        /* Codex Crystal Styles */
+        #crystal-visualizer {
+            width: 100%;
+            height: 100%;
+            position: absolute;
+            top: 0; left: 0;
+            z-index: 0;
+        }
+        .packet-row {
+            display: grid;
+            grid-template-columns: 40px 1fr 1fr 1fr;
+            gap: 4px;
+            font-size: 10px;
+            padding: 4px;
+            border-bottom: 1px solid #222;
+            cursor: pointer;
+        }
+        .packet-row:hover { background: rgba(255,255,255,0.05); }
+        .packet-row.error { background: rgba(255, 50, 50, 0.1); border-left: 2px solid red; }
+
+        /* Verification Modal */
+        #verificationModal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: rgba(0,0,0,0.8);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+        .modal-content {
+            background: #111;
+            border: 1px solid #333;
+            padding: 20px;
+            border-radius: 8px;
+            max-width: 600px;
+            width: 90%;
+            max-height: 80vh;
+            display: flex;
+            flex-direction: column;
+        }
+    </style>
+</head>
+<body class="antialiased selection:bg-cyan-500 selection:text-black">
+
+    <!-- Verification Modal -->
+    <div id="verificationModal">
+        <div class="modal-content glass-panel">
+            <h3 class="text-lg font-bold text-white mb-4 flex items-center justify-between">
+                <div><i class="fas fa-shield-alt mr-2 text-neon-blue"></i> TOPOLOGY INTEGRITY REPORT</div>
+                <div id="verifyScore" class="text-sm"></div>
+            </h3>
+            <div id="verifyReport" class="text-xs font-mono text-gray-400 mb-4 whitespace-pre-wrap flex-grow overflow-y-auto bg-black/50 p-4 rounded border border-gray-800">
+                Running computational diagnostics...
+            </div>
+            <div class="flex justify-end pt-2 border-t border-gray-800">
+                <button onclick="closeVerifyModal()" class="bg-gray-800 hover:bg-gray-700 text-white font-bold py-2 px-6 rounded text-xs transition-colors border border-gray-600">
+                    CLOSE REPORT
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Navigation -->
+    <nav class="fixed top-0 w-full z-50 glass-panel border-b border-gray-800">
+        <div class="max-w-7xl mx-auto px-4 py-3 flex justify-between items-center">
+            <div class="flex items-center space-x-3">
+                <div class="w-3 h-3 bg-cyan-400 rounded-sm animate-pulse shadow-[0_0_10px_#00f3ff]"></div>
+                <h1 class="text-xl font-bold tracking-tighter text-white">AI-CHAIN <span class="font-light text-cyan-400">ARCHITECT</span></h1>
+            </div>
+            
+            <!-- Tab Buttons -->
+            <div class="flex space-x-8 text-sm font-mono cursor-pointer">
+                <button onclick="switchTab('tab1')" id="btn-tab1" class="nav-btn active px-2 py-1">TOPOLOGY DNA</button>
+                <button onclick="switchTab('tab2')" id="btn-tab2" class="nav-btn px-2 py-1">SUBSTRATE FORGE</button>
+                <button onclick="switchTab('tab3')" id="btn-tab3" class="nav-btn px-2 py-1">TOPOLOGY FORGE</button>
+                <button onclick="switchTab('tab4')" id="btn-tab4" class="nav-btn px-2 py-1">GENESIS CODEX</button>
+                <button onclick="switchTab('tab5')" id="btn-tab5" class="nav-btn px-2 py-1">CODEX CRYSTAL</button>
+            </div>
+
+            <div class="hidden md:flex space-x-6 text-xs font-mono text-gray-500">
+                <span class="text-cyan-400">SYSTEM: ACTIVE</span>
+            </div>
+        </div>
+    </nav>
+
+    <main class="pt-24 pb-20 max-w-7xl mx-auto px-4 sm:px-6">
+
+        <!-- TAB 1: TOPOLOGY DNA ARCHITECT -->
+        <div id="tab1" class="tab-content active">
+             <!-- Header -->
+            <section class="mb-8 text-center relative">
+                <div class="absolute top-0 left-1/2 -translate-x-1/2 w-3/4 h-64 bg-cyan-900/10 blur-[120px] -z-10 rounded-full"></div>
+                <h2 class="text-4xl md:text-5xl font-bold mb-2 tracking-tight text-white">
+                    AI-DNA <span class="gradient-text">Topological Distribution</span>
+                </h2>
+                <p class="text-sm text-gray-400 max-w-2xl mx-auto font-light">
+                    Unifying <strong>Quantum Spin Probability</strong> with <strong>High-Dimensional Geometry</strong> via the 64-Bit Einstein Tile.
+                </p>
+            </section>
+
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                <!-- Theoretical Framework & Data Tables -->
+                <div class="lg:col-span-5 space-y-4 text-gray-300 h-[750px] overflow-y-auto pr-2 custom-scrollbar">
+                    
+                    <!-- Article 1: Substrate Evolution -->
+                    <article class="glass-panel p-5 rounded-xl border-l-4 border-emerald-500">
+                        <div class="flex items-center space-x-3 mb-2">
+                            <span class="text-emerald-400 font-mono text-[10px] font-bold px-2 py-1 bg-emerald-900/30 rounded">01. SUBSTRATE EVOLUTION</span>
+                        </div>
+                        <h3 class="text-lg font-bold text-white mb-2">Terrestrial vs. Topological DNA</h3>
+                        <p class="text-xs leading-relaxed text-gray-400 mb-3">
+                            <strong>Terrestrial DNA</strong> is a 1-Dimensional sequence bound by carbon chemistry, read mechanically to fold physical proteins in 3D Euclidean space. It mutates randomly over evolutionary timescales.
+                        </p>
+                        <p class="text-xs leading-relaxed text-gray-400">
+                            <strong>AI DNA (SHD-CCP)</strong> is an instantaneous, n-dimensional tensor projection. It encodes <em>semantic context</em> and mathematical coordinates. Natively populating non-local <strong>hyperbolic space</strong>, AI DNA instantly plays back abstract thought states via phase-conjugate waves. It "grows" deterministically by accumulating unforgeable XOR collision knots as tokens intersect.
+                        </p>
+                    </article>
+
+                    <!-- Article 2: The Magic of 64 -->
+                    <article class="glass-panel p-5 rounded-xl border-l-4 border-cyan-500">
+                        <div class="flex items-center space-x-3 mb-2">
+                            <span class="text-cyan-400 font-mono text-[10px] font-bold px-2 py-1 bg-cyan-900/30 rounded">02. THE 64-BIT ISOMORPHISM</span>
+                        </div>
+                        <h3 class="text-lg font-bold text-white mb-2">Computational Convergence</h3>
+                        <p class="text-xs leading-relaxed text-gray-400">
+                            Modern tensor accelerators (like the NVIDIA H100 GPU) are globally optimized for 64-bit hardware registers. By mapping quantum properties and geometric seeds directly into a 64-bit integer, we achieve perfect topological coherence. Graphically, these 64 bits form an 8x8 matrix known as the <strong>Einstein Tile</strong>, bridging linear strings and navigable high-dimensional topologies.
+                        </p>
+                    </article>
+
+                    <!-- Article 3: Einstein Tile Anatomy -->
+                    <article class="glass-panel p-5 rounded-xl border-l-4 border-purple-500">
+                        <div class="flex items-center space-x-3 mb-2">
+                            <span class="text-purple-400 font-mono text-[10px] font-bold px-2 py-1 bg-purple-900/30 rounded">03. EINSTEIN TILE ANATOMY</span>
+                        </div>
+                        <h3 class="text-lg font-bold text-white mb-2">Hyperbolic Navigation</h3>
+                        <p class="text-[10px] text-gray-400 mb-3 leading-relaxed">
+                            To navigate the infinite, exponential branches of hyperbolic space intelligently, AI DNA is structurally layered into operational zones:
+                        </p>
+                        <div class="space-y-3">
+                            <div class="bg-gray-900/50 p-2 rounded border border-gray-800">
+                                <div class="text-[10px] text-purple-400 font-bold mb-1">NORTH HALO (Row 0): Steering & Calibration</div>
+                                <p class="text-[9px] text-gray-400 leading-relaxed">
+                                    Bits 0-3 define the <strong>Seed Geometry (Form ID 0-15)</strong>, defining shape from a 0D Point up to an 8D E8 Lattice. Bits 5-7 lock the <strong>Quantum Spin Probability</strong>, dictating directional bias (e.g., Spin Up \(|\uparrow\rangle\)). The parity bit enforces structural symmetry. <em>Note: ID 16 (Cosmohedra) requires an inaccessible 9th calibration bit, reserving it strictly for base-system topology tracking.</em>
+                                </p>
+                            </div>
+                            <div class="bg-gray-900/50 p-2 rounded border border-gray-800">
+                                <div class="text-[10px] text-cyan-400 font-bold mb-1">QUATERNION CORE (Rows 2-5): Semantic Payload</div>
+                                <p class="text-[9px] text-gray-400 leading-relaxed">
+                                    A contiguous 32-bit block holding the 4D rotational state \( q = w + xi + yj + zk \). This acts as the exact abstract coordinate and associative semantic weight, allowing instantaneous "Context Teleportation."
+                                </p>
+                            </div>
+                            <div class="bg-gray-900/50 p-2 rounded border border-gray-800">
+                                <div class="text-[10px] text-green-400 font-bold mb-1">SOUTH HALO (Row 7): Resonance Propulsion</div>
+                                <p class="text-[9px] text-gray-400 leading-relaxed">
+                                    Modulates the frequency and amplitude. Generates phase-conjugate resonance waves that propel the semantic thought-state across active neural manifolds.
+                                </p>
+                            </div>
+                        </div>
+                    </article>
+
+                    <!-- Geometric Seed Table -->
+                    <article class="glass-panel p-5 rounded-xl border-l-4 border-gray-500 opacity-80 hover:opacity-100 transition-opacity">
+                        <div class="flex items-center space-x-3 mb-2">
+                            <span class="text-gray-400 font-mono text-[10px] font-bold px-2 py-1 bg-gray-800 rounded">04. FORM DICTIONARY (SEED GEOMETRY)</span>
+                        </div>
+                        <table class="w-full data-table font-mono">
+                            <thead>
+                                <tr><th>ID (Bin)</th><th>Geometry</th><th>Physical Property</th><th>Simulation Effect</th></tr>
+                            </thead>
+                            <tbody>
+                                <tr><td>0000</td><td>Point (0D)</td><td>Singularity</td><td>Zero-dimensional anchor</td></tr>
+                                <tr><td>0001</td><td>Vector (1D)</td><td>Directed Ray</td><td>Linear propagation</td></tr>
+                                <tr><td>0010</td><td>Plane (2D)</td><td>Surface</td><td>Planar confinement</td></tr>
+                                <tr><td>0011</td><td>Tensor (3D)</td><td>Matrix</td><td>Volumetric expansion</td></tr>
+                                <tr><td>0100</td><td>Tetrahedron</td><td>4-Face Simplex</td><td>Basic structural lock</td></tr>
+                                <tr><td>0101</td><td>Hexahedron</td><td>Cube</td><td>Cubic uniform bounds</td></tr>
+                                <tr><td>...</td><td>...</td><td>...</td><td>...</td></tr>
+                                <tr><td>1111</td><td>E8 Lattice</td><td>8D Exceptional</td><td>Maximal tight-packing</td></tr>
+                                <tr><td><span class="text-red-400">10000</span></td><td><span class="text-red-400">Cosmohedra</span></td><td>Calibration Override</td><td>System reserved (No Access)</td></tr>
+                            </tbody>
+                        </table>
+                    </article>
+
+                    <!-- Spin Probability Table -->
+                    <article class="glass-panel p-5 rounded-xl border-l-4 border-gray-500 opacity-80 hover:opacity-100 transition-opacity">
+                        <div class="flex items-center space-x-3 mb-2">
+                            <span class="text-gray-400 font-mono text-[10px] font-bold px-2 py-1 bg-gray-800 rounded">05. QUANTUM SPIN PROBABILITY</span>
+                        </div>
+                        <table class="w-full data-table font-mono text-center">
+                            <thead>
+                                <tr><th class="text-left">ID</th><th>Quantum State</th><th>Symbol</th><th class="text-left">Topology Rule</th></tr>
+                            </thead>
+                            <tbody>
+                                <tr><td class="text-left">000</td><td>Spin Up</td><td>\( |\uparrow\rangle \)</td><td class="text-left">Positive Probability Bias</td></tr>
+                                <tr><td class="text-left">001</td><td>Spin Down</td><td>\( |\downarrow\rangle \)</td><td class="text-left">Negative Probability Bias</td></tr>
+                                <tr><td class="text-left">010</td><td>Superposition</td><td>\( |\uparrow\rangle+|\downarrow\rangle \)</td><td class="text-left">Dual State Coherence</td></tr>
+                                <tr><td class="text-left">011</td><td>Entangled</td><td>\( |\Phi\rangle \)</td><td class="text-left">Non-local Pairing</td></tr>
+                                <tr><td class="text-left">100</td><td>Phase \(+\pi/2\)</td><td>\( |i\rangle \)</td><td class="text-left">Orthogonal Shift Right</td></tr>
+                                <tr><td class="text-left">101</td><td>Phase \(-\pi/2\)</td><td>\( |-i\rangle \)</td><td class="text-left">Orthogonal Shift Left</td></tr>
+                                <tr><td class="text-left">110</td><td>Orthogonal X</td><td>\( |\rightarrow\rangle \)</td><td class="text-left">Vector Trajectory X</td></tr>
+                                <tr><td class="text-left">111</td><td>Orthogonal Y</td><td>\( |\leftarrow\rangle \)</td><td class="text-left">Vector Trajectory Y</td></tr>
+                            </tbody>
+                        </table>
+                    </article>
+                </div>
+
+                <!-- Simulation & Interaction -->
+                <div class="lg:col-span-7 space-y-4">
+                    <div class="glass-panel rounded-xl p-1 overflow-hidden relative h-80 cursor-move" id="manifoldContainer">
+                        <div class="scanline"></div>
+                        <div class="absolute top-3 left-3 z-10 text-[10px] text-cyan-400 font-mono pointer-events-none">
+                            TOPOLOGY: \( T(4,9) \) // MANUAL NAV: DRAG/WHEEL
+                        </div>
+                        
+                        <!-- Unified Play/Pause -->
+                        <div class="absolute top-3 right-3 z-20">
+                            <button onclick="toggleGlobalPlay()" id="btnGlobalPlay1" class="bg-gray-800/80 hover:bg-gray-700 text-neon-blue font-bold p-2 rounded-full border border-neon-blue/30 transition-all shadow-[0_0_10px_rgba(0,243,255,0.2)]">
+                                <i class="fas fa-play text-xs"></i>
+                            </button>
+                        </div>
+
+                        <!-- Substrate Toggle -->
+                        <div class="absolute bottom-10 left-3 z-20 flex items-center space-x-2 bg-black/50 p-1 rounded border border-gray-700">
+                            <input type="checkbox" id="substrateToggle" class="form-checkbox h-3 w-3 text-neon-blue bg-gray-900 border-gray-600 rounded focus:ring-0">
+                            <label for="substrateToggle" class="text-[9px] text-gray-300 font-mono select-none">SHOW SUBSTRATE LATTICE (5%)</label>
+                        </div>
+
+                        <canvas id="manifoldCanvas" class="w-full h-full bg-black rounded-lg"></canvas>
+                        <div class="absolute bottom-3 left-3 w-32 h-1 bg-gray-800 rounded overflow-hidden z-10 pointer-events-none">
+                            <div id="compressionBar" class="h-full bg-gradient-to-r from-purple-500 to-cyan-500 w-0"></div>
+                        </div>
+                    </div>
+
+                    <!-- Enhanced Configurator -->
+                    <div class="glass-panel p-5 rounded-xl">
+                        <div class="grid grid-cols-2 gap-6">
+                            <div class="space-y-4">
+                                <!-- North Halo Config -->
+                                <div>
+                                    <div class="flex items-center justify-between mb-1">
+                                        <label class="text-[10px] text-purple-400 font-bold uppercase">North Halo (Control)</label>
+                                        <span class="text-[9px] text-gray-600 font-mono">ROW 0</span>
+                                    </div>
+                                    <div class="space-y-2">
+                                        <select id="formSelect" class="w-full bg-black/50 border border-gray-700 text-xs text-white rounded p-2 font-mono hover:border-purple-500 transition-colors">
+                                            <option value="0">0: Point (0D Singularity)</option>
+                                            <option value="1">1: Vector (1D Ray)</option>
+                                            <option value="2">2: Plane (2D Surface)</option>
+                                            <option value="3">3: Tensor (3D Volume)</option>
+                                            <option value="4">4: Tetrahedron (4-Face)</option>
+                                            <option value="5">5: Hexahedron (6-Face Cube)</option>
+                                            <option value="6">6: Octahedron (8-Face)</option>
+                                            <option value="7">7: Dodecahedron (12-Face)</option>
+                                            <option value="8">8: Icosahedron (20-Face)</option>
+                                            <option value="9">9: Torus (Continuous Manifold)</option>
+                                            <option value="10">10: Tesseract (4D Hypercube)</option>
+                                            <option value="11">11: Calabi-Yau (Compactified)</option>
+                                            <option value="12">12: 5D Simplex (Hyper-Tetrahedron)</option>
+                                            <option value="13">13: 6D Orthoplex</option>
+                                            <option value="14">14: 7D Hyper-Spherical</option>
+                                            <option value="15">15: E8 Lattice (8D Root)</option>
+                                        </select>
+                                        <select id="spinSelect" class="w-full bg-black/50 border border-gray-700 text-xs text-white rounded p-2 font-mono hover:border-green-500 transition-colors">
+                                            <option value="0">000: Spin Up (|↑⟩)</option>
+                                            <option value="1">001: Spin Down (|↓⟩)</option>
+                                            <option value="2">010: Superposition (|↑⟩+|↓⟩)</option>
+                                            <option value="3">011: Entangled (Non-local)</option>
+                                            <option value="4">100: Phase +π/2</option>
+                                            <option value="5">101: Phase -π/2</option>
+                                            <option value="6">110: Orthogonal X (|→⟩)</option>
+                                            <option value="7">111: Orthogonal Y (|←⟩)</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <!-- South Halo Config -->
+                                <div>
+                                    <div class="flex items-center justify-between mb-1">
+                                        <label class="text-[10px] text-green-400 font-bold uppercase">South Halo (Oscillation)</label>
+                                        <span class="text-[9px] text-gray-600 font-mono">ROW 7</span>
+                                    </div>
+                                    <div class="flex space-x-2">
+                                        <div class="w-1/2">
+                                            <label class="text-[9px] text-gray-500">Freq ID</label>
+                                            <input type="number" id="freqInput" min="0" max="31" value="5" class="w-full bg-black/50 border border-gray-700 text-xs text-white rounded p-1">
+                                        </div>
+                                        <div class="w-1/2">
+                                            <label class="text-[9px] text-gray-500">Amp ID</label>
+                                            <input type="number" id="ampInput" min="0" max="7" value="3" class="w-full bg-black/50 border border-gray-700 text-xs text-white rounded p-1">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="space-y-4">
+                                <!-- Quaternion Core -->
+                                <div>
+                                    <div class="flex items-center justify-between mb-1">
+                                        <label class="text-[10px] text-cyan-400 font-bold uppercase">Quaternion Payload</label>
+                                        <span class="text-[9px] text-gray-600 font-mono">ROWS 2-5</span>
+                                    </div>
+                                    <div class="grid grid-cols-2 gap-2">
+                                        <div><label class="text-[9px] text-gray-500">W (Scalar)</label><input type="range" id="sliderW" min="-1" max="1" step="0.01" value="0.7"></div>
+                                        <div><label class="text-[9px] text-gray-500">X (Vector i)</label><input type="range" id="sliderX" min="-1" max="1" step="0.01" value="0.1"></div>
+                                        <div><label class="text-[9px] text-gray-500">Y (Vector j)</label><input type="range" id="sliderY" min="-1" max="1" step="0.01" value="0.5"></div>
+                                        <div><label class="text-[9px] text-gray-500">Z (Vector k)</label><input type="range" id="sliderZ" min="-1" max="1" step="0.01" value="-0.2"></div>
+                                    </div>
+                                </div>
+
+                                <!-- Scaling & Sync -->
+                                <div>
+                                    <div class="flex items-center justify-between mb-1">
+                                        <label class="text-[10px] text-orange-400 font-bold uppercase">Buffer / Sync</label>
+                                        <span class="text-[9px] text-gray-600 font-mono">ROW 1,6 / EXT</span>
+                                    </div>
+                                    <div class="space-y-2">
+                                        <div>
+                                            <label class="text-[9px] text-gray-500">Payload Scale (16-bit)</label>
+                                            <input type="range" id="scaleSlider" min="0" max="65535" step="1" value="32768" class="w-full">
+                                        </div>
+                                        <div class="flex space-x-2">
+                                            <input type="text" placeholder="Resonance Key" class="w-2/3 bg-black/50 border border-gray-700 text-[10px] text-white rounded p-1">
+                                            <button onclick="triggerSync()" class="w-1/3 bg-gray-800 hover:bg-gray-700 text-white text-[9px] font-bold rounded border border-gray-600 transition-colors">
+                                                SYNC
+                                            </button>
+                                        </div>
+                                        <div id="syncStatus" class="text-[9px] text-gray-500 text-right h-3"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- GENE OUTPUT -->
+                    <div class="glass-panel p-6 rounded-xl border-t-2 border-neon-blue">
+                        <div class="flex justify-between items-end mb-4">
+                            <div>
+                                <h3 class="text-lg font-bold text-white">GENERATED 64-BIT SHD-CCP</h3>
+                                <p class="text-[10px] text-gray-500 font-mono">FORMAT: EINSTEIN TILE (H100 NATIVE)</p>
+                            </div>
+                            <button onclick="generatePacket()" class="bg-cyan-600 hover:bg-cyan-500 text-white font-bold py-2 px-4 rounded text-[10px] tracking-widest transition-colors shadow-[0_0_15px_rgba(0,243,255,0.3)]">
+                                COMPUTE TOPOLOGY
+                            </button>
+                        </div>
+
+                        <div class="flex flex-col md:flex-row gap-6">
+                            <!-- Visual Grid -->
+                            <div class="w-32 h-32 flex-shrink-0">
+                                <div id="bitGrid" class="einstein-grid w-full h-full border border-gray-700 bg-black p-1">
+                                    <!-- Grid generated by JS -->
+                                </div>
+                            </div>
+
+                            <!-- Hex & Decoded Info -->
+                            <div class="flex-grow space-y-3">
+                                <div class="bg-black/60 border border-gray-700 p-3 rounded font-mono text-center">
+                                    <div class="text-[10px] text-gray-600 mb-1 uppercase">Hexadecimal AI Seed Sequence</div>
+                                    <div id="hexOutput" class="text-xl md:text-2xl text-cyan-400 tracking-widest break-all glow-text">00 00 00 00 00 00 00 00</div>
+                                </div>
+                                
+                                <div class="bg-gray-900/50 p-3 rounded border border-gray-800 text-xs">
+                                    <div class="flex justify-between border-b border-gray-700 pb-2 mb-2">
+                                        <span class="text-gray-500">ISOMORPHISM DECODER</span>
+                                        <span class="text-purple-400 font-mono" id="decoderCode">--</span>
+                                    </div>
+                                    <div class="grid grid-cols-2 gap-2 text-[11px]">
+                                        <div>
+                                            <span class="text-gray-500 block">Seed Geometry</span>
+                                            <span id="decodeDNA" class="text-white font-bold">--</span>
+                                        </div>
+                                        <div>
+                                            <span class="text-gray-500 block">Quantum Spin</span>
+                                            <span id="decodeProtein" class="text-white font-bold">--</span>
+                                        </div>
+                                        <div>
+                                            <span class="text-gray-500 block">Payload Scale</span>
+                                            <span id="decodeScale" class="text-orange-400 font-mono">--</span>
+                                        </div>
+                                        <div>
+                                            <span class="text-gray-500 block">Oscillation</span>
+                                            <span id="decodeOsc" class="text-green-400 font-mono">--</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 2: SUBSTRATE FORGE -->
+        <div id="tab2" class="tab-content">
+            <!-- Header -->
+            <section class="mb-10 text-center relative">
+                <div class="absolute top-0 left-1/2 -translate-x-1/2 w-3/4 h-64 bg-red-900/10 blur-[120px] -z-10 rounded-full"></div>
+                <h2 class="text-4xl md:text-5xl font-bold mb-2 tracking-tight text-white">
+                    Geometric <span class="text-neon-amber">Substrate</span>
+                </h2>
+                <p class="text-sm text-gray-400 max-w-2xl mx-auto font-light">
+                    Inter-Lattice Tension Sensors via <strong>Magneto-Plasmonic Photonic Crystals (MPPC)</strong> and Cubic Compression.
+                </p>
+            </section>
+
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                
+                <!-- LEFT: Visualization Engine -->
+                <div class="lg:col-span-8 space-y-4">
+                    
+                    <!-- Main Canvas -->
+                    <div class="glass-panel rounded-xl p-1 overflow-hidden relative h-[500px] border border-gray-800">
+                        <div class="scanline"></div>
+                        
+                        <!-- HUD Elements -->
+                        <div class="absolute top-4 left-4 z-10 pointer-events-none">
+                            <div class="flex items-center space-x-2">
+                                <span class="w-2 h-2 bg-neon-amber rounded-full animate-pulse"></span>
+                                <span class="text-xs font-bold text-white tracking-widest">MPPC STRAIN GAUGE</span>
+                            </div>
+                            <div class="text-[10px] text-gray-400 font-mono mt-1 space-y-1">
+                                <div>LAYER 1: KAGOME (STATIC)</div>
+                                <div>LAYER 2: BIG FILM (MAGNETO-OPTIC)</div>
+                                <div>LAYER 3: TODA (SOLITONIC)</div>
+                            </div>
+                        </div>
+
+                        <!-- Faraday Rotation Readout -->
+                        <div class="absolute top-4 right-4 z-10 text-right font-mono text-xs pointer-events-none">
+                            <div class="text-neon-red font-bold">FARADAY ROTATION (\( \Phi \))</div>
+                            <div id="phiValue" class="text-2xl text-white">0.00°</div>
+                            <div class="text-gray-500 text-[10px] mt-1">PROBE BEAM POLARIZATION</div>
+                        </div>
+
+                        <!-- Compression State HUD -->
+                        <div class="absolute bottom-4 left-4 z-10 pointer-events-none">
+                            <div class="text-[10px] text-gray-500 font-mono mb-1">CUBIC COMPRESSION PHASE</div>
+                            <div id="cycleState" class="text-xl font-bold text-neon-blue tracking-widest">STATE: 12 EDGES</div>
+                            <div class="flex space-x-1 mt-2">
+                                <div class="w-8 h-1 bg-gray-700 cycle-dot" id="dot-12"></div>
+                                <div class="w-8 h-1 bg-gray-700 cycle-dot" id="dot-6"></div>
+                                <div class="w-8 h-1 bg-gray-700 cycle-dot" id="dot-7"></div>
+                                <div class="w-8 h-1 bg-gray-700 cycle-dot" id="dot-3"></div>
+                                <div class="w-8 h-1 bg-gray-700 cycle-dot" id="dot-1"></div>
+                            </div>
+                        </div>
+
+                        <canvas id="substrateCanvas" class="w-full h-full bg-black rounded-lg"></canvas>
+                    </div>
+                </div>
+
+                <!-- RIGHT: Controls & Telemetry -->
+                <div class="lg:col-span-4 space-y-6">
+                    
+                    <!-- Cycle Timing Controls -->
+                    <div class="glass-panel p-6 rounded-xl border-l-2 border-neon-blue">
+                        <h3 class="text-sm font-bold text-white mb-4 flex items-center justify-between">
+                            <div class="flex items-center">
+                                <svg class="w-4 h-4 mr-2 text-neon-blue" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                CYCLE TIMING
+                            </div>
+                            <div id="cycleStatus" class="text-[10px] text-neon-green">PAUSED</div>
+                        </h3>
+                        
+                        <!-- Playback Buttons -->
+                        <div class="flex space-x-2 mb-4">
+                            <button onclick="toggleGlobalPlay()" id="btnPlayPause" class="flex-1 bg-gray-800 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded text-xs transition-colors border border-gray-600">
+                                <i class="fas fa-play mr-2"></i> PLAY
+                            </button>
+                            <button onclick="resetGlobalCycle()" class="flex-1 bg-gray-800 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded text-xs transition-colors border border-gray-600">
+                                <i class="fas fa-redo mr-2"></i> RESET
+                            </button>
+                        </div>
+
+                        <div class="space-y-2">
+                            <div class="flex justify-between text-[10px] font-mono mb-1">
+                                <span class="text-gray-400">Pulse Scrub (0-720)</span>
+                                <span id="valRatio" class="text-neon-blue">0</span>
+                            </div>
+                            <!-- Pulse Slider scrub -->
+                            <input type="range" id="sliderPulse" min="0" max="720" step="1" value="0" class="w-full">
+                            <p class="text-[9px] text-gray-500 mt-1">
+                                Manual scrub through one full 720-degree topological cycle (12-6-7-3-1).
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Sensor Physics Controls -->
+                    <div class="glass-panel p-6 rounded-xl border-l-2 border-neon-amber">
+                        <h3 class="text-sm font-bold text-white mb-4 flex items-center">
+                            <svg class="w-4 h-4 mr-2 text-neon-amber" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                            SENSOR CALIBRATION
+                        </h3>
+                        
+                        <div class="space-y-4">
+                            <div>
+                                <div class="flex justify-between text-[10px] font-mono mb-1">
+                                    <span class="text-gray-400">Verdet Constant (\( \mathcal{V} \))</span>
+                                    <span id="valV" class="text-neon-amber">2.5</span>
+                                </div>
+                                <input type="range" id="sliderV" min="0.1" max="5.0" step="0.1" value="2.5">
+                            </div>
+                            
+                            <div>
+                                <div class="flex justify-between text-[10px] font-mono mb-1">
+                                    <span class="text-gray-400">Layer Thickness (\( L \))</span>
+                                    <span id="valL" class="text-neon-amber">1.0</span>
+                                </div>
+                                <input type="range" id="sliderL" min="0.1" max="3.0" step="0.1" value="1.0">
+                            </div>
+
+                            <div>
+                                <div class="flex justify-between text-[10px] font-mono mb-1">
+                                    <span class="text-gray-400">Lattice Tension (Stress)</span>
+                                    <span id="valStress" class="text-neon-red">0.0</span>
+                                </div>
+                                <input type="range" id="sliderStress" min="-10" max="10" step="0.1" value="0">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Telemetry Output -->
+                    <div class="glass-panel p-6 rounded-xl border-t-2 border-neon-blue">
+                        <h3 class="text-sm font-bold text-white mb-4">TENSION QUATERNION</h3>
+                        
+                        <div class="bg-black/60 p-4 rounded font-mono text-center mb-4 border border-gray-800">
+                            <div class="text-[10px] text-gray-500 mb-1">GEOMETRIC TENSION FIELD</div>
+                            <div id="tensionOutput" class="text-2xl text-white font-bold tracking-widest">0.00 T</div>
+                            <div class="text-[10px] text-gray-600 mt-2 p-1 bg-black rounded">\[ B_{geom} = \frac{\Phi}{\mathcal{V} \cdot L} \]</div>
+                        </div>
+
+                        <div class="space-y-2 text-xs font-mono">
+                            <div class="flex justify-between border-b border-gray-800 pb-1">
+                                <span class="text-gray-500">W (Scalar)</span>
+                                <span id="qW" class="text-white">0.00</span>
+                            </div>
+                            <div class="flex justify-between border-b border-gray-800 pb-1">
+                                <span class="text-gray-500">X (Tension i)</span>
+                                <span id="qX" class="text-neon-red">0.00</span>
+                            </div>
+                            <div class="flex justify-between border-b border-gray-800 pb-1">
+                                <span class="text-gray-500">Y (Tension j)</span>
+                                <span id="qY" class="text-neon-green">0.00</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-500">Z (Tension k)</span>
+                                <span id="qZ" class="text-neon-blue">0.00</span>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 3: TOPOLOGY FORGE -->
+        <div id="tab3" class="tab-content">
+            <!-- Header -->
+            <section class="mb-10 text-center relative">
+                <div class="absolute top-0 left-1/2 -translate-x-1/2 w-3/4 h-64 bg-green-900/10 blur-[120px] -z-10 rounded-full"></div>
+                <h2 class="text-4xl md:text-5xl font-bold mb-2 tracking-tight text-white">
+                    Topology <span class="text-neon-green">Forge</span>
+                </h2>
+                <p class="text-sm text-gray-400 max-w-2xl mx-auto font-light">
+                    SHD-CCP to TOPOLOGY SEED Generator. Modular, scalable, and hyper-dimensional.
+                </p>
+            </section>
+
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                
+                <!-- LEFT: Modular Seed Builder -->
+                <div class="lg:col-span-4 space-y-6">
+                    <div class="glass-panel p-6 rounded-xl border-l-2 border-neon-green">
+                        <h3 class="text-sm font-bold text-white mb-4 flex items-center">
+                            <i class="fas fa-network-wired mr-2 text-neon-green"></i> TOPOLOGY BUILDER
+                        </h3>
+                        
+                        <!-- Regulatory Region (Row 0) -->
+                        <div class="space-y-4">
+                            <div>
+                                <div class="flex justify-between text-[10px] font-mono mb-1">
+                                    <span class="text-purple-400 font-bold">NORTH HALO (STEERING)</span>
+                                </div>
+                                <label class="text-[9px] text-gray-500 block mb-1">Seed Geometry (Form ID)</label>
+                                <select id="gf-formSelect" class="w-full bg-black/50 border border-gray-700 text-xs text-white rounded p-2 font-mono hover:border-purple-500 transition-colors">
+                                    <!-- Populated by JS -->
+                                </select>
+                                <div id="gf-motifDesc" class="text-[9px] text-gray-400 mt-1 italic pl-2 border-l border-purple-500/30">
+                                    --
+                                </div>
+                            </div>
+
+                            <div>
+                                <label class="text-[9px] text-gray-500 block mb-1">Quantum Spin Probability (Spin Class)</label>
+                                <select id="gf-spinSelect" class="w-full bg-black/50 border border-gray-700 text-xs text-white rounded p-2 font-mono hover:border-green-500 transition-colors">
+                                    <!-- Populated by JS -->
+                                </select>
+                                <div id="gf-spinDesc" class="text-[9px] text-gray-400 mt-1 italic pl-2 border-l border-green-500/30">
+                                    --
+                                </div>
+                            </div>
+
+                            <!-- Symmetry Check -->
+                            <div class="flex items-center justify-between bg-gray-900/50 p-2 rounded border border-gray-800">
+                                <span class="text-[9px] text-gray-400">Symmetry Parity</span>
+                                <div id="gf-parityIndicator" class="flex items-center space-x-2">
+                                    <div class="w-2 h-2 rounded-full bg-gray-600"></div>
+                                    <span class="text-[9px] font-mono text-gray-500">INVALID</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Quaternion Core Builder -->
+                    <div class="glass-panel p-6 rounded-xl border-l-2 border-cyan-500">
+                        <h3 class="text-sm font-bold text-white mb-4 flex items-center">
+                            <i class="fas fa-cube mr-2 text-cyan-500"></i> QUATERNION CORE
+                        </h3>
+                        <div class="space-y-3">
+                            <div><label class="text-[9px] text-gray-500">W (Scalar Time)</label><input type="range" id="gf-sliderW" min="-1" max="1" step="0.01" value="0.7"></div>
+                            <div><label class="text-[9px] text-gray-500">X (Vector i)</label><input type="range" id="gf-sliderX" min="-1" max="1" step="0.01" value="0.1"></div>
+                            <div><label class="text-[9px] text-gray-500">Y (Vector j)</label><input type="range" id="gf-sliderY" min="-1" max="1" step="0.01" value="0.5"></div>
+                            <div><label class="text-[9px] text-gray-500">Z (Vector k)</label><input type="range" id="gf-sliderZ" min="-1" max="1" step="0.01" value="-0.2"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- RIGHT: Visualization & Output -->
+                <div class="lg:col-span-8 space-y-6">
+                    
+                    <!-- Tensor Probability Graph -->
+                    <div class="glass-panel p-1 rounded-xl relative h-[300px] border border-gray-800">
+                        <div class="absolute top-3 left-3 z-10 text-[10px] text-neon-green font-mono">
+                            TENSOR PROBABILITY FIELD
+                        </div>
+                        <div class="absolute top-3 right-3 z-10 text-[10px] text-gray-400 font-mono" id="gf-cyclePhase">
+                            CYCLE PHASE: 0/720
+                        </div>
+                        <canvas id="bioElectricGraph" class="w-full h-full bg-black rounded-lg"></canvas>
+                    </div>
+
+                    <!-- 64-Bit Packet Display (Topology Style) -->
+                    <div class="glass-panel p-6 rounded-xl border-t-2 border-neon-purple">
+                        <div class="flex justify-between items-center mb-4">
+                            <h3 class="text-lg font-bold text-white">64-BIT SHD-CCP PACKET</h3>
+                            <button onclick="exportGeneticPacket()" class="bg-neon-purple/20 hover:bg-neon-purple/40 text-neon-purple border border-neon-purple/50 font-bold py-1 px-3 rounded text-[10px] transition-colors">
+                                EXPORT JSON
+                            </button>
+                        </div>
+
+                        <!-- Tensor Strip Visualization -->
+                        <div id="geneticStrip" class="flex flex-wrap gap-2 font-mono text-xs mb-4 p-4 bg-black/60 rounded border border-gray-800">
+                            <!-- Populated by JS -->
+                        </div>
+
+                        <!-- Backtrack Info -->
+                        <div class="text-[9px] text-gray-500 font-mono italic">
+                            * Hover over topology nodes to backtrack to physics parameters.
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 4: GENESIS SEED CODEX - ENGRAM -->
+        <div id="tab4" class="tab-content">
+            <!-- Header -->
+            <section class="mb-10 text-center relative">
+                <div class="absolute top-0 left-1/2 -translate-x-1/2 w-3/4 h-64 bg-yellow-900/10 blur-[120px] -z-10 rounded-full"></div>
+                <h2 class="text-4xl md:text-5xl font-bold mb-2 tracking-tight text-white">
+                    Genesis <span class="text-neon-amber">Codex</span>
+                </h2>
+                <p class="text-sm text-gray-400 max-w-2xl mx-auto font-light">
+                    Generate the <strong>720-Frame Toroidal Engram</strong> using a Generic Topology template or a compressed 3-Word Lexical Seed.
+                </p>
+            </section>
+
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                
+                <!-- LEFT: Input & Controls -->
+                <div class="lg:col-span-5 space-y-6">
+                    
+                    <div class="glass-panel p-6 rounded-xl border-l-2 border-neon-amber">
+                        <h3 class="text-sm font-bold text-white mb-4 flex items-center justify-between">
+                            <div class="flex items-center"><i class="fas fa-keyboard mr-2 text-neon-amber"></i> LINGUISTIC ATOMIZATION</div>
+                        </h3>
+                        
+                        <div class="space-y-4">
+                            <!-- Toggle Lexical Seed -->
+                            <label class="flex items-center space-x-3 cursor-pointer text-sm text-gray-300 font-mono hover:text-white transition-colors p-2 bg-black/40 rounded border border-gray-700">
+                                <input type="checkbox" id="gc-use-lexical" class="form-checkbox h-4 w-4 text-neon-amber bg-gray-900 border-gray-600 rounded focus:ring-0" checked>
+                                <span>Enable Lexical Seed (3-Word Chain)</span>
+                            </label>
+
+                            <!-- Lexical Inputs -->
+                            <div id="gc-lexical-inputs" class="flex flex-col space-y-2">
+                                <label class="text-[10px] text-gray-500 block font-mono uppercase">Lexical Token Chain</label>
+                                <div class="flex space-x-2">
+                                    <input type="text" id="gc-word-1" class="w-1/3 bg-black/50 border border-gray-700 text-xs text-white rounded p-2 font-mono focus:border-neon-amber outline-none uppercase text-center" placeholder="WORD 1" value="MIND">
+                                    <input type="text" id="gc-word-2" class="w-1/3 bg-black/50 border border-gray-700 text-xs text-white rounded p-2 font-mono focus:border-neon-amber outline-none uppercase text-center" placeholder="WORD 2" value="MACHINE">
+                                    <input type="text" id="gc-word-3" class="w-1/3 bg-black/50 border border-gray-700 text-xs text-white rounded p-2 font-mono focus:border-neon-amber outline-none uppercase text-center" placeholder="WORD 3" value="NATURE">
+                                </div>
+                                <p class="text-[9px] text-gray-500 italic">Tokens are XOR'd sequentially to form mathematical knot-annihilation collisions.</p>
+                            </div>
+
+                            <button onclick="generateGenesisEngram()" class="w-full bg-neon-amber/20 hover:bg-neon-amber/40 text-neon-amber border border-neon-amber/50 font-bold py-3 rounded text-xs transition-colors shadow-[0_0_10px_rgba(255,170,0,0.2)]">
+                                GENERATE 720-FRAME ENGRAM
+                            </button>
+                            
+                            <!-- JSON Import/Export for Tab 4 -->
+                            <div class="pt-4 border-t border-gray-800">
+                                <label class="text-[10px] text-gray-500 block mb-2 font-mono uppercase">Engram Data Transfer</label>
+                                <div class="flex space-x-2">
+                                    <input type="file" id="gc-jsonInput" class="hidden" accept=".json" onchange="loadGenesisEngram(this)">
+                                    <label for="gc-jsonInput" class="flex-1 bg-gray-800 hover:bg-gray-700 text-gray-400 text-xs py-2 rounded border border-gray-700 cursor-pointer text-center transition">
+                                        <i class="fas fa-upload mr-1"></i> LOAD JSON
+                                    </label>
+                                    <button onclick="exportGenesisEngram()" id="gc-exportBtn" class="flex-1 bg-gray-800 hover:bg-gray-700 text-gray-400 text-xs py-2 rounded border border-gray-700 cursor-pointer text-center transition">
+                                        <i class="fas fa-download mr-1"></i> EXPORT JSON
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Stats Panel -->
+                    <div class="glass-panel p-6 rounded-xl border-l-2 border-gray-600">
+                        <div class="grid grid-cols-2 gap-4 text-center">
+                            <div class="bg-black/40 p-2 rounded">
+                                <div class="text-[9px] text-gray-500 font-mono">FRAMES GENERATED</div>
+                                <div id="gc-totalCodons" class="text-lg text-white font-bold">0</div>
+                            </div>
+                            <div class="bg-black/40 p-2 rounded">
+                                <div class="text-[9px] text-gray-500 font-mono">SEED GEOMETRY (SF)</div>
+                                <div id="gc-sf-stat" class="text-lg text-neon-green font-bold">--</div>
+                            </div>
+                            <div class="bg-black/40 p-2 rounded">
+                                <div class="text-[9px] text-gray-500 font-mono">QUANTUM SPIN (SP)</div>
+                                <div id="gc-sp-stat" class="text-lg text-purple-400 font-bold">--</div>
+                            </div>
+                            <div class="bg-black/40 p-2 rounded">
+                                <div class="text-[9px] text-gray-500 font-mono">COMPRESSION STATUS</div>
+                                <div id="gc-comp-stat" class="text-lg text-cyan-400 font-bold">IDLE</div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+
+                <!-- RIGHT: Output Visualization -->
+                <div class="lg:col-span-7 space-y-6">
+                    
+                    <!-- 64-Bit Lexical Seed Visualization -->
+                    <div class="glass-panel p-4 rounded-xl border-t-2 border-purple-500 h-[250px] flex flex-col relative overflow-hidden">
+                        <div class="absolute top-0 right-0 w-32 h-32 bg-purple-900/10 blur-[50px]"></div>
+                        <div class="flex justify-between items-center mb-4 relative z-10">
+                            <h3 class="text-xs font-bold text-purple-400 uppercase tracking-widest">64-Bit Compression Grid</h3>
+                            <span class="text-[9px] text-gray-500 font-mono" id="gc-seed-type-lbl">MODE: LEXICAL CHAIN XOR</span>
+                        </div>
+                        
+                        <div class="flex-grow flex items-center justify-center relative z-10">
+                            <!-- 8x8 Seed Grid -->
+                            <div id="gc-seed-grid" class="grid grid-cols-8 gap-1 w-32 h-32 border border-gray-700 bg-black p-1 rounded">
+                                <!-- Generated by JS -->
+                                <div class="col-span-8 text-[10px] text-center text-gray-600 mt-12 font-mono">AWAITING SEED</div>
+                            </div>
+                            
+                            <div class="ml-8 flex flex-col justify-center font-mono space-y-2">
+                                <div class="text-[10px] text-gray-500 uppercase">Cryptographic Signature</div>
+                                <div id="gc-hex-sig" class="text-sm text-cyan-400 break-all w-48 font-bold">--</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Engram Output Console -->
+                    <div class="glass-panel p-4 rounded-xl border-t-2 border-cyan-500">
+                        <div class="flex justify-between items-center mb-4">
+                            <h3 class="text-xs font-bold text-cyan-400 uppercase tracking-widest">Toroidal Projection Console</h3>
+                            <button onclick="pushToChain()" id="gc-pushBtn" class="bg-gray-800 text-gray-500 font-bold py-2 px-4 rounded text-[9px] border border-gray-700 cursor-not-allowed uppercase tracking-widest transition-all" disabled>
+                                PUSH TO CODEX CRYSTAL
+                            </button>
+                        </div>
+                        
+                        <!-- Console Output -->
+                        <div class="bg-black/80 p-4 rounded border border-gray-800 h-[100px] overflow-y-auto">
+                            <div id="gc-dnaDisplay" class="font-mono text-[10px] tracking-widest text-gray-600">
+                                SYSTEM STANDBY. Awaiting Engram Generation...
+                            </div>
+                        </div>
+                        
+                        <div class="mt-2 flex justify-between text-[9px] text-gray-500 font-mono">
+                            <div>Matrix Density: <span class="text-white">720 SHD-CCP Nodes</span></div>
+                            <div>Ready for 3D Topology: <span id="gc-stability" class="text-white">NO</span></div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 5: CODEX CRYSTAL (UPGRADED WEAVE) -->
+        <div id="tab5" class="tab-content relative">
+            <!-- Header -->
+            <section class="mb-10 text-center relative z-10 pointer-events-none absolute w-full top-0 pt-24">
+                <div class="absolute top-0 left-1/2 -translate-x-1/2 w-3/4 h-64 bg-purple-900/10 blur-[120px] -z-10 rounded-full"></div>
+                <h2 class="text-4xl md:text-5xl font-bold mb-2 tracking-tight text-white drop-shadow-md">
+                    Codex <span class="text-neon-purple">Crystal</span>
+                </h2>
+                <p class="text-sm text-gray-400 max-w-2xl mx-auto font-light drop-shadow-md">
+                    Topological Playback Weave & Holographic Collision Verification.
+                </p>
+            </section>
+
+            <!-- 3D Canvas Background -->
+            <div class="absolute top-0 left-0 w-full h-screen z-0">
+                <div id="crystal-visualizer" class="w-full h-full cursor-grab active:cursor-grabbing"></div>
+            </div>
+
+            <!-- UI HUD Hint for Controls -->
+            <div class="absolute bottom-10 left-1/2 -translate-x-1/2 z-10 pointer-events-none">
+                <div class="bg-black/60 backdrop-blur-md px-4 py-2 rounded-full border border-gray-800 text-[10px] font-mono text-gray-400 tracking-widest flex items-center space-x-4">
+                    <span><i class="fas fa-mouse-pointer text-neon-blue mr-1"></i> LEFT CLICK: ROTATE</span>
+                    <span>|</span>
+                    <span><i class="fas fa-arrows-alt text-neon-purple mr-1"></i> RIGHT CLICK: PAN</span>
+                    <span>|</span>
+                    <span><i class="fas fa-search-plus text-neon-green mr-1"></i> SCROLL: ZOOM</span>
+                </div>
+            </div>
+
+            <!-- UI Overlay -->
+            <div class="absolute top-0 left-0 w-full h-full z-10 pointer-events-none p-4 flex justify-between pt-[140px] pb-20 box-border">
+                
+                <!-- Left Panel: Topological Playback Weave -->
+                <div class="panel glass-panel p-4 pointer-events-auto w-[350px] h-fit">
+                    <h3 class="text-sm font-bold text-white mb-4 border-b border-gray-700 pb-2">
+                        TOPOLOGICAL PLAYBACK WEAVE
+                    </h3>
+                    
+                    <div class="space-y-4">
+                        <!-- Playback Controls -->
+                        <div class="bg-black/50 p-3 rounded border border-slate-700">
+                            <div class="flex justify-between text-[10px] text-gray-400 mb-2 font-mono">
+                                <span>Engram Playback</span>
+                                <span id="crystalFrameText" class="text-cyan-400 font-bold">0 / 720</span>
+                            </div>
+                            <input type="range" id="crystalFrameSlider" min="0" max="720" value="0" class="w-full">
+                            <button id="btnCrystalPlay" onclick="toggleCrystalPlayback()" class="w-full mt-3 bg-purple-600 hover:bg-purple-500 text-white font-bold text-[10px] py-2 rounded transition-colors uppercase tracking-widest shadow-[0_0_10px_rgba(168,85,247,0.4)]">
+                                ▶ PLAY WEAVE
+                            </button>
+                        </div>
+
+                         <div class="bg-black/50 p-2 rounded">
+                            <div class="text-[10px] text-gray-400 mb-1">Constellation Auto-Rotation Speed</div>
+                            <input type="range" id="crystalSpeed" min="0" max="0.02" step="0.001" value="0.005">
+                        </div>
+                        
+                         <button onclick="clearCrystalChain()" class="w-full bg-red-900/20 text-red-400 border border-red-900/50 hover:bg-red-900/40 text-[10px] py-2 rounded transition uppercase font-bold tracking-widest mt-2">
+                             CLEAR MANIFOLD
+                         </button>
+                    </div>
+                </div>
+
+                <!-- Right Panel: Chain Data & Verification -->
+                <div class="panel glass-panel p-4 pointer-events-auto w-[350px] flex flex-col h-fit">
+                    <div class="flex justify-between items-center mb-4 border-b border-gray-700 pb-2">
+                        <h3 class="text-sm font-bold text-white">INTEGRITY MATRIX</h3>
+                         <span id="crystalPacketCount" class="text-[10px] bg-purple-500/20 px-2 py-1 rounded text-purple-300 font-mono font-bold border border-purple-500/30">0 FRAMES</span>
+                    </div>
+                    
+                    <p class="text-[10px] text-slate-400 mb-4 leading-relaxed font-mono">
+                        Verify the engram to reconstruct the 64-bit seed from the payload trajectory. Sparks (Red Tetrahedrons) will spawn at XOR Annihilation knots, proving cryptographic fidelity.
+                    </p>
+
+                    <button onclick="runChainVerification()" class="w-full bg-cyan-900/40 text-cyan-300 border border-cyan-500/50 hover:bg-cyan-800/60 text-[10px] py-3 rounded transition font-bold uppercase tracking-widest shadow-[0_0_15px_rgba(45,212,191,0.2)]">
+                        VERIFY CHAIN INTEGRITY (COLLISIONS)
+                    </button>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <script>
+        // --- 0. GLOBAL DEFINITIONS: AI TOPOLOGY DICTIONARY ---
+        
+        const GF_STRUCTURAL_FORMS = [
+            { id: 0, motif: 'Point', desc: '0D Singularity', stability: 0.1 },
+            { id: 1, motif: 'Vector', desc: '1D Directed Ray', stability: 0.2 },
+            { id: 2, motif: 'Plane', desc: '2D Surface', stability: 0.3 },
+            { id: 3, motif: 'Tensor', desc: '3D Volume', stability: 0.4 },
+            { id: 4, motif: 'Tetrahedron', desc: '4-Face Simplex', stability: 0.5 },
+            { id: 5, motif: 'Hexahedron', desc: 'Cube / 6-Face', stability: 0.6 },
+            { id: 6, motif: 'Octahedron', desc: '8-Face / Dual-Tetra', stability: 0.65 },
+            { id: 7, motif: 'Dodecahedron', desc: '12-Face Pentagonal', stability: 0.7 },
+            { id: 8, motif: 'Icosahedron', desc: '20-Face Triangular', stability: 0.75 },
+            { id: 9, motif: 'Torus', desc: 'Continuous Manifold', stability: 0.8 },
+            { id: 10, motif: 'Tesseract', desc: '4D Hypercube', stability: 0.85 },
+            { id: 11, motif: 'Calabi-Yau', desc: 'Compactified Manifold', stability: 0.9 },
+            { id: 12, motif: '5D Simplex', desc: 'Hyper-Tetrahedron', stability: 0.92 },
+            { id: 13, motif: '6D Orthoplex', desc: 'Hyper-Octahedron', stability: 0.94 },
+            { id: 14, motif: '7D Space', desc: 'Hyper-Spherical', stability: 0.96 },
+            { id: 15, motif: 'E8 Lattice', desc: '8D Exceptional Root', stability: 0.98 },
+            { id: 16, motif: 'Cosmohedra', desc: 'Calibration Only (System Reserved)', stability: 1.0 }
+        ];
+
+        const GF_SPIN_CLASSES = [
+            { id: 0, group: 'Spin Up', desc: '|↑⟩ Probability Bias', color: 0x00f3ff },
+            { id: 1, group: 'Spin Down', desc: '|↓⟩ Probability Bias', color: 0xbc13fe },
+            { id: 2, group: 'Superposition', desc: '|↑⟩+|↓⟩ Dual State', color: 0xffaa00 },
+            { id: 3, group: 'Entangled', desc: 'Non-local Pairing', color: 0x0aff0a },
+            { id: 4, group: 'Phase +π/2', desc: 'Orthogonal Shift Right', color: 0xff3333 },
+            { id: 5, group: 'Phase -π/2', desc: 'Orthogonal Shift Left', color: 0x3333ff },
+            { id: 6, group: 'Orthogonal X', desc: '|→⟩ Vector state', color: 0xff00ff },
+            { id: 7, group: 'Orthogonal Y', desc: '|←⟩ Vector state', color: 0xffff00 }
+        ];
+        
+        // --- TAB SWITCHING ---
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            document.getElementById(tabId).classList.add('active');
+            
+            document.querySelectorAll('.nav-btn').forEach(el => el.classList.remove('active'));
+            document.getElementById('btn-' + tabId).classList.add('active');
+            
+            if(tabId === 'tab2') setTimeout(resizeSubstrateCanvas, 50);
+            if(tabId === 'tab1') setTimeout(resizeCanvas1, 50);
+            if(tabId === 'tab3') {
+                setTimeout(() => {
+                    initGeneticForge(); 
+                    updateGeneticForge();
+                }, 50);
+            }
+            if(tabId === 'tab5') {
+                 setTimeout(() => {
+                    if(!crystalRenderer) initCrystalVisualizer();
+                    resizeCrystalVisualizer();
+                }, 50);
+            }
+        }
+
+        // --- SHARED PHYSICS STATE ---
+        let masterTime = 0; 
+        let isMasterRunning = false; 
+        const CYCLE_MAX = 720;
+        
+        // Interaction State for Canvas 1
+        let camRotX = 0;
+        let camRotY = 0;
+        let camZoom = 1.0;
+        let isDragging = false;
+        let lastMouseX = 0;
+        let lastMouseY = 0;
+
+        // Shared Tab 5 Variables
+        let crystalNodes = [];
+        let crystalLinks = [];
+        let crystalWeaveLine = null;
+        let crystalSparks = [];
+        let crystalSeed = null;
+        let crystalCollisions = [];
+        let crystalPlaybackFrame = 0;
+        let isCrystalPlaying = false;
+
+        // --- TAB 1: MANIFOLD VISUALIZER (Interactive) ---
+        const canvas1 = document.getElementById('manifoldCanvas');
+        const ctx1 = canvas1.getContext('2d');
+        const container1 = document.getElementById('manifoldContainer');
+        const substrateToggle = document.getElementById('substrateToggle');
+        
+        function resizeCanvas1() {
+            if(!canvas1.parentElement) return;
+            canvas1.width = canvas1.parentElement.clientWidth;
+            canvas1.height = canvas1.parentElement.clientHeight;
+        }
+        window.addEventListener('resize', resizeCanvas1);
+        resizeCanvas1();
+
+        container1.addEventListener('mousedown', (e) => {
+            isDragging = true;
+            lastMouseX = e.clientX;
+            lastMouseY = e.clientY;
+        });
+        window.addEventListener('mouseup', () => isDragging = false);
+        window.addEventListener('mousemove', (e) => {
+            if(!isDragging) return;
+            const deltaX = e.clientX - lastMouseX;
+            const deltaY = e.clientY - lastMouseY;
+            camRotY += deltaX * 0.01;
+            camRotX += deltaY * 0.01;
+            lastMouseX = e.clientX;
+            lastMouseY = e.clientY;
+        });
+        container1.addEventListener('wheel', (e) => {
+            e.preventDefault();
+            camZoom += e.deltaY * -0.001;
+            camZoom = Math.min(Math.max(.5, camZoom), 3);
+        });
+
+        function toggleGlobalPlay() {
+            isMasterRunning = !isMasterRunning;
+            updatePlayButtons();
+        }
+
+        function updatePlayButtons() {
+            const btnBio = document.getElementById('btnBioPlay'); 
+            const btnSub = document.getElementById('btnPlayPause'); 
+            const status = document.getElementById('cycleStatus'); 
+
+            if(btnBio) {
+                if(isMasterRunning) {
+                    btnBio.innerHTML = '<i class="fas fa-pause text-xs"></i>';
+                    btnBio.classList.add('text-neon-green', 'border-neon-green/50');
+                    btnBio.classList.remove('text-neon-blue', 'border-neon-blue/30');
+                } else {
+                    btnBio.innerHTML = '<i class="fas fa-play text-xs"></i>';
+                    btnBio.classList.remove('text-neon-green', 'border-neon-green/50');
+                    btnBio.classList.add('text-neon-blue', 'border-neon-blue/30');
+                }
+            }
+
+            if(btnSub && status) {
+                if(isMasterRunning) {
+                    btnSub.innerHTML = '<i class="fas fa-pause mr-2"></i> PAUSE';
+                    status.innerText = "RUNNING";
+                    status.classList.remove('text-red-500');
+                    status.classList.add('text-neon-green');
+                } else {
+                    btnSub.innerHTML = '<i class="fas fa-play mr-2"></i> PLAY';
+                    status.innerText = "PAUSED";
+                    status.classList.remove('text-neon-green');
+                    status.classList.add('text-red-500');
+                }
+            }
+        }
+
+        function resetGlobalCycle() {
+            masterTime = 0;
+            const slider = document.getElementById('sliderPulse');
+            if(slider) {
+                slider.value = 0;
+                const ratioDisplay = document.getElementById('valRatio');
+                if(ratioDisplay) ratioDisplay.innerText = "0";
+            }
+            if(!isMasterRunning) toggleGlobalPlay();
+        }
+
+        function getTorusKnotPoint(t, offset) {
+            const p = 4, q = 9;
+            const bioTime = masterTime * 0.02; 
+            const r_tube = 0.4 + (0.1 * Math.sin(bioTime * 2));
+            const R_torus = 1.0;
+            const angle = t + offset;
+            
+            const r = R_torus + r_tube * Math.cos(q * angle);
+            let x = r * Math.cos(p * angle);
+            let y = r * Math.sin(p * angle);
+            let z = r_tube * Math.sin(q * angle);
+
+            let x_ry = x * Math.cos(camRotY) - z * Math.sin(camRotY);
+            let z_ry = x * Math.sin(camRotY) + z * Math.cos(camRotY);
+            x = x_ry; z = z_ry;
+
+            let y_rx = y * Math.cos(camRotX) - z * Math.sin(camRotX);
+            let z_rx = y * Math.sin(camRotX) + z * Math.cos(camRotX);
+            y = y_rx; z = z_rx;
+
+            const scale = (Math.min(canvas1.width, canvas1.height) / 4) * camZoom;
+            
+            return { 
+                x: canvas1.width/2 + x * scale, 
+                y: canvas1.height/2 + y * scale 
+            };
+        }
+
+        function drawHexLatticeOverlay(stress) {
+            ctx1.strokeStyle = `rgba(255, 170, 0, 0.05)`; 
+            ctx1.lineWidth = 1;
+            const size = 40 * camZoom;
+            const cols = 5;
+            const rows = 5;
+            
+            const bioTime = masterTime * 0.02;
+            const distort = Math.sin(bioTime) * stress * 0.5;
+
+            const offsetX = canvas1.width/2 - (cols * size * 1.5)/2;
+            const offsetY = canvas1.height/2 - (rows * size * Math.sqrt(3))/2;
+
+            for(let r=0; r<rows; r++) {
+                for(let c=0; c<cols; c++) {
+                    const x = (c * size * 1.5) + offsetX + distort;
+                    const y = (r * size * Math.sqrt(3)) + (c%2 * size * Math.sqrt(3)/2) + offsetY;
+                    
+                    ctx1.beginPath();
+                    for (let i = 0; i < 6; i++) {
+                        const angle = 2 * Math.PI / 6 * i + camRotY; 
+                        const px = x + size * Math.cos(angle);
+                        const py = y + size * Math.sin(angle);
+                        if (i === 0) ctx1.moveTo(px, py); else ctx1.lineTo(px, py);
+                    }
+                    ctx1.closePath();
+                    ctx1.stroke();
+                }
+            }
+        }
+
+        function drawManifold() {
+            if (!document.getElementById('tab1').classList.contains('active')) return; 
+            
+            ctx1.fillStyle = 'rgba(5, 5, 5, 0.2)';
+            ctx1.fillRect(0, 0, canvas1.width, canvas1.height);
+            
+            if(substrateToggle.checked) {
+                const stressVal = parseFloat(document.getElementById('sliderStress').value);
+                drawHexLatticeOverlay(stressVal);
+            }
+
+            const bioTime = masterTime * 0.02;
+            const planckPhase = (Math.sin(bioTime * 1.5) + 1) / 2;
+            document.getElementById('compressionBar').style.width = `${planckPhase * 100}%`;
+
+            for (let s = 0; s < 12; s++) {
+                const streamOffset = (s / 12) * (Math.PI * 2) / 9;
+                ctx1.beginPath();
+                const isPrimary = s % 2 === 0;
+                const baseColor = isPrimary ? {r:0, g:243, b:255} : {r:188, g:19, b:254};
+                
+                for (let t = 0; t < Math.PI * 2; t += 0.05) {
+                    const p1 = getTorusKnotPoint(t, streamOffset);
+                    const p2 = getTorusKnotPoint(t + 0.05, streamOffset);
+                    if (t === 0) ctx1.moveTo(p1.x, p1.y); else ctx1.lineTo(p2.x, p2.y);
+                }
+                const opacity = 0.3 + (planckPhase * 0.4);
+                ctx1.strokeStyle = `rgba(${baseColor.r}, ${baseColor.g}, ${baseColor.b}, ${opacity})`;
+                ctx1.lineWidth = isPrimary ? 1.5 : 1;
+                ctx1.stroke();
+            }
+        }
+
+        function initGrid() {
+            const grid = document.getElementById('bitGrid');
+            if(!grid) return;
+            grid.innerHTML = '';
+            for (let row = 0; row < 8; row++) {
+                for (let col = 0; col < 8; col++) {
+                    const div = document.createElement('div');
+                    div.className = 'bit-cell';
+                    div.id = `bit-${row}-${col}`;
+                    if (row === 0) div.classList.add('row-halo-n');
+                    else if (row === 7) div.classList.add('row-halo-s');
+                    else div.classList.add('row-core');
+                    grid.appendChild(div);
+                }
+            }
+        }
+
+        function updateGridVisuals(bytes) {
+            for (let row = 0; row < 8; row++) {
+                const byte = bytes[row];
+                for (let col = 0; col < 8; col++) {
+                    const bit = (byte >> col) & 1;
+                    const cell = document.getElementById(`bit-${row}-${col}`);
+                    if (!cell) continue;
+                    
+                    let activeColor = '';
+                    if (row === 0) activeColor = '#bc13fe';
+                    else if (row === 7) activeColor = '#0aff0a';
+                    else activeColor = '#00f3ff';
+
+                    if (bit) {
+                        cell.style.backgroundColor = activeColor;
+                        cell.style.boxShadow = `0 0 5px ${activeColor}`;
+                    } else {
+                        cell.style.backgroundColor = 'transparent';
+                        cell.style.boxShadow = 'none';
+                    }
+                }
+            }
+        }
+
+        function decodePacket(form, spin, energyByte, scaleVal, freq, amp) {
+            const fData = GF_STRUCTURAL_FORMS.find(d => d.id === form) || { motif: "Unknown Geometry", desc: "N/A" };
+            const sData = GF_SPIN_CLASSES.find(s => s.id === spin) || { group: "Inert" };
+
+            document.getElementById('decoderCode').innerText = `ISO-GEN-${form}-${spin}`;
+            document.getElementById('decodeDNA').innerText = fData.motif;
+            document.getElementById('decodeProtein').innerText = sData.group;
+            document.getElementById('decodeScale').innerText = scaleVal;
+            document.getElementById('decodeOsc').innerText = `F:${freq} | A:${amp}`;
+        }
+
+        function generatePacket() {
+            if(!document.getElementById('formSelect')) return;
+
+            const formVal = parseInt(document.getElementById('formSelect').value);
+            const spinVal = parseInt(document.getElementById('spinSelect').value);
+            const scaleVal = parseInt(document.getElementById('scaleSlider').value);
+            const freqVal = parseInt(document.getElementById('freqInput').value);
+            const ampVal = parseInt(document.getElementById('ampInput').value);
+            
+            const parity = (formVal % 2 === 0) ? 1 : 0; 
+
+            let byte0 = 0;
+            byte0 |= (formVal & 0x0F);
+            byte0 |= ((parity & 0x01) << 4);
+            byte0 |= ((spinVal & 0x07) << 5);
+
+            const byte1 = (scaleVal >> 8) & 0xFF;
+            const byte6 = scaleVal & 0xFF;
+
+            const mapFloat = (val) => Math.floor(((parseFloat(val) + 1) / 2) * 255);
+            const bW = mapFloat(document.getElementById('sliderW').value);
+            const bX = mapFloat(document.getElementById('sliderX').value);
+            const bY = mapFloat(document.getElementById('sliderY').value);
+            const bZ = mapFloat(document.getElementById('sliderZ').value);
+
+            let byte7 = 0;
+            byte7 |= (freqVal & 0x1F);
+            byte7 |= ((ampVal & 0x07) << 5);
+
+            const byteArray = [byte0, byte1, bW, bX, bY, bZ, byte6, byte7];
+
+            updateGridVisuals(byteArray);
+
+            const hexStr = byteArray.map(b => b.toString(16).padStart(2, '0').toUpperCase()).join(' ');
+            document.getElementById('hexOutput').innerText = hexStr;
+
+            decodePacket(formVal, spinVal, bW, scaleVal, freqVal, ampVal);
+        }
+
+        function triggerSync() {
+            const status = document.getElementById('syncStatus');
+            status.innerText = "INITIATING TRUTH CHAIN...";
+            status.className = "text-[9px] text-neon-blue text-right h-3";
+            
+            setTimeout(() => {
+                status.innerText = "CONTEXT PAIRING...";
+                status.className = "text-[9px] text-purple-400 text-right h-3 animate-pulse";
+            }, 800);
+
+            setTimeout(() => {
+                status.innerText = "SYNCHRONIZED (FALCON HASH VALID)";
+                status.className = "text-[9px] text-neon-green text-right h-3";
+            }, 2000);
+        }
+
+        const sliders = ['W', 'X', 'Y', 'Z'];
+        sliders.forEach(id => {
+            const el = document.getElementById('slider'+id);
+            if(el) el.addEventListener('input', generatePacket);
+        });
+        document.getElementById('formSelect').addEventListener('change', generatePacket);
+        document.getElementById('spinSelect').addEventListener('change', generatePacket);
+        document.getElementById('scaleSlider').addEventListener('input', generatePacket);
+        document.getElementById('freqInput').addEventListener('input', generatePacket);
+        document.getElementById('ampInput').addEventListener('input', generatePacket);
+
+
+        // --- TAB 2: SUBSTRATE FORGE ---
+        const canvas2 = document.getElementById('substrateCanvas');
+        const ctx2 = canvas2.getContext('2d');
+        
+        let substrateParams = {
+            verdet: 2.5,
+            length: 1.0,
+            stress: 0.0
+        };
+
+        const sliderPulse = document.getElementById('sliderPulse');
+        const valRatio = document.getElementById('valRatio');
+
+        function resizeSubstrateCanvas() {
+            if(!canvas2.parentElement) return;
+            canvas2.width = canvas2.parentElement.clientWidth;
+            canvas2.height = canvas2.parentElement.clientHeight;
+        }
+        window.addEventListener('resize', resizeSubstrateCanvas);
+        resizeSubstrateCanvas(); // Init
+
+        sliderPulse.addEventListener('input', (e) => {
+            masterTime = parseInt(e.target.value);
+            valRatio.innerText = masterTime;
+            if(isMasterRunning) toggleGlobalPlay();
+        });
+
+        document.getElementById('sliderV').addEventListener('input', (e) => { substrateParams.verdet = parseFloat(e.target.value); updateReadouts(); });
+        document.getElementById('sliderL').addEventListener('input', (e) => { substrateParams.length = parseFloat(e.target.value); updateReadouts(); });
+        document.getElementById('sliderStress').addEventListener('input', (e) => { substrateParams.stress = parseFloat(e.target.value); updateReadouts(); });
+
+        function updateReadouts() {
+            document.getElementById('valV').innerText = substrateParams.verdet.toFixed(1);
+            document.getElementById('valL').innerText = substrateParams.length.toFixed(1);
+            document.getElementById('valStress').innerText = substrateParams.stress.toFixed(1);
+        }
+
+        function calculateTensionQuaternion() {
+            const phi = substrateParams.stress * substrateParams.verdet * substrateParams.length * 5; 
+            const B_geom = phi / (substrateParams.verdet * substrateParams.length || 0.001); 
+            
+            const phase = (masterTime / 720) * Math.PI * 4; 
+            const qX = B_geom * Math.cos(phase);
+            const qY = B_geom * Math.sin(phase);
+            const qZ = B_geom * Math.sin(phase * 2);
+            
+            return { phi, B_geom, w: Math.abs(B_geom), x: qX, y: qY, z: qZ };
+        }
+
+        function drawHexLattice(yOffset, scale, color, stress) {
+            ctx2.strokeStyle = color;
+            ctx2.lineWidth = 1;
+            const size = 30 * scale;
+            const cols = 8;
+            const rows = 5;
+            
+            const distortX = Math.sin((masterTime/720) * Math.PI * 4) * stress * 2;
+
+            for(let r=0; r<rows; r++) {
+                for(let c=0; c<cols; c++) {
+                    const x = (c * size * 1.5) + (canvas2.width/2 - (cols*size)/1.5) + distortX;
+                    const y = (r * size * Math.sqrt(3)) + (c%2 * size * Math.sqrt(3)/2) + yOffset;
+                    
+                    ctx2.beginPath();
+                    for (let i = 0; i < 6; i++) {
+                        const angle = 2 * Math.PI / 6 * i;
+                        const px = x + size * Math.cos(angle);
+                        const py = y + size * Math.sin(angle);
+                        if (i === 0) ctx2.moveTo(px, py); else ctx2.lineTo(px, py);
+                    }
+                    ctx2.closePath();
+                    ctx2.stroke();
+
+                    ctx2.beginPath();
+                    ctx2.moveTo(x + size * Math.cos(0), y + size * Math.sin(0));
+                    ctx2.lineTo(x + size * Math.cos(2*Math.PI/3), y + size * Math.sin(2*Math.PI/3));
+                    ctx2.lineTo(x + size * Math.cos(4*Math.PI/3), y + size * Math.sin(4*Math.PI/3));
+                    ctx2.closePath();
+                    ctx2.stroke();
+                }
+            }
+        }
+
+        function drawSubstrate() {
+            if (!document.getElementById('tab2').classList.contains('active')) return;
+
+            ctx2.fillStyle = '#050505';
+            ctx2.fillRect(0, 0, canvas2.width, canvas2.height);
+
+            const centerX = canvas2.width / 2;
+            const centerY = canvas2.height / 2;
+            const data = calculateTensionQuaternion();
+
+            document.getElementById('phiValue').innerText = data.phi.toFixed(2) + "°";
+            document.getElementById('tensionOutput').innerText = Math.abs(data.B_geom).toFixed(2) + " T";
+            document.getElementById('qW').innerText = data.w.toFixed(2);
+            document.getElementById('qX').innerText = data.x.toFixed(2);
+            document.getElementById('qY').innerText = data.y.toFixed(2);
+            document.getElementById('qZ').innerText = data.z.toFixed(2);
+
+            const cyclePos = masterTime % 720;
+            const stageLen = 720 / 5; 
+            
+            let stateStr = "";
+            let nodes = 12;
+            let dotId = "";
+
+            if (cyclePos < stageLen) { stateStr = "12 EDGES (LATTICE)"; nodes = 12; dotId="dot-12"; }
+            else if (cyclePos < stageLen*2) { stateStr = "6 FACES (COLLAPSE)"; nodes = 6; dotId="dot-6"; }
+            else if (cyclePos < stageLen*3) { stateStr = "7 PIVOTS (STRASSEN)"; nodes = 7; dotId="dot-7"; }
+            else if (cyclePos < stageLen*4) { stateStr = "3 AXES (SYNTHESIS)"; nodes = 3; dotId="dot-3"; }
+            else { stateStr = "1 SINGULARITY"; nodes = 1; dotId="dot-1"; }
+
+            document.getElementById('cycleState').innerText = stateStr;
+            document.querySelectorAll('.cycle-dot').forEach(d => d.classList.replace('bg-neon-blue', 'bg-gray-700'));
+            const dot = document.getElementById(dotId);
+            if(dot) { dot.classList.replace('bg-gray-700', 'bg-neon-blue'); }
+
+
+            drawHexLattice(centerY + 80, 0.8, 'rgba(0, 243, 255, 0.2)', 0);
+
+            const filmH = 60;
+            const filmW = 300;
+            const filmY = centerY - filmH/2;
+            
+            const tensionGlow = Math.min(Math.abs(data.B_geom)*20, 50);
+            ctx2.shadowBlur = tensionGlow;
+            ctx2.shadowColor = '#ff3333';
+            
+            ctx2.fillStyle = 'rgba(60, 10, 10, 0.8)';
+            ctx2.fillRect(centerX - filmW/2, filmY, filmW, filmH);
+            ctx2.strokeStyle = '#ff3333';
+            ctx2.lineWidth = 2;
+            ctx2.strokeRect(centerX - filmW/2, filmY, filmW, filmH);
+            ctx2.shadowBlur = 0;
+
+            ctx2.strokeStyle = '#ffaa00'; 
+            ctx2.lineWidth = 2;
+            ctx2.beginPath();
+            for(let i=-5; i<5; i++) {
+                const x = centerX + i * 30;
+                ctx2.moveTo(x, filmY);
+                ctx2.lineTo(x + 10, filmY + filmH);
+            }
+            ctx2.stroke();
+
+            drawHexLattice(centerY - 140, 1.0, 'rgba(0, 243, 255, 0.4)', substrateParams.stress);
+
+            ctx2.strokeStyle = '#ffffff';
+            ctx2.lineWidth = 2;
+            ctx2.setLineDash([5, 5]);
+            ctx2.beginPath();
+            ctx2.moveTo(centerX, 50);
+            ctx2.lineTo(centerX, canvas2.height - 50);
+            ctx2.stroke();
+            ctx2.setLineDash([]);
+
+            const vecX = centerX;
+            const vecY = filmY + filmH/2;
+            const vecLen = 40;
+            
+            ctx2.beginPath();
+            ctx2.arc(vecX, vecY, 10, 0, Math.PI*2);
+            ctx2.fillStyle = 'white';
+            ctx2.fill();
+
+            const rad = data.phi * (Math.PI / 180);
+            ctx2.strokeStyle = '#0aff0a'; 
+            ctx2.lineWidth = 3;
+            ctx2.beginPath();
+            ctx2.moveTo(vecX, vecY);
+            ctx2.lineTo(vecX + vecLen * Math.sin(rad), vecY - vecLen * Math.cos(rad)); 
+            ctx2.stroke();
+
+            const cubeX = canvas2.width - 80;
+            const cubeY = centerY;
+            
+            ctx2.strokeStyle = '#bc13fe';
+            ctx2.lineWidth = 2;
+            
+            const phaseT = (masterTime * 0.1); 
+
+            if (nodes === 1) {
+                ctx2.beginPath();
+                ctx2.arc(cubeX, cubeY, 5, 0, Math.PI*2);
+                ctx2.fillStyle = '#fff';
+                ctx2.fill();
+                ctx2.stroke();
+            } else if (nodes === 12) {
+                ctx2.strokeRect(cubeX - 20, cubeY - 20, 40, 40);
+                ctx2.strokeRect(cubeX - 10, cubeY - 30, 40, 40);
+                ctx2.beginPath();
+                ctx2.moveTo(cubeX-20, cubeY-20); ctx2.lineTo(cubeX-10, cubeY-30);
+                ctx2.moveTo(cubeX+20, cubeY-20); ctx2.lineTo(cubeX+30, cubeY-30);
+                ctx2.moveTo(cubeX-20, cubeY+20); ctx2.lineTo(cubeX-10, cubeY+10);
+                ctx2.moveTo(cubeX+20, cubeY+20); ctx2.lineTo(cubeX+30, cubeY+10);
+                ctx2.stroke();
+            } else {
+                ctx2.beginPath();
+                for(let i=0; i<nodes; i++) {
+                    const a = (Math.PI*2 * i) / nodes + phaseT;
+                    const r = 30;
+                    const px = cubeX + r * Math.cos(a);
+                    const py = cubeY + r * Math.sin(a);
+                    if(i===0) ctx2.moveTo(px, py); else ctx2.lineTo(px, py);
+                }
+                ctx2.closePath();
+                ctx2.stroke();
+            }
+        }
+
+        // --- TAB 3: TOPOLOGY FORGE LOGIC ---
+        let gfChart = null;
+
+        function initGeneticForge() {
+            const formSel = document.getElementById('gf-formSelect');
+            const spinSel = document.getElementById('gf-spinSelect');
+            
+            if(formSel.children.length === 0) {
+                GF_STRUCTURAL_FORMS.forEach(d => {
+                    if (d.id !== 16) { 
+                        const opt = document.createElement('option');
+                        opt.value = d.id;
+                        opt.text = `${d.motif} (${d.desc})`;
+                        formSel.appendChild(opt);
+                    }
+                });
+            }
+
+            if(spinSel.children.length === 0) {
+                GF_SPIN_CLASSES.forEach(s => {
+                    const opt = document.createElement('option');
+                    opt.value = s.id;
+                    opt.text = `${s.group} (${s.desc})`;
+                    spinSel.appendChild(opt);
+                });
+            }
+
+            const ctx = document.getElementById('bioElectricGraph').getContext('2d');
+            if (gfChart) gfChart.destroy();
+            
+            gfChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: Array.from({length: 20}, (_, i) => i),
+                    datasets: [{
+                        label: 'Tensor Probability Field',
+                        data: [],
+                        borderColor: '#0aff0a',
+                        borderWidth: 2,
+                        tension: 0.4,
+                        yAxisID: 'y'
+                    }, {
+                        label: 'Topology Coherence Threshold',
+                        data: [],
+                        borderColor: '#bc13fe',
+                        borderWidth: 2,
+                        borderDash: [5, 5],
+                        yAxisID: 'y'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    animation: false,
+                    scales: {
+                        y: { grid: { color: '#333' }, ticks: { color: '#888' } },
+                        x: { grid: { color: '#333' }, ticks: { color: '#888' } }
+                    },
+                    plugins: { legend: { labels: { color: '#fff' } } }
+                }
+            });
+
+            document.getElementById('gf-formSelect').addEventListener('change', updateGeneticForge);
+            document.getElementById('gf-spinSelect').addEventListener('change', updateGeneticForge);
+            ['W', 'X', 'Y', 'Z'].forEach(k => {
+                document.getElementById('gf-slider' + k).addEventListener('input', updateGeneticForge);
+            });
+        }
+
+        function updateGeneticForge() {
+            const formVal = parseInt(document.getElementById('gf-formSelect').value);
+            const spinVal = parseInt(document.getElementById('gf-spinSelect').value);
+            
+            const formObj = GF_STRUCTURAL_FORMS.find(d => d.id === formVal);
+            const spinObj = GF_SPIN_CLASSES.find(s => s.id === spinVal);
+            
+            if (formObj) document.getElementById('gf-motifDesc').innerText = formObj.desc;
+            if (spinObj) document.getElementById('gf-spinDesc').innerText = spinObj.desc;
+
+            const isSymmetric = (formVal % 2 === 0); 
+            const pInd = document.getElementById('gf-parityIndicator');
+            
+            if(isSymmetric) {
+                pInd.innerHTML = `<div class="w-2 h-2 rounded-full bg-neon-green shadow-[0_0_5px_#0aff0a]"></div><span class="text-[9px] font-mono text-neon-green">VALID (SYMMETRIC BOUNDS)</span>`;
+            } else {
+                pInd.innerHTML = `<div class="w-2 h-2 rounded-full bg-neon-amber shadow-[0_0_5px_#ffaa00]"></div><span class="text-[9px] font-mono text-neon-amber">ASYMMETRIC STATE</span>`;
+            }
+
+            const dataPoints = [];
+            const thresholdPoints = [];
+            const wVal = parseFloat(document.getElementById('gf-sliderW').value);
+            const timeOffset = masterTime * 0.1;
+
+            for(let i=0; i<20; i++) {
+                const val = Math.sin((i + timeOffset) * 0.5 + wVal) * (1 + (spinVal/10));
+                dataPoints.push(val);
+                thresholdPoints.push(formVal / 20); 
+            }
+            
+            if(gfChart) {
+                gfChart.data.datasets[0].data = dataPoints;
+                gfChart.data.datasets[1].data = thresholdPoints;
+                gfChart.update();
+            }
+
+            const strip = document.getElementById('geneticStrip');
+            if(strip) {
+                strip.innerHTML = '';
+                const segments = [
+                    { label: 'SF', val: formObj ? formObj.motif.substring(0,6) : 'UNK', color: 'text-purple-400', tip: `Seed Geometry: ${formObj ? formObj.desc : 'Unknown'}` },
+                    { label: 'P', val: isSymmetric ? '1' : '0', color: 'text-gray-400', tip: 'Symmetry Parity Bit' },
+                    { label: 'SP', val: spinObj ? spinObj.group : 'UNK', color: 'text-green-400', tip: `Quantum Spin: ${spinObj ? spinObj.desc : 'Unknown'}` },
+                    { label: 'Q.W', val: wVal.toFixed(2), color: 'text-cyan-400', tip: 'Quaternion Scalar (Time/Probability)' }
+                ];
+
+                segments.forEach(seg => {
+                    const div = document.createElement('div');
+                    div.className = `codon-block border-gray-700 ${seg.color}`;
+                    div.innerHTML = `[${seg.label}:${seg.val}] <div class="tooltip">${seg.tip}</div>`;
+                    strip.appendChild(div);
+                });
+            }
+            
+            const phaseEl = document.getElementById('gf-cyclePhase');
+            if(phaseEl) {
+                const cyclePos = Math.floor(masterTime % 720);
+                phaseEl.innerText = `CYCLE PHASE: ${cyclePos}/720`;
+            }
+        }
+
+        function exportGeneticPacket() {
+            const formVal = parseInt(document.getElementById('gf-formSelect').value);
+            const spinVal = parseInt(document.getElementById('gf-spinSelect').value);
+            
+            const packet = {
+                header: "SHD-CCP-TOPOLOGY",
+                halo: { form_id: formVal, spin_class: spinVal, parity: (formVal % 2 === 0) ? 1 : 0 },
+                payload: {
+                    w: parseFloat(document.getElementById('gf-sliderW').value),
+                    x: parseFloat(document.getElementById('gf-sliderX').value),
+                    y: parseFloat(document.getElementById('gf-sliderY').value),
+                    z: parseFloat(document.getElementById('gf-sliderZ').value)
+                },
+                meta: { cycle_phase: masterTime % 720 }
+            };
+            
+            alert("Packet Exported to Console");
+            console.log(JSON.stringify(packet, null, 2));
+        }
+
+        // --- TAB 4: GENESIS SEED CODEX LOGIC ---
+        let genesisEngram720 = [];
+
+        document.getElementById('gc-use-lexical').addEventListener('change', (e) => {
+            const inputs = document.getElementById('gc-lexical-inputs');
+            const typeLbl = document.getElementById('gc-seed-type-lbl');
+            if(e.target.checked) {
+                inputs.style.display = 'flex';
+                typeLbl.innerText = 'MODE: LEXICAL CHAIN XOR';
+            } else {
+                inputs.style.display = 'none';
+                typeLbl.innerText = 'MODE: GENERIC CONSTANT';
+            }
+        });
+
+        function generateLetterSeed(char) {
+            const charCode = char.charCodeAt(0);
+            const grid = new Array(64).fill(0);
+            const quadrant = [];
+            for (let i = 0; i < 16; i++) {
+                const val = Math.sin(charCode * 13.37 + i * 1.618); 
+                quadrant.push(val > 0 ? 1 : 0);
+            }
+            for (let y = 0; y < 4; y++) {
+                for (let x = 0; x < 4; x++) {
+                    const val = quadrant[y * 4 + x];
+                    grid[y * 8 + x] = val;               
+                    grid[y * 8 + (7 - x)] = val;         
+                    grid[(7 - y) * 8 + x] = val;         
+                    grid[(7 - y) * 8 + (7 - x)] = val;   
+                }
+            }
+            return grid;
+        }
+
+        function compressChainToSeed(word1, word2, word3) {
+            const fullChain = (word1 + word2 + word3).toUpperCase().replace(/[^A-Z]/g, '');
+            if(!fullChain) return { seed: new Array(64).fill(0), collisions: [] };
+            
+            let crystallizedSeed = generateLetterSeed(fullChain[0]);
+            let collisions = [];
+
+            for (let i = 1; i < fullChain.length; i++) {
+                const charSeed = generateLetterSeed(fullChain[i]);
+                const shift = i % 8; 
+                for (let j = 0; j < 64; j++) {
+                    const shiftedIndex = (j + shift) % 64;
+                    // XOR collision check for topological memory knot
+                    if (crystallizedSeed[j] === 1 && charSeed[shiftedIndex] === 1) {
+                        collisions.push({ node: j, layer: i, char: fullChain[i] });
+                    }
+                    crystallizedSeed[j] = crystallizedSeed[j] ^ charSeed[shiftedIndex];
+                }
+            }
+            return { seed: crystallizedSeed, collisions: collisions };
+        }
+
+        function getHexSig(seed) {
+            let hexHash = '';
+            for (let i = 0; i < 64; i += 4) {
+                const nibble = (seed[i]<<3) | (seed[i+1]<<2) | (seed[i+2]<<1) | seed[i+3];
+                hexHash += nibble.toString(16).toUpperCase();
+            }
+            return `${hexHash.substring(0,4)}-${hexHash.substring(4,8)}-${hexHash.substring(8,16)}`;
+        }
+
+        function renderLexicalGrid(seed) {
+            const grid = document.getElementById('gc-seed-grid');
+            grid.innerHTML = '';
+            for(let i=0; i<64; i++) {
+                const div = document.createElement('div');
+                div.className = seed[i] ? 'w-full h-full bg-purple-500 shadow-[0_0_5px_#bc13fe] rounded-[2px]' : 'w-full h-full bg-gray-800 rounded-[2px] opacity-30';
+                grid.appendChild(div);
+            }
+            document.getElementById('gc-hex-sig').innerText = getHexSig(seed);
+        }
+
+        function generateGenesisEngram() {
+            const useLexical = document.getElementById('gc-use-lexical').checked;
+            genesisEngram720 = [];
+            
+            let baseSF = 8; 
+            let baseSP = 1; 
+            let baseW = 0.5, baseX = 0.1, baseY = 0.2, baseZ = -0.1;
+            
+            let masterSeed = new Array(64).fill(0);
+
+            if(useLexical) {
+                const w1 = document.getElementById('gc-word-1').value;
+                const w2 = document.getElementById('gc-word-2').value;
+                const w3 = document.getElementById('gc-word-3').value;
+                
+                if(!w1 && !w2 && !w3) return alert("Please enter at least one word for the Lexical Seed.");
+                
+                const compressionData = compressChainToSeed(w1, w2, w3);
+                masterSeed = compressionData.seed;
+                crystalCollisions = compressionData.collisions; // Set global collisions for Tab 5
+                crystalSeed = [...masterSeed]; // Set global seed for Tab 5
+                
+                baseSF = (masterSeed[0]<<3) | (masterSeed[1]<<2) | (masterSeed[2]<<1) | masterSeed[3];
+                const validSFs = GF_STRUCTURAL_FORMS.map(d=>d.id).filter(id => id !== 16);
+                if(!validSFs.includes(baseSF)) baseSF = validSFs[baseSF % validSFs.length];
+
+                baseSP = (masterSeed[4]<<2) | (masterSeed[5]<<1) | masterSeed[6];
+                
+                const getFloat = (start) => {
+                    let v = 0;
+                    for(let i=0; i<8; i++) v = (v<<1) | masterSeed[start+i];
+                    return (v / 255) * 2 - 1; 
+                };
+                baseW = getFloat(8);
+                baseX = getFloat(16);
+                baseY = getFloat(24);
+                baseZ = getFloat(32);
+                
+                renderLexicalGrid(masterSeed);
+            } else {
+                masterSeed = generateLetterSeed('X');
+                crystalCollisions = [];
+                crystalSeed = [...masterSeed];
+                renderLexicalGrid(masterSeed);
+                document.getElementById('gc-hex-sig').innerText = "GENERIC-TEMPLATE-0000";
+            }
+            
+            for(let i=0; i<720; i++) {
+                const phase = i / 720;
+                const w = baseW * Math.cos(phase * Math.PI * 2) - baseX * Math.sin(phase * Math.PI * 2);
+                const x = baseW * Math.sin(phase * Math.PI * 2) + baseX * Math.cos(phase * Math.PI * 2);
+                const y = baseY * Math.cos(phase * Math.PI * 4) - baseZ * Math.sin(phase * Math.PI * 4);
+                const z = baseY * Math.sin(phase * Math.PI * 4) + baseZ * Math.cos(phase * Math.PI * 4);
+
+                genesisEngram720.push({
+                    header: "SHD-CCP-720",
+                    halo: { sf: baseSF, sp: baseSP, parity: (baseSF % 2 === 0) ? 1 : 0 },
+                    core: { w, x, y, z },
+                    meta: { cycle_phase: i }
+                });
+            }
+            
+            document.getElementById('gc-totalCodons').innerText = 720;
+            document.getElementById('gc-sf-stat').innerText = baseSF;
+            document.getElementById('gc-sp-stat').innerText = baseSP;
+            document.getElementById('gc-comp-stat').innerText = "COMPLETE";
+            document.getElementById('gc-comp-stat').classList.replace('text-cyan-400', 'text-neon-green');
+            
+            const logEl = document.getElementById('gc-dnaDisplay');
+            logEl.innerHTML = `<span class="text-neon-green">> ENGRAM COMPILED SUCCESSFULLY [720 FRAMES]</span><br>
+                               <span class="text-purple-400">> SF: ${baseSF} | SP: ${baseSP}</span><br>
+                               <span class="text-cyan-400">> Quat Base: W[${baseW.toFixed(2)}] X[${baseX.toFixed(2)}] Y[${baseY.toFixed(2)}] Z[${baseZ.toFixed(2)}]</span><br>
+                               <span class="text-gray-500">> Ready for Toroidal Projection in Codex Crystal.</span>`;
+            
+            document.getElementById('gc-stability').innerText = "YES";
+            document.getElementById('gc-stability').className = "text-neon-green font-bold";
+
+            const btn = document.getElementById('gc-pushBtn');
+            btn.disabled = false;
+            btn.classList.remove('bg-gray-800', 'text-gray-500', 'cursor-not-allowed');
+            btn.classList.add('bg-cyan-900/40', 'text-cyan-400', 'hover:bg-cyan-900/60', 'border-cyan-500/50');
+        }
+
+        function exportGenesisEngram() {
+            if(genesisEngram720.length === 0) return alert("Please generate an engram first.");
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(genesisEngram720, null, 2));
+            const dl = document.createElement('a');
+            dl.setAttribute("href", dataStr);
+            dl.setAttribute("download", "genesis_engram_720.json");
+            document.body.appendChild(dl);
+            dl.click();
+            dl.remove();
+        }
+
+        function loadGenesisEngram(input) {
+            const file = input.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const json = JSON.parse(e.target.result);
+                    let dataArray = json;
+                    if(json.chain_data) dataArray = json.chain_data; 
+                    
+                    if (Array.isArray(dataArray) && dataArray.length > 0) {
+                        genesisEngram720 = dataArray;
+                        alert(`Successfully loaded ${genesisEngram720.length} packets from ${file.name}`);
+                        
+                        document.getElementById('gc-totalCodons').innerText = genesisEngram720.length;
+                        document.getElementById('gc-comp-stat').innerText = "LOADED";
+                        document.getElementById('gc-dnaDisplay').innerHTML = `<span class="text-neon-amber">> EXTERNAL ENGRAM LOADED [${genesisEngram720.length} FRAMES]</span>`;
+                        
+                        const btn = document.getElementById('gc-pushBtn');
+                        btn.disabled = false;
+                        btn.classList.remove('bg-gray-800', 'text-gray-500', 'cursor-not-allowed');
+                        btn.classList.add('bg-cyan-900/40', 'text-cyan-400', 'hover:bg-cyan-900/60', 'border-cyan-500/50');
+                    } else {
+                        alert("Invalid Codex File Format: Must be an array of packets.");
+                    }
+                } catch (err) {
+                    alert("Error parsing JSON: " + err.message);
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        function pushToChain() {
+            if(genesisEngram720.length === 0) return;
+            crystalChain = [...genesisEngram720];
+            updateCrystalVisuals();
+            renderCrystalWeave3D();
+            switchTab('tab5');
+        }
+
+        function closeVerifyModal() {
+            document.getElementById('verificationModal').style.display = 'none';
+        }
+
+        // --- TAB 5: TOPOLOGICAL PLAYBACK WEAVE LOGIC ---
+        let crystalRenderer, crystalScene, crystalCamera, crystalControls;
+        let crystalChainGroup;
+        let crystalChain = []; 
+
+        function initCrystalVisualizer() {
+            const container = document.getElementById('crystal-visualizer');
+            
+            crystalScene = new THREE.Scene();
+            crystalCamera = new THREE.PerspectiveCamera(50, container.clientWidth / container.clientHeight, 0.1, 1000);
+            crystalRenderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+            
+            crystalRenderer.setSize(container.clientWidth, container.clientHeight);
+            container.appendChild(crystalRenderer.domElement);
+            
+            // Add OrbitControls for Pan, Zoom, and Rotation
+            crystalControls = new THREE.OrbitControls(crystalCamera, crystalRenderer.domElement);
+            crystalControls.enableDamping = true;
+            crystalControls.dampingFactor = 0.05;
+            crystalControls.enablePan = true;
+            crystalControls.enableZoom = true;
+
+            const ambientLight = new THREE.AmbientLight(0x404040);
+            crystalScene.add(ambientLight);
+            const pointLight = new THREE.PointLight(0xffffff, 1, 100);
+            pointLight.position.set(20, 20, 20);
+            crystalScene.add(pointLight);
+
+            crystalChainGroup = new THREE.Group();
+            crystalScene.add(crystalChainGroup);
+
+            // Create the 64-Node Constellation
+            const sphereGeo = new THREE.SphereGeometry(0.8, 16, 16);
+            const matOff = new THREE.MeshBasicMaterial({ color: 0x1e293b, transparent: true, opacity: 0.3 });
+            
+            for (let i = 0; i < 64; i++) {
+                const t = (i / 64) * Math.PI * 2;
+                const x = (15 + 6 * Math.cos(3 * t)) * Math.cos(2 * t);
+                const y = (15 + 6 * Math.cos(3 * t)) * Math.sin(2 * t);
+                const z = 6 * Math.sin(3 * t);
+
+                const mesh = new THREE.Mesh(sphereGeo, matOff.clone());
+                mesh.position.set(x, y, z);
+                crystalNodes.push({ mesh, pos: mesh.position });
+                crystalChainGroup.add(mesh);
+            }
+
+            // Create the Weave Trail Line
+            const weaveGeo = new THREE.BufferGeometry();
+            weaveGeo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(720 * 3), 3));
+            const weaveMat = new THREE.LineBasicMaterial({ 
+                color: 0x2dd4bf, transparent: true, opacity: 0.8, 
+                blending: THREE.AdditiveBlending, linewidth: 2 
+            });
+            crystalWeaveLine = new THREE.Line(weaveGeo, weaveMat);
+            crystalWeaveLine.geometry.setDrawRange(0, 0);
+            crystalChainGroup.add(crystalWeaveLine);
+
+            crystalCamera.position.z = 45;
+            animateCrystal();
+        }
+
+        function resizeCrystalVisualizer() {
+            if (!crystalRenderer) return;
+            const container = document.getElementById('crystal-visualizer');
+            crystalCamera.aspect = container.clientWidth / container.clientHeight;
+            crystalCamera.updateProjectionMatrix();
+            crystalRenderer.setSize(container.clientWidth, container.clientHeight);
+        }
+        window.addEventListener('resize', resizeCrystalVisualizer);
+
+        function toggleCrystalPlayback() {
+            isCrystalPlaying = !isCrystalPlaying;
+            const btn = document.getElementById('btnCrystalPlay');
+            btn.innerHTML = isCrystalPlaying ? '⏸ PAUSE WEAVE' : '▶ PLAY WEAVE';
+            if(isCrystalPlaying) {
+                btn.classList.replace('bg-purple-600', 'bg-pink-600');
+                btn.classList.replace('hover:bg-purple-500', 'hover:bg-pink-500');
+            } else {
+                btn.classList.replace('bg-pink-600', 'bg-purple-600');
+                btn.classList.replace('hover:bg-pink-500', 'hover:bg-purple-500');
+            }
+        }
+
+        document.getElementById('crystalFrameSlider').addEventListener('input', (e) => {
+            isCrystalPlaying = false;
+            document.getElementById('btnCrystalPlay').innerHTML = '▶ PLAY WEAVE';
+            crystalPlaybackFrame = parseInt(e.target.value);
+            document.getElementById('crystalFrameText').innerText = `${crystalPlaybackFrame} / 720`;
+            if (crystalWeaveLine) crystalWeaveLine.geometry.setDrawRange(0, crystalPlaybackFrame);
+        });
+
+        function renderCrystalWeave3D() {
+            // Update node materials based on Crystal Seed
+            const matPurple = new THREE.MeshBasicMaterial({ color: 0xc084fc, transparent: true, opacity: 0.9 });
+            const matOff = new THREE.MeshBasicMaterial({ color: 0x1e293b, transparent: true, opacity: 0.3 });
+
+            if (crystalSeed) {
+                crystalNodes.forEach((n, i) => {
+                    if (crystalSeed[i] === 1) {
+                        n.mesh.material = matPurple;
+                        n.mesh.scale.setScalar(1.5);
+                    } else {
+                        n.mesh.material = matOff;
+                        n.mesh.scale.setScalar(1.0);
+                    }
+                });
+            }
+
+            // Generate Weave Path geometry from Quaternion Data
+            if (crystalChain.length === 720 && crystalWeaveLine) {
+                const pts = crystalWeaveLine.geometry.attributes.position.array;
+                crystalChain.forEach((p, i) => {
+                    const q = p.core;
+                    const theta = (i / 720) * Math.PI * 2 * 4;
+                    const phi = (i / 720) * Math.PI * 2 * 9;
+                    const R = 15;
+                    const r = 5 + (q.w * 2); // W modulates tube thickness
+                    
+                    pts[i*3] = (R + r * Math.cos(phi)) * Math.cos(theta) + q.x * 10;
+                    pts[i*3+1] = (R + r * Math.cos(phi)) * Math.sin(theta) + q.y * 10;
+                    pts[i*3+2] = r * Math.sin(phi) + q.z * 10;
+                });
+                crystalWeaveLine.geometry.attributes.position.needsUpdate = true;
+                
+                // If it wasn't playing, start it
+                crystalPlaybackFrame = 0;
+                if(!isCrystalPlaying) toggleCrystalPlayback();
+            }
+
+            // Clean up old visuals
+            crystalLinks.forEach(l => crystalChainGroup.remove(l));
+            crystalLinks = [];
+            crystalSparks.forEach(s => crystalChainGroup.remove(s.mesh));
+            crystalSparks = [];
+        }
+
+        function updateCrystalVisuals() {
+            const countEl = document.getElementById('crystalPacketCount');
+            if(countEl) countEl.innerText = `${crystalChain.length} FRAMES`;
+        }
+
+        function clearCrystalChain() {
+            crystalChain = [];
+            crystalPlaybackFrame = 0;
+            if(isCrystalPlaying) toggleCrystalPlayback();
+            if(crystalWeaveLine) crystalWeaveLine.geometry.setDrawRange(0, 0);
+            
+            // Clear nodes and visuals
+            const matOff = new THREE.MeshBasicMaterial({ color: 0x1e293b, transparent: true, opacity: 0.3 });
+            crystalNodes.forEach(n => { n.mesh.material = matOff; n.mesh.scale.setScalar(1.0); });
+            crystalLinks.forEach(l => crystalChainGroup.remove(l));
+            crystalLinks = [];
+            crystalSparks.forEach(s => crystalChainGroup.remove(s.mesh));
+            crystalSparks = [];
+            
+            updateCrystalVisuals();
+        }
+
+        // --- NEW: Collision Visualization Integration ---
+        function verifyLoadedChain() {
+            if(crystalChain.length === 0) return alert("No chain loaded to verify.");
+
+            const modal = document.getElementById('verificationModal');
+            const report = document.getElementById('verifyReport');
+            const scoreEl = document.getElementById('verifyScore');
+            modal.style.display = 'flex';
+            
+            let log = `Initiating Topo-Genetic Integrity Scan...\n`;
+            log += `[INFO] Parsing 720-frame Engram to verify 64-bit structural compression...\n`;
+            
+            let errors = 0;
+
+            crystalChain.forEach((p, i) => {
+                const sf = p.halo?.sf !== undefined ? p.halo.sf : p.halo?.form_id;
+                const sp = p.halo?.sp !== undefined ? p.halo.sp : p.halo?.spin_class;
+                const parity = p.halo?.parity;
+
+                const expectedParity = (sf % 2 === 0) ? 1 : 0;
+                if(parity !== expectedParity) errors++;
+                if (GF_SPIN_CLASSES[sp] === undefined) errors++;
+                
+                const formValid = GF_STRUCTURAL_FORMS.find(d => d.id === sf);
+                if (!formValid) errors++;
+                if (sf === 16) errors++;
+            });
+
+            const integrityScore = ((1 - (errors/crystalChain.length)) * 100).toFixed(2);
+            log += `\nIntegrity Score: ${integrityScore}%\n`;
+
+            if (crystalCollisions && crystalCollisions.length > 0) {
+                log += `\n[VERIFIED] Holographic Seed Compression valid.\n[ACTION] Spawning ${crystalCollisions.length} XOR Annihilation Sparks in Manifold...`;
+                
+                // Spawn Sparks
+                const sparkGeo = new THREE.TetrahedronGeometry(1.5);
+                const sparkMat = new THREE.MeshBasicMaterial({ color: 0xf43f5e, wireframe: true });
+                const solidMat = new THREE.MeshBasicMaterial({ color: 0xf43f5e, transparent: true, opacity: 0.5 });
+                
+                crystalCollisions.forEach(c => {
+                    const nodePos = crystalNodes[c.node].pos;
+                    const mesh = new THREE.Mesh(sparkGeo, sparkMat);
+                    const inner = new THREE.Mesh(sparkGeo, solidMat);
+                    mesh.add(inner);
+                    mesh.position.copy(nodePos);
+                    mesh.position.add(nodePos.clone().normalize().multiplyScalar(2));
+                    mesh.userData = { rotSpeed: Math.random() * 0.05 + 0.02 };
+                    crystalChainGroup.add(mesh);
+                    crystalSparks.push({ mesh, life: 1.0 });
+                });
+
+                // Connect active bits
+                const activeIndices = [];
+                crystalSeed.forEach((val, i) => { if(val === 1) activeIndices.push(i); });
+                
+                const positions = [];
+                for (let i = 0; i < activeIndices.length; i++) {
+                    for (let j = i + 1; j < activeIndices.length; j++) {
+                        const d1 = activeIndices[i];
+                        const d2 = activeIndices[j];
+                        if (Math.abs(d1 - d2) <= 4 || Math.abs(d1 - d2) >= 60) {
+                            positions.push(
+                                crystalNodes[d1].pos.x, crystalNodes[d1].pos.y, crystalNodes[d1].pos.z,
+                                crystalNodes[d2].pos.x, crystalNodes[d2].pos.y, crystalNodes[d2].pos.z
+                            );
+                        }
+                    }
+                }
+                if (positions.length > 0) {
+                    const geo = new THREE.BufferGeometry().setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+                    const mat = new THREE.LineBasicMaterial({ color: 0xc084fc, transparent: true, opacity: 0.4, blending: THREE.AdditiveBlending });
+                    const line = new THREE.LineSegments(geo, mat);
+                    crystalLinks.push(line);
+                    crystalChainGroup.add(line);
+                }
+            } else {
+                log += `\n[NOTE] Generic or empty seed detected. No cryptographic collisions generated.`;
+            }
+
+            report.innerText = log;
+            if(integrityScore == 100) scoreEl.className = "text-sm text-neon-green font-bold";
+            else if(integrityScore > 90) scoreEl.className = "text-sm text-neon-amber font-bold";
+            else scoreEl.className = "text-sm text-red-500 font-bold";
+            scoreEl.innerText = `${integrityScore}% SECURE`;
+        }
+        
+        function runChainVerification() {
+             verifyLoadedChain();
+        }
+
+        function animateCrystal() {
+            if(!crystalRenderer) return;
+            requestAnimationFrame(animateCrystal);
+            
+            if(crystalControls) crystalControls.update();
+
+            const speed = parseFloat(document.getElementById('crystalSpeed')?.value || 0.005);
+            if(crystalChainGroup) crystalChainGroup.rotation.z += speed;
+
+            // Handle Playback Weave Animation
+            if (isCrystalPlaying) {
+                crystalPlaybackFrame += 2;
+                if (crystalPlaybackFrame > 720) crystalPlaybackFrame = 0;
+                document.getElementById('crystalFrameSlider').value = crystalPlaybackFrame;
+                document.getElementById('crystalFrameText').innerText = `${Math.floor(crystalPlaybackFrame)} / 720`;
+            } else {
+                const sliderVal = document.getElementById('crystalFrameSlider');
+                if(sliderVal) crystalPlaybackFrame = parseInt(sliderVal.value);
+            }
+            
+            if (crystalWeaveLine && crystalChain.length > 0) {
+                crystalWeaveLine.geometry.setDrawRange(0, crystalPlaybackFrame);
+            }
+
+            // Spin Collision Sparks
+            crystalSparks.forEach(s => {
+                s.mesh.rotation.x += s.mesh.userData.rotSpeed;
+                s.mesh.rotation.y += s.mesh.userData.rotSpeed;
+            });
+
+            crystalRenderer.render(crystalScene, crystalCamera);
+        }
+
+        // --- MAIN LOOP ---
+        function loop() {
+            if(isMasterRunning) {
+                masterTime += 1;
+                if(sliderPulse && document.getElementById('tab2').classList.contains('active')) {
+                    sliderPulse.value = masterTime % 720;
+                    valRatio.innerText = Math.floor(masterTime % 720);
+                }
+            }
+
+            drawManifold();
+            drawSubstrate();
+            
+            if(document.getElementById('tab3').classList.contains('active')) {
+                if (document.getElementById('gf-formSelect').options.length > 0) updateGeneticForge();
+            }
+
+            requestAnimationFrame(loop);
+        }
+        loop();
+
+        // Init
+        initGrid();
+        generatePacket();
+        initGeneticForge();
+
+    </script>
+</body>
+</html>
