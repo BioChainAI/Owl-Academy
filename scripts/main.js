@@ -9,46 +9,60 @@ import { initHubTabs } from "./ui/tabs.ui.js";
 let profileUnsubscribe = null;
 
 const initHub = async (user) => {
-  // First load — create profile doc if it doesn't exist yet
-  const profile = await getOrCreateProfile(user);
+  try {
+    // First load — create profile doc if it doesn't exist yet
+    const profile = await getOrCreateProfile(user);
 
-  // Prompt new users to pick their school
-  if (!profile.school) {
-    promptSchoolSelection(user.uid);
+    // Prompt new users to pick their school
+    if (!profile.school) {
+      promptSchoolSelection(user.uid);
+    }
+
+    // Render initial state across all panels
+    renderHubProfile(user, profile);
+    renderSanctum(user, profile);
+    renderAthenaeumFull();
+    renderAtelierFull();
+
+    // Initialize tab navigation (Sanctum is default)
+    initHubTabs("sanctum");
+
+    // Load active quests
+    const quests = await getActiveQuests(user.uid);
+    renderQuestPanel(quests);
+
+    // Live-sync profile changes (rank-ups, XP, Vis) across all panels without reload
+    if (profileUnsubscribe) profileUnsubscribe();
+    profileUnsubscribe = watchProfile(user.uid, (updatedProfile) => {
+      if (updatedProfile) {
+        renderHubProfile(user, updatedProfile);
+        renderSanctum(user, updatedProfile);
+      }
+    });
+
+    // Wire sign-out (button rendered inside hub.ui.js, so listen via delegation)
+    document.addEventListener("click", async (e) => {
+      if (e.target.id === "btn-signout") {
+        if (profileUnsubscribe) profileUnsubscribe();
+        await signOutUser();
+        showToast("Resonance closed. Farewell, Scholar.", "info");
+      }
+    }, { once: false });
+
+    showToast(`Welcome back, ${profile.rank ?? "Initiate"} ${user.displayName?.split(" ")[0] ?? "Scholar"}`, "success");
+  } catch (err) {
+    console.error("[Owl Academy] initHub failed:", err);
+    showToast(`Error loading hub: ${err.message}`, "error");
+    // Show a minimal recovery UI in the profile bar
+    const bar = document.getElementById("hub-profile-bar");
+    if (bar) {
+      bar.innerHTML = `
+        <div class="glass-panel rounded-xl px-6 py-3 border border-red-600/30 flex items-center justify-between gap-4">
+          <span class="text-xs text-red-400 font-mono">Resonance disrupted — could not load profile.</span>
+          <button id="btn-signout" class="text-[10px] text-slate-500 hover:text-red-400 transition-colors uppercase tracking-widest cursor-pointer">Sign Out</button>
+        </div>`;
+    }
   }
-
-  // Render initial state across all panels
-  renderHubProfile(user, profile);
-  renderSanctum(user, profile);
-  renderAthenaeumFull();
-  renderAtelierFull();
-
-  // Initialize tab navigation (Sanctum is default)
-  initHubTabs("sanctum");
-
-  // Load active quests
-  const quests = await getActiveQuests(user.uid);
-  renderQuestPanel(quests);
-
-  // Live-sync profile changes (rank-ups, XP, Vis) across all panels without reload
-  if (profileUnsubscribe) profileUnsubscribe();
-  profileUnsubscribe = watchProfile(user.uid, (updatedProfile) => {
-    if (updatedProfile) {
-      renderHubProfile(user, updatedProfile);
-      renderSanctum(user, updatedProfile);
-    }
-  });
-
-  // Wire sign-out (button rendered inside hub.ui.js, so listen via delegation)
-  document.addEventListener("click", async (e) => {
-    if (e.target.id === "btn-signout") {
-      if (profileUnsubscribe) profileUnsubscribe();
-      await signOutUser();
-      showToast("Resonance closed. Farewell, Scholar.", "info");
-    }
-  }, { once: false });
-
-  showToast(`Welcome back, ${profile.rank ?? "Initiate"} ${user.displayName?.split(" ")[0] ?? "Scholar"}`, "success");
 };
 
 // ── Auth State Machine ────────────────────────────────────────────────────────
