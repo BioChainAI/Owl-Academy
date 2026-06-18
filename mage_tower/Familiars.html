@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Owl Academy | Familiar Selection</title>
+  <title>Owl Academy | Familiar Vault</title>
   <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Space+Grotesk:wght@400;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
   <style>
     :root {
@@ -18,12 +18,11 @@
     }
     * { box-sizing: border-box; margin: 0; padding: 0; }
     html, body { background: var(--void); color: #e2e8f0; font-family: 'Space Grotesk', sans-serif; min-height: 100vh; }
-
     a { color: inherit; text-decoration: none; }
     .arcane { font-family: 'Cinzel', serif; }
     .mono { font-family: 'Fira Code', monospace; }
 
-    /* ── Nav ── */
+    /* Nav */
     nav {
       position: sticky; top: 0; z-index: 50;
       background: rgba(10,13,20,0.95); backdrop-filter: blur(12px);
@@ -35,44 +34,122 @@
     .nav-back { font-size: 0.75rem; color: #94a3b8; letter-spacing: 0.15em; text-transform: uppercase; transition: color 0.2s; }
     .nav-back:hover { color: var(--gold); }
 
-    /* ── Layout ── */
+    /* Layout */
     main { max-width: 1100px; margin: 0 auto; padding: 2.5rem 1.5rem 5rem; }
     .page-header { text-align: center; margin-bottom: 3rem; }
     .proto-badge { display: inline-block; padding: 0.25rem 0.75rem; border: 1px solid rgba(0,240,255,0.3); border-radius: 4px; color: var(--cyan); font-size: 0.7rem; letter-spacing: 0.2em; text-transform: uppercase; margin-bottom: 1rem; }
-    h1 { font-family: 'Cinzel', serif; font-size: 2.5rem; color: #fff; margin-bottom: 0.5rem; }
+    h1 { font-family: 'Cinzel', serif; font-size: 2.2rem; color: #fff; margin-bottom: 0.5rem; }
     .page-sub { color: #94a3b8; max-width: 560px; margin: 0 auto; font-size: 0.9rem; line-height: 1.6; }
 
-    /* ── My Familiar panel ── */
-    #my-familiar-panel {
+    /* Section titles */
+    .section-title { font-family: 'Cinzel', serif; font-size: 1rem; color: var(--gold); margin-bottom: 1.25rem; letter-spacing: 0.08em; display: flex; align-items: center; gap: 0.75rem; }
+    .section-rule { flex: 1; height: 1px; background: var(--border); }
+
+    /* Active familiar panel */
+    #active-panel {
       background: var(--panel); border: 1px solid var(--border);
-      border-radius: 16px; padding: 2rem; margin-bottom: 3rem;
+      border-radius: 16px; padding: 2rem; margin-bottom: 2.5rem;
       display: flex; gap: 2.5rem; align-items: center; flex-wrap: wrap;
     }
-    #sigil-display { flex-shrink: 0; }
-    #sigil-display svg { display: block; }
-    .familiar-info { flex: 1; min-width: 240px; }
+    #active-sigil { flex-shrink: 0; position: relative; }
+    #active-sigil svg { display: block; }
+    .active-badge {
+      position: absolute; bottom: -8px; left: 50%; transform: translateX(-50%);
+      font-size: 0.6rem; letter-spacing: 0.2em; color: var(--emerald); background: rgba(0,255,102,0.1);
+      border: 1px solid rgba(0,255,102,0.3); border-radius: 999px; padding: 0.15rem 0.6rem;
+      white-space: nowrap;
+    }
+    .familiar-info { flex: 1; min-width: 220px; }
     .familiar-label { font-size: 0.65rem; color: #64748b; letter-spacing: 0.25em; text-transform: uppercase; margin-bottom: 0.4rem; }
     .familiar-name { font-family: 'Cinzel', serif; font-size: 1.8rem; margin-bottom: 0.25rem; }
-    .familiar-title { font-size: 0.8rem; color: #94a3b8; letter-spacing: 0.15em; text-transform: uppercase; margin-bottom: 1rem; }
-    .seed-display { font-family: 'Fira Code', monospace; font-size: 0.75rem; color: #64748b; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06); border-radius: 6px; padding: 0.5rem 0.75rem; margin-bottom: 1.25rem; word-break: break-all; }
+    .familiar-title { font-size: 0.8rem; color: #94a3b8; letter-spacing: 0.15em; text-transform: uppercase; margin-bottom: 0.75rem; }
+    .familiar-slot { font-family: 'Fira Code', monospace; font-size: 0.7rem; color: #64748b; margin-bottom: 1rem; }
+    .seed-display { font-family: 'Fira Code', monospace; font-size: 0.72rem; color: #64748b; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06); border-radius: 6px; padding: 0.4rem 0.7rem; margin-bottom: 1rem; word-break: break-all; }
     .sigil-meta { display: flex; flex-wrap: wrap; gap: 0.5rem; }
     .meta-chip { font-size: 0.7rem; padding: 0.25rem 0.6rem; border-radius: 999px; border: 1px solid; }
 
-    /* ── Archetype grid ── */
-    .section-title { font-family: 'Cinzel', serif; font-size: 1.1rem; color: var(--gold); margin-bottom: 1.25rem; letter-spacing: 0.08em; }
-    .archetype-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 1rem; margin-bottom: 3rem; }
+    /* Manifold config display on active panel */
+    .manifold-display { font-family: 'Fira Code', monospace; font-size: 0.7rem; color: #64748b; margin-top: 0.75rem; }
+    .manifold-display span { color: var(--amethyst); }
+
+    /* Vault grid */
+    .vault-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 1rem; margin-bottom: 2.5rem;
+    }
+    .vault-card {
+      background: var(--panel); border: 1px solid rgba(255,255,255,0.07);
+      border-radius: 14px; padding: 1.25rem; text-align: center;
+      position: relative; transition: all 0.2s;
+    }
+    .vault-card.is-active { border-color: var(--emerald); box-shadow: 0 0 18px rgba(0,255,102,0.12); }
+    .vault-card svg { display: block; margin: 0 auto 0.75rem; }
+    .vault-card h3 { font-family: 'Cinzel', serif; font-size: 0.9rem; margin-bottom: 0.2rem; }
+    .vault-card .slot-label { font-family: 'Fira Code', monospace; font-size: 0.65rem; color: #64748b; margin-bottom: 0.9rem; }
+    .vault-card-actions { display: flex; flex-direction: column; gap: 0.4rem; margin-top: 0.75rem; }
+
+    /* Echo unlock card (empty slot) */
+    .vault-card.unlock-slot {
+      border: 1px dashed rgba(176,38,255,0.25);
+      cursor: pointer; transition: all 0.2s; align-items: center;
+      display: flex; flex-direction: column; justify-content: center; min-height: 220px;
+    }
+    .vault-card.unlock-slot:hover { border-color: rgba(176,38,255,0.55); background: rgba(176,38,255,0.04); }
+    .vault-card.unlock-slot .unlock-icon { font-size: 2rem; color: var(--amethyst); margin-bottom: 0.6rem; opacity: 0.6; }
+    .vault-card.unlock-slot .unlock-title { font-family: 'Cinzel', serif; font-size: 0.85rem; color: var(--amethyst); margin-bottom: 0.3rem; }
+    .vault-card.unlock-slot .unlock-price { font-family: 'Fira Code', monospace; font-size: 0.75rem; color: #64748b; }
+    .vault-card.unlock-slot.capped { cursor: default; }
+    .vault-card.unlock-slot.capped:hover { border-color: rgba(255,255,255,0.08); background: transparent; }
+
+    /* Buttons */
+    .btn { display: inline-block; padding: 0.4rem 0.9rem; border-radius: 7px; font-size: 0.75rem; font-weight: 600; cursor: pointer; transition: all 0.18s; border: none; font-family: 'Space Grotesk', sans-serif; }
+    .btn-swap { background: rgba(0,240,255,0.1); color: var(--cyan); border: 1px solid rgba(0,240,255,0.25); width: 100%; }
+    .btn-swap:hover:not(:disabled) { background: rgba(0,240,255,0.18); }
+    .btn-forge { background: rgba(176,38,255,0.1); color: var(--amethyst); border: 1px solid rgba(176,38,255,0.25); width: 100%; }
+    .btn-forge:hover:not(:disabled) { background: rgba(176,38,255,0.18); }
+    .btn-release { background: rgba(255,51,102,0.08); color: var(--crimson); border: 1px solid rgba(255,51,102,0.2); width: 100%; }
+    .btn-release:hover:not(:disabled) { background: rgba(255,51,102,0.16); }
+    .btn-gold { background: var(--gold); color: #0a0d14; padding: 0.5rem 1.2rem; font-size: 0.8rem; }
+    .btn-gold:hover { opacity: 0.85; }
+    .btn-outline { background: transparent; border: 1px solid rgba(255,255,255,0.15); color: #94a3b8; padding: 0.5rem 1.2rem; font-size: 0.8rem; }
+    .btn-outline:hover { border-color: var(--gold); color: var(--gold); }
+    .btn:disabled { opacity: 0.4; cursor: default; }
+    .active-chip { display: inline-block; font-size: 0.6rem; padding: 0.15rem 0.5rem; border-radius: 999px; background: rgba(0,255,102,0.1); border: 1px solid rgba(0,255,102,0.3); color: var(--emerald); letter-spacing: 0.1em; margin-bottom: 0.4rem; }
+
+    /* Manifold Forge drawer */
+    #forge-drawer {
+      background: rgba(176,38,255,0.04); border: 1px solid rgba(176,38,255,0.2);
+      border-radius: 16px; padding: 2rem; margin-bottom: 2.5rem;
+      display: none;
+    }
+    #forge-drawer.open { display: block; }
+    .forge-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.5rem; }
+    .forge-title { font-family: 'Cinzel', serif; font-size: 1rem; color: var(--amethyst); }
+    .forge-close { background: none; border: none; color: #64748b; font-size: 1.2rem; cursor: pointer; padding: 0.25rem 0.5rem; line-height: 1; }
+    .forge-close:hover { color: #e2e8f0; }
+    .forge-body { display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; align-items: start; }
+    @media (max-width: 640px) { .forge-body { grid-template-columns: 1fr; } }
+    .forge-controls { display: flex; flex-direction: column; gap: 1.25rem; }
+    .slider-row label { font-size: 0.75rem; color: #94a3b8; letter-spacing: 0.1em; text-transform: uppercase; display: flex; justify-content: space-between; margin-bottom: 0.4rem; }
+    .slider-row label span { font-family: 'Fira Code', monospace; color: var(--amethyst); }
+    input[type=range] { width: 100%; accent-color: var(--amethyst); }
+    .forge-preview { display: flex; flex-direction: column; align-items: center; gap: 1rem; }
+    .forge-preview-label { font-size: 0.65rem; color: #64748b; letter-spacing: 0.2em; text-transform: uppercase; }
+    #forge-preview-svg { display: block; }
+    .forge-actions { display: flex; gap: 0.75rem; margin-top: 1.5rem; }
+
+    /* Archetype grid */
+    .archetype-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 1rem; margin-bottom: 2.5rem; }
     .archetype-card {
       background: var(--panel); border: 1px solid rgba(255,255,255,0.07);
-      border-radius: 12px; padding: 1.5rem 1rem; text-align: center;
-      cursor: pointer; transition: all 0.25s;
+      border-radius: 12px; padding: 1.5rem 1rem; text-align: center; transition: all 0.25s;
     }
-    .archetype-card:hover { border-color: var(--card-color, var(--gold)); box-shadow: 0 0 20px var(--card-glow, rgba(212,175,55,0.2)); }
-    .archetype-card.active { border-color: var(--card-color, var(--gold)); background: rgba(255,255,255,0.04); }
-    .archetype-card svg { display: block; margin: 0 auto 1rem; }
-    .archetype-card h3 { font-family: 'Cinzel', serif; font-size: 0.95rem; margin-bottom: 0.25rem; }
-    .archetype-card p { font-size: 0.7rem; color: #64748b; text-transform: uppercase; letter-spacing: 0.15em; }
+    .archetype-card svg { display: block; margin: 0 auto 0.75rem; }
+    .archetype-card h3 { font-family: 'Cinzel', serif; font-size: 0.9rem; margin-bottom: 0.2rem; }
+    .archetype-card p { font-size: 0.68rem; color: #64748b; text-transform: uppercase; letter-spacing: 0.12em; }
 
-    /* ── Protocol explainer ── */
+    /* Protocol explainer */
     details { background: var(--panel); border: 1px solid var(--border); border-radius: 12px; margin-bottom: 1.5rem; }
     summary { padding: 1.25rem 1.5rem; cursor: pointer; font-family: 'Cinzel', serif; font-size: 1rem; color: var(--gold); list-style: none; display: flex; align-items: center; justify-content: space-between; }
     summary::after { content: '▼'; font-size: 0.75rem; transition: transform 0.3s; }
@@ -82,29 +159,39 @@
     .protocol-body p, .protocol-body li { font-size: 0.85rem; color: #94a3b8; line-height: 1.7; }
     .protocol-body ul { padding-left: 1.25rem; }
     .protocol-body code { font-family: 'Fira Code', monospace; font-size: 0.8rem; color: #e2e8f0; background: rgba(255,255,255,0.05); padding: 0.1rem 0.35rem; border-radius: 3px; }
-    .layer-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 0.75rem; margin-top: 0.75rem; }
-    .layer-card { border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; padding: 0.75rem 1rem; }
-    .layer-card .layer-num { font-size: 0.65rem; color: #64748b; letter-spacing: 0.2em; text-transform: uppercase; margin-bottom: 0.35rem; }
-    .layer-card .layer-label { font-size: 0.85rem; font-weight: 600; margin-bottom: 0.25rem; }
-    .layer-card .layer-desc { font-size: 0.75rem; color: #64748b; }
 
-    /* ── Auth gate ── */
-    #auth-gate { text-align: center; padding: 4rem 1rem; }
-    #auth-gate p { color: #64748b; margin-bottom: 1.5rem; }
-    .btn { display: inline-block; padding: 0.6rem 1.5rem; border-radius: 8px; font-size: 0.85rem; font-weight: 600; cursor: pointer; transition: all 0.2s; border: none; }
-    .btn-gold { background: var(--gold); color: #0a0d14; }
-    .btn-gold:hover { opacity: 0.85; }
-    .btn-outline { background: transparent; border: 1px solid rgba(255,255,255,0.2); color: #e2e8f0; }
-    .btn-outline:hover { border-color: var(--gold); color: var(--gold); }
-
-    /* Sigil SVG animations */
-    @keyframes sigilDraw { to { stroke-dashoffset: 0; } }
-    @keyframes sigilPulse { 0%,100% { opacity: 0.7; } 50% { opacity: 1; } }
-    .sigil-draw path { animation: sigilDraw 2s ease-out forwards; }
+    /* Auth gate */
+    #auth-gate { text-align: center; padding: 4rem 1rem; display: none; }
 
     /* Loading */
     .spinner { width: 36px; height: 36px; border: 2px solid rgba(212,175,55,0.2); border-top-color: var(--gold); border-radius: 50%; animation: spin 0.8s linear infinite; margin: 2rem auto; }
     @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* Release confirm modal */
+    #release-modal {
+      position: fixed; inset: 0; z-index: 100;
+      background: rgba(5,3,10,0.88); backdrop-filter: blur(8px);
+      display: flex; align-items: center; justify-content: center;
+      display: none;
+    }
+    #release-modal.open { display: flex; }
+    .release-box {
+      background: var(--panel); border: 1px solid rgba(255,51,102,0.3);
+      border-radius: 16px; padding: 2rem; max-width: 360px; width: 100%; margin: 1rem; text-align: center;
+    }
+    .release-box h3 { font-family: 'Cinzel', serif; font-size: 1.2rem; color: var(--crimson); margin-bottom: 0.5rem; }
+    .release-box p { font-size: 0.85rem; color: #94a3b8; line-height: 1.6; margin-bottom: 1.5rem; }
+    .release-actions { display: flex; gap: 0.75rem; justify-content: center; }
+
+    /* Toast */
+    #toast {
+      position: fixed; bottom: 1.5rem; right: 1.5rem; z-index: 200;
+      padding: 0.75rem 1.25rem; border-radius: 8px; font-size: 0.85rem;
+      transition: opacity 0.3s; pointer-events: none; opacity: 0;
+    }
+    #toast.show { opacity: 1; }
+    #toast.success { background: rgba(0,255,136,0.12); border: 1px solid rgba(0,255,136,0.3); color: #00ff88; }
+    #toast.error   { background: rgba(255,51,51,0.12);  border: 1px solid rgba(255,51,51,0.3);  color: #ff5555; }
   </style>
 </head>
 <body>
@@ -112,84 +199,109 @@
 <nav>
   <a href="../index.html" class="nav-brand">Owl Academy</a>
   <span class="nav-sep">›</span>
-  <a href="Familiars.html" style="font-size:0.75rem;color:#94a3b8;letter-spacing:0.15em;text-transform:uppercase;">Familiar Selection</a>
+  <span style="font-size:0.75rem;color:#94a3b8;letter-spacing:0.15em;text-transform:uppercase;">Familiar Vault</span>
   <span class="nav-sep" style="margin-left:auto;"></span>
+  <a href="Store.html" class="nav-back" style="color:var(--amethyst);margin-right:1rem;">◈ Store</a>
   <a href="../index.html" class="nav-back">← Sanctum</a>
 </nav>
 
 <main>
   <div class="page-header">
     <div class="proto-badge">Protocol // SHD-CCP Familiar Binding</div>
-    <h1>Familiar Selection</h1>
-    <p class="page-sub">Your genesis seed deterministically selects your familiar archetype from Hilbert space. The resulting composite sigil encodes your tier, guild affiliations, and departmental achievements.</p>
+    <h1>Familiar Vault</h1>
+    <p class="page-sub">Your genesis seed deterministically reveals familiar archetypes. Unlock Echo familiars to explore adjacent draws — each a shadow resonance of your primary seed.</p>
   </div>
 
   <!-- Auth gate -->
-  <div id="auth-gate" style="display:none;">
+  <div id="auth-gate">
     <p class="arcane" style="font-size:1.1rem;color:#e2e8f0;margin-bottom:0.5rem;">Sign in to bind your familiar</p>
-    <p>Your familiar is derived from your genesis seed. Sign in to reveal it.</p>
+    <p style="color:#64748b;margin-bottom:1.5rem;">Your familiar is derived from your genesis seed. Sign in to reveal it.</p>
     <a href="../index.html" class="btn btn-gold">Go to Sanctum</a>
   </div>
 
   <!-- Loading -->
   <div id="loading"><div class="spinner"></div></div>
 
-  <!-- My Familiar -->
-  <div id="familiar-content" style="display:none;">
+  <!-- Main content -->
+  <div id="vault-content" style="display:none;">
 
-    <div id="my-familiar-panel">
-      <div id="sigil-display"></div>
+    <!-- Active Familiar -->
+    <div class="section-title">Active Familiar <div class="section-rule"></div></div>
+    <div id="active-panel">
+      <div id="active-sigil">
+        <!-- injected -->
+        <div class="active-badge">● ACTIVE</div>
+      </div>
       <div class="familiar-info">
-        <div class="familiar-label">Your Bound Familiar</div>
+        <div class="familiar-label">Bound Familiar</div>
         <div class="familiar-name" id="fam-name">—</div>
         <div class="familiar-title" id="fam-title">—</div>
-        <div class="seed-display" id="fam-seed">Loading seed…</div>
+        <div class="familiar-slot" id="fam-slot">Slot 0 · Genesis</div>
+        <div class="seed-display" id="fam-seed">Loading…</div>
         <div class="sigil-meta" id="fam-meta"></div>
+        <div class="manifold-display" id="fam-manifold" style="display:none;">
+          Manifold: N=<span id="md-n">—</span> K=<span id="md-k">—</span> T=<span id="md-t">—</span>
+        </div>
       </div>
     </div>
 
+    <!-- Manifold Forge drawer -->
+    <div id="forge-drawer">
+      <div class="forge-header">
+        <div class="forge-title">◈ Manifold Forge — <span id="forge-slot-label">Slot 0</span></div>
+        <button class="forge-close" onclick="closeForge()">✕</button>
+      </div>
+      <div class="forge-body">
+        <div class="forge-controls">
+          <p style="font-size:0.8rem;color:#94a3b8;line-height:1.6;margin-bottom:0.5rem;">Tune the Hilbert manifold field behind your familiar sigil. Changes are stored per slot and render live.</p>
+          <div class="slider-row">
+            <label>N — Points <span id="val-n">8</span></label>
+            <input type="range" id="slider-n" min="3" max="20" value="8" oninput="updateForgePreview()">
+          </div>
+          <div class="slider-row">
+            <label>K — String Multiplier <span id="val-k">4</span></label>
+            <input type="range" id="slider-k" min="2" max="12" value="4" oninput="updateForgePreview()">
+          </div>
+          <div class="slider-row">
+            <label>T — Tiers <span id="val-t">3</span></label>
+            <input type="range" id="slider-t" min="1" max="6" value="3" oninput="updateForgePreview()">
+          </div>
+          <div class="forge-actions">
+            <button class="btn btn-gold" onclick="saveManifold()">Save Manifold</button>
+            <button class="btn btn-outline" onclick="clearManifold()">Clear</button>
+          </div>
+        </div>
+        <div class="forge-preview">
+          <div class="forge-preview-label">Live Preview</div>
+          <svg id="forge-preview-svg" viewBox="0 0 100 100" width="140" height="140"
+               style="background:rgba(0,0,0,0.3);border-radius:50%;border:1px solid rgba(176,38,255,0.2);">
+          </svg>
+          <div style="font-size:0.65rem;color:#64748b;font-family:'Fira Code',monospace;text-align:center;" id="forge-familiar-label">—</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Familiar Vault -->
+    <div class="section-title">Familiar Vault <div class="section-rule"></div> <span id="vault-count-label" style="font-size:0.7rem;color:#64748b;font-family:'Fira Code',monospace;white-space:nowrap;"></span></div>
+    <div class="vault-grid" id="vault-grid">
+      <!-- injected by JS -->
+    </div>
+
     <!-- Archetype Browser -->
-    <div class="section-title">All Archetypes</div>
+    <div class="section-title">All Archetypes <div class="section-rule"></div></div>
     <div class="archetype-grid" id="archetype-grid"></div>
 
-    <!-- Protocol explainer -->
+    <!-- Protocol -->
     <details>
       <summary>Sigil Composition Protocol</summary>
       <div class="protocol-body">
-        <p>The user sigil is a deterministic composite SVG generated from three data sources: the genesis seed (cosmologicalId), the user's tier, and their earned achievements. Every layer is algorithmically derived — no choices are made, only revealed.</p>
-
-        <h4>Layer Architecture</h4>
-        <div class="layer-grid">
-          <div class="layer-card">
-            <div class="layer-num">Layer 1 · Core</div>
-            <div class="layer-label" style="color:var(--cyan)">Familiar Sigil</div>
-            <div class="layer-desc">The inner 56px circle contains the familiar's unique geometric SVG — lines, nodes, and accent paths generated from the SHD-CCP archetype pattern.</div>
-          </div>
-          <div class="layer-card">
-            <div class="layer-num">Layer 2 · r=36</div>
-            <div class="layer-label" style="color:var(--gold)">Tier Ring</div>
-            <div class="layer-desc">Solid ring for INSTRUCTOR, doubled ring for ARCHON, dashed for ACOLYTE. Color encodes rank: gold / cyan / slate.</div>
-          </div>
-          <div class="layer-card">
-            <div class="layer-num">Layer 3 · r=43</div>
-            <div class="layer-label" style="color:var(--amethyst)">Achievement Ring</div>
-            <div class="layer-desc">Dot markers appear when Dept 7, 8, or 9 are unlocked. White, amethyst, and emerald pips at evenly-spaced angular positions.</div>
-          </div>
-          <div class="layer-card">
-            <div class="layer-num">Layer 4 · r=48</div>
-            <div class="layer-label" style="color:var(--emerald)">Guild Ring</div>
-            <div class="layer-desc">One pip per guild affiliation (up to 4), color-coded by guild archetype, placed at equal angular spacing on the ring.</div>
-          </div>
-          <div class="layer-card">
-            <div class="layer-num">Layer 5 · r=50</div>
-            <div class="layer-label" style="color:var(--crimson)">Outer Border</div>
-            <div class="layer-desc">Tick marks encode tome and minor-tome count (up to 16 ticks) in purple, forming a progress halo around the full sigil.</div>
-          </div>
-        </div>
-
+        <p>The user sigil is a deterministic composite SVG generated from three sources: the genesis seed (cosmologicalId), the user's tier, and earned achievements. Every layer is algorithmically derived — no choices are made, only revealed.</p>
+        <h4>Slot System</h4>
+        <p>Slot 0 is your genesis familiar — always bound. Each Echo Familiar purchase reveals the next draw from your seed's PRNG stream. Slot 1 = second draw, slot 2 = third, and so on. Released slots are permanently consumed; their slot number is never reused. Maximum 6 slots (0–5).</p>
+        <h4>Manifold Forge</h4>
+        <p>Each echo slot (slot 1+) may have an independent Hilbert manifold — a nested polygon string-art field rendered behind the familiar sigil. Parameters N (points), K (string multiplier), and T (tiers) control its geometry. Slot 0 always uses a clean background unless explicitly configured.</p>
         <h4>PRNG Seeding</h4>
-        <p>The familiar archetype is selected using the <code>xmur3 + sfc32</code> algorithm — a cryptographic-quality 128-bit seeded PRNG from the SHD-CCP specification. The <code>cosmologicalId</code> (a hex string derived from the genesis position in the SPIRE hyperbolic manifold) is the sole input. The same ID will always produce the same familiar.</p>
-
+        <p>The <code>xmur3 + sfc32</code> algorithm seeded with your <code>cosmologicalId</code> produces a deterministic float stream. Slot N burns N draws then takes the Nth+1 as the archetype index. The same ID, same slot, always yields the same familiar.</p>
         <h4>Archetype Mapping</h4>
         <ul>
           <li><strong style="color:var(--cyan)">FELIS Arcana</strong> — The Observer. Emergent intelligence, pattern recognition, liminal awareness.</li>
@@ -201,89 +313,335 @@
       </div>
     </details>
 
-  </div><!-- /familiar-content -->
+  </div><!-- /vault-content -->
 </main>
+
+<!-- Release Confirm Modal -->
+<div id="release-modal">
+  <div class="release-box">
+    <h3>Release Familiar?</h3>
+    <p id="release-desc">This familiar will be permanently released. The Vis spent is lost, and this slot number will never be reused. Are you certain?</p>
+    <div class="release-actions">
+      <button class="btn btn-outline" onclick="closeRelease()">Cancel</button>
+      <button class="btn btn-release" style="width:auto;" onclick="confirmRelease()">Release</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div id="toast"></div>
 
 <script type="module">
   import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-auth.js";
-  import { doc, getDoc } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-firestore.js";
+  import { doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-firestore.js";
   import { auth, db } from "../scripts/firebase/config.js";
-  import { FAMILIARS, getFamiliarFromCosmologicalId, renderUserSigil } from "../scripts/sigil-renderer.js";
+  import {
+    FAMILIARS, MAX_FAMILIAR_SLOTS,
+    getFamiliarForSlot, getFamiliarFromCosmologicalId,
+    generateManifoldSVG, renderUserSigil,
+  } from "../scripts/sigil-renderer.js";
   import { resolveTier } from "../scripts/genesis-registrar.js";
 
-  // ── Archetype browser ─────────────────────────────────────────────────────
-  function populateArchetypeGrid(activeFamiliar) {
-    const grid = document.getElementById('archetype-grid');
-    grid.innerHTML = FAMILIARS.map(f => `
-      <div class="archetype-card ${activeFamiliar && f.id === activeFamiliar.id ? 'active' : ''}"
-           style="--card-color:${f.color};--card-glow:${f.color}33;"
-           onclick="this.parentElement.querySelectorAll('.archetype-card').forEach(c=>c.classList.remove('active'));this.classList.add('active');">
-        <svg viewBox="0 0 100 100" width="80" height="80" style="color:${f.color}; filter:drop-shadow(0 0 6px ${f.color}66)">
-          ${f.svg}
-        </svg>
+  // ── State ──────────────────────────────────────────────────────────────────
+  let _user = null;
+  let _cosmologicalId = '';
+  let _tier = 'ACOLYTE';
+  let _guilds = [];
+  let _orbitals = {};
+  let _profile = {};
+  let _familiarSlots = [0];       // owned slot numbers
+  let _activeSlot = 0;
+  let _manifolds = {};            // { slotNum: { n, k, t } | null }
+  let _forgeSlot = null;          // which slot is currently being forged
+  let _releaseSlot = null;
+
+  // ── Toast ──────────────────────────────────────────────────────────────────
+  function toast(msg, type = 'success') {
+    const el = document.getElementById('toast');
+    el.textContent = msg;
+    el.className = `${type} show`;
+    clearTimeout(el._t);
+    el._t = setTimeout(() => { el.className = ''; }, 3000);
+  }
+
+  // ── Profile save ───────────────────────────────────────────────────────────
+  async function saveProfile(patch) {
+    const ref = doc(db, 'users', _user.uid, 'profile', 'main');
+    await setDoc(ref, patch, { merge: true });
+    Object.assign(_profile, patch);
+  }
+
+  // ── Render active familiar panel ───────────────────────────────────────────
+  function renderActivePanel() {
+    const manifold = _manifolds[String(_activeSlot)] ?? null;
+    const svgHtml = renderUserSigil({
+      cosmologicalId: _cosmologicalId,
+      activeSlot: _activeSlot,
+      manifoldConfig: manifold,
+      tier: _tier,
+      guilds: _guilds,
+      orbitals: _orbitals,
+      size: 160,
+    });
+    const sigilWrap = document.getElementById('active-sigil');
+    sigilWrap.innerHTML = svgHtml + '<div class="active-badge">● ACTIVE</div>';
+
+    const familiar = getFamiliarForSlot(_cosmologicalId, _activeSlot);
+    document.getElementById('fam-name').textContent = familiar.name;
+    document.getElementById('fam-name').style.color = familiar.color;
+    document.getElementById('fam-title').textContent = familiar.title;
+    document.getElementById('fam-slot').textContent =
+      `Slot ${_activeSlot} · ${_activeSlot === 0 ? 'Genesis' : 'Echo #' + _activeSlot}`;
+    document.getElementById('fam-seed').textContent = `Seed: ${_cosmologicalId}`;
+
+    const TIER_COLOR = { ARCHON: '#d4af37', INSTRUCTOR: '#00d4ff', ACOLYTE: '#94a3b8' };
+    const tc = TIER_COLOR[_tier] || '#94a3b8';
+    document.getElementById('fam-meta').innerHTML = `
+      <span class="meta-chip" style="border-color:${familiar.color}55;color:${familiar.color}">${familiar.id}</span>
+      <span class="meta-chip" style="border-color:${tc}55;color:${tc}">${_tier}</span>
+      ${_guilds.slice(0,3).map(g=>`<span class="meta-chip" style="border-color:#00ff6655;color:#00ff66">${g}</span>`).join('')}
+    `;
+
+    const mEl = document.getElementById('fam-manifold');
+    if (manifold) {
+      mEl.style.display = '';
+      document.getElementById('md-n').textContent = manifold.n;
+      document.getElementById('md-k').textContent = manifold.k;
+      document.getElementById('md-t').textContent = manifold.t;
+    } else {
+      mEl.style.display = 'none';
+    }
+  }
+
+  // ── Render vault grid ──────────────────────────────────────────────────────
+  function renderVaultGrid() {
+    const grid = document.getElementById('vault-grid');
+    const atCap = _familiarSlots.length >= MAX_FAMILIAR_SLOTS;
+    document.getElementById('vault-count-label').textContent =
+      `${_familiarSlots.length} / ${MAX_FAMILIAR_SLOTS} slots`;
+
+    let html = '';
+
+    // Owned slots
+    for (const slotNum of _familiarSlots) {
+      const fam = getFamiliarForSlot(_cosmologicalId, slotNum);
+      const isActive = slotNum === _activeSlot;
+      const smallSvg = renderUserSigil({
+        cosmologicalId: _cosmologicalId,
+        activeSlot: slotNum,
+        manifoldConfig: _manifolds[String(slotNum)] ?? null,
+        tier: _tier,
+        guilds: _guilds,
+        orbitals: _orbitals,
+        size: 80,
+        animated: false,
+      });
+
+      html += `
+        <div class="vault-card ${isActive ? 'is-active' : ''}">
+          ${isActive ? `<div class="active-chip">● Active</div>` : ''}
+          ${smallSvg}
+          <h3 style="color:${fam.color}">${fam.name}</h3>
+          <div class="slot-label">Slot ${slotNum} · ${slotNum === 0 ? 'Genesis' : 'Echo #' + slotNum}</div>
+          <div class="vault-card-actions">
+            ${!isActive ? `<button class="btn btn-swap" onclick="window._swapActive(${slotNum})">Make Active</button>` : `<button class="btn btn-swap" disabled>Active</button>`}
+            <button class="btn btn-forge" onclick="window._openForge(${slotNum})">Manifold Forge</button>
+            ${slotNum > 0 ? `<button class="btn btn-release" onclick="window._openRelease(${slotNum})">Release</button>` : ''}
+          </div>
+        </div>`;
+    }
+
+    // Unlock slot card
+    if (!atCap) {
+      html += `
+        <div class="vault-card unlock-slot" onclick="window.location.href='Store.html'">
+          <div class="unlock-icon">✦</div>
+          <div class="unlock-title">Echo Familiar</div>
+          <div class="unlock-price">50 ◈ → Store</div>
+        </div>`;
+    } else {
+      html += `
+        <div class="vault-card unlock-slot capped">
+          <div class="unlock-icon" style="color:#64748b;">✦</div>
+          <div class="unlock-title" style="color:#64748b;">Vault Full</div>
+          <div class="unlock-price">Max 6 familiars reached.<br>Release one to unlock more.</div>
+        </div>`;
+    }
+
+    grid.innerHTML = html;
+  }
+
+  // ── Swap active familiar ───────────────────────────────────────────────────
+  window._swapActive = async function(slotNum) {
+    _activeSlot = slotNum;
+    await saveProfile({ activeFamiliarSlot: slotNum });
+    renderActivePanel();
+    renderVaultGrid();
+    toast(`Active familiar swapped to Slot ${slotNum}`, 'success');
+  };
+
+  // ── Manifold Forge ─────────────────────────────────────────────────────────
+  window._openForge = function(slotNum) {
+    _forgeSlot = slotNum;
+    const existing = _manifolds[String(slotNum)];
+    const n = existing?.n ?? 8;
+    const k = existing?.k ?? 4;
+    const t = existing?.t ?? 3;
+    document.getElementById('slider-n').value = n;
+    document.getElementById('slider-k').value = k;
+    document.getElementById('slider-t').value = t;
+    document.getElementById('forge-slot-label').textContent =
+      `Slot ${slotNum} — ${getFamiliarForSlot(_cosmologicalId, slotNum).name}`;
+    window.updateForgePreview();
+    const drawer = document.getElementById('forge-drawer');
+    drawer.classList.add('open');
+    drawer.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  };
+
+  window.closeForge = function() {
+    document.getElementById('forge-drawer').classList.remove('open');
+    _forgeSlot = null;
+  };
+
+  window.updateForgePreview = function() {
+    const n = parseInt(document.getElementById('slider-n').value);
+    const k = parseInt(document.getElementById('slider-k').value);
+    const t = parseInt(document.getElementById('slider-t').value);
+    document.getElementById('val-n').textContent = n;
+    document.getElementById('val-k').textContent = k;
+    document.getElementById('val-t').textContent = t;
+
+    const fam = _forgeSlot !== null ? getFamiliarForSlot(_cosmologicalId, _forgeSlot) : FAMILIARS[0];
+    const svg = document.getElementById('forge-preview-svg');
+    svg.style.color = fam.color;
+    svg.innerHTML = generateManifoldSVG(n, k, t, 45);
+    document.getElementById('forge-familiar-label').textContent = fam.name;
+  };
+
+  window.saveManifold = async function() {
+    if (_forgeSlot === null) return;
+    const n = parseInt(document.getElementById('slider-n').value);
+    const k = parseInt(document.getElementById('slider-k').value);
+    const t = parseInt(document.getElementById('slider-t').value);
+    _manifolds[String(_forgeSlot)] = { n, k, t };
+    await saveProfile({ familiarManifolds: { ..._profile.familiarManifolds, [String(_forgeSlot)]: { n, k, t } } });
+    renderActivePanel();
+    renderVaultGrid();
+    toast('Manifold configuration saved', 'success');
+  };
+
+  window.clearManifold = async function() {
+    if (_forgeSlot === null) return;
+    delete _manifolds[String(_forgeSlot)];
+    const updatedManifolds = { ..._profile.familiarManifolds };
+    delete updatedManifolds[String(_forgeSlot)];
+    await saveProfile({ familiarManifolds: updatedManifolds });
+    renderActivePanel();
+    renderVaultGrid();
+    toast('Manifold cleared', 'success');
+  };
+
+  // ── Release familiar ───────────────────────────────────────────────────────
+  window._openRelease = function(slotNum) {
+    if (slotNum === 0) return; // genesis is permanent
+    _releaseSlot = slotNum;
+    const fam = getFamiliarForSlot(_cosmologicalId, slotNum);
+    document.getElementById('release-desc').textContent =
+      `You are about to release ${fam.name} (Slot ${slotNum}). The 50 ◈ Vis spent is permanently lost, ` +
+      `and this slot number will never be reused. Your remaining familiars are unaffected.`;
+    document.getElementById('release-modal').classList.add('open');
+  };
+
+  window.closeRelease = function() {
+    document.getElementById('release-modal').classList.remove('open');
+    _releaseSlot = null;
+  };
+
+  window.confirmRelease = async function() {
+    if (_releaseSlot === null) return;
+    const slotNum = _releaseSlot;
+    document.getElementById('release-modal').classList.remove('open');
+    _releaseSlot = null;
+
+    // Remove from slots, keep totalFamiliarsPurchased unchanged
+    _familiarSlots = _familiarSlots.filter(s => s !== slotNum);
+
+    // If released slot was active, revert to slot 0
+    if (_activeSlot === slotNum) {
+      _activeSlot = 0;
+    }
+
+    // Clear manifold for this slot
+    delete _manifolds[String(slotNum)];
+    const updatedManifolds = { ..._profile.familiarManifolds };
+    delete updatedManifolds[String(slotNum)];
+
+    await saveProfile({
+      familiarSlots: _familiarSlots,
+      activeFamiliarSlot: _activeSlot,
+      familiarManifolds: updatedManifolds,
+    });
+
+    renderActivePanel();
+    renderVaultGrid();
+    toast(`Familiar released. Slot ${slotNum} is permanently gone.`, 'error');
+  };
+
+  // ── Archetype browser ──────────────────────────────────────────────────────
+  function renderArchetypeGrid() {
+    const activeFam = getFamiliarForSlot(_cosmologicalId, _activeSlot);
+    document.getElementById('archetype-grid').innerHTML = FAMILIARS.map(f => `
+      <div class="archetype-card" style="border-color:${f.id === activeFam.id ? f.color + '55' : 'rgba(255,255,255,0.07)'}">
+        <svg viewBox="0 0 100 100" width="70" height="70" style="color:${f.color};filter:drop-shadow(0 0 5px ${f.color}55)">${f.svg}</svg>
         <h3 style="color:${f.color}">${f.name}</h3>
         <p>${f.title}</p>
       </div>
     `).join('');
   }
 
-  // ── Render my familiar section ─────────────────────────────────────────────
-  async function renderMyFamiliar(user) {
-    // Fetch all data in parallel
+  // ── Load everything ────────────────────────────────────────────────────────
+  async function init(user) {
+    _user = user;
     const [regSnap, profSnap, constSnap] = await Promise.all([
       getDoc(doc(db, 'users', user.uid, 'registrar', 'main')),
       getDoc(doc(db, 'users', user.uid, 'profile', 'main')),
-      getDoc(doc(db, 'constellations', user.uid)),
+      getDoc(doc(db, 'constellations', user.uid)).catch(() => null),
     ]);
 
-    const cosmologicalId = regSnap.exists() ? (regSnap.data().cosmologicalId || user.uid) : user.uid;
-    const profile = profSnap.exists() ? profSnap.data() : {};
-    const orbitals = constSnap.exists() ? (constSnap.data().orbitals || {}) : {};
+    _cosmologicalId = regSnap.exists() ? (regSnap.data().cosmologicalId || user.uid) : user.uid;
+    _profile = profSnap.exists() ? profSnap.data() : {};
+    _orbitals = constSnap?.exists() ? (constSnap.data().orbitals || {}) : {};
+    _guilds = _profile.guilds || [];
+    _familiarSlots = _profile.familiarSlots ?? [0];
+    _activeSlot = _profile.activeFamiliarSlot ?? 0;
+    _manifolds = _profile.familiarManifolds ?? {};
 
-    let tier = 'ACOLYTE';
-    try { tier = await resolveTier(user.uid); } catch(_) {}
+    try { _tier = await resolveTier(user.uid); } catch(_) {}
 
-    const guilds = profile.guilds || [];
-    const { familiar } = getFamiliarFromCosmologicalId(cosmologicalId);
+    // Make sure active slot is in the owned list (safety check)
+    if (!_familiarSlots.includes(_activeSlot)) {
+      _activeSlot = _familiarSlots[0] ?? 0;
+    }
 
-    // Render sigil
-    const sigilSvg = renderUserSigil({ cosmologicalId, tier, guilds, orbitals, size: 160 });
-    document.getElementById('sigil-display').innerHTML = sigilSvg;
-
-    // Familiar name + title
-    document.getElementById('fam-name').textContent = familiar.name;
-    document.getElementById('fam-name').style.color = familiar.color;
-    document.getElementById('fam-title').textContent = familiar.title;
-    document.getElementById('fam-seed').textContent = `Seed: ${cosmologicalId}`;
-
-    // Meta chips
-    const TIER_COLOR = { ARCHON: '#d4af37', INSTRUCTOR: '#00d4ff', ACOLYTE: '#94a3b8' };
-    const tc = TIER_COLOR[tier] || '#94a3b8';
-    document.getElementById('fam-meta').innerHTML = `
-      <span class="meta-chip" style="border-color:${familiar.color}55;color:${familiar.color}">${familiar.id}</span>
-      <span class="meta-chip" style="border-color:${tc}55;color:${tc}">${tier}</span>
-      ${guilds.slice(0,3).map(g=>`<span class="meta-chip" style="border-color:#00ff6655;color:#00ff66">${g}</span>`).join('')}
-    `;
-
-    populateArchetypeGrid(familiar);
+    renderActivePanel();
+    renderVaultGrid();
+    renderArchetypeGrid();
 
     document.getElementById('loading').style.display = 'none';
-    document.getElementById('familiar-content').style.display = 'block';
+    document.getElementById('vault-content').style.display = 'block';
   }
 
-  // ── Auth ──────────────────────────────────────────────────────────────────
+  // ── Auth ───────────────────────────────────────────────────────────────────
   onAuthStateChanged(auth, user => {
     if (!user) {
       document.getElementById('loading').style.display = 'none';
       document.getElementById('auth-gate').style.display = 'block';
-      populateArchetypeGrid(null);
-      document.getElementById('familiar-content').style.display = 'block';
       return;
     }
-    renderMyFamiliar(user).catch(err => {
-      console.error('Familiar load error:', err);
+    init(user).catch(err => {
+      console.error('[Familiars] load error:', err);
       document.getElementById('loading').style.display = 'none';
-      document.getElementById('familiar-content').style.display = 'block';
+      document.getElementById('vault-content').style.display = 'block';
     });
   });
 </script>

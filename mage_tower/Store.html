@@ -203,10 +203,12 @@
 
 <script type="module">
     import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-auth.js";
-    import { auth } from "../scripts/firebase/config.js";
+    import { doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-firestore.js";
+    import { auth, db } from "../scripts/firebase/config.js";
     import { getDocument } from "../scripts/firebase/firestore.js";
     import { getTotalXP } from "../scripts/services/user.service.js";
     import { getLevelInfo, spendVis, getTransactions, getInventory, checkAndAwardLevelUp } from "../scripts/services/vis.service.js";
+    import { MAX_FAMILIAR_SLOTS } from "../scripts/sigil-renderer.js";
 
     // ── Store catalog ────────────────────────────────────────────────────────
     const STORE_ITEMS = [
@@ -218,9 +220,10 @@
             icon: '✦',
             color: '#b026ff',
             glow: 'rgba(176,38,255,0.15)',
-            description: 'Unlock a second familiar archetype derived from a shifted variant of your genesis seed — a shadow resonance alongside your primary familiar.',
-            detail: 'Shifts the PRNG by +1 draw, revealing the archetype beneath yours.',
-            oneTime: true,
+            description: 'Unlock an additional familiar archetype derived from a shifted draw of your genesis seed. Up to 6 familiar slots total (release one to make room).',
+            detail: 'Shifts the PRNG by +1 draw, revealing the archetype beneath yours. Vis spent on release is lost permanently.',
+            oneTime: false,
+            echoItem: true,
         },
         {
             id: 'constellation-beacon',
@@ -324,16 +327,31 @@
     function renderGrid() {
         const vis = currentProfile?.vis ?? 0;
         const ownedIds = new Set(inventory.map(i => i.itemId));
+        const familiarSlots = currentProfile?.familiarSlots ?? [0];
+        const slotCount = familiarSlots.length;
+        const echoAtCap = slotCount >= MAX_FAMILIAR_SLOTS;
 
         document.getElementById('store-grid').innerHTML = STORE_ITEMS.map(item => {
+            const isEcho = item.echoItem;
             const owned = item.oneTime && ownedIds.has(item.id);
             const cs = item.comingSoon;
+            const blocked = isEcho && echoAtCap;
             const canAfford = vis >= item.price;
-            const cardClass = `store-card${owned ? ' owned' : ''}${cs ? ' coming-soon' : ''}`;
+            const disabled = !canAfford || blocked;
+            const cardClass = `store-card${owned ? ' owned' : ''}${cs ? ' coming-soon' : ''}${blocked ? ' coming-soon' : ''}`;
+
+            const echoCounter = isEcho
+                ? `<span class="text-[10px] px-2 py-0.5 rounded-full mono uppercase tracking-wider"
+                         style="background:rgba(176,38,255,0.08);color:#b026ff;border:1px solid rgba(176,38,255,0.25)"
+                   >${slotCount}/${MAX_FAMILIAR_SLOTS} slots</span>`
+                : '';
+            const blockedMsg = isEcho && echoAtCap
+                ? `<span class="text-[10px] px-2 py-0.5 rounded-full mono uppercase tracking-wider bg-slate-500/10 text-slate-500 border border-slate-500/20">Vault Full</span>`
+                : '';
 
             return `
             <div class="${cardClass}" style="--card-color:${item.color};--card-glow:${item.glow};"
-                 ${!owned && !cs ? `onclick="openConfirm('${item.id}')"` : ''}>
+                 ${!owned && !cs && !blocked ? `onclick="openConfirm('${item.id}')"` : ''}>
                 <div class="flex items-start justify-between mb-3">
                     <span class="text-3xl">${item.icon}</span>
                     <div class="flex flex-col items-end gap-1">
@@ -341,8 +359,10 @@
                               style="background:${item.color}15;color:${item.color};border:1px solid ${item.color}30">
                             ${item.category}
                         </span>
+                        ${echoCounter}
                         ${owned ? `<span class="text-[10px] px-2 py-0.5 rounded-full mono uppercase tracking-wider bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">Owned</span>` : ''}
                         ${cs ? `<span class="text-[10px] px-2 py-0.5 rounded-full mono uppercase tracking-wider bg-slate-500/10 text-slate-500 border border-slate-500/20">Soon</span>` : ''}
+                        ${blockedMsg}
                     </div>
                 </div>
                 <h3 class="mystical text-base font-semibold mb-1" style="color:${item.color}">${item.title}</h3>
@@ -350,9 +370,9 @@
                 <div class="mt-4 flex items-center justify-between">
                     <span class="mono font-bold text-lg" style="color:${item.color}">${item.price} ◈</span>
                     ${!owned && !cs ? `
-                        <button class="px-4 py-1.5 rounded text-xs font-semibold transition ${canAfford ? 'bg-yellow-500 text-black hover:bg-yellow-400' : 'bg-slate-700 text-slate-500 cursor-not-allowed'}"
-                                ${!canAfford ? 'disabled' : ''}>
-                            ${canAfford ? 'Purchase' : 'Need more ◈'}
+                        <button class="px-4 py-1.5 rounded text-xs font-semibold transition ${!disabled ? 'bg-yellow-500 text-black hover:bg-yellow-400' : 'bg-slate-700 text-slate-500 cursor-not-allowed'}"
+                                ${disabled ? 'disabled' : ''}>
+                            ${blocked ? 'Vault Full' : canAfford ? 'Purchase' : 'Need more ◈'}
                         </button>` : ''}
                 </div>
             </div>`;
@@ -410,12 +430,37 @@
         pendingPurchase = null;
         try {
             const newBal = await spendVis(currentUser.uid, item.price, item.id, item.title);
-            currentProfile = { ...currentProfile, vis: newBal };
+
+            if (item.echoItem) {
+                // Echo familiar: unlock the next slot
+                const profRef = doc(db, 'users', currentUser.uid, 'profile', 'main');
+                const profSnap = await getDoc(profRef);
+                const profData = profSnap.exists() ? profSnap.data() : {};
+                const currentSlots = profData.familiarSlots ?? [0];
+                const totalPurchased = profData.totalFamiliarsPurchased ?? 0;
+
+                if (currentSlots.length < MAX_FAMILIAR_SLOTS) {
+                    const nextSlot = totalPurchased + 1;
+                    const newSlots = [...currentSlots, nextSlot];
+                    await setDoc(profRef, {
+                        familiarSlots: newSlots,
+                        totalFamiliarsPurchased: nextSlot,
+                    }, { merge: true });
+                    currentProfile = { ...currentProfile, vis: newBal, familiarSlots: newSlots, totalFamiliarsPurchased: nextSlot };
+                    toast(`Echo Familiar unlocked — Slot ${nextSlot} revealed! (${newBal} ◈ remaining)`, 'success');
+                } else {
+                    currentProfile = { ...currentProfile, vis: newBal };
+                    toast(`Familiar vault is full. Release a familiar to make room.`, 'error');
+                }
+            } else {
+                currentProfile = { ...currentProfile, vis: newBal };
+                toast(`${item.title} acquired! (${newBal} ◈ remaining)`, 'success');
+            }
+
             inventory = await getInventory(currentUser.uid);
             renderBalance(currentProfile);
             renderGrid();
             renderTransactions(currentUser.uid);
-            toast(`${item.title} acquired! (${newBal} ◈ remaining)`, 'success');
         } catch(e) {
             toast(e.message || 'Purchase failed', 'error');
         }
