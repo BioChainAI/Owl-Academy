@@ -1,8 +1,5 @@
 import { getRankProgress } from "../services/arts.service.js";
 import { getTotalXP } from "../services/user.service.js";
-import { getFamiliarFromCosmologicalId, renderUserSigil } from "../sigil-renderer.js";
-import { getDocument } from "../firebase/firestore.js";
-import { resolveTier } from "../genesis-registrar.js";
 
 const ART_LABELS = {
   mathematics:    "Mathematics",
@@ -29,10 +26,12 @@ export const renderHubProfile = (user, profile) => {
   const totalXP = getTotalXP(profile.arts);
   const progress = getRankProgress(profile.arts);
 
-  const initial = (profile.displayName ?? "?").trim().charAt(0).toUpperCase();
   bar.innerHTML = `
     <div class="flex items-center gap-4 flex-wrap">
-      <div id="hub-sigil-wrap" class="w-10 h-10 rounded-full border-2 border-yellow-500/40 flex items-center justify-center text-lg text-yellow-400 flex-shrink-0 bg-gradient-to-br from-yellow-500/10 to-purple-500/10">${initial}</div>
+      <img src="${profile.avatarUrl || 'storage/logos/main/owl-placeholder.svg'}"
+           alt="Avatar"
+           class="w-10 h-10 rounded-full border-2 border-yellow-500/60 object-cover"
+           onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 40 40%22><circle cx=%2220%22 cy=%2220%22 r=%2220%22 fill=%22%23D4AF37%22 opacity=%220.3%22/><text x=%2250%%22 y=%2255%%22 text-anchor=%22middle%22 fill=%22%23D4AF37%22 font-size=%2218%22>⬡</text></svg>'">
       <div class="flex flex-col min-w-0">
         <span class="text-white font-semibold text-sm truncate">${profile.displayName}</span>
         <span class="text-yellow-500/80 text-xs mystical-font tracking-widest">${profile.rank ?? "Initiate"} · ${profile.school ?? "Unaffiliated"}</span>
@@ -60,25 +59,6 @@ export const renderHubProfile = (user, profile) => {
       ${renderArtsBar(profile.arts)}
     </div>
   `;
-
-  // Async: swap placeholder with real familiar sigil
-  if (user && user.uid) {
-    Promise.all([
-      getDocument(`users/${user.uid}/registrar/main`),
-      getDocument(`constellations/${user.uid}`),
-      resolveTier(user.uid),
-    ]).then(([reg, constDoc, tier]) => {
-      const wrap = document.getElementById("hub-sigil-wrap");
-      if (!wrap) return;
-      const cosmologicalId = reg?.cosmologicalId || user.uid;
-      const orbitals = constDoc?.orbitals || {};
-      const guilds = profile.guilds || [];
-      wrap.innerHTML = renderUserSigil({ cosmologicalId, tier, guilds, orbitals, size: 40, animated: false });
-      wrap.style.border = "none";
-      wrap.style.background = "none";
-      wrap.style.padding = "0";
-    }).catch(() => {});
-  }
 };
 
 export const renderArtsBar = (arts = {}) =>
