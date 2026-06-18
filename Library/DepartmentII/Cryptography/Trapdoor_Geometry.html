@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Owl Academy | The Trapdoor Geometry</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Inter:wght@300;400;500;600&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+    <script>window.MathJax = { tex: { inlineMath: [['$','$'],['\\(','\\)']], displayMath: [['$$','$$'],['\\[','\\]']] } };</script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <style>
+        :root { --color-void: #05030a; --color-primary: #8A2BE2; --color-primary-light: #d8b4fe; }
+        body { background-color: var(--color-void); color: #e2e8f0; font-family: 'Inter', sans-serif;
+               background: radial-gradient(circle at 50% 0%, color-mix(in srgb, var(--color-primary) 8%, var(--color-void)), var(--color-void) 60%); min-height: 100vh; }
+        h1, h2, .mystical-font { font-family: 'Cinzel', serif; }
+        .glass-panel { background: rgba(10, 8, 20, 0.5); backdrop-filter: blur(12px);
+                       border: 1px solid color-mix(in srgb, var(--color-primary) 25%, transparent); }
+        .stub-tag { font-size: 9px; letter-spacing: 0.2em; text-transform: uppercase;
+                    padding: 4px 10px; border-radius: 999px;
+                    border: 1px solid color-mix(in srgb, var(--color-primary) 40%, transparent);
+                    color: var(--color-primary-light); background: color-mix(in srgb, var(--color-primary) 10%, transparent); }
+    </style>
+</head>
+<body class="antialiased">
+    <div class="max-w-3xl mx-auto px-6 py-16">
+        <header class="text-center mb-10">
+            <div class="text-[10px] text-purple-400 tracking-[0.3em] uppercase mb-3">Department II · Tome of Matrices</div>
+            <h1 class="text-4xl md:text-5xl font-bold tracking-[0.1em] text-white mystical-font mb-4">The Trapdoor Geometry</h1>
+            <p class="text-purple-400/80 tracking-widest text-xs uppercase">Elliptic Curve Matrices &amp; One-Way Functions</p>
+        </header>
+
+        <section class="glass-panel rounded-xl p-8 mb-6">
+            <div class="flex items-center gap-3 mb-6">
+                <span class="stub-tag">Manuscript In Progress</span>
+            </div>
+            <h2 class="text-xl text-white mystical-font mb-3">Course Overview</h2>
+            <p class="text-gray-300 font-light leading-relaxed mb-4">
+                A trapdoor function is easy to compute in one direction yet computationally infeasible to invert
+                without secret information. The trapdoor geometry of an elliptic curve $E$ over a finite field
+                $\mathbb{F}_p$ underwrites modern public-key cryptography: scalar multiplication $k \mapsto kP$
+                is cheap, while the discrete logarithm $P \mapsto k$ is presumed hard. This tome will guide the
+                scholar from group law axioms to ECDSA signatures and the post-quantum landscape.
+            </p>
+            <h3 class="text-sm text-purple-400 tracking-widest uppercase mt-6 mb-3">Planned Sections</h3>
+            <ul class="space-y-2 text-sm text-gray-400 list-none">
+                <li>⬡ The group law on an elliptic curve — geometric &amp; algebraic forms</li>
+                <li>⬡ Curves over $\mathbb{F}_p$ and the Hasse-Weil bound</li>
+                <li>⬡ Scalar multiplication via double-and-add</li>
+                <li>⬡ The Elliptic Curve Discrete Logarithm Problem (ECDLP)</li>
+                <li>⬡ ECDSA signature construction and verification</li>
+                <li>⬡ Pairing-based cryptography (Weil &amp; Tate pairings)</li>
+                <li>⬡ Post-quantum considerations — why ECC will eventually fall</li>
+            </ul>
+        </section>
+
+        <div class="text-center">
+            <a href="Cryptography_main.html" class="text-xs text-gray-500 hover:text-purple-400 uppercase tracking-widest">← Return to Cryptography &amp; Sigils</a>
+        </div>
+    </div>
+</body>
+</html>
