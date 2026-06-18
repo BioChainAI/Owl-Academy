@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Owl Academy | Submit Video Tome</title>
+
+    <script type="module" src="scripts/auth-guard.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+
+    <style>
+        body {
+            background-color: #05030a; color: #e2e8f0;
+            font-family: 'Inter', sans-serif;
+            background: radial-gradient(circle at 50% 0%, rgba(100,180,255,0.05), #05030a 70%);
+            min-height: 100vh; margin: 0;
+        }
+        h1, h2, h3, .mystical { font-family: 'Cinzel', serif; }
+        .mono { font-family: 'JetBrains Mono', monospace; }
+        .blue-gradient {
+            background: linear-gradient(to right, #60a5fa, #c4b5fd, #60a5fa);
+            -webkit-background-clip: text; background-clip: text; color: transparent;
+        }
+        .glass {
+            background: rgba(8,12,22,0.75); backdrop-filter: blur(16px);
+            border: 1px solid rgba(96,165,250,0.18);
+        }
+        .glass-gold {
+            background: rgba(8,12,22,0.75); backdrop-filter: blur(16px);
+            border: 1px solid rgba(212,175,55,0.22);
+        }
+        input, textarea, select {
+            background: #060e1a; color: #FFF8DC;
+            border: 1px solid rgba(96,165,250,0.2);
+        }
+        input:focus, textarea:focus, select:focus {
+            outline: none; border-color: #60a5fa;
+            box-shadow: 0 0 0 2px rgba(96,165,250,0.12);
+        }
+        .btn-blue {
+            background: linear-gradient(135deg, #1d4ed8, #60a5fa);
+            color: #fff; font-weight: 600; transition: opacity 0.2s;
+        }
+        .btn-blue:hover { opacity: 0.85; }
+        .btn-ghost {
+            border: 1px solid rgba(96,165,250,0.3); color: #93c5fd;
+            background: transparent; transition: background 0.2s;
+        }
+        .btn-ghost:hover { background: rgba(96,165,250,0.1); }
+        .label { font-size: 0.75rem; color: #94a3b8; margin-bottom: 0.375rem; display: block; }
+        .hint { font-size: 0.6875rem; color: #475569; margin-top: 0.25rem; }
+        .preview-embed {
+            position: relative; padding-bottom: 56.25%; height: 0;
+            border-radius: 0.5rem; overflow: hidden; background: #000;
+        }
+        .preview-embed iframe {
+            position: absolute; top:0; left:0; width:100%; height:100%; border:none;
+        }
+        .platform-btn {
+            border: 1px solid rgba(96,165,250,0.2); color: #64748b;
+            background: transparent; transition: all 0.15s; border-radius: 0.5rem;
+            padding: 0.5rem 1rem; font-size: 0.75rem; font-family: 'JetBrains Mono', monospace;
+        }
+        .platform-btn.active {
+            border-color: #60a5fa; color: #93c5fd; background: rgba(96,165,250,0.1);
+        }
+        .example-item {
+            background: rgba(96,165,250,0.05); border: 1px solid rgba(96,165,250,0.15);
+            border-radius: 0.5rem; padding: 0.75rem; display: flex; gap: 0.5rem; align-items: start;
+        }
+        .spinner {
+            border: 2px solid rgba(96,165,250,0.2); border-top-color: #60a5fa;
+            border-radius: 50%; width: 18px; height: 18px;
+            animation: spin 0.7s linear infinite; display: inline-block;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .genesis-badge {
+            background: rgba(212,175,55,0.08); border: 1px solid rgba(212,175,55,0.25);
+            color: #D4AF37; border-radius: 0.5rem; padding: 0.5rem 0.75rem;
+            font-size: 0.6875rem; font-family: 'JetBrains Mono', monospace;
+        }
+    </style>
+</head>
+<body class="antialiased">
+
+<main class="max-w-2xl mx-auto px-4 md:px-8 py-10">
+
+    <!-- Header -->
+    <header class="text-center mb-10">
+        <div class="flex items-center justify-center gap-3 mb-4">
+            <a href="Prereq_Math.html" class="text-slate-500 hover:text-slate-300 text-xs mono transition-colors">← Prerequisite Math</a>
+        </div>
+        <div class="inline-flex items-center gap-2 px-3 py-1 border border-blue-500/30 rounded-full bg-blue-950/20 text-blue-300 text-[10px] tracking-[0.2em] uppercase mono mb-4">
+            ◯ Contribute to the Sovereign Layer
+        </div>
+        <h1 class="text-3xl md:text-4xl font-bold blue-gradient mb-3">Submit a Video Tome</h1>
+        <p class="text-slate-400 text-sm max-w-md mx-auto">
+            Share a math explainer video with the academy. Your contribution is signed to your Genesis ID
+            and permanently traceable in the knowledge constellation.
+        </p>
+    </header>
+
+    <!-- Identity badge (filled after auth) -->
+    <div id="identityBanner" class="genesis-badge mb-8 hidden">
+        <span class="text-slate-400">Submitting as: </span>
+        <span id="identityGenId">—</span>
+        <span class="text-slate-600 mx-2">·</span>
+        <span class="text-slate-400">Tier: </span>
+        <span id="identityTier">—</span>
+    </div>
+
+    <!-- Form -->
+    <form id="submitForm" onsubmit="return false" class="space-y-6">
+
+        <!-- Title -->
+        <div>
+            <label class="label">Video Title <span class="text-red-400">*</span></label>
+            <input id="fTitle" type="text" required maxlength="120"
+                class="w-full rounded-lg px-4 py-2.5 text-sm"
+                placeholder="e.g. Introduction to the Unit Circle">
+        </div>
+
+        <!-- Subject -->
+        <div>
+            <label class="label">Mathematical Subject <span class="text-red-400">*</span></label>
+            <select id="fSubject" required class="w-full rounded-lg px-4 py-2.5 text-sm">
+                <option value="">— Select subject —</option>
+                <option value="arithmetic">Arithmetic</option>
+                <option value="algebra">Algebra</option>
+                <option value="geometry">Geometry</option>
+                <option value="trigonometry">Trigonometry</option>
+                <option value="precalculus">Pre-Calculus</option>
+                <option value="calculus">Calculus</option>
+                <option value="linear-algebra">Linear Algebra</option>
+                <option value="statistics">Statistics & Probability</option>
+                <option value="set-theory">Set Theory</option>
+                <option value="logic">Logic & Proof</option>
+                <option value="number-theory">Number Theory</option>
+                <option value="discrete-math">Discrete Math</option>
+            </select>
+        </div>
+
+        <!-- Platform -->
+        <div>
+            <label class="label">Video Platform <span class="text-red-400">*</span></label>
+            <div class="flex gap-2 flex-wrap">
+                <button type="button" class="platform-btn active" data-platform="youtube" onclick="setPlatform('youtube')">▶ YouTube</button>
+                <button type="button" class="platform-btn" data-platform="vimeo" onclick="setPlatform('vimeo')">◉ Vimeo</button>
+                <button type="button" class="platform-btn" data-platform="direct" onclick="setPlatform('direct')">⬡ Direct URL</button>
+            </div>
+        </div>
+
+        <!-- Video URL -->
+        <div>
+            <label class="label">Video URL <span class="text-red-400">*</span></label>
+            <input id="fVideoUrl" type="text" required
+                class="w-full rounded-lg px-4 py-2.5 text-sm mono"
+                placeholder="https://www.youtube.com/watch?v=..."
+                oninput="previewVideo()">
+            <p class="hint" id="urlHint">Paste the full YouTube video URL.</p>
+        </div>
+
+        <!-- Live preview -->
+        <div id="previewSection" class="hidden">
+            <label class="label">Preview</label>
+            <div class="preview-embed" id="previewEmbed"></div>
+        </div>
+
+        <!-- Lesson Notes -->
+        <div>
+            <label class="label">Lesson Notes</label>
+            <textarea id="fNotes" rows="6" maxlength="4000"
+                class="w-full rounded-lg px-4 py-2.5 text-sm resize-y"
+                placeholder="Key concepts covered, formulas introduced, prerequisites assumed, etc. Plain text or structured notes."></textarea>
+            <p class="hint">Optional but strongly encouraged — helps students before and after watching.</p>
+        </div>
+
+        <!-- Examples -->
+        <div>
+            <label class="label">Practice Examples</label>
+            <div id="examplesList" class="space-y-2 mb-3"></div>
+            <button type="button" onclick="addExample()" class="btn-ghost px-3 py-1.5 rounded-lg text-xs">+ Add Example</button>
+            <p class="hint">Optional worked examples or practice problems to accompany the video.</p>
+        </div>
+
+        <!-- Tags -->
+        <div>
+            <label class="label">Tags <span class="text-[10px] text-slate-600">(comma-separated)</span></label>
+            <input id="fTags" type="text" maxlength="200"
+                class="w-full rounded-lg px-4 py-2.5 text-sm"
+                placeholder="e.g. unit circle, radians, sin, cos">
+            <p class="hint">Keywords that make this easier to find via search.</p>
+        </div>
+
+        <!-- Submit -->
+        <div class="pt-2">
+            <button type="submit" onclick="submitTome()" class="btn-blue w-full px-6 py-3 rounded-xl text-sm">
+                ◯ Publish Video Tome
+            </button>
+            <p id="submitMsg" class="text-xs text-center mt-3"></p>
+        </div>
+    </form>
+
+    <!-- Success state (hidden) -->
+    <div id="successState" class="hidden text-center py-12">
+        <div class="text-6xl mb-4">✦</div>
+        <h2 class="mystical text-2xl text-blue-300 mb-3">Tome Published</h2>
+        <p class="text-slate-400 text-sm mb-2">Your video tome has been signed to your Genesis ID and added to the sovereign knowledge layer.</p>
+        <p id="successId" class="mono text-[10px] text-slate-500 mb-6"></p>
+        <div class="flex gap-3 justify-center flex-wrap">
+            <a href="Prereq_Math.html" class="btn-blue px-5 py-2 rounded-full text-sm">View Library</a>
+            <button onclick="resetForm()" class="btn-ghost px-5 py-2 rounded-full text-sm">Submit Another</button>
+        </div>
+    </div>
+
+</main>
+
+<script type="module">
+import { auth } from "./scripts/firebase/config.js";
+import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-auth.js";
+import { db } from "./scripts/firebase/config.js";
+import { collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-firestore.js";
+import { readRegistrar } from "./scripts/spire-registrar.js";
+import { resolveTier } from "./scripts/genesis-registrar.js";
+
+let currentUser = null;
+let currentRegistrar = null;
+let currentTier = "ACOLYTE";
+let selectedPlatform = "youtube";
+let exampleCount = 0;
+
+onAuthStateChanged(auth, async (user) => {
+    if (!user) return;
+    currentUser = user;
+    currentRegistrar = await readRegistrar(user.uid);
+    currentTier = await resolveTier(user.uid);
+
+    const banner = document.getElementById("identityBanner");
+    document.getElementById("identityGenId").textContent =
+        currentRegistrar?.cosmologicalId || "Not yet registered — visit Codex";
+    document.getElementById("identityTier").textContent = currentTier;
+    banner.classList.remove("hidden");
+});
+
+// ── Platform ──────────────────────────────────────────────────────
+window.setPlatform = function(platform) {
+    selectedPlatform = platform;
+    document.querySelectorAll(".platform-btn").forEach(b => {
+        b.classList.toggle("active", b.dataset.platform === platform);
+    });
+    const hints = {
+        youtube: "Paste the full YouTube video URL.",
+        vimeo: "Paste the full Vimeo video URL (e.g. https://vimeo.com/123456789).",
+        direct: "Paste a direct link to an .mp4 or .webm file."
+    };
+    document.getElementById("urlHint").textContent = hints[platform];
+    document.getElementById("fVideoUrl").value = "";
+    document.getElementById("previewSection").classList.add("hidden");
+    document.getElementById("previewEmbed").innerHTML = "";
+};
+
+// ── Video preview ─────────────────────────────────────────────────
+window.previewVideo = function() {
+    const url = document.getElementById("fVideoUrl").value.trim();
+    const id = extractVideoId(url, selectedPlatform);
+    const section = document.getElementById("previewSection");
+    const embed = document.getElementById("previewEmbed");
+
+    if (!id && selectedPlatform !== "direct") { section.classList.add("hidden"); return; }
+
+    let html = "";
+    if (selectedPlatform === "youtube" && id) {
+        html = `<iframe src="https://www.youtube.com/embed/${encodeURIComponent(id)}?rel=0&modestbranding=1" allowfullscreen allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"></iframe>`;
+    } else if (selectedPlatform === "vimeo" && id) {
+        html = `<iframe src="https://player.vimeo.com/video/${encodeURIComponent(id)}?color=60a5fa&title=0" allowfullscreen allow="autoplay; fullscreen; picture-in-picture"></iframe>`;
+    } else if (selectedPlatform === "direct" && url) {
+        html = `<video src="${escapeHtml(url)}" controls style="position:absolute;top:0;left:0;width:100%;height:100%;"></video>`;
+    }
+
+    if (html) {
+        embed.innerHTML = html;
+        section.classList.remove("hidden");
+    } else {
+        section.classList.add("hidden");
+    }
+};
+
+// ── Examples ──────────────────────────────────────────────────────
+window.addExample = function() {
+    exampleCount++;
+    const id = `example-${exampleCount}`;
+    const container = document.getElementById("examplesList");
+    const div = document.createElement("div");
+    div.className = "example-item";
+    div.id = id;
+    div.innerHTML = `
+        <div class="flex-1">
+            <textarea rows="2" placeholder="Example ${exampleCount}: e.g. Find sin(π/4) and show the derivation."
+                class="w-full rounded-lg px-3 py-2 text-sm resize-none" data-example="${exampleCount}"></textarea>
+        </div>
+        <button type="button" onclick="removeExample('${id}')" class="text-slate-600 hover:text-red-400 text-sm mt-1 flex-shrink-0">✕</button>
+    `;
+    container.appendChild(div);
+};
+
+window.removeExample = function(id) {
+    document.getElementById(id)?.remove();
+};
+
+// ── Submit ────────────────────────────────────────────────────────
+window.submitTome = async function() {
+    if (!currentUser) return;
+
+    const title = document.getElementById("fTitle").value.trim();
+    const subject = document.getElementById("fSubject").value;
+    const videoUrl = document.getElementById("fVideoUrl").value.trim();
+    const notes = document.getElementById("fNotes").value.trim();
+    const tagsRaw = document.getElementById("fTags").value;
+    const msg = document.getElementById("submitMsg");
+
+    if (!title) { msg.textContent = "Title is required."; msg.style.color = "#fca5a5"; return; }
+    if (!subject) { msg.textContent = "Select a subject."; msg.style.color = "#fca5a5"; return; }
+    if (!videoUrl) { msg.textContent = "Video URL is required."; msg.style.color = "#fca5a5"; return; }
+
+    const videoId = extractVideoId(videoUrl, selectedPlatform);
+    if ((selectedPlatform === "youtube" || selectedPlatform === "vimeo") && !videoId) {
+        msg.textContent = "Could not parse video ID from URL. Check the link and try again.";
+        msg.style.color = "#fca5a5"; return;
+    }
+
+    // Collect examples
+    const examples = Array.from(document.querySelectorAll("[data-example]"))
+        .map(el => el.value.trim()).filter(Boolean);
+
+    // Tags
+    const tags = tagsRaw.split(",").map(t => t.trim()).filter(Boolean);
+
+    msg.textContent = "Publishing…"; msg.style.color = "#60a5fa";
+    const btn = document.querySelector("[onclick='submitTome()']");
+    if (btn) { btn.disabled = true; btn.innerHTML = '<span class="spinner"></span> Publishing…'; }
+
+    try {
+        const payload = {
+            type: "video",
+            title,
+            subject,
+            platform: selectedPlatform,
+            videoUrl,
+            videoId: videoId || null,
+            lessonNotes: notes || null,
+            examples: examples.length > 0 ? examples : [],
+            tags,
+            plane: "prereq",
+            tier: "sovereign",
+            status: "active",
+            creatorUid: currentUser.uid,
+            creatorGenesisId: currentRegistrar?.cosmologicalId || null,
+            creatorTier: currentTier,
+            enrolledCount: 0,
+            viewCount: 0,
+            createdAt: serverTimestamp(),
+            updatedAt: serverTimestamp()
+        };
+
+        const ref = await addDoc(collection(db, "tomes"), payload);
+
+        document.getElementById("submitForm").classList.add("hidden");
+        document.getElementById("successState").classList.remove("hidden");
+        document.getElementById("successId").textContent = `Tome ID: ${ref.id}`;
+
+    } catch (e) {
+        msg.textContent = "Error: " + e.message;
+        msg.style.color = "#fca5a5";
+        if (btn) { btn.disabled = false; btn.textContent = "◯ Publish Video Tome"; }
+    }
+};
+
+window.resetForm = function() {
+    document.getElementById("submitForm").reset();
+    document.getElementById("submitForm").classList.remove("hidden");
+    document.getElementById("successState").classList.add("hidden");
+    document.getElementById("examplesList").innerHTML = "";
+    document.getElementById("previewSection").classList.add("hidden");
+    document.getElementById("submitMsg").textContent = "";
+    exampleCount = 0;
+    const btn = document.querySelector("[onclick='submitTome()']");
+    if (btn) { btn.disabled = false; btn.textContent = "◯ Publish Video Tome"; }
+};
+
+// ── Helpers ───────────────────────────────────────────────────────
+function extractVideoId(url, platform) {
+    if (!url) return null;
+    if (platform === "youtube") {
+        const m = url.match(/(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/)|youtu\.be\/)([A-Za-z0-9_-]{11})/);
+        return m ? m[1] : null;
+    }
+    if (platform === "vimeo") {
+        const m = url.match(/vimeo\.com\/(\d+)/);
+        return m ? m[1] : null;
+    }
+    return url;
+}
+
+function escapeHtml(s) {
+    return String(s || "").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+}
+</script>
+
+</body>
+</html>

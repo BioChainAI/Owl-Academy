@@ -43,12 +43,20 @@ service cloud.firestore {
     }
 
     // ─── Tomes ────────────────────────────────────────────────────────
+    function isViewCountOnlyUpdate() {
+      // Allow any signed-in user to increment viewCount and touch updatedAt
+      let allowed = ['viewCount', 'updatedAt'];
+      return request.resource.data.diff(resource.data).affectedKeys().hasOnly(allowed);
+    }
     match /tomes/{tomeId} {
       allow read: if isSignedIn();
       allow create: if isSignedIn()
         && request.resource.data.creatorUid == request.auth.uid;
-      allow update: if isSignedIn()
-        && (resource.data.creatorUid == request.auth.uid || isInstructorOrArchon());
+      allow update: if isSignedIn() && (
+        isViewCountOnlyUpdate()
+        || resource.data.creatorUid == request.auth.uid
+        || isInstructorOrArchon()
+      );
       allow delete: if isSignedIn()
         && (resource.data.creatorUid == request.auth.uid || isArchon());
     }

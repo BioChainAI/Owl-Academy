@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Owl Academy | Prerequisite Mathematics</title>
+
+    <script type="module" src="scripts/auth-guard.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+
+    <style>
+        body {
+            background-color: #05030a; color: #e2e8f0;
+            font-family: 'Inter', sans-serif;
+            background: radial-gradient(circle at 50% 0%, rgba(100,180,255,0.05), #05030a 70%);
+            min-height: 100vh; margin: 0;
+        }
+        h1, h2, h3, .mystical { font-family: 'Cinzel', serif; }
+        .mono { font-family: 'JetBrains Mono', monospace; }
+        .gold-gradient {
+            background: linear-gradient(to right, #D4AF37, #FFF8DC, #D4AF37);
+            -webkit-background-clip: text; background-clip: text; color: transparent;
+        }
+        .blue-gradient {
+            background: linear-gradient(to right, #60a5fa, #c4b5fd, #60a5fa);
+            -webkit-background-clip: text; background-clip: text; color: transparent;
+        }
+        .glass {
+            background: rgba(8,12,22,0.75); backdrop-filter: blur(16px);
+            border: 1px solid rgba(96,165,250,0.18);
+        }
+        .glass-gold {
+            background: rgba(8,12,22,0.75); backdrop-filter: blur(16px);
+            border: 1px solid rgba(212,175,55,0.22);
+        }
+        .video-card {
+            background: rgba(8,12,22,0.70); border: 1px solid rgba(96,165,250,0.14);
+            border-radius: 0.875rem; transition: border-color 0.2s, transform 0.2s;
+            overflow: hidden;
+        }
+        .video-card:hover { border-color: rgba(96,165,250,0.4); transform: translateY(-2px); }
+        .video-card.expanded { border-color: rgba(96,165,250,0.5); }
+        .tag {
+            background: rgba(96,165,250,0.12); border: 1px solid rgba(96,165,250,0.25);
+            color: #93c5fd; font-family: 'JetBrains Mono', monospace;
+        }
+        .tag-active {
+            background: rgba(96,165,250,0.25); border-color: rgba(96,165,250,0.6);
+            color: #bfdbfe;
+        }
+        .btn-blue {
+            background: linear-gradient(135deg, #1d4ed8, #60a5fa);
+            color: #fff; font-weight: 600; transition: opacity 0.2s;
+        }
+        .btn-blue:hover { opacity: 0.85; }
+        .btn-ghost {
+            border: 1px solid rgba(96,165,250,0.3); color: #93c5fd;
+            background: transparent; transition: background 0.2s;
+        }
+        .btn-ghost:hover { background: rgba(96,165,250,0.1); }
+        .genesis-badge {
+            background: rgba(212,175,55,0.08); border: 1px solid rgba(212,175,55,0.25);
+            color: #D4AF37;
+        }
+        .spinner {
+            border: 2px solid rgba(96,165,250,0.2); border-top-color: #60a5fa;
+            border-radius: 50%; width: 20px; height: 20px;
+            animation: spin 0.7s linear infinite; display: inline-block;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .embed-container {
+            position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden;
+            border-radius: 0.5rem; background: #000;
+        }
+        .embed-container iframe {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            border: none;
+        }
+        .lesson-notes {
+            white-space: pre-wrap; font-size: 0.8125rem; line-height: 1.6;
+            color: #cbd5e1;
+        }
+        input[type="text"], select {
+            background: #060e1a; color: #FFF8DC;
+            border: 1px solid rgba(96,165,250,0.2);
+        }
+        input[type="text"]:focus, select:focus {
+            outline: none; border-color: #60a5fa;
+            box-shadow: 0 0 0 2px rgba(96,165,250,0.12);
+        }
+        .subject-scroll { overflow-x: auto; scrollbar-width: none; }
+        .subject-scroll::-webkit-scrollbar { display: none; }
+    </style>
+</head>
+<body class="antialiased">
+
+<main class="max-w-6xl mx-auto px-4 md:px-8 py-10">
+
+    <!-- Header -->
+    <header class="text-center mb-10">
+        <div class="flex items-center justify-center gap-3 mb-4">
+            <a href="Learning-Hub.html" class="text-slate-500 hover:text-slate-300 text-xs mono transition-colors">← Learning Hub</a>
+            <span class="text-slate-700">|</span>
+            <a href="Submit_Video_Tome.html" class="btn-blue px-4 py-1.5 rounded-full text-xs">+ Submit a Video</a>
+        </div>
+        <div class="inline-flex items-center gap-2 px-3 py-1 border border-blue-500/30 rounded-full bg-blue-950/20 text-blue-300 text-[10px] tracking-[0.2em] uppercase mono mb-4">
+            ◯ Sovereign Knowledge Layer
+        </div>
+        <h1 class="text-4xl md:text-5xl font-bold blue-gradient mb-3">Prerequisite Mathematics</h1>
+        <p class="text-slate-400 text-sm max-w-xl mx-auto">
+            A free, community-sourced library of explainer videos. Each contribution is signed to its creator's
+            Genesis ID — knowledge made traceable across the constellation.
+        </p>
+    </header>
+
+    <!-- Controls -->
+    <div class="glass-gold rounded-xl p-4 mb-6 flex flex-wrap gap-4 items-center">
+        <div class="flex-1 min-w-48">
+            <input id="searchInput" type="text" placeholder="Search by title, topic, or keyword…"
+                class="w-full rounded-lg px-4 py-2 text-sm" oninput="filterVideos()">
+        </div>
+        <div class="flex items-center gap-2">
+            <select id="sortSelect" class="rounded-lg px-3 py-2 text-xs mono" onchange="filterVideos()">
+                <option value="newest">Newest First</option>
+                <option value="oldest">Oldest First</option>
+                <option value="views">Most Viewed</option>
+            </select>
+        </div>
+        <div class="text-xs text-slate-500 mono">
+            <span id="countLabel">—</span> videos
+        </div>
+    </div>
+
+    <!-- Subject filter chips -->
+    <div class="subject-scroll flex gap-2 mb-6 pb-1">
+        <button class="tag tag-active px-3 py-1 rounded-full text-xs whitespace-nowrap transition-all"
+            data-subject="" onclick="setSubject('', this)">All</button>
+        <button class="tag px-3 py-1 rounded-full text-xs whitespace-nowrap transition-all"
+            data-subject="arithmetic" onclick="setSubject('arithmetic', this)">Arithmetic</button>
+        <button class="tag px-3 py-1 rounded-full text-xs whitespace-nowrap transition-all"
+            data-subject="algebra" onclick="setSubject('algebra', this)">Algebra</button>
+        <button class="tag px-3 py-1 rounded-full text-xs whitespace-nowrap transition-all"
+            data-subject="geometry" onclick="setSubject('geometry', this)">Geometry</button>
+        <button class="tag px-3 py-1 rounded-full text-xs whitespace-nowrap transition-all"
+            data-subject="trigonometry" onclick="setSubject('trigonometry', this)">Trigonometry</button>
+        <button class="tag px-3 py-1 rounded-full text-xs whitespace-nowrap transition-all"
+            data-subject="precalculus" onclick="setSubject('precalculus', this)">Pre-Calculus</button>
+        <button class="tag px-3 py-1 rounded-full text-xs whitespace-nowrap transition-all"
+            data-subject="calculus" onclick="setSubject('calculus', this)">Calculus</button>
+        <button class="tag px-3 py-1 rounded-full text-xs whitespace-nowrap transition-all"
+            data-subject="linear-algebra" onclick="setSubject('linear-algebra', this)">Linear Algebra</button>
+        <button class="tag px-3 py-1 rounded-full text-xs whitespace-nowrap transition-all"
+            data-subject="statistics" onclick="setSubject('statistics', this)">Statistics</button>
+        <button class="tag px-3 py-1 rounded-full text-xs whitespace-nowrap transition-all"
+            data-subject="set-theory" onclick="setSubject('set-theory', this)">Set Theory</button>
+        <button class="tag px-3 py-1 rounded-full text-xs whitespace-nowrap transition-all"
+            data-subject="logic" onclick="setSubject('logic', this)">Logic & Proof</button>
+        <button class="tag px-3 py-1 rounded-full text-xs whitespace-nowrap transition-all"
+            data-subject="number-theory" onclick="setSubject('number-theory', this)">Number Theory</button>
+        <button class="tag px-3 py-1 rounded-full text-xs whitespace-nowrap transition-all"
+            data-subject="discrete-math" onclick="setSubject('discrete-math', this)">Discrete Math</button>
+    </div>
+
+    <!-- Video grid -->
+    <div id="videoGrid" class="grid md:grid-cols-2 xl:grid-cols-3 gap-5">
+        <div class="col-span-full text-center py-16"><div class="spinner mx-auto mb-4"></div>
+            <p class="text-slate-500 text-sm">Loading knowledge repository…</p></div>
+    </div>
+
+    <!-- Empty state (hidden) -->
+    <div id="emptyState" class="hidden text-center py-16">
+        <div class="text-5xl mb-4">📐</div>
+        <p class="text-slate-400 text-sm mb-4">No videos found for this filter.</p>
+        <a href="Submit_Video_Tome.html" class="btn-blue px-5 py-2 rounded-full text-sm inline-block">
+            Be the first to contribute →
+        </a>
+    </div>
+
+    <!-- Expanded video modal -->
+    <div id="videoModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex items-start justify-center p-4 pt-10 overflow-y-auto">
+        <div class="glass rounded-2xl w-full max-w-3xl relative">
+            <button onclick="closeModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white text-xl z-10">✕</button>
+
+            <div class="p-6">
+                <!-- Video embed -->
+                <div id="modalEmbed" class="embed-container mb-5"></div>
+
+                <!-- Title + meta -->
+                <div class="flex flex-wrap items-start gap-3 mb-4">
+                    <div class="flex-1">
+                        <h2 id="modalTitle" class="mystical text-xl text-blue-200 mb-1"></h2>
+                        <div class="flex flex-wrap gap-2 items-center">
+                            <span id="modalSubjectTag" class="tag px-2 py-0.5 rounded-full text-[10px]"></span>
+                            <span id="modalViews" class="text-[10px] text-slate-500 mono"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Creator -->
+                <div id="modalCreator" class="genesis-badge rounded-lg px-3 py-2 mb-4 text-xs mono"></div>
+
+                <!-- Lesson notes -->
+                <div id="modalNotes" class="hidden">
+                    <h3 class="mystical text-sm text-slate-300 mb-2">Lesson Notes</h3>
+                    <div id="modalNotesContent" class="lesson-notes glass rounded-lg p-4"></div>
+                </div>
+
+                <!-- Examples -->
+                <div id="modalExamples" class="hidden mt-4">
+                    <h3 class="mystical text-sm text-slate-300 mb-2">Examples</h3>
+                    <div id="modalExamplesList" class="space-y-2"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</main>
+
+<script type="module">
+import { auth } from "./scripts/firebase/config.js";
+import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-auth.js";
+import { db } from "./scripts/firebase/config.js";
+import {
+    collection, getDocs, doc, updateDoc, query, where, orderBy, increment, serverTimestamp
+} from "https://www.gstatic.com/firebasejs/12.15.0/firebase-firestore.js";
+
+let allVideos = [];
+let activeSubject = "";
+let currentUser = null;
+
+onAuthStateChanged(auth, async (user) => {
+    if (!user) return;
+    currentUser = user;
+    await loadVideos();
+});
+
+async function loadVideos() {
+    try {
+        const q = query(
+            collection(db, "tomes"),
+            where("type", "==", "video"),
+            orderBy("createdAt", "desc")
+        );
+        const snap = await getDocs(q);
+        allVideos = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        filterVideos();
+    } catch (e) {
+        document.getElementById("videoGrid").innerHTML =
+            `<div class="col-span-full text-center py-10 text-red-400 text-sm">
+                Error loading videos: ${escapeHtml(e.message)}
+                <br><span class="text-[10px] text-slate-500">A Firestore index may be required — check the console for a creation link.</span>
+            </div>`;
+    }
+}
+
+window.filterVideos = function() {
+    const search = document.getElementById("searchInput").value.toLowerCase().trim();
+    const sort = document.getElementById("sortSelect").value;
+
+    let filtered = allVideos.filter(v => {
+        const matchSubject = !activeSubject || v.subject === activeSubject;
+        const matchSearch = !search || [v.title, v.lessonNotes, v.subject, ...(v.tags||[])]
+            .some(s => (s||"").toLowerCase().includes(search));
+        return matchSubject && matchSearch;
+    });
+
+    filtered.sort((a, b) => {
+        if (sort === "oldest") return (a.createdAt?.seconds||0) - (b.createdAt?.seconds||0);
+        if (sort === "views") return (b.viewCount||0) - (a.viewCount||0);
+        return (b.createdAt?.seconds||0) - (a.createdAt?.seconds||0);
+    });
+
+    document.getElementById("countLabel").textContent = filtered.length;
+    renderGrid(filtered);
+};
+
+window.setSubject = function(subject, btn) {
+    activeSubject = subject;
+    document.querySelectorAll("[data-subject]").forEach(b => b.classList.replace("tag-active","tag") || b.classList.remove("tag-active"));
+    btn.classList.remove("tag"); btn.classList.add("tag-active");
+    filterVideos();
+};
+
+function renderGrid(videos) {
+    const grid = document.getElementById("videoGrid");
+    const empty = document.getElementById("emptyState");
+
+    if (videos.length === 0) {
+        grid.innerHTML = "";
+        empty.classList.remove("hidden");
+        return;
+    }
+    empty.classList.add("hidden");
+
+    grid.innerHTML = videos.map(v => {
+        const thumb = getThumbnail(v);
+        const created = v.createdAt?.toDate ? v.createdAt.toDate().toLocaleDateString() : "—";
+        const genId = v.creatorGenesisId
+            ? `<span class="genesis-badge px-2 py-0.5 rounded-full text-[10px] mono">${escapeHtml(v.creatorGenesisId.slice(0,18))}…</span>`
+            : `<span class="text-[10px] text-slate-600 mono">unregistered</span>`;
+
+        return `
+        <div class="video-card" id="card-${escapeHtml(v.id)}">
+            <!-- Thumbnail -->
+            <div class="relative cursor-pointer" onclick="openModal('${escapeHtml(v.id)}')">
+                ${thumb
+                    ? `<img src="${escapeHtml(thumb)}" alt="" class="w-full aspect-video object-cover opacity-85 hover:opacity-100 transition-opacity">`
+                    : `<div class="w-full aspect-video bg-blue-950/30 flex items-center justify-center">
+                        <span class="text-4xl opacity-30">▶</span>
+                       </div>`
+                }
+                <div class="absolute inset-0 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
+                    <div class="w-14 h-14 rounded-full bg-blue-500/80 flex items-center justify-center shadow-xl">
+                        <span class="text-white text-xl ml-1">▶</span>
+                    </div>
+                </div>
+                <div class="absolute top-2 right-2">
+                    <span class="tag px-2 py-0.5 rounded-full text-[10px]">${escapeHtml(formatSubject(v.subject))}</span>
+                </div>
+            </div>
+
+            <!-- Card body -->
+            <div class="p-4">
+                <h3 class="font-semibold text-slate-200 text-sm mb-2 line-clamp-2 cursor-pointer hover:text-blue-300 transition-colors"
+                    onclick="openModal('${escapeHtml(v.id)}')">
+                    ${escapeHtml(v.title || "Untitled")}
+                </h3>
+
+                <div class="flex items-center justify-between flex-wrap gap-1 mt-3">
+                    ${genId}
+                    <span class="text-[10px] text-slate-600 mono">${escapeHtml(created)}</span>
+                </div>
+
+                ${v.lessonNotes ? `
+                <p class="text-xs text-slate-500 mt-2 line-clamp-2">${escapeHtml(v.lessonNotes.slice(0,120))}…</p>
+                ` : ""}
+
+                <div class="flex items-center gap-2 mt-3">
+                    <button onclick="openModal('${escapeHtml(v.id)}')" class="btn-ghost px-3 py-1.5 rounded-lg text-xs flex-1">
+                        ▶ Watch &amp; Study
+                    </button>
+                    ${v.viewCount ? `<span class="text-[10px] text-slate-600 mono">${v.viewCount} views</span>` : ""}
+                </div>
+            </div>
+        </div>`;
+    }).join("");
+}
+
+// ── Modal ─────────────────────────────────────────────────────────
+window._modalData = {};
+window.openModal = async function(id) {
+    const v = allVideos.find(x => x.id === id);
+    if (!v) return;
+
+    // Increment view count
+    updateDoc(doc(db, "tomes", id), { viewCount: increment(1), updatedAt: serverTimestamp() }).catch(() => {});
+
+    // Build embed
+    const embedHtml = buildEmbed(v);
+    document.getElementById("modalEmbed").innerHTML = embedHtml || `<div class="w-full aspect-video bg-blue-950/20 flex items-center justify-center text-slate-500 text-sm rounded-lg">No embeddable source</div>`;
+
+    document.getElementById("modalTitle").textContent = v.title || "Untitled";
+    document.getElementById("modalSubjectTag").textContent = formatSubject(v.subject);
+    document.getElementById("modalViews").textContent = v.viewCount ? `${v.viewCount + 1} views` : "";
+
+    document.getElementById("modalCreator").innerHTML =
+        `♛ Creator Genesis ID: <span class="text-yellow-200">${escapeHtml(v.creatorGenesisId || "Not registered")}</span>
+         &nbsp;·&nbsp; Tier: <span class="text-yellow-300">${escapeHtml(v.creatorTier || "ACOLYTE")}</span>`;
+
+    const notesEl = document.getElementById("modalNotes");
+    const notesContent = document.getElementById("modalNotesContent");
+    if (v.lessonNotes) {
+        notesContent.textContent = v.lessonNotes;
+        notesEl.classList.remove("hidden");
+    } else {
+        notesEl.classList.add("hidden");
+    }
+
+    const examplesEl = document.getElementById("modalExamples");
+    const examplesList = document.getElementById("modalExamplesList");
+    if (v.examples && v.examples.length > 0) {
+        examplesList.innerHTML = v.examples.map((ex, i) => `
+            <div class="glass rounded-lg p-3">
+                <span class="text-[10px] mono text-blue-400 block mb-1">Example ${i+1}</span>
+                <p class="text-sm text-slate-300">${escapeHtml(ex)}</p>
+            </div>`).join("");
+        examplesEl.classList.remove("hidden");
+    } else {
+        examplesEl.classList.add("hidden");
+    }
+
+    document.getElementById("videoModal").classList.remove("hidden");
+    document.body.style.overflow = "hidden";
+};
+
+window.closeModal = function() {
+    document.getElementById("videoModal").classList.add("hidden");
+    document.getElementById("modalEmbed").innerHTML = "";
+    document.body.style.overflow = "";
+};
+
+document.getElementById("videoModal").addEventListener("click", function(e) {
+    if (e.target === this) closeModal();
+});
+
+// ── Utilities ─────────────────────────────────────────────────────
+function escapeHtml(s) {
+    return String(s || "").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+}
+
+function formatSubject(s) {
+    const map = {
+        "arithmetic":"Arithmetic","algebra":"Algebra","geometry":"Geometry",
+        "trigonometry":"Trigonometry","precalculus":"Pre-Calculus","calculus":"Calculus",
+        "linear-algebra":"Linear Algebra","statistics":"Statistics","set-theory":"Set Theory",
+        "logic":"Logic & Proof","number-theory":"Number Theory","discrete-math":"Discrete Math"
+    };
+    return map[s] || (s||"Unknown");
+}
+
+function getThumbnail(v) {
+    if (v.platform === "youtube" && v.videoId) {
+        return `https://img.youtube.com/vi/${v.videoId}/mqdefault.jpg`;
+    }
+    return null;
+}
+
+function buildEmbed(v) {
+    if (v.platform === "youtube" && v.videoId) {
+        return `<iframe src="https://www.youtube.com/embed/${encodeURIComponent(v.videoId)}?rel=0&modestbranding=1" allowfullscreen allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"></iframe>`;
+    }
+    if (v.platform === "vimeo" && v.videoId) {
+        return `<iframe src="https://player.vimeo.com/video/${encodeURIComponent(v.videoId)}?color=60a5fa&title=0&byline=0" allowfullscreen allow="autoplay; fullscreen; picture-in-picture"></iframe>`;
+    }
+    if (v.platform === "direct" && v.videoUrl) {
+        return `<video src="${escapeHtml(v.videoUrl)}" controls class="w-full rounded-lg"></video>`;
+    }
+    return null;
+}
+</script>
+
+</body>
+</html>
