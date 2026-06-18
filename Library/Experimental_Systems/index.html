@@ -253,6 +253,37 @@
             <strong>3-Packet Window</strong> — Alpha (oldest context), Beta (mid), Gamma (newest, active for resonance).
             On each utterance: Alpha ← Beta ← Gamma ← new crystallized engram.
         </div>
+
+        <div class="section-label">The Crystallization Pipeline</div>
+
+        <div class="protocol-box">
+            The four systems form one logical chain. Language enters as text and leaves as a compressed
+            quaternion crystal — and the whole loop is anchored to your <strong>active familiar's manifold</strong>.<br><br>
+
+            <strong>1 · Engram Mind Eye</strong> — Bind to your familiar's manifold (N/K/T pulled from
+            <code>familiarManifolds[activeSlot]</code>). Converse with STRIX. Every token from both speakers is
+            logged as a 128-bit SHD-CCP packet (cyan = human, amethyst = STRIX) and accumulated into a master
+            <strong>Text Crystal</strong>.<br><br>
+
+            <strong>2 · Segmented Export</strong> — From the Packet Ledger, <code>EXPORT ⬡72</code> or
+            <code>EXPORT ⬡720</code> distributes the token chain across exactly 72 nodes (or 720 frames) and
+            XOR-crystallizes each section into its own <code>seed_state</code>. The file is self-describing:
+            <code>topology_constants.node_count</code> tells the downstream programs how many sections to read.<br><br>
+
+            <strong>3 · Blackwell Architect</strong> — Reads each node's <code>seed_state</code> (a real 64-bit
+            text crystal) and the <code>720 / 72</code> topology to generate the toroidal quaternion
+            <em>winding &amp; unwinding</em> pattern — language rendered as motion on the manifold.<br><br>
+
+            <strong>4 · O1 Compressor</strong> — Reads the same <code>node_count</code> chain and compresses the
+            full winding into a single <strong>crystallized engram</strong> — the conversation collapsed to one
+            quaternion signature.<br><br>
+
+            <strong>Shared schema</strong> — Every hop speaks the same JSON:
+            <code>system_header{ chiral_key, seed_state[64], topology_constants{ major_R, minor_R, total_frames, node_count } }</code>
+            plus a <code>quaternion_chain[]</code> of nodes (each with its own <code>seed_state</code> and
+            <code>chiral_key</code>). Engram packets travel with a <code>packet_meta</code> /
+            <code>source_mix</code> annotation so human-vs-STRIX provenance survives the full round trip.
+        </div>
     </main>
 </body>
 </html>
