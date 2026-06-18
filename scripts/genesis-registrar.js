@@ -172,8 +172,14 @@ export async function applyCertificate(uid, cert) {
  */
 export async function resolveTier(uid) {
   const reg = await readRegistrar(uid);
-  if (!reg) return "ACOLYTE";
-  if (!reg.certificate) return "ACOLYTE";
+  if (!reg) {
+    // Master Key UIDs are trusted Archons even without a registrar yet
+    return GENESIS_MASTER_UIDS.includes(uid) ? "ARCHON" : "ACOLYTE";
+  }
+  if (!reg.certificate) {
+    // Hardcoded Master Key UIDs receive implicit Archon authority
+    return GENESIS_MASTER_UIDS.includes(uid) ? "ARCHON" : "ACOLYTE";
+  }
 
   // Bootstrap Archons: self-signed, must be in master list
   if (reg.certificate.selfSigned) {
@@ -183,7 +189,9 @@ export async function resolveTier(uid) {
   }
 
   const { valid } = await verifyCertificate(reg.certificate, reg.certificate.issuer);
-  return valid ? reg.certificate.tier : "ACOLYTE";
+  if (valid) return reg.certificate.tier;
+  // Even if cert is invalid, Master Key UIDs retain Archon trust
+  return GENESIS_MASTER_UIDS.includes(uid) ? "ARCHON" : "ACOLYTE";
 }
 
 /**

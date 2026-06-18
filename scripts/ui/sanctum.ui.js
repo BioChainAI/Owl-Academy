@@ -4,6 +4,13 @@
  */
 import { getRankProgress } from "../services/arts.service.js";
 import { getTotalXP } from "../services/user.service.js";
+import { resolveTier } from "../genesis-registrar.js";
+
+const GENESIS_TIER_META = {
+  ARCHON:     { symbol: "♛", label: "Archon",     color: "#D4AF37", glow: "rgba(212,175,55,0.55)" },
+  INSTRUCTOR: { symbol: "⬢", label: "Instructor", color: "#00d4ff", glow: "rgba(0,212,255,0.45)" },
+  ACOLYTE:    { symbol: "◯", label: "Acolyte",    color: "#94a3b8", glow: "rgba(148,163,184,0.25)" },
+};
 
 // ── Configuration: easy to extend with new departments/tools ──────────────────
 const LIBRARY_DEPARTMENTS = [
@@ -33,7 +40,7 @@ const TIER_PATHS = [
 
 // ── Public API ────────────────────────────────────────────────────────────────
 export const renderSanctum = (user, profile) => {
-  renderWelcome(profile);
+  renderWelcome(profile, user);
   renderOrrery(profile);
   renderGrimoires(profile);
   renderChronicle(profile);
@@ -42,7 +49,7 @@ export const renderSanctum = (user, profile) => {
 };
 
 // ── Welcome Banner (top of Sanctum) ───────────────────────────────────────────
-const renderWelcome = (profile) => {
+const renderWelcome = (profile, user) => {
   const el = document.getElementById("sanctum-welcome");
   if (!el) return;
 
@@ -68,6 +75,7 @@ const renderWelcome = (profile) => {
         <p class="text-[10px] text-yellow-500/80 mystical-font tracking-[0.3em] uppercase mb-1">Sanctum of the</p>
         <h2 class="text-2xl md:text-3xl mystical-font gold-gradient tracking-wide mb-1">${escape(profile.rank ?? "Initiate")}</h2>
         <p class="text-sm text-slate-300">${escape(profile.displayName ?? "Scholar")} <span class="text-slate-500">·</span> <span class="text-yellow-400/80">${escape(profile.school ?? "Unaffiliated")}</span></p>
+        <div id="sanctum-genesis-tier" class="mt-2 flex flex-wrap items-center gap-2"></div>
         <div class="mt-3 max-w-md">
           <div class="flex justify-between items-center text-[10px] text-slate-400 uppercase tracking-widest mb-1">
             <span>Resonance toward next rank</span>
@@ -80,6 +88,40 @@ const renderWelcome = (profile) => {
       </div>
     </div>
   `;
+
+  // Async: resolve Genesis tier and inject badge + Admin link
+  if (user && user.uid) {
+    resolveTier(user.uid).then(tier => {
+      const meta = GENESIS_TIER_META[tier] || GENESIS_TIER_META.ACOLYTE;
+      const badgeEl = document.getElementById("sanctum-genesis-tier");
+      if (!badgeEl) return;
+      const isAdmin = tier === "INSTRUCTOR" || tier === "ARCHON";
+      badgeEl.innerHTML = `
+        <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-mono uppercase tracking-widest"
+              style="border:1px solid ${meta.color}55; background:${meta.color}12; color:${meta.color}; text-shadow:0 0 8px ${meta.glow};">
+          <span style="font-size:14px;line-height:1;">${meta.symbol}</span> ${meta.label}
+        </span>
+        ${isAdmin ? `
+          <a href="Admin_Console.html"
+             class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-mono uppercase tracking-widest transition hover:opacity-80"
+             style="border:1px solid #D4AF3755; background:#D4AF3712; color:#D4AF37; text-shadow:0 0 8px rgba(212,175,55,0.45);">
+            ♛ Open Admin Console →
+          </a>
+          <a href="Instructor_Console.html"
+             class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-mono uppercase tracking-widest transition hover:opacity-80"
+             style="border:1px solid #00d4ff55; background:#00d4ff12; color:#00d4ff;">
+            ⬢ Authoring
+          </a>
+        ` : `
+          <a href="Codex.html"
+             class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-mono uppercase tracking-widest transition hover:opacity-80"
+             style="border:1px solid #94a3b855; background:#94a3b812; color:#cbd5e1;">
+            View Codex →
+          </a>
+        `}
+      `;
+    }).catch(() => {});
+  }
 };
 
 // ── The Orrery (per-Art XP visualization) ─────────────────────────────────────
