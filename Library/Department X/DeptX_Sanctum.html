@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Owl Academy | Department X — BioChain Substrate</title>
+
+    <!-- Auth Guard -->
+    <script type="module" src="../../scripts/auth-guard.js"></script>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Inter:wght@300;400;600&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --substrate: #00ff88;
+            --substrate-dim: rgba(0, 255, 136, 0.15);
+            --void: #020a05;
+            --strand: #00d4ff;
+        }
+        body {
+            background-color: var(--void);
+            color: #e2e8f0;
+            margin: 0;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            font-family: 'Inter', sans-serif;
+            /* DNA helix grid pattern */
+            background-image:
+                radial-gradient(ellipse at 50% 0%, rgba(0, 255, 136, 0.07) 0%, transparent 55%),
+                radial-gradient(ellipse at 50% 100%, rgba(0, 212, 255, 0.05) 0%, transparent 55%),
+                linear-gradient(rgba(0,255,136,0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0,212,255,0.02) 1px, transparent 1px);
+            background-size: 100% 100%, 100% 100%, 40px 40px, 40px 40px;
+        }
+        h1, h2, .mystical-font { font-family: 'Cinzel', serif; }
+
+        .substrate-panel {
+            background: rgba(2, 12, 6, 0.92);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(0, 255, 136, 0.25);
+            box-shadow:
+                0 0 60px rgba(0, 255, 136, 0.08),
+                0 0 120px rgba(0, 212, 255, 0.04),
+                inset 0 0 30px rgba(0, 255, 136, 0.04);
+        }
+
+        /* Breathing pulse — slower and deeper than the red alert */
+        .pulse-substrate {
+            animation: pulse-sub 4s ease-in-out infinite alternate;
+        }
+        @keyframes pulse-sub {
+            0%   { filter: drop-shadow(0 0 6px rgba(0,255,136,0.4)); }
+            100% { filter: drop-shadow(0 0 30px rgba(0,255,136,0.85)) drop-shadow(0 0 60px rgba(0,212,255,0.3)); }
+        }
+
+        /* Counter-rotating helix rings */
+        .spin-cw  { animation: spinCW  45s linear infinite; transform-origin: center; }
+        .spin-ccw { animation: spinCCW 30s linear infinite; transform-origin: center; }
+        @keyframes spinCW  { 100% { transform: rotate(360deg);  } }
+        @keyframes spinCCW { 100% { transform: rotate(-360deg); } }
+
+        /* Strand cascade — the scanline analog, but vertical, dual -->
+        .strand-left, .strand-right {
+            position: absolute; top: 0; width: 2px; height: 40%;
+            background: linear-gradient(to bottom, transparent, var(--substrate), transparent);
+            opacity: 0; pointer-events: none;
+        }
+        .strand-left  { left: 8%; animation: strandDrop 6s ease-in-out 0s infinite; }
+        .strand-right { right: 8%; animation: strandDrop 6s ease-in-out 1.5s infinite; }
+        @keyframes strandDrop {
+            0%   { top: -40%; opacity: 0; }
+            15%  { opacity: 0.6; }
+            85%  { opacity: 0.6; }
+            100% { top: 140%; opacity: 0; }
+        }
+
+        /* Codon counter rows */
+        .codon-grid {
+            display: grid;
+            grid-template-columns: repeat(16, 1fr);
+            gap: 3px;
+        }
+        .codon-cell {
+            width: 100%; aspect-ratio: 1;
+            border: 1px solid rgba(0, 255, 136, 0.2);
+            border-radius: 2px;
+            background: rgba(0, 255, 136, 0.04);
+            position: relative;
+        }
+        /* 4 filled artifact cells */
+        .codon-cell.locked {
+            background: rgba(0, 255, 136, 0.0);
+            border-color: rgba(0,255,136,0.08);
+        }
+
+        .corner-accent { position: absolute; width: 10px; height: 10px; }
+        .corner-accent.tl { top: 1rem; left: 1rem; border-top: 1px solid var(--substrate); border-left: 1px solid var(--substrate); }
+        .corner-accent.tr { top: 1rem; right: 1rem; border-top: 1px solid var(--substrate); border-right: 1px solid var(--substrate); }
+        .corner-accent.bl { bottom: 1rem; left: 1rem; border-bottom: 1px solid var(--substrate); border-left: 1px solid var(--substrate); }
+        .corner-accent.br { bottom: 1rem; right: 1rem; border-bottom: 1px solid var(--substrate); border-right: 1px solid var(--substrate); }
+
+        .enter-btn {
+            display: inline-flex; align-items: center; gap: 0.5rem;
+            padding: 0.75rem 2rem;
+            background: rgba(0, 255, 136, 0.08);
+            border: 1px solid rgba(0, 255, 136, 0.4);
+            color: var(--substrate);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.7rem; letter-spacing: 0.2em; text-transform: uppercase;
+            border-radius: 4px; text-decoration: none;
+            box-shadow: 0 0 20px rgba(0,255,136,0.15);
+            transition: all 0.3s ease;
+            position: relative; overflow: hidden;
+        }
+        .enter-btn::after {
+            content: ''; position: absolute; inset: 0;
+            background: rgba(0,255,136,0.12);
+            width: 0; transition: width 0.4s ease;
+        }
+        .enter-btn:hover { color: #fff; box-shadow: 0 0 30px rgba(0,255,136,0.3); }
+        .enter-btn:hover::after { width: 100%; }
+        .enter-btn span { position: relative; z-index: 1; }
+    </style>
+</head>
+<body>
+    <!-- Strand cascade effects -->
+    <div class="strand-left"></div>
+    <div class="strand-right"></div>
+
+    <div class="substrate-panel relative w-full max-w-2xl mx-4 p-10 md:p-14 rounded-2xl text-center overflow-hidden">
+
+        <!-- Corner Accents -->
+        <div class="corner-accent tl"></div>
+        <div class="corner-accent tr"></div>
+        <div class="corner-accent bl"></div>
+        <div class="corner-accent br"></div>
+
+        <!-- Department X Sigil: DNA double-helix / substrate geometry -->
+        <div class="relative w-44 h-44 mx-auto mb-8">
+            <svg viewBox="0 0 200 200" class="w-full h-full pulse-substrate" xmlns="http://www.w3.org/2000/svg">
+                <!-- Outer substrate rings -->
+                <g class="spin-cw">
+                    <circle cx="100" cy="100" r="95" fill="none" stroke="#00ff88" stroke-width="1" stroke-dasharray="6 8" opacity="0.5"/>
+                    <circle cx="100" cy="100" r="82" fill="none" stroke="#00d4ff" stroke-width="0.5" stroke-dasharray="2 12" opacity="0.35"/>
+                </g>
+                <g class="spin-ccw">
+                    <circle cx="100" cy="100" r="70" fill="none" stroke="#00ff88" stroke-width="1.5" stroke-dasharray="3 9" opacity="0.4"/>
+                </g>
+
+                <!-- 64-codon hexagonal substrate lattice (inner) -->
+                <g opacity="0.3" stroke="#00ff88" stroke-width="0.5" fill="none">
+                    <!-- Simplified: 3 concentric hexagons representing codon layers -->
+                    <polygon points="100,62 134,81 134,119 100,138 66,119 66,81" />
+                    <polygon points="100,52 142,76 142,124 100,148 58,124 58,76" opacity="0.5"/>
+                </g>
+
+                <!-- Central biochain symbol: double-helix cross section -->
+                <!-- The 4 DNA bases as corner nodes -->
+                <g fill="none" stroke-width="1.5">
+                    <!-- Vertical axis -->
+                    <line x1="100" y1="40" x2="100" y2="160" stroke="#00ff88" stroke-width="1" opacity="0.4"/>
+                    <!-- Horizontal axis -->
+                    <line x1="40" y1="100" x2="160" y2="100" stroke="#00d4ff" stroke-width="1" opacity="0.4"/>
+                    <!-- Helix strands as sine-offset curves -->
+                    <path d="M 100,55 C 120,65 120,85 100,95 C 80,105 80,125 100,135" stroke="#00ff88" stroke-width="2" opacity="0.9"/>
+                    <path d="M 100,55 C 80,65 80,85 100,95 C 120,105 120,125 100,135" stroke="#00d4ff" stroke-width="2" opacity="0.9"/>
+                    <!-- Base-pair rungs -->
+                    <line x1="116" y1="68" x2="84"  y2="68"  stroke="#00ff88" stroke-width="1" opacity="0.6"/>
+                    <line x1="83"  y1="83" x2="117" y2="83"  stroke="#00d4ff" stroke-width="1" opacity="0.6"/>
+                    <line x1="117" y1="98" x2="83"  y2="98"  stroke="#00ff88" stroke-width="1" opacity="0.6"/>
+                    <line x1="83"  y1="113" x2="117" y2="113" stroke="#00d4ff" stroke-width="1" opacity="0.6"/>
+                    <line x1="116" y1="128" x2="84" y2="128"  stroke="#00ff88" stroke-width="1" opacity="0.6"/>
+                    <!-- 4 base nodes -->
+                    <circle cx="100" cy="95" r="6" fill="rgba(0,255,136,0.15)" stroke="#00ff88" stroke-width="1.5"/>
+                    <!-- A / T / G / C labels -->
+                    <text x="116" y="72"  fill="#00ff88" font-family="JetBrains Mono,monospace" font-size="7" opacity="0.8">A</text>
+                    <text x="77"  y="87"  fill="#00d4ff" font-family="JetBrains Mono,monospace" font-size="7" opacity="0.8">T</text>
+                    <text x="118" y="102" fill="#00ff88" font-family="JetBrains Mono,monospace" font-size="7" opacity="0.8">G</text>
+                    <text x="77"  y="117" fill="#00d4ff" font-family="JetBrains Mono,monospace" font-size="7" opacity="0.8">C</text>
+                </g>
+            </svg>
+        </div>
+
+        <!-- Header -->
+        <div class="mb-2">
+            <div class="text-[9px] text-green-500 font-mono uppercase tracking-[0.4em] mb-1">
+                Stratum · Primordial
+            </div>
+            <h2 class="text-xs text-green-400 font-mono uppercase tracking-[0.25em] mb-3">Department X — BioChain Substrate</h2>
+            <h1 class="text-3xl md:text-4xl font-serif text-white uppercase tracking-widest mb-4" style="text-shadow: 0 0 20px rgba(0,255,136,0.4);">
+                The Substrate Layer
+            </h1>
+            <p class="text-sm text-gray-400 font-light leading-relaxed max-w-lg mx-auto">
+                This is the <span class="text-green-400 font-medium">primordial stratum</span> — the living architecture
+                beneath all other departments. Mastery of the BioChain Substrate is the prerequisite resonance for unlocking
+                Departments VII, VIII, and IX simultaneously.
+            </p>
+        </div>
+
+        <!-- 64-Codon Progress Grid -->
+        <div class="border border-green-900/40 rounded-lg p-5 my-6 bg-green-950/10 max-w-md mx-auto">
+            <div class="flex items-center justify-between mb-3">
+                <div class="text-[9px] text-green-500 font-mono uppercase tracking-[0.25em]">Substrate Codon Map</div>
+                <div class="text-[9px] text-gray-600 font-mono">64 codons · 4 artifacts · 16 sequences</div>
+            </div>
+            <!-- 4 rows of 16 = 64 codon cells, matching 4 DNA bases × 16 permutations -->
+            <div class="space-y-1.5">
+                <div class="codon-grid">
+                    <!-- Row A — 16 locked cells -->
+                    <div class="codon-cell locked" title="A·codon 1"></div><div class="codon-cell locked"></div><div class="codon-cell locked"></div><div class="codon-cell locked"></div>
+                    <div class="codon-cell locked"></div><div class="codon-cell locked"></div><div class="codon-cell locked"></div><div class="codon-cell locked"></div>
+                    <div class="codon-cell locked"></div><div class="codon-cell locked"></div><div class="codon-cell locked"></div><div class="codon-cell locked"></div>
+                    <div class="codon-cell locked"></div><div class="codon-cell locked"></div><div class="codon-cell locked"></div><div class="codon-cell locked"></div>
+                </div>
+                <div class="codon-grid">
+                    <div class="codon-cell locked"></div><div class="codon-cell locked"></div><div class="codon-cell locked"></div><div class="codon-cell locked"></div>
+                    <div class="codon-cell locked"></div><div class="codon-cell locked"></div><div class="codon-cell locked"></div><div class="codon-cell locked"></div>
+                    <div class="codon-cell locked"></div><div class="codon-cell locked"></div><div class="codon-cell locked"></div><div class="codon-cell locked"></div>
+                    <div class="codon-cell locked"></div><div class="codon-cell locked"></div><div class="codon-cell locked"></div><div class="codon-cell locked"></div>
+                </div>
+                <div class="codon-grid">
+                    <div class="codon-cell locked"></div><div class="codon-cell locked"></div><div class="codon-cell locked"></div><div class="codon-cell locked"></div>
+                    <div class="codon-cell locked"></div><div class="codon-cell locked"></div><div class="codon-cell locked"></div><div class="codon-cell locked"></div>
+                    <div class="codon-cell locked"></div><div class="codon-cell locked"></div><div class="codon-cell locked"></div><div class="codon-cell locked"></div>
+                    <div class="codon-cell locked"></div><div class="codon-cell locked"></div><div class="codon-cell locked"></div><div class="codon-cell locked"></div>
+                </div>
+                <div class="codon-grid">
+                    <div class="codon-cell locked"></div><div class="codon-cell locked"></div><div class="codon-cell locked"></div><div class="codon-cell locked"></div>
+                    <div class="codon-cell locked"></div><div class="codon-cell locked"></div><div class="codon-cell locked"></div><div class="codon-cell locked"></div>
+                    <div class="codon-cell locked"></div><div class="codon-cell locked"></div><div class="codon-cell locked"></div><div class="codon-cell locked"></div>
+                    <div class="codon-cell locked"></div><div class="codon-cell locked"></div><div class="codon-cell locked"></div><div class="codon-cell locked"></div>
+                </div>
+            </div>
+            <div class="flex items-center gap-3 mt-3">
+                <div class="flex gap-1 text-[8px] font-mono text-gray-700">
+                    <span class="text-green-700">A</span><span class="text-cyan-700">·</span>
+                    <span class="text-green-700">T</span><span class="text-cyan-700">·</span>
+                    <span class="text-green-700">G</span><span class="text-cyan-700">·</span>
+                    <span class="text-green-700">C</span>
+                </div>
+                <div class="flex-grow h-px bg-gray-900"></div>
+                <span class="text-[9px] text-gray-700 font-mono">0 / 64 sequenced</span>
+            </div>
+        </div>
+
+        <!-- Artifacts status -->
+        <div class="flex justify-center gap-4 mb-7">
+            <div class="flex flex-col items-center gap-1">
+                <div class="w-8 h-8 rounded border border-green-900/50 bg-green-950/10 flex items-center justify-center text-green-900 text-xs">⬡</div>
+                <span class="text-[8px] text-gray-700 font-mono uppercase tracking-widest">Artifact I</span>
+            </div>
+            <div class="flex flex-col items-center gap-1">
+                <div class="w-8 h-8 rounded border border-green-900/50 bg-green-950/10 flex items-center justify-center text-green-900 text-xs">⬡</div>
+                <span class="text-[8px] text-gray-700 font-mono uppercase tracking-widest">Artifact II</span>
+            </div>
+            <div class="flex flex-col items-center gap-1">
+                <div class="w-8 h-8 rounded border border-green-900/50 bg-green-950/10 flex items-center justify-center text-green-900 text-xs">⬡</div>
+                <span class="text-[8px] text-gray-700 font-mono uppercase tracking-widest">Artifact III</span>
+            </div>
+            <div class="flex flex-col items-center gap-1">
+                <div class="w-8 h-8 rounded border border-green-900/50 bg-green-950/10 flex items-center justify-center text-green-900 text-xs">⬡</div>
+                <span class="text-[8px] text-gray-700 font-mono uppercase tracking-widest">Artifact IV</span>
+            </div>
+        </div>
+
+        <!-- Actions -->
+        <div class="flex flex-col items-center gap-3">
+            <div class="h-px w-32 bg-gradient-to-r from-transparent via-green-600 to-transparent opacity-40 mb-1"></div>
+            <a href="../Grand_Archives.html" class="enter-btn">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
+                <span>Return to Grand Archives</span>
+            </a>
+            <p class="text-[9px] text-gray-800 font-mono mt-2 uppercase tracking-[0.2em]">
+                Substrate Access Pending · Ledger Record X-0000
+            </p>
+        </div>
+    </div>
+</body>
+</html>

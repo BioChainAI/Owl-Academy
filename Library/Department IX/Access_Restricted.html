@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Owl Academy | Department IX — Access Restricted</title>
+
+    <!-- Auth Guard -->
+    <script type="module" src="../../scripts/auth-guard.js"></script>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Inter:wght@300;400;600&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+
+    <script>
+        tailwind.config = {
+            theme: { extend: {
+                colors: { void: '#05030a', alert: '#ff0055', cyan: '#00f2ff' },
+                fontFamily: { sans: ['Inter','sans-serif'], serif: ['Cinzel','serif'], mono: ['JetBrains Mono','monospace'] }
+            }}
+        }
+    </script>
+
+    <style>
+        body {
+            background-color: #05030a; color: #e2e8f0; margin: 0; overflow: hidden;
+            display: flex; align-items: center; justify-content: center; min-height: 100vh;
+            background-image:
+                radial-gradient(circle at center, rgba(255, 0, 85, 0.06) 0%, transparent 60%),
+                linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px);
+            background-size: 100% 100%, 30px 30px, 30px 30px;
+        }
+        .glass-panel {
+            background: rgba(10, 5, 10, 0.85); backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 0, 85, 0.3);
+            box-shadow: 0 0 50px rgba(255, 0, 85, 0.15), inset 0 0 20px rgba(255, 0, 85, 0.05);
+        }
+        .pulse-alert { animation: pulse-red 2s infinite alternate; }
+        @keyframes pulse-red {
+            0% { filter: drop-shadow(0 0 5px rgba(255, 0, 85, 0.5)); }
+            100% { filter: drop-shadow(0 0 25px rgba(255, 0, 85, 0.9)); }
+        }
+        .spin-slow { animation: spin 30s linear infinite; transform-origin: center; }
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+        .scanline {
+            position: absolute; top: 0; left: 0; width: 100%; height: 4px;
+            background: rgba(255, 0, 85, 0.5); box-shadow: 0 0 10px rgba(255, 0, 85, 0.8);
+            opacity: 0.6; animation: scan 4s linear infinite; pointer-events: none; z-index: 50;
+        }
+        @keyframes scan { 0%{top:-10%;opacity:0} 10%{opacity:0.6} 90%{opacity:0.6} 100%{top:110%;opacity:0} }
+        .glitch-text { position: relative; display: inline-block; }
+        .glitch-text::before, .glitch-text::after {
+            content: attr(data-text); position: absolute; top: 0; left: 0;
+            width: 100%; height: 100%; opacity: 0.8;
+        }
+        .glitch-text::before { left: 2px; text-shadow: -1px 0 red; animation: glitch-anim 3s infinite linear alternate-reverse; }
+        .glitch-text::after  { left: -2px; text-shadow: -1px 0 cyan; animation: glitch-anim 2.5s infinite linear alternate-reverse; }
+        @keyframes glitch-anim {
+            0%{clip:rect(10px,9999px,81px,0)} 20%{clip:rect(62px,9999px,14px,0)}
+            40%{clip:rect(29px,9999px,55px,0)} 60%{clip:rect(89px,9999px,12px,0)}
+            80%{clip:rect(3px,9999px,78px,0)}  100%{clip:rect(42px,9999px,23px,0)}
+        }
+        .progress-ring { stroke-dasharray: 251.2; stroke-dashoffset: 251.2; animation: none; }
+    </style>
+</head>
+<body>
+    <div class="scanline"></div>
+
+    <div class="glass-panel relative w-full max-w-2xl mx-4 p-10 md:p-14 rounded-2xl text-center overflow-hidden">
+
+        <!-- Corner Accents -->
+        <div class="absolute top-0 left-0 w-8 h-8 border-t-2 border-l-2 border-red-500 m-4 opacity-50"></div>
+        <div class="absolute top-0 right-0 w-8 h-8 border-t-2 border-r-2 border-red-500 m-4 opacity-50"></div>
+        <div class="absolute bottom-0 left-0 w-8 h-8 border-b-2 border-l-2 border-red-500 m-4 opacity-50"></div>
+        <div class="absolute bottom-0 right-0 w-8 h-8 border-b-2 border-r-2 border-red-500 m-4 opacity-50"></div>
+
+        <!-- Sigil -->
+        <div class="relative w-40 h-40 mx-auto mb-8">
+            <svg viewBox="0 0 200 200" class="w-full h-full pulse-alert" xmlns="http://www.w3.org/2000/svg">
+                <g class="spin-slow">
+                    <circle cx="100" cy="100" r="95" fill="none" stroke="#ff0055" stroke-width="1.5" stroke-dasharray="10 5" opacity="0.6"/>
+                    <circle cx="100" cy="100" r="85" fill="none" stroke="#ff0055" stroke-width="0.5" opacity="0.4"/>
+                    <circle cx="100" cy="100" r="75" fill="none" stroke="#00f2ff" stroke-width="1" stroke-dasharray="2 15" opacity="0.5"/>
+                </g>
+                <g stroke-linejoin="round" stroke-linecap="round">
+                    <polygon points="100,20 180,100 100,180 20,100" fill="none" stroke="#ff0055" stroke-width="1" opacity="0.3"/>
+                    <polygon points="100,50 140,40 120,70 100,65 80,70 60,40" fill="none" stroke="#ff0055" stroke-width="2"/>
+                    <polygon points="100,150 140,90 120,70 100,65 80,70 60,90" fill="rgba(255,0,85,0.05)" stroke="#ff0055" stroke-width="1.5"/>
+                    <polygon points="100,110 90,85 110,85" fill="#ff0055" stroke="#ff0055" stroke-width="1"/>
+                    <line x1="100" y1="110" x2="100" y2="135" stroke="#ff0055" stroke-width="2"/>
+                    <polygon points="70,75 90,80 85,95 65,90" fill="#05030a" stroke="#ff0055" stroke-width="1.5"/>
+                    <polygon points="130,75 110,80 115,95 135,90" fill="#05030a" stroke="#ff0055" stroke-width="1.5"/>
+                    <circle cx="78" cy="85" r="4" fill="#00f2ff" filter="drop-shadow(0 0 5px #00f2ff)"/>
+                    <circle cx="122" cy="85" r="4" fill="#00f2ff" filter="drop-shadow(0 0 5px #00f2ff)"/>
+                </g>
+            </svg>
+        </div>
+
+        <div class="mb-6">
+            <h2 class="text-xs text-red-500 font-mono uppercase tracking-[0.3em] font-bold mb-2">Error 403 · Department IX</h2>
+            <h1 class="text-3xl md:text-5xl font-serif text-white uppercase tracking-widest mb-4 glitch-text" data-text="Access Restricted">
+                Access Restricted
+            </h1>
+            <p class="text-sm text-gray-400 font-light leading-relaxed max-w-lg mx-auto mb-4">
+                Department IX — <span class="text-sky-400 font-medium">AI-Human Integration</span> — is sealed by order of the Mother Plenum.
+                Your SHD-CCP cryptographic token lacks the neural resonance required to penetrate this bio-strata.
+            </p>
+        </div>
+
+        <!-- Unlock Condition -->
+        <div class="border border-red-900/50 rounded-lg p-5 mb-8 bg-red-950/10 text-left max-w-md mx-auto">
+            <div class="text-[9px] text-red-400 font-mono uppercase tracking-[0.3em] mb-3">Unlock Condition</div>
+            <p class="text-xs text-gray-400 font-light leading-relaxed">
+                Complete <span class="text-white font-semibold">Department X — BioChain Substrate Management</span> and
+                demonstrate mastery across its <span class="text-cyan-400 font-mono">64 Substrate Tomes</span> to acquire the
+                <span class="text-yellow-400">3 Substrate Artifacts</span>.
+                Artifact resonance is required to unlock Departments VII, VIII, and IX simultaneously.
+            </p>
+            <!-- 33 tome progress display (0 / 33 until tracked) -->
+            <!-- Note: swap 33→27 if using 3³ cube structure (3 artifacts × 9 tomes) -->
+            <div class="mt-4 flex items-center gap-3">
+                <div class="flex-grow h-1 bg-gray-900 rounded-full overflow-hidden">
+                    <div class="h-full w-0 bg-gradient-to-r from-red-700 to-red-500 rounded-full"></div>
+                </div>
+                <span class="text-[10px] text-gray-600 font-mono whitespace-nowrap">0 / 33 Tomes</span>
+            </div>
+        </div>
+
+        <div class="flex flex-col items-center gap-4">
+            <div class="h-px w-32 bg-gradient-to-r from-transparent via-red-500 to-transparent opacity-50 mb-2"></div>
+            <a href="../Grand_Archives.html"
+               class="group relative px-8 py-3 bg-red-500/10 hover:bg-red-500/20 border border-red-500/50 text-red-400 hover:text-white transition-all duration-300 font-mono text-xs uppercase tracking-widest rounded shadow-[0_0_15px_rgba(255,0,85,0.2)] overflow-hidden">
+                <span class="relative z-10 flex items-center gap-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
+                    Return to Grand Archives
+                </span>
+                <div class="absolute inset-0 h-full w-0 bg-red-500/20 group-hover:w-full transition-all duration-500 ease-out z-0"></div>
+            </a>
+            <p class="text-[9px] text-gray-700 font-mono mt-2 uppercase tracking-[0.2em]">
+                Incident Logged · Department IX · S.P.I.R.E. Ledger
+            </p>
+        </div>
+    </div>
+</body>
+</html>
