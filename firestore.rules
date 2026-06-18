@@ -91,6 +91,13 @@ service cloud.firestore {
       allow read:   if false;
     }
 
+    // ─── Constellation Map (public genesis positions) ─────────────────
+    match /constellations/{uid} {
+      allow read: if isSignedIn();
+      allow create, update: if isSignedIn() && request.auth.uid == uid;
+      allow delete: if false;
+    }
+
     // ─── Guilds ───────────────────────────────────────────────────────
     match /guilds/{guildId} {
       allow read: if isSignedIn();
