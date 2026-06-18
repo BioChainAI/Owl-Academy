@@ -223,7 +223,7 @@ async function loadModules() {
                 const payload = {
                     type:"module", moduleId:entry.id, title:entry.title,
                     subject:entry.subject, description:entry.description,
-                    path:entry.path, tags:entry.tags||[], difficulty:entry.difficulty||"beginner",
+                    path:entry.path, modulePath:entry.path, tags:entry.tags||[], difficulty:entry.difficulty||"beginner",
                     plane:"prereq", tier:"sovereign",
                     creatorUid:"system", creatorGenesisId:"system",
                     creatorTier:"SYSTEM", viewCount:0, enrolledCount:0,
@@ -380,7 +380,7 @@ function moduleCard(m) {
     const diffColor = DIFFICULTY_COLORS[m.difficulty]||"#60a5fa";
     return `
     <div class="video-card ${glow}" style="border-color:rgba(148,130,255,0.18)">
-        <div class="w-full aspect-video bg-purple-950/30 flex flex-col items-center justify-center gap-2 relative cursor-pointer" onclick="openLesson('${escHtml(m.id)}','${escHtml(m.path||"")}')">
+        <div class="w-full aspect-video bg-purple-950/30 flex flex-col items-center justify-center gap-2 relative cursor-pointer" onclick="openLesson('${escHtml(m.id)}','${escHtml(m.path||m.modulePath||"")}')">
             <span class="text-4xl opacity-30">📄</span>
             <span class="text-xs text-purple-300/60 mono">HTML Lesson</span>
             ${certBadges ? `<div class="absolute bottom-2 left-2 flex gap-1 flex-wrap">${certBadges}</div>` : ""}
@@ -395,7 +395,7 @@ function moduleCard(m) {
             <h3 class="font-semibold text-slate-200 text-sm mb-2 line-clamp-2">${escHtml(m.title||"Untitled")}</h3>
             ${m.description ? `<p class="text-xs text-slate-500 mb-2 line-clamp-2">${escHtml(m.description)}</p>` : ""}
             <div class="flex items-center justify-between mt-2">
-                <button onclick="openLesson('${escHtml(m.id)}','${escHtml(m.path||"")}')" class="text-xs text-purple-400 hover:text-purple-300 mono transition-colors">Open Lesson →</button>
+                <button onclick="openLesson('${escHtml(m.id)}','${escHtml(m.path||m.modulePath||"")}')" class="text-xs text-purple-400 hover:text-purple-300 mono transition-colors">Open Lesson →</button>
                 ${m.viewCount ? `<span class="text-[10px] text-slate-600 mono">${m.viewCount} views</span>` : ""}
             </div>
         </div>
