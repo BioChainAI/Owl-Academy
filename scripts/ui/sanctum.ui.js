@@ -29,6 +29,7 @@ const ACADEMY_TOOLS = [
   { id: "archives",  title: "Grand Archives",       desc: "Master library map and index",               path: "Library/Grand_Archives.html",                    color: "#FFF8DC" },
   { id: "hyperbolic", title: "Hyperbolic Systems",  desc: "Advanced reading pathways for topologists",  path: "Library/Hyperbolic_Systems_Learning/",           color: "#8A2BE2" },
   { id: "proofs",    title: "Proof Workshop",       desc: "Trefoil pump and topological proofs",        path: "Proofs/Torsional-Trefoil-Markov-Pump/",          color: "#ff6b35" },
+  { id: "constellation", title: "Constellation Map", desc: "Live 3D map of all Genesis seeds on the SPIRE manifold", path: "mage_tower/Constellation_Map.html", color: "#8A2BE2" },
 ];
 
 const TIER_PATHS = [
