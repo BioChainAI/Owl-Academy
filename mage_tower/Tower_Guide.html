@@ -1,0 +1,978 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Owl Academy | Mage Tower Guide</title>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --gold: #D4AF37;
+            --cyan: #00d4ff;
+            --magenta: #e81cff;
+            --bg: #05030a;
+        }
+        * { box-sizing: border-box; }
+        body {
+            background: var(--bg);
+            color: #e2e8f0;
+            font-family: 'Inter', sans-serif;
+            margin: 0;
+            min-height: 100vh;
+        }
+        .bg-glow {
+            background:
+                radial-gradient(ellipse at 20% 0%, rgba(212,175,55,0.07) 0%, transparent 60%),
+                radial-gradient(ellipse at 80% 100%, rgba(0,212,255,0.06) 0%, transparent 60%),
+                var(--bg);
+        }
+        h1,h2,h3,h4,.mystical { font-family:'Cinzel',serif; }
+        .mono { font-family:'JetBrains Mono',monospace; }
+
+        /* Panels */
+        .glass {
+            background: rgba(8,12,22,0.75);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 1rem;
+        }
+        .panel-gold  { border-color: rgba(212,175,55,0.25); }
+        .panel-cyan  { border-color: rgba(0,212,255,0.25); }
+        .panel-magenta { border-color: rgba(232,28,255,0.25); }
+
+        /* Gradients */
+        .gold-grad { background: linear-gradient(135deg,#b8922a,#D4AF37,#FFF8DC); -webkit-background-clip:text; background-clip:text; color:transparent; }
+        .cyan-grad { background: linear-gradient(135deg,#007a99,#00d4ff); -webkit-background-clip:text; background-clip:text; color:transparent; }
+        .magenta-grad { background: linear-gradient(135deg,#a00faa,#e81cff); -webkit-background-clip:text; background-clip:text; color:transparent; }
+
+        /* Section headings */
+        .section-label {
+            display: inline-flex; align-items: center; gap: 0.5rem;
+            padding: 0.2rem 0.75rem; border-radius: 9999px;
+            font-size: 10px; letter-spacing: 0.2em; text-transform: uppercase;
+            font-family: 'JetBrains Mono', monospace;
+        }
+        .sl-gold { background: rgba(212,175,55,0.12); border:1px solid rgba(212,175,55,0.35); color:#D4AF37; }
+        .sl-cyan  { background: rgba(0,212,255,0.10); border:1px solid rgba(0,212,255,0.3); color:#00d4ff; }
+        .sl-magenta { background: rgba(232,28,255,0.10); border:1px solid rgba(232,28,255,0.3); color:#e81cff; }
+        .sl-green { background: rgba(0,255,100,0.10); border:1px solid rgba(0,255,100,0.3); color:#00ff64; }
+
+        /* Tier badges */
+        .tier-archon    { border:1px solid rgba(212,175,55,0.5); background:rgba(212,175,55,0.08); color:#D4AF37; padding:0.15rem 0.6rem; border-radius:9999px; font-size:11px; }
+        .tier-instructor{ border:1px solid rgba(0,212,255,0.5); background:rgba(0,212,255,0.08); color:#00d4ff; padding:0.15rem 0.6rem; border-radius:9999px; font-size:11px; }
+        .tier-acolyte   { border:1px solid rgba(148,163,184,0.4); background:rgba(148,163,184,0.06); color:#94a3b8; padding:0.15rem 0.6rem; border-radius:9999px; font-size:11px; }
+
+        /* Priority labels */
+        .p-canonical    { color:#D4AF37; border:1px solid rgba(212,175,55,0.4); background:rgba(212,175,55,0.08); }
+        .p-validated    { color:#00d4ff; border:1px solid rgba(0,212,255,0.4); background:rgba(0,212,255,0.08); }
+        .p-experimental { color:#e81cff; border:1px solid rgba(232,28,255,0.4); background:rgba(232,28,255,0.08); }
+        .priority-pill  { padding:0.15rem 0.6rem; border-radius:9999px; font-size:11px; font-family:'JetBrains Mono',monospace; }
+
+        /* Steps */
+        .step-num {
+            width: 2rem; height: 2rem; border-radius:50%;
+            display: flex; align-items:center; justify-content:center;
+            font-size: 12px; font-family:'JetBrains Mono',monospace; font-weight:700;
+            flex-shrink: 0;
+        }
+        .step-gold { background:rgba(212,175,55,0.15); border:1px solid rgba(212,175,55,0.5); color:#D4AF37; }
+        .step-cyan { background:rgba(0,212,255,0.12); border:1px solid rgba(0,212,255,0.4); color:#00d4ff; }
+
+        /* Code blocks */
+        pre {
+            background: rgba(0,0,0,0.5); border:1px solid rgba(255,255,255,0.08);
+            border-radius:0.5rem; padding:1rem; overflow-x:auto;
+            font-size:12px; line-height:1.7; color:#a8b8c8;
+        }
+        code { font-family:'JetBrains Mono',monospace; }
+        .hl { color:#D4AF37; }
+        .hl-c { color:#00d4ff; }
+        .hl-m { color:#e81cff; }
+        .hl-g { color:#00ff64; }
+
+        /* Flow diagram */
+        .flow-node {
+            border-radius:0.75rem; padding:0.75rem 1.25rem;
+            text-align:center; font-size:12px; font-family:'JetBrains Mono',monospace;
+            position:relative;
+        }
+        .flow-arrow { color:#475569; font-size:20px; line-height:1; display:flex; align-items:center; justify-content:center; }
+
+        /* Table */
+        table { width:100%; border-collapse:collapse; font-size:13px; }
+        th { text-align:left; padding:0.5rem 0.75rem; font-size:10px; text-transform:uppercase; letter-spacing:0.15em; color:#64748b; font-family:'JetBrains Mono',monospace; border-bottom:1px solid rgba(255,255,255,0.08); }
+        td { padding:0.6rem 0.75rem; border-bottom:1px solid rgba(255,255,255,0.05); color:#cbd5e1; vertical-align:top; }
+        tr:last-child td { border-bottom:none; }
+        tr:hover td { background:rgba(255,255,255,0.02); }
+
+        /* Nav */
+        .nav-link {
+            padding:0.4rem 1rem; border-radius:0.5rem;
+            font-size:11px; font-family:'JetBrains Mono',monospace;
+            text-transform:uppercase; letter-spacing:0.1em;
+            color:#94a3b8; border:1px solid transparent;
+            text-decoration:none; transition:all 0.2s;
+            display:inline-block;
+        }
+        .nav-link:hover { border-color:rgba(212,175,55,0.3); color:#D4AF37; background:rgba(212,175,55,0.06); }
+
+        /* Callout */
+        .callout {
+            border-left:3px solid; border-radius:0 0.5rem 0.5rem 0;
+            padding:0.75rem 1rem; font-size:13px;
+        }
+        .callout-gold   { border-color:#D4AF37; background:rgba(212,175,55,0.06); }
+        .callout-cyan   { border-color:#00d4ff; background:rgba(0,212,255,0.05); }
+        .callout-red    { border-color:#ff5f5f; background:rgba(255,80,80,0.05); }
+        .callout-green  { border-color:#00ff64; background:rgba(0,255,100,0.05); }
+
+        /* Sticky ToC */
+        @media(min-width:1280px){
+            .toc-sticky { position:sticky; top:2rem; }
+        }
+
+        /* Section divider */
+        .divider { border:none; border-top:1px solid rgba(255,255,255,0.07); margin:3rem 0; }
+    </style>
+</head>
+<body class="bg-glow antialiased">
+
+<div class="max-w-7xl mx-auto px-4 md:px-8 py-12">
+
+    <!-- Page Header -->
+    <div class="text-center mb-14">
+        <div class="section-label sl-gold mx-auto mb-4">♛ Mage Tower</div>
+        <h1 class="text-4xl md:text-6xl font-bold mystical gold-grad mb-4">The Mage Tower Guide</h1>
+        <p class="text-slate-400 max-w-2xl mx-auto">
+            A complete reference for the Genesis Authority System, tome creation, cosmological identity,
+            and the certification chain that governs all content on the Academy.
+        </p>
+        <div class="flex flex-wrap justify-center gap-3 mt-6">
+            <a href="Registrar.html"        class="nav-link">Registrar</a>
+            <a href="Codex.html"            class="nav-link">Codex</a>
+            <a href="Genesis_Forge.html"    class="nav-link">Genesis Forge</a>
+            <a href="Instructor_Console.html" class="nav-link">Instructor Console</a>
+            <a href="Admin_Console.html"    class="nav-link">Admin Console</a>
+            <a href="../Learning-Hub.html"  class="nav-link">← Learning Hub</a>
+        </div>
+    </div>
+
+    <div class="xl:grid xl:grid-cols-[260px_1fr] gap-10">
+
+        <!-- ══════════════════════════════════════════
+             TABLE OF CONTENTS (sticky sidebar)
+        ══════════════════════════════════════════ -->
+        <aside class="hidden xl:block">
+            <div class="toc-sticky glass panel-gold p-5 text-sm">
+                <p class="mono text-[10px] text-yellow-600 uppercase tracking-widest mb-4">Contents</p>
+                <nav class="space-y-1">
+                    <a href="#overview"     class="block text-slate-400 hover:text-yellow-300 py-1 text-xs transition">Overview</a>
+                    <a href="#tiers"        class="block text-slate-400 hover:text-yellow-300 py-1 text-xs transition">The Three Tiers</a>
+                    <a href="#cosmological-id" class="block text-slate-400 hover:text-yellow-300 py-1 text-xs transition pl-3 border-l border-white/10">Cosmological ID</a>
+                    <a href="#genesis-seed" class="block text-slate-400 hover:text-yellow-300 py-1 text-xs transition pl-3 border-l border-white/10">Genesis Seed</a>
+                    <a href="#certificates" class="block text-slate-400 hover:text-yellow-300 py-1 text-xs transition">Validation Certificates</a>
+                    <a href="#cert-anatomy" class="block text-slate-400 hover:text-yellow-300 py-1 text-xs transition pl-3 border-l border-white/10">Certificate Anatomy</a>
+                    <a href="#cert-verify"  class="block text-slate-400 hover:text-yellow-300 py-1 text-xs transition pl-3 border-l border-white/10">Verification</a>
+                    <a href="#planes"       class="block text-slate-400 hover:text-yellow-300 py-1 text-xs transition">Dimensional Planes</a>
+                    <a href="#bootstrap"    class="block text-slate-400 hover:text-yellow-300 py-1 text-xs transition">Archon Bootstrap</a>
+                    <a href="#tomes"        class="block text-slate-400 hover:text-yellow-300 py-1 text-xs transition">Tome Creation</a>
+                    <a href="#tome-status"  class="block text-slate-400 hover:text-yellow-300 py-1 text-xs transition pl-3 border-l border-white/10">Tome Statuses</a>
+                    <a href="#priority"     class="block text-slate-400 hover:text-yellow-300 py-1 text-xs transition pl-3 border-l border-white/10">Priority Stamping</a>
+                    <a href="#artifacts"    class="block text-slate-400 hover:text-yellow-300 py-1 text-xs transition">Artifacts</a>
+                    <a href="#workflow"     class="block text-slate-400 hover:text-yellow-300 py-1 text-xs transition">Full Workflow</a>
+                    <a href="#errors"       class="block text-slate-400 hover:text-yellow-300 py-1 text-xs transition">Common Errors</a>
+                    <a href="#firestore"    class="block text-slate-400 hover:text-yellow-300 py-1 text-xs transition">Firestore Setup</a>
+                </nav>
+            </div>
+        </aside>
+
+        <!-- ══════════════════════════════════════════
+             MAIN CONTENT
+        ══════════════════════════════════════════ -->
+        <main class="space-y-16 min-w-0">
+
+            <!-- ─── OVERVIEW ─────────────────────────────── -->
+            <section id="overview">
+                <div class="section-label sl-gold mb-4">01 — Overview</div>
+                <h2 class="text-3xl mystical gold-grad mb-6">What Is the Mage Tower?</h2>
+
+                <p class="text-slate-300 leading-relaxed mb-4">
+                    The <strong class="text-slate-100">Mage Tower</strong> is the authority layer that sits above the standard
+                    Academy learning experience. It controls <em>who can create knowledge</em>, <em>how that knowledge is trusted</em>,
+                    and <em>how it earns XP</em> for students. All content on the Academy — every tome and artifact — carries a
+                    cryptographic signature that traces back to this system.
+                </p>
+                <p class="text-slate-300 leading-relaxed mb-6">
+                    The system has three interlocking parts: a <strong class="text-yellow-300">Cosmological Identity</strong> (your
+                    immutable geometric fingerprint), a <strong class="text-cyan-300">Genesis Certificate</strong> (cryptographic
+                    proof of your tier), and a <strong class="text-fuchsia-300">Dimensional Plane</strong> (the content namespace
+                    you're authorized to write in).
+                </p>
+
+                <!-- Three pillars -->
+                <div class="grid md:grid-cols-3 gap-4">
+                    <div class="glass panel-gold p-5">
+                        <div class="text-3xl mb-3">🔑</div>
+                        <h3 class="mystical text-base text-yellow-300 mb-2">Identity</h3>
+                        <p class="text-xs text-slate-400 leading-relaxed">
+                            Your Cosmological ID is forged once from a ledger seed. It is geometric,
+                            deterministic, and immutable. It anchors everything else.
+                        </p>
+                    </div>
+                    <div class="glass panel-cyan p-5">
+                        <div class="text-3xl mb-3">📜</div>
+                        <h3 class="mystical text-base text-cyan-300 mb-2">Authority</h3>
+                        <p class="text-xs text-slate-400 leading-relaxed">
+                            An Archon issues you a cryptographically signed certificate that proves your tier
+                            (Instructor or Archon) and the planes you can author on.
+                        </p>
+                    </div>
+                    <div class="glass panel-magenta p-5">
+                        <div class="text-3xl mb-3">📖</div>
+                        <h3 class="mystical text-base text-fuchsia-300 mb-2">Content</h3>
+                        <p class="text-xs text-slate-400 leading-relaxed">
+                            Tomes you create are stamped with your tier's priority (Canonical / Validated /
+                            Experimental) and stored permanently in Firestore.
+                        </p>
+                    </div>
+                </div>
+            </section>
+
+            <hr class="divider">
+
+            <!-- ─── THE THREE TIERS ──────────────────────── -->
+            <section id="tiers">
+                <div class="section-label sl-gold mb-4">02 — Tiers</div>
+                <h2 class="text-3xl mystical gold-grad mb-6">The Three Tiers</h2>
+
+                <p class="text-slate-300 leading-relaxed mb-6">
+                    Every user on the Academy occupies one of three tiers. Tiers are cumulative —
+                    an Archon has all Instructor capabilities, and an Instructor has all Acolyte capabilities.
+                    Promotion is strictly upward; there is no demotion mechanism in the current implementation.
+                </p>
+
+                <!-- Tier comparison table -->
+                <div class="glass panel-gold overflow-hidden mb-8">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Tier</th>
+                                <th>Symbol</th>
+                                <th>Read Tomes</th>
+                                <th>Create Tomes</th>
+                                <th>Mint Certificates</th>
+                                <th>How Obtained</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><span class="tier-acolyte mono">Acolyte</span></td>
+                                <td class="text-slate-500">◯</td>
+                                <td class="text-green-400">✓ All</td>
+                                <td class="text-slate-500">✗</td>
+                                <td class="text-slate-500">✗</td>
+                                <td class="text-slate-400 text-xs">Default after registration</td>
+                            </tr>
+                            <tr>
+                                <td><span class="tier-instructor mono">Instructor</span></td>
+                                <td class="text-cyan-400">⬢</td>
+                                <td class="text-green-400">✓ All</td>
+                                <td class="text-green-400">✓ Certified planes</td>
+                                <td class="text-slate-500">✗</td>
+                                <td class="text-slate-400 text-xs">Archon-issued certificate</td>
+                            </tr>
+                            <tr>
+                                <td><span class="tier-archon mono">Archon</span></td>
+                                <td class="text-yellow-400">♛</td>
+                                <td class="text-green-400">✓ All</td>
+                                <td class="text-green-400">✓ All planes</td>
+                                <td class="text-green-400">✓ Instructor + Archon</td>
+                                <td class="text-slate-400 text-xs">Self-signed via Master Key UID list</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- S.P.I.R.E. mapping -->
+                <div class="callout callout-gold mb-6">
+                    <p class="text-xs text-yellow-200/80 font-semibold mb-1">S.P.I.R.E. Engine Layer Mapping</p>
+                    <p class="text-xs text-slate-400">
+                        Tiers correspond directly to the tri-layer model:
+                        <strong class="text-yellow-300">Archon → S.P.I.R.E. Consensus</strong> (canonical),
+                        <strong class="text-cyan-300">Instructor → Hypersim Substrate</strong> (validated),
+                        <strong class="text-fuchsia-300">Acolyte → Biostrata Sovereign</strong> (experimental).
+                    </p>
+                </div>
+
+                <!-- Cosmological ID subsection -->
+                <h3 id="cosmological-id" class="text-xl mystical text-yellow-200 mb-4 mt-8">Cosmological ID</h3>
+                <p class="text-slate-300 leading-relaxed mb-4">
+                    Every user has exactly one Cosmological ID — a 64-bit hexadecimal value prefixed with <code class="mono text-yellow-300 text-sm">0x</code>.
+                    It is computed deterministically:
+                </p>
+
+                <pre><code><span class="hl">CosmologicalId</span> = <span class="hl-c">SHD-CCP</span>(ledgerSeed, latticeSpace)
+              <span class="text-slate-500">XOR</span>
+              <span class="hl-g">SHA-256</span>(uid)[0..8]     ← first 8 bytes only
+
+<span class="text-slate-500">SHD-CCP</span> = Sequential Hyperdimensional Context Compression Protocol
+         A 4×4×4 cubic lattice (64 voxels) with φ-weighted axis folding
+         and a 32-byte → 64-byte holographic inverse expansion.</code></pre>
+
+                <div class="grid md:grid-cols-2 gap-4 mt-4">
+                    <div class="glass p-4 text-xs text-slate-400 space-y-1">
+                        <p class="text-slate-200 font-semibold text-sm mb-2">Properties</p>
+                        <p>• <span class="text-green-400">Deterministic</span> — same seed + UID always produces same ID</p>
+                        <p>• <span class="text-green-400">Immutable</span> — sealed in Firestore, can never be changed</p>
+                        <p>• <span class="text-yellow-300">Unique</span> — XOR with Firebase UID makes collisions negligible</p>
+                        <p>• <span class="text-cyan-300">Public</span> — safe to share; contains no private data</p>
+                    </div>
+                    <div class="glass p-4 text-xs text-slate-400 space-y-1">
+                        <p class="text-slate-200 font-semibold text-sm mb-2">Lattice Spaces</p>
+                        <p>• <code class="mono text-yellow-300">E8</code> — φ = 1.618 (standard, recommended)</p>
+                        <p>• <code class="mono text-yellow-300">R8</code> — φ = 2.618 (elevated resonance)</p>
+                        <p>• <code class="mono text-yellow-300">R24</code> — φ = 4.236 (Leech lattice resonance)</p>
+                        <p class="text-slate-500 mt-2">The lattice affects compression geometry only. Your ID still XORs with your UID regardless of lattice choice.</p>
+                    </div>
+                </div>
+
+                <!-- Genesis Seed subsection -->
+                <h3 id="genesis-seed" class="text-xl mystical text-yellow-200 mb-4 mt-8">Genesis Seed vs Ledger Seed</h3>
+
+                <div class="glass panel-gold overflow-hidden mb-4">
+                    <table>
+                        <thead>
+                            <tr><th>Attribute</th><th>Ledger Seed</th><th>Genesis Seed</th></tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td class="text-slate-300">Who has it</td>
+                                <td>All users (Acolyte+)</td>
+                                <td>Instructors and Archons</td>
+                            </tr>
+                            <tr>
+                                <td class="text-slate-300">Composed of</td>
+                                <td>User-chosen phrase</td>
+                                <td>Ledger Seed <span class="text-yellow-400">+</span> Validation Certificate</td>
+                            </tr>
+                            <tr>
+                                <td class="text-slate-300">Produces</td>
+                                <td>Cosmological ID only</td>
+                                <td>Cosmological ID + tier + authoring rights</td>
+                            </tr>
+                            <tr>
+                                <td class="text-slate-300">Mutable?</td>
+                                <td class="text-red-400">Never — write-once</td>
+                                <td>Tier can be elevated, never demoted</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="callout callout-red">
+                    <p class="text-xs text-red-300 font-semibold mb-1">⚠ Critical</p>
+                    <p class="text-xs text-slate-400">
+                        Your ledger seed is your identity. If you lose it and are locked out, your Cosmological ID
+                        cannot be recovered. Write it down and store it offline. The Academy cannot reset it —
+                        Firestore rules make the <code class="mono text-red-300">cosmologicalId</code> and
+                        <code class="mono text-red-300">ledgerSeed</code> fields permanently immutable.
+                    </p>
+                </div>
+            </section>
+
+            <hr class="divider">
+
+            <!-- ─── CERTIFICATES ─────────────────────────── -->
+            <section id="certificates">
+                <div class="section-label sl-cyan mb-4">03 — Certificates</div>
+                <h2 class="text-3xl mystical cyan-grad mb-6">Validation Certificates</h2>
+
+                <p class="text-slate-300 leading-relaxed mb-6">
+                    A <strong class="text-cyan-300">Validation Certificate</strong> is a JSON object cryptographically
+                    signed by an Archon using HMAC-SHA-256. It is the only way to prove that someone granted you a tier.
+                    No certificate → Acolyte. Tampered certificate → verification fails → Acolyte.
+                </p>
+
+                <!-- Certificate anatomy -->
+                <h3 id="cert-anatomy" class="text-xl mystical text-cyan-200 mb-4">Certificate Anatomy</h3>
+
+                <pre><code>{
+  <span class="hl-c">"issuer"</span>:    <span class="hl-g">"0xD4AF37F00BA4C0DE"</span>,   <span class="text-slate-500">// Archon's Cosmological ID</span>
+  <span class="hl-c">"subject"</span>:   <span class="hl-g">"0x9F00CAFEDEADBEEF"</span>,   <span class="text-slate-500">// Recipient's Cosmological ID</span>
+  <span class="hl-c">"tier"</span>:      <span class="hl-g">"INSTRUCTOR"</span>,            <span class="text-slate-500">// or "ARCHON"</span>
+  <span class="hl-c">"plane"</span>:     <span class="hl-g">"dept-IV"</span>,              <span class="text-slate-500">// authoring scope (see Planes)</span>
+  <span class="hl-c">"issuedAt"</span>:  <span class="hl-g">"2026-06-18T00:00:00.000Z"</span>,
+  <span class="hl-c">"signature"</span>: <span class="hl-g">"a1b2c3...e9f0"</span>         <span class="text-slate-500">// HMAC-SHA-256 hex</span>
+}</code></pre>
+
+                <div class="grid md:grid-cols-2 gap-4 mt-6 mb-6">
+                    <div class="glass panel-cyan p-5">
+                        <h4 class="text-sm text-cyan-300 mono uppercase tracking-widest mb-3">What the signature covers</h4>
+                        <pre class="!m-0 !text-[11px]"><code>HMAC-SHA-256(
+  key:  issuerCosmologicalId,
+  data: "issuer|tier|plane|subject|issuedAt"
+)</code></pre>
+                        <p class="text-xs text-slate-500 mt-3">The key is the issuer's own Cosmological ID. Anyone can verify the signature if they know the issuer's ID (which is public).</p>
+                    </div>
+                    <div class="glass panel-cyan p-5">
+                        <h4 class="text-sm text-cyan-300 mono uppercase tracking-widest mb-3">What it proves</h4>
+                        <ul class="text-xs text-slate-400 space-y-1.5">
+                            <li>✓ A specific Archon (by ID) issued this</li>
+                            <li>✓ It was issued to exactly one specific subject</li>
+                            <li>✓ It grants a specific tier on a specific plane</li>
+                            <li>✓ It has not been tampered with</li>
+                            <li class="text-slate-500">✗ It cannot be replayed for a different subject</li>
+                            <li class="text-slate-500">✗ It cannot be revoked (no revocation list yet)</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Verification flow -->
+                <h3 id="cert-verify" class="text-xl mystical text-cyan-200 mb-4">Verification Flow</h3>
+                <p class="text-slate-400 text-sm mb-4">When you apply a certificate in your Codex, this chain runs:</p>
+
+                <div class="space-y-2">
+                    <div class="flex items-start gap-3">
+                        <div class="step-num step-cyan">1</div>
+                        <div class="flex-1">
+                            <p class="text-sm text-slate-200 font-semibold">Subject match</p>
+                            <p class="text-xs text-slate-500">Certificate <code class="mono text-cyan-300">subject</code> must equal your Cosmological ID. Prevents replay attacks.</p>
+                        </div>
+                    </div>
+                    <div class="flex items-start gap-3">
+                        <div class="step-num step-cyan">2</div>
+                        <div class="flex-1">
+                            <p class="text-sm text-slate-200 font-semibold">HMAC recomputation</p>
+                            <p class="text-xs text-slate-500">Browser recomputes <code class="mono text-cyan-300">HMAC-SHA-256(issuer, payload)</code> and compares to the certificate's <code class="mono text-cyan-300">signature</code> field. Any tampering → mismatch → rejected.</p>
+                        </div>
+                    </div>
+                    <div class="flex items-start gap-3">
+                        <div class="step-num step-cyan">3</div>
+                        <div class="flex-1">
+                            <p class="text-sm text-slate-200 font-semibold">Tier escalation check</p>
+                            <p class="text-xs text-slate-500">Only an Archon may issue an Archon certificate. If the issuer's registered tier is Instructor, an Archon cert is rejected.</p>
+                        </div>
+                    </div>
+                    <div class="flex items-start gap-3">
+                        <div class="step-num step-cyan">4</div>
+                        <div class="flex-1">
+                            <p class="text-sm text-slate-200 font-semibold">Firestore write</p>
+                            <p class="text-xs text-slate-500">On success, <code class="mono text-cyan-300">tier</code>, <code class="mono text-cyan-300">certificate</code>, <code class="mono text-cyan-300">certifiedPlanes</code>, and <code class="mono text-cyan-300">certifiedAt</code> are merged into your <code class="mono">registrar/main</code> document. The write is only permitted if your core identity fields are unchanged (Firestore rules).</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="callout callout-cyan mt-6">
+                    <p class="text-xs text-cyan-200 font-semibold mb-1">Security model</p>
+                    <p class="text-xs text-slate-400">
+                        This is <strong class="text-slate-300">client-side cryptographic with Firestore as backstop</strong>.
+                        A certificate is valid because the HMAC is unforgeable without the issuer's Cosmological ID as the key.
+                        A determined attacker who manipulates their local JS could fake their displayed tier, but cannot write
+                        content as a different <code class="mono text-cyan-300">creatorUid</code> — Firestore Rules enforce that boundary.
+                        For maximum security, migrate certificate verification to a Cloud Function.
+                    </p>
+                </div>
+            </section>
+
+            <hr class="divider">
+
+            <!-- ─── DIMENSIONAL PLANES ───────────────────── -->
+            <section id="planes">
+                <div class="section-label sl-gold mb-4">04 — Planes</div>
+                <h2 class="text-3xl mystical gold-grad mb-6">Dimensional Planes</h2>
+
+                <p class="text-slate-300 leading-relaxed mb-6">
+                    A <strong class="text-yellow-300">Dimensional Plane</strong> is the namespace within which an Instructor
+                    can create tomes and artifacts. Each plane corresponds to one Academy department. An Instructor certified
+                    for <code class="mono text-yellow-300">dept-IV</code> cannot write on <code class="mono text-yellow-300">dept-X</code>.
+                    Archons always receive <code class="mono text-yellow-300">*</code> (universal) and may write anywhere.
+                </p>
+
+                <div class="glass panel-gold overflow-hidden mb-6">
+                    <table>
+                        <thead>
+                            <tr><th>Plane</th><th>Department</th><th>Notes</th></tr>
+                        </thead>
+                        <tbody>
+                            <tr><td class="mono text-yellow-300">dept-I</td>  <td>Sacred Geometry &amp; Topology</td><td class="text-slate-500 text-xs">9 active tomes → 1 artifact</td></tr>
+                            <tr><td class="mono text-yellow-300">dept-II</td> <td>Cryptography &amp; Sigils</td><td class="text-slate-500 text-xs"></td></tr>
+                            <tr><td class="mono text-yellow-300">dept-III</td><td>Celestial Topology</td><td class="text-slate-500 text-xs"></td></tr>
+                            <tr><td class="mono text-yellow-300">dept-IV</td> <td>Hyperbolic Systems</td><td class="text-slate-500 text-xs"></td></tr>
+                            <tr><td class="mono text-yellow-300">dept-V</td>  <td>Fractal Processing</td><td class="text-slate-500 text-xs"></td></tr>
+                            <tr><td class="mono text-yellow-300">dept-VI</td> <td>Seed Protocols</td><td class="text-slate-500 text-xs"></td></tr>
+                            <tr><td class="mono text-yellow-300">dept-VII</td><td>Human Consciousness</td><td class="text-slate-500 text-xs text-purple-400">Locked — Biostrata L3 required</td></tr>
+                            <tr><td class="mono text-yellow-300">dept-VIII</td><td>Soul-Mind Projection</td><td class="text-slate-500 text-xs text-teal-400">Locked — Biostrata L3 required</td></tr>
+                            <tr><td class="mono text-yellow-300">dept-IX</td> <td>AI-Human Integration</td><td class="text-slate-500 text-xs text-blue-400">Locked — Biostrata L3 required</td></tr>
+                            <tr><td class="mono text-yellow-300">dept-X</td>  <td>BioChain Substrate</td><td class="text-slate-500 text-xs text-pink-400">16 tomes → 1 artifact (×4)</td></tr>
+                            <tr><td class="mono text-yellow-300">custom</td>  <td>User-defined parallel plane</td><td class="text-slate-500 text-xs">Instructor-created namespace</td></tr>
+                            <tr><td class="mono text-yellow-300">*</td>       <td>Universal</td><td class="text-slate-500 text-xs text-yellow-400">Archon only</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <hr class="divider">
+
+            <!-- ─── BOOTSTRAP ────────────────────────────── -->
+            <section id="bootstrap">
+                <div class="section-label sl-gold mb-4">05 — Bootstrap</div>
+                <h2 class="text-3xl mystical gold-grad mb-6">Archon Bootstrap Path</h2>
+
+                <p class="text-slate-300 leading-relaxed mb-4">
+                    The first Archon cannot receive a certificate from anyone — there is no one above them.
+                    This is the <em>bootstrap problem</em>. The system solves it with a
+                    <strong class="text-yellow-300">Genesis Master Key List</strong>: a hardcoded array of Firebase UIDs
+                    in <code class="mono text-yellow-300">scripts/genesis-registrar.js</code>.
+                </p>
+
+                <pre class="mb-4"><code><span class="text-slate-500">// scripts/genesis-registrar.js</span>
+export const GENESIS_MASTER_UIDS = [
+  <span class="hl-g">"k1E2ylvBlJPMYaCq9SY8muJQx8a2"</span>,   <span class="text-slate-500">// Garrett Hoard — Root Archon</span>
+];</code></pre>
+
+                <p class="text-slate-400 text-sm mb-6">
+                    Any UID in this list receives implicit Archon authority immediately — even before they
+                    create a Cosmological ID or self-sign a certificate. Once they visit
+                    <strong class="text-yellow-300">Genesis Forge → Self-Sign Archon Certificate</strong>, a proper
+                    self-signed certificate is written to their Firestore registrar.
+                </p>
+
+                <div class="callout callout-gold">
+                    <p class="text-xs text-yellow-200 font-semibold mb-1">Why hardcode UIDs?</p>
+                    <p class="text-xs text-slate-400">
+                        Firebase Auth UIDs are assigned by Google and cannot be forged. A user cannot change their own UID.
+                        Hardcoding them in source code (committed to a private/controlled repo) is the standard Firebase
+                        bootstrap pattern — it's equivalent to how most admin panels have a seeded first admin in their
+                        database migration.
+                    </p>
+                </div>
+            </section>
+
+            <hr class="divider">
+
+            <!-- ─── TOME CREATION ────────────────────────── -->
+            <section id="tomes">
+                <div class="section-label sl-cyan mb-4">06 — Tomes</div>
+                <h2 class="text-3xl mystical cyan-grad mb-6">Tome Creation</h2>
+
+                <p class="text-slate-300 leading-relaxed mb-6">
+                    A <strong class="text-cyan-300">Tome</strong> is a structured knowledge document — the fundamental
+                    unit of learning on the Academy. Each tome is stored as a Firestore document at
+                    <code class="mono text-cyan-300">tomes/{tomeId}</code> and carries the author's tier-derived priority,
+                    a plane scope, and a status controlling whether it awards XP.
+                </p>
+
+                <!-- Tome anatomy -->
+                <pre class="mb-6"><code><span class="text-slate-500">// Firestore: tomes/{tomeId}</span>
+{
+  <span class="hl-c">"title"</span>:           "Clifford Torus Proof",
+  <span class="hl-c">"description"</span>:     "Demonstrates the flat torus embedding in ℝ⁴",
+  <span class="hl-c">"body"</span>:            "Full content text or HTML...",
+  <span class="hl-c">"dept"</span>:            "I",
+  <span class="hl-c">"plane"</span>:           <span class="hl-g">"dept-I"</span>,
+  <span class="hl-c">"status"</span>:          <span class="hl-g">"active"</span>,        <span class="text-slate-500">// controls XP</span>
+  <span class="hl-c">"priority"</span>:        <span class="hl-g">"canonical"</span>,     <span class="text-slate-500">// from author's tier</span>
+  <span class="hl-c">"creatorUid"</span>:      "k1E2ylvBlJPMYaCq9SY8...",
+  <span class="hl-c">"creatorGenesisId"</span>:"0xD4AF37F00BA4C0DE",
+  <span class="hl-c">"creatorTier"</span>:     "ARCHON",
+  <span class="hl-c">"certificateHash"</span>: "a1b2c3d4e5f60708",  <span class="text-slate-500">// first 16 chars of signature</span>
+  <span class="hl-c">"createdAt"</span>:       <span class="hl-g">serverTimestamp()</span>,
+  <span class="hl-c">"updatedAt"</span>:       <span class="hl-g">serverTimestamp()</span>
+}</code></pre>
+
+                <!-- Tome statuses -->
+                <h3 id="tome-status" class="text-xl mystical text-cyan-200 mb-4">Tome Statuses</h3>
+                <p class="text-slate-400 text-sm mb-4">
+                    Status determines how a tome behaves for students. Only Instructors and Archons
+                    can change status via the Admin Console.
+                </p>
+
+                <div class="grid md:grid-cols-2 gap-4 mb-6">
+                    <div class="glass p-4">
+                        <div class="flex items-center gap-2 mb-2">
+                            <span class="inline-block px-2 py-0.5 rounded-full text-[10px] mono bg-green-400/15 text-green-400 border border-green-400/35">Active ★</span>
+                        </div>
+                        <p class="text-xs text-slate-400">Visible to all students. Awards XP on completion. Counts toward artifact thresholds. This is the published state — a tome should only go active when it's polished and reviewed.</p>
+                    </div>
+                    <div class="glass p-4">
+                        <div class="flex items-center gap-2 mb-2">
+                            <span class="inline-block px-2 py-0.5 rounded-full text-[10px] mono bg-cyan-400/12 text-cyan-400 border border-cyan-400/30">Manuscript</span>
+                        </div>
+                        <p class="text-xs text-slate-400">Visible to all students but awards no XP. Use this for works-in-progress or supplementary reading that hasn't been formally validated yet.</p>
+                    </div>
+                    <div class="glass p-4">
+                        <div class="flex items-center gap-2 mb-2">
+                            <span class="inline-block px-2 py-0.5 rounded-full text-[10px] mono bg-purple-400/12 text-purple-400 border border-purple-400/30">Reference</span>
+                        </div>
+                        <p class="text-xs text-slate-400">Visible but explicitly marked as reference material. No XP. Use for glossaries, appendices, or background reading linked from active tomes.</p>
+                    </div>
+                    <div class="glass p-4">
+                        <div class="flex items-center gap-2 mb-2">
+                            <span class="inline-block px-2 py-0.5 rounded-full text-[10px] mono bg-red-400/10 text-red-400 border border-red-400/25">Sealed</span>
+                        </div>
+                        <p class="text-xs text-slate-400">Hidden from Acolytes. Only Instructors and Archons can see sealed tomes. Use for drafts, admin-only notes, or department-locked content.</p>
+                    </div>
+                </div>
+
+                <!-- Priority stamping -->
+                <h3 id="priority" class="text-xl mystical text-cyan-200 mb-4">Priority Stamping</h3>
+                <p class="text-slate-400 text-sm mb-4">
+                    Every tome is stamped at creation time with a priority derived from the author's tier.
+                    When two tomes cover the same topic, priority determines display order.
+                    <strong class="text-slate-300">Only Active tomes award XP regardless of priority.</strong>
+                </p>
+
+                <div class="glass panel-gold overflow-hidden">
+                    <table>
+                        <thead>
+                            <tr><th>Author Tier</th><th>Priority</th><th>Color</th><th>Display Order</th><th>XP Eligible?</th></tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><span class="tier-archon">♛ Archon</span></td>
+                                <td><span class="priority-pill p-canonical">Canonical</span></td>
+                                <td class="text-yellow-400">Gold</td>
+                                <td class="text-slate-400 text-xs">First — absolute consensus</td>
+                                <td class="text-green-400">✓ if Active</td>
+                            </tr>
+                            <tr>
+                                <td><span class="tier-instructor">⬢ Instructor</span></td>
+                                <td><span class="priority-pill p-validated">Validated</span></td>
+                                <td class="text-cyan-400">Cyan</td>
+                                <td class="text-slate-400 text-xs">Second</td>
+                                <td class="text-green-400">✓ if Active</td>
+                            </tr>
+                            <tr>
+                                <td><span class="tier-acolyte">◯ Acolyte</span></td>
+                                <td><span class="priority-pill p-experimental">Experimental</span></td>
+                                <td class="text-fuchsia-400">Magenta</td>
+                                <td class="text-slate-400 text-xs">Last — Biostrata layer</td>
+                                <td class="text-red-400">✗ never</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <hr class="divider">
+
+            <!-- ─── ARTIFACTS ────────────────────────────── -->
+            <section id="artifacts">
+                <div class="section-label sl-gold mb-4">07 — Artifacts</div>
+                <h2 class="text-3xl mystical gold-grad mb-6">Artifacts</h2>
+
+                <p class="text-slate-300 leading-relaxed mb-6">
+                    An <strong class="text-yellow-300">Artifact</strong> is a mastery milestone — a named credential
+                    minted when a student completes a required set of tomes. Only the <strong>Active</strong> tomes in
+                    the required list count. Only Instructors and Archons can mint artifacts.
+                </p>
+
+                <div class="grid md:grid-cols-3 gap-4 mb-6">
+                    <div class="glass panel-gold p-5 text-center">
+                        <div class="text-4xl font-bold mystical gold-grad mb-1">9</div>
+                        <p class="text-xs text-slate-400">Active tomes required per artifact for Departments I–IX</p>
+                    </div>
+                    <div class="glass panel-gold p-5 text-center">
+                        <div class="text-4xl font-bold mystical gold-grad mb-1">16</div>
+                        <p class="text-xs text-slate-400">Active tomes per artifact for Department X (BioChain Substrate)</p>
+                    </div>
+                    <div class="glass panel-gold p-5 text-center">
+                        <div class="text-4xl font-bold mystical gold-grad mb-1">4</div>
+                        <p class="text-xs text-slate-400">Total artifacts in Department X (64 tomes ÷ 16)</p>
+                    </div>
+                </div>
+
+                <pre class="mb-4"><code><span class="text-slate-500">// Firestore: artifacts/{artifactId}</span>
+{
+  <span class="hl-c">"name"</span>:          "Sacred Geometry Mastery",
+  <span class="hl-c">"plane"</span>:         "dept-I",
+  <span class="hl-c">"requiredTomes"</span>: ["tomeId1", "tomeId2", ..., "tomeId9"],
+  <span class="hl-c">"priority"</span>:      "canonical",        <span class="text-slate-500">// from creator's tier</span>
+  <span class="hl-c">"creatorUid"</span>:    "k1E2ylvBlJPMYaCq9SY8..."
+}</code></pre>
+
+                <div class="callout callout-gold">
+                    <p class="text-xs text-yellow-200 font-semibold mb-1">145-Tome Cubic Model</p>
+                    <p class="text-xs text-slate-400">
+                        The full Academy curriculum: <strong class="text-slate-200">15 Foundation tomes</strong> (Depts I–VI, 9 each → 54 minus overlaps, net 15 active),
+                        <strong class="text-slate-200">27 Triad tomes</strong> (Depts VII–IX, 9 each), and
+                        <strong class="text-slate-200">64 Substrate tomes</strong> (Dept X).
+                        Completing all 145 active tomes represents a full 4×4×4 cubic matrix of knowledge — the same structure as the SHD-CCP lattice.
+                    </p>
+                </div>
+            </section>
+
+            <hr class="divider">
+
+            <!-- ─── FULL WORKFLOW ─────────────────────────── -->
+            <section id="workflow">
+                <div class="section-label sl-gold mb-4">08 — Workflow</div>
+                <h2 class="text-3xl mystical gold-grad mb-6">Full Workflow</h2>
+
+                <!-- Acolyte path -->
+                <h3 class="text-xl mystical text-slate-200 mb-4">Path A — Becoming an Acolyte (any user)</h3>
+                <div class="space-y-3 mb-8">
+                    <div class="flex items-start gap-3">
+                        <div class="step-num step-gold">1</div>
+                        <div>
+                            <p class="text-sm text-slate-200 font-semibold">Sign up / log in</p>
+                            <p class="text-xs text-slate-500">Create a Firebase account at <code class="mono">login.html</code>. Firebase assigns you a permanent UID.</p>
+                        </div>
+                    </div>
+                    <div class="flex items-start gap-3">
+                        <div class="step-num step-gold">2</div>
+                        <div>
+                            <p class="text-sm text-slate-200 font-semibold">Forge your Cosmological ID</p>
+                            <p class="text-xs text-slate-500">Visit <code class="mono text-yellow-300">mage_tower/Registrar.html</code>. Enter a ledger seed phrase (memorable, private). Choose a lattice space (E8 recommended). Preview the sigil. Click <strong>Seal</strong> — this is permanent.</p>
+                        </div>
+                    </div>
+                    <div class="flex items-start gap-3">
+                        <div class="step-num step-gold">3</div>
+                        <div>
+                            <p class="text-sm text-slate-200 font-semibold">View your Codex</p>
+                            <p class="text-xs text-slate-500">Visit <code class="mono text-yellow-300">mage_tower/Codex.html</code> to see your sigil, Cosmological ID, and tier. Your tier is now <span class="tier-acolyte">Acolyte</span>.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Archon bootstrap -->
+                <h3 class="text-xl mystical text-slate-200 mb-4">Path B — Bootstrapping the Root Archon (one-time)</h3>
+                <div class="space-y-3 mb-8">
+                    <div class="flex items-start gap-3">
+                        <div class="step-num step-gold">1</div>
+                        <div>
+                            <p class="text-sm text-slate-200 font-semibold">Find your Firebase UID</p>
+                            <p class="text-xs text-slate-500">Open browser DevTools while logged in → Console → type <code class="mono text-cyan-300">firebase.auth().currentUser.uid</code> or check Application → IndexedDB → firebaseLocalStorageDb.</p>
+                        </div>
+                    </div>
+                    <div class="flex items-start gap-3">
+                        <div class="step-num step-gold">2</div>
+                        <div>
+                            <p class="text-sm text-slate-200 font-semibold">Add UID to the Master Key list</p>
+                            <p class="text-xs text-slate-500">Edit <code class="mono text-yellow-300">scripts/genesis-registrar.js</code> → add UID to <code class="mono text-yellow-300">GENESIS_MASTER_UIDS</code> array → commit and deploy.</p>
+                        </div>
+                    </div>
+                    <div class="flex items-start gap-3">
+                        <div class="step-num step-gold">3</div>
+                        <div>
+                            <p class="text-sm text-slate-200 font-semibold">Self-sign at Genesis Forge</p>
+                            <p class="text-xs text-slate-500">Visit <code class="mono text-yellow-300">mage_tower/Genesis_Forge.html</code> → click <strong>Self-Sign Archon Certificate</strong>. Your registrar is upgraded. You are now <span class="tier-archon">♛ Archon</span>.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Instructor path -->
+                <h3 class="text-xl mystical text-slate-200 mb-4">Path C — Minting a New Instructor (Archon does this)</h3>
+                <div class="space-y-3 mb-8">
+                    <div class="flex items-start gap-3">
+                        <div class="step-num step-cyan">1</div>
+                        <div>
+                            <p class="text-sm text-slate-200 font-semibold">New instructor registers</p>
+                            <p class="text-xs text-slate-500">They complete Path A (Acolyte setup) and share their Cosmological ID with you (screenshot from their Codex).</p>
+                        </div>
+                    </div>
+                    <div class="flex items-start gap-3">
+                        <div class="step-num step-cyan">2</div>
+                        <div>
+                            <p class="text-sm text-slate-200 font-semibold">Archon issues certificate</p>
+                            <p class="text-xs text-slate-500">Visit <code class="mono text-yellow-300">mage_tower/Genesis_Forge.html</code> or <code class="mono text-yellow-300">mage_tower/Admin_Console.html → Elect Instructors tab</code>. Enter the subject's Cosmological ID, select <strong>Instructor</strong>, pick a plane. Click <strong>Forge Certificate</strong>.</p>
+                        </div>
+                    </div>
+                    <div class="flex items-start gap-3">
+                        <div class="step-num step-cyan">3</div>
+                        <div>
+                            <p class="text-sm text-slate-200 font-semibold">Deliver the certificate securely</p>
+                            <p class="text-xs text-slate-500">Download the JSON or copy it. Send via Signal, encrypted email, or in-person handoff. Do NOT post in public chat.</p>
+                        </div>
+                    </div>
+                    <div class="flex items-start gap-3">
+                        <div class="step-num step-cyan">4</div>
+                        <div>
+                            <p class="text-sm text-slate-200 font-semibold">Recipient applies the certificate</p>
+                            <p class="text-xs text-slate-500">They open <code class="mono text-yellow-300">mage_tower/Codex.html → Apply Genesis Certificate</code>, paste the JSON, click <strong>Apply</strong>. Page reloads. They are now <span class="tier-instructor">⬢ Instructor</span>.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tome authoring -->
+                <h3 class="text-xl mystical text-slate-200 mb-4">Path D — Creating a Tome (Instructor or Archon)</h3>
+                <div class="space-y-3 mb-8">
+                    <div class="flex items-start gap-3">
+                        <div class="step-num step-cyan">1</div>
+                        <div>
+                            <p class="text-sm text-slate-200 font-semibold">Open the Instructor Console</p>
+                            <p class="text-xs text-slate-500">Visit <code class="mono text-yellow-300">mage_tower/Instructor_Console.html</code>. The tab <strong>+ New Tome</strong> is shown.</p>
+                        </div>
+                    </div>
+                    <div class="flex items-start gap-3">
+                        <div class="step-num step-cyan">2</div>
+                        <div>
+                            <p class="text-sm text-slate-200 font-semibold">Fill in tome fields</p>
+                            <p class="text-xs text-slate-500">Title, description, plane (must match your certified plane), body content, and status. The priority preview shows your tier's stamp automatically.</p>
+                        </div>
+                    </div>
+                    <div class="flex items-start gap-3">
+                        <div class="step-num step-cyan">3</div>
+                        <div>
+                            <p class="text-sm text-slate-200 font-semibold">Inscribe to Ledger</p>
+                            <p class="text-xs text-slate-500">Click <strong>Inscribe Tome to Ledger</strong>. The tome is written to Firestore with your tier's priority stamp and a hash of your certificate. The tome ID is returned — save it for artifact configuration.</p>
+                        </div>
+                    </div>
+                    <div class="flex items-start gap-3">
+                        <div class="step-num step-cyan">4</div>
+                        <div>
+                            <p class="text-sm text-slate-200 font-semibold">Manage release status</p>
+                            <p class="text-xs text-slate-500">Use <code class="mono text-yellow-300">mage_tower/Admin_Console.html → Departments tab</code> to toggle tome status between Active / Manuscript / Sealed at any time.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Artifact minting -->
+                <h3 class="text-xl mystical text-slate-200 mb-4">Path E — Minting an Artifact</h3>
+                <div class="space-y-3">
+                    <div class="flex items-start gap-3">
+                        <div class="step-num step-gold">1</div>
+                        <div>
+                            <p class="text-sm text-slate-200 font-semibold">Create the required tomes first</p>
+                            <p class="text-xs text-slate-500">An artifact requires a list of tome IDs. Create and <strong>activate</strong> all required tomes (Path D above) before minting.</p>
+                        </div>
+                    </div>
+                    <div class="flex items-start gap-3">
+                        <div class="step-num step-gold">2</div>
+                        <div>
+                            <p class="text-sm text-slate-200 font-semibold">Collect the Firestore tome IDs</p>
+                            <p class="text-xs text-slate-500">Find them in <code class="mono text-yellow-300">Admin Console → Tome Registry</code>. Each card shows the Firestore document ID below the title.</p>
+                        </div>
+                    </div>
+                    <div class="flex items-start gap-3">
+                        <div class="step-num step-gold">3</div>
+                        <div>
+                            <p class="text-sm text-slate-200 font-semibold">Mint the artifact</p>
+                            <p class="text-xs text-slate-500">Use <code class="mono text-yellow-300">Admin Console → Artifacts tab</code> or the <strong>+ New Artifact</strong> tab in the Instructor Console. Paste the comma-separated tome IDs. Click <strong>Mint Artifact</strong>.</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <hr class="divider">
+
+            <!-- ─── COMMON ERRORS ─────────────────────────── -->
+            <section id="errors">
+                <div class="section-label sl-gold mb-4">09 — Errors</div>
+                <h2 class="text-3xl mystical gold-grad mb-6">Common Errors</h2>
+
+                <div class="glass panel-gold overflow-hidden mb-6">
+                    <table>
+                        <thead>
+                            <tr><th>Error</th><th>Cause</th><th>Fix</th></tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td class="mono text-red-300 text-xs">Registrar not found</td>
+                                <td class="text-xs">User hasn't forged Cosmological ID yet</td>
+                                <td class="text-xs text-cyan-300">Visit Registrar.html first</td>
+                            </tr>
+                            <tr>
+                                <td class="mono text-red-300 text-xs">Certificate subject does not match your Cosmological ID</td>
+                                <td class="text-xs">Certificate was minted for a different user</td>
+                                <td class="text-xs text-cyan-300">Re-issue from Genesis Forge for the correct subject ID</td>
+                            </tr>
+                            <tr>
+                                <td class="mono text-red-300 text-xs">Issuer cannot mint Instructors</td>
+                                <td class="text-xs">Acting user is not an Archon</td>
+                                <td class="text-xs text-cyan-300">Obtain your own Archon certificate first</td>
+                            </tr>
+                            <tr>
+                                <td class="mono text-red-300 text-xs">Your Genesis certificate does not authorize authorship on dept-X</td>
+                                <td class="text-xs">Plane mismatch — your certificate covers a different plane</td>
+                                <td class="text-xs text-cyan-300">Request a new certificate scoped to that plane, or use * for universal</td>
+                            </tr>
+                            <tr>
+                                <td class="mono text-red-300 text-xs">Self-signed certificates only permitted for Master Key UIDs</td>
+                                <td class="text-xs">Tried Genesis Forge bootstrap without being in the UID list</td>
+                                <td class="text-xs text-cyan-300">Add UID to GENESIS_MASTER_UIDS, commit, redeploy</td>
+                            </tr>
+                            <tr>
+                                <td class="mono text-red-300 text-xs">The query requires an index</td>
+                                <td class="text-xs">Firestore composite index missing for the plane+createdAt query</td>
+                                <td class="text-xs text-cyan-300">Click the URL in the error → Firebase Console → Create index</td>
+                            </tr>
+                            <tr>
+                                <td class="mono text-red-300 text-xs">Missing or insufficient permissions</td>
+                                <td class="text-xs">Firestore rules deny the write (wrong tier or unregistered)</td>
+                                <td class="text-xs text-cyan-300">Ensure your registrar/main document has tier set; re-apply certificate</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <hr class="divider">
+
+            <!-- ─── FIRESTORE SETUP ───────────────────────── -->
+            <section id="firestore">
+                <div class="section-label sl-green mb-4">10 — Firestore</div>
+                <h2 class="text-3xl mystical mb-4" style="background:linear-gradient(135deg,#00ff64,#00d4ff);-webkit-background-clip:text;background-clip:text;color:transparent;">Firestore Setup Checklist</h2>
+
+                <p class="text-slate-400 text-sm mb-6">Required steps in Firebase Console before the system is fully functional:</p>
+
+                <div class="space-y-3">
+                    <div class="flex items-start gap-3 glass p-4 rounded-xl">
+                        <span class="text-green-400 text-lg mt-0.5">☐</span>
+                        <div>
+                            <p class="text-sm text-slate-200 font-semibold">Deploy Firestore Rules</p>
+                            <p class="text-xs text-slate-500">Copy contents of <code class="mono">firestore.rules</code> into Firebase Console → Firestore → Rules → Publish. Or run <code class="mono text-green-300">firebase deploy --only firestore:rules</code>.</p>
+                        </div>
+                    </div>
+                    <div class="flex items-start gap-3 glass p-4 rounded-xl">
+                        <span class="text-green-400 text-lg mt-0.5">☐</span>
+                        <div>
+                            <p class="text-sm text-slate-200 font-semibold">Create Composite Indexes</p>
+                            <p class="text-xs text-slate-500 mb-2">The Admin Console and Instructor Console run queries that require composite indexes. Click each link below to create them in one step, or create manually:</p>
+                            <ul class="text-xs text-slate-500 space-y-1 list-disc list-inside">
+                                <li>Collection: <code class="mono text-green-300">tomes</code> — fields: <code class="mono text-green-300">plane ASC, createdAt DESC</code></li>
+                                <li>Collection: <code class="mono text-green-300">tomes</code> — fields: <code class="mono text-green-300">status ASC, createdAt DESC</code></li>
+                                <li>Collection: <code class="mono text-green-300">tomes</code> — fields: <code class="mono text-green-300">plane ASC, status ASC, createdAt DESC</code></li>
+                                <li>Collection: <code class="mono text-green-300">tomes</code> — fields: <code class="mono text-green-300">creatorUid ASC, createdAt DESC</code></li>
+                                <li>Collection: <code class="mono text-green-300">artifacts</code> — fields: <code class="mono text-green-300">plane ASC, createdAt DESC</code></li>
+                                <li>Collection: <code class="mono text-green-300">artifacts</code> — fields: <code class="mono text-green-300">createdAt DESC</code></li>
+                            </ul>
+                            <p class="text-xs text-slate-600 mt-2">Tip: trigger each query in the app while logged in as Archon — each 400 error includes a direct link to create the exact index needed.</p>
+                        </div>
+                    </div>
+                    <div class="flex items-start gap-3 glass p-4 rounded-xl">
+                        <span class="text-green-400 text-lg mt-0.5">☐</span>
+                        <div>
+                            <p class="text-sm text-slate-200 font-semibold">Forge Cosmological ID + Self-Sign Archon Certificate</p>
+                            <p class="text-xs text-slate-500">Your registrar/main document needs a <code class="mono">tier: "ARCHON"</code> field for Firestore Rules to recognize you as Archon. Complete Paths A and B above.</p>
+                        </div>
+                    </div>
+                    <div class="flex items-start gap-3 glass p-4 rounded-xl">
+                        <span class="text-green-400 text-lg mt-0.5">☐</span>
+                        <div>
+                            <p class="text-sm text-slate-200 font-semibold">Enable Firebase Auth (Email/Password + Google)</p>
+                            <p class="text-xs text-slate-500">Firebase Console → Authentication → Sign-in method → Enable Email/Password (and Google if desired). Without this, no one can log in.</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Footer nav -->
+            <div class="pt-8 border-t border-white/08 flex flex-wrap gap-3 justify-center">
+                <a href="Registrar.html"          class="nav-link">⬡ Registrar</a>
+                <a href="Codex.html"              class="nav-link">⬡ Codex</a>
+                <a href="Genesis_Forge.html"      class="nav-link">♛ Genesis Forge</a>
+                <a href="Instructor_Console.html" class="nav-link">⬢ Instructor Console</a>
+                <a href="Admin_Console.html"      class="nav-link">♛ Admin Console</a>
+                <a href="../Learning-Hub.html"    class="nav-link">← Learning Hub</a>
+            </div>
+
+        </main>
+    </div>
+</div>
+
+</body>
+</html>
