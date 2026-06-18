@@ -1,0 +1,901 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Owl Academy | Quadrance Scaling in Lattice Systems</title>
+    
+    <!-- External Libraries -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Inter:wght@300;400;500;600&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+    
+    <!-- MathJax Configuration -->
+    <script>
+        window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']] } };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+    <style>
+        :root {
+            --color-void: #05030a;
+            --color-primary: #D4AF37;
+            --color-primary-light: #FFF8DC;
+            --color-holo-cyan: #00d4ff;
+            --color-holo-purple: #8A2BE2;
+            --color-holo-emerald: #10b981;
+            --color-holo-rose: #f43f5e;
+        }
+
+        body {
+            background-color: var(--color-void);
+            color: #e2e8f0;
+            font-family: 'Inter', sans-serif;
+            background: radial-gradient(circle at 50% 0%, color-mix(in srgb, var(--color-holo-cyan) 10%, var(--color-void)), var(--color-void) 80%);
+            min-height: 100vh;
+            margin: 0;
+            overflow-x: hidden;
+            line-height: 1.6;
+        }
+
+        .starfield {
+            position: fixed; inset: 0;
+            background-image:
+                radial-gradient(2px 2px at 20px 30px, var(--color-holo-cyan), rgba(0,0,0,0)),
+                radial-gradient(2px 2px at 40px 70px, #fff, rgba(0,0,0,0)),
+                radial-gradient(2px 2px at 50px 160px, rgba(255,255,255,0.8), rgba(0,0,0,0)),
+                radial-gradient(2px 2px at 90px 40px, #fff, rgba(0,0,0,0)),
+                radial-gradient(2px 2px at 130px 80px, var(--color-holo-cyan), rgba(0,0,0,0));
+            background-repeat: repeat; background-size: 250px 250px;
+            animation: twinkle 8s infinite alternate;
+            opacity: 0.15; z-index: -2; pointer-events: none;
+        }
+
+        @keyframes twinkle { 0% { opacity: 0.05; } 100% { opacity: 0.2; } }
+
+        h1, h2, h3, h4, h5, .mystical-font { font-family: 'Cinzel', serif; }
+
+        .gold-gradient {
+            background: linear-gradient(to right, var(--color-holo-cyan), var(--color-primary-light), var(--color-holo-cyan));
+            -webkit-background-clip: text; background-clip: text;
+            color: transparent; text-shadow: 0 0 15px color-mix(in srgb, var(--color-holo-cyan) 30%, transparent);
+        }
+
+        .glass-panel {
+            background: rgba(10, 8, 20, 0.65);
+            backdrop-filter: blur(16px);
+            border: 1px solid color-mix(in srgb, var(--color-holo-cyan) 15%, transparent);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5);
+        }
+
+        /* Sidebar Nav Styles */
+        .nav-item {
+            transition: all 0.3s ease;
+            border-left: 2px solid transparent;
+        }
+        .nav-item.active {
+            background: linear-gradient(90deg, rgba(0, 212, 255, 0.15) 0%, transparent 100%);
+            border-left-color: var(--color-holo-cyan);
+            color: var(--color-holo-cyan);
+        }
+        .nav-item:hover:not(.active) {
+            background: rgba(255,255,255,0.05);
+            border-left-color: rgba(0, 212, 255, 0.4);
+        }
+
+        /* Content Scrollbar */
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-track { background: rgba(0,0,0,0.3); }
+        ::-webkit-scrollbar-thumb { background: color-mix(in srgb, var(--color-holo-cyan) 40%, transparent); border-radius: 10px; }
+    </style>
+</head>
+<body class="antialiased flex flex-col h-screen overflow-hidden">
+
+    <!-- Atmospheric Background -->
+    <div class="starfield"></div>
+
+    <!-- Header -->
+    <header class="flex-shrink-0 w-full py-4 px-6 relative border-b border-cyan-600/20 bg-[#05030a]/80 backdrop-blur-md z-[100] flex justify-between items-center shadow-lg">
+        <div>
+            <div class="text-[10px] text-cyan-500/80 tracking-[0.3em] uppercase font-mono mb-1">
+                Community & Research &gt; Independent Learning
+            </div>
+            <h1 class="text-xl md:text-2xl font-bold tracking-[0.2em] gold-gradient">OWL ACADEMY</h1>
+        </div>
+        
+        <div class="flex items-center gap-3">
+            <div class="relative">
+                <button id="video-toggle" class="font-mono text-xs text-yellow-400 hover:text-yellow-300 border border-yellow-500/30 px-3 py-1.5 rounded bg-yellow-900/20 hover:bg-yellow-900/40 transition-colors flex items-center gap-2">
+                    <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                    REFERENCE MATERIAL
+                </button>
+                
+                <!-- Resizable Dropdown Panel -->
+                <div id="video-dropdown" class="absolute right-0 top-full mt-3 w-[85vw] md:w-[500px] h-[350px] min-w-[300px] min-h-[200px] glass-panel border border-yellow-500/30 rounded-xl p-3 hidden shadow-[0_0_30px_rgba(212,175,55,0.15)] origin-top-right transition-opacity duration-200 resize overflow-hidden flex flex-col z-[100]">
+                    <div class="flex justify-between items-center mb-3 px-1 flex-shrink-0">
+                        <div class="flex items-center gap-4">
+                            <span class="text-[10px] font-bold text-yellow-500 uppercase tracking-widest font-mono flex items-center gap-2">
+                                <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                                Reference
+                            </span>
+                        </div>
+                        <button id="video-close" class="text-slate-400 hover:text-white transition-colors p-1 bg-black/50 rounded hover:bg-white/10">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                        </button>
+                    </div>
+                    
+                    <!-- Content Area -->
+                    <div class="w-full flex-1 rounded-lg border border-white/10 overflow-hidden bg-black shadow-inner relative flex items-center justify-center">
+                        <div class="text-center text-slate-500 font-mono text-sm p-4">
+                            [ Placeholder for PDF/Video Resource ]<br><br>
+                            Quadrance Scaling in lattice systems.mp4
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="font-mono text-xs text-cyan-400 border border-cyan-500/30 px-3 py-1.5 rounded bg-cyan-900/20 hidden md:block">
+                MODULE: <span class="text-white">QUADRANCE SCALING IN LATTICE SYSTEMS</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Application Area -->
+    <div class="flex-1 flex overflow-hidden relative z-10 p-4 gap-4">
+        
+        <!-- Sidebar Navigation -->
+        <aside class="w-1/4 max-w-[300px] glass-panel rounded-xl flex flex-col overflow-hidden h-full">
+            <div class="p-4 border-b border-white/10">
+                <h2 class="text-sm font-bold text-white tracking-widest mystical-font">Module Phases</h2>
+            </div>
+            <nav class="flex-1 overflow-y-auto py-2" id="nav-container">
+                <!-- Nav items generated via JS -->
+            </nav>
+            
+            <!-- Related Departments Links -->
+            <div class="p-4 border-t border-white/10 bg-black/20 flex-shrink-0">
+                <h3 class="text-[10px] font-bold text-slate-400 uppercase tracking-widest font-mono mb-3">Related Departments</h3>
+                <ul class="space-y-2">
+                    <li>
+                        <a href="../../kinematics/index.html" class="text-[10px] font-mono text-emerald-400 hover:text-emerald-200 transition-colors flex items-center gap-2">
+                            <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 shadow-[0_0_5px_#10b981]"></span> 
+                            Dept. of Kinematics
+                        </a>
+                    </li>
+                    <li>
+                        <a href="../../quantum_topology/index.html" class="text-[10px] font-mono text-fuchsia-400 hover:text-fuchsia-200 transition-colors flex items-center gap-2">
+                            <span class="w-1.5 h-1.5 rounded-full bg-fuchsia-400 shadow-[0_0_5px_#f43f5e]"></span> 
+                            Quantum Topology
+                        </a>
+                    </li>
+                    <li>
+                        <a href="../../applied_robotics/index.html" class="text-[10px] font-mono text-yellow-400 hover:text-yellow-200 transition-colors flex items-center gap-2">
+                            <span class="w-1.5 h-1.5 rounded-full bg-yellow-400 shadow-[0_0_5px_#D4AF37]"></span> 
+                            Applied Robotics
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </aside>
+
+        <!-- Content Area -->
+        <main class="flex-1 flex flex-col gap-4 h-full overflow-hidden">
+            
+            <!-- Interactive Visualization Panel -->
+            <div class="w-full h-1/2 lg:h-[55%] min-h-[250px] glass-panel rounded-xl relative overflow-hidden shadow-[0_0_40px_rgba(0,212,255,0.1)_inset] flex-shrink-0">
+                <!-- 3D Canvas -->
+                <div id="canvas-container" class="w-full h-full"></div>
+                
+                <!-- Vis HUD -->
+                <div class="absolute top-4 left-4 z-20 font-mono text-[10px] bg-black/60 px-3 py-1.5 rounded border border-white/10 text-slate-300 backdrop-blur-md">
+                    <span class="text-white font-bold" id="vis-title">Live Visualization</span><br>
+                    <span class="text-slate-500">Interact with mouse to rotate/zoom</span>
+                </div>
+                
+                <div id="vis-overlay-data" class="absolute bottom-4 right-4 z-20 font-mono text-[10px] bg-black/80 px-3 py-2 rounded border border-cyan-500/30 text-right backdrop-blur-md text-cyan-300">
+                    <!-- Dynamic HUD data per phase -->
+                </div>
+            </div>
+
+            <!-- Explainer Text Panel -->
+            <div class="w-full flex-1 glass-panel rounded-xl flex flex-col overflow-hidden">
+                <div class="p-4 md:p-6 border-b border-white/10 bg-black/40 flex-shrink-0">
+                    <div id="phase-badge" class="inline-block px-2 py-0.5 border border-cyan-500/30 rounded text-cyan-400 text-[9px] tracking-widest uppercase mb-2 font-mono">Phase 0</div>
+                    <h2 id="phase-title" class="text-xl md:text-2xl font-bold text-white mystical-font leading-tight">Concept Title</h2>
+                    <p id="phase-objective" class="text-xs md:text-sm text-slate-400 mt-2 italic border-l-2 border-cyan-600/50 pl-3">Objective description here.</p>
+                </div>
+                
+                <div class="p-4 md:p-6 overflow-y-auto flex-1 custom-scrollbar" id="phase-content">
+                    <!-- Content generated via JS -->
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <!-- Application Script -->
+    <script>
+        // ==========================================
+        // 1. DATA: Phase Content Definitions
+        // ==========================================
+        const phasesData = [
+            {
+                id: "phase-0",
+                badge: "Phase 0",
+                badgeColor: "cyan",
+                title: "Introduction to Quadrance",
+                objective: "Understand that quadrance means squared distance.",
+                content: `
+                    <div class="space-y-4 text-sm text-slate-300 leading-relaxed">
+                        <p>A lattice can be studied from one starting vertex by measuring how far other points are from it. However, we do not use ordinary Euclidean distance. Instead, we use <strong>squared distance</strong>, known as <strong>Quadrance</strong>.</p>
+                        
+                        <div class="bg-black/40 border border-white/10 rounded p-4 mt-4">
+                            <h3 class="text-white font-bold border-b border-cyan-500/30 pb-2 mb-3 tracking-wide">The Quadrance Equation</h3>
+                            <p class="text-xs text-slate-400 mb-3">In a flat grid, a move of $a$ steps in one direction and $b$ steps in a perpendicular direction produces a quadrance value defined by:</p>
+                            
+                            <div class="text-center font-mono text-cyan-300 text-sm mb-3">
+                                $$Q = a^2 + b^2$$
+                            </div>
+
+                            <p class="text-xs text-slate-400">This squared measurement is incredibly useful because the sides of right triangles inside the grid can be compared directly to the geometric squares built on those sides. When triangles inside the lattice expand into squares, a simple rule keeps the measurements organized.</p>
+                        </div>
+                    </div>
+                `,
+                visTitle: "Triangles form Squares (Quadrance)",
+                initScene: initPhase0
+            },
+            {
+                id: "phase-1",
+                badge: "Phase 1",
+                badgeColor: "yellow",
+                title: "Three-Dimensional Lattices",
+                objective: "Scale the concept of quadrance into a 4x4x4 spatial grid.",
+                content: `
+                    <div class="space-y-4 text-sm text-slate-300 leading-relaxed">
+                        <p>A lattice is made of regular grid positions. A point is described by how many steps it moves in each direction away from a chosen starting vertex.</p>
+                        
+                        <div class="bg-black/40 border border-white/10 rounded p-4 mt-4">
+                            <h3 class="text-white font-bold border-b border-yellow-500/30 pb-2 mb-3 tracking-wide">The $4 \\times 4 \\times 4$ Lattice</h3>
+                            <p class="text-xs text-slate-400 mb-3">In a three-dimensional $4 \\times 4 \\times 4$ lattice, a point that is $a$ steps, $b$ steps, and $c$ steps from the starting vertex has a quadrance defined by:</p>
+                            
+                            <div class="text-center font-mono text-yellow-300 text-sm mb-3">
+                                $$Q = a^2 + b^2 + c^2$$
+                            </div>
+
+                            <p class="text-xs text-slate-400">The triangles form squares, the squares record quadrance, and as the lattice expands, the function preserves these records as pure squared-distance records.</p>
+                        </div>
+                    </div>
+                `,
+                visTitle: "Pathing in a 4x4x4 Lattice",
+                initScene: initPhase1
+            },
+            {
+                id: "phase-2",
+                badge: "Phase 2",
+                badgeColor: "fuchsia",
+                title: "Scale Factors and the Squaring Rule",
+                objective: "Understand how doubling a length multiplies the squared measurement by four.",
+                content: `
+                    <div class="space-y-4 text-sm text-slate-300 leading-relaxed">
+                        <p>The key idea is that squaring a length changes how scaling works. The function $f(x) = x^2$ implies that a length $x$ becomes an area-like value $x^2$.</p>
+                        
+                        <div class="bg-black/40 border border-white/10 rounded p-4 mt-4">
+                            <h3 class="text-white font-bold border-b border-fuchsia-500/30 pb-2 mb-3 tracking-wide">Scaling the Lattice Length</h3>
+                            <p class="text-xs text-slate-400 mb-3">If the lattice is scaled so that $p$ represents a doubled version of the original length $x$, then $p = 2x$. Solving for $x$ gives $x = p/2$.</p>
+                            
+                            <p class="text-xs text-slate-400 mb-3">Substituting this back into the square rule $x^2$ gives:</p>
+                            
+                            <div class="text-center font-mono text-fuchsia-300 text-sm mb-3">
+                                $$f(p) = \\left(\\frac{p}{2}\\right)^2 = \\frac{p^2}{4}$$
+                            </div>
+
+                            <p class="text-xs text-slate-400">The division by four appears because squaring a doubled length multiplies the squared measurement by four. Therefore, <strong>undoing a doubled length requires dividing the squared measurement by four</strong>.</p>
+                        </div>
+                    </div>
+                `,
+                visTitle: "Expansion and the p²/4 Adjustment",
+                initScene: initPhase2
+            },
+            {
+                id: "phase-3",
+                badge: "Phase 3",
+                badgeColor: "emerald",
+                title: "Symmetry & Mirrored Expansion",
+                objective: "Observe how a 1/16th sample region mirrors the entire lattice pattern.",
+                content: `
+                    <div class="space-y-4 text-sm text-slate-300 leading-relaxed">
+                        <p>Inside a $4 \\times 4 \\times 4$ lattice, the coordinates and the quadrance must follow the same scale rule. This symmetry means that the same measurements reappear in matching positions instead of needing to be recalculated from scratch.</p>
+                        
+                        <div class="bg-black/40 border border-white/10 rounded p-4 mt-4">
+                            <h3 class="text-white font-bold border-b border-emerald-500/30 pb-2 mb-3 tracking-wide">The 1/16th Sample Region</h3>
+                            <p class="text-xs text-slate-400 mb-3">One small region can act like a sample of the larger pattern if every coordinate and every quadrance is scaled by the same rule.</p>
+                            
+                            <p class="text-xs text-slate-400 mb-3">When one sixteenth of a repeated design mirrors the inner matrix expansion, the inner matrix mirrors the whole lattice without losing data. The scaled coordinate $p$ still carries the original squared value once the scale factor ($p^2/4$) is accounted for.</p>
+                        </div>
+                    </div>
+                `,
+                visTitle: "1/16th Symmetrical Mirroring",
+                initScene: initPhase3
+            },
+            {
+                id: "phase-4",
+                badge: "Phase 4",
+                badgeColor: "rose",
+                title: "Tessellation via Squared Distance",
+                objective: "See how repeated shapes fit without gaps, governed by quadrance.",
+                content: `
+                    <div class="space-y-4 text-sm text-slate-300 leading-relaxed">
+                        <p>A tessellation is a pattern where repeated shapes fit together without any gaps or overlaps.</p>
+                        
+                        <div class="bg-black/40 border border-white/10 rounded p-4 mt-4">
+                            <h3 class="text-white font-bold border-b border-rose-500/30 pb-2 mb-3 tracking-wide">Quadrance-Controlled Repetition</h3>
+                            <p class="text-xs text-slate-400 mb-3">In our lattice system, this geometric repetition is not arbitrary. The repeat pattern is strictly controlled by the squared-distance values distributed throughout the grid.</p>
+                            
+                            <p class="text-xs text-slate-400">By linking physical space expansion to quadrance, the grid ensures that any scaled sub-region maps perfectly into its neighbors, forming a seamless, mathematically rigid tessellation.</p>
+                        </div>
+                    </div>
+                `,
+                visTitle: "Quadrance-Controlled Tessellation",
+                initScene: initPhase4
+            },
+            {
+                id: "phase-5",
+                badge: "Phase 5",
+                badgeColor: "purple",
+                title: "Preserving the Original Pattern",
+                objective: "Conclude that f(p) = p²/4 preserves the original quadrance relationships.",
+                content: `
+                    <div class="space-y-4 text-sm text-slate-300 leading-relaxed">
+                        <p>The core takeaway of scaling within the lattice is mathematical conservation.</p>
+                        
+                        <div class="bg-black/40 border border-white/10 rounded p-4 mt-4">
+                            <h3 class="text-white font-bold border-b border-purple-500/30 pb-2 mb-3 tracking-wide">Main Conclusion</h3>
+                            <p class="text-xs text-slate-400 mb-3">The function $f(p) = p^2 / 4$ is <strong>not a new square rule</strong>.</p>
+                            
+                            <p class="text-xs text-slate-400 mb-3">It is the original squaring rule adjusted for a length scale of two. This mathematical adjustment allows a smaller mirrored part to represent the exact same quadrance pattern inside the larger lattice.</p>
+                            
+                            <div class="text-center font-mono text-purple-300 text-xs mt-3 bg-black/50 py-2 rounded">
+                                The scaled rule perfectly preserves the original records as the lattice expands.
+                            </div>
+                        </div>
+                    </div>
+                `,
+                visTitle: "Pattern Conservation Across Scales",
+                initScene: initPhase5
+            }
+        ];
+
+        let activePhaseIndex = 0;
+
+        // ==========================================
+        // 2. THREE.JS GLOBAL SETUP
+        // ==========================================
+        const canvasContainer = document.getElementById('canvas-container');
+        const scene = new THREE.Scene();
+        scene.fog = new THREE.FogExp2(0x05030a, 0.015);
+
+        const camera = new THREE.PerspectiveCamera(45, canvasContainer.clientWidth / canvasContainer.clientHeight, 0.1, 1000);
+        camera.position.set(0, 10, 25);
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        renderer.setSize(canvasContainer.clientWidth, canvasContainer.clientHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        canvasContainer.appendChild(renderer.domElement);
+
+        const controls = new THREE.OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.05;
+        controls.autoRotate = false;
+
+        // Global Lighting
+        const ambLight = new THREE.AmbientLight(0xffffff, 0.4);
+        const dirLight = new THREE.DirectionalLight(0xfff2c8, 1.2);
+        dirLight.position.set(10, 20, 15);
+        const rimLight = new THREE.DirectionalLight(0x00d4ff, 2.0);
+        rimLight.position.set(-15, -10, -15);
+        scene.add(ambLight, dirLight, rimLight);
+
+        const phaseGroup = new THREE.Group();
+        scene.add(phaseGroup);
+
+        let animationFrameId;
+        let clock = new THREE.Clock();
+        let currentCustomAnimate = null; 
+
+        // ==========================================
+        // 3. PHASE SCENE INITIALIZERS
+        // ==========================================
+
+        function clearPhaseGroup() {
+            while(phaseGroup.children.length > 0){ 
+                const child = phaseGroup.children[0];
+                phaseGroup.remove(child); 
+                child.traverse((node) => {
+                    if (node.isMesh || node.isLine || node.isPoints) {
+                        if(node.geometry) node.geometry.dispose();
+                        if(node.material) {
+                            if(Array.isArray(node.material)) node.material.forEach(m => m.dispose());
+                            else node.material.dispose();
+                        }
+                    }
+                });
+            }
+            currentCustomAnimate = null;
+        }
+
+        // Phase 0: 2D Quadrance Basics (Triangles to Squares)
+        function initPhase0(group) {
+            // Draw a flat grid
+            const gridHelper = new THREE.GridHelper(10, 10, 0x334155, 0x334155);
+            gridHelper.rotation.x = Math.PI / 2;
+            group.add(gridHelper);
+
+            // Right triangle A=3, B=4
+            const aLen = 3, bLen = 4;
+            const pts = [
+                new THREE.Vector3(0, 0, 0),
+                new THREE.Vector3(aLen, 0, 0),
+                new THREE.Vector3(aLen, bLen, 0),
+                new THREE.Vector3(0, 0, 0)
+            ];
+            const lineGeo = new THREE.BufferGeometry().setFromPoints(pts);
+            const lineMat = new THREE.LineBasicMaterial({ color: 0xffffff, linewidth: 2 });
+            const triangle = new THREE.Line(lineGeo, lineMat);
+            group.add(triangle);
+
+            // Create Geometric Squares extending outward
+            // Square A (bottom)
+            const sqAGeo = new THREE.PlaneGeometry(aLen, aLen);
+            const sqAMat = new THREE.MeshBasicMaterial({ color: 0x00d4ff, transparent: true, opacity: 0.4, side: THREE.DoubleSide });
+            const sqA = new THREE.Mesh(sqAGeo, sqAMat);
+            sqA.position.set(aLen/2, -aLen/2, 0);
+            group.add(sqA);
+
+            // Square B (right side)
+            const sqBGeo = new THREE.PlaneGeometry(bLen, bLen);
+            const sqBMat = new THREE.MeshBasicMaterial({ color: 0xD4AF37, transparent: true, opacity: 0.4, side: THREE.DoubleSide });
+            const sqB = new THREE.Mesh(sqBGeo, sqBMat);
+            sqB.position.set(aLen + bLen/2, bLen/2, 0);
+            group.add(sqB);
+
+            // Square C (Hypotenuse)
+            const cLen = Math.sqrt(aLen*aLen + bLen*bLen); // 5
+            const sqCGeo = new THREE.PlaneGeometry(cLen, cLen);
+            const sqCMat = new THREE.MeshBasicMaterial({ color: 0x10b981, transparent: true, opacity: 0.4, side: THREE.DoubleSide });
+            const sqC = new THREE.Mesh(sqCGeo, sqCMat);
+            // Position and rotate onto the hypotenuse
+            const angle = Math.atan2(bLen, aLen);
+            sqC.rotation.z = angle;
+            const cx = (0 + aLen) / 2 - (Math.sin(angle) * cLen/2);
+            const cy = (0 + bLen) / 2 + (Math.cos(angle) * cLen/2);
+            sqC.position.set(cx, cy, 0);
+            group.add(sqC);
+
+            // Center group for viewing
+            group.position.set(-aLen/2, -bLen/2, 0);
+
+            const hudData = document.getElementById('vis-overlay-data');
+
+            currentCustomAnimate = (elapsed) => {
+                // Subtle pulse to the squares to emphasize "area"
+                sqAMat.opacity = 0.2 + Math.abs(Math.sin(elapsed * 1.5)) * 0.3;
+                sqBMat.opacity = 0.2 + Math.abs(Math.cos(elapsed * 1.5)) * 0.3;
+                sqCMat.opacity = 0.4 + Math.abs(Math.sin(elapsed * 1.5 + Math.PI/4)) * 0.3;
+
+                // Subtle float
+                group.rotation.y = Math.sin(elapsed * 0.5) * 0.2;
+                group.rotation.x = Math.cos(elapsed * 0.3) * 0.1;
+
+                hudData.innerHTML = `
+                    GEOMETRY: <span class="text-white">Triangles form Squares</span><br>
+                    QUADRANCE (A²): <span class="text-cyan-400">${aLen*aLen}</span><br>
+                    QUADRANCE (B²): <span class="text-yellow-400">${bLen*bLen}</span><br>
+                    TOTAL (Q): <span class="text-emerald-400">${cLen*cLen}</span>
+                `;
+            };
+        }
+
+        // Phase 1: 3D 4x4x4 Lattice
+        function initPhase1(group) {
+            const size = 4;
+            const spacing = 2;
+            const offset = ((size - 1) * spacing) / 2;
+
+            const points = [];
+            const pGeo = new THREE.SphereGeometry(0.15, 8, 8);
+            const pMat = new THREE.MeshBasicMaterial({ color: 0x334155, transparent: true, opacity: 0.6 });
+
+            for (let x = 0; x < size; x++) {
+                for (let y = 0; y < size; y++) {
+                    for (let z = 0; z < size; z++) {
+                        const mesh = new THREE.Mesh(pGeo, pMat);
+                        mesh.position.set(x * spacing - offset, y * spacing - offset, z * spacing - offset);
+                        group.add(mesh);
+                        points.push({ mesh, x, y, z });
+                    }
+                }
+            }
+
+            // Origin vertex
+            const originMat = new THREE.MeshBasicMaterial({ color: 0x00d4ff });
+            const originMesh = new THREE.Mesh(new THREE.SphereGeometry(0.3, 16, 16), originMat);
+            originMesh.position.set(-offset, -offset, -offset);
+            group.add(originMesh);
+
+            // Path lines to a target (a steps, b steps, c steps)
+            const targetX = 3, targetY = 2, targetZ = 3;
+            
+            const lineGeo = new THREE.BufferGeometry();
+            const linePos = new Float32Array([
+                -offset, -offset, -offset,
+                targetX*spacing-offset, -offset, -offset,
+                targetX*spacing-offset, targetY*spacing-offset, -offset,
+                targetX*spacing-offset, targetY*spacing-offset, targetZ*spacing-offset
+            ]);
+            lineGeo.setAttribute('position', new THREE.BufferAttribute(linePos, 3));
+            const lineMat = new THREE.LineBasicMaterial({ color: 0xD4AF37, linewidth: 2 });
+            const pathLine = new THREE.Line(lineGeo, lineMat);
+            group.add(pathLine);
+
+            // Target Point
+            const targetMat = new THREE.MeshBasicMaterial({ color: 0xD4AF37 });
+            const targetMesh = new THREE.Mesh(new THREE.SphereGeometry(0.3, 16, 16), targetMat);
+            targetMesh.position.set(targetX*spacing-offset, targetY*spacing-offset, targetZ*spacing-offset);
+            group.add(targetMesh);
+
+            const hudData = document.getElementById('vis-overlay-data');
+
+            currentCustomAnimate = (elapsed) => {
+                group.rotation.y = elapsed * 0.2;
+                group.rotation.x = 0.2 + Math.sin(elapsed * 0.3) * 0.1;
+
+                targetMesh.scale.setScalar(1 + Math.sin(elapsed * 5) * 0.3);
+                originMesh.scale.setScalar(1 + Math.sin(elapsed * 5 + Math.PI) * 0.3);
+
+                const quadrance = (targetX*targetX) + (targetY*targetY) + (targetZ*targetZ);
+
+                hudData.innerHTML = `
+                    DIMENSION: <span class="text-white">4x4x4 Lattice</span><br>
+                    PATH: <span class="text-yellow-400">a=${targetX}, b=${targetY}, c=${targetZ}</span><br>
+                    QUADRANCE (Q): <span class="text-emerald-400">${quadrance}</span>
+                `;
+            };
+        }
+
+        // Phase 2: Scale Factors (Doubling -> Dividing by 4)
+        function initPhase2(group) {
+            // Base Square (x)
+            const baseGeo = new THREE.PlaneGeometry(2, 2);
+            const baseMat = new THREE.MeshBasicMaterial({ color: 0x3b82f6, transparent: true, opacity: 0.5, side: THREE.DoubleSide });
+            const baseSquare = new THREE.Mesh(baseGeo, baseMat);
+            baseSquare.position.set(-3, 0, 0);
+            
+            const baseEdge = new THREE.LineSegments(new THREE.EdgesGeometry(baseGeo), new THREE.LineBasicMaterial({ color: 0xffffff }));
+            baseSquare.add(baseEdge);
+            group.add(baseSquare);
+
+            // Doubled Square (p = 2x) -> area is 4x
+            const dGeo = new THREE.PlaneGeometry(4, 4);
+            const dMat = new THREE.MeshBasicMaterial({ color: 0xf43f5e, transparent: true, opacity: 0.5, side: THREE.DoubleSide });
+            const dSquare = new THREE.Mesh(dGeo, dMat);
+            dSquare.position.set(3, 0, 0);
+            
+            // Draw internal divisions (showing it's 4 squares)
+            const dEdges = new THREE.LineSegments(
+                new THREE.EdgesGeometry(new THREE.PlaneGeometry(4, 4, 2, 2)), 
+                new THREE.LineBasicMaterial({ color: 0xffffff })
+            );
+            dSquare.add(dEdges);
+            group.add(dSquare);
+
+            // Arrow
+            const arrowHelper = new THREE.ArrowHelper(new THREE.Vector3(1,0,0), new THREE.Vector3(-1,0,0), 2, 0xffffff);
+            group.add(arrowHelper);
+
+            const hudData = document.getElementById('vis-overlay-data');
+
+            currentCustomAnimate = (elapsed) => {
+                // Animation logic: show expansion from base to doubled
+                const cycle = (Math.sin(elapsed * 2) + 1) / 2; // 0 to 1
+                
+                // Pulse the doubled square's division to emphasize dividing by 4
+                if (cycle > 0.8) {
+                    dMat.color.setHex(0xD4AF37); // Gold flash
+                } else {
+                    dMat.color.setHex(0xf43f5e);
+                }
+
+                dSquare.scale.setScalar(0.5 + cycle * 0.5); // Grows from x size to 2x size visually
+
+                group.rotation.x = Math.sin(elapsed * 0.5) * 0.1;
+
+                hudData.innerHTML = `
+                    BASE LENGTH: <span class="text-blue-400">x</span> → AREA: <span class="text-blue-400">x²</span><br>
+                    SCALED LENGTH: <span class="text-rose-400">p = 2x</span><br>
+                    ADJUSTMENT: <span class="text-yellow-400">f(p) = p² / 4</span>
+                `;
+            };
+        }
+
+        // Phase 3: Symmetry & Mirrored Expansion (1/16th)
+        function initPhase3(group) {
+            const size = 4;
+            const spacing = 1.5;
+            const offset = ((size - 1) * spacing) / 2;
+
+            const squares = [];
+            const sGeo = new THREE.PlaneGeometry(spacing * 0.9, spacing * 0.9);
+            
+            for (let x = 0; x < size; x++) {
+                for (let y = 0; y < size; y++) {
+                    const mat = new THREE.MeshBasicMaterial({ color: 0x334155, transparent: true, opacity: 0.3, side: THREE.DoubleSide });
+                    const mesh = new THREE.Mesh(sGeo, mat);
+                    mesh.position.set(x * spacing - offset, y * spacing - offset, 0);
+                    group.add(mesh);
+                    squares.push({ mesh, x, y });
+                }
+            }
+
+            // Outline the whole 4x4 matrix
+            const outlineGeo = new THREE.EdgesGeometry(new THREE.PlaneGeometry(size * spacing, size * spacing));
+            const outline = new THREE.LineSegments(outlineGeo, new THREE.LineBasicMaterial({ color: 0xffffff, linewidth: 2 }));
+            group.add(outline);
+
+            const hudData = document.getElementById('vis-overlay-data');
+
+            currentCustomAnimate = (elapsed) => {
+                const cycle = (elapsed * 1.5) % 2.0; // 2 second cycle
+
+                squares.forEach((s) => {
+                    if (s.x === 0 && s.y === size - 1) {
+                        // The 1/16th sample (top left)
+                        s.mesh.material.color.setHex(0x00d4ff);
+                        s.mesh.material.opacity = 0.8;
+                        s.mesh.scale.setScalar(1 + Math.sin(elapsed * 5) * 0.1); // Pulse
+                    } else {
+                        // The mirrored copies
+                        if (cycle > 1.0) {
+                            // "Copy" phase
+                            s.mesh.material.color.setHex(0x00d4ff);
+                            s.mesh.material.opacity = 0.4 + Math.random() * 0.2;
+                        } else {
+                            // Reset phase
+                            s.mesh.material.color.setHex(0x334155);
+                            s.mesh.material.opacity = 0.3;
+                        }
+                        s.mesh.scale.setScalar(1);
+                    }
+                });
+
+                group.rotation.x = Math.sin(elapsed * 0.3) * 0.1;
+                group.rotation.y = Math.cos(elapsed * 0.4) * 0.1;
+
+                hudData.innerHTML = `
+                    SAMPLE: <span class="text-cyan-400">1/16th Region</span><br>
+                    ACTION: <span class="text-white">${cycle > 1.0 ? 'Mirroring Data...' : 'Sampling...'}</span><br>
+                    SYMMETRY: Preserved
+                `;
+            };
+        }
+
+        // Phase 4: Tessellation
+        function initPhase4(group) {
+            const gridSize = 8;
+            const spacing = 1.2;
+            const offset = ((gridSize - 1) * spacing) / 2;
+
+            const cells = [];
+            const geo = new THREE.BoxGeometry(spacing * 0.95, spacing * 0.95, 0.5);
+
+            for(let x=0; x<gridSize; x++) {
+                for(let y=0; y<gridSize; y++) {
+                    const mat = new THREE.MeshPhysicalMaterial({ color: 0x10b981, transparent: true, opacity: 0.8 });
+                    const mesh = new THREE.Mesh(geo, mat);
+                    mesh.position.set(x * spacing - offset, y * spacing - offset, 0);
+                    group.add(mesh);
+                    
+                    // Calculate Quadrance from center (3.5, 3.5 is center index)
+                    const cx = x - 3.5;
+                    const cy = y - 3.5;
+                    const quadrance = cx*cx + cy*cy;
+                    
+                    cells.push({ mesh, mat, quadrance });
+                }
+            }
+
+            // Tilt to view 3D effect
+            group.rotation.x = -Math.PI / 4;
+
+            const hudData = document.getElementById('vis-overlay-data');
+
+            currentCustomAnimate = (elapsed) => {
+                group.rotation.z = elapsed * 0.1;
+
+                // Animate based on quadrance (squared distance)
+                cells.forEach(c => {
+                    // Create a repeating wave based on quadrance
+                    const wave = Math.sin(c.quadrance * 0.5 - elapsed * 3);
+                    c.mesh.position.z = wave * 1.5;
+                    
+                    // Color shift based on height
+                    const hue = 0.5 + (wave * 0.1); // Green/Cyan shift
+                    c.mat.color.setHSL(hue, 0.8, 0.5);
+                });
+
+                hudData.innerHTML = `
+                    PATTERN: <span class="text-emerald-400">Tessellation</span><br>
+                    CONTROL: <span class="text-white">Squared-Distance Values</span><br>
+                    GAPS: 0
+                `;
+            };
+        }
+
+        // Phase 5: Pattern Conservation
+        function initPhase5(group) {
+            // Create a small lattice and a large lattice bounding box to show mapping
+            
+            // Small Lattice (The p^2/4 adjusted representation)
+            const smallGroup = new THREE.Group();
+            const sGeo = new THREE.EdgesGeometry(new THREE.BoxGeometry(2, 2, 2));
+            const sMat = new THREE.LineBasicMaterial({ color: 0xD4AF37, linewidth: 2 });
+            const smallBox = new THREE.LineSegments(sGeo, sMat);
+            smallGroup.add(smallBox);
+            
+            // Add a dense inner core to small
+            const coreMesh = new THREE.Mesh(new THREE.BoxGeometry(1.8, 1.8, 1.8), new THREE.MeshBasicMaterial({ color: 0xD4AF37, transparent: true, opacity: 0.3 }));
+            smallGroup.add(coreMesh);
+            smallGroup.position.set(-3, 0, 0);
+            group.add(smallGroup);
+
+            // Large Lattice (The expanded system)
+            const largeGroup = new THREE.Group();
+            const lGeo = new THREE.EdgesGeometry(new THREE.BoxGeometry(4, 4, 4));
+            const lMat = new THREE.LineBasicMaterial({ color: 0x00d4ff, transparent: true, opacity: 0.5 });
+            const largeBox = new THREE.LineSegments(lGeo, lMat);
+            largeGroup.add(largeBox);
+            
+            // Embed a copy of the small lattice inside the large one to show it maps directly
+            const embeddedBox = new THREE.LineSegments(sGeo, new THREE.LineBasicMaterial({ color: 0xD4AF37, transparent: true, opacity: 0.8 }));
+            // Position it in one octant (1/8th volume, typical of scaling lengths by 2 in 3D)
+            embeddedBox.position.set(1, 1, 1); 
+            largeGroup.add(embeddedBox);
+            
+            largeGroup.position.set(2, 0, 0);
+            group.add(largeGroup);
+
+            // Connection Arrow
+            const arrow = new THREE.ArrowHelper(new THREE.Vector3(1,0,0), new THREE.Vector3(-1.5, 0, 0), 1.5, 0xffffff);
+            group.add(arrow);
+
+            const hudData = document.getElementById('vis-overlay-data');
+
+            currentCustomAnimate = (elapsed) => {
+                // Synchronized rotation
+                smallGroup.rotation.x = elapsed * 0.3;
+                smallGroup.rotation.y = elapsed * 0.4;
+                
+                largeGroup.rotation.x = elapsed * 0.3;
+                largeGroup.rotation.y = elapsed * 0.4;
+
+                // Pulse the embedded copy
+                embeddedBox.material.opacity = 0.4 + Math.sin(elapsed * 4) * 0.4;
+
+                hudData.innerHTML = `
+                    FUNCTION: <span class="text-purple-400">f(p) = p² / 4</span><br>
+                    RESULT: <span class="text-yellow-400">Measurements Preserved</span><br>
+                    MAPPING: 1:1 Quadrance Retention
+                `;
+            };
+        }
+
+
+        // ==========================================
+        // 4. UI & LOGIC INTEGRATION
+        // ==========================================
+        const navContainer = document.getElementById('nav-container');
+        const phaseTitle = document.getElementById('phase-title');
+        const phaseObjective = document.getElementById('phase-objective');
+        const phaseBadge = document.getElementById('phase-badge');
+        const phaseContent = document.getElementById('phase-content');
+        const visTitle = document.getElementById('vis-title');
+
+        const colorMap = {
+            'cyan': 'text-cyan-400 border-cyan-500/30',
+            'yellow': 'text-yellow-400 border-yellow-500/30',
+            'fuchsia': 'text-fuchsia-400 border-fuchsia-500/30',
+            'emerald': 'text-emerald-400 border-emerald-500/30',
+            'rose': 'text-rose-400 border-rose-500/30',
+            'purple': 'text-purple-400 border-purple-500/30'
+        };
+
+        function renderNav() {
+            navContainer.innerHTML = '';
+
+            const p1Header = document.createElement('div');
+            p1Header.className = "px-4 py-2 text-[9px] font-bold text-slate-500 uppercase tracking-widest font-mono mt-2 mb-1";
+            p1Header.innerText = "Module Phases";
+            navContainer.appendChild(p1Header);
+
+            phasesData.forEach((phase, index) => {
+                const btn = document.createElement('button');
+                const btnStyle = index === activePhaseIndex ? 'active' : 'text-slate-400';
+
+                btn.className = `nav-item w-full text-left px-4 py-3 text-sm font-mono tracking-wide ${btnStyle}`;
+                btn.innerHTML = `<span class="font-bold opacity-50 mr-2">0${index}</span> ${phase.badge}`;
+                btn.onclick = () => loadPhase(index);
+                
+                navContainer.appendChild(btn);
+            });
+        }
+
+        function loadPhase(index) {
+            activePhaseIndex = index;
+            const phase = phasesData[index];
+            
+            phaseTitle.innerText = phase.title;
+            phaseObjective.innerText = phase.objective;
+            phaseContent.innerHTML = phase.content;
+            visTitle.innerText = phase.visTitle;
+            
+            phaseBadge.innerText = phase.badge;
+            phaseBadge.className = `inline-block px-2 py-0.5 border rounded text-[9px] tracking-widest uppercase mb-2 font-mono ${colorMap[phase.badgeColor]}`;
+
+            renderNav();
+            
+            if(window.MathJax && typeof MathJax.typesetPromise === 'function') {
+                MathJax.typesetPromise([phaseContent]).catch((err) => console.log(err.message));
+            }
+
+            clearPhaseGroup();
+            phase.initScene(phaseGroup);
+            
+            controls.reset();
+            camera.position.set(0, 15, 30);
+            clock.start();
+        }
+
+        // ==========================================
+        // 5. MAIN RENDER LOOP & UI EVENTS
+        // ==========================================
+        function animate() {
+            animationFrameId = requestAnimationFrame(animate);
+            const elapsed = clock.getElapsedTime();
+            
+            if (currentCustomAnimate) {
+                currentCustomAnimate(elapsed);
+            }
+
+            controls.update();
+            renderer.render(scene, camera);
+        }
+
+        window.addEventListener('resize', () => {
+            camera.aspect = canvasContainer.clientWidth / canvasContainer.clientHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(canvasContainer.clientWidth, canvasContainer.clientHeight);
+        });
+
+        // Reference Panel Logic
+        const videoToggle = document.getElementById('video-toggle');
+        const videoDropdown = document.getElementById('video-dropdown');
+        const videoClose = document.getElementById('video-close');
+
+        if(videoToggle && videoDropdown && videoClose) {
+            videoToggle.addEventListener('click', () => {
+                videoDropdown.classList.toggle('hidden');
+            });
+            videoClose.addEventListener('click', () => {
+                videoDropdown.classList.add('hidden');
+            });
+        }
+
+        // Initialize App
+        loadPhase(0);
+        animate();
+
+    </script>
+</body>
+</html>
