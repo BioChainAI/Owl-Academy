@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Owl Academy | Algorithmic Labyrinths</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Inter:wght@300;400;500;600&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+    <script>window.MathJax = { tex: { inlineMath: [['$','$'],['\\(','\\)']], displayMath: [['$$','$$'],['\\[','\\]']] } };</script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <style>
+        :root { --color-void: #05030a; --color-primary: #8A2BE2; --color-primary-light: #d8b4fe; }
+        body { background-color: var(--color-void); color: #e2e8f0; font-family: 'Inter', sans-serif;
+               background: radial-gradient(circle at 50% 0%, color-mix(in srgb, var(--color-primary) 8%, var(--color-void)), var(--color-void) 60%); min-height: 100vh; }
+        h1, h2, .mystical-font { font-family: 'Cinzel', serif; }
+        .glass-panel { background: rgba(10, 8, 20, 0.5); backdrop-filter: blur(12px);
+                       border: 1px solid color-mix(in srgb, var(--color-primary) 25%, transparent); }
+        .stub-tag { font-size: 9px; letter-spacing: 0.2em; text-transform: uppercase;
+                    padding: 4px 10px; border-radius: 999px;
+                    border: 1px solid color-mix(in srgb, var(--color-primary) 40%, transparent);
+                    color: var(--color-primary-light); background: color-mix(in srgb, var(--color-primary) 10%, transparent); }
+    </style>
+</head>
+<body class="antialiased">
+    <div class="max-w-3xl mx-auto px-6 py-16">
+        <header class="text-center mb-10">
+            <div class="text-[10px] text-purple-400 tracking-[0.3em] uppercase mb-3">Department II · Tome of Cascades</div>
+            <h1 class="text-4xl md:text-5xl font-bold tracking-[0.1em] text-white mystical-font mb-4">Algorithmic Labyrinths</h1>
+            <p class="text-purple-400/80 tracking-widest text-xs uppercase">The Avalanche Effect &amp; Hash Function Design</p>
+        </header>
+
+        <section class="glass-panel rounded-xl p-8 mb-6">
+            <div class="flex items-center gap-3 mb-6">
+                <span class="stub-tag">Manuscript In Progress</span>
+            </div>
+            <h2 class="text-xl text-white mystical-font mb-3">Course Overview</h2>
+            <p class="text-gray-300 font-light leading-relaxed mb-4">
+                A well-constructed cryptographic primitive behaves as a labyrinth: flipping one input bit
+                cascades through the internal state until roughly half the output bits change — the
+                <em>avalanche effect</em>. This tome examines the diffusion-and-confusion machinery of
+                modern block ciphers and hash functions, with particular attention to the design choices
+                that produce statistical unpredictability from purely deterministic operations.
+            </p>
+            <h3 class="text-sm text-purple-400 tracking-widest uppercase mt-6 mb-3">Planned Sections</h3>
+            <ul class="space-y-2 text-sm text-gray-400 list-none">
+                <li>⬡ Shannon's confusion and diffusion principles</li>
+                <li>⬡ Substitution-permutation networks (AES)</li>
+                <li>⬡ Feistel networks and their structural symmetries</li>
+                <li>⬡ The strict avalanche criterion (SAC) and bit-independence</li>
+                <li>⬡ Merkle-Damgård vs. sponge constructions (SHA-2, SHA-3)</li>
+                <li>⬡ Differential and linear cryptanalysis — measuring the labyrinth</li>
+                <li>⬡ Application: hash-based commitment schemes in SHD-CCP</li>
+            </ul>
+        </section>
+
+        <div class="text-center">
+            <a href="Cryptography_main.html" class="text-xs text-gray-500 hover:text-purple-400 uppercase tracking-widest">← Return to Cryptography &amp; Sigils</a>
+        </div>
+    </div>
+</body>
+</html>

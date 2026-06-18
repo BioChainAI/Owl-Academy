@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Owl Academy | Dept IV: Hyperbolic Systems</title>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Inter:wght@300;400;500;600&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+
+    <script>
+      window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']] } };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+    <style>
+        :root {
+            --color-void: #05030a;
+            --color-primary: #fb7185;
+            --color-primary-light: #fecdd3;
+            --color-primary-dark: #9f1239;
+        }
+        body {
+            background-color: var(--color-void);
+            color: #e2e8f0;
+            font-family: 'Inter', sans-serif;
+            background: radial-gradient(circle at 50% 0%, color-mix(in srgb, var(--color-primary) 8%, var(--color-void)), var(--color-void) 60%);
+            min-height: 100vh;
+        }
+        h1, h2, h3, .mystical-font { font-family: 'Cinzel', serif; }
+        .glass-panel {
+            background: rgba(10, 8, 20, 0.5);
+            backdrop-filter: blur(12px);
+            border: 1px solid color-mix(in srgb, var(--color-primary) 25%, transparent);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.6);
+        }
+        .module-link {
+            display: flex; align-items: center; gap: 0.75rem;
+            padding: 0.85rem 1rem;
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 0.5rem;
+            background: rgba(0,0,0,0.3);
+            text-decoration: none; color: #e2e8f0;
+            transition: all 0.2s ease;
+        }
+        .module-link:hover {
+            border-color: var(--color-primary);
+            background: color-mix(in srgb, var(--color-primary) 8%, transparent);
+            transform: translateX(4px);
+        }
+        .module-link .arrow { margin-left: auto; opacity: 0.4; transition: all 0.2s; }
+        .module-link:hover .arrow { opacity: 1; transform: translateX(4px); }
+        .stub-tag {
+            font-size: 9px; letter-spacing: 0.2em; text-transform: uppercase;
+            padding: 2px 8px; border-radius: 999px;
+            border: 1px solid rgba(255,255,255,0.15); color: #94a3b8;
+        }
+        .live-tag {
+            border-color: color-mix(in srgb, var(--color-primary) 60%, transparent);
+            color: var(--color-primary-light);
+            background: color-mix(in srgb, var(--color-primary) 12%, transparent);
+        }
+    </style>
+</head>
+<body class="antialiased">
+    <div class="max-w-5xl mx-auto px-6 py-12">
+
+        <header class="text-center mb-12">
+            <div class="text-[10px] text-rose-400 tracking-[0.3em] uppercase mb-3">Department IV</div>
+            <h1 class="text-4xl md:text-5xl font-bold tracking-[0.1em] text-white mystical-font mb-4">Hyperbolic Systems</h1>
+            <p class="text-gray-400 font-light max-w-2xl mx-auto">
+                Advanced non-Euclidean manifolds, curvature tensors, and the topology bridging infinite geometric planes.
+                The curriculum below was migrated from the standalone Hyperbolic Systems Learning track.
+            </p>
+        </header>
+
+        <section class="glass-panel rounded-xl p-6 md:p-8 mb-6">
+            <h2 class="text-xs text-rose-400 tracking-[0.2em] font-bold uppercase mb-5 pb-2 border-b border-white/10">
+                01 · Mathematics
+            </h2>
+
+            <div class="mb-6">
+                <h3 class="text-sm text-white/80 mystical-font mb-3 pl-1">01.1 — Geometry · The Clifford Torus</h3>
+                <div class="space-y-2">
+                    <a href="Hyperbolic_Systems_Learning/01_Mathematics/01.1_Geometry/Clifford_Torus/CT_Curriculum_Main.html" class="module-link">
+                        <span class="text-rose-400">⬡</span>
+                        <span class="flex-grow">Clifford Torus — Curriculum Index</span>
+                        <span class="live-tag stub-tag">Available</span>
+                        <span class="arrow text-rose-400">→</span>
+                    </a>
+                    <a href="Hyperbolic_Systems_Learning/01_Mathematics/01.1_Geometry/Clifford_Torus/CT_Proof.html" class="module-link">
+                        <span class="text-rose-400">⬡</span>
+                        <span class="flex-grow">Clifford Torus — Proof Walkthrough</span>
+                        <span class="live-tag stub-tag">Available</span>
+                        <span class="arrow text-rose-400">→</span>
+                    </a>
+                </div>
+            </div>
+
+            <div class="mb-6">
+                <h3 class="text-sm text-white/80 mystical-font mb-3 pl-1">01.2 — Algebra · Linear Algebra</h3>
+                <div class="space-y-2">
+                    <div class="module-link opacity-50 cursor-not-allowed">
+                        <span>⬡</span>
+                        <span class="flex-grow text-gray-500">Linear Algebra Foundations</span>
+                        <span class="stub-tag">In Development</span>
+                    </div>
+                </div>
+            </div>
+
+            <div>
+                <h3 class="text-sm text-white/80 mystical-font mb-3 pl-1">01.3 — Topology · Vulnerabilities</h3>
+                <div class="space-y-2">
+                    <a href="Hyperbolic_Systems_Learning/01_Mathematics/01.3_Topology/Vulnerabilities/Geometric_Trojan_Horse.html" class="module-link">
+                        <span class="text-rose-400">⬡</span>
+                        <span class="flex-grow">Geometric Trojan Horse</span>
+                        <span class="live-tag stub-tag">Available</span>
+                        <span class="arrow text-rose-400">→</span>
+                    </a>
+                </div>
+            </div>
+        </section>
+
+        <section class="glass-panel rounded-xl p-6 md:p-8 mb-6">
+            <h2 class="text-xs text-rose-400 tracking-[0.2em] font-bold uppercase mb-5 pb-2 border-b border-white/10">
+                The Poincaré Manifold
+            </h2>
+            <p class="text-sm text-gray-400 leading-relaxed mb-4">
+                Tome of the Curved Void — non-Euclidean coordinate systems and the geometry of constant negative curvature.
+            </p>
+            <div class="module-link opacity-50 cursor-not-allowed">
+                <span>⬡</span>
+                <span class="flex-grow text-gray-500">Poincaré Manifold — Introduction</span>
+                <span class="stub-tag">In Development</span>
+            </div>
+        </section>
+
+        <div class="text-center mt-10">
+            <a href="../Grand_Archives.html" class="text-xs text-gray-500 hover:text-rose-400 uppercase tracking-widest">← Back to Grand Archives</a>
+        </div>
+    </div>
+</body>
+</html>
