@@ -129,10 +129,11 @@
                     
                     <!-- Content Area -->
                     <div class="w-full flex-1 rounded-lg border border-white/10 overflow-hidden bg-black shadow-inner relative flex items-center justify-center">
-                        <div class="text-center text-slate-500 font-mono text-sm p-4">
-                            [ Placeholder for PDF/Video Resource ]<br><br>
-                            Quadrance Scaling in lattice systems.mp4
-                        </div>
+                        <!-- Video iframe -->
+                        <iframe id="ref-video" class="absolute inset-0 w-full h-full" src="https://www.youtube.com/embed/896bGXyUcwc" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+                        
+                        <!-- PDF iframe (hidden by default) -->
+                        <iframe id="ref-pdf" class="absolute inset-0 w-full h-full hidden" src="Library/Community%20&%20Research/Independent_Learning/Quadrance_Scaling/General%203D%20Displacement%20and%20Triangle%20Law.pdf" title="PDF Reference Paper" frameborder="0"></iframe>
                     </div>
                 </div>
             </div>
@@ -361,14 +362,132 @@
                                 The scaled rule perfectly preserves the original records as the lattice expands.
                             </div>
                         </div>
+                        
+                        <div id="unlock-container" class="mt-8 pt-6 border-t border-purple-500/30 text-center">
+                            <h4 class="text-white font-bold mb-3 font-mono tracking-widest text-sm">ADVANCED DATA UNLOCKED</h4>
+                            <p class="text-xs text-slate-400 mb-4">Connect quadrance and spatial tracking to the Triangle Law of Vector Addition.</p>
+                            <button onclick="window.unlockAdvanced()" class="px-6 py-2 bg-gradient-to-r from-blue-600 to-emerald-600 hover:from-blue-500 hover:to-emerald-500 text-white font-mono text-xs font-bold rounded shadow-[0_0_20px_rgba(59,130,246,0.5)] transition-all transform hover:scale-105 border border-white/20">
+                                LOAD PART TWO: 3D DISPLACEMENT
+                            </button>
+                        </div>
                     </div>
                 `,
                 visTitle: "Pattern Conservation Across Scales",
                 initScene: initPhase5
+            },
+            // --- PART TWO: 3D DISPLACEMENT & TRIANGLE LAW ---
+            {
+                id: "phase-6",
+                badge: "Phase 6",
+                badgeColor: "cyan",
+                title: "Defining Position Vectors",
+                objective: "Anchor points in 3D Euclidean space to a fixed Cartesian origin.",
+                content: `
+                    <div class="space-y-4 text-sm text-slate-300 leading-relaxed">
+                        <p>To accurately measure lattice distances, we must first establish the <strong>Definitional Foundations</strong> of position vectors.</p>
+                        
+                        <div class="bg-black/40 border border-white/10 rounded p-4 mt-4">
+                            <h3 class="text-white font-bold border-b border-cyan-500/30 pb-2 mb-3 tracking-wide">Anchoring to Origin $O(0,0,0)$</h3>
+                            <p class="text-xs text-slate-400 mb-3">We define three arbitrary points, $A_1$, $A_2$, and $A_3$ in three-dimensional Euclidean space $\\mathbb{R}^3$. Their spatial coordinates are referenced directly to a fixed origin via position vectors:</p>
+                            
+                            <ul class="space-y-2 text-xs font-mono text-cyan-300 bg-black/50 p-3 rounded list-none">
+                                <li>$O\\vec{A}_1 = a_1 = \\langle x_1, y_1, z_1 \\rangle \\in \\mathbb{R}^3$</li>
+                                <li>$O\\vec{A}_2 = a_2 = \\langle x_2, y_2, z_2 \\rangle \\in \\mathbb{R}^3$</li>
+                                <li>$O\\vec{A}_3 = a_3 = \\langle x_3, y_3, z_3 \\rangle \\in \\mathbb{R}^3$</li>
+                            </ul>
+
+                            <p class="text-xs text-slate-400 mt-3">These directed line segments induce a bijective mapping, locking absolute locations in space to our coordinate system.</p>
+                        </div>
+                    </div>
+                `,
+                visTitle: "Absolute Position Vectors",
+                initScene: initPhase6
+            },
+            {
+                id: "phase-7",
+                badge: "Phase 7",
+                badgeColor: "rose",
+                title: "The Vector Subtraction Proof",
+                objective: "Isolate the displacement vector representing a change in state.",
+                content: `
+                    <div class="space-y-4 text-sm text-slate-300 leading-relaxed">
+                        <p>By geometric axiom, a directed displacement vector $V_{12}$ is defined as the change in state when moving from $a_1$ to $a_2$. Using head-to-tail vector addition, arriving at destination $a_2$ requires traversing $a_1$ and then adding the displacement bridge: $a_1 + V_{12} = a_2$.</p>
+                        
+                        <div class="bg-black/40 border border-white/10 rounded p-4 mt-4">
+                            <h3 class="text-white font-bold border-b border-rose-500/30 pb-2 mb-3 tracking-wide">Algebraic Isolation</h3>
+                            <p class="text-xs text-slate-400 mb-3">To isolate the displacement vector $V_{12}$, we add the <strong>additive inverse</strong> of the initial position $(-a_1)$ to both sides. This visually simulates an intermediate transit back to the origin, which immediately chains into the destination position vector.</p>
+                            
+                            <div class="text-center font-mono text-rose-300 text-sm mb-3">
+                                $$V_{12} = a_2 + (-a_1)$$
+                            </div>
+
+                            <p class="text-xs text-slate-400">Which simplifies directly to our core subtraction format: <strong>$V_{12} = A_2 - A_1$</strong>. The displacement vector $V_{12}$ acts as a direct spatial bridge.</p>
+                        </div>
+                    </div>
+                `,
+                visTitle: "Visualizing the Subtraction Axiom",
+                initScene: initPhase7
+            },
+            {
+                id: "phase-8",
+                badge: "Phase 8",
+                badgeColor: "yellow",
+                title: "Component-Wise Expansion",
+                objective: "Strip the absolute reference origin out of the equation entirely.",
+                content: `
+                    <div class="space-y-4 text-sm text-slate-300 leading-relaxed">
+                        <p>By substituting the independent Cartesian coordinates into the vector fields, we verify the subtraction operation component-by-component across the $X$, $Y$, and $Z$ axes.</p>
+                        
+                        <div class="bg-black/40 border border-white/10 rounded p-4 mt-4">
+                            <h3 class="text-white font-bold border-b border-yellow-500/30 pb-2 mb-3 tracking-wide">Coordinate Component Reduction</h3>
+                            
+                            <div class="text-center font-mono text-yellow-300 text-xs mb-3 overflow-x-auto">
+                                $$V_{12} = \\langle x_2, y_2, z_2 \\rangle - \\langle x_1, y_1, z_1 \\rangle$$<br>
+                                $$V_{12} = \\langle x_2 - x_1, y_2 - y_1, z_2 - z_1 \\rangle$$
+                            </div>
+
+                            <p class="text-xs text-slate-400 mb-2">Notice the coordinates inherit the delta components. Because the static anchor coordinates cancel out, the resulting displacement vector $V_{12}$ is rendered completely <strong>free-floating and coordinate-invariant</strong>.</p>
+                            
+                            <p class="text-xs text-slate-400 italic">This translates static spatial addresses into a pure dynamic trajectory, depending strictly on the relative separation and directional orientation.</p>
+                        </div>
+                    </div>
+                `,
+                visTitle: "Coordinate-Invariant Displacement",
+                initScene: initPhase8
+            },
+            {
+                id: "phase-9",
+                badge: "Phase 9",
+                badgeColor: "emerald",
+                title: "Displacement Equivalence",
+                objective: "Prove that intermediate points cancel out in direct paths.",
+                content: `
+                    <div class="space-y-4 text-sm text-slate-300 leading-relaxed">
+                        <p>The result confirms a fundamental property of vector spaces: any direct path between two points can be constructed as a sum of intermediate paths.</p>
+                        
+                        <div class="bg-black/40 border border-white/10 rounded p-4 mt-4">
+                            <h3 class="text-white font-bold border-b border-emerald-500/30 pb-2 mb-3 tracking-wide">The Triangle Law of Vector Addition</h3>
+                            <p class="text-xs text-slate-400 mb-3">If we travel along the primary path ($V_{12}$) and then the secondary path ($V_{23}$), it yields an identical spatial result to taking the gold path ($V_{13}$) directly.</p>
+                            
+                            <div class="text-center font-mono text-emerald-300 text-sm mb-3">
+                                $$V_{13} = V_{12} + V_{23}$$
+                            </div>
+                            
+                            <p class="text-[10px] text-slate-500 font-mono mb-2 text-center">
+                                $A_3 - A_1 = (A_2 - A_1) + (A_3 - A_2)$
+                            </p>
+
+                            <p class="text-xs text-slate-400">The intermediate destination $A_2$ perfectly cancels out. This displacement equivalence forms the mathematical foundation for coordinate geometry, kinematics, and higher-dimensional lattice transformations.</p>
+                        </div>
+                    </div>
+                `,
+                visTitle: "The Triangle Law (Path Independence)",
+                initScene: initPhase9
             }
         ];
 
         let activePhaseIndex = 0;
+        let advancedUnlocked = false; 
 
         // ==========================================
         // 2. THREE.JS GLOBAL SETUP
@@ -791,6 +910,265 @@
             };
         }
 
+        // Phase 6: Position Vectors (Anchoring to Origin)
+        function initPhase6(group) {
+            // Draw Cartesian Axes
+            const axesHelper = new THREE.AxesHelper(6);
+            group.add(axesHelper);
+
+            const gridHelper = new THREE.GridHelper(10, 10, 0x444444, 0x222222);
+            group.add(gridHelper);
+
+            // Origin O
+            const oMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+            const origin = new THREE.Mesh(new THREE.SphereGeometry(0.2, 16, 16), oMat);
+            group.add(origin);
+
+            // Points A1, A2, A3
+            const pA1 = new THREE.Vector3(-4, 2, -2);
+            const pA2 = new THREE.Vector3(2, 5, -3);
+            const pA3 = new THREE.Vector3(5, 1, 3);
+
+            const addPoint = (pos, color) => {
+                const mesh = new THREE.Mesh(new THREE.SphereGeometry(0.3, 16, 16), new THREE.MeshBasicMaterial({ color: color }));
+                mesh.position.copy(pos);
+                group.add(mesh);
+                return mesh;
+            };
+
+            const mA1 = addPoint(pA1, 0xff0000); // Red
+            const mA2 = addPoint(pA2, 0x0000ff); // Blue
+            const mA3 = addPoint(pA3, 0x10b981); // Green
+
+            // Position Vector Lines (Dashed)
+            const addDashedLine = (start, end, color) => {
+                const geo = new THREE.BufferGeometry().setFromPoints([start, end]);
+                const mat = new THREE.LineDashedMaterial({ color: color, dashSize: 0.3, gapSize: 0.2, transparent: true, opacity: 0.8 });
+                const line = new THREE.Line(geo, mat);
+                line.computeLineDistances();
+                group.add(line);
+                return line;
+            };
+
+            const lineA1 = addDashedLine(new THREE.Vector3(0,0,0), pA1, 0xff0000);
+            const lineA2 = addDashedLine(new THREE.Vector3(0,0,0), pA2, 0x0000ff);
+            const lineA3 = addDashedLine(new THREE.Vector3(0,0,0), pA3, 0x10b981);
+
+            const hudData = document.getElementById('vis-overlay-data');
+
+            currentCustomAnimate = (elapsed) => {
+                group.rotation.y = Math.sin(elapsed * 0.2) * 0.5;
+
+                // Pulsing points to show they are anchored
+                mA1.scale.setScalar(1 + Math.sin(elapsed * 3) * 0.1);
+                mA2.scale.setScalar(1 + Math.sin(elapsed * 3 + 1) * 0.1);
+                mA3.scale.setScalar(1 + Math.sin(elapsed * 3 + 2) * 0.1);
+
+                hudData.innerHTML = `
+                    ORIGIN: <span class="text-white">O(0,0,0)</span><br>
+                    VECTOR a₁: <span class="text-rose-400">⟨x₁, y₁, z₁⟩</span><br>
+                    VECTOR a₂: <span class="text-blue-400">⟨x₂, y₂, z₂⟩</span><br>
+                    VECTOR a₃: <span class="text-emerald-400">⟨x₃, y₃, z₃⟩</span>
+                `;
+            };
+        }
+
+        // Phase 7: The Vector Subtraction Proof
+        function initPhase7(group) {
+            const axesHelper = new THREE.AxesHelper(4);
+            group.add(axesHelper);
+
+            const oPos = new THREE.Vector3(0,0,0);
+            const origin = new THREE.Mesh(new THREE.SphereGeometry(0.2, 16, 16), new THREE.MeshBasicMaterial({ color: 0xffffff }));
+            group.add(origin);
+
+            const pA1 = new THREE.Vector3(-4, 3, 0); // Flat for easier visual
+            const pA2 = new THREE.Vector3(4, 5, 0);
+
+            const mA1 = new THREE.Mesh(new THREE.SphereGeometry(0.3, 16, 16), new THREE.MeshBasicMaterial({ color: 0xff0000 }));
+            mA1.position.copy(pA1);
+            group.add(mA1);
+
+            const mA2 = new THREE.Mesh(new THREE.SphereGeometry(0.3, 16, 16), new THREE.MeshBasicMaterial({ color: 0x0000ff }));
+            mA2.position.copy(pA2);
+            group.add(mA2);
+
+            // Vector a1 (Red dashed)
+            const geoA1 = new THREE.BufferGeometry().setFromPoints([oPos, pA1]);
+            const matA1 = new THREE.LineDashedMaterial({ color: 0xff0000, dashSize: 0.3, gapSize: 0.2 });
+            const lineA1 = new THREE.Line(geoA1, matA1);
+            lineA1.computeLineDistances();
+            group.add(lineA1);
+
+            // Vector a2 (Blue dashed)
+            const geoA2 = new THREE.BufferGeometry().setFromPoints([oPos, pA2]);
+            const matA2 = new THREE.LineDashedMaterial({ color: 0x0000ff, dashSize: 0.3, gapSize: 0.2 });
+            const lineA2 = new THREE.Line(geoA2, matA2);
+            lineA2.computeLineDistances();
+            group.add(lineA2);
+
+            // The animated displacement vector
+            const v12Arrow = new THREE.ArrowHelper(new THREE.Vector3(1,0,0), pA1, 1, 0x8A2BE2, 0.4, 0.4);
+            group.add(v12Arrow);
+
+            // "Traveling" particle to show the proof logic
+            const particle = new THREE.Mesh(new THREE.SphereGeometry(0.4, 16, 16), new THREE.MeshBasicMaterial({ color: 0xffd700 }));
+            group.add(particle);
+
+            const hudData = document.getElementById('vis-overlay-data');
+
+            currentCustomAnimate = (elapsed) => {
+                const cycle = (elapsed * 0.4) % 1.0; 
+                
+                // Animation states: 
+                // 0 to 0.4: Travel backwards along a1 (-a1)
+                // 0.4 to 0.8: Travel forwards along a2 (+a2)
+                // 0.8 to 1.0: Draw the direct purple bridge V12
+                
+                if (cycle < 0.4) {
+                    // Moving A1 -> Origin
+                    const t = cycle / 0.4;
+                    particle.position.copy(pA1).lerp(oPos, t);
+                    v12Arrow.setLength(0.001); // Hide bridge
+                } else if (cycle < 0.8) {
+                    // Moving Origin -> A2
+                    const t = (cycle - 0.4) / 0.4;
+                    particle.position.copy(oPos).lerp(pA2, t);
+                    v12Arrow.setLength(0.001);
+                } else {
+                    // Bridging A1 -> A2 directly
+                    const t = (cycle - 0.8) / 0.2;
+                    particle.position.copy(pA1).lerp(pA2, t);
+                    
+                    const bridgeVec = new THREE.Vector3().subVectors(pA2, pA1);
+                    v12Arrow.position.copy(pA1);
+                    v12Arrow.setDirection(bridgeVec.clone().normalize());
+                    v12Arrow.setLength(bridgeVec.length() * t, 0.4, 0.4);
+                }
+
+                hudData.innerHTML = `
+                    PROOF: <span class="text-rose-400">V₁₂ = a₂ + (-a₁)</span><br>
+                    ACTION: <span class="text-white">${cycle < 0.4 ? 'Inverse Transit (-a₁)' : cycle < 0.8 ? 'Destination Transit (+a₂)' : 'Displacement Synthesis (V₁₂)'}</span>
+                `;
+            };
+        }
+
+        // Phase 8: Component-Wise Expansion
+        function initPhase8(group) {
+            // Draw a bounding box to represent Delta X, Delta Y, Delta Z
+            const pA1 = new THREE.Vector3(-3, -2, -3);
+            const pA2 = new THREE.Vector3(3, 4, 3);
+            
+            const originMat = new THREE.MeshBasicMaterial({ color: 0xff0000 });
+            const originMesh = new THREE.Mesh(new THREE.SphereGeometry(0.3, 16, 16), originMat);
+            originMesh.position.copy(pA1);
+            group.add(originMesh);
+
+            const destMat = new THREE.MeshBasicMaterial({ color: 0x0000ff });
+            const destMesh = new THREE.Mesh(new THREE.SphereGeometry(0.3, 16, 16), destMat);
+            destMesh.position.copy(pA2);
+            group.add(destMesh);
+
+            // Direct Vector V12
+            const bridgeVec = new THREE.Vector3().subVectors(pA2, pA1);
+            const v12Arrow = new THREE.ArrowHelper(bridgeVec.clone().normalize(), pA1, bridgeVec.length(), 0x8A2BE2, 0.6, 0.6);
+            group.add(v12Arrow);
+
+            // Bounding Box (Component Expansion)
+            const boxGeo = new THREE.BoxGeometry(pA2.x - pA1.x, pA2.y - pA1.y, pA2.z - pA1.z);
+            // Offset position because box center is mid-point
+            const boxCenter = new THREE.Vector3().addVectors(pA1, pA2).multiplyScalar(0.5);
+            
+            const edgesGeo = new THREE.EdgesGeometry(boxGeo);
+            const boxLines = new THREE.LineSegments(edgesGeo, new THREE.LineBasicMaterial({ color: 0x00d4ff, transparent: true, opacity: 0.4, dashed: true, dashSize: 0.3, gapSize: 0.1 }));
+            boxLines.computeLineDistances();
+            boxLines.position.copy(boxCenter);
+            group.add(boxLines);
+
+            const hudData = document.getElementById('vis-overlay-data');
+
+            currentCustomAnimate = (elapsed) => {
+                group.rotation.y = elapsed * 0.2;
+                group.rotation.x = 0.2;
+
+                // Make the component box pulse
+                boxLines.material.opacity = 0.2 + Math.abs(Math.sin(elapsed * 2)) * 0.4;
+
+                hudData.innerHTML = `
+                    EXPANSION: <span class="text-purple-400">V₁₂ = A₂ - A₁</span><br>
+                    COMPONENTS: <span class="text-cyan-400">⟨Δx, Δy, Δz⟩</span><br>
+                    STATE: Free-floating (Coordinate Invariant)
+                `;
+            };
+        }
+
+        // Phase 9: Displacement Equivalence (Triangle Law)
+        function initPhase9(group) {
+            const pA1 = new THREE.Vector3(-5, 0, -2);
+            const pA2 = new THREE.Vector3(1, 6, -3);
+            const pA3 = new THREE.Vector3(6, -2, 2);
+
+            // Points
+            const addPoint = (pos, color) => {
+                const mesh = new THREE.Mesh(new THREE.SphereGeometry(0.3, 16, 16), new THREE.MeshBasicMaterial({ color: color }));
+                mesh.position.copy(pos);
+                group.add(mesh);
+            };
+            addPoint(pA1, 0xff0000); // A1 Red
+            addPoint(pA2, 0x0000ff); // A2 Blue
+            addPoint(pA3, 0x10b981); // A3 Green
+
+            // V12 (Purple)
+            const v12Dir = new THREE.Vector3().subVectors(pA2, pA1);
+            const v12Arrow = new THREE.ArrowHelper(v12Dir.clone().normalize(), pA1, v12Dir.length(), 0x8A2BE2, 0.5, 0.5);
+            group.add(v12Arrow);
+
+            // V23 (Teal)
+            const v23Dir = new THREE.Vector3().subVectors(pA3, pA2);
+            const v23Arrow = new THREE.ArrowHelper(v23Dir.clone().normalize(), pA2, v23Dir.length(), 0x00d4ff, 0.5, 0.5);
+            group.add(v23Arrow);
+
+            // V13 (Gold - The Direct Path)
+            const v13Dir = new THREE.Vector3().subVectors(pA3, pA1);
+            const v13Arrow = new THREE.ArrowHelper(v13Dir.clone().normalize(), pA1, v13Dir.length(), 0xD4AF37, 0.6, 0.6);
+            group.add(v13Arrow);
+
+            // Animated traveling energy
+            const sparkGeo = new THREE.SphereGeometry(0.4, 16, 16);
+            const multiPathSpark = new THREE.Mesh(sparkGeo, new THREE.MeshBasicMaterial({ color: 0x00d4ff }));
+            const directPathSpark = new THREE.Mesh(sparkGeo, new THREE.MeshBasicMaterial({ color: 0xD4AF37 }));
+            group.add(multiPathSpark);
+            group.add(directPathSpark);
+
+            const hudData = document.getElementById('vis-overlay-data');
+
+            currentCustomAnimate = (elapsed) => {
+                group.rotation.y = Math.sin(elapsed * 0.1) * 0.5;
+                
+                const cycle = (elapsed * 0.5) % 1.0; 
+
+                // Multi-path spark logic (A1 -> A2, then A2 -> A3)
+                if (cycle < 0.5) {
+                    // A1 to A2
+                    const t = cycle / 0.5;
+                    multiPathSpark.position.copy(pA1).lerp(pA2, t);
+                } else {
+                    // A2 to A3
+                    const t = (cycle - 0.5) / 0.5;
+                    multiPathSpark.position.copy(pA2).lerp(pA3, t);
+                }
+
+                // Direct-path spark logic (A1 -> A3)
+                directPathSpark.position.copy(pA1).lerp(pA3, cycle);
+
+                hudData.innerHTML = `
+                    PRINCIPLE: <span class="text-emerald-400">Displacement Equivalence</span><br>
+                    LAW: <span class="text-yellow-400">V₁₃ = V₁₂ + V₂₃</span><br>
+                    RESULT: Intermediate A₂ cancels out
+                `;
+            };
+        }
+
 
         // ==========================================
         // 4. UI & LOGIC INTEGRATION
@@ -811,21 +1189,46 @@
             'purple': 'text-purple-400 border-purple-500/30'
         };
 
+        window.unlockAdvanced = function() {
+            advancedUnlocked = true;
+            loadPhase(6); // Jump straight to Part Two
+        };
+
         function renderNav() {
             navContainer.innerHTML = '';
 
+            // Part 1 Header
             const p1Header = document.createElement('div');
             p1Header.className = "px-4 py-2 text-[9px] font-bold text-slate-500 uppercase tracking-widest font-mono mt-2 mb-1";
-            p1Header.innerText = "Module Phases";
+            p1Header.innerText = "Part I: Quadrance Scaling";
             navContainer.appendChild(p1Header);
 
             phasesData.forEach((phase, index) => {
+                // Insert Part 2 Header before Phase 6
+                if (index === 6) {
+                    const p2Header = document.createElement('div');
+                    p2Header.className = "px-4 py-2 text-[9px] font-bold text-slate-500 uppercase tracking-widest font-mono mt-4 mb-1 flex items-center justify-between";
+                    
+                    const lockIcon = !advancedUnlocked ? '<svg class="w-3 h-3 text-red-500" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clip-rule="evenodd"></path></svg>' : '';
+                    p2Header.innerHTML = `<span class="${advancedUnlocked ? 'text-cyan-400' : ''}">Part II: 3D Displacement</span> ${lockIcon}`;
+                    navContainer.appendChild(p2Header);
+                }
+
+                const isLocked = index >= 6 && !advancedUnlocked;
+
                 const btn = document.createElement('button');
                 const btnStyle = index === activePhaseIndex ? 'active' : 'text-slate-400';
 
                 btn.className = `nav-item w-full text-left px-4 py-3 text-sm font-mono tracking-wide ${btnStyle}`;
+                if (isLocked) {
+                    btn.className += ' text-slate-600 cursor-not-allowed opacity-50 border-transparent';
+                }
+
                 btn.innerHTML = `<span class="font-bold opacity-50 mr-2">0${index}</span> ${phase.badge}`;
-                btn.onclick = () => loadPhase(index);
+                
+                if (!isLocked) {
+                    btn.onclick = () => loadPhase(index);
+                }
                 
                 navContainer.appendChild(btn);
             });
