@@ -21,289 +21,220 @@
     html, body { width: 100%; height: 100%; overflow: hidden; background: var(--void); }
     body { font-family: 'Inter', sans-serif; color: #e2e8f0; }
 
-    #canvas-container {
-      position: fixed; inset: 0; z-index: 0;
-    }
+    #canvas-container { position: fixed; inset: 0; z-index: 0; }
     #canvas-container canvas { display: block; width: 100% !important; height: 100% !important; }
 
-    /* ── Left Panel ── */
+    /* ── Side Panel ── */
     #side-panel {
-      position: fixed; top: 0; left: 0; bottom: 0;
-      width: 320px; z-index: 10;
-      background: var(--panel-bg);
-      border-right: 1px solid var(--border);
-      backdrop-filter: blur(16px);
-      display: flex; flex-direction: column;
-      overflow: hidden;
+      position: fixed; top: 0; left: 0; bottom: 0; width: 320px;
+      z-index: 10; background: var(--panel-bg);
+      border-right: 1px solid var(--border); backdrop-filter: blur(16px);
+      display: flex; flex-direction: column; overflow: hidden;
     }
-
-    .panel-header {
-      padding: 20px 18px 14px;
-      border-bottom: 1px solid var(--border);
-      flex-shrink: 0;
-    }
-    .panel-header .back-link {
+    .panel-header { padding: 20px 18px 14px; border-bottom: 1px solid var(--border); flex-shrink: 0; }
+    .back-link {
       display: inline-flex; align-items: center; gap: 6px;
       font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase;
-      color: rgba(212,175,55,0.5); text-decoration: none; margin-bottom: 10px;
-      transition: color 0.2s;
+      color: rgba(212,175,55,0.5); text-decoration: none; margin-bottom: 10px; transition: color 0.2s;
     }
-    .panel-header .back-link:hover { color: var(--gold); }
-    .panel-title {
-      font-family: 'Cinzel', serif; font-size: 18px;
-      color: var(--gold); letter-spacing: 0.08em; line-height: 1.3;
-    }
-    .panel-subtitle {
-      font-size: 10px; color: rgba(255,255,255,0.3);
-      text-transform: uppercase; letter-spacing: 0.1em; margin-top: 4px;
-    }
+    .back-link:hover { color: var(--gold); }
+    .panel-title { font-family: 'Cinzel', serif; font-size: 18px; color: var(--gold); letter-spacing: 0.08em; }
+    .panel-subtitle { font-size: 10px; color: rgba(255,255,255,0.3); text-transform: uppercase; letter-spacing: 0.1em; margin-top: 4px; }
 
-    /* Auth banner */
     #auth-banner {
-      margin: 14px 14px 0;
-      padding: 10px 14px;
-      background: rgba(212,175,55,0.06);
-      border: 1px solid rgba(212,175,55,0.2);
-      border-radius: 8px;
-      font-size: 11px;
+      margin: 14px 14px 0; padding: 10px 14px;
+      background: rgba(212,175,55,0.06); border: 1px solid rgba(212,175,55,0.2);
+      border-radius: 8px; font-size: 11px;
     }
     #auth-banner.hidden { display: none; }
 
-    /* Stats bar */
-    #stats-bar {
-      display: flex; gap: 0;
-      border-bottom: 1px solid var(--border);
-      flex-shrink: 0;
-    }
-    .stat-cell {
-      flex: 1; text-align: center; padding: 10px 4px;
-      border-right: 1px solid var(--border);
-    }
+    #stats-bar { display: flex; border-bottom: 1px solid var(--border); flex-shrink: 0; }
+    .stat-cell { flex: 1; text-align: center; padding: 10px 4px; border-right: 1px solid var(--border); }
     .stat-cell:last-child { border-right: none; }
     .stat-num { font-size: 18px; font-weight: 700; color: var(--gold); font-family: 'Cinzel', serif; }
     .stat-lbl { font-size: 9px; text-transform: uppercase; letter-spacing: 0.1em; color: rgba(255,255,255,0.3); }
 
-    /* Sweep button */
     #sweep-btn {
-      margin: 12px 14px 6px;
-      width: calc(100% - 28px);
-      padding: 9px 0;
-      background: rgba(0,212,255,0.08);
-      border: 1px solid rgba(0,212,255,0.3);
-      border-radius: 8px;
-      color: var(--cyan);
+      margin: 12px 14px 6px; width: calc(100% - 28px); padding: 9px 0;
+      background: rgba(0,212,255,0.08); border: 1px solid rgba(0,212,255,0.3);
+      border-radius: 8px; color: var(--cyan);
       font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase;
-      cursor: pointer; transition: all 0.2s;
-      font-family: 'Fira Code', monospace;
-      flex-shrink: 0;
+      cursor: pointer; transition: all 0.2s; font-family: 'Fira Code', monospace; flex-shrink: 0;
     }
     #sweep-btn:hover { background: rgba(0,212,255,0.16); box-shadow: 0 0 20px rgba(0,212,255,0.2); }
     #sweep-btn:disabled { opacity: 0.4; cursor: not-allowed; }
 
-    /* Search */
     #search-wrap { padding: 0 14px 8px; flex-shrink: 0; }
     #search-input {
-      width: 100%;
-      padding: 7px 12px;
-      background: rgba(255,255,255,0.04);
-      border: 1px solid rgba(255,255,255,0.08);
-      border-radius: 6px;
-      color: #e2e8f0; font-size: 12px;
-      outline: none;
+      width: 100%; padding: 7px 12px;
+      background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 6px; color: #e2e8f0; font-size: 12px; outline: none;
     }
     #search-input::placeholder { color: rgba(255,255,255,0.2); }
     #search-input:focus { border-color: rgba(212,175,55,0.3); }
 
-    /* User list */
-    #user-list-wrap {
-      flex: 1; overflow-y: auto; padding: 4px 0;
-    }
+    #user-list-wrap { flex: 1; overflow-y: auto; padding: 4px 0; }
     #user-list-wrap::-webkit-scrollbar { width: 4px; }
     #user-list-wrap::-webkit-scrollbar-thumb { background: rgba(212,175,55,0.2); border-radius: 2px; }
 
     .user-card {
-      display: flex; align-items: center; gap: 10px;
-      padding: 9px 14px;
-      cursor: pointer; transition: background 0.15s;
-      border-left: 2px solid transparent;
+      display: flex; align-items: center; gap: 10px; padding: 9px 14px;
+      cursor: pointer; transition: background 0.15s; border-left: 2px solid transparent;
     }
     .user-card:hover { background: rgba(255,255,255,0.04); }
-    .user-card.selected {
-      background: rgba(212,175,55,0.06);
-      border-left-color: var(--gold);
-    }
+    .user-card.selected { background: rgba(212,175,55,0.06); border-left-color: var(--gold); }
     .user-card.new-arrival { animation: sweep-flash 1.2s ease-out; }
-    @keyframes sweep-flash {
-      0% { background: rgba(0,212,255,0.15); }
-      100% { background: transparent; }
-    }
+    @keyframes sweep-flash { 0% { background: rgba(0,212,255,0.15); } 100% { background: transparent; } }
 
-    .node-dot {
-      width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0;
-      box-shadow: 0 0 8px currentColor;
-    }
-    .node-dot.tier-ARCHON { background: #D4AF37; color: #D4AF37; }
-    .node-dot.tier-INSTRUCTOR { background: #00d4ff; color: #00d4ff; }
-    .node-dot.tier-ACOLYTE { background: #8A2BE2; color: #8A2BE2; }
+    .node-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; box-shadow: 0 0 8px currentColor; }
+    .node-dot.tier-ARCHON    { background: #D4AF37; color: #D4AF37; }
+    .node-dot.tier-INSTRUCTOR{ background: #00d4ff; color: #00d4ff; }
+    .node-dot.tier-ACOLYTE   { background: #8A2BE2; color: #8A2BE2; }
 
-    .card-name { font-size: 12px; color: #e2e8f0; font-weight: 500; flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .card-info { flex: 1; min-width: 0; }
+    .card-name { font-size: 12px; color: #e2e8f0; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .card-meta { display: flex; align-items: center; gap: 6px; margin-top: 2px; }
     .card-tier { font-size: 9px; text-transform: uppercase; letter-spacing: 0.1em; }
-    .card-tier.tier-ARCHON { color: #D4AF37; }
-    .card-tier.tier-INSTRUCTOR { color: #00d4ff; }
-    .card-tier.tier-ACOLYTE { color: rgba(138,43,226,0.8); }
-
-    .empty-state {
-      padding: 40px 20px; text-align: center;
-      color: rgba(255,255,255,0.2); font-size: 12px; line-height: 1.8;
+    .card-tier.tier-ARCHON    { color: #D4AF37; }
+    .card-tier.tier-INSTRUCTOR{ color: #00d4ff; }
+    .card-tier.tier-ACOLYTE   { color: rgba(138,43,226,0.8); }
+    .card-orbit-pips { display: flex; gap: 3px; align-items: center; }
+    .orbit-pip {
+      width: 5px; height: 5px; border-radius: 50%;
+      opacity: 0.7;
     }
+    .orbit-pip.o4 { background: #8A2BE2; }
+    .orbit-pip.o3 { background: #00d4ff; }
+    .orbit-pip.o2 { background: #D4AF37; }
+    .orbit-pip.o1 { background: #ffffff; }
 
-    /* Inspector panel */
+    .empty-state { padding: 40px 20px; text-align: center; color: rgba(255,255,255,0.2); font-size: 12px; line-height: 1.8; }
+
+    /* ── Inspector ── */
     #inspector {
-      border-top: 1px solid var(--border);
-      padding: 14px;
-      flex-shrink: 0;
-      background: rgba(0,0,0,0.3);
+      border-top: 1px solid var(--border); padding: 14px;
+      flex-shrink: 0; background: rgba(0,0,0,0.3);
+      max-height: 52vh; overflow-y: auto;
     }
     #inspector.hidden { display: none; }
-    .insp-label {
-      font-size: 9px; text-transform: uppercase; letter-spacing: 0.12em;
-      color: rgba(212,175,55,0.5); margin-bottom: 8px;
-    }
-    .insp-name {
-      font-family: 'Cinzel', serif; font-size: 15px; color: var(--gold); margin-bottom: 4px;
-    }
-    .insp-tier {
-      font-size: 10px; text-transform: uppercase; letter-spacing: 0.12em;
-      margin-bottom: 10px;
-    }
+    #inspector::-webkit-scrollbar { width: 3px; }
+    #inspector::-webkit-scrollbar-thumb { background: rgba(212,175,55,0.15); border-radius: 2px; }
+
+    .insp-label { font-size: 9px; text-transform: uppercase; letter-spacing: 0.12em; color: rgba(212,175,55,0.5); margin-bottom: 8px; }
+    .insp-name  { font-family: 'Cinzel', serif; font-size: 15px; color: var(--gold); margin-bottom: 3px; }
+    .insp-tier  { font-size: 10px; text-transform: uppercase; letter-spacing: 0.12em; margin-bottom: 10px; font-weight: 600; }
+    .insp-coords { font-family: 'Fira Code', monospace; font-size: 9px; color: rgba(0,212,255,0.6); margin-bottom: 10px; }
     .insp-row {
       display: flex; justify-content: space-between;
       font-size: 10px; color: rgba(255,255,255,0.4); margin-bottom: 4px;
     }
     .insp-row span:last-child { color: rgba(255,255,255,0.65); font-family: 'Fira Code', monospace; font-size: 9px; }
-    .insp-coords {
-      font-family: 'Fira Code', monospace; font-size: 9px;
-      color: rgba(0,212,255,0.6); margin-bottom: 12px;
+
+    /* Orbital matrix */
+    .orbit-matrix { margin: 10px 0; }
+    .orbit-matrix-title { font-size: 9px; text-transform: uppercase; letter-spacing: 0.12em; color: rgba(212,175,55,0.4); margin-bottom: 6px; }
+    .orbit-row {
+      display: flex; align-items: center; gap: 8px;
+      padding: 5px 0; border-bottom: 1px solid rgba(255,255,255,0.04);
     }
+    .orbit-row:last-child { border-bottom: none; }
+    .orbit-tier-badge {
+      width: 20px; height: 20px; border-radius: 50%; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 8px; font-weight: 700; font-family: 'Fira Code', monospace;
+    }
+    .orbit-tier-badge.t4 { background: rgba(138,43,226,0.15); color: #8A2BE2; border: 1px solid rgba(138,43,226,0.3); }
+    .orbit-tier-badge.t3 { background: rgba(0,212,255,0.12); color: #00d4ff; border: 1px solid rgba(0,212,255,0.25); }
+    .orbit-tier-badge.t2 { background: rgba(212,175,55,0.1);  color: #D4AF37; border: 1px solid rgba(212,175,55,0.25); }
+    .orbit-tier-badge.t1 { background: rgba(255,255,255,0.06); color: #ffffff; border: 1px solid rgba(255,255,255,0.15); }
+    .orbit-info { flex: 1; min-width: 0; }
+    .orbit-info-label { font-size: 10px; color: rgba(255,255,255,0.55); }
+    .orbit-info-count { font-family: 'Fira Code', monospace; font-size: 11px; font-weight: 600; }
+    .orbit-info-count.t4 { color: rgba(138,43,226,0.9); }
+    .orbit-info-count.t3 { color: rgba(0,212,255,0.9); }
+    .orbit-info-count.t2 { color: #D4AF37; }
+    .orbit-info-count.t1 { color: rgba(255,255,255,0.8); }
+    .orbit-locked { opacity: 0.3; font-size: 9px; color: rgba(255,255,255,0.3); font-style: italic; }
+
+    .dept789-badges { display: flex; gap: 4px; margin-top: 4px; }
+    .dept-badge {
+      font-size: 9px; padding: 2px 6px; border-radius: 4px;
+      font-family: 'Fira Code', monospace; font-weight: 600;
+    }
+    .dept-badge.d7 { background: rgba(168,85,247,0.15); color: #a855f7; border: 1px solid rgba(168,85,247,0.3); }
+    .dept-badge.d8 { background: rgba(236,72,153,0.12); color: #ec4899; border: 1px solid rgba(236,72,153,0.25); }
+    .dept-badge.d9 { background: rgba(239,68,68,0.12);  color: #ef4444; border: 1px solid rgba(239,68,68,0.25); }
+
     #warp-btn {
-      width: 100%;
-      padding: 8px 0;
-      background: rgba(212,175,55,0.08);
-      border: 1px solid rgba(212,175,55,0.3);
-      border-radius: 6px;
-      color: var(--gold);
+      width: 100%; margin-top: 12px; padding: 8px 0;
+      background: rgba(212,175,55,0.08); border: 1px solid rgba(212,175,55,0.3);
+      border-radius: 6px; color: var(--gold);
       font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase;
       cursor: pointer; transition: all 0.2s; font-family: 'Fira Code', monospace;
     }
     #warp-btn:hover { background: rgba(212,175,55,0.16); box-shadow: 0 0 16px rgba(212,175,55,0.2); }
 
-    /* My position badge */
+    /* Nav + my-pos */
     #my-pos {
-      position: fixed; bottom: 24px; left: 328px;
-      padding: 8px 16px;
-      background: rgba(8,6,20,0.85);
-      border: 1px solid rgba(52,211,153,0.25);
-      border-radius: 20px;
-      font-family: 'Fira Code', monospace; font-size: 10px;
-      color: rgba(52,211,153,0.7);
-      backdrop-filter: blur(8px);
-      z-index: 10;
-      transition: opacity 0.3s;
+      position: fixed; bottom: 24px; left: 328px; padding: 8px 16px;
+      background: rgba(8,6,20,0.85); border: 1px solid rgba(52,211,153,0.25);
+      border-radius: 20px; font-family: 'Fira Code', monospace; font-size: 10px;
+      color: rgba(52,211,153,0.7); backdrop-filter: blur(8px); z-index: 10; transition: opacity 0.3s;
     }
     #my-pos.hidden { opacity: 0; pointer-events: none; }
 
-    /* Nav controls (top-right) */
-    #nav-controls {
-      position: fixed; top: 20px; right: 20px;
-      display: flex; flex-direction: column; gap: 8px;
-      z-index: 10;
-    }
+    #nav-controls { position: fixed; top: 20px; right: 20px; display: flex; flex-direction: column; gap: 8px; z-index: 10; }
     .ctrl-btn {
-      padding: 8px 14px;
-      background: var(--panel-bg);
-      border: 1px solid var(--border);
-      border-radius: 6px;
-      color: rgba(255,255,255,0.5); font-size: 10px;
-      letter-spacing: 0.1em; text-transform: uppercase;
-      cursor: pointer; transition: all 0.2s;
-      backdrop-filter: blur(8px);
-      font-family: 'Fira Code', monospace;
+      padding: 8px 14px; background: var(--panel-bg); border: 1px solid var(--border);
+      border-radius: 6px; color: rgba(255,255,255,0.5); font-size: 10px;
+      letter-spacing: 0.1em; text-transform: uppercase; cursor: pointer; transition: all 0.2s;
+      backdrop-filter: blur(8px); font-family: 'Fira Code', monospace;
     }
     .ctrl-btn:hover { color: var(--gold); border-color: rgba(212,175,55,0.4); }
 
-    /* Sweep ring overlay */
-    #sweep-overlay {
-      position: fixed; inset: 0; z-index: 5;
-      pointer-events: none;
-      display: flex; align-items: center; justify-content: center;
-    }
+    /* Sweep ring */
+    #sweep-overlay { position: fixed; inset: 0; z-index: 5; pointer-events: none; display: flex; align-items: center; justify-content: center; }
     .sweep-ring {
-      position: absolute;
-      border-radius: 50%;
+      position: absolute; border-radius: 50%;
       border: 2px solid rgba(0,212,255,0.6);
       box-shadow: 0 0 30px rgba(0,212,255,0.3), inset 0 0 30px rgba(0,212,255,0.05);
       animation: expand-ring 2s ease-out forwards;
     }
-    @keyframes expand-ring {
-      0%   { width: 0; height: 0; opacity: 1; }
-      100% { width: 200vmax; height: 200vmax; opacity: 0; }
-    }
+    @keyframes expand-ring { 0% { width: 0; height: 0; opacity: 1; } 100% { width: 200vmax; height: 200vmax; opacity: 0; } }
 
     /* Toast */
     #toast {
-      position: fixed; bottom: 32px; right: 24px;
-      padding: 10px 18px;
-      background: rgba(8,6,20,0.95);
-      border: 1px solid rgba(212,175,55,0.3);
-      border-radius: 8px;
-      font-size: 12px; color: var(--gold);
-      z-index: 100;
-      transform: translateY(20px); opacity: 0;
-      transition: all 0.3s;
-      pointer-events: none;
+      position: fixed; bottom: 32px; right: 24px; padding: 10px 18px;
+      background: rgba(8,6,20,0.95); border: 1px solid rgba(212,175,55,0.3);
+      border-radius: 8px; font-size: 12px; color: var(--gold); z-index: 100;
+      transform: translateY(20px); opacity: 0; transition: all 0.3s; pointer-events: none;
     }
     #toast.show { transform: translateY(0); opacity: 1; }
 
-    /* Loading overlay */
+    /* Loading */
     #loading-overlay {
-      position: fixed; inset: 0; z-index: 50;
-      background: var(--void);
+      position: fixed; inset: 0; z-index: 50; background: var(--void);
       display: flex; align-items: center; justify-content: center;
-      flex-direction: column; gap: 16px;
-      transition: opacity 0.6s;
+      flex-direction: column; gap: 16px; transition: opacity 0.6s;
     }
     #loading-overlay.fade-out { opacity: 0; pointer-events: none; }
-    .load-spinner {
-      width: 48px; height: 48px;
-      border: 2px solid rgba(212,175,55,0.1);
-      border-top-color: var(--gold);
-      border-radius: 50%;
-      animation: spin 1s linear infinite;
-    }
+    .load-spinner { width: 48px; height: 48px; border: 2px solid rgba(212,175,55,0.1); border-top-color: var(--gold); border-radius: 50%; animation: spin 1s linear infinite; }
     @keyframes spin { to { transform: rotate(360deg); } }
     .load-text { font-family: 'Cinzel', serif; font-size: 14px; color: rgba(212,175,55,0.6); letter-spacing: 0.12em; }
 
-    @media (max-width: 600px) {
-      #side-panel { width: 260px; }
-      #my-pos { left: 268px; }
-    }
+    @media (max-width: 600px) { #side-panel { width: 260px; } #my-pos { left: 268px; } }
   </style>
 </head>
 <body>
 
-<!-- Loading -->
 <div id="loading-overlay">
   <div class="load-spinner"></div>
   <div class="load-text">Scanning Manifold…</div>
 </div>
 
-<!-- Three.js Canvas -->
 <div id="canvas-container"></div>
-
-<!-- Sweep overlay -->
 <div id="sweep-overlay"></div>
 
-<!-- Left Panel -->
 <div id="side-panel">
   <div class="panel-header">
     <a href="../Learning-Hub.html" class="back-link">← Mage Tower</a>
@@ -333,7 +264,7 @@
   <button id="sweep-btn" disabled>⬡ Sweep Manifold</button>
 
   <div id="search-wrap">
-    <input id="search-input" type="text" placeholder="Search by name or ID…">
+    <input id="search-input" type="text" placeholder="Search by name or genesis ID…">
   </div>
 
   <div id="user-list-wrap">
@@ -354,120 +285,144 @@
       <span>Registered</span>
       <span id="insp-registered">—</span>
     </div>
+
+    <div class="orbit-matrix">
+      <div class="orbit-matrix-title">⟳ Orbital Matrix</div>
+
+      <div class="orbit-row">
+        <div class="orbit-tier-badge t4">T4</div>
+        <div class="orbit-info">
+          <div class="orbit-info-label">Minor Tomes</div>
+        </div>
+        <div class="orbit-info-count t4" id="insp-minor-tomes">—</div>
+      </div>
+
+      <div class="orbit-row">
+        <div class="orbit-tier-badge t3">T3</div>
+        <div class="orbit-info">
+          <div class="orbit-info-label">Tomes</div>
+        </div>
+        <div class="orbit-info-count t3" id="insp-tomes">—</div>
+      </div>
+
+      <div class="orbit-row">
+        <div class="orbit-tier-badge t2">T2</div>
+        <div class="orbit-info">
+          <div class="orbit-info-label">Artifacts</div>
+        </div>
+        <div class="orbit-info-count t2" id="insp-artifacts">—</div>
+      </div>
+
+      <div class="orbit-row" id="orbit-row-t1">
+        <div class="orbit-tier-badge t1">T1</div>
+        <div class="orbit-info">
+          <div class="orbit-info-label">Dept X · Consciousness</div>
+          <div class="dept789-badges" id="insp-dept789-badges"></div>
+        </div>
+        <div class="orbit-info-count t1" id="insp-dept789">—</div>
+      </div>
+    </div>
+
     <button id="warp-btn">⟿ Warp to Node</button>
   </div>
 </div>
 
-<!-- Nav controls -->
 <div id="nav-controls">
   <button class="ctrl-btn" id="btn-reset">↺ Reset View</button>
   <button class="ctrl-btn" id="btn-center">⬡ My Node</button>
 </div>
 
-<!-- My position -->
 <div id="my-pos" class="hidden"></div>
-
-<!-- Toast -->
 <div id="toast"></div>
 
-<!-- Firebase (ES Module) -->
 <script type="module">
 import { auth, db } from "../scripts/firebase/config.js";
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-auth.js";
 import {
-  collection, doc, getDoc, setDoc, onSnapshot,
-  serverTimestamp, query, orderBy
+  collection, doc, getDoc, setDoc, getDocs,
+  onSnapshot, query, where, orderBy, serverTimestamp
 } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-firestore.js";
 
 // ── Constants ────────────────────────────────────────────────────────────────
-const TIER_COLORS = { ARCHON: 0xD4AF37, INSTRUCTOR: 0x00d4ff, ACOLYTE: 0x8A2BE2 };
-const TIER_HEX    = { ARCHON: '#D4AF37', INSTRUCTOR: '#00d4ff', ACOLYTE: '#8A2BE2' };
-const NODE_SIZES  = { ARCHON: 6, INSTRUCTOR: 4, ACOLYTE: 3 };
+const TIER_COLORS  = { ARCHON: 0xD4AF37, INSTRUCTOR: 0x00d4ff, ACOLYTE: 0x8A2BE2 };
+const TIER_HEX     = { ARCHON: '#D4AF37', INSTRUCTOR: '#00d4ff', ACOLYTE: '#8A2BE2' };
+const NODE_SIZES   = { ARCHON: 7, INSTRUCTOR: 5, ACOLYTE: 3.5 };
+
+// orbit tier definitions — T4 outermost, T1 innermost
+const ORBIT_DEFS = [
+  { tier: 4, key: 'minorTomes', label: 'Minor Tomes',         color: 0x8A2BE2, hexColor: '#8A2BE2', radius: 44, speed: 0.35, axis: new THREE.Vector3(0.2,  1, 0.15).normalize() },
+  { tier: 3, key: 'tomes',      label: 'Tomes',               color: 0x00d4ff, hexColor: '#00d4ff', radius: 30, speed: 0.65, axis: new THREE.Vector3(0.1,  1, 0.4 ).normalize() },
+  { tier: 2, key: 'artifacts',  label: 'Artifacts',           color: 0xD4AF37, hexColor: '#D4AF37', radius: 18, speed: 1.1,  axis: new THREE.Vector3(0.35, 1, 0.1 ).normalize() },
+  { tier: 1, key: 'dept789',    label: 'Consciousness Depts', color: 0xffffff, hexColor: '#ffffff', radius: 10, speed: 1.8,  axis: new THREE.Vector3(0,    1, 0   )             },
+];
+const DEPT_COLORS = { 7: 0xa855f7, 8: 0xec4899, 9: 0xef4444 };
 
 // ── State ────────────────────────────────────────────────────────────────────
-let currentUser = null;
-let myUid = null;
-let allUsers = [];          // { uid, displayName, tier, cosmologicalId, coords, registeredAt }
+let myUid    = null;
+let allUsers = [];         // array of constellations docs
 let selectedUid = null;
-let userNodes = {};         // uid → THREE.Mesh
-let isSweeping = false;
+let userNodes   = {};      // uid → THREE.Mesh (core sphere)
+let isSweeping  = false;
+let dragMoved   = false;
 
 // ── Three.js Scene ───────────────────────────────────────────────────────────
 const container = document.getElementById('canvas-container');
 const scene     = new THREE.Scene();
 scene.background = new THREE.Color(0x03020a);
+scene.fog = new THREE.FogExp2(0x03020a, 0.00018);
 
 const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 1, 8000);
-camera.position.set(0, 200, 1200);
-camera.lookAt(0, 0, 0);
-
-const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+const renderer = new THREE.WebGLRenderer({ antialias: true });
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
 renderer.setSize(window.innerWidth, window.innerHeight);
 container.appendChild(renderer.domElement);
 
-// Ambient + directional light
-scene.add(new THREE.AmbientLight(0xffffff, 0.4));
-const dirLight = new THREE.DirectionalLight(0xD4AF37, 0.6);
+scene.add(new THREE.AmbientLight(0xffffff, 0.35));
+const dirLight = new THREE.DirectionalLight(0xD4AF37, 0.7);
 dirLight.position.set(400, 600, 400);
 scene.add(dirLight);
+const pointLight = new THREE.PointLight(0x00d4ff, 0.4, 2000);
+pointLight.position.set(-400, 0, -400);
+scene.add(pointLight);
 
-// ── Starfield ────────────────────────────────────────────────────────────────
-(function buildStarfield() {
-  const geo  = new THREE.BufferGeometry();
-  const count = 4000;
-  const pos   = new Float32Array(count * 3);
-  for (let i = 0; i < count * 3; i++) pos[i] = (Math.random() - 0.5) * 6000;
+// Starfield
+(function() {
+  const geo = new THREE.BufferGeometry();
+  const pos = new Float32Array(5000 * 3);
+  for (let i = 0; i < pos.length; i++) pos[i] = (Math.random() - 0.5) * 7000;
   geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
-  const mat  = new THREE.PointsMaterial({ color: 0xffffff, size: 1.2, sizeAttenuation: true, transparent: true, opacity: 0.5 });
-  scene.add(new THREE.Points(geo, mat));
+  scene.add(new THREE.Points(geo, new THREE.PointsMaterial({ color: 0xffffff, size: 1.1, sizeAttenuation: true, transparent: true, opacity: 0.45 })));
 })();
 
-// ── Hyperbolic Manifold Lattice (wireframe skeleton) ─────────────────────────
-(function buildLattice() {
-  const mat = new THREE.LineBasicMaterial({ color: 0x0d1a2e, transparent: true, opacity: 0.35 });
-
-  // Toroidal grid — simplified Clifford-torus projection
-  const SEGMENTS = 32;
-  const R = 600; const r = 200;
-
-  for (let i = 0; i <= SEGMENTS; i++) {
-    const phi = (i / SEGMENTS) * Math.PI * 2;
+// Hyperbolic toroid lattice
+(function() {
+  const mat = new THREE.LineBasicMaterial({ color: 0x0a1828, transparent: true, opacity: 0.3 });
+  const SEG = 40, R = 700, r = 220;
+  for (let i = 0; i <= SEG; i++) {
+    const phi = (i / SEG) * Math.PI * 2;
     const pts = [];
-    for (let j = 0; j <= SEGMENTS; j++) {
-      const theta = (j / SEGMENTS) * Math.PI * 2;
-      pts.push(new THREE.Vector3(
-        (R + r * Math.cos(theta)) * Math.cos(phi),
-        r * Math.sin(theta),
-        (R + r * Math.cos(theta)) * Math.sin(phi)
-      ));
+    for (let j = 0; j <= SEG; j++) {
+      const t = (j / SEG) * Math.PI * 2;
+      pts.push(new THREE.Vector3((R + r * Math.cos(t)) * Math.cos(phi), r * Math.sin(t), (R + r * Math.cos(t)) * Math.sin(phi)));
     }
     scene.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), mat));
   }
-  for (let j = 0; j <= SEGMENTS; j++) {
-    const theta = (j / SEGMENTS) * Math.PI * 2;
+  for (let j = 0; j <= SEG; j++) {
+    const t = (j / SEG) * Math.PI * 2;
     const pts = [];
-    for (let i = 0; i <= SEGMENTS; i++) {
-      const phi = (i / SEGMENTS) * Math.PI * 2;
-      pts.push(new THREE.Vector3(
-        (R + r * Math.cos(theta)) * Math.cos(phi),
-        r * Math.sin(theta),
-        (R + r * Math.cos(theta)) * Math.sin(phi)
-      ));
+    for (let i = 0; i <= SEG; i++) {
+      const phi = (i / SEG) * Math.PI * 2;
+      pts.push(new THREE.Vector3((R + r * Math.cos(t)) * Math.cos(phi), r * Math.sin(t), (R + r * Math.cos(t)) * Math.sin(phi)));
     }
     scene.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), mat));
   }
 })();
 
 // ── Camera Orbit ─────────────────────────────────────────────────────────────
-let orbitEnabled = true;
-let autoRotate   = true;
-let isDragging   = false;
-let prevMouse    = { x: 0, y: 0 };
-let camTheta     = 0;
-let camPhi       = Math.PI / 6;
-let camRadius    = 1200;
-const CAM_TARGET = new THREE.Vector3(0, 0, 0);
+let autoRotate = true, isDragging = false;
+let camTheta = 0, camPhi = Math.PI / 6, camRadius = 1200;
+let prevMouse = { x: 0, y: 0 };
+const CAM_TARGET = new THREE.Vector3();
 
 function updateCamera() {
   camera.position.set(
@@ -479,74 +434,72 @@ function updateCamera() {
 }
 
 renderer.domElement.addEventListener('mousedown', e => {
-  if (e.button === 0) { isDragging = true; prevMouse = { x: e.clientX, y: e.clientY }; autoRotate = false; }
+  if (e.button !== 0) return;
+  isDragging = true; dragMoved = false;
+  prevMouse = { x: e.clientX, y: e.clientY };
+  autoRotate = false;
 });
 renderer.domElement.addEventListener('mousemove', e => {
   if (!isDragging) return;
-  camTheta -= (e.clientX - prevMouse.x) * 0.005;
-  camPhi   = Math.max(0.2, Math.min(Math.PI - 0.2, camPhi + (e.clientY - prevMouse.y) * 0.005));
+  const dx = e.clientX - prevMouse.x, dy = e.clientY - prevMouse.y;
+  if (Math.abs(dx) > 3 || Math.abs(dy) > 3) dragMoved = true;
+  camTheta -= dx * 0.005;
+  camPhi = Math.max(0.15, Math.min(Math.PI - 0.15, camPhi + dy * 0.005));
   prevMouse = { x: e.clientX, y: e.clientY };
   updateCamera();
 });
 window.addEventListener('mouseup', () => { isDragging = false; });
 renderer.domElement.addEventListener('wheel', e => {
-  camRadius = Math.max(300, Math.min(3000, camRadius + e.deltaY * 1.2));
+  camRadius = Math.max(100, Math.min(3500, camRadius + e.deltaY * 1.2));
   updateCamera(); e.preventDefault();
 }, { passive: false });
 
-// Touch support
 let lastTouchDist = 0;
 renderer.domElement.addEventListener('touchstart', e => {
-  if (e.touches.length === 1) { isDragging = true; prevMouse = { x: e.touches[0].clientX, y: e.touches[0].clientY }; autoRotate = false; }
-  if (e.touches.length === 2) { lastTouchDist = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY); }
+  if (e.touches.length === 1) { isDragging = true; dragMoved = false; prevMouse = { x: e.touches[0].clientX, y: e.touches[0].clientY }; autoRotate = false; }
+  if (e.touches.length === 2) lastTouchDist = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
 });
 renderer.domElement.addEventListener('touchmove', e => {
   if (e.touches.length === 1 && isDragging) {
-    camTheta -= (e.touches[0].clientX - prevMouse.x) * 0.005;
-    camPhi   = Math.max(0.2, Math.min(Math.PI - 0.2, camPhi + (e.touches[0].clientY - prevMouse.y) * 0.005));
+    const dx = e.touches[0].clientX - prevMouse.x, dy = e.touches[0].clientY - prevMouse.y;
+    if (Math.abs(dx) > 3 || Math.abs(dy) > 3) dragMoved = true;
+    camTheta -= dx * 0.005;
+    camPhi = Math.max(0.15, Math.min(Math.PI - 0.15, camPhi + dy * 0.005));
     prevMouse = { x: e.touches[0].clientX, y: e.touches[0].clientY };
     updateCamera();
   }
   if (e.touches.length === 2) {
     const d = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
-    camRadius = Math.max(300, Math.min(3000, camRadius - (d - lastTouchDist) * 2));
-    lastTouchDist = d;
-    updateCamera();
+    camRadius = Math.max(100, Math.min(3500, camRadius - (d - lastTouchDist) * 2));
+    lastTouchDist = d; updateCamera();
   }
   e.preventDefault();
 }, { passive: false });
 window.addEventListener('touchend', () => { isDragging = false; });
 
 // ── Raycaster ────────────────────────────────────────────────────────────────
-const raycaster  = new THREE.Raycaster();
-const mouse2d    = new THREE.Vector2();
-raycaster.params.Points = { threshold: 10 };
+const raycaster = new THREE.Raycaster();
+const mouse2d   = new THREE.Vector2();
 
 renderer.domElement.addEventListener('click', e => {
-  if (isDragging) return;
+  if (dragMoved) return;
   const rect = renderer.domElement.getBoundingClientRect();
   mouse2d.x =  ((e.clientX - rect.left) / rect.width)  * 2 - 1;
   mouse2d.y = -((e.clientY - rect.top)  / rect.height) * 2 + 1;
-
   raycaster.setFromCamera(mouse2d, camera);
-  const meshes = Object.values(userNodes);
-  const hits   = raycaster.intersectObjects(meshes);
-  if (hits.length > 0) {
-    const uid = hits[0].object.userData.uid;
-    selectUser(uid);
-  }
+  const hits = raycaster.intersectObjects(Object.values(userNodes));
+  if (hits.length) selectUser(hits[0].object.userData.uid);
 });
 
-// ── Genesis → Position ───────────────────────────────────────────────────────
+// ── Genesis → 3D Position ────────────────────────────────────────────────────
 function genesisToPosition(cosmologicalId) {
-  if (!cosmologicalId || cosmologicalId.length < 6) return new THREE.Vector3(
-    (Math.random() - 0.5) * 1200, (Math.random() - 0.5) * 600, (Math.random() - 0.5) * 1200
-  );
-  const hex = cosmologicalId.replace(/-/g, '');
-  const padded = hex.padEnd(12, '0').substring(0, 12);
-  const xVal = parseInt(padded.substring(0, 4), 16) || 0;
-  const yVal = parseInt(padded.substring(4, 8),  16) || 0;
-  const zVal = parseInt(padded.substring(8, 12), 16) || 0;
+  if (!cosmologicalId || cosmologicalId.length < 6) {
+    return new THREE.Vector3((Math.random() - 0.5) * 1200, (Math.random() - 0.5) * 600, (Math.random() - 0.5) * 1200);
+  }
+  const hex    = cosmologicalId.replace(/-/g, '').padEnd(12, '0').substring(0, 12);
+  const xVal   = parseInt(hex.substring(0, 4), 16) || 0;
+  const yVal   = parseInt(hex.substring(4, 8),  16) || 0;
+  const zVal   = parseInt(hex.substring(8, 12), 16) || 0;
   return new THREE.Vector3(
     (xVal / 65535) * 1400 - 700,
     (yVal / 65535) * 700  - 350,
@@ -554,171 +507,270 @@ function genesisToPosition(cosmologicalId) {
   );
 }
 
-// ── Node Creation ────────────────────────────────────────────────────────────
-function createUserNode(userData) {
-  const { uid, tier, cosmologicalId, displayName } = userData;
-  const tierKey  = (tier || 'ACOLYTE').toUpperCase();
-  const color    = TIER_COLORS[tierKey] ?? TIER_COLORS.ACOLYTE;
-  const size     = NODE_SIZES[tierKey] ?? NODE_SIZES.ACOLYTE;
-  const pos      = genesisToPosition(cosmologicalId);
+// ── Orbital Ring Builder ──────────────────────────────────────────────────────
+function buildOrbitRing(def, count) {
+  const group = new THREE.Group();
+  group.userData.orbitDef = def;
 
-  // Core sphere
-  const geo  = new THREE.SphereGeometry(size, 12, 12);
+  const capped = Math.min(count, 16);
+
+  // Faint guide circle
+  const circlePts = [];
+  for (let i = 0; i <= 64; i++) {
+    const a = (i / 64) * Math.PI * 2;
+    circlePts.push(new THREE.Vector3(def.radius * Math.cos(a), 0, def.radius * Math.sin(a)));
+  }
+  const guideMat = new THREE.LineBasicMaterial({ color: def.color, transparent: true, opacity: 0.08 });
+  group.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(circlePts), guideMat));
+
+  // Particles
+  for (let i = 0; i < capped; i++) {
+    const angle   = (i / capped) * Math.PI * 2;
+    const pSize   = def.tier === 1 ? 1.8 : def.tier === 2 ? 1.5 : def.tier === 3 ? 1.2 : 1.0;
+    const geo     = new THREE.SphereGeometry(pSize, 6, 6);
+
+    // T1 dept particles get per-dept color
+    let pColor = def.color;
+    if (def.tier === 1 && count > 0) {
+      const deptIdx = i % 3;
+      pColor = [0xa855f7, 0xec4899, 0xef4444][deptIdx];
+    }
+    const mat = new THREE.MeshBasicMaterial({ color: pColor, transparent: true, opacity: 0.85 });
+    const p   = new THREE.Mesh(geo, mat);
+    p.position.set(def.radius * Math.cos(angle), 0, def.radius * Math.sin(angle));
+    group.add(p);
+  }
+
+  return group;
+}
+
+function buildOrbitalSystem(mesh, orbitals) {
+  // Remove old system if present
+  const old = mesh.children.find(c => c.userData.isOrbitSystem);
+  if (old) mesh.remove(old);
+
+  const system = new THREE.Group();
+  system.userData.isOrbitSystem = true;
+
+  for (const def of ORBIT_DEFS) {
+    let count = 0;
+    if (def.key === 'dept789') {
+      count = Array.isArray(orbitals?.dept789) ? orbitals.dept789.length : 0;
+      if (!orbitals?.deptXUnlocked || count === 0) continue;
+    } else {
+      count = orbitals?.[def.key] || 0;
+      if (count === 0) continue;
+    }
+
+    const ring = buildOrbitRing(def, count);
+    // Tilt the orbital plane
+    const tiltAngle = Math.acos(Math.max(-1, Math.min(1, def.axis.dot(new THREE.Vector3(0, 1, 0)))));
+    const tiltAxis  = new THREE.Vector3().crossVectors(new THREE.Vector3(0, 1, 0), def.axis).normalize();
+    if (tiltAxis.length() > 0.001) ring.rotateOnAxis(tiltAxis, tiltAngle);
+    system.add(ring);
+  }
+
+  mesh.add(system);
+}
+
+// ── Node Creation / Update ───────────────────────────────────────────────────
+function normTier(tier) {
+  const t = (tier || 'ACOLYTE').toUpperCase().trim();
+  return ['ARCHON', 'INSTRUCTOR', 'ACOLYTE'].includes(t) ? t : 'ACOLYTE';
+}
+
+function createUserNode(data) {
+  const { uid, cosmologicalId, displayName, orbitals } = data;
+  const tier  = normTier(data.tier);
+  const color = TIER_COLORS[tier];
+  const size  = NODE_SIZES[tier];
+  const pos   = genesisToPosition(cosmologicalId);
+
+  const geo  = new THREE.SphereGeometry(size, 14, 14);
   const mat  = new THREE.MeshStandardMaterial({
-    color,
-    emissive: color,
-    emissiveIntensity: 0.6,
-    metalness: 0.3,
-    roughness: 0.4
+    color, emissive: color, emissiveIntensity: 0.5,
+    metalness: 0.4, roughness: 0.35
   });
   const mesh = new THREE.Mesh(geo, mat);
   mesh.position.copy(pos);
-  mesh.userData = { uid, displayName, tier: tierKey, cosmologicalId, pos };
+  mesh.userData = { uid, displayName, tier, cosmologicalId, baseY: pos.y };
 
-  // Glow ring
-  const ringGeo = new THREE.RingGeometry(size * 1.4, size * 2.2, 24);
-  const ringMat = new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.2, side: THREE.DoubleSide });
-  const ring    = new THREE.Mesh(ringGeo, ringMat);
+  // Equatorial glow ring
+  const rGeo = new THREE.RingGeometry(size * 1.5, size * 2.4, 28);
+  const rMat = new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.18, side: THREE.DoubleSide });
+  const ring = new THREE.Mesh(rGeo, rMat);
   ring.rotation.x = Math.PI / 2;
   mesh.add(ring);
 
-  // Special crown for Archon
-  if (tierKey === 'ARCHON') {
-    const crownGeo = new THREE.OctahedronGeometry(size * 1.5, 0);
-    const crownMat = new THREE.MeshBasicMaterial({ color: 0xD4AF37, wireframe: true, transparent: true, opacity: 0.5 });
-    const crown    = new THREE.Mesh(crownGeo, crownMat);
-    mesh.add(crown);
+  // Archon wireframe crown
+  if (tier === 'ARCHON') {
+    const oct = new THREE.OctahedronGeometry(size * 2, 0);
+    mesh.add(new THREE.Mesh(oct, new THREE.MeshBasicMaterial({ color: 0xD4AF37, wireframe: true, transparent: true, opacity: 0.4 })));
   }
+  // Instructor diamond ring
+  if (tier === 'INSTRUCTOR') {
+    const iGeo = new THREE.TorusGeometry(size * 2, 0.4, 4, 12);
+    mesh.add(new THREE.Mesh(iGeo, new THREE.MeshBasicMaterial({ color: 0x00d4ff, transparent: true, opacity: 0.3 })));
+  }
+
+  buildOrbitalSystem(mesh, orbitals);
 
   scene.add(mesh);
   userNodes[uid] = mesh;
-  userData._mesh = mesh;
   return mesh;
 }
 
-function removeUserNode(uid) {
-  if (userNodes[uid]) {
-    scene.remove(userNodes[uid]);
-    delete userNodes[uid];
-  }
+function updateUserNode(data) {
+  const mesh = userNodes[data.uid];
+  if (!mesh) { createUserNode(data); return; }
+
+  const tier  = normTier(data.tier);
+  const color = TIER_COLORS[tier];
+
+  mesh.userData.tier        = tier;
+  mesh.userData.displayName = data.displayName;
+  mesh.material.color.setHex(color);
+  mesh.material.emissive.setHex(color);
+  mesh.material.needsUpdate = true;
+
+  buildOrbitalSystem(mesh, data.orbitals);
 }
 
-// ── UI Helpers ───────────────────────────────────────────────────────────────
+function removeUserNode(uid) {
+  const mesh = userNodes[uid];
+  if (mesh) { scene.remove(mesh); delete userNodes[uid]; }
+}
+
+// ── Toast ────────────────────────────────────────────────────────────────────
 let toastTimer = null;
 function showToast(msg) {
   const el = document.getElementById('toast');
   el.textContent = msg;
   el.classList.add('show');
   clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => el.classList.remove('show'), 3000);
+  toastTimer = setTimeout(() => el.classList.remove('show'), 3200);
 }
 
+// ── Stats + List ─────────────────────────────────────────────────────────────
 function updateStats() {
-  const archons     = allUsers.filter(u => u.tier === 'ARCHON').length;
-  const instructors = allUsers.filter(u => u.tier === 'INSTRUCTOR').length;
   document.getElementById('stat-total').textContent      = allUsers.length;
-  document.getElementById('stat-archons').textContent    = archons;
-  document.getElementById('stat-instructors').textContent = instructors;
+  document.getElementById('stat-archons').textContent    = allUsers.filter(u => normTier(u.tier) === 'ARCHON').length;
+  document.getElementById('stat-instructors').textContent = allUsers.filter(u => normTier(u.tier) === 'INSTRUCTOR').length;
+}
+
+function orbitPipsHtml(orbitals) {
+  if (!orbitals) return '';
+  const pips = [];
+  if ((orbitals.minorTomes || 0) > 0)  pips.push('<div class="orbit-pip o4" title="Minor Tomes"></div>');
+  if ((orbitals.tomes      || 0) > 0)  pips.push('<div class="orbit-pip o3" title="Tomes"></div>');
+  if ((orbitals.artifacts  || 0) > 0)  pips.push('<div class="orbit-pip o2" title="Artifacts"></div>');
+  if (orbitals.deptXUnlocked && (orbitals.dept789||[]).length > 0) pips.push('<div class="orbit-pip o1" title="Dept X"></div>');
+  return pips.length ? `<div class="card-orbit-pips">${pips.join('')}</div>` : '';
 }
 
 function renderUserList(filter = '') {
   const list  = document.getElementById('user-list');
   const empty = document.getElementById('empty-state');
-  const terms = filter.toLowerCase().trim();
-  const shown = terms
-    ? allUsers.filter(u => (u.displayName || '').toLowerCase().includes(terms) || (u.cosmologicalId || '').toLowerCase().includes(terms))
+  const term  = filter.toLowerCase().trim();
+  const shown = term
+    ? allUsers.filter(u => (u.displayName || '').toLowerCase().includes(term) || (u.cosmologicalId || '').toLowerCase().includes(term))
     : allUsers;
 
-  if (shown.length === 0) {
+  if (!shown.length) {
     empty.style.display = 'block';
-    empty.textContent   = terms ? 'No matching nodes found.' : 'No registered genesis seeds yet.';
-    list.innerHTML      = '';
-    return;
+    empty.textContent   = term ? 'No matching nodes.' : 'No genesis seeds registered yet.';
+    list.innerHTML = ''; return;
   }
   empty.style.display = 'none';
 
   list.innerHTML = shown.map(u => {
-    const tierKey = (u.tier || 'ACOLYTE').toUpperCase();
-    const isMe    = u.uid === myUid;
-    return `
-      <div class="user-card${selectedUid === u.uid ? ' selected' : ''}" data-uid="${u.uid}" onclick="window._selectUser('${u.uid}')">
-        <div class="node-dot tier-${tierKey}"></div>
-        <div style="flex:1;min-width:0;">
-          <div class="card-name">${escapeHtml(u.displayName || 'Unknown Scholar')}${isMe ? ' <span style="color:rgba(52,211,153,0.7);font-size:9px;">(you)</span>' : ''}</div>
-          <div class="card-tier tier-${tierKey}">${tierKey}</div>
+    const tier  = normTier(u.tier);
+    const isMe  = u.uid === myUid;
+    return `<div class="user-card${selectedUid === u.uid ? ' selected' : ''}" data-uid="${u.uid}" onclick="window._selectUser('${u.uid}')">
+      <div class="node-dot tier-${tier}"></div>
+      <div class="card-info">
+        <div class="card-name">${escHtml(u.displayName || 'Unknown Scholar')}${isMe ? ' <span style="color:rgba(52,211,153,0.7);font-size:9px;">(you)</span>' : ''}</div>
+        <div class="card-meta">
+          <div class="card-tier tier-${tier}">${tier}</div>
+          ${orbitPipsHtml(u.orbitals)}
         </div>
       </div>
-    `;
+    </div>`;
   }).join('');
 }
 
+// ── Inspector ────────────────────────────────────────────────────────────────
 function selectUser(uid) {
   selectedUid = uid;
   const u = allUsers.find(x => x.uid === uid);
   if (!u) return;
 
-  // Highlight list
-  document.querySelectorAll('.user-card').forEach(el => {
-    el.classList.toggle('selected', el.dataset.uid === uid);
-  });
+  document.querySelectorAll('.user-card').forEach(el => el.classList.toggle('selected', el.dataset.uid === uid));
 
-  // Highlight node
   Object.entries(userNodes).forEach(([id, mesh]) => {
-    const mat = mesh.material;
-    mat.emissiveIntensity = id === uid ? 1.4 : 0.6;
-    mat.needsUpdate = true;
+    mesh.material.emissiveIntensity = id === uid ? 1.6 : 0.5;
+    mesh.material.needsUpdate = true;
   });
 
-  // Inspector
-  const insp = document.getElementById('inspector');
-  insp.classList.remove('hidden');
+  const tier = normTier(u.tier);
+  document.getElementById('inspector').classList.remove('hidden');
   document.getElementById('insp-name').textContent = u.displayName || 'Unknown Scholar';
   const tierEl = document.getElementById('insp-tier');
-  tierEl.textContent = u.tier || 'ACOLYTE';
-  tierEl.style.color = TIER_HEX[(u.tier||'ACOLYTE').toUpperCase()] || '#8A2BE2';
+  tierEl.textContent = tier;
+  tierEl.style.color = TIER_HEX[tier];
+
   const pos = genesisToPosition(u.cosmologicalId);
-  document.getElementById('insp-coords').textContent = `x:${pos.x.toFixed(0)} y:${pos.y.toFixed(0)} z:${pos.z.toFixed(0)}`;
-  document.getElementById('insp-genesis').textContent = u.cosmologicalId ? u.cosmologicalId.substring(0, 16) + '…' : '—';
+  document.getElementById('insp-coords').textContent = `x:${pos.x.toFixed(0)}  y:${pos.y.toFixed(0)}  z:${pos.z.toFixed(0)}`;
+  document.getElementById('insp-genesis').textContent = u.cosmologicalId ? u.cosmologicalId.substring(0, 18) + '…' : '—';
   const reg = u.registeredAt?.toDate?.() || (u.registeredAt ? new Date(u.registeredAt) : null);
   document.getElementById('insp-registered').textContent = reg ? reg.toLocaleDateString() : '—';
-}
 
+  // Orbital matrix
+  const orb = u.orbitals || {};
+  document.getElementById('insp-minor-tomes').textContent = orb.minorTomes ?? 0;
+  document.getElementById('insp-tomes').textContent       = orb.tomes      ?? 0;
+  document.getElementById('insp-artifacts').textContent   = orb.artifacts  ?? 0;
+
+  const dept789 = Array.isArray(orb.dept789) ? orb.dept789 : [];
+  const t1El    = document.getElementById('insp-dept789');
+  const badgesEl= document.getElementById('insp-dept789-badges');
+  if (!orb.deptXUnlocked || dept789.length === 0) {
+    t1El.innerHTML      = '<span class="orbit-locked">Locked</span>';
+    badgesEl.innerHTML  = '';
+  } else {
+    t1El.textContent = dept789.length + '/3';
+    badgesEl.innerHTML = dept789.map(d => `<span class="dept-badge d${d}">D${d}</span>`).join('');
+  }
+}
 window._selectUser = selectUser;
 
-function escapeHtml(s) {
+function escHtml(s) {
   return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
-// ── Warp Animation ───────────────────────────────────────────────────────────
+// ── Warp ─────────────────────────────────────────────────────────────────────
 function warpToNode(uid) {
   const mesh = userNodes[uid];
-  if (!mesh) return;
+  if (!mesh) { showToast('Node not found on manifold.'); return; }
   const target = mesh.position.clone();
-  const startRadius = camRadius;
-  const endRadius   = 200;
-
-  autoRotate = false;
-  new TWEEN.Tween({ r: startRadius, theta: camTheta, phi: camPhi, tx: CAM_TARGET.x, ty: CAM_TARGET.y, tz: CAM_TARGET.z })
-    .to({ r: endRadius, theta: camTheta, phi: camPhi, tx: target.x, ty: target.y, tz: target.z }, 1600)
+  autoRotate   = false;
+  new TWEEN.Tween({ r: camRadius, theta: camTheta, phi: camPhi, tx: CAM_TARGET.x, ty: CAM_TARGET.y, tz: CAM_TARGET.z })
+    .to({ r: 180, theta: camTheta, phi: camPhi, tx: target.x, ty: target.y, tz: target.z }, 1800)
     .easing(TWEEN.Easing.Quintic.InOut)
     .onUpdate(({ r, theta, phi, tx, ty, tz }) => {
       camRadius = r; camTheta = theta; camPhi = phi;
-      CAM_TARGET.set(tx, ty, tz);
-      updateCamera();
+      CAM_TARGET.set(tx, ty, tz); updateCamera();
     })
-    .onComplete(() => { camRadius = endRadius; showToast(`Warped to ${allUsers.find(x=>x.uid===uid)?.displayName || 'node'}`); })
+    .onComplete(() => { showToast(`⟿ Warped to ${allUsers.find(x=>x.uid===uid)?.displayName || 'node'}`); })
     .start();
 }
 
-document.getElementById('warp-btn').addEventListener('click', () => {
-  if (selectedUid) warpToNode(selectedUid);
-});
+document.getElementById('warp-btn').addEventListener('click', () => { if (selectedUid) warpToNode(selectedUid); });
 
 document.getElementById('btn-reset').addEventListener('click', () => {
-  autoRotate = true;
-  CAM_TARGET.set(0, 0, 0);
+  autoRotate = true; CAM_TARGET.set(0, 0, 0);
   new TWEEN.Tween({ r: camRadius, theta: camTheta, phi: camPhi })
-    .to({ r: 1200, theta: 0, phi: Math.PI / 6 }, 1200)
+    .to({ r: 1200, theta: 0, phi: Math.PI / 6 }, 1400)
     .easing(TWEEN.Easing.Cubic.InOut)
     .onUpdate(({ r, theta, phi }) => { camRadius = r; camTheta = theta; camPhi = phi; updateCamera(); })
     .start();
@@ -729,50 +781,105 @@ document.getElementById('btn-center').addEventListener('click', () => {
   warpToNode(myUid);
 });
 
-document.getElementById('search-input').addEventListener('input', e => {
-  renderUserList(e.target.value);
-});
+document.getElementById('search-input').addEventListener('input', e => renderUserList(e.target.value));
 
-// ── Sweep Animation ──────────────────────────────────────────────────────────
+// ── Sweep button ─────────────────────────────────────────────────────────────
 function playSweepRing() {
-  const overlay = document.getElementById('sweep-overlay');
-  const ring    = document.createElement('div');
+  const ring = document.createElement('div');
   ring.className = 'sweep-ring';
-  overlay.appendChild(ring);
-  setTimeout(() => ring.remove(), 2100);
+  document.getElementById('sweep-overlay').appendChild(ring);
+  setTimeout(() => ring.remove(), 2200);
 }
 
-// ── Firestore: Constellations ────────────────────────────────────────────────
+document.getElementById('sweep-btn').addEventListener('click', async () => {
+  if (isSweeping) return;
+  isSweeping = true;
+  const btn = document.getElementById('sweep-btn');
+  btn.textContent = '⟳ Sweeping…'; btn.disabled = true;
+  playSweepRing();
+  await new Promise(r => setTimeout(r, 2200));
+  btn.textContent = `⬡ ${allUsers.length} Nodes Located`;
+  setTimeout(() => { btn.textContent = '⬡ Sweep Manifold'; btn.disabled = false; isSweeping = false; }, 2000);
+});
+
+// ── Self-register + compute orbitals ────────────────────────────────────────
+async function registerMyPosition(user) {
+  try {
+    const regSnap = await getDoc(doc(db, 'users', user.uid, 'registrar', 'main'));
+    if (!regSnap.exists()) return;
+    const reg = regSnap.data();
+    if (!reg.cosmologicalId) return;
+
+    const tier = normTier(reg.tier);
+
+    // Query my tomes
+    const tomesSnap = await getDocs(query(collection(db, 'tomes'), where('creatorUid', '==', user.uid)));
+    let minorTomes = 0, tomes = 0;
+    tomesSnap.forEach(d => {
+      const t = d.data().type;
+      if (t === 'video' || t === 'module') minorTomes++;
+      else tomes++;
+    });
+
+    // Query my artifacts
+    const artSnap = await getDocs(query(collection(db, 'artifacts'), where('creatorUid', '==', user.uid)));
+    const artifacts = artSnap.size;
+
+    // Dept X: read from registrar fields (stored as deptXUnlocked bool + dept789 array)
+    const deptXUnlocked = reg.deptXUnlocked || false;
+    const dept789       = Array.isArray(reg.dept789) ? reg.dept789 : [];
+
+    const pos = genesisToPosition(reg.cosmologicalId);
+
+    // Only set registeredAt on first creation (check if doc exists)
+    const existingSnap = await getDoc(doc(db, 'constellations', user.uid));
+    const payload = {
+      uid:             user.uid,
+      displayName:     user.displayName || reg.displayName || 'Unknown Scholar',
+      cosmologicalId:  reg.cosmologicalId,
+      tier,
+      coords:          { x: pos.x, y: pos.y, z: pos.z },
+      orbitals:        { minorTomes, tomes, artifacts, deptXUnlocked, dept789 },
+      updatedAt:       serverTimestamp()
+    };
+    if (!existingSnap.exists()) payload.registeredAt = serverTimestamp();
+
+    await setDoc(doc(db, 'constellations', user.uid), payload, { merge: true });
+
+    document.getElementById('my-pos').textContent = `⬡ ${pos.x.toFixed(0)}, ${pos.y.toFixed(0)}, ${pos.z.toFixed(0)}`;
+    document.getElementById('my-pos').classList.remove('hidden');
+  } catch (e) {
+    console.warn('registerMyPosition failed:', e);
+  }
+}
+
+// ── Firestore live listener ──────────────────────────────────────────────────
 let unsubscribe = null;
 
 function startListening() {
   if (unsubscribe) unsubscribe();
   const q = query(collection(db, 'constellations'), orderBy('registeredAt', 'asc'));
   unsubscribe = onSnapshot(q, snap => {
-    const isFirst = allUsers.length === 0 && !snap.metadata.hasPendingWrites;
+    const isInitialLoad = snap.metadata.fromCache === false && allUsers.length === 0;
 
     snap.docChanges().forEach(change => {
       const data = { uid: change.doc.id, ...change.doc.data() };
 
       if (change.type === 'added') {
-        if (!allUsers.find(u => u.uid === data.uid)) {
-          allUsers.push(data);
-          createUserNode(data);
-          if (!isFirst) {
-            // New arrival — flash card
-            setTimeout(() => {
-              const card = document.querySelector(`.user-card[data-uid="${data.uid}"]`);
-              if (card) card.classList.add('new-arrival');
-            }, 100);
-            playSweepRing();
-            showToast(`⬡ ${data.displayName || 'New scholar'} joined the manifold`);
-          }
+        if (allUsers.find(u => u.uid === data.uid)) return;
+        allUsers.push(data);
+        createUserNode(data);
+        if (!isInitialLoad && allUsers.length > 1) {
+          setTimeout(() => {
+            document.querySelector(`.user-card[data-uid="${data.uid}"]`)?.classList.add('new-arrival');
+          }, 80);
+          playSweepRing();
+          showToast(`⬡ ${data.displayName || 'New scholar'} appeared on the manifold`);
         }
       } else if (change.type === 'modified') {
         const idx = allUsers.findIndex(u => u.uid === data.uid);
         if (idx !== -1) allUsers[idx] = data;
-        removeUserNode(data.uid);
-        createUserNode(data);
+        updateUserNode(data);
       } else if (change.type === 'removed') {
         allUsers = allUsers.filter(u => u.uid !== data.uid);
         removeUserNode(data.uid);
@@ -783,78 +890,30 @@ function startListening() {
     renderUserList(document.getElementById('search-input').value);
     hideLoading();
   }, err => {
-    console.error('Constellation snapshot error:', err);
+    console.error('Constellation listener:', err);
     hideLoading();
-    document.getElementById('empty-state').textContent = 'Could not load constellation data.';
+    document.getElementById('empty-state').textContent = 'Could not reach the manifold.';
   });
-}
-
-// ── Sweep Button ─────────────────────────────────────────────────────────────
-document.getElementById('sweep-btn').addEventListener('click', async () => {
-  if (isSweeping) return;
-  isSweeping = true;
-  const btn = document.getElementById('sweep-btn');
-  btn.textContent = '⟳ Sweeping…';
-  btn.disabled = true;
-  playSweepRing();
-  await new Promise(r => setTimeout(r, 2200));
-  btn.textContent = `⬡ ${allUsers.length} Nodes Located`;
-  setTimeout(() => {
-    btn.textContent = '⬡ Sweep Manifold';
-    btn.disabled = false;
-    isSweeping = false;
-  }, 2000);
-});
-
-// ── Self-register on Constellations ─────────────────────────────────────────
-async function registerMyPosition(user) {
-  try {
-    const regSnap = await getDoc(doc(db, 'users', user.uid, 'registrar', 'main'));
-    if (!regSnap.exists()) return;
-    const regData = regSnap.data();
-    const cosmologicalId = regData.cosmologicalId;
-    if (!cosmologicalId) return;
-
-    const tier = regData.tier || 'ACOLYTE';
-    const pos  = genesisToPosition(cosmologicalId);
-
-    await setDoc(doc(db, 'constellations', user.uid), {
-      uid: user.uid,
-      displayName: user.displayName || 'Unknown Scholar',
-      cosmologicalId,
-      tier,
-      coords: { x: pos.x, y: pos.y, z: pos.z },
-      registeredAt: serverTimestamp(),
-      updatedAt: serverTimestamp()
-    }, { merge: true });
-
-    const myPosEl = document.getElementById('my-pos');
-    myPosEl.textContent = `⬡ Your node: ${pos.x.toFixed(0)}, ${pos.y.toFixed(0)}, ${pos.z.toFixed(0)}`;
-    myPosEl.classList.remove('hidden');
-  } catch (e) {
-    console.warn('Self-register failed:', e);
-  }
 }
 
 // ── Auth ─────────────────────────────────────────────────────────────────────
 function hideLoading() {
   const el = document.getElementById('loading-overlay');
-  if (!el.classList.contains('fade-out')) {
+  if (el && !el.classList.contains('fade-out')) {
     el.classList.add('fade-out');
-    setTimeout(() => el.remove(), 700);
+    setTimeout(() => el?.remove(), 700);
   }
 }
 
 onAuthStateChanged(auth, user => {
   if (user) {
-    currentUser = user;
     myUid = user.uid;
     document.getElementById('sweep-btn').disabled = false;
     registerMyPosition(user);
     startListening();
   } else {
     document.getElementById('auth-banner').classList.remove('hidden');
-    document.getElementById('empty-state').textContent = 'Sign in to view the live manifold.';
+    document.getElementById('empty-state').textContent = 'Sign in to access the live manifold.';
     hideLoading();
   }
 });
@@ -868,33 +927,46 @@ window.addEventListener('resize', () => {
 
 // ── Render Loop ──────────────────────────────────────────────────────────────
 const clock = new THREE.Clock();
+
+function animateOrbits(delta) {
+  Object.values(userNodes).forEach(mesh => {
+    const system = mesh.children.find(c => c.userData.isOrbitSystem);
+    if (!system) return;
+    system.children.forEach(ring => {
+      const def = ring.userData.orbitDef;
+      if (def) ring.rotateOnAxis(def.axis, def.speed * delta);
+    });
+  });
+}
+
 function animate() {
   requestAnimationFrame(animate);
-  const t = clock.getElapsedTime();
+  const delta = clock.getDelta();
+  const t     = clock.getElapsedTime();
 
   TWEEN.update();
 
   if (autoRotate && !isDragging) {
-    camTheta += 0.0004;
+    camTheta += 0.00035;
     updateCamera();
   }
 
-  // Pulse selected node
-  if (selectedUid && userNodes[selectedUid]) {
-    const mesh = userNodes[selectedUid];
-    mesh.material.emissiveIntensity = 0.8 + 0.6 * Math.sin(t * 3);
-  }
-
-  // Gentle bob for all nodes
+  // Bob all nodes gently
   Object.values(userNodes).forEach(mesh => {
-    mesh.position.y = mesh.userData.pos.y + Math.sin(t * 0.8 + mesh.position.x * 0.01) * 4;
+    mesh.position.y = mesh.userData.baseY + Math.sin(t * 0.7 + mesh.userData.baseY * 0.008) * 5;
   });
 
+  // Pulse selected node
+  if (selectedUid && userNodes[selectedUid]) {
+    userNodes[selectedUid].material.emissiveIntensity = 1.0 + 0.6 * Math.sin(t * 3.5);
+  }
+
+  animateOrbits(delta);
   renderer.render(scene, camera);
 }
-animate();
-updateCamera();
 
+updateCamera();
+animate();
 </script>
 </body>
 </html>
