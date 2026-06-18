@@ -2,7 +2,8 @@
  * Sanctum UI — renders the Mage Tower dashboard panels.
  * Each render* function is independent so panels can be refreshed in isolation.
  */
-import { getTotalXP, getRankProgress } from "../services/arts.service.js";
+import { getRankProgress } from "../services/arts.service.js";
+import { getTotalXP } from "../services/user.service.js";
 
 // ── Configuration: easy to extend with new departments/tools ──────────────────
 const LIBRARY_DEPARTMENTS = [
