@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Owl Academy | Mage Tower Store</title>
+
+    <script type="module" src="../scripts/auth-guard.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Inter:wght@300;400;500;600&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+
+    <style>
+        body {
+            background-color: #05030a;
+            color: #e2e8f0;
+            font-family: 'Inter', sans-serif;
+            background: radial-gradient(circle at 50% 0%, rgba(212,175,55,0.06), #05030a 80%);
+            min-height: 100vh;
+        }
+        h1, h2, h3, .mystical { font-family: 'Cinzel', serif; }
+        .mono { font-family: 'Fira Code', monospace; }
+        .gold-gradient {
+            background: linear-gradient(to right, #D4AF37, #FFF8DC, #D4AF37);
+            -webkit-background-clip: text; background-clip: text; color: transparent;
+        }
+        .glass {
+            background: rgba(10, 6, 22, 0.6); backdrop-filter: blur(16px);
+            border: 1px solid rgba(212, 175, 55, 0.18);
+        }
+        .glass-cyan { background: rgba(10,6,22,0.6); backdrop-filter: blur(16px); border: 1px solid rgba(0,212,255,0.18); }
+
+        /* Store card */
+        .store-card {
+            background: rgba(10,6,22,0.6); backdrop-filter: blur(12px);
+            border: 1px solid rgba(255,255,255,0.07);
+            border-radius: 12px; padding: 1.5rem;
+            transition: all 0.25s; cursor: pointer; display: flex; flex-direction: column;
+        }
+        .store-card:hover:not(.owned):not(.coming-soon) {
+            transform: translateY(-3px);
+            border-color: var(--card-color, rgba(212,175,55,0.4));
+            box-shadow: 0 8px 32px var(--card-glow, rgba(212,175,55,0.12));
+        }
+        .store-card.owned { opacity: 0.7; cursor: default; }
+        .store-card.coming-soon { opacity: 0.45; cursor: not-allowed; }
+
+        /* Vis badge */
+        .vis-amount {
+            font-family: 'Fira Code', monospace;
+            color: #D4AF37;
+            font-size: 1.1rem;
+            font-weight: 700;
+        }
+
+        /* Progress bar */
+        .xp-bar-fill { transition: width 0.7s ease; }
+
+        /* Modal */
+        #confirm-modal {
+            position: fixed; inset: 0; z-index: 100;
+            background: rgba(5,3,10,0.85); backdrop-filter: blur(8px);
+            display: flex; align-items: center; justify-content: center;
+        }
+        #confirm-modal.hidden { display: none; }
+
+        details summary { list-style: none; cursor: pointer; }
+        details summary::-webkit-details-marker { display: none; }
+        details summary::after { content: ' ▼'; font-size: 0.7rem; transition: transform 0.3s; }
+        details[open] summary::after { transform: rotate(180deg); display: inline-block; }
+
+        /* Transaction row */
+        .tx-row { border-bottom: 1px solid rgba(255,255,255,0.04); }
+        .tx-row:last-child { border-bottom: none; }
+
+        /* Spinner */
+        .spinner { width: 32px; height: 32px; border: 2px solid rgba(212,175,55,0.2); border-top-color: #D4AF37; border-radius: 50%; animation: spin 0.8s linear infinite; margin: 2rem auto; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* Toast */
+        #toast {
+            position: fixed; bottom: 1.5rem; right: 1.5rem; z-index: 200;
+            padding: 0.75rem 1.25rem; border-radius: 8px; font-size: 0.85rem;
+            transition: opacity 0.3s; pointer-events: none;
+        }
+        #toast.hidden { opacity: 0; }
+        #toast.success { background: rgba(0,255,136,0.15); border: 1px solid rgba(0,255,136,0.3); color: #00ff88; }
+        #toast.error   { background: rgba(255,51,51,0.15);  border: 1px solid rgba(255,51,51,0.3);  color: #ff5555; }
+    </style>
+</head>
+<body class="antialiased">
+
+<nav class="sticky top-0 z-50 border-b border-yellow-500/10 bg-[#05030a]/90 backdrop-blur-xl px-6 py-3 flex items-center gap-3">
+    <a href="../index.html" class="mystical text-yellow-500 text-sm tracking-widest hover:text-yellow-300 transition">Owl Academy</a>
+    <span class="text-white/20">›</span>
+    <span class="mystical text-white/50 text-sm tracking-widest">Mage Tower Store</span>
+    <a href="../index.html" class="ml-auto text-[10px] text-slate-500 hover:text-yellow-400 transition uppercase tracking-widest">← Sanctum</a>
+</nav>
+
+<main class="max-w-5xl mx-auto px-4 md:px-8 py-10">
+
+    <div id="loading"><div class="spinner"></div></div>
+
+    <div id="store-body" class="hidden">
+
+        <!-- Header -->
+        <header class="text-center mb-10">
+            <div class="text-[10px] mono text-yellow-500 tracking-[0.3em] uppercase mb-2">Mage Tower Exchange</div>
+            <h1 class="text-3xl md:text-4xl font-bold mystical tracking-widest">
+                THE <span class="gold-gradient">VIS STORE</span>
+            </h1>
+            <p class="text-sm text-slate-400 mt-3 max-w-lg mx-auto">Exchange your earned Vis tokens for enhancements, cosmetics, and academy privileges.</p>
+        </header>
+
+        <!-- Vis Balance Panel -->
+        <div class="glass rounded-xl p-6 mb-8 flex flex-col md:flex-row gap-6 items-start md:items-center">
+            <div class="flex items-center gap-4">
+                <div class="w-14 h-14 rounded-full border-2 border-yellow-500/60 flex items-center justify-center text-2xl"
+                     style="background: radial-gradient(circle, rgba(212,175,55,0.15), rgba(10,6,22,0.8));">◈</div>
+                <div>
+                    <div class="text-[10px] mono text-slate-500 uppercase tracking-widest">Vis Balance</div>
+                    <div class="vis-amount text-3xl" id="vis-balance">—</div>
+                </div>
+            </div>
+            <div class="flex-1 min-w-0">
+                <div class="flex justify-between items-baseline mb-1">
+                    <span class="text-[10px] mono text-slate-500 uppercase tracking-widest">Level <span id="current-level">—</span> · <span id="xp-to-next">—</span> XP to next level-up (+20 ◈)</span>
+                    <span class="text-[10px] mono text-yellow-500" id="level-pct">—%</span>
+                </div>
+                <div class="w-full h-2 bg-slate-800 rounded-full overflow-hidden">
+                    <div id="level-bar" class="h-full bg-gradient-to-r from-yellow-700 to-yellow-400 xp-bar-fill rounded-full" style="width:0%"></div>
+                </div>
+            </div>
+            <a href="Codex.html" class="text-[10px] mono text-slate-500 hover:text-yellow-400 transition uppercase tracking-widest whitespace-nowrap">→ Codex</a>
+        </div>
+
+        <!-- How to earn Vis -->
+        <details class="glass rounded-xl mb-6 overflow-hidden">
+            <summary class="px-5 py-4 mystical text-yellow-400 text-sm tracking-widest uppercase flex items-center justify-between">
+                ◈ How to Earn Vis
+            </summary>
+            <div class="px-5 pb-5 space-y-4 text-sm text-slate-400 leading-relaxed">
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 mt-2">
+                    <div class="bg-black/30 rounded-lg p-4 border border-yellow-500/10">
+                        <div class="text-yellow-400 font-semibold mb-1 mystical text-xs tracking-widest">LEVEL UP</div>
+                        <div class="text-2xl font-bold mono text-yellow-300 mb-1">+20 ◈</div>
+                        <div class="text-xs text-slate-500">Per level gained. XP thresholds increase by 10 each level (100 → 110 → 120 …)</div>
+                    </div>
+                    <div class="bg-black/30 rounded-lg p-4 border border-cyan-500/10">
+                        <div class="text-cyan-400 font-semibold mb-1 mystical text-xs tracking-widest">TOME STAMPS</div>
+                        <div class="text-2xl font-bold mono text-cyan-300 mb-1">+2 ◈</div>
+                        <div class="text-xs text-slate-500">Per stamp your authored tome receives (up to 20 stamps per tome). Synced from your Codex.</div>
+                    </div>
+                    <div class="bg-black/30 rounded-lg p-4 border border-purple-500/10">
+                        <div class="text-purple-400 font-semibold mb-1 mystical text-xs tracking-widest">STARTING BONUS</div>
+                        <div class="text-2xl font-bold mono text-purple-300 mb-1">+50 ◈</div>
+                        <div class="text-xs text-slate-500">Every new scholar starts with 50 Vis to explore the store.</div>
+                    </div>
+                </div>
+                <div class="text-[11px] mono text-slate-600 border-t border-white/5 pt-3">
+                    ⚠ Anti-spam: Each user may give at most 10 stamps per day. Creator Vis is only awarded for the first 20 unique stamps per tome. Future: certification bonuses, seasonal events, guild rewards.
+                </div>
+            </div>
+        </details>
+
+        <!-- Store Grid -->
+        <div class="text-[10px] mono text-slate-500 uppercase tracking-widest mb-4">Available Items</div>
+        <div id="store-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-10">
+            <!-- Injected by JS -->
+        </div>
+
+        <!-- Transaction Ledger -->
+        <details class="glass rounded-xl overflow-hidden">
+            <summary class="px-5 py-4 mystical text-slate-400 text-sm tracking-widest uppercase flex items-center justify-between">
+                Transaction Ledger
+            </summary>
+            <div class="px-5 pb-4">
+                <div id="tx-list" class="space-y-0 text-sm">
+                    <div class="spinner" style="width:20px;height:20px;margin:1rem auto;border-width:1.5px;"></div>
+                </div>
+            </div>
+        </details>
+
+    </div><!-- /store-body -->
+
+</main>
+
+<!-- Confirm Modal -->
+<div id="confirm-modal" class="hidden">
+    <div class="glass rounded-2xl p-8 max-w-sm w-full mx-4 text-center">
+        <div id="modal-icon" class="text-4xl mb-3">◈</div>
+        <h3 class="mystical text-xl text-white mb-1" id="modal-title">Confirm Purchase</h3>
+        <p class="text-sm text-slate-400 mb-1" id="modal-desc"></p>
+        <div class="my-4 text-2xl font-bold mono text-yellow-400" id="modal-price"></div>
+        <div class="flex gap-3 justify-center mt-2">
+            <button id="modal-cancel" class="px-5 py-2 rounded border border-white/20 text-slate-400 hover:text-white transition text-sm">Cancel</button>
+            <button id="modal-confirm" class="px-5 py-2 rounded bg-yellow-500 text-black font-bold text-sm hover:bg-yellow-400 transition">Purchase</button>
+        </div>
+    </div>
+</div>
+
+<!-- Toast -->
+<div id="toast" class="hidden"></div>
+
+<script type="module">
+    import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-auth.js";
+    import { auth } from "../scripts/firebase/config.js";
+    import { getDocument } from "../scripts/firebase/firestore.js";
+    import { getTotalXP } from "../scripts/services/user.service.js";
+    import { getLevelInfo, spendVis, getTransactions, getInventory, checkAndAwardLevelUp } from "../scripts/services/vis.service.js";
+
+    // ── Store catalog ────────────────────────────────────────────────────────
+    const STORE_ITEMS = [
+        {
+            id: 'familiar-echo',
+            title: 'Echo Familiar',
+            category: 'Familiar',
+            price: 50,
+            icon: '✦',
+            color: '#b026ff',
+            glow: 'rgba(176,38,255,0.15)',
+            description: 'Unlock a second familiar archetype derived from a shifted variant of your genesis seed — a shadow resonance alongside your primary familiar.',
+            detail: 'Shifts the PRNG by +1 draw, revealing the archetype beneath yours.',
+            oneTime: true,
+        },
+        {
+            id: 'constellation-beacon',
+            title: 'Constellation Beacon',
+            category: 'Cosmetic',
+            price: 30,
+            icon: '⬡',
+            color: '#D4AF37',
+            glow: 'rgba(212,175,55,0.15)',
+            description: 'Your node on the Constellation Map pulses with a golden beacon glow, visible across the entire manifold.',
+            detail: 'Applies a persistent glow effect to your genesis node in the live 3D map.',
+            oneTime: true,
+        },
+        {
+            id: 'tome-showcase',
+            title: 'Tome Showcase',
+            category: 'Profile',
+            price: 25,
+            icon: '📜',
+            color: '#00d4ff',
+            glow: 'rgba(0,212,255,0.12)',
+            description: 'Pin one of your tomes to your Codex profile as a featured work, displayed prominently to any visitor.',
+            detail: 'Unlocks a "Featured Tome" slot on your Codex page.',
+            oneTime: false,
+        },
+        {
+            id: 'sigil-frame-gold',
+            title: 'Aurum Sigil Frame',
+            category: 'Cosmetic',
+            price: 40,
+            icon: '◈',
+            color: '#D4AF37',
+            glow: 'rgba(212,175,55,0.15)',
+            description: 'Adds a golden geometric frame around your familiar sigil wherever it appears — welcome banner, hub bar, and Constellation Map.',
+            detail: 'Visual cosmetic only. Applied across all sigil render locations.',
+            oneTime: true,
+        },
+        {
+            id: 'guild-founder',
+            title: 'Guild Founder Scroll',
+            category: 'Guild',
+            price: 100,
+            icon: '⚜',
+            color: '#00ff88',
+            glow: 'rgba(0,255,136,0.12)',
+            description: 'Grants the authority to found a new Guild within Owl Academy. Your genesis seed becomes the Guild\'s founding signature.',
+            detail: 'Guild system coming soon.',
+            oneTime: true,
+            comingSoon: true,
+        },
+        {
+            id: 'archival-seal',
+            title: 'Archival Seal',
+            category: 'Content',
+            price: 75,
+            icon: '⬢',
+            color: '#00d4ff',
+            glow: 'rgba(0,212,255,0.12)',
+            description: 'Apply a personal Archival Seal to a tome you authored, marking it as your verified contribution to the canonical knowledge base.',
+            detail: 'One seal per purchase. Usable on any tome you created.',
+            oneTime: false,
+            comingSoon: true,
+        },
+    ];
+
+    const CATEGORY_COLORS = {
+        Familiar: '#b026ff', Cosmetic: '#D4AF37', Profile: '#00d4ff',
+        Guild: '#00ff88', Content: '#00d4ff',
+    };
+
+    // ── State ────────────────────────────────────────────────────────────────
+    let currentUser = null;
+    let currentProfile = null;
+    let inventory = [];
+    let pendingPurchase = null;
+
+    // ── Toast ────────────────────────────────────────────────────────────────
+    function toast(msg, type = 'success') {
+        const el = document.getElementById('toast');
+        el.textContent = msg;
+        el.className = `${type}`;
+        el.style.opacity = '1';
+        setTimeout(() => { el.style.opacity = '0'; setTimeout(() => el.className = 'hidden', 300); }, 3000);
+    }
+
+    // ── Render vis balance panel ─────────────────────────────────────────────
+    function renderBalance(profile) {
+        const vis = profile?.vis ?? 0;
+        const arts = profile?.arts ?? {};
+        const totalXP = getTotalXP(arts);
+        const { level, xpIntoCurrentLevel, xpNeededForNext, progress } = getLevelInfo(totalXP);
+
+        document.getElementById('vis-balance').textContent = vis + ' ◈';
+        document.getElementById('current-level').textContent = level;
+        document.getElementById('xp-to-next').textContent = (xpNeededForNext - xpIntoCurrentLevel);
+        document.getElementById('level-pct').textContent = progress + '%';
+        document.getElementById('level-bar').style.width = progress + '%';
+    }
+
+    // ── Render store grid ────────────────────────────────────────────────────
+    function renderGrid() {
+        const vis = currentProfile?.vis ?? 0;
+        const ownedIds = new Set(inventory.map(i => i.itemId));
+
+        document.getElementById('store-grid').innerHTML = STORE_ITEMS.map(item => {
+            const owned = item.oneTime && ownedIds.has(item.id);
+            const cs = item.comingSoon;
+            const canAfford = vis >= item.price;
+            const cardClass = `store-card${owned ? ' owned' : ''}${cs ? ' coming-soon' : ''}`;
+
+            return `
+            <div class="${cardClass}" style="--card-color:${item.color};--card-glow:${item.glow};"
+                 ${!owned && !cs ? `onclick="openConfirm('${item.id}')"` : ''}>
+                <div class="flex items-start justify-between mb-3">
+                    <span class="text-3xl">${item.icon}</span>
+                    <div class="flex flex-col items-end gap-1">
+                        <span class="text-[10px] px-2 py-0.5 rounded-full mono uppercase tracking-wider"
+                              style="background:${item.color}15;color:${item.color};border:1px solid ${item.color}30">
+                            ${item.category}
+                        </span>
+                        ${owned ? `<span class="text-[10px] px-2 py-0.5 rounded-full mono uppercase tracking-wider bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">Owned</span>` : ''}
+                        ${cs ? `<span class="text-[10px] px-2 py-0.5 rounded-full mono uppercase tracking-wider bg-slate-500/10 text-slate-500 border border-slate-500/20">Soon</span>` : ''}
+                    </div>
+                </div>
+                <h3 class="mystical text-base font-semibold mb-1" style="color:${item.color}">${item.title}</h3>
+                <p class="text-xs text-slate-400 leading-relaxed flex-1">${item.description}</p>
+                <div class="mt-4 flex items-center justify-between">
+                    <span class="mono font-bold text-lg" style="color:${item.color}">${item.price} ◈</span>
+                    ${!owned && !cs ? `
+                        <button class="px-4 py-1.5 rounded text-xs font-semibold transition ${canAfford ? 'bg-yellow-500 text-black hover:bg-yellow-400' : 'bg-slate-700 text-slate-500 cursor-not-allowed'}"
+                                ${!canAfford ? 'disabled' : ''}>
+                            ${canAfford ? 'Purchase' : 'Need more ◈'}
+                        </button>` : ''}
+                </div>
+            </div>`;
+        }).join('');
+    }
+
+    // ── Transaction ledger ───────────────────────────────────────────────────
+    async function renderTransactions(uid) {
+        const txs = await getTransactions(uid);
+        const el = document.getElementById('tx-list');
+        if (!txs.length) {
+            el.innerHTML = `<p class="text-xs text-slate-600 italic py-4 text-center">No transactions yet.</p>`;
+            return;
+        }
+        const TYPE_LABELS = { award: '+ Earned', purchase: '− Spent', level_up: '↑ Level Up' };
+        const TYPE_COLORS = { award: '#00ff88', purchase: '#ff5555', level_up: '#D4AF37' };
+        el.innerHTML = txs.map(tx => {
+            const ts = tx.createdAt?.toDate?.()?.toLocaleDateString() ?? '—';
+            const label = TYPE_LABELS[tx.type] || tx.type;
+            const color = TYPE_COLORS[tx.type] || '#94a3b8';
+            const sign = tx.amount > 0 ? '+' : '';
+            return `<div class="tx-row py-2.5 flex items-center justify-between gap-3">
+                <div>
+                    <div class="text-xs text-slate-300">${tx.reason || tx.itemTitle || label}</div>
+                    <div class="text-[10px] mono text-slate-600">${ts} · ${label}</div>
+                </div>
+                <div class="mono font-bold text-sm whitespace-nowrap" style="color:${color}">${sign}${tx.amount} ◈</div>
+            </div>`;
+        }).join('');
+    }
+
+    // ── Confirm modal ────────────────────────────────────────────────────────
+    window.openConfirm = function(itemId) {
+        const item = STORE_ITEMS.find(i => i.id === itemId);
+        if (!item) return;
+        const vis = currentProfile?.vis ?? 0;
+        if (vis < item.price) return;
+        pendingPurchase = item;
+        document.getElementById('modal-icon').textContent = item.icon;
+        document.getElementById('modal-title').textContent = item.title;
+        document.getElementById('modal-desc').textContent = item.detail;
+        document.getElementById('modal-price').textContent = item.price + ' ◈';
+        document.getElementById('confirm-modal').classList.remove('hidden');
+    };
+
+    document.getElementById('modal-cancel').addEventListener('click', () => {
+        document.getElementById('confirm-modal').classList.add('hidden');
+        pendingPurchase = null;
+    });
+
+    document.getElementById('modal-confirm').addEventListener('click', async () => {
+        if (!pendingPurchase || !currentUser) return;
+        const item = pendingPurchase;
+        document.getElementById('confirm-modal').classList.add('hidden');
+        pendingPurchase = null;
+        try {
+            const newBal = await spendVis(currentUser.uid, item.price, item.id, item.title);
+            currentProfile = { ...currentProfile, vis: newBal };
+            inventory = await getInventory(currentUser.uid);
+            renderBalance(currentProfile);
+            renderGrid();
+            renderTransactions(currentUser.uid);
+            toast(`${item.title} acquired! (${newBal} ◈ remaining)`, 'success');
+        } catch(e) {
+            toast(e.message || 'Purchase failed', 'error');
+        }
+    });
+
+    // Click outside modal to close
+    document.getElementById('confirm-modal').addEventListener('click', e => {
+        if (e.target === e.currentTarget) {
+            e.currentTarget.classList.add('hidden');
+            pendingPurchase = null;
+        }
+    });
+
+    // ── Auth & init ──────────────────────────────────────────────────────────
+    onAuthStateChanged(auth, async user => {
+        if (!user) return; // auth-guard.js handles redirect
+        currentUser = user;
+        try {
+            // Check level-up before reading profile so balance is current
+            const profile = await getDocument(`users/${user.uid}/profile/main`);
+            if (profile?.arts) await checkAndAwardLevelUp(user.uid, profile.arts);
+
+            currentProfile = await getDocument(`users/${user.uid}/profile/main`);
+            inventory = await getInventory(user.uid);
+
+            renderBalance(currentProfile);
+            renderGrid();
+            renderTransactions(user.uid);
+
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('store-body').classList.remove('hidden');
+        } catch(e) {
+            console.error('[Store] load failed', e);
+            document.getElementById('loading').innerHTML = `<p class="text-red-400 text-center mono text-sm">${e.message}</p>`;
+        }
+    });
+</script>
+</body>
+</html>

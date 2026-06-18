@@ -36,10 +36,25 @@ service cloud.firestore {
       allow delete: if false;
     }
 
+    // Transactions: owner write (award/purchase), owner read only
+    match /users/{uid}/transactions/{txId} {
+      allow read:   if isSignedIn() && request.auth.uid == uid;
+      allow create: if isSignedIn() && request.auth.uid == uid;
+      allow update, delete: if false;
+    }
+
+    // Inventory: owner read/write, no deletes
+    match /users/{uid}/inventory/{itemId} {
+      allow read, write: if isSignedIn() && request.auth.uid == uid;
+      allow delete: if false;
+    }
+
     // Codex and other per-user subcollections: owner-only
     match /users/{uid}/{collection}/{doc=**} {
       allow read, write: if isSignedIn() && request.auth.uid == uid
-        && collection != "registrar";
+        && collection != "registrar"
+        && collection != "transactions"
+        && collection != "inventory";
     }
 
     // ─── Tomes ────────────────────────────────────────────────────────
