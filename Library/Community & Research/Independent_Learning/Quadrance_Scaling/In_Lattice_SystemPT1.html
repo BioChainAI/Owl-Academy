@@ -121,7 +121,14 @@
                                 <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
                                 Reference
                             </span>
+                            
+                            <!-- Tabs for Video vs PDF -->
+                            <div class="flex bg-black/50 rounded overflow-hidden border border-white/10">
+                                <button id="tab-video" class="px-3 py-1 text-[9px] font-mono font-bold bg-yellow-500/20 text-yellow-300 transition-colors">VIDEO</button>
+                                <button id="tab-pdf" class="px-3 py-1 text-[9px] font-mono font-bold text-slate-400 hover:text-white transition-colors">PDF PAPER</button>
+                            </div>
                         </div>
+
                         <button id="video-close" class="text-slate-400 hover:text-white transition-colors p-1 bg-black/50 rounded hover:bg-white/10">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
                         </button>
@@ -1285,6 +1292,10 @@
         const videoToggle = document.getElementById('video-toggle');
         const videoDropdown = document.getElementById('video-dropdown');
         const videoClose = document.getElementById('video-close');
+        const tabVideo = document.getElementById('tab-video');
+        const tabPdf = document.getElementById('tab-pdf');
+        const refVideo = document.getElementById('ref-video');
+        const refPdf = document.getElementById('ref-pdf');
 
         if(videoToggle && videoDropdown && videoClose) {
             videoToggle.addEventListener('click', () => {
@@ -1292,6 +1303,20 @@
             });
             videoClose.addEventListener('click', () => {
                 videoDropdown.classList.add('hidden');
+            });
+
+            tabVideo.addEventListener('click', () => {
+                refVideo.classList.remove('hidden');
+                refPdf.classList.add('hidden');
+                tabVideo.className = "px-3 py-1 text-[9px] font-mono font-bold bg-yellow-500/20 text-yellow-300 transition-colors";
+                tabPdf.className = "px-3 py-1 text-[9px] font-mono font-bold text-slate-400 hover:text-white transition-colors";
+            });
+
+            tabPdf.addEventListener('click', () => {
+                refPdf.classList.remove('hidden');
+                refVideo.classList.add('hidden');
+                tabPdf.className = "px-3 py-1 text-[9px] font-mono font-bold bg-yellow-500/20 text-yellow-300 transition-colors";
+                tabVideo.className = "px-3 py-1 text-[9px] font-mono font-bold text-slate-400 hover:text-white transition-colors";
             });
         }
 
