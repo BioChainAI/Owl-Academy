@@ -173,6 +173,7 @@
             <button class="tab-btn px-4 py-2 rounded-lg text-sm border border-yellow-600/30 mono text-slate-400" data-tab="artifacts" onclick="switchTab('artifacts', this)">⬡ Artifacts</button>
             <button class="tab-btn px-4 py-2 rounded-lg text-sm border border-yellow-600/30 mono text-slate-400" data-tab="tomes-db" onclick="switchTab('tomes-db', this)">📖 Tome Registry</button>
             <button class="tab-btn px-4 py-2 rounded-lg text-sm border border-yellow-600/30 mono text-slate-400" data-tab="elect" onclick="switchTab('elect', this)">♛ Elect Instructors</button>
+            <button class="tab-btn px-4 py-2 rounded-lg text-sm border border-yellow-600/30 mono text-slate-400" data-tab="chain-audit" onclick="switchTab('chain-audit', this)">🔍 Chain Audit</button>
         </div>
 
         <!-- ═══════════════════════════════════════════
@@ -367,6 +368,41 @@
             </div>
         </div>
 
+        <!-- ═══════════════════════════════════════════
+             TAB: CHAIN AUDIT
+        ═══════════════════════════════════════════ -->
+        <div id="tab-chain-audit" class="tab-panel">
+            <div class="flex flex-wrap items-center justify-between gap-4 mb-6">
+                <div>
+                    <h2 class="mystical text-xl text-yellow-300">Genesis Chain Audit</h2>
+                    <p class="text-xs text-slate-500 mt-1">
+                        Tomes grouped by issuing instructor — shows department, status, and enrolled student count.
+                    </p>
+                </div>
+                <div class="flex flex-wrap gap-3">
+                    <select id="auditFilterDept" onchange="loadChainAudit()" class="rounded-lg px-3 py-1.5 text-xs mono">
+                        <option value="">All Departments</option>
+                    </select>
+                    <select id="auditFilterStatus" onchange="loadChainAudit()" class="rounded-lg px-3 py-1.5 text-xs mono">
+                        <option value="">All Statuses</option>
+                        <option value="active">Active</option>
+                        <option value="manuscript">Manuscript</option>
+                        <option value="reference">Reference</option>
+                        <option value="sealed">Sealed</option>
+                    </select>
+                    <button onclick="loadChainAudit()" class="btn-ghost px-3 py-1.5 rounded-lg text-xs mono">↻ Refresh</button>
+                </div>
+            </div>
+
+            <!-- Summary stats -->
+            <div id="auditStats" class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6"></div>
+
+            <!-- Chain groups -->
+            <div id="auditList" class="space-y-5">
+                <div class="text-center py-10"><div class="spinner mx-auto"></div></div>
+            </div>
+        </div>
+
     </div><!-- /adminConsole -->
 
 </main>
@@ -451,6 +487,7 @@ window.switchTab = function(tab, btn) {
 
     if (tab === "tomes-db") loadTomeRegistry();
     if (tab === "artifacts") loadArtifacts();
+    if (tab === "chain-audit") loadChainAudit();
 };
 
 // ── Auth ─────────────────────────────────────────────────────────
@@ -505,13 +542,15 @@ function populatePlaneSelects() {
         });
     });
 
-    // Also populate the dept filter for tome registry
-    const deptFilter = document.getElementById("tomeFilterDept");
-    DEPARTMENT_PLANES.forEach(p => {
-        const opt = document.createElement("option");
-        opt.value = p.plane;
-        opt.textContent = p.name;
-        deptFilter.appendChild(opt);
+    // Also populate the dept filters for tome registry and chain audit
+    ["tomeFilterDept", "auditFilterDept"].forEach(filterId => {
+        const deptFilter = document.getElementById(filterId);
+        DEPARTMENT_PLANES.forEach(p => {
+            const opt = document.createElement("option");
+            opt.value = p.plane;
+            opt.textContent = p.name;
+            deptFilter.appendChild(opt);
+        });
     });
 }
 
@@ -792,6 +831,163 @@ window.loadTomeRegistry = async function() {
 window.filterDept = function(plane) {
     document.getElementById("tomeFilterDept").value = plane;
     loadTomeRegistry();
+};
+
+// ── CHAIN AUDIT TAB ──────────────────────────────────────────────
+window.loadChainAudit = async function() {
+    const container = document.getElementById("auditList");
+    const statsEl = document.getElementById("auditStats");
+    container.innerHTML = `<div class="text-center py-10"><div class="spinner mx-auto"></div></div>`;
+    statsEl.innerHTML = "";
+
+    try {
+        const deptFilter = document.getElementById("auditFilterDept").value;
+        const statusFilter = document.getElementById("auditFilterStatus").value;
+
+        // Build query
+        let q;
+        if (deptFilter && statusFilter) {
+            q = query(collection(db, "tomes"), where("plane","==",deptFilter), where("status","==",statusFilter), orderBy("createdAt","desc"));
+        } else if (deptFilter) {
+            q = query(collection(db, "tomes"), where("plane","==",deptFilter), orderBy("createdAt","desc"));
+        } else if (statusFilter) {
+            q = query(collection(db, "tomes"), where("status","==",statusFilter), orderBy("createdAt","desc"));
+        } else {
+            q = query(collection(db, "tomes"), orderBy("createdAt","desc"));
+        }
+
+        const snap = await getDocs(q);
+        const tomes = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+
+        // Summary stats
+        const totalStudents = tomes.reduce((s, t) => s + (t.enrolledCount || 0), 0);
+        const instructorSet = new Set(tomes.map(t => t.creatorGenesisId || t.creatorUid || "unknown"));
+        const activeTomes = tomes.filter(t => t.status === "active").length;
+        statsEl.innerHTML = [
+            { label: "Total Tomes", value: tomes.length, color: "#D4AF37" },
+            { label: "Active Tomes", value: activeTomes, color: "#00ff78" },
+            { label: "Instructors", value: instructorSet.size, color: "#9482ff" },
+            { label: "Total Enrolled", value: totalStudents, color: "#00d4ff" },
+        ].map(s => `
+            <div class="glass rounded-xl p-3 text-center">
+                <div class="text-2xl font-bold mono" style="color:${s.color}">${s.value}</div>
+                <div class="text-xs text-slate-400 mt-1">${s.label}</div>
+            </div>`).join("");
+
+        if (tomes.length === 0) {
+            container.innerHTML = `<p class="text-slate-500 text-sm text-center py-8">No tomes found for this filter. Create tomes via the Instructor Console.</p>`;
+            return;
+        }
+
+        // Group by instructor (creatorGenesisId, fallback to creatorUid)
+        const byInstructor = new Map();
+        for (const t of tomes) {
+            const key = t.creatorGenesisId || t.creatorUid || "unknown";
+            if (!byInstructor.has(key)) {
+                byInstructor.set(key, {
+                    genesisId: t.creatorGenesisId || null,
+                    uid: t.creatorUid || null,
+                    tier: t.creatorTier || "INSTRUCTOR",
+                    displayName: t.creatorDisplayName || null,
+                    tomes: []
+                });
+            }
+            byInstructor.get(key).tomes.push(t);
+        }
+
+        // Dept name lookup
+        const deptNames = Object.fromEntries(DEPARTMENT_PLANES.map(p => [p.plane, p.name]));
+
+        let html = "";
+        for (const [key, group] of byInstructor) {
+            const groupTotal = group.tomes.reduce((s, t) => s + (t.enrolledCount || 0), 0);
+            const tierColor = group.tier === "ARCHON" ? "#D4AF37" : "#9482ff";
+            const tierSymbol = group.tier === "ARCHON" ? "♛" : "⬢";
+            const planeSet = [...new Set(group.tomes.map(t => t.plane).filter(Boolean))];
+
+            html += `
+            <div class="glass rounded-xl overflow-hidden">
+                <!-- Instructor header -->
+                <div class="p-4 flex flex-wrap items-start gap-4 border-b border-white/5 dept-header" onclick="toggleDept('chain-group-${CSS.escape(key)}')">
+                    <div class="flex-1 min-w-0">
+                        <div class="flex items-center gap-2 flex-wrap">
+                            <span class="text-base font-bold" style="color:${tierColor}">${tierSymbol}</span>
+                            <span class="font-semibold text-slate-200 mystical text-sm">
+                                ${group.displayName ? escapeHtml(group.displayName) : (group.uid ? `UID: ${escapeHtml(group.uid.slice(0,8))}…` : "Unknown Instructor")}
+                            </span>
+                            <span class="px-2 py-0.5 rounded-full text-[10px] mono border" style="color:${tierColor};border-color:${tierColor}44">${escapeHtml(group.tier)}</span>
+                        </div>
+                        <div class="mono text-[10px] text-slate-500 mt-1 truncate">
+                            Genesis ID: ${group.genesisId ? escapeHtml(group.genesisId) : `<span class="text-slate-600">not registered</span>`}
+                        </div>
+                        <div class="flex flex-wrap gap-1 mt-2">
+                            ${planeSet.map(p => `<span class="mono text-[10px] px-1.5 py-0.5 rounded bg-white/5 text-slate-400">${escapeHtml(deptNames[p] || p)}</span>`).join("")}
+                        </div>
+                    </div>
+                    <div class="text-right">
+                        <div class="text-xl font-bold mono text-yellow-300">${group.tomes.length}</div>
+                        <div class="text-[10px] text-slate-500">tomes</div>
+                        <div class="text-sm font-semibold text-cyan-400 mt-1">${groupTotal}</div>
+                        <div class="text-[10px] text-slate-500">enrolled</div>
+                    </div>
+                    <svg class="w-4 h-4 text-slate-500 mt-1 transition-transform flex-shrink-0" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z"/>
+                    </svg>
+                </div>
+
+                <!-- Tome rows (collapsed by default) -->
+                <div id="chain-group-${escapeHtml(key)}" class="hidden">
+                    <table class="w-full text-xs">
+                        <thead>
+                            <tr class="text-left text-slate-500 mono border-b border-white/5 bg-white/2">
+                                <th class="px-4 py-2">Tome Title</th>
+                                <th class="px-4 py-2">Department</th>
+                                <th class="px-4 py-2">Status</th>
+                                <th class="px-4 py-2 text-right">Enrolled</th>
+                                <th class="px-4 py-2 text-right">Created</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${group.tomes.map(t => {
+                                const deptLabel = deptNames[t.plane] || t.plane || "—";
+                                const created = t.createdAt?.toDate ? t.createdAt.toDate().toLocaleDateString() : "—";
+                                return `
+                                <tr class="tome-row hover:bg-white/2 transition-colors">
+                                    <td class="px-4 py-2.5">
+                                        <div class="text-slate-200 font-medium">${escapeHtml(t.title || "Untitled")}</div>
+                                        <div class="mono text-[10px] text-slate-600 truncate">ID: ${escapeHtml(t.id)}</div>
+                                    </td>
+                                    <td class="px-4 py-2.5">
+                                        <span class="mono text-[10px] text-slate-400">${escapeHtml(deptLabel)}</span>
+                                    </td>
+                                    <td class="px-4 py-2.5">${badgeHtml(t.status || "manuscript")}</td>
+                                    <td class="px-4 py-2.5 text-right">
+                                        <span class="font-semibold ${(t.enrolledCount||0) > 0 ? "text-cyan-400" : "text-slate-600"} mono">
+                                            ${t.enrolledCount || 0}
+                                        </span>
+                                    </td>
+                                    <td class="px-4 py-2.5 text-right text-slate-500 mono">${escapeHtml(created)}</td>
+                                </tr>`;
+                            }).join("")}
+                        </tbody>
+                    </table>
+                    <div class="px-4 py-2 border-t border-white/5 flex justify-between items-center">
+                        <span class="text-[10px] text-slate-600 mono">
+                            Certificate chain: ${group.genesisId ? `issuer → subject → ${escapeHtml(group.genesisId)}` : "no genesis ID on record"}
+                        </span>
+                        <button onclick="filterDept('${escapeHtml(planeSet[0] || '')}'); switchTab('tomes-db', document.querySelector('[data-tab=tomes-db]'))"
+                            class="text-[10px] btn-ghost px-2 py-1 rounded mono">
+                            View in Registry →
+                        </button>
+                    </div>
+                </div>
+            </div>`;
+        }
+        container.innerHTML = html;
+
+    } catch (e) {
+        container.innerHTML = `<p class="text-red-400 text-sm text-center py-8">Error: ${escapeHtml(e.message)}<br><span class="text-[10px] text-slate-500">Composite index may be required — check the browser console for an index creation link.</span></p>`;
+    }
 };
 
 // ── TOME MODAL ────────────────────────────────────────────────────

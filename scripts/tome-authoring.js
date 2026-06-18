@@ -38,6 +38,7 @@ export async function createTome(uid, tomeData) {
     creatorTier: tier,
     priority: stampPriority(tier),
     certificateHash: reg.certificate ? reg.certificate.signature.slice(0, 16) : null,
+    enrolledCount: 0,
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp()
   };
