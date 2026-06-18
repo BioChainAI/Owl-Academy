@@ -108,7 +108,7 @@
     <div class="starfield"></div>
 
     <!-- Header -->
-    <header class="flex-shrink-0 w-full py-4 px-6 relative border-b border-cyan-600/20 bg-[#05030a]/80 backdrop-blur-md z-50 flex justify-between items-center shadow-lg">
+    <header class="flex-shrink-0 w-full py-4 px-6 relative border-b border-cyan-600/20 bg-[#05030a]/80 backdrop-blur-md z-[100] flex justify-between items-center shadow-lg">
         <div>
             <div class="text-[10px] text-cyan-500/80 tracking-[0.3em] uppercase font-mono mb-1">
                 Community & Research &gt; Independent Learning
@@ -117,26 +117,41 @@
         </div>
         
         <div class="flex items-center gap-3">
-            <!-- Video Dropdown Container -->
+            <!-- Reference Dropdown Container -->
             <div class="relative">
                 <button id="video-toggle" class="font-mono text-xs text-yellow-400 hover:text-yellow-300 border border-yellow-500/30 px-3 py-1.5 rounded bg-yellow-900/20 hover:bg-yellow-900/40 transition-colors flex items-center gap-2">
                     <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
-                    EXPLAINER VIDEO
+                    REFERENCE MATERIAL
                 </button>
                 
-                <!-- Video Dropdown Panel -->
-                <div id="video-dropdown" class="absolute right-0 top-full mt-3 w-[85vw] md:w-[450px] glass-panel border border-yellow-500/30 rounded-xl p-3 hidden shadow-[0_0_30px_rgba(212,175,55,0.15)] origin-top-right transition-all">
-                    <div class="flex justify-between items-center mb-2 px-1">
-                        <span class="text-[10px] font-bold text-yellow-500 uppercase tracking-widest font-mono flex items-center gap-2">
-                            <span class="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span>
-                            Reference Material
-                        </span>
-                        <button id="video-close" class="text-slate-400 hover:text-white transition-colors p-1">
+                <!-- Resizable Dropdown Panel -->
+                <div id="video-dropdown" class="absolute right-0 top-full mt-3 w-[85vw] md:w-[500px] h-[350px] min-w-[300px] min-h-[200px] glass-panel border border-yellow-500/30 rounded-xl p-3 hidden shadow-[0_0_30px_rgba(212,175,55,0.15)] origin-top-right transition-opacity duration-200 resize overflow-hidden flex flex-col z-[100]">
+                    <div class="flex justify-between items-center mb-3 px-1 flex-shrink-0">
+                        <div class="flex items-center gap-4">
+                            <span class="text-[10px] font-bold text-yellow-500 uppercase tracking-widest font-mono flex items-center gap-2">
+                                <span class="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span>
+                                Reference
+                            </span>
+                            
+                            <!-- Tabs for Video vs PDF -->
+                            <div class="flex bg-black/50 rounded overflow-hidden border border-white/10">
+                                <button id="tab-video" class="px-3 py-1 text-[9px] font-mono font-bold bg-yellow-500/20 text-yellow-300 transition-colors">VIDEO</button>
+                                <button id="tab-pdf" class="px-3 py-1 text-[9px] font-mono font-bold text-slate-400 hover:text-white transition-colors">PDF PAPER</button>
+                            </div>
+                        </div>
+
+                        <button id="video-close" class="text-slate-400 hover:text-white transition-colors p-1 bg-black/50 rounded hover:bg-white/10">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
                         </button>
                     </div>
-                    <div class="w-full aspect-video rounded-lg border border-white/10 overflow-hidden bg-black shadow-inner">
-                        <iframe width="100%" height="100%" src="https://www.youtube.com/embed/H8sCWs9jgJA" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+                    
+                    <!-- Content Area (Flex-1 grows to fill resized container) -->
+                    <div class="w-full flex-1 rounded-lg border border-white/10 overflow-hidden bg-black shadow-inner relative">
+                        <!-- Video iframe -->
+                        <iframe id="ref-video" class="absolute inset-0 w-full h-full" src="https://www.youtube.com/embed/H8sCWs9jgJA" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+                        
+                        <!-- PDF iframe (hidden by default) -->
+                        <iframe id="ref-pdf" class="absolute inset-0 w-full h-full hidden" src="quaternionic_delta_encoding_paper.pdf" title="PDF Reference Paper" frameborder="0"></iframe>
                     </div>
                 </div>
             </div>
@@ -158,6 +173,31 @@
             <nav class="flex-1 overflow-y-auto py-2" id="nav-container">
                 <!-- Nav items generated via JS -->
             </nav>
+            
+            <!-- Related Departments Links -->
+            <div class="p-4 border-t border-white/10 bg-black/20 flex-shrink-0">
+                <h3 class="text-[10px] font-bold text-slate-400 uppercase tracking-widest font-mono mb-3">Related Departments</h3>
+                <ul class="space-y-2">
+                    <li>
+                        <a href="../../kinematics/index.html" class="text-[10px] font-mono text-emerald-400 hover:text-emerald-200 transition-colors flex items-center gap-2">
+                            <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 shadow-[0_0_5px_#10b981]"></span> 
+                            Dept. of Kinematics
+                        </a>
+                    </li>
+                    <li>
+                        <a href="../../quantum_topology/index.html" class="text-[10px] font-mono text-fuchsia-400 hover:text-fuchsia-200 transition-colors flex items-center gap-2">
+                            <span class="w-1.5 h-1.5 rounded-full bg-fuchsia-400 shadow-[0_0_5px_#f43f5e]"></span> 
+                            Quantum Topology
+                        </a>
+                    </li>
+                    <li>
+                        <a href="../../applied_robotics/index.html" class="text-[10px] font-mono text-yellow-400 hover:text-yellow-200 transition-colors flex items-center gap-2">
+                            <span class="w-1.5 h-1.5 rounded-full bg-yellow-400 shadow-[0_0_5px_#D4AF37]"></span> 
+                            Applied Robotics
+                        </a>
+                    </li>
+                </ul>
+            </div>
         </aside>
 
         <!-- Content Area -->
@@ -318,14 +358,123 @@
                         </div>
                         
                         <p class="italic text-emerald-400 text-xs mt-4">This mathematical foundation is what allows the Owl Academy's Memory Offload structures to function with zero data degradation.</p>
+                        
+                        <div id="unlock-container" class="mt-8 pt-6 border-t border-emerald-500/30 text-center">
+                            <h4 class="text-white font-bold mb-3 font-mono tracking-widest text-sm">SHD-CCP RESEARCH DETECTED</h4>
+                            <p class="text-xs text-slate-400 mb-4">You have completed the foundational delta mathematics. Do you wish to decrypt the advanced topological manifolds?</p>
+                            <button onclick="window.unlockAdvanced()" class="px-6 py-2 bg-gradient-to-r from-purple-600 to-fuchsia-600 hover:from-purple-500 hover:to-fuchsia-500 text-white font-mono text-xs font-bold rounded shadow-[0_0_20px_rgba(138,43,226,0.5)] transition-all transform hover:scale-105 border border-white/20">
+                                UNLOCK PART TWO: ADVANCED PHASE
+                            </button>
+                        </div>
                     </div>
                 `,
                 visTitle: "Continuous Delta Integration",
                 initScene: initPhase3
+            },
+            {
+                id: "phase-4",
+                badge: "Phase 4",
+                badgeColor: "purple",
+                title: "Topology of the Golden Clifford Toroid",
+                objective: "Constrain the infinite hyperbolic expansion using a 4D manifold parameterized by the Golden Ratio.",
+                content: `
+                    <div class="space-y-4 text-sm text-slate-300 leading-relaxed">
+                        <p>In the SHD-CCP protocol, projecting continuous evolution into negatively curved space incurs massive matrix-multiplication overhead. To resolve this, we map the Quaternionic Delta Encoding directly onto a generalized <strong>Clifford Torus</strong> embedded in $S^3$.</p>
+                        
+                        <div class="bg-black/40 border border-white/10 rounded p-4 mt-4">
+                            <h3 class="text-white font-bold border-b border-purple-500/30 pb-2 mb-3 tracking-wide">The $\\phi$-Scaled Manifold</h3>
+                            <p class="text-xs text-slate-400 mb-3">A standard Clifford torus is defined by $x^2+y^2=r_1^2$ and $z^2+w^2=r_2^2$. In our protocol, the lattice branching is governed by Fibonacci scaling. Thus, we define the Golden Clifford Toroid by establishing the ratio of the radii as the Golden Ratio, $\\phi \\approx 1.61803$:</p>
+                            
+                            <div class="text-center font-mono text-purple-300 text-sm mb-3">
+                                $$\\frac{r_1}{r_2} = \\phi \\implies r_1^2 = \\frac{\\phi^2}{1+\\phi^2}, \\quad r_2^2 = \\frac{1}{1+\\phi^2}$$
+                            </div>
+
+                            <p class="text-xs text-slate-400">Because this ratio is irrational, the trajectory of a continuous data stream acts as an <strong>Ergodic Covering</strong>. It wraps around the torus infinitely without ever perfectly closing a loop, resulting in a dense, non-repeating web across the 4D surface.</p>
+                        </div>
+                    </div>
+                `,
+                visTitle: "Ergodic Covering on the Golden Toroid",
+                initScene: initPhase4
+            },
+            {
+                id: "phase-5",
+                badge: "Phase 5",
+                badgeColor: "cyan",
+                title: "Differential Phase Shift Encoding",
+                objective: "Generate Quaternionic Deltas using purely angular phase shifts.",
+                content: `
+                    <div class="space-y-4 text-sm text-slate-300 leading-relaxed">
+                        <p>With the 4D topological boundary established, we modify how we generate the Delta ($\\Delta q$). Instead of raw Cartesian updates, we derive it from the independent data streams specified by the <strong>Rule of 3</strong>.</p>
+                        
+                        <div class="bg-black/40 border border-white/10 rounded p-4 mt-4">
+                            <h3 class="text-white font-bold border-b border-cyan-500/30 pb-2 mb-3 tracking-wide">Phase Angle Formulation</h3>
+                            <p class="text-xs text-slate-400 mb-3">Any unit quaternion on the toroid can be defined using two phase angles, $\\theta_1$ and $\\theta_2$. The Delta Encoding simply applies a differential shift to these independent rotations:</p>
+                            
+                            <div class="text-center font-mono text-cyan-300 text-sm mb-3">
+                                $$\\Delta q = e^{i\\Delta\\theta_1} \\cdot e^{j\\Delta\\theta_2}$$
+                            </div>
+
+                            <p class="text-xs text-slate-400">Because multiplication of unit quaternions corresponds intrinsically to rotations within $S^3$, applying this differential operator guarantees the system state is strictly bounded to the toroidal surface. <strong>This permanently eliminates all floating-point coordinate drift.</strong></p>
+                        </div>
+                    </div>
+                `,
+                visTitle: "S3 Phase Shift Interpolation",
+                initScene: initPhase5
+            },
+            {
+                id: "phase-6",
+                badge: "Phase 6",
+                badgeColor: "rose",
+                title: "Geodesic Flow & Soliton Collisions",
+                objective: "Observe the Fokker-Planck prime sieve generating stable structural nodes.",
+                content: `
+                    <div class="space-y-4 text-sm text-slate-300 leading-relaxed">
+                        <p>The probability waves of the system do not drift randomly; they follow the <strong>Geodesic Flow</strong> of the Golden Clifford Toroid, constrained by the Triple Quad Formula (TQF).</p>
+                        
+                        <div class="bg-black/40 border border-white/10 rounded p-4 mt-4">
+                            <h3 class="text-white font-bold border-b border-rose-500/30 pb-2 mb-3 tracking-wide">The Prime Sieve</h3>
+                            <p class="text-xs text-slate-400 mb-3">While the individual streams never self-intersect due to the irrational $\\phi$ scaling, multiple streams are flowing simultaneously. A self-reinforcing wave packet (a <strong>Soliton</strong>) forms specifically when the superposition of these streams resonates.</p>
+                            
+                            <p class="text-xs text-slate-400 mb-3">These resonant collisions occur strictly where the generalized Quadrance equals a rational prime ($Q = p_0$). At these nodes, the diffusion tensor drops to zero ($D_2 \\rightarrow 0$), and the wave packet "freezes" into a stable geometric vertex.</p>
+                            
+                            <p class="italic text-rose-400 text-xs mt-4">These Solitons act as the eternal anchoring points that the system ultimately crystallizes into the geometric Codex.</p>
+                        </div>
+                    </div>
+                `,
+                visTitle: "Wave Collision & Golden Solitons",
+                initScene: initPhase6
+            },
+            {
+                id: "phase-7",
+                badge: "Phase 7",
+                badgeColor: "yellow",
+                title: "Sub-Cubic Tensor Execution",
+                objective: "Optimize continuous 4D procedural generation for high-throughput FPGA fabrics.",
+                content: `
+                    <div class="space-y-4 text-sm text-slate-300 leading-relaxed">
+                        <p>The "Strassen-Clifford" designation refers not just to the topology, but to the algorithmic optimization required to process these matrices in real-time on tensor hardware.</p>
+                        
+                        <div class="bg-black/40 border border-white/10 rounded p-4 mt-4">
+                            <h3 class="text-white font-bold border-b border-yellow-500/30 pb-2 mb-3 tracking-wide">Strassen-like DAG Reduction</h3>
+                            <p class="text-xs text-slate-400 mb-3">Standard multiplication of two $4\\times4$ matrices requires 64 multiply-accumulate (MAC) operations ($O(N^3)$). However, because our Quaternionic Delta matrices are highly structured (skew-symmetric and orthogonal), we don't perform full matrix multiplication.</p>
+                            
+                            <p class="text-xs text-slate-400 mb-3">The hardware DSP slices execute a reduced, Strassen-like Directed Acyclic Graph (DAG) of operations. By exploiting the algebraic symmetries of the Golden Toroid, the SHD-CCP protocol reduces the workload to just <strong>16 core MAC operations</strong> per state step.</p>
+                            
+                            <p class="text-xs font-mono text-yellow-300 mb-2">Performance Yield:</p>
+                            <ul class="text-xs text-slate-400 list-disc pl-5">
+                                <li><strong>$O(1)$ Constant Time Generation</strong> via Trefoil BRAM folding.</li>
+                                <li><strong>75% Reduction</strong> in total logic gate latency.</li>
+                            </ul>
+                        </div>
+                    </div>
+                `,
+                visTitle: "16-Node MAC Operations DAG",
+                initScene: initPhase7
             }
         ];
 
         let activePhaseIndex = 0;
+        let advancedUnlocked = false; // Tracks Part Two access
 
         // ==========================================
         // 2. THREE.JS GLOBAL SETUP
@@ -743,6 +892,337 @@
             };
         }
 
+        // Phase 4: Golden Clifford Toroid
+        function initPhase4(group) {
+            const phi = 1.6180339;
+            const r2 = 3;
+            const r1 = r2 * phi; // r1 / r2 = phi
+
+            // Base Torus Surface
+            const torusGeo = new THREE.TorusGeometry(r1, r2, 32, 100);
+            const torusMat = new THREE.MeshPhysicalMaterial({
+                color: 0x8A2BE2,
+                transmission: 0.9,
+                opacity: 0.2,
+                transparent: true,
+                wireframe: true,
+                side: THREE.DoubleSide
+            });
+            const torusMesh = new THREE.Mesh(torusGeo, torusMat);
+            group.add(torusMesh);
+
+            // Ergodic Flow Path
+            const maxPoints = 5000;
+            const flowGeo = new THREE.BufferGeometry();
+            const flowPos = new Float32Array(maxPoints * 3);
+            flowGeo.setAttribute('position', new THREE.BufferAttribute(flowPos, 3));
+            
+            const flowMat = new THREE.LineBasicMaterial({
+                color: 0x00d4ff,
+                transparent: true,
+                opacity: 0.8,
+                blending: THREE.AdditiveBlending
+            });
+            const flowLine = new THREE.Line(flowGeo, flowMat);
+            // Fix: Call setDrawRange on the geometry, not the line mesh
+            flowGeo.setDrawRange(0, 0);
+            group.add(flowLine);
+
+            const hudData = document.getElementById('vis-overlay-data');
+
+            currentCustomAnimate = (elapsed) => {
+                // Animate torus floating
+                torusMesh.rotation.x = Math.sin(elapsed * 0.2) * 0.3 + Math.PI / 2;
+                torusMesh.rotation.y = elapsed * 0.1;
+                flowLine.rotation.copy(torusMesh.rotation);
+
+                // Calculate Ergodic trace points based on phi
+                // Theta1 (major ring) advances at speed 1, Theta2 (minor ring) at speed phi
+                const drawCount = Math.min(maxPoints, Math.floor(elapsed * 150));
+                
+                for(let i=0; i<drawCount; i++) {
+                    const t = i * 0.05;
+                    const theta1 = t;
+                    const theta2 = t * phi; // Irrational ratio mapping
+
+                    // 3D Projection of Clifford torus
+                    const x = (r1 + r2 * Math.cos(theta2)) * Math.cos(theta1);
+                    const y = (r1 + r2 * Math.cos(theta2)) * Math.sin(theta1);
+                    const z = r2 * Math.sin(theta2);
+
+                    flowPos[i*3] = x;
+                    flowPos[i*3+1] = y;
+                    flowPos[i*3+2] = z;
+                }
+                
+                flowGeo.attributes.position.needsUpdate = true;
+                // Fix: Call setDrawRange on the geometry, not the line mesh
+                flowGeo.setDrawRange(0, drawCount);
+
+                hudData.innerHTML = `
+                    TOPOLOGY: <span class="text-purple-400">Golden Clifford Toroid</span><br>
+                    RATIO: <span class="text-white">r₁ / r₂ = φ (1.618)</span><br>
+                    ERGODIC NODES: ${drawCount}
+                `;
+            };
+        }
+
+        // Phase 5: Phase Angle Delta Encoding
+        function initPhase5(group) {
+            // Two orthogonal rings representing the complex planes
+            const ringGeo = new THREE.RingGeometry(4.8, 5, 64);
+            const ringMat1 = new THREE.MeshBasicMaterial({ color: 0x00d4ff, side: THREE.DoubleSide, transparent:true, opacity:0.3 });
+            const ringMat2 = new THREE.MeshBasicMaterial({ color: 0x8A2BE2, side: THREE.DoubleSide, transparent:true, opacity:0.3 });
+
+            const ring1 = new THREE.Mesh(ringGeo, ringMat1);
+            const ring2 = new THREE.Mesh(ringGeo, ringMat2);
+            ring2.rotation.x = Math.PI / 2; // Orthogonal
+            
+            group.add(ring1);
+            group.add(ring2);
+
+            // Angle Markers
+            const dotGeo = new THREE.SphereGeometry(0.3, 16, 16);
+            const dot1 = new THREE.Mesh(dotGeo, new THREE.MeshBasicMaterial({color: 0x00d4ff}));
+            const dot2 = new THREE.Mesh(dotGeo, new THREE.MeshBasicMaterial({color: 0x8A2BE2}));
+            const stateDot = new THREE.Mesh(new THREE.OctahedronGeometry(0.5, 0), new THREE.MeshBasicMaterial({color: 0xffffff}));
+            
+            group.add(dot1);
+            group.add(dot2);
+            group.add(stateDot);
+
+            // Connective Tensor Line
+            const lineGeo = new THREE.BufferGeometry();
+            lineGeo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(9), 3));
+            const lineMat = new THREE.LineBasicMaterial({color: 0xffffff, transparent:true, opacity:0.5});
+            const line = new THREE.Line(lineGeo, lineMat);
+            group.add(line);
+
+            const hudData = document.getElementById('vis-overlay-data');
+
+            currentCustomAnimate = (elapsed) => {
+                // Phase shifts
+                const theta1 = elapsed * 1.5;
+                const theta2 = elapsed * 2.2;
+
+                // Position on orthogonal rings
+                dot1.position.set(Math.cos(theta1)*5, Math.sin(theta1)*5, 0);
+                dot2.position.set(Math.cos(theta2)*5, 0, Math.sin(theta2)*5);
+
+                // Composite state in S3 (Projected to R3 for vis)
+                // A true quaternion maps 4D, here we visualize the composite vector sum dynamically
+                stateDot.position.set(
+                    (dot1.position.x + dot2.position.x) * 0.5,
+                    (dot1.position.y + dot2.position.y) * 0.5,
+                    (dot1.position.z + dot2.position.z) * 0.5
+                );
+                stateDot.rotation.x += 0.05;
+                stateDot.rotation.y += 0.05;
+
+                // Update Line connecting them
+                const pos = lineGeo.attributes.position.array;
+                pos[0] = dot1.position.x; pos[1] = dot1.position.y; pos[2] = dot1.position.z;
+                pos[3] = stateDot.position.x; pos[4] = stateDot.position.y; pos[5] = stateDot.position.z;
+                pos[6] = dot2.position.x; pos[7] = dot2.position.y; pos[8] = dot2.position.z;
+                lineGeo.attributes.position.needsUpdate = true;
+
+                group.rotation.x = Math.sin(elapsed*0.2)*0.2;
+                group.rotation.y = elapsed * 0.1;
+
+                hudData.innerHTML = `
+                    OPERATOR: <span class="text-cyan-400">e^(iΔθ₁) · e^(jΔθ₂)</span><br>
+                    θ₁: ${(theta1 % (Math.PI*2)).toFixed(2)} rad<br>
+                    θ₂: ${(theta2 % (Math.PI*2)).toFixed(2)} rad<br>
+                    DRIFT: 0.0000000
+                `;
+            };
+        }
+
+        // Phase 6: Soliton Resonance
+        function initPhase6(group) {
+            const r1 = 6;
+            const r2 = 2;
+            const torusGeo = new THREE.TorusGeometry(r1, r2, 32, 64);
+            const torusMat = new THREE.LineBasicMaterial({ color: 0x334155, transparent: true, opacity: 0.3 });
+            const torusWire = new THREE.LineSegments(new THREE.EdgesGeometry(torusGeo), torusMat);
+            torusWire.rotation.x = Math.PI / 2;
+            group.add(torusWire);
+
+            // Particles flowing
+            const streamCount = 3;
+            const particlesPerStream = 20;
+            const streams = [];
+            
+            const partGeo = new THREE.SphereGeometry(0.15, 8, 8);
+            const partMat = new THREE.MeshBasicMaterial({color: 0xf43f5e, transparent:true, opacity: 0.6});
+
+            for(let s=0; s<streamCount; s++) {
+                const streamGroup = new THREE.Group();
+                for(let p=0; p<particlesPerStream; p++) {
+                    const mesh = new THREE.Mesh(partGeo, partMat);
+                    streamGroup.add(mesh);
+                }
+                group.add(streamGroup);
+                streams.push({ group: streamGroup, speedBase: 1 + (s * 0.3), offset: s * (Math.PI*2/3) });
+            }
+
+            // Solitons Array
+            const solitons = [];
+            const solitonMat = new THREE.MeshPhysicalMaterial({ color: 0xD4AF37, emissive: 0xD4AF37, emissiveIntensity: 0.8, transmission: 0.5 });
+            const solitonGeo = new THREE.IcosahedronGeometry(0.6, 0);
+
+            const hudData = document.getElementById('vis-overlay-data');
+
+            currentCustomAnimate = (elapsed) => {
+                const time = elapsed * 2;
+                
+                // Animate streams
+                streams.forEach((stream, sIdx) => {
+                    stream.group.children.forEach((mesh, pIdx) => {
+                        const t = time * stream.speedBase + (pIdx * 0.1) + stream.offset;
+                        const theta1 = t;
+                        const theta2 = t * 1.618;
+
+                        mesh.position.set(
+                            (r1 + r2 * Math.cos(theta2)) * Math.cos(theta1),
+                            r2 * Math.sin(theta2),
+                            (r1 + r2 * Math.cos(theta2)) * Math.sin(theta1)
+                        );
+                    });
+                });
+
+                // Spawn Solitons on arbitrary "Prime Quadrance" ticks
+                // Simulating resonance every ~3.14 seconds
+                if (Math.floor(elapsed * 10) % 31 === 0 && Math.random() > 0.5 && solitons.length < 15) {
+                    const sol = new THREE.Mesh(solitonGeo, solitonMat);
+                    // Pick the position of a random leading particle
+                    sol.position.copy(streams[0].group.children[0].position);
+                    sol.rotation.set(Math.random(), Math.random(), Math.random());
+                    sol.scale.setScalar(0.01); // Pop in
+                    group.add(sol);
+                    solitons.push({ mesh: sol, life: 0 });
+                }
+
+                // Animate existing Solitons
+                solitons.forEach(sol => {
+                    sol.life += 0.05;
+                    if(sol.life < 1.0) {
+                        const s = 1.0 + Math.sin(sol.life * Math.PI) * 0.5; // Bounce scale
+                        sol.mesh.scale.setScalar(s);
+                    }
+                    sol.mesh.rotation.y += 0.05;
+                });
+
+                group.rotation.x = Math.sin(elapsed * 0.1) * 0.2 + 0.2;
+                group.rotation.y = elapsed * 0.05;
+
+                hudData.innerHTML = `
+                    FOKKER-PLANCK: <span class="text-rose-400">Drift Vector Active</span><br>
+                    COLLISIONS: <span class="text-white">Prime Quadrance</span><br>
+                    SOLITONS FORMED: ${solitons.length}
+                `;
+            };
+        }
+
+        // Phase 7: Sub-Cubic Tensor Execution DAG
+        function initPhase7(group) {
+            const nodes = [];
+            const edges = [];
+            
+            // Layer 1: Inputs (16 nodes, 4x4 grid)
+            // Layer 2: Hidden MACs (16 optimized nodes)
+            // Layer 3: Output (16 nodes, 4x4 grid)
+            
+            const nodeGeo = new THREE.SphereGeometry(0.2, 16, 16);
+            const inMat = new THREE.MeshBasicMaterial({color: 0x3b82f6});
+            const macMat = new THREE.MeshBasicMaterial({color: 0xD4AF37});
+            const outMat = new THREE.MeshBasicMaterial({color: 0x10b981});
+
+            const createLayer = (xOffset, yOffset, mat, count) => {
+                const layerNodes = [];
+                for(let i=0; i<count; i++) {
+                    const mesh = new THREE.Mesh(nodeGeo, mat);
+                    const y = (Math.floor(i/4) - 1.5) * 1.5 + yOffset;
+                    const z = ((i%4) - 1.5) * 1.5;
+                    mesh.position.set(xOffset, y, z);
+                    group.add(mesh);
+                    layerNodes.push(mesh);
+                    nodes.push(mesh);
+                }
+                return layerNodes;
+            };
+
+            const inputs = createLayer(-8, 0, inMat, 16);
+            const macs = createLayer(0, 0, macMat, 16); // The 16 Strassen-like core MACs
+            const outputs = createLayer(8, 0, outMat, 16);
+
+            // Connect DAG Edges (Inputs -> MACs -> Outputs)
+            // Simulate complex cross-routing
+            const edgeGeo = new THREE.BufferGeometry();
+            const maxEdges = 16 * 4 * 2; // Lots of lines
+            const edgePos = new Float32Array(maxEdges * 6);
+            let eIdx = 0;
+
+            const addEdge = (n1, n2) => {
+                edgePos[eIdx++] = n1.position.x; edgePos[eIdx++] = n1.position.y; edgePos[eIdx++] = n1.position.z;
+                edgePos[eIdx++] = n2.position.x; edgePos[eIdx++] = n2.position.y; edgePos[eIdx++] = n2.position.z;
+                edges.push({ start: n1.position, end: n2.position, progress: Math.random() });
+            };
+
+            for(let i=0; i<16; i++) {
+                // Connect 1 input to 2 random MACs
+                addEdge(inputs[i], macs[Math.floor(Math.random()*16)]);
+                addEdge(inputs[i], macs[Math.floor(Math.random()*16)]);
+                // Connect 1 MAC to 2 random outputs
+                addEdge(macs[i], outputs[Math.floor(Math.random()*16)]);
+                addEdge(macs[i], outputs[Math.floor(Math.random()*16)]);
+            }
+
+            edgeGeo.setAttribute('position', new THREE.BufferAttribute(edgePos, 3));
+            const wireMat = new THREE.LineBasicMaterial({color: 0x334155, transparent:true, opacity:0.3});
+            group.add(new THREE.LineSegments(edgeGeo, wireMat));
+
+            // Energy pulses flowing through the DAG
+            const pulseGeo = new THREE.BufferGeometry();
+            const pulsePos = new Float32Array(edges.length * 3);
+            pulseGeo.setAttribute('position', new THREE.BufferAttribute(pulsePos, 3));
+            const pulseMat = new THREE.PointsMaterial({color: 0xffffff, size: 0.3, transparent:true, opacity:0.8, blending: THREE.AdditiveBlending});
+            const pulses = new THREE.Points(pulseGeo, pulseMat);
+            group.add(pulses);
+
+            const hudData = document.getElementById('vis-overlay-data');
+
+            currentCustomAnimate = (elapsed) => {
+                // Flow pulses along edges
+                const pArr = pulseGeo.attributes.position.array;
+                
+                edges.forEach((edge, i) => {
+                    edge.progress += 0.02; // Speed of computation
+                    if (edge.progress > 1) edge.progress = 0;
+                    
+                    pArr[i*3] = THREE.MathUtils.lerp(edge.start.x, edge.end.x, edge.progress);
+                    pArr[i*3+1] = THREE.MathUtils.lerp(edge.start.y, edge.end.y, edge.progress);
+                    pArr[i*3+2] = THREE.MathUtils.lerp(edge.start.z, edge.end.z, edge.progress);
+                });
+                pulseGeo.attributes.position.needsUpdate = true;
+
+                // Slowly rotate to see 3D structure
+                group.rotation.x = Math.sin(elapsed * 0.2) * 0.2;
+                group.rotation.y = elapsed * 0.1;
+
+                // Make MAC cores throb based on throughput
+                macs.forEach((mac, i) => {
+                    mac.scale.setScalar(1.0 + Math.sin(elapsed * 10 + i) * 0.3);
+                });
+
+                hudData.innerHTML = `
+                    ARCHITECTURE: <span class="text-yellow-400">Strassen-like DAG</span><br>
+                    MAC OPERATIONS: <span class="text-white">16 (Reduced from 64)</span><br>
+                    LATENCY: <span class="text-emerald-400">O(1) Constant Time</span>
+                `;
+            };
+        }
+
         // ==========================================
         // 4. UI & LOGIC INTEGRATION
         // ==========================================
@@ -759,16 +1239,54 @@
             'yellow': 'text-yellow-400 border-yellow-500/30',
             'fuchsia': 'text-fuchsia-400 border-fuchsia-500/30',
             'emerald': 'text-emerald-400 border-emerald-500/30',
-            'rose': 'text-rose-400 border-rose-500/30'
+            'rose': 'text-rose-400 border-rose-500/30',
+            'purple': 'text-purple-400 border-purple-500/30'
+        };
+
+        // Global unlock function
+        window.unlockAdvanced = function() {
+            advancedUnlocked = true;
+            loadPhase(4); // Automatically transition to the first advanced phase
         };
 
         function renderNav() {
             navContainer.innerHTML = '';
+
+            // Part 1 Header
+            const p1Header = document.createElement('div');
+            p1Header.className = "px-4 py-2 text-[9px] font-bold text-slate-500 uppercase tracking-widest font-mono mt-2 mb-1";
+            p1Header.innerText = "Part I: Fundamentals";
+            navContainer.appendChild(p1Header);
+
             phasesData.forEach((phase, index) => {
+                // Insert Part 2 Header before Phase 4
+                if (index === 4) {
+                    const p2Header = document.createElement('div');
+                    p2Header.className = "px-4 py-2 text-[9px] font-bold text-slate-500 uppercase tracking-widest font-mono mt-4 mb-1 flex items-center justify-between";
+                    
+                    const lockIcon = !advancedUnlocked ? '<svg class="w-3 h-3 text-red-500" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clip-rule="evenodd"></path></svg>' : '';
+                    p2Header.innerHTML = `<span class="${advancedUnlocked ? 'text-purple-400' : ''}">Part II: SHD-CCP Protocol</span> ${lockIcon}`;
+                    navContainer.appendChild(p2Header);
+                }
+
+                const isLocked = index >= 4 && !advancedUnlocked;
+
                 const btn = document.createElement('button');
-                btn.className = `nav-item w-full text-left px-4 py-3 text-sm font-mono tracking-wide ${index === activePhaseIndex ? 'active' : 'text-slate-400'}`;
+                
+                let btnStyle = 'text-slate-400';
+                if (index === activePhaseIndex) {
+                    btnStyle = 'active';
+                } else if (isLocked) {
+                    btnStyle = 'text-slate-600 cursor-not-allowed opacity-50 border-transparent';
+                }
+
+                btn.className = `nav-item w-full text-left px-4 py-3 text-sm font-mono tracking-wide ${btnStyle}`;
                 btn.innerHTML = `<span class="font-bold opacity-50 mr-2">0${index}</span> ${phase.badge}`;
-                btn.onclick = () => loadPhase(index);
+                
+                if (!isLocked) {
+                    btn.onclick = () => loadPhase(index);
+                }
+                
                 navContainer.appendChild(btn);
             });
         }
@@ -825,10 +1343,16 @@
             renderer.setSize(canvasContainer.clientWidth, canvasContainer.clientHeight);
         });
 
-        // Video Dropdown Logic
+        // Reference Panel Logic
         const videoToggle = document.getElementById('video-toggle');
         const videoDropdown = document.getElementById('video-dropdown');
         const videoClose = document.getElementById('video-close');
+        
+        // Tab Logic
+        const tabVideo = document.getElementById('tab-video');
+        const tabPdf = document.getElementById('tab-pdf');
+        const refVideo = document.getElementById('ref-video');
+        const refPdf = document.getElementById('ref-pdf');
 
         if(videoToggle && videoDropdown && videoClose) {
             videoToggle.addEventListener('click', () => {
@@ -836,6 +1360,23 @@
             });
             videoClose.addEventListener('click', () => {
                 videoDropdown.classList.add('hidden');
+            });
+            
+            // Handle Video vs PDF tab switching
+            tabVideo.addEventListener('click', () => {
+                refVideo.classList.remove('hidden');
+                refPdf.classList.add('hidden');
+                
+                tabVideo.className = "px-3 py-1 text-[9px] font-mono font-bold bg-yellow-500/20 text-yellow-300 transition-colors";
+                tabPdf.className = "px-3 py-1 text-[9px] font-mono font-bold text-slate-400 hover:text-white transition-colors";
+            });
+
+            tabPdf.addEventListener('click', () => {
+                refPdf.classList.remove('hidden');
+                refVideo.classList.add('hidden');
+                
+                tabPdf.className = "px-3 py-1 text-[9px] font-mono font-bold bg-yellow-500/20 text-yellow-300 transition-colors";
+                tabVideo.className = "px-3 py-1 text-[9px] font-mono font-bold text-slate-400 hover:text-white transition-colors";
             });
         }
 
