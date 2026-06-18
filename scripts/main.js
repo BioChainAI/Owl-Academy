@@ -1,6 +1,7 @@
 import { onAuthChange, signInWithGoogle, signOutUser } from "./firebase/auth.js";
 import { getOrCreateProfile, watchProfile } from "./services/user.service.js";
 import { getActiveQuests } from "./services/quest.service.js";
+import { checkAndAwardLevelUp } from "./services/vis.service.js";
 import { renderHubProfile, renderQuestPanel, showToast } from "./ui/hub.ui.js";
 import { promptSchoolSelection } from "./ui/profile.ui.js";
 import { renderSanctum, renderAthenaeumFull, renderAtelierFull } from "./ui/sanctum.ui.js";
@@ -17,6 +18,9 @@ const initHub = async (user) => {
     if (!profile.school) {
       promptSchoolSelection(user.uid);
     }
+
+    // Check for level-up and award Vis (fire-and-forget, never blocks UI)
+    if (profile.arts) checkAndAwardLevelUp(user.uid, profile.arts).catch(() => {});
 
     // Render initial state across all panels
     renderHubProfile(user, profile);
