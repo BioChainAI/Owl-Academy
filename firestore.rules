@@ -44,9 +44,16 @@ service cloud.firestore {
 
     // ─── Tomes ────────────────────────────────────────────────────────
     function isViewCountOnlyUpdate() {
-      // Allow any signed-in user to increment viewCount and touch updatedAt
       let allowed = ['viewCount', 'updatedAt'];
       return request.resource.data.diff(resource.data).affectedKeys().hasOnly(allowed);
+    }
+    function isCertificationUpdate() {
+      // Only Instructors/Archons may write certification fields
+      let certFields = ['owlCertified','owlCertifiedBy','owlCertifiedAt',
+                        'deptCertified','deptCertifiedBy','deptCertifiedAt','deptCertifiedPlane',
+                        'updatedAt'];
+      return isInstructorOrArchon() &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(certFields);
     }
     match /tomes/{tomeId} {
       allow read: if isSignedIn();
@@ -54,6 +61,7 @@ service cloud.firestore {
         && request.resource.data.creatorUid == request.auth.uid;
       allow update: if isSignedIn() && (
         isViewCountOnlyUpdate()
+        || isCertificationUpdate()
         || resource.data.creatorUid == request.auth.uid
         || isInstructorOrArchon()
       );
