@@ -5,6 +5,7 @@
 import { getRankProgress } from "../services/arts.service.js";
 import { getTotalXP } from "../services/user.service.js";
 import { resolveTier } from "../genesis-registrar.js";
+import { getFamiliarFromCosmologicalId, renderUserSigil } from "../sigil-renderer.js";
 
 const GENESIS_TIER_META = {
   ARCHON:     { symbol: "♛", label: "Archon",     color: "#D4AF37", glow: "rgba(212,175,55,0.55)" },
@@ -30,6 +31,7 @@ const ACADEMY_TOOLS = [
   { id: "hyperbolic", title: "Hyperbolic Systems",  desc: "Advanced reading pathways for topologists",  path: "Library/Hyperbolic_Systems_Learning/",           color: "#8A2BE2" },
   { id: "proofs",    title: "Proof Workshop",       desc: "Trefoil pump and topological proofs",        path: "Proofs/Torsional-Trefoil-Markov-Pump/",          color: "#ff6b35" },
   { id: "constellation", title: "Constellation Map", desc: "Live 3D map of all Genesis seeds on the SPIRE manifold", path: "mage_tower/Constellation_Map.html", color: "#8A2BE2" },
+  { id: "familiars",    title: "Familiar Selection", desc: "Bind your genesis seed to a familiar archetype and generate your User Sigil", path: "mage_tower/Familiars.html", color: "#b026ff" },
 ];
 
 const TIER_PATHS = [
@@ -58,15 +60,18 @@ const renderWelcome = (profile, user) => {
   const totalXP = getTotalXP(profile.arts);
   const progress = getRankProgress(profile.arts);
 
-  el.innerHTML = `
-    <div class="flex items-center gap-6 flex-wrap">
-      <div class="flex-shrink-0 relative">
-        <div class="w-20 h-20 md:w-24 md:h-24 rounded-full border-2 border-yellow-500/60
+  // Placeholder sigil using initial letter — replaced async once cosmologicalId loads
+  const placeholderSigil = `<div class="w-20 h-20 md:w-24 md:h-24 rounded-full border-2 border-yellow-500/60
                     flex items-center justify-center text-3xl mystical-font text-yellow-300
                     bg-gradient-to-br from-yellow-500/10 to-purple-500/10"
              style="text-shadow: 0 0 18px rgba(212,175,55,0.6); box-shadow: inset 0 0 18px rgba(212,175,55,0.15)">
           ${initial}
-        </div>
+        </div>`;
+
+  el.innerHTML = `
+    <div class="flex items-center gap-6 flex-wrap">
+      <div class="flex-shrink-0 relative" id="sanctum-sigil-wrap">
+        ${placeholderSigil}
         <div class="absolute -bottom-1 -right-1 w-7 h-7 rounded-full bg-[#05030a] border border-yellow-500
                     flex items-center justify-center text-[10px] text-yellow-400 font-mono">
           ${totalXP > 999 ? Math.floor(totalXP/1000) + "k" : totalXP}
@@ -92,7 +97,7 @@ const renderWelcome = (profile, user) => {
 
   // Async: resolve Genesis tier and inject badge + Admin link
   if (user && user.uid) {
-    resolveTier(user.uid).then(tier => {
+    resolveTier(user.uid).then(async tier => {
       const meta = GENESIS_TIER_META[tier] || GENESIS_TIER_META.ACOLYTE;
       const badgeEl = document.getElementById("sanctum-genesis-tier");
       if (!badgeEl) return;
@@ -120,7 +125,31 @@ const renderWelcome = (profile, user) => {
             View Codex →
           </a>
         `}
+        <a href="mage_tower/Familiars.html"
+           class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-mono uppercase tracking-widest transition hover:opacity-80"
+           style="border:1px solid #b026ff55; background:#b026ff12; color:#b026ff;">
+          ✦ Familiar
+        </a>
       `;
+
+      // Async: load cosmologicalId and replace placeholder with real sigil
+      try {
+        const { getDocument } = await import("../firebase/firestore.js");
+        const registrar = await getDocument("registrar/main");
+        const cosmologicalId = registrar?.cosmologicalId || user.uid;
+        const orbitals = {};
+        try {
+          const constDoc = await getDocument(`constellations/${user.uid}`);
+          Object.assign(orbitals, constDoc?.orbitals || {});
+        } catch(_) {}
+        const guilds = profile?.guilds || [];
+        const sigilSvg = renderUserSigil({ cosmologicalId, tier, guilds, orbitals, size: 96 });
+        const wrap = document.getElementById("sanctum-sigil-wrap");
+        if (wrap) wrap.innerHTML = `
+          <a href="mage_tower/Familiars.html" title="View your familiar" style="display:block;border-radius:50%;overflow:hidden;line-height:0;">
+            ${sigilSvg}
+          </a>`;
+      } catch(_) {}
     }).catch(() => {});
   }
 };
