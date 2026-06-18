@@ -2,9 +2,15 @@
  * Sigil Renderer — deterministic familiar + composite user sigil generation.
  * All output is seeded from cosmologicalId so the same seed always produces
  * the same familiar and sigil SVG.
+ *
+ * Slot system: each echo purchase consumes the next PRNG draw.
+ *   slot 0 = genesis familiar (always unlocked)
+ *   slot 1 = first echo (+1 PRNG draw)
+ *   slot N = Nth echo (+N PRNG draws burned before selection)
+ * Max 6 slots (slots 0–5).
  */
 
-// ── PRNG (mirrors the familiars protocol exactly) ─────────────────────────────
+// ── PRNG ──────────────────────────────────────────────────────────────────────
 function xmur3(str) {
   for (var i = 0, h = 1779033703 ^ str.length; i < str.length; i++) {
     h = Math.imul(h ^ str.charCodeAt(i), 3432918353);
@@ -95,111 +101,195 @@ export const FAMILIARS = [
   },
 ];
 
-// ── Familiar lookup from cosmologicalId ───────────────────────────────────────
-export function getFamiliarFromCosmologicalId(cosmologicalId) {
-  if (!cosmologicalId) return { familiar: FAMILIARS[2], rand: makeRand('default') };
-  const seed = String(cosmologicalId);
-  const rand = makeRand(seed);
-  // Use first random value to select archetype
-  const idx = Math.floor(rand() * FAMILIARS.length);
-  return { familiar: FAMILIARS[idx], rand };
+export const MAX_FAMILIAR_SLOTS = 6;
+
+// ── Slot-aware familiar lookup ────────────────────────────────────────────────
+
+/**
+ * Returns the familiar archetype for a given slot number.
+ * slot 0 = genesis (first PRNG draw)
+ * slot N = Nth echo (N+1th PRNG draw, burning N draws first)
+ */
+export function getFamiliarForSlot(cosmologicalId, slotNumber = 0) {
+  if (!cosmologicalId) return FAMILIARS[2]; // STRIX default
+  const rand = makeRand(String(cosmologicalId));
+  let idx;
+  for (let i = 0; i <= slotNumber; i++) {
+    idx = Math.floor(rand() * FAMILIARS.length);
+  }
+  return FAMILIARS[idx];
 }
 
-// ── Tier ring colors ──────────────────────────────────────────────────────────
+// Backwards-compatible wrapper
+export function getFamiliarFromCosmologicalId(cosmologicalId) {
+  const familiar = getFamiliarForSlot(cosmologicalId, 0);
+  return { familiar, rand: makeRand(String(cosmologicalId || 'default')) };
+}
+
+// ── Hilbert Manifold SVG ──────────────────────────────────────────────────────
+// Ported from SHD-CCP_Generator_v3. Generates nested string-art manifold geometry.
+
+const FIB = [1, 2, 3, 5, 8, 13, 21, 34, 55, 89];
+
+/**
+ * Generates the Hilbert manifold (nested polygon string art).
+ * @param {number} n  - Points / symmetry (3–64)
+ * @param {number} k  - String multiplier (1–64)
+ * @param {number} t  - Nested tiers (1–6)
+ * @param {number} [maxRadius=45] - Radius in viewBox units
+ * @returns {string} SVG path markup (no outer <svg> wrapper)
+ */
+export function generateManifoldSVG(n, k, t, maxRadius = 45) {
+  n = Math.max(3, Math.min(64, parseInt(n) || 12));
+  k = Math.max(1, Math.min(64, parseInt(k) || 5));
+  t = Math.max(1, Math.min(6,  parseInt(t) || 4));
+  const center = { x: 50, y: 50 };
+  const baseFibIndex = Math.min(t + 3, FIB.length - 1);
+  let svg = '';
+
+  for (let layer = 0; layer < t; layer++) {
+    const fibIdx = Math.max(0, baseFibIndex - layer);
+    const scale = FIB[fibIdx] / FIB[baseFibIndex];
+    const radius = maxRadius * scale;
+
+    const coords = [];
+    for (let i = 0; i < n; i++) {
+      const angle = (i / n) * 2 * Math.PI - Math.PI / 2;
+      coords.push({
+        x: center.x + radius * Math.cos(angle),
+        y: center.y + radius * Math.sin(angle),
+      });
+    }
+
+    let pathData = '';
+    for (let i = 0; i < n; i++) {
+      const s = coords[i];
+      const e = coords[(i * k) % n];
+      pathData += `M${s.x.toFixed(1)},${s.y.toFixed(1)} L${e.x.toFixed(1)},${e.y.toFixed(1)} `;
+    }
+
+    let perimData = `M${coords[0].x.toFixed(1)},${coords[0].y.toFixed(1)} `;
+    for (let i = 1; i <= n; i++) {
+      const c = coords[i % n];
+      perimData += `L${c.x.toFixed(1)},${c.y.toFixed(1)} `;
+    }
+
+    const opacity  = layer === 0 ? 0.9 : (0.9 - layer * 0.15);
+    const sw       = layer === 0 ? 0.5 : 0.3;
+    const dash     = layer === 0 ? '' : 'stroke-dasharray="1 2"';
+
+    svg += `<path d="${pathData}" stroke="currentColor" stroke-width="${sw}" fill="none" opacity="${opacity}" ${dash}/>`;
+    if (layer === 0) {
+      svg += `<path d="${perimData}" stroke="currentColor" stroke-width="0.4" fill="none" opacity="0.35"/>`;
+    }
+
+    // Node dots on outermost layer only
+    if (layer === 0) {
+      let nodes = '';
+      for (let i = 0; i < n; i++) {
+        nodes += `<circle cx="${coords[i].x.toFixed(1)}" cy="${coords[i].y.toFixed(1)}" r="0.7" fill="currentColor" opacity="0.7"/>`;
+      }
+      svg += `<g>${nodes}</g>`;
+    }
+  }
+
+  return svg;
+}
+
+// ── Ring / tier colors ────────────────────────────────────────────────────────
 const TIER_COLORS = {
   ARCHON:     '#D4AF37',
   INSTRUCTOR: '#00d4ff',
   ACOLYTE:    '#94a3b8',
 };
-
-// ── Guild marker colors ───────────────────────────────────────────────────────
 const GUILD_COLORS = ['#00f0ff', '#d4af37', '#b026ff', '#00ff66', '#ff3366'];
+const DEPT_COLORS  = { 7: '#ffffff', 8: '#b026ff', 9: '#00ff66' };
 
-// ── Dept 7/8/9 colors ────────────────────────────────────────────────────────
-const DEPT_COLORS = { 7: '#ffffff', 8: '#b026ff', 9: '#00ff66' };
+// ── Composite sigil renderer ──────────────────────────────────────────────────
 
 /**
  * Renders the composite user sigil as an SVG string.
  *
  * @param {object} opts
- * @param {string} opts.cosmologicalId
- * @param {string} opts.tier          — "ARCHON" | "INSTRUCTOR" | "ACOLYTE"
- * @param {string[]} opts.guilds      — array of guild IDs (up to 3)
- * @param {object} opts.orbitals      — { tomes, minorTomes, artifacts, dept7, dept8, dept9 }
- * @param {number} [opts.size=120]    — outer pixel size of the SVG
+ * @param {string}  opts.cosmologicalId
+ * @param {number}  [opts.activeSlot=0]        — which familiar slot is active
+ * @param {object}  [opts.manifoldConfig=null]  — { n, k, t } for Hilbert manifold background
+ * @param {string}  [opts.tier='ACOLYTE']
+ * @param {string[]} [opts.guilds=[]]
+ * @param {object}  [opts.orbitals={}]          — { tomes, minorTomes, artifacts, dept7, dept8, dept9 }
+ * @param {number}  [opts.size=120]
  * @param {boolean} [opts.animated=true]
  * @returns {string} SVG element string
  */
-export function renderUserSigil({ cosmologicalId, tier = 'ACOLYTE', guilds = [], orbitals = {}, size = 120, animated = true }) {
-  const { familiar } = getFamiliarFromCosmologicalId(cosmologicalId);
-  const tierColor = TIER_COLORS[tier] || TIER_COLORS.ACOLYTE;
+export function renderUserSigil({
+  cosmologicalId,
+  activeSlot = 0,
+  manifoldConfig = null,
+  tier = 'ACOLYTE',
+  guilds = [],
+  orbitals = {},
+  size = 120,
+  animated = true,
+}) {
+  const familiar   = getFamiliarForSlot(cosmologicalId, activeSlot);
+  const tierColor  = TIER_COLORS[tier] || TIER_COLORS.ACOLYTE;
   const cx = 50, cy = 50;
-
-  // Rings (viewBox 0 0 100 100)
   const r = { core: 28, tier: 36, achievement: 43, guild: 48, border: 50 };
 
-  // Tier ring — dashed for ACOLYTE, solid for INSTRUCTOR, doubled for ARCHON
-  const tierDash = tier === 'ACOLYTE' ? 'stroke-dasharray="3 2"' : '';
+  // Tier ring style
+  const tierDash  = tier === 'ACOLYTE' ? 'stroke-dasharray="3 2"' : '';
   const tierStroke = tier === 'ARCHON' ? 1.5 : 1;
-  const tierRingExtra = tier === 'ARCHON'
+  const tierExtra  = tier === 'ARCHON'
     ? `<circle cx="${cx}" cy="${cy}" r="${r.tier - 2}" fill="none" stroke="${tierColor}" stroke-width="0.5" opacity="0.5"/>`
     : '';
 
-  // Achievement pips — dept 7/8/9 if unlocked
+  // Dept achievement pips
   const deptPips = [7, 8, 9]
     .filter(d => orbitals[`dept${d}`] > 0)
     .map((d, i, arr) => {
       const angle = (i / arr.length) * Math.PI * 2 - Math.PI / 2;
-      const px = cx + r.achievement * Math.cos(angle);
-      const py = cy + r.achievement * Math.sin(angle);
-      return `<circle cx="${px.toFixed(1)}" cy="${py.toFixed(1)}" r="2.5" fill="${DEPT_COLORS[d]}" opacity="0.9"/>`;
-    })
-    .join('');
+      return `<circle cx="${(cx + r.achievement * Math.cos(angle)).toFixed(1)}" cy="${(cy + r.achievement * Math.sin(angle)).toFixed(1)}" r="2.5" fill="${DEPT_COLORS[d]}" opacity="0.9"/>`;
+    }).join('');
 
-  // Guild arc markers
+  // Guild ring pips
   const guildMarkers = (guilds || []).slice(0, 4).map((_, i, arr) => {
     const angle = (i / arr.length) * Math.PI * 2 - Math.PI / 2;
-    const px = cx + r.guild * Math.cos(angle);
-    const py = cy + r.guild * Math.sin(angle);
-    return `<circle cx="${px.toFixed(1)}" cy="${py.toFixed(1)}" r="2" fill="${GUILD_COLORS[i % GUILD_COLORS.length]}" opacity="0.85"/>`;
+    return `<circle cx="${(cx + r.guild * Math.cos(angle)).toFixed(1)}" cy="${(cy + r.guild * Math.sin(angle)).toFixed(1)}" r="2" fill="${GUILD_COLORS[i % GUILD_COLORS.length]}" opacity="0.85"/>`;
   }).join('');
 
-  // Orbital count notches on border ring (up to 8 ticks for tomes + artifacts)
+  // Tome count ticks on outer border
   const tomeCount = Math.min((orbitals.tomes || 0) + (orbitals.minorTomes || 0), 16);
   const ticks = Array.from({ length: tomeCount }, (_, i) => {
     const angle = (i / 16) * Math.PI * 2;
-    const r1 = r.border - 0.5, r2 = r.border + 0.5;
-    const x1 = (cx + r1 * Math.cos(angle)).toFixed(1);
-    const y1 = (cy + r1 * Math.sin(angle)).toFixed(1);
-    const x2 = (cx + r2 * Math.cos(angle)).toFixed(1);
-    const y2 = (cy + r2 * Math.sin(angle)).toFixed(1);
-    return `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="#8A2BE2" stroke-width="1.2" opacity="0.7"/>`;
+    return `<line x1="${(cx + (r.border - 0.5) * Math.cos(angle)).toFixed(1)}" y1="${(cy + (r.border - 0.5) * Math.sin(angle)).toFixed(1)}" x2="${(cx + (r.border + 0.5) * Math.cos(angle)).toFixed(1)}" y2="${(cy + (r.border + 0.5) * Math.sin(angle)).toFixed(1)}" stroke="#8A2BE2" stroke-width="1.2" opacity="0.7"/>`;
   }).join('');
 
-  const animClass = animated ? 'sigil-draw' : '';
+  // Hilbert manifold background (if configured, renders inside familiar core)
+  const manifoldLayer = manifoldConfig
+    ? `<g transform="translate(${cx - r.core}, ${cy - r.core}) scale(${(r.core * 2) / 100})"
+          color="${familiar.color}" style="color:${familiar.color};opacity:0.22">
+         ${generateManifoldSVG(manifoldConfig.n, manifoldConfig.k, manifoldConfig.t, 45)}
+       </g>`
+    : '';
 
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="${size}" height="${size}"
                style="filter:drop-shadow(0 0 6px ${familiar.color}88)">
-    <!-- Outer border ring -->
     <circle cx="${cx}" cy="${cy}" r="${r.border}" fill="none" stroke="${familiar.color}" stroke-width="0.4" opacity="0.4"/>
     ${ticks}
-
-    <!-- Guild ring -->
     <circle cx="${cx}" cy="${cy}" r="${r.guild}" fill="none" stroke="${familiar.color}" stroke-width="0.3" stroke-dasharray="1 3" opacity="0.35"/>
     ${guildMarkers}
-
-    <!-- Achievement ring -->
     <circle cx="${cx}" cy="${cy}" r="${r.achievement}" fill="none" stroke="${tierColor}" stroke-width="0.3" opacity="0.25"/>
     ${deptPips}
-
-    <!-- Tier ring -->
-    ${tierRingExtra}
+    ${tierExtra}
     <circle cx="${cx}" cy="${cy}" r="${r.tier}" fill="none" stroke="${tierColor}" stroke-width="${tierStroke}" ${tierDash} opacity="0.8"/>
-
-    <!-- Familiar core (scaled to fit r.core) -->
     <g transform="translate(${cx - r.core}, ${cy - r.core}) scale(${(r.core * 2) / 100})"
        color="${familiar.color}" style="color:${familiar.color}">
       <circle cx="50" cy="50" r="49" fill="#05030a" opacity="0.85"/>
+      ${manifoldLayer ? '' : ''}
+    </g>
+    ${manifoldLayer}
+    <g transform="translate(${cx - r.core}, ${cy - r.core}) scale(${(r.core * 2) / 100})"
+       color="${familiar.color}" style="color:${familiar.color}">
       ${familiar.svg}
     </g>
   </svg>`;
