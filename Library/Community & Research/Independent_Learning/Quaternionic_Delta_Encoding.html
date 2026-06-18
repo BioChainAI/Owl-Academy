@@ -1,0 +1,807 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Owl Academy | Quaternionic Delta Encoding</title>
+    
+    <!-- External Libraries -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Inter:wght@300;400;500;600&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+    
+    <!-- MathJax Configuration -->
+    <script>
+        window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']] } };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+    <style>
+        :root {
+            --color-void: #05030a;
+            --color-primary: #D4AF37;
+            --color-primary-light: #FFF8DC;
+            --color-holo-cyan: #00d4ff;
+            --color-holo-purple: #8A2BE2;
+            --color-holo-emerald: #10b981;
+            --color-holo-rose: #f43f5e;
+        }
+
+        body {
+            background-color: var(--color-void);
+            color: #e2e8f0;
+            font-family: 'Inter', sans-serif;
+            background: radial-gradient(circle at 50% 0%, color-mix(in srgb, var(--color-holo-cyan) 10%, var(--color-void)), var(--color-void) 80%);
+            min-height: 100vh;
+            margin: 0;
+            overflow-x: hidden;
+            line-height: 1.6;
+        }
+
+        .starfield {
+            position: fixed; inset: 0;
+            background-image:
+                radial-gradient(2px 2px at 20px 30px, var(--color-holo-cyan), rgba(0,0,0,0)),
+                radial-gradient(2px 2px at 40px 70px, #fff, rgba(0,0,0,0)),
+                radial-gradient(2px 2px at 50px 160px, rgba(255,255,255,0.8), rgba(0,0,0,0)),
+                radial-gradient(2px 2px at 90px 40px, #fff, rgba(0,0,0,0)),
+                radial-gradient(2px 2px at 130px 80px, var(--color-holo-cyan), rgba(0,0,0,0));
+            background-repeat: repeat; background-size: 250px 250px;
+            animation: twinkle 8s infinite alternate;
+            opacity: 0.15; z-index: -2; pointer-events: none;
+        }
+
+        @keyframes twinkle { 0% { opacity: 0.05; } 100% { opacity: 0.2; } }
+
+        h1, h2, h3, h4, h5, .mystical-font { font-family: 'Cinzel', serif; }
+
+        .gold-gradient {
+            background: linear-gradient(to right, var(--color-holo-cyan), var(--color-primary-light), var(--color-holo-cyan));
+            -webkit-background-clip: text; background-clip: text;
+            color: transparent; text-shadow: 0 0 15px color-mix(in srgb, var(--color-holo-cyan) 30%, transparent);
+        }
+
+        .glass-panel {
+            background: rgba(10, 8, 20, 0.65);
+            backdrop-filter: blur(16px);
+            border: 1px solid color-mix(in srgb, var(--color-holo-cyan) 15%, transparent);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5);
+        }
+
+        /* Sidebar Nav Styles */
+        .nav-item {
+            transition: all 0.3s ease;
+            border-left: 2px solid transparent;
+        }
+        .nav-item.active {
+            background: linear-gradient(90deg, rgba(0, 212, 255, 0.15) 0%, transparent 100%);
+            border-left-color: var(--color-holo-cyan);
+            color: var(--color-holo-cyan);
+        }
+        .nav-item:hover:not(.active) {
+            background: rgba(255,255,255,0.05);
+            border-left-color: rgba(0, 212, 255, 0.4);
+        }
+
+        /* Content Scrollbar */
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-track { background: rgba(0,0,0,0.3); }
+        ::-webkit-scrollbar-thumb { background: color-mix(in srgb, var(--color-holo-cyan) 40%, transparent); border-radius: 10px; }
+
+        .code-block {
+            font-family: 'Fira Code', monospace;
+            background: rgba(0,0,0,0.5);
+            border: 1px solid rgba(255,255,255,0.1);
+            padding: 1rem;
+            border-radius: 0.5rem;
+            font-size: 0.75rem;
+            color: #a5b4fc;
+        }
+    </style>
+</head>
+<body class="antialiased flex flex-col h-screen overflow-hidden">
+
+    <!-- Atmospheric Background -->
+    <div class="starfield"></div>
+
+    <!-- Header -->
+    <header class="flex-shrink-0 w-full py-4 px-6 relative border-b border-cyan-600/20 bg-[#05030a]/80 backdrop-blur-md z-20 flex justify-between items-center shadow-lg">
+        <div>
+            <div class="text-[10px] text-cyan-500/80 tracking-[0.3em] uppercase font-mono mb-1">
+                Community & Research &gt; Independent Learning
+            </div>
+            <h1 class="text-xl md:text-2xl font-bold tracking-[0.2em] gold-gradient">OWL ACADEMY</h1>
+        </div>
+        <div class="font-mono text-xs text-cyan-400 border border-cyan-500/30 px-3 py-1 rounded bg-cyan-900/20 hidden md:block">
+            MODULE: <span class="text-white">PRELIMINARY MATH</span>
+        </div>
+    </header>
+
+    <!-- Main Application Area -->
+    <div class="flex-1 flex overflow-hidden relative z-10 p-4 gap-4">
+        
+        <!-- Sidebar Navigation -->
+        <aside class="w-1/4 max-w-[300px] glass-panel rounded-xl flex flex-col overflow-hidden h-full">
+            <div class="p-4 border-b border-white/10">
+                <h2 class="text-sm font-bold text-white tracking-widest mystical-font">Module Phases</h2>
+            </div>
+            <nav class="flex-1 overflow-y-auto py-2" id="nav-container">
+                <!-- Nav items generated via JS -->
+            </nav>
+        </aside>
+
+        <!-- Content Area -->
+        <main class="flex-1 flex flex-col gap-4 h-full overflow-hidden">
+            
+            <!-- Interactive Visualization Panel -->
+            <div class="w-full h-1/2 lg:h-[55%] min-h-[250px] glass-panel rounded-xl relative overflow-hidden shadow-[0_0_40px_rgba(0,212,255,0.1)_inset] flex-shrink-0">
+                <!-- 3D Canvas -->
+                <div id="canvas-container" class="w-full h-full"></div>
+                
+                <!-- Vis HUD -->
+                <div class="absolute top-4 left-4 z-20 font-mono text-[10px] bg-black/60 px-3 py-1.5 rounded border border-white/10 text-slate-300 backdrop-blur-md">
+                    <span class="text-white font-bold" id="vis-title">Live Visualization</span><br>
+                    <span class="text-slate-500">Interact with mouse to rotate/zoom</span>
+                </div>
+                
+                <div id="vis-overlay-data" class="absolute bottom-4 right-4 z-20 font-mono text-[10px] bg-black/80 px-3 py-2 rounded border border-cyan-500/30 text-right backdrop-blur-md text-cyan-300">
+                    <!-- Dynamic HUD data per phase -->
+                </div>
+            </div>
+
+            <!-- Explainer Text Panel -->
+            <div class="w-full flex-1 glass-panel rounded-xl flex flex-col overflow-hidden">
+                <div class="p-4 md:p-6 border-b border-white/10 bg-black/40 flex-shrink-0">
+                    <div id="phase-badge" class="inline-block px-2 py-0.5 border border-cyan-500/30 rounded text-cyan-400 text-[9px] tracking-widest uppercase mb-2 font-mono">Phase 0</div>
+                    <h2 id="phase-title" class="text-xl md:text-2xl font-bold text-white mystical-font leading-tight">Concept Title</h2>
+                    <p id="phase-objective" class="text-xs md:text-sm text-slate-400 mt-2 italic border-l-2 border-cyan-600/50 pl-3">Objective description here.</p>
+                </div>
+                
+                <div class="p-4 md:p-6 overflow-y-auto flex-1 custom-scrollbar" id="phase-content">
+                    <!-- Content generated via JS -->
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <!-- Application Script -->
+    <script>
+        // ==========================================
+        // 1. DATA: Phase Content Definitions
+        // ==========================================
+        const phasesData = [
+            {
+                id: "phase-0",
+                badge: "Phase 0",
+                badgeColor: "cyan",
+                title: "Absolute vs. Delta Tracking",
+                objective: "Understand why storing differences (deltas) is more efficient than storing absolute coordinates.",
+                content: `
+                    <div class="space-y-4 text-sm text-slate-300 leading-relaxed">
+                        <p>In standard computational systems, we often track the evolution of an object by recording its <strong>absolute state</strong> at every frame. If an artifact rotates, we record its exact absolute rotation relative to the universal origin $(0,0,0)$.</p>
+                        
+                        <p>However, inside the Owl Academy's high-dimensional simulations, storing absolute coordinates for complex, evolving manifolds creates immense memory bloat. Instead, we utilize <strong>Delta Encoding</strong>.</p>
+                        
+                        <div class="bg-black/40 border border-white/10 rounded p-4 mt-4">
+                            <h3 class="text-white font-bold border-b border-cyan-500/30 pb-2 mb-3 tracking-wide">The Delta Principle</h3>
+                            <p>Rather than storing where an object <em>is</em>, we only store <em>how it changed</em> since the last recorded moment. This increment is known as the Delta ($\\Delta$).</p>
+                            <div class="text-center my-4 font-mono text-cyan-300 bg-black/50 p-3 rounded border border-cyan-900/50">
+                                $$\\text{State}_{new} = \\text{State}_{old} + \\Delta$$
+                            </div>
+                            <ul class="space-y-2 text-xs text-slate-400 list-disc pl-5">
+                                <li><strong>Absolute Path:</strong> Storing $P_0, P_1, P_2, P_3...$</li>
+                                <li><strong>Delta Path:</strong> Storing $P_0$ (the seed) and $\\Delta_1, \\Delta_2, \\Delta_3...$</li>
+                            </ul>
+                            <p class="mt-3 text-xs">For linear translation, this is simple addition. But what happens when we must track complex 3D rotations without suffering from gimbal lock or dimensional drift? We must look to Quaternions.</p>
+                        </div>
+                    </div>
+                `,
+                visTitle: "Translational Delta Tracking",
+                initScene: initPhase0
+            },
+            {
+                id: "phase-1",
+                badge: "Phase 1",
+                badgeColor: "yellow",
+                title: "Lifting Quaternions to Matrix Form",
+                objective: "Transform a 4D quaternion into its operational 4x4 matrix representation.",
+                content: `
+                    <div class="space-y-4 text-sm text-slate-300 leading-relaxed">
+                        <p>To apply delta encoding to 3D rotations, we use <strong>Quaternions</strong>. A quaternion is traditionally written as four discrete components: a real part ($w$) and three imaginary parts ($x, y, z$).</p>
+                        
+                        <div class="text-center font-mono text-yellow-300 mb-2">
+                            $$q = w + xi + yj + zk$$
+                        </div>
+
+                        <p>Students often view quaternions as just four isolated numbers. But the true power of Quaternionic Math emerges when we "lift" these four numbers into their <strong>Matrix Form</strong>. This allows us to multiply rotational states using ordinary linear algebra.</p>
+                        
+                        <div class="bg-black/40 border border-white/10 rounded p-4 mt-4">
+                            <h3 class="text-white font-bold border-b border-yellow-500/30 pb-2 mb-3 tracking-wide">The 4x4 Real Matrix</h3>
+                            <p class="text-xs text-slate-400 mb-2">Every quaternion corresponds perfectly to an orthogonal $4 \\times 4$ real matrix. Notice how the scalar $w$ occupies the main diagonal, while the vector components $(x, y, z)$ populate the off-diagonals with carefully chosen signs to encode the non-commutative rules of quaternion multiplication.</p>
+                            
+                            <div class="overflow-x-auto">
+                                $$\\mathbf{Q} = \\begin{bmatrix} 
+                                {\\color{#3b82f6}w} & -{\\color{#ef4444}x} & -{\\color{#10b981}y} & -{\\color{#a855f7}z} \\\\ 
+                                {\\color{#ef4444}x} & {\\color{#3b82f6}w} & -{\\color{#a855f7}z} & {\\color{#10b981}y} \\\\ 
+                                {\\color{#10b981}y} & {\\color{#a855f7}z} & {\\color{#3b82f6}w} & -{\\color{#ef4444}x} \\\\ 
+                                {\\color{#a855f7}z} & -{\\color{#10b981}y} & {\\color{#ef4444}x} & {\\color{#3b82f6}w} 
+                                \\end{bmatrix}$$
+                            </div>
+                        </div>
+                    </div>
+                `,
+                visTitle: "4x4 Quaternion Matrix Projection",
+                initScene: initPhase1
+            },
+            {
+                id: "phase-2",
+                badge: "Phase 2",
+                badgeColor: "fuchsia",
+                title: "The Quaternionic Delta Rule",
+                objective: "Apply the delta rule to evolve an absolute state using matrix left-multiplication.",
+                content: `
+                    <div class="space-y-4 text-sm text-slate-300 leading-relaxed">
+                        <p>With our matrix representation established, we can now apply the <strong>Quaternionic Delta Encoding Update Rule</strong>. This is how the Owl Academy dynamically evolves rotational artifacts in real-time without storing their entire absolute history.</p>
+                        
+                        <div class="bg-black/40 border border-white/10 rounded p-4 mt-4">
+                            <h3 class="text-white font-bold border-b border-fuchsia-500/30 pb-2 mb-3 tracking-wide">Left-Multiplication Evolution</h3>
+                            <p class="text-xs text-slate-400 mb-4">To find the new absolute orientation of a system, we take the 4x4 matrix representation of the *change* (the Delta $Q$), and left-multiply it by the column vector representing the *old* state.</p>
+                            
+                            <div class="text-center font-mono text-fuchsia-300 bg-black/50 p-4 rounded border border-fuchsia-900/50 my-4 text-lg">
+                                $$\\text{State}_{new} = \\Delta \\mathbf{Q} \\cdot \\text{State}_{old}$$
+                            </div>
+
+                            <ul class="space-y-3 text-xs">
+                                <li><strong class="text-fuchsia-400">State$_{old}$:</strong> The current absolute orientation $[w_0, x_0, y_0, z_0]^T$.</li>
+                                <li><strong class="text-fuchsia-400">$\\Delta \\mathbf{Q}$:</strong> The $4 \\times 4$ matrix encoding the angular change required by the current physics frame.</li>
+                                <li><strong class="text-fuchsia-400">State$_{new}$:</strong> The resulting, perfectly updated $4 \\times 1$ state vector.</li>
+                            </ul>
+                        </div>
+                        <p class="italic text-slate-500 text-xs mt-2">Observe the visualization above: As the external $\\Delta$ energy packet intercepts the core artifact, it applies the matrix multiplication, causing a precise, deterministic shift in rotation.</p>
+                    </div>
+                `,
+                visTitle: "Matrix Left-Multiplication Evolution",
+                initScene: initPhase2
+            },
+            {
+                id: "phase-3",
+                badge: "Phase 3",
+                badgeColor: "emerald",
+                title: "Continuous Tracking Systems",
+                objective: "Observe a complex orbital system maintaining coherence via sequential delta updates.",
+                content: `
+                    <div class="space-y-4 text-sm text-slate-300 leading-relaxed">
+                        <p>The ultimate application of Quaternionic Delta Encoding is in tracking <strong>continuous rotational systems</strong> over millions of frames—essential for advanced robotics, 3D tracking, and physics simulations.</p>
+                        
+                        <div class="bg-black/40 border border-white/10 rounded p-4 mt-4">
+                            <h3 class="text-white font-bold border-b border-emerald-500/30 pb-2 mb-3 tracking-wide">Preventing Dimensional Drift</h3>
+                            <p class="text-xs text-slate-400 mb-3">If we tracked this gyroscope using Euler angles (Pitch, Yaw, Roll), we would eventually encounter "Gimbal Lock"—a catastrophic loss of a degree of freedom when two rotational axes align. Furthermore, compounding tiny floating-point errors over time would cause the system to drift away from physical reality.</p>
+                            
+                            <p class="text-xs text-slate-400 mb-3">By utilizing a chain of quaternionic delta matrices:</p>
+                            
+                            <div class="text-center font-mono text-emerald-300 text-xs mb-3 overflow-x-auto">
+                                $$S_n = (\\Delta Q_n \\cdot \\Delta Q_{n-1} \\cdots \\Delta Q_1) \\cdot S_0$$
+                            </div>
+
+                            <p class="text-xs text-slate-400">We maintain perfect orthogonal coherence. The system stores only the tiny incremental deltas streaming in from the physics engine, calculating the absolute state on-the-fly via rapid matrix multiplication.</p>
+                        </div>
+                        
+                        <p class="italic text-emerald-400 text-xs mt-4">This mathematical foundation is what allows the Owl Academy's Memory Offload structures to function with zero data degradation.</p>
+                    </div>
+                `,
+                visTitle: "Continuous Delta Integration",
+                initScene: initPhase3
+            }
+        ];
+
+        let activePhaseIndex = 0;
+
+        // ==========================================
+        // 2. THREE.JS GLOBAL SETUP
+        // ==========================================
+        const canvasContainer = document.getElementById('canvas-container');
+        const scene = new THREE.Scene();
+        scene.fog = new THREE.FogExp2(0x05030a, 0.015);
+
+        const camera = new THREE.PerspectiveCamera(45, canvasContainer.clientWidth / canvasContainer.clientHeight, 0.1, 1000);
+        camera.position.set(0, 10, 25);
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        renderer.setSize(canvasContainer.clientWidth, canvasContainer.clientHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        canvasContainer.appendChild(renderer.domElement);
+
+        const controls = new THREE.OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.05;
+        controls.autoRotate = false;
+
+        // Global Lighting
+        const ambLight = new THREE.AmbientLight(0xffffff, 0.4);
+        const dirLight = new THREE.DirectionalLight(0xfff2c8, 1.2);
+        dirLight.position.set(10, 20, 15);
+        const rimLight = new THREE.DirectionalLight(0x00d4ff, 2.0);
+        rimLight.position.set(-15, -10, -15);
+        scene.add(ambLight, dirLight, rimLight);
+
+        // Container for phase-specific objects
+        const phaseGroup = new THREE.Group();
+        scene.add(phaseGroup);
+
+        let animationFrameId;
+        let clock = new THREE.Clock();
+        let currentCustomAnimate = null; // Holds phase-specific animation loop
+
+        // ==========================================
+        // 3. PHASE SCENE INITIALIZERS
+        // ==========================================
+
+        function clearPhaseGroup() {
+            while(phaseGroup.children.length > 0){ 
+                const child = phaseGroup.children[0];
+                phaseGroup.remove(child); 
+                // Recursively dispose meshes
+                child.traverse((node) => {
+                    if (node.isMesh || node.isLine || node.isPoints) {
+                        if(node.geometry) node.geometry.dispose();
+                        if(node.material) {
+                            if(Array.isArray(node.material)) node.material.forEach(m => m.dispose());
+                            else node.material.dispose();
+                        }
+                    }
+                });
+            }
+            currentCustomAnimate = null;
+        }
+
+        // Phase 0: Absolute vs Delta Vector Tracking
+        function initPhase0(group) {
+            // Origin Point
+            const originMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+            const origin = new THREE.Mesh(new THREE.SphereGeometry(0.3, 16, 16), originMat);
+            group.add(origin);
+
+            // Create a curved path
+            const curve = new THREE.CatmullRomCurve3([
+                new THREE.Vector3(-10, 0, 0),
+                new THREE.Vector3(-5, 4, -3),
+                new THREE.Vector3(0, -2, 5),
+                new THREE.Vector3(5, 5, 0),
+                new THREE.Vector3(10, 0, -5)
+            ]);
+
+            const points = curve.getPoints(100);
+            const pathGeo = new THREE.BufferGeometry().setFromPoints(points);
+            const pathMat = new THREE.LineBasicMaterial({ color: 0x334155, transparent: true, opacity: 0.5 });
+            const pathLine = new THREE.Line(pathGeo, pathMat);
+            group.add(pathLine);
+
+            // Artifact traveling the path
+            const artifactMat = new THREE.MeshPhysicalMaterial({ color: 0x00d4ff, emissive: 0x00d4ff, emissiveIntensity: 0.5 });
+            const artifact = new THREE.Mesh(new THREE.OctahedronGeometry(0.6, 0), artifactMat);
+            group.add(artifact);
+
+            // Vectors
+            const absVector = new THREE.ArrowHelper(new THREE.Vector3(0,1,0), new THREE.Vector3(0,0,0), 1, 0xffffff, 0.4, 0.4);
+            group.add(absVector);
+
+            const deltaVector = new THREE.ArrowHelper(new THREE.Vector3(1,0,0), new THREE.Vector3(0,0,0), 1, 0x00d4ff, 0.4, 0.4);
+            group.add(deltaVector);
+
+            const hudData = document.getElementById('vis-overlay-data');
+
+            currentCustomAnimate = (elapsed) => {
+                const speed = 0.15;
+                const t = (elapsed * speed) % 1.0;
+                const prevT = Math.max(0, t - 0.05);
+
+                const currentPos = curve.getPointAt(t);
+                const prevPos = curve.getPointAt(prevT);
+
+                artifact.position.copy(currentPos);
+                artifact.rotation.x += 0.05;
+                artifact.rotation.y += 0.05;
+
+                // Absolute Vector (Origin to Artifact)
+                const absDir = currentPos.clone().normalize();
+                const absLength = currentPos.length();
+                if(absLength > 0.1) {
+                    absVector.setDirection(absDir);
+                    absVector.setLength(absLength, 0.6, 0.4);
+                }
+
+                // Delta Vector (Prev to Current)
+                const deltaVec = new THREE.Vector3().subVectors(currentPos, prevPos);
+                const deltaLength = deltaVec.length();
+                if(deltaLength > 0.01) {
+                    deltaVector.position.copy(prevPos);
+                    deltaVector.setDirection(deltaVec.normalize());
+                    deltaVector.setLength(deltaLength * 5, 0.4, 0.4); // Exaggerate length for visibility
+                }
+
+                hudData.innerHTML = `
+                    ABSOLUTE TRACKING: <span class="text-white">Active</span><br>
+                    DELTA VECTOR: <span class="text-cyan-400">Tracking</span><br>
+                    POS: [${currentPos.x.toFixed(1)}, ${currentPos.y.toFixed(1)}, ${currentPos.z.toFixed(1)}]
+                `;
+            };
+        }
+
+        // Phase 1: 4x4 Matrix Projection
+        function initPhase1(group) {
+            const matrixSize = 4;
+            const spacing = 2.5;
+            const offset = (matrixSize * spacing) / 2 - (spacing / 2);
+            
+            const boxes = [];
+            const boxGeo = new THREE.BoxGeometry(1.5, 1.5, 1.5);
+            
+            // Colors matching the MathJax formula: w(blue), x(red), y(green), z(purple)
+            const colorW = 0x3b82f6; // Blue
+            const colorX = 0xef4444; // Red
+            const colorY = 0x10b981; // Green
+            const colorZ = 0xa855f7; // Purple
+            
+            const matrixDef = [
+                ['w', '-x', '-y', '-z'],
+                ['x', 'w', '-z', 'y'],
+                ['y', 'z', 'w', '-x'],
+                ['z', '-y', 'x', 'w']
+            ];
+
+            const getBoxColor = (val) => {
+                if(val.includes('w')) return colorW;
+                if(val.includes('x')) return colorX;
+                if(val.includes('y')) return colorY;
+                if(val.includes('z')) return colorZ;
+                return 0xffffff;
+            };
+
+            for(let row = 0; row < 4; row++) {
+                for(let col = 0; col < 4; col++) {
+                    const val = matrixDef[row][col];
+                    const baseColor = getBoxColor(val);
+                    const isNegative = val.includes('-');
+
+                    const mat = new THREE.MeshPhysicalMaterial({ 
+                        color: baseColor, 
+                        transmission: 0.8, 
+                        opacity: 0.9, 
+                        transparent: true,
+                        roughness: 0.2,
+                        wireframe: isNegative // Represent negatives as wireframes/hollow visually
+                    });
+
+                    // Add an inner core to solid ones
+                    const mesh = new THREE.Mesh(boxGeo, mat);
+                    mesh.position.set(
+                        col * spacing - offset, 
+                        -(row * spacing - offset), // Invert Y so row 0 is top
+                        0
+                    );
+                    
+                    // Floating label logic (simple text sprite placeholder)
+                    const edges = new THREE.LineSegments(new THREE.EdgesGeometry(boxGeo), new THREE.LineBasicMaterial({color: baseColor, opacity: 0.5, transparent:true}));
+                    mesh.add(edges);
+
+                    group.add(mesh);
+                    boxes.push({ mesh, row, col, val, baseColor });
+                }
+            }
+
+            // Group adjustments
+            group.position.y = 2; // Lift up slightly
+
+            const hudData = document.getElementById('vis-overlay-data');
+
+            currentCustomAnimate = (elapsed) => {
+                // Gentle floating effect
+                group.position.y = 2 + Math.sin(elapsed * 0.5) * 0.5;
+                group.rotation.y = Math.sin(elapsed * 0.2) * 0.2;
+
+                // Highlight diagonals vs off-diagonals rhythmically
+                const pulseW = (Math.sin(elapsed * 2) + 1) * 0.5;
+                const pulseOff = (Math.cos(elapsed * 2) + 1) * 0.5;
+
+                boxes.forEach(b => {
+                    b.mesh.rotation.x = Math.sin(elapsed + b.col) * 0.1;
+                    b.mesh.rotation.y = Math.cos(elapsed + b.row) * 0.1;
+                    
+                    if (b.val === 'w') {
+                        b.mesh.scale.setScalar(1 + pulseW * 0.1);
+                        b.mesh.material.emissive = new THREE.Color(b.baseColor);
+                        b.mesh.material.emissiveIntensity = pulseW * 0.5;
+                    } else {
+                        b.mesh.scale.setScalar(1 + pulseOff * 0.05);
+                        b.mesh.material.emissive = new THREE.Color(b.baseColor);
+                        b.mesh.material.emissiveIntensity = pulseOff * 0.3;
+                    }
+                });
+
+                hudData.innerHTML = `
+                    DIMENSION: <span class="text-white">4x4 Orthogonal</span><br>
+                    DIAGONAL (W): <span style="color:#3b82f6">Pulsing</span><br>
+                    OFF-DIAG (X,Y,Z): <span style="color:#ef4444">Coupled</span>
+                `;
+            };
+        }
+
+        // Phase 2: Matrix Multiplication (State Evolution)
+        function initPhase2(group) {
+            // State_old: A glowing internal crystal
+            const stateGeo = new THREE.IcosahedronGeometry(3, 1);
+            const stateMat = new THREE.MeshPhysicalMaterial({
+                color: 0xffffff, wireframe: true, transparent: true, opacity: 0.6
+            });
+            const stateMesh = new THREE.Mesh(stateGeo, stateMat);
+            group.add(stateMesh);
+
+            // The core that shows current orientation
+            const coreMat = new THREE.MeshLambertMaterial({ color: 0xf43f5e });
+            const coreMesh = new THREE.Mesh(new THREE.BoxGeometry(2, 4, 1), coreMat);
+            stateMesh.add(coreMesh);
+
+            // Axes helpers on the state to show rotation clearly
+            const axesHelper = new THREE.AxesHelper( 5 );
+            stateMesh.add( axesHelper );
+
+            // Delta Q: Incoming Energy packets
+            const deltaGroup = new THREE.Group();
+            group.add(deltaGroup);
+            
+            const deltaGeo = new THREE.TorusGeometry(1, 0.1, 8, 24);
+            const deltaMat = new THREE.MeshBasicMaterial({ color: 0x00d4ff, transparent: true, opacity: 0.8 });
+            
+            const deltas = [];
+            for(let i=0; i<3; i++) {
+                const mesh = new THREE.Mesh(deltaGeo, deltaMat);
+                mesh.position.set(-20 - (i*15), 0, 0); // Start far away
+                deltaGroup.add(mesh);
+                deltas.push({ mesh, active: true, axis: new THREE.Vector3(Math.random(), Math.random(), Math.random()).normalize() });
+            }
+
+            const hudData = document.getElementById('vis-overlay-data');
+            let currentStateRot = new THREE.Quaternion();
+
+            currentCustomAnimate = (elapsed) => {
+                const speed = 10.0;
+                
+                deltas.forEach((d, i) => {
+                    // Move Delta towards origin
+                    d.mesh.position.x += speed * 0.016; // Approx delta time
+                    
+                    // Spin the delta packet
+                    d.mesh.rotation.x += 0.1;
+                    d.mesh.rotation.y += 0.1;
+
+                    // If it hits the center (State_old)
+                    if (d.mesh.position.x > 0 && d.mesh.position.x < speed*0.02 && d.active) {
+                        d.active = false; // Prevent multiple triggers
+                        
+                        // Apply Delta Rotation (State_new = Delta * State_old)
+                        // In Three.js, quaternion multiply applies rotation
+                        const deltaQuat = new THREE.Quaternion().setFromAxisAngle(d.axis, Math.PI / 3); // Rotate 60 deg
+                        
+                        // stateMesh.quaternion.multiplyQuaternions(deltaQuat, stateMesh.quaternion); // Left multiply equivalent
+                        // For visual smoothness, we'll trigger a tween target instead
+                        d.targetQuat = new THREE.Quaternion().multiplyQuaternions(deltaQuat, stateMesh.quaternion);
+                        stateMesh.userData.targetQuat = d.targetQuat;
+                        
+                        // Flash core
+                        coreMat.emissive.setHex(0x00d4ff);
+                        setTimeout(() => coreMat.emissive.setHex(0x000000), 200);
+                    }
+
+                    // Reset when off screen
+                    if (d.mesh.position.x > 15) {
+                        d.mesh.position.x = -30;
+                        d.active = true;
+                        d.axis = new THREE.Vector3(Math.random(), Math.random(), Math.random()).normalize();
+                    }
+                });
+
+                // Smoothly slerp to target rotation
+                if (stateMesh.userData.targetQuat) {
+                    stateMesh.quaternion.slerp(stateMesh.userData.targetQuat, 0.1);
+                }
+
+                hudData.innerHTML = `
+                    STATE UPDATES: <span class="text-fuchsia-400">Left-Multiply</span><br>
+                    Q_CORE_X: ${stateMesh.quaternion.x.toFixed(2)}<br>
+                    Q_CORE_Y: ${stateMesh.quaternion.y.toFixed(2)}<br>
+                    Q_CORE_Z: ${stateMesh.quaternion.z.toFixed(2)}<br>
+                    Q_CORE_W: ${stateMesh.quaternion.w.toFixed(2)}
+                `;
+            };
+        }
+
+        // Phase 3: Continuous Gyroscopic System
+        function initPhase3(group) {
+            const rings = [];
+            const colors = [0x10b981, 0x00d4ff, 0xD4AF37]; // Emerald, Cyan, Gold
+            
+            // Create Nested Toroids
+            for(let i=0; i<3; i++) {
+                const rGroup = new THREE.Group();
+                const geo = new THREE.TorusGeometry(6 - (i*1.5), 0.2, 16, 64);
+                const mat = new THREE.MeshPhysicalMaterial({ 
+                    color: colors[i], 
+                    roughness: 0.1, 
+                    transmission: 0.5, 
+                    transparent: true 
+                });
+                const mesh = new THREE.Mesh(geo, mat);
+                
+                // Add tick marks to see rotation better
+                const tickGeo = new THREE.BoxGeometry(0.5, 0.5, 0.5);
+                const tickMat = new THREE.MeshBasicMaterial({color: 0xffffff});
+                const tick = new THREE.Mesh(tickGeo, tickMat);
+                tick.position.set(6 - (i*1.5), 0, 0);
+                mesh.add(tick);
+
+                rGroup.add(mesh);
+                group.add(rGroup);
+                
+                // Store random rotation axes
+                rings.push({
+                    group: rGroup,
+                    axis1: new THREE.Vector3(Math.random(), Math.random(), Math.random()).normalize(),
+                    axis2: new THREE.Vector3(Math.random(), Math.random(), Math.random()).normalize(),
+                    speed: 1 + (i*0.5)
+                });
+            }
+
+            // Central stabilized core
+            const coreMesh = new THREE.Mesh(new THREE.OctahedronGeometry(1.5, 0), new THREE.MeshBasicMaterial({color: 0xffffff, wireframe: true}));
+            group.add(coreMesh);
+
+            // Particle stream simulating continuous delta data
+            const partGeo = new THREE.BufferGeometry();
+            const partCount = 200;
+            const partPos = new Float32Array(partCount * 3);
+            for(let i=0; i<partCount*3; i++) partPos[i] = (Math.random() - 0.5) * 20;
+            partGeo.setAttribute('position', new THREE.BufferAttribute(partPos, 3));
+            const partMat = new THREE.PointsMaterial({color: 0x10b981, size: 0.1, transparent: true, opacity: 0.5});
+            const particles = new THREE.Points(partGeo, partMat);
+            group.add(particles);
+
+            const hudData = document.getElementById('vis-overlay-data');
+
+            currentCustomAnimate = (elapsed) => {
+                // Continuous complex rotation applied via quaternions to avoid gimbal lock visually
+                rings.forEach((r, idx) => {
+                    const time = elapsed * r.speed * 0.5;
+                    // Blend two axes for complex continuous movement
+                    const currentAxis = new THREE.Vector3().copy(r.axis1).lerp(r.axis2, (Math.sin(time)+1)/2).normalize();
+                    
+                    // Create a delta rotation
+                    const deltaQ = new THREE.Quaternion().setFromAxisAngle(currentAxis, 0.02);
+                    
+                    // Left multiply: New = Delta * Old
+                    r.group.quaternion.multiplyQuaternions(deltaQ, r.group.quaternion);
+                });
+
+                coreMesh.rotation.y = -elapsed;
+
+                // Animate particles flowing inward (delta data stream)
+                const pos = particles.geometry.attributes.position.array;
+                for(let i=0; i<partCount; i++) {
+                    const x = pos[i*3];
+                    const y = pos[i*3+1];
+                    const z = pos[i*3+2];
+                    
+                    // Move towards center
+                    pos[i*3] = x * 0.98;
+                    pos[i*3+1] = y * 0.98;
+                    pos[i*3+2] = z * 0.98;
+
+                    // Reset if too close
+                    if (Math.abs(x) < 0.5 && Math.abs(y) < 0.5 && Math.abs(z) < 0.5) {
+                        pos[i*3] = (Math.random() - 0.5) * 25;
+                        pos[i*3+1] = (Math.random() - 0.5) * 25;
+                        pos[i*3+2] = (Math.random() - 0.5) * 25;
+                    }
+                }
+                particles.geometry.attributes.position.needsUpdate = true;
+
+                hudData.innerHTML = `
+                    SYSTEM STATE: <span class="text-emerald-400">Coherent</span><br>
+                    GIMBAL LOCK: <span class="text-emerald-400">Avoided</span><br>
+                    DELTA STREAM: ${Math.floor(elapsed * 60)} ops/sec
+                `;
+            };
+        }
+
+        // ==========================================
+        // 4. UI & LOGIC INTEGRATION
+        // ==========================================
+        const navContainer = document.getElementById('nav-container');
+        const phaseTitle = document.getElementById('phase-title');
+        const phaseObjective = document.getElementById('phase-objective');
+        const phaseBadge = document.getElementById('phase-badge');
+        const phaseContent = document.getElementById('phase-content');
+        const visTitle = document.getElementById('vis-title');
+
+        // Color map for Tailwind classes
+        const colorMap = {
+            'cyan': 'text-cyan-400 border-cyan-500/30',
+            'yellow': 'text-yellow-400 border-yellow-500/30',
+            'fuchsia': 'text-fuchsia-400 border-fuchsia-500/30',
+            'emerald': 'text-emerald-400 border-emerald-500/30',
+            'rose': 'text-rose-400 border-rose-500/30'
+        };
+
+        function renderNav() {
+            navContainer.innerHTML = '';
+            phasesData.forEach((phase, index) => {
+                const btn = document.createElement('button');
+                btn.className = `nav-item w-full text-left px-4 py-3 text-sm font-mono tracking-wide ${index === activePhaseIndex ? 'active' : 'text-slate-400'}`;
+                btn.innerHTML = `<span class="font-bold opacity-50 mr-2">0${index}</span> ${phase.badge}`;
+                btn.onclick = () => loadPhase(index);
+                navContainer.appendChild(btn);
+            });
+        }
+
+        function loadPhase(index) {
+            activePhaseIndex = index;
+            const phase = phasesData[index];
+            
+            // Update UI text
+            phaseTitle.innerText = phase.title;
+            phaseObjective.innerText = phase.objective;
+            phaseContent.innerHTML = phase.content;
+            visTitle.innerText = phase.visTitle;
+            
+            phaseBadge.innerText = phase.badge;
+            phaseBadge.className = `inline-block px-2 py-0.5 border rounded text-[9px] tracking-widest uppercase mb-2 font-mono ${colorMap[phase.badgeColor]}`;
+
+            renderNav();
+            
+            // Rerun MathJax for dynamic content
+            if(window.MathJax && typeof MathJax.typesetPromise === 'function') {
+                MathJax.typesetPromise([phaseContent]).catch((err) => console.log(err.message));
+            }
+
+            // Update 3D Scene
+            clearPhaseGroup();
+            phase.initScene(phaseGroup);
+            
+            // Reset camera for consistent viewing
+            controls.reset();
+            camera.position.set(0, 10, 25);
+            clock.start();
+        }
+
+        // ==========================================
+        // 5. MAIN RENDER LOOP
+        // ==========================================
+        function animate() {
+            animationFrameId = requestAnimationFrame(animate);
+            const elapsed = clock.getElapsedTime();
+            
+            if (currentCustomAnimate) {
+                currentCustomAnimate(elapsed);
+            }
+
+            controls.update();
+            renderer.render(scene, camera);
+        }
+
+        // Handle Window Resize
+        window.addEventListener('resize', () => {
+            camera.aspect = canvasContainer.clientWidth / canvasContainer.clientHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(canvasContainer.clientWidth, canvasContainer.clientHeight);
+        });
+
+        // Initialize App
+        loadPhase(0);
+        animate();
+
+    </script>
+</body>
+</html>
