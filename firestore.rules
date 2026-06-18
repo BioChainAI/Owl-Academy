@@ -47,6 +47,10 @@ service cloud.firestore {
       let allowed = ['viewCount', 'updatedAt'];
       return request.resource.data.diff(resource.data).affectedKeys().hasOnly(allowed);
     }
+    function isStampUpdate() {
+      let allowed = ['stampCount', 'stampedBy', 'updatedAt'];
+      return request.resource.data.diff(resource.data).affectedKeys().hasOnly(allowed);
+    }
     function isCertificationUpdate() {
       // Only Instructors/Archons may write certification fields
       let certFields = ['owlCertified','owlCertifiedBy','owlCertifiedAt',
@@ -61,6 +65,7 @@ service cloud.firestore {
         && request.resource.data.creatorUid == request.auth.uid;
       allow update: if isSignedIn() && (
         isViewCountOnlyUpdate()
+        || isStampUpdate()
         || isCertificationUpdate()
         || resource.data.creatorUid == request.auth.uid
         || isInstructorOrArchon()

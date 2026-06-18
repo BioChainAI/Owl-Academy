@@ -192,10 +192,10 @@
 import { auth } from "../../scripts/firebase/config.js";
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-auth.js";
 import { db } from "../../scripts/firebase/config.js";
-import { collection, getDocs, doc, updateDoc, query, where, orderBy, increment, serverTimestamp }
+import { collection, getDocs, addDoc, doc, updateDoc, query, where, orderBy, increment, serverTimestamp }
     from "https://www.gstatic.com/firebasejs/12.15.0/firebase-firestore.js";
 
-let allVideos = [];
+let allContent = [];
 let activeSubject = "";
 
 const SUBJECTS = {
@@ -205,12 +205,46 @@ const SUBJECTS = {
     logic:"Logic & Proof", "number-theory":"Number Theory", "discrete-math":"Discrete Math"
 };
 
+const MODULES_JSON_URL = "Independent_Learning/modules.json";
+const DIFFICULTY_COLORS = {beginner:"#34d399",intermediate:"#60a5fa",advanced:"#a78bfa",expert:"#f472b6"};
+
+async function loadModules() {
+    try {
+        const res = await fetch(MODULES_JSON_URL);
+        if (!res.ok) return [];
+        const manifest = await res.json();
+        const mSnap = await getDocs(query(collection(db,"tomes"), where("type","==","module")));
+        const existing = new Map(mSnap.docs.map(d=>[d.data().moduleId,{id:d.id,...d.data()}]));
+        const result = [];
+        for (const entry of (manifest.modules||[])) {
+            if (existing.has(entry.id)) {
+                result.push(existing.get(entry.id));
+            } else {
+                const payload = {
+                    type:"module", moduleId:entry.id, title:entry.title,
+                    subject:entry.subject, description:entry.description,
+                    path:entry.path, tags:entry.tags||[], difficulty:entry.difficulty||"beginner",
+                    plane:"prereq", tier:"sovereign",
+                    creatorUid:"system", creatorGenesisId:"system",
+                    creatorTier:"SYSTEM", viewCount:0, enrolledCount:0,
+                    createdAt:serverTimestamp(), updatedAt:serverTimestamp()
+                };
+                const ref = await addDoc(collection(db,"tomes"), payload);
+                result.push({id:ref.id,...payload});
+            }
+        }
+        return result;
+    } catch(e) { console.warn("Modules load failed:", e); return []; }
+}
+
 onAuthStateChanged(auth, async (user) => {
     if (!user) return;
     try {
         const q = query(collection(db,"tomes"), where("type","==","video"), orderBy("createdAt","desc"));
         const snap = await getDocs(q);
-        allVideos = snap.docs.map(d => ({id:d.id,...d.data()}));
+        const videos = snap.docs.map(d => ({id:d.id,...d.data()}));
+        const modules = await loadModules();
+        allContent = [...videos, ...modules];
         renderStats();
         applyFilters();
     } catch(e) {
@@ -220,12 +254,12 @@ onAuthStateChanged(auth, async (user) => {
 });
 
 function renderStats() {
-    const total = allVideos.length;
-    const owlCert = allVideos.filter(v=>v.owlCertified).length;
-    const deptCert = allVideos.filter(v=>v.deptCertified).length;
-    const contributors = new Set(allVideos.map(v=>v.creatorGenesisId||v.creatorUid)).size;
+    const total = allContent.length;
+    const owlCert = allContent.filter(v=>v.owlCertified).length;
+    const deptCert = allContent.filter(v=>v.deptCertified).length;
+    const contributors = new Set(allContent.filter(v=>v.creatorGenesisId!=="system").map(v=>v.creatorGenesisId||v.creatorUid)).size;
     document.getElementById("statsBar").innerHTML = [
-        {label:"Total Videos", value:total, color:"#60a5fa"},
+        {label:"Total Resources", value:total, color:"#60a5fa"},
         {label:"OA Certified", value:owlCert, color:"#D4AF37"},
         {label:"Dept Certified", value:deptCert, color:"#a78bfa"},
         {label:"Contributors", value:contributors, color:"#34d399"},
@@ -248,7 +282,7 @@ window.applyFilters = function() {
     const sort = document.getElementById("sortSelect").value;
     const certFilter = document.getElementById("certFilter").value;
 
-    let filtered = allVideos.filter(v => {
+    let filtered = allContent.filter(v => {
         if (activeSubject && v.subject !== activeSubject) return false;
         if (certFilter === "owl" && !v.owlCertified) return false;
         if (certFilter === "dept" && !v.deptCertified) return false;
@@ -290,7 +324,7 @@ window.applyFilters = function() {
     document.getElementById("allSectionHeader").classList.remove("hidden");
 
     if (certified.length > 0) {
-        document.getElementById("certifiedGrid").innerHTML = certified.map(v=>videoCard(v)).join("");
+        document.getElementById("certifiedGrid").innerHTML = certified.map(v=>v.type==="module"?moduleCard(v):videoCard(v)).join("");
         certSection.classList.remove("hidden");
         document.getElementById("allSectionTitle").textContent = "Uncertified Contributions";
     } else {
@@ -298,9 +332,9 @@ window.applyFilters = function() {
         document.getElementById("allSectionTitle").textContent = "Community Contributions";
     }
 
-    document.getElementById("allCount").textContent = rest.length + " videos";
+    document.getElementById("allCount").textContent = rest.length + " items";
     document.getElementById("allGrid").innerHTML = rest.length > 0
-        ? rest.map(v=>videoCard(v)).join("")
+        ? rest.map(v=>v.type==="module" ? moduleCard(v) : videoCard(v)).join("")
         : `<div class="col-span-full text-center py-6 text-slate-600 text-sm">All content in this filter has been certified.</div>`;
 };
 
@@ -337,8 +371,45 @@ function videoCard(v) {
     </div>`;
 }
 
+function moduleCard(m) {
+    const glow = m.owlCertified ? "cert-glow-owl" : m.deptCertified ? "cert-glow-dept" : "";
+    const certBadges = [
+        m.owlCertified ? `<span class="cert-owl px-2 py-0.5 rounded-full text-[10px] mono">♛ OA Certified</span>` : "",
+        m.deptCertified ? `<span class="cert-dept px-2 py-0.5 rounded-full text-[10px] mono">⬢ ${escHtml(m.deptCertifiedPlane||"Dept")}</span>` : ""
+    ].filter(Boolean).join("");
+    const diffColor = DIFFICULTY_COLORS[m.difficulty]||"#60a5fa";
+    return `
+    <div class="video-card ${glow}" style="border-color:rgba(148,130,255,0.18)">
+        <div class="w-full aspect-video bg-purple-950/30 flex flex-col items-center justify-center gap-2 relative cursor-pointer" onclick="openLesson('${escHtml(m.id)}','${escHtml(m.path||"")}')">
+            <span class="text-4xl opacity-30">📄</span>
+            <span class="text-xs text-purple-300/60 mono">HTML Lesson</span>
+            ${certBadges ? `<div class="absolute bottom-2 left-2 flex gap-1 flex-wrap">${certBadges}</div>` : ""}
+            <div class="absolute top-2 right-2 flex gap-1">
+                <span class="tag px-2 py-0.5 rounded-full text-[10px]">${escHtml(SUBJECTS[m.subject]||m.subject||"—")}</span>
+            </div>
+            <div class="absolute top-2 left-2">
+                <span class="px-2 py-0.5 rounded-full text-[10px] mono font-bold" style="background:${diffColor}22;border:1px solid ${diffColor}55;color:${diffColor}">${escHtml(m.difficulty||"")}</span>
+            </div>
+        </div>
+        <div class="p-4">
+            <h3 class="font-semibold text-slate-200 text-sm mb-2 line-clamp-2">${escHtml(m.title||"Untitled")}</h3>
+            ${m.description ? `<p class="text-xs text-slate-500 mb-2 line-clamp-2">${escHtml(m.description)}</p>` : ""}
+            <div class="flex items-center justify-between mt-2">
+                <button onclick="openLesson('${escHtml(m.id)}','${escHtml(m.path||"")}')" class="text-xs text-purple-400 hover:text-purple-300 mono transition-colors">Open Lesson →</button>
+                ${m.viewCount ? `<span class="text-[10px] text-slate-600 mono">${m.viewCount} views</span>` : ""}
+            </div>
+        </div>
+    </div>`;
+}
+
+window.openLesson = function(id, path) {
+    if (!path) return;
+    updateDoc(doc(db,"tomes",id),{viewCount:increment(1),updatedAt:serverTimestamp()}).catch(()=>{});
+    window.open("Independent_Learning/" + path, "_blank");
+};
+
 window.openModal = function(id) {
-    const v = allVideos.find(x=>x.id===id); if (!v) return;
+    const v = allContent.find(x=>x.id===id); if (!v || v.type!=="video") return;
     updateDoc(doc(db,"tomes",id),{viewCount:increment(1),updatedAt:serverTimestamp()}).catch(()=>{});
     const embed=document.getElementById("modalEmbed");
     if (v.platform==="youtube"&&v.videoId) embed.innerHTML=`<iframe src="https://www.youtube.com/embed/${encodeURIComponent(v.videoId)}?rel=0&modestbranding=1" allowfullscreen allow="autoplay;encrypted-media" style="position:absolute;top:0;left:0;width:100%;height:100%;border:none"></iframe>`;

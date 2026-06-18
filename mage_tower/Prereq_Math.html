@@ -97,6 +97,17 @@
                 <option value="dept">⬢ Department Certified</option>
                 <option value="none">Uncertified</option>
             </select>
+            <select id="browseStamps" class="rounded-lg px-3 py-2 text-xs mono" onchange="renderBrowse()">
+                <option value="">All Stamps</option>
+                <option value="high">★★★ High (5+)</option>
+                <option value="med">★★ Medium (2–4)</option>
+                <option value="low">★ Low (1)</option>
+                <option value="none">⬡ Unstamped</option>
+            </select>
+            <select id="browseSort" class="rounded-lg px-3 py-2 text-xs mono" onchange="renderBrowse()">
+                <option value="newest">Newest First</option>
+                <option value="stamps">Most Stamped</option>
+            </select>
             <span id="browseCount" class="text-xs text-slate-500 mono">—</span>
         </div>
         <div id="browseGrid" class="grid md:grid-cols-2 xl:grid-cols-3 gap-4">
@@ -208,18 +219,23 @@ import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.15.0/f
 import { db } from "../scripts/firebase/config.js";
 import {
     collection, getDocs, doc, addDoc, updateDoc,
-    query, where, orderBy, increment, serverTimestamp
+    query, where, orderBy, increment, arrayUnion, serverTimestamp
 } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-firestore.js";
 import { readRegistrar } from "../scripts/spire-registrar.js";
 import { resolveTier } from "../scripts/genesis-registrar.js";
 
 // ── State ─────────────────────────────────────────────────────────
-let allVideos = [];
+let allContent = [];   // merged: video tomes + HTML modules
 let currentUser = null;
 let currentReg = null;
 let currentTier = "ACOLYTE";
 let selectedPlatform = "youtube";
 let exampleCount = 0;
+
+// Base path from mage_tower/ to the Independent_Learning folder
+const IL_BASE = "../Library/Community & Research/Independent_Learning/";
+// URL used to fetch modules.json (relative to this page)
+const MODULES_JSON_URL = IL_BASE + "modules.json";
 
 const SUBJECTS = [
     {v:"arithmetic",l:"Arithmetic"},{v:"algebra",l:"Algebra"},{v:"geometry",l:"Geometry"},
@@ -227,6 +243,8 @@ const SUBJECTS = [
     {v:"linear-algebra",l:"Linear Algebra"},{v:"statistics",l:"Statistics"},{v:"set-theory",l:"Set Theory"},
     {v:"logic",l:"Logic & Proof"},{v:"number-theory",l:"Number Theory"},{v:"discrete-math",l:"Discrete Math"}
 ];
+const SUBJECT_MAP = Object.fromEntries(SUBJECTS.map(s=>[s.v,s.l]));
+const DIFFICULTY_COLORS = {beginner:"#34d399",intermediate:"#60a5fa",advanced:"#a78bfa",expert:"#f472b6"};
 
 // ── Auth ──────────────────────────────────────────────────────────
 onAuthStateChanged(auth, async (user) => {
@@ -235,10 +253,9 @@ onAuthStateChanged(auth, async (user) => {
     currentReg = await readRegistrar(user.uid);
     currentTier = await resolveTier(user.uid);
 
-    const b = document.getElementById("identityBanner");
     document.getElementById("bannerGenId").textContent = currentReg?.cosmologicalId || "Not registered";
     document.getElementById("bannerTier").textContent = currentTier;
-    b.classList.remove("hidden");
+    document.getElementById("identityBanner").classList.remove("hidden");
 
     const canCert = currentTier === "INSTRUCTOR" || currentTier === "ARCHON";
     if (canCert) {
@@ -247,15 +264,16 @@ onAuthStateChanged(auth, async (user) => {
     }
 
     populateSubjectSelects();
-    await loadVideos();
+    await loadAllContent();
 });
 
 function populateSubjectSelects() {
     ["fSubject","browseSubject","certifySubject"].forEach(id => {
         const el = document.getElementById(id);
         if (!el) return;
-        if (id !== "fSubject") el.innerHTML = `<option value="">All Subjects</option>`;
-        else el.innerHTML = `<option value="">— Select subject —</option>`;
+        el.innerHTML = id === "fSubject"
+            ? `<option value="">— Select subject —</option>`
+            : `<option value="">All Subjects</option>`;
         SUBJECTS.forEach(s => {
             const o = document.createElement("option");
             o.value = s.v; o.textContent = s.l;
@@ -264,18 +282,81 @@ function populateSubjectSelects() {
     });
 }
 
-async function loadVideos() {
+// ── Load everything ───────────────────────────────────────────────
+async function loadAllContent() {
     try {
-        const q = query(collection(db, "tomes"), where("type","==","video"), orderBy("createdAt","desc"));
+        // 1. Fetch video tomes from Firestore
+        const q = query(collection(db,"tomes"), where("type","==","video"), orderBy("createdAt","desc"));
         const snap = await getDocs(q);
-        allVideos = snap.docs.map(d => ({id: d.id, ...d.data()}));
+        const videos = snap.docs.map(d => ({id:d.id, ...d.data()}));
+
+        // 2. Fetch + sync HTML modules from modules.json
+        const modules = await loadModules();
+
+        allContent = [...videos, ...modules];
         renderBrowse();
         renderMine();
         renderCertify();
     } catch(e) {
-        const errHtml = `<div class="col-span-full text-center py-8 text-red-400 text-xs">Error: ${escHtml(e.message)}<br><span class="text-slate-600">Check console for Firestore index link.</span></div>`;
-        document.getElementById("browseGrid").innerHTML = errHtml;
+        document.getElementById("browseGrid").innerHTML =
+            `<div class="col-span-full text-center py-8 text-red-400 text-xs">Error: ${escHtml(e.message)}<br><span class="text-slate-600">Check console for details / Firestore index link.</span></div>`;
+        console.error("[Prereq_Math] loadAllContent:", e);
     }
+}
+
+// Fetches modules.json, syncs new entries to Firestore, returns merged list
+async function loadModules() {
+    let manifest;
+    try {
+        const res = await fetch(MODULES_JSON_URL);
+        if (!res.ok) throw new Error(`modules.json fetch failed: ${res.status}`);
+        manifest = await res.json();
+    } catch(e) {
+        console.warn("[Prereq_Math] Could not load modules.json:", e.message);
+        return [];
+    }
+
+    // Load existing module tomes from Firestore
+    const mSnap = await getDocs(query(collection(db,"tomes"), where("type","==","module")));
+    const existing = new Map(mSnap.docs.map(d => [d.data().moduleId, {id:d.id,...d.data()}]));
+
+    const result = [];
+    for (const entry of (manifest.modules || [])) {
+        if (existing.has(entry.id)) {
+            // Already registered — use the Firestore doc (has cert state)
+            result.push(existing.get(entry.id));
+        } else {
+            // New entry — register it in Firestore automatically
+            try {
+                const payload = {
+                    type: "module",
+                    moduleId: entry.id,
+                    title: entry.title,
+                    subject: entry.subject,
+                    description: entry.description || "",
+                    modulePath: entry.path,
+                    tags: entry.tags || [],
+                    difficulty: entry.difficulty || "intermediate",
+                    plane: "prereq",
+                    tier: "sovereign",
+                    status: "active",
+                    owlCertified: false, owlCertifiedBy: null, owlCertifiedAt: null,
+                    deptCertified: false, deptCertifiedBy: null, deptCertifiedAt: null, deptCertifiedPlane: null,
+                    creatorUid: currentUser.uid,
+                    creatorGenesisId: currentReg?.cosmologicalId || null,
+                    creatorTier: currentTier,
+                    viewCount: 0, stampCount: 0, stampedBy: [],
+                    createdAt: serverTimestamp(), updatedAt: serverTimestamp()
+                };
+                const ref = await addDoc(collection(db,"tomes"), payload);
+                result.push({id: ref.id, ...payload});
+                showToast(`📄 Registered new module: ${entry.title}`);
+            } catch(e2) {
+                console.error("[Prereq_Math] Failed to register module:", entry.id, e2);
+            }
+        }
+    }
+    return result;
 }
 
 // ── Tab switching ─────────────────────────────────────────────────
@@ -286,50 +367,142 @@ window.switchTab = function(tab, btn) {
     if (btn) { btn.classList.add("active"); btn.classList.remove("text-slate-400"); }
 };
 
-// ── Browse tab ────────────────────────────────────────────────────
-window.renderBrowse = function() {
-    const search = document.getElementById("browseSearch")?.value.toLowerCase().trim() || "";
-    const subj = document.getElementById("browseSubject")?.value || "";
-    const cert = document.getElementById("browseCert")?.value || "";
-    let filtered = allVideos.filter(v => {
+// ── Filter helper ─────────────────────────────────────────────────
+function applyContentFilters(items, {search="", subj="", cert="", stamps="", typeFilter=""} = {}) {
+    return items.filter(v => {
+        if (typeFilter && v.type !== typeFilter) return false;
         if (subj && v.subject !== subj) return false;
         if (cert === "owl" && !v.owlCertified) return false;
         if (cert === "dept" && !v.deptCertified) return false;
         if (cert === "none" && (v.owlCertified || v.deptCertified)) return false;
+        const sc = v.stampCount || 0;
+        if (stamps === "high" && sc < 5) return false;
+        if (stamps === "med" && (sc < 2 || sc > 4)) return false;
+        if (stamps === "low" && sc !== 1) return false;
+        if (stamps === "none" && sc > 0) return false;
         if (search) {
-            const hay = [v.title,v.lessonNotes,v.subject,...(v.tags||[])].join(" ").toLowerCase();
+            const hay = [v.title, v.description, v.lessonNotes, v.subject, ...(v.tags||[])].join(" ").toLowerCase();
             if (!hay.includes(search)) return false;
         }
         return true;
     });
-    document.getElementById("browseCount").textContent = filtered.length + " videos";
+}
+
+// ── Browse tab ────────────────────────────────────────────────────
+window.renderBrowse = function() {
+    const search = document.getElementById("browseSearch")?.value.toLowerCase().trim() || "";
+    const subj   = document.getElementById("browseSubject")?.value || "";
+    const cert   = document.getElementById("browseCert")?.value || "";
+    const stamps = document.getElementById("browseStamps")?.value || "";
+    const sort   = document.getElementById("browseSort")?.value || "newest";
+    let filtered = applyContentFilters(allContent, {search, subj, cert, stamps});
+
+    if (sort === "stamps") {
+        filtered = [...filtered].sort((a,b) => (b.stampCount||0) - (a.stampCount||0));
+    }
+
+    const modules = filtered.filter(v => v.type === "module");
+    const videos  = filtered.filter(v => v.type === "video");
+
+    let html = "";
+    if (modules.length > 0) {
+        html += `<div class="col-span-full mb-2 flex items-center gap-3">
+            <span class="mystical text-xs text-purple-300">📄 HTML Lessons</span>
+            <div class="flex-1 border-t border-purple-500/10"></div>
+            <span class="text-[10px] text-slate-600 mono">${modules.length} modules</span>
+        </div>`;
+        html += modules.map(m => moduleCardHtml(m)).join("");
+    }
+    if (videos.length > 0) {
+        html += `<div class="col-span-full mt-4 mb-2 flex items-center gap-3">
+            <span class="mystical text-xs text-blue-300">▶ Video Tomes</span>
+            <div class="flex-1 border-t border-blue-500/10"></div>
+            <span class="text-[10px] text-slate-600 mono">${videos.length} videos</span>
+        </div>`;
+        html += videos.map(v => videoCardHtml(v, true)).join("");
+    }
+
+    document.getElementById("browseCount").textContent = filtered.length + " items";
     document.getElementById("browseGrid").innerHTML = filtered.length === 0
-        ? `<div class="col-span-full text-center py-10 text-slate-500 text-sm">No videos found.</div>`
-        : filtered.map(v => videoCardHtml(v, true)).join("");
+        ? `<div class="col-span-full text-center py-10 text-slate-500 text-sm">No content matches this filter.</div>`
+        : html;
 };
 
 window.renderMine = function() {
     if (!currentUser) return;
-    const mine = allVideos.filter(v => v.creatorUid === currentUser.uid);
+    const mine = allContent.filter(v => v.creatorUid === currentUser.uid);
     document.getElementById("mineGrid").innerHTML = mine.length === 0
-        ? `<div class="col-span-full text-center py-10 text-slate-500 text-sm">You haven't submitted any video tomes yet.<br><button onclick="switchTab('submit',document.querySelector('[onclick*=submit]'))" class="btn-blue px-4 py-2 rounded-full text-xs mt-4">Submit Your First →</button></div>`
-        : mine.map(v => videoCardHtml(v, false)).join("");
+        ? `<div class="col-span-full text-center py-10 text-slate-500 text-sm">You haven't submitted any tomes yet.<br>
+           <button onclick="switchTab('submit',document.querySelector('[onclick*=submit]'))" class="btn-blue px-4 py-2 rounded-full text-xs mt-4">Submit Your First →</button></div>`
+        : mine.map(v => v.type === "module" ? moduleCardHtml(v) : videoCardHtml(v, false)).join("");
 };
 
 window.renderCertify = function() {
-    const subj = document.getElementById("certifySubject")?.value || "";
+    const subj   = document.getElementById("certifySubject")?.value || "";
     const filter = document.getElementById("certifyFilter")?.value || "all";
-    let filtered = allVideos.filter(v => {
-        if (subj && v.subject !== subj) return false;
-        if (filter === "uncertified" && (v.owlCertified || v.deptCertified)) return false;
-        if (filter === "owl" && !v.owlCertified) return false;
-        if (filter === "dept" && !v.deptCertified) return false;
-        return true;
-    });
+    const cert   = filter === "uncertified" ? "none" : filter === "owl" ? "owl" : filter === "dept" ? "dept" : "";
+    const filtered = applyContentFilters(allContent, {subj, cert});
     document.getElementById("certifyList").innerHTML = filtered.length === 0
         ? `<p class="text-slate-500 text-sm text-center py-8">No content matches this filter.</p>`
         : filtered.map(v => certRowHtml(v)).join("");
 };
+
+// ── Stamp bar helper ──────────────────────────────────────────────
+function stampBarHtml(v) {
+    const sc = v.stampCount || 0;
+    const alreadyStamped = currentUser && (v.stampedBy||[]).includes(currentUser.uid);
+    const isMine = currentUser && v.creatorUid === currentUser.uid;
+    const stampLabel = sc > 0
+        ? `<span class="text-[10px] mono" style="color:#fbbf24">★ ${sc} useful${sc===1?"":" stamps"}</span>`
+        : `<span class="text-[10px] mono text-slate-700">⬡ no stamps yet</span>`;
+    let stampBtn = "";
+    if (!isMine) {
+        if (alreadyStamped) {
+            stampBtn = `<span class="text-[10px] mono px-2 py-0.5 rounded" style="color:#34d399;background:rgba(52,211,153,0.08);border:1px solid rgba(52,211,153,0.2)">✓ Stamped</span>`;
+        } else {
+            stampBtn = `<button onclick="stampMinorTome('${escHtml(v.id)}')" title="Mark as useful"
+                class="text-[10px] mono px-2 py-0.5 rounded transition-all hover:opacity-90"
+                style="color:#fbbf24;background:rgba(251,191,36,0.08);border:1px solid rgba(251,191,36,0.22)">★ Useful</button>`;
+        }
+    }
+    return `<div class="flex items-center gap-2">${stampLabel}${stampBtn}</div>`;
+}
+
+// ── HTML Module card ──────────────────────────────────────────────
+function moduleCardHtml(m) {
+    const certBadges = [
+        m.owlCertified ? `<span class="cert-owl px-2 py-0.5 rounded-full text-[10px] mono">♛ OA Certified</span>` : "",
+        m.deptCertified ? `<span class="cert-dept px-2 py-0.5 rounded-full text-[10px] mono">⬢ ${escHtml(m.deptCertifiedPlane||"Dept")}</span>` : ""
+    ].filter(Boolean).join("");
+    const diffColor = DIFFICULTY_COLORS[m.difficulty] || "#60a5fa";
+    const lessonUrl = IL_BASE + encodeURI(m.modulePath || "");
+    return `
+    <div class="video-card" style="border-color:rgba(148,130,255,0.2)">
+        <div class="p-4 pb-2 flex items-start gap-3 cursor-pointer" onclick="openLesson('${escHtml(m.id)}')">
+            <div class="flex-shrink-0 w-10 h-10 rounded-lg flex items-center justify-center text-xl"
+                 style="background:rgba(148,130,255,0.12);border:1px solid rgba(148,130,255,0.25)">📄</div>
+            <div class="flex-1 min-w-0">
+                <h3 class="font-semibold text-slate-200 text-sm line-clamp-2 hover:text-purple-300 transition-colors">${escHtml(m.title||"Untitled")}</h3>
+                ${m.description ? `<p class="text-xs text-slate-500 mt-1 line-clamp-2">${escHtml(m.description)}</p>` : ""}
+            </div>
+        </div>
+        <div class="px-4 pb-4">
+            <div class="flex flex-wrap items-center gap-1.5 mt-2">
+                <span class="tag px-2 py-0.5 rounded-full text-[10px]">${escHtml(SUBJECT_MAP[m.subject]||m.subject||"—")}</span>
+                ${m.difficulty ? `<span class="px-2 py-0.5 rounded-full text-[10px] mono border" style="color:${diffColor};border-color:${diffColor}44">${escHtml(m.difficulty)}</span>` : ""}
+                ${certBadges}
+            </div>
+            <div class="flex items-center justify-between mt-3 flex-wrap gap-2">
+                ${stampBarHtml(m)}
+                <a href="${escHtml(lessonUrl)}" target="_blank" onclick="trackModuleView('${escHtml(m.id)}')"
+                   class="btn-ghost px-3 py-1 rounded-lg text-xs" style="border-color:rgba(148,130,255,0.3);color:#a78bfa">
+                    Open Lesson →
+                </a>
+            </div>
+            ${m.creatorGenesisId && m.creatorGenesisId !== "system" ? `<div class="mt-2 text-[10px] text-yellow-600/60 mono truncate">${escHtml(m.creatorGenesisId.slice(0,20))}…</div>` : ""}
+        </div>
+    </div>`;
+}
 
 // ── Video card HTML ───────────────────────────────────────────────
 function videoCardHtml(v, showCreator) {
@@ -340,7 +513,6 @@ function videoCardHtml(v, showCreator) {
         v.owlCertified ? `<span class="cert-owl px-2 py-0.5 rounded-full text-[10px] mono">♛ OA Certified</span>` : "",
         v.deptCertified ? `<span class="cert-dept px-2 py-0.5 rounded-full text-[10px] mono">⬢ ${escHtml(v.deptCertifiedPlane||"Dept")}</span>` : ""
     ].filter(Boolean).join("");
-    const subjectLabel = SUBJECTS.find(s=>s.v===v.subject)?.l || v.subject || "—";
     return `
     <div class="video-card">
         <div class="relative cursor-pointer" onclick="openModal('${escHtml(v.id)}')">
@@ -351,43 +523,48 @@ function videoCardHtml(v, showCreator) {
             ${certBadges ? `<div class="absolute bottom-2 left-2 flex gap-1 flex-wrap">${certBadges}</div>` : ""}
         </div>
         <div class="p-4">
-            <div class="flex items-start gap-2 mb-2">
-                <h3 class="font-semibold text-slate-200 text-sm flex-1 line-clamp-2 cursor-pointer hover:text-blue-300 transition-colors" onclick="openModal('${escHtml(v.id)}')">${escHtml(v.title||"Untitled")}</h3>
-            </div>
-            <div class="flex items-center justify-between flex-wrap gap-1">
-                <span class="tag px-2 py-0.5 rounded-full text-[10px]">${escHtml(subjectLabel)}</span>
+            <h3 class="font-semibold text-slate-200 text-sm flex-1 line-clamp-2 cursor-pointer hover:text-blue-300 transition-colors mb-2" onclick="openModal('${escHtml(v.id)}')">${escHtml(v.title||"Untitled")}</h3>
+            <div class="flex items-center justify-between flex-wrap gap-2">
+                <span class="tag px-2 py-0.5 rounded-full text-[10px]">${escHtml(SUBJECT_MAP[v.subject]||v.subject||"—")}</span>
                 ${showCreator && v.creatorGenesisId ? `<span class="text-[10px] text-yellow-600 mono truncate max-w-[120px]">${escHtml(v.creatorGenesisId.slice(0,16))}…</span>` : ""}
             </div>
+            <div class="mt-3">${stampBarHtml(v)}</div>
         </div>
     </div>`;
 }
 
 // ── Certify row HTML ──────────────────────────────────────────────
 function certRowHtml(v) {
-    const subjectLabel = SUBJECTS.find(s=>s.v===v.subject)?.l || v.subject || "—";
-    const isArchon = currentTier === "ARCHON";
-    const canCertOwl = isArchon && !v.owlCertified;
+    const isArchon  = currentTier === "ARCHON";
+    const canCertOwl  = isArchon && !v.owlCertified;
     const canCertDept = (currentTier === "INSTRUCTOR" || isArchon) && !v.deptCertified;
-    const canRevoke = isArchon;
+    const typeLabel = v.type === "module"
+        ? `<span class="text-[10px] px-2 py-0.5 rounded-full mono" style="background:rgba(148,130,255,0.1);border:1px solid rgba(148,130,255,0.3);color:#a78bfa">📄 Lesson</span>`
+        : `<span class="tag text-[10px] px-2 py-0.5 rounded-full mono">▶ Video</span>`;
+    const previewAction = v.type === "module"
+        ? `<a href="${escHtml(IL_BASE + encodeURI(v.modulePath||""))}" target="_blank" class="btn-ghost px-3 py-1.5 rounded-lg text-xs">📄 Open</a>`
+        : `<button onclick="openModal('${escHtml(v.id)}')" class="btn-ghost px-3 py-1.5 rounded-lg text-xs">▶ Preview</button>`;
     return `
     <div class="glass rounded-xl p-4 flex flex-wrap items-center gap-4">
         <div class="flex-1 min-w-0">
             <div class="flex items-center gap-2 flex-wrap mb-1">
+                ${typeLabel}
                 <span class="font-semibold text-slate-200 text-sm">${escHtml(v.title||"Untitled")}</span>
-                <span class="tag px-2 py-0.5 rounded-full text-[10px]">${escHtml(subjectLabel)}</span>
+                <span class="tag px-2 py-0.5 rounded-full text-[10px]">${escHtml(SUBJECT_MAP[v.subject]||v.subject||"—")}</span>
                 ${v.owlCertified ? `<span class="cert-owl px-2 py-0.5 rounded-full text-[10px] mono">♛ OA Certified</span>` : ""}
                 ${v.deptCertified ? `<span class="cert-dept px-2 py-0.5 rounded-full text-[10px] mono">⬢ ${escHtml(v.deptCertifiedPlane||"Dept")}</span>` : ""}
             </div>
             <div class="text-[10px] text-slate-500 mono">
-                By: ${escHtml(v.creatorGenesisId || v.creatorUid?.slice(0,12) || "unknown")}
+                By: ${escHtml(v.creatorGenesisId || v.creatorUid?.slice(0,12) || "system")}
                 &nbsp;·&nbsp; ${v.creatorTier || "ACOLYTE"}
+                ${v.type==="module" && v.difficulty ? `&nbsp;·&nbsp; ${escHtml(v.difficulty)}` : ""}
             </div>
         </div>
         <div class="flex gap-2 flex-wrap">
-            <button onclick="openModal('${escHtml(v.id)}')" class="btn-ghost px-3 py-1.5 rounded-lg text-xs">▶ Preview</button>
-            ${canCertOwl ? `<button onclick="certifyOwl('${escHtml(v.id)}')" class="btn-gold px-3 py-1.5 rounded-lg text-xs">♛ OA Certify</button>` : ""}
+            ${previewAction}
+            ${canCertOwl  ? `<button onclick="certifyOwl('${escHtml(v.id)}')" class="btn-gold px-3 py-1.5 rounded-lg text-xs">♛ OA Certify</button>` : ""}
             ${canCertDept ? `<button onclick="certifyDept('${escHtml(v.id)}')" class="btn-ghost-gold px-3 py-1.5 rounded-lg text-xs">⬢ Dept Certify</button>` : ""}
-            ${canRevoke && (v.owlCertified||v.deptCertified) ? `<button onclick="revokeCert('${escHtml(v.id)}')" class="text-xs px-3 py-1.5 rounded-lg border border-red-500/30 text-red-400 hover:bg-red-500/10 transition-colors">Revoke</button>` : ""}
+            ${isArchon && (v.owlCertified||v.deptCertified) ? `<button onclick="revokeCert('${escHtml(v.id)}')" class="text-xs px-3 py-1.5 rounded-lg border border-red-500/30 text-red-400 hover:bg-red-500/10 transition-colors">Revoke</button>` : ""}
         </div>
     </div>`;
 }
@@ -396,14 +573,11 @@ function certRowHtml(v) {
 window.certifyOwl = async function(tomeId) {
     if (currentTier !== "ARCHON") return;
     try {
-        await updateDoc(doc(db, "tomes", tomeId), {
-            owlCertified: true,
-            owlCertifiedBy: currentReg?.cosmologicalId || currentUser.uid,
-            owlCertifiedAt: serverTimestamp(),
-            updatedAt: serverTimestamp()
+        await updateDoc(doc(db,"tomes",tomeId), {
+            owlCertified:true, owlCertifiedBy:currentReg?.cosmologicalId||currentUser.uid,
+            owlCertifiedAt:serverTimestamp(), updatedAt:serverTimestamp()
         });
-        const idx = allVideos.findIndex(v=>v.id===tomeId);
-        if (idx>=0) { allVideos[idx].owlCertified=true; allVideos[idx].owlCertifiedBy=currentReg?.cosmologicalId; }
+        patchLocal(tomeId, {owlCertified:true, owlCertifiedBy:currentReg?.cosmologicalId});
         showToast("♛ Owl Academy Certified");
         renderBrowse(); renderMine(); renderCertify();
     } catch(e) { showToast("Error: "+e.message, false); }
@@ -413,15 +587,11 @@ window.certifyDept = async function(tomeId) {
     const plane = currentReg?.certifiedPlanes?.[0] || prompt("Enter your dimensional plane (e.g. dept-I):");
     if (!plane) return;
     try {
-        await updateDoc(doc(db, "tomes", tomeId), {
-            deptCertified: true,
-            deptCertifiedBy: currentReg?.cosmologicalId || currentUser.uid,
-            deptCertifiedPlane: plane,
-            deptCertifiedAt: serverTimestamp(),
-            updatedAt: serverTimestamp()
+        await updateDoc(doc(db,"tomes",tomeId), {
+            deptCertified:true, deptCertifiedBy:currentReg?.cosmologicalId||currentUser.uid,
+            deptCertifiedPlane:plane, deptCertifiedAt:serverTimestamp(), updatedAt:serverTimestamp()
         });
-        const idx = allVideos.findIndex(v=>v.id===tomeId);
-        if (idx>=0) { allVideos[idx].deptCertified=true; allVideos[idx].deptCertifiedPlane=plane; }
+        patchLocal(tomeId, {deptCertified:true, deptCertifiedPlane:plane});
         showToast("⬢ Department Certified for "+plane);
         renderBrowse(); renderMine(); renderCertify();
     } catch(e) { showToast("Error: "+e.message, false); }
@@ -429,38 +599,79 @@ window.certifyDept = async function(tomeId) {
 
 window.revokeCert = async function(tomeId) {
     if (currentTier !== "ARCHON") return;
-    if (!confirm("Revoke all certifications on this tome?")) return;
+    if (!confirm("Revoke all certifications on this content?")) return;
     try {
-        await updateDoc(doc(db, "tomes", tomeId), {
-            owlCertified: false, owlCertifiedBy: null, owlCertifiedAt: null,
-            deptCertified: false, deptCertifiedBy: null, deptCertifiedAt: null, deptCertifiedPlane: null,
-            updatedAt: serverTimestamp()
+        await updateDoc(doc(db,"tomes",tomeId), {
+            owlCertified:false, owlCertifiedBy:null, owlCertifiedAt:null,
+            deptCertified:false, deptCertifiedBy:null, deptCertifiedAt:null, deptCertifiedPlane:null,
+            updatedAt:serverTimestamp()
         });
-        const idx = allVideos.findIndex(v=>v.id===tomeId);
-        if (idx>=0) { allVideos[idx].owlCertified=false; allVideos[idx].deptCertified=false; }
+        patchLocal(tomeId, {owlCertified:false, deptCertified:false});
         showToast("Certifications revoked");
         renderBrowse(); renderMine(); renderCertify();
     } catch(e) { showToast("Error: "+e.message, false); }
 };
 
-// ── Modal ─────────────────────────────────────────────────────────
+function patchLocal(id, patch) {
+    const idx = allContent.findIndex(v=>v.id===id);
+    if (idx >= 0) allContent[idx] = {...allContent[idx], ...patch};
+}
+
+// ── Stamp a minor tome as useful ──────────────────────────────────
+const XP_PER_STAMP = 5;
+window.stampMinorTome = async function(tomeId) {
+    if (!currentUser) return;
+    const v = allContent.find(x=>x.id===tomeId);
+    if (!v) return;
+    if (v.creatorUid === currentUser.uid) { showToast("You can't stamp your own tome.", false); return; }
+    if ((v.stampedBy||[]).includes(currentUser.uid)) { showToast("Already stamped.", false); return; }
+    try {
+        await updateDoc(doc(db,"tomes",tomeId), {
+            stampCount: increment(1),
+            stampedBy: arrayUnion(currentUser.uid),
+            updatedAt: serverTimestamp()
+        });
+        patchLocal(tomeId, {
+            stampCount: (v.stampCount||0) + 1,
+            stampedBy: [...(v.stampedBy||[]), currentUser.uid]
+        });
+        showToast(`★ Stamped as useful! +${XP_PER_STAMP} XP → contributor`);
+        renderBrowse(); renderMine();
+    } catch(e) { showToast("Error: "+e.message, false); }
+};
+
+// Track module views
+window.trackModuleView = function(id) {
+    updateDoc(doc(db,"tomes",id), {viewCount:increment(1), updatedAt:serverTimestamp()}).catch(()=>{});
+};
+
+// Open lesson in certify tab (just opens the HTML)
+window.openLesson = function(id) {
+    const m = allContent.find(x=>x.id===id);
+    if (!m || m.type !== "module") return;
+    trackModuleView(id);
+    window.open(IL_BASE + encodeURI(m.modulePath||""), "_blank");
+};
+
+// ── Video modal ───────────────────────────────────────────────────
 window.openModal = function(id) {
-    const v = allVideos.find(x=>x.id===id); if (!v) return;
-    updateDoc(doc(db,"tomes",id), {viewCount: increment(1), updatedAt: serverTimestamp()}).catch(()=>{});
+    const v = allContent.find(x=>x.id===id);
+    if (!v || v.type !== "video") return;
+    updateDoc(doc(db,"tomes",id), {viewCount:increment(1), updatedAt:serverTimestamp()}).catch(()=>{});
     const embed = document.getElementById("modalEmbed");
     if (v.platform==="youtube"&&v.videoId) embed.innerHTML=`<iframe src="https://www.youtube.com/embed/${encodeURIComponent(v.videoId)}?rel=0" allowfullscreen allow="autoplay; encrypted-media" style="position:absolute;top:0;left:0;width:100%;height:100%;border:none"></iframe>`;
     else if (v.platform==="vimeo"&&v.videoId) embed.innerHTML=`<iframe src="https://player.vimeo.com/video/${encodeURIComponent(v.videoId)}?color=60a5fa" allowfullscreen style="position:absolute;top:0;left:0;width:100%;height:100%;border:none"></iframe>`;
     else embed.innerHTML=`<div style="position:absolute;top:0;left:0;width:100%;height:100%;display:flex;align-items:center;justify-content:center;color:#475569" class="text-sm">No embeddable source — <a href="${escHtml(v.videoUrl)}" target="_blank" class="text-blue-400 underline ml-1">Open link</a></div>`;
     document.getElementById("modalTitle").textContent = v.title||"";
-    document.getElementById("modalSubject").textContent = SUBJECTS.find(s=>s.v===v.subject)?.l||v.subject||"";
-    const owlEl=document.getElementById("modalOwlCert"); v.owlCertified ? owlEl.classList.remove("hidden") : owlEl.classList.add("hidden");
+    document.getElementById("modalSubject").textContent = SUBJECT_MAP[v.subject]||v.subject||"";
+    const owlEl=document.getElementById("modalOwlCert"); v.owlCertified?owlEl.classList.remove("hidden"):owlEl.classList.add("hidden");
     const deptEl=document.getElementById("modalDeptCert");
-    if (v.deptCertified) { deptEl.textContent=`⬢ ${v.deptCertifiedPlane||"Dept"} Certified`; deptEl.classList.remove("hidden"); } else { deptEl.classList.add("hidden"); }
-    document.getElementById("modalCreator").textContent = `Genesis ID: ${v.creatorGenesisId||"unregistered"} · ${v.creatorTier||"ACOLYTE"}`;
+    if (v.deptCertified){deptEl.textContent=`⬢ ${v.deptCertifiedPlane||"Dept"} Certified`;deptEl.classList.remove("hidden");}else{deptEl.classList.add("hidden");}
+    document.getElementById("modalCreator").textContent=`Genesis ID: ${v.creatorGenesisId||"unregistered"} · ${v.creatorTier||"ACOLYTE"}`;
     const notesEl=document.getElementById("modalNotes");
-    if (v.lessonNotes) { document.getElementById("modalNotesText").textContent=v.lessonNotes; notesEl.classList.remove("hidden"); } else { notesEl.classList.add("hidden"); }
+    if(v.lessonNotes){document.getElementById("modalNotesText").textContent=v.lessonNotes;notesEl.classList.remove("hidden");}else{notesEl.classList.add("hidden");}
     const exEl=document.getElementById("modalExamples");
-    if (v.examples?.length>0) { document.getElementById("modalExamplesList").innerHTML=v.examples.map((e,i)=>`<div class="glass rounded-lg p-3"><span class="text-[10px] mono text-blue-400 block mb-1">Example ${i+1}</span><p class="text-xs text-slate-300">${escHtml(e)}</p></div>`).join(""); exEl.classList.remove("hidden"); } else { exEl.classList.add("hidden"); }
+    if(v.examples?.length>0){document.getElementById("modalExamplesList").innerHTML=v.examples.map((e,i)=>`<div class="glass rounded-lg p-3"><span class="text-[10px] mono text-blue-400 block mb-1">Example ${i+1}</span><p class="text-xs text-slate-300">${escHtml(e)}</p></div>`).join("");exEl.classList.remove("hidden");}else{exEl.classList.add("hidden");}
     document.getElementById("videoModal").classList.remove("hidden");
     document.body.style.overflow="hidden";
 };
@@ -522,12 +733,13 @@ window.submitTome = async function() {
             deptCertified:false, deptCertifiedBy:null, deptCertifiedAt:null, deptCertifiedPlane:null,
             creatorUid:currentUser.uid, creatorGenesisId:currentReg?.cosmologicalId||null,
             creatorTier:currentTier, enrolledCount:0, viewCount:0,
+            stampCount:0, stampedBy:[],
             createdAt:serverTimestamp(), updatedAt:serverTimestamp()
         });
         document.getElementById("submitForm").classList.add("hidden");
         document.getElementById("submitSuccess").classList.remove("hidden");
         document.getElementById("submitSuccessId").textContent="Tome ID: "+ref.id;
-        await loadVideos();
+        await loadAllContent();
     } catch(e) { msg.textContent="Error: "+e.message; msg.style.color="#fca5a5"; }
 };
 window.resetSubmit = function() {
