@@ -1,0 +1,1518 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SHD-CCP Formal Proofer Terminal</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
+    
+    <!-- MathJax for rendering LaTeX formulas -->
+    <script>
+        window.MathJax = { 
+            tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']] },
+            svg: { fontCache: 'global' },
+            startup: { typeset: false } 
+        };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+    <style>
+        :root {
+            --c64-border: #8b8bb4;
+            --c64-bg: #3e31a2;
+            --c64-text: #7c70da;
+            --c64-text-light: #a4a0e0;
+            --c64-highlight: #c7c7ec;
+            --c64-red: #883932;
+            --c64-green: #55a049;
+            --c64-yellow: #bfce72;
+        }
+
+        body, html {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            background-color: #111;
+            font-family: 'VT323', monospace;
+            overflow: hidden;
+            color: var(--c64-highlight);
+        }
+
+        .crt {
+            position: relative;
+            height: 100vh;
+            width: 100vw;
+            background-color: var(--c64-border);
+            padding: 4vh 4vw;
+            box-sizing: border-box;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .crt::before {
+            content: " ";
+            display: block;
+            position: absolute;
+            top: 0;
+            left: 0;
+            bottom: 0;
+            right: 0;
+            background: linear-gradient(
+                to bottom,
+                rgba(18, 16, 16, 0) 50%,
+                rgba(0, 0, 0, 0.1) 50%
+            );
+            background-size: 100% 4px;
+            z-index: 50;
+            pointer-events: none;
+        }
+
+        .screen {
+            background-color: var(--c64-bg);
+            width: 100%;
+            height: 100%;
+            display: flex;
+            border: 1px solid rgba(255,255,255,0.1);
+            box-shadow: inset 0 0 20px rgba(0,0,0,0.5);
+            position: relative;
+            z-index: 10;
+        }
+
+        .panel {
+            flex: 1;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .border-divider {
+            width: 4px;
+            background-color: var(--c64-border);
+            height: 100%;
+        }
+
+        .btn-retro {
+            background-color: var(--c64-bg);
+            color: var(--c64-highlight);
+            border: 2px solid var(--c64-border);
+            padding: 4px 8px;
+            font-family: 'VT323', monospace;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-transform: uppercase;
+        }
+
+        .btn-retro:hover {
+            background-color: var(--c64-highlight);
+            color: var(--c64-bg);
+        }
+
+        /* Modal / Window System */
+        #selection-modal, #proof-viewer-modal, #inspector-modal, #editor-modal, #grapher-modal {
+            position: absolute;
+            top: 5%;
+            left: 5%;
+            width: 90%;
+            height: 90%;
+            background-color: var(--c64-bg);
+            border: 4px solid var(--c64-highlight);
+            z-index: 100;
+            display: none;
+            flex-direction: column;
+            box-shadow: 0 0 30px rgba(0,0,0,0.8);
+        }
+
+        #selection-modal {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 200;
+            text-align: center;
+            padding: 20px;
+        }
+        
+        #inspector-modal {
+            top: 10%;
+            left: 10%;
+            width: 80%;
+            height: 80%;
+            z-index: 180;
+        }
+
+        .modal-header {
+            background-color: var(--c64-highlight);
+            color: var(--c64-bg);
+            padding: 5px 10px;
+            font-weight: bold;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .modal-close {
+            cursor: pointer;
+            font-weight: bold;
+        }
+        .modal-close:hover { color: var(--c64-red); }
+
+        .modal-body {
+            flex-grow: 1;
+            padding: 20px;
+            overflow-y: auto;
+            color: var(--c64-highlight);
+            font-size: 1.2rem;
+            line-height: 1.3;
+            background-color: rgba(0,0,0,0.4);
+        }
+        
+        .modal-body::-webkit-scrollbar { width: 8px; }
+        .modal-body::-webkit-scrollbar-thumb { background: var(--c64-highlight); }
+
+        /* Document / Proof Viewer Formatting */
+        #proof-content {
+            font-family: 'VT323', monospace;
+        }
+        #proof-content h1 { font-size: 2rem; color: var(--c64-yellow); border-bottom: 2px solid var(--c64-border); margin-bottom: 10px; padding-bottom: 5px; }
+        #proof-content h2 { font-size: 1.6rem; color: var(--c64-green); margin-top: 20px; margin-bottom: 10px; }
+        #proof-content h3 { font-size: 1.3rem; color: var(--c64-highlight); margin-top: 15px; margin-bottom: 5px; }
+        #proof-content p { margin-bottom: 15px; }
+        #proof-content strong { color: var(--c64-highlight); text-shadow: 1px 1px 0 #000; }
+        #proof-content em { color: var(--c64-text-light); }
+        #proof-content mjx-container { background: rgba(0,0,0,0.3); padding: 2px 4px; border-radius: 4px; }
+
+        /* Terminal Styles */
+        #terminal-output {
+            flex-grow: 1;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            font-size: 1.2rem;
+            line-height: 1.1;
+            text-shadow: 1px 1px 0px rgba(0,0,0,0.5);
+        }
+
+        #terminal-output::-webkit-scrollbar { width: 8px; }
+        #terminal-output::-webkit-scrollbar-thumb { background: var(--c64-highlight); }
+
+        .input-line {
+            display: flex;
+            margin-top: 5px;
+            font-size: 1.2rem;
+        }
+
+        .prompt { margin-right: 8px; }
+
+        #cmd-input, .c64-input {
+            background: transparent;
+            border: none;
+            color: var(--c64-highlight);
+            font-family: 'VT323', monospace;
+            font-size: 1.2rem;
+            flex-grow: 1;
+            outline: none;
+        }
+        #cmd-input { text-transform: uppercase; }
+
+        .c64-input {
+            background: rgba(0,0,0,0.5);
+            border: 1px solid var(--c64-border);
+            padding: 2px 5px;
+            width: 100%;
+            margin-bottom: 5px;
+        }
+
+        /* Familiar System (Clippy) */
+        #familiar-widget {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            width: 320px;
+            background: var(--c64-bg);
+            border: 3px solid var(--c64-highlight);
+            box-shadow: 8px 8px 0px rgba(0,0,0,0.5);
+            z-index: 150;
+            display: none;
+            flex-direction: column;
+        }
+
+        #familiar-header {
+            background: var(--c64-highlight);
+            color: var(--c64-bg);
+            padding: 2px 8px;
+            font-weight: bold;
+            font-size: 1.1rem;
+            text-transform: uppercase;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .familiar-body {
+            padding: 10px;
+            display: flex;
+            gap: 10px;
+        }
+
+        #familiar-svg {
+            width: 60px;
+            height: 60px;
+            border: 2px solid var(--c64-border);
+            background: #000;
+            padding: 5px;
+            flex-shrink: 0;
+            image-rendering: pixelated;
+        }
+
+        #familiar-text {
+            font-size: 1.2rem;
+            line-height: 1.1;
+            color: var(--c64-highlight);
+            flex-grow: 1;
+        }
+
+        .cursor {
+            display: inline-block;
+            width: 8px;
+            height: 1.1em;
+            background-color: currentColor;
+            animation: blink 1s step-end infinite;
+        }
+
+        @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+
+        .scanline {
+            width: 100%;
+            height: 100px;
+            z-index: 55;
+            position: absolute;
+            pointer-events: none;
+            background: linear-gradient(0deg, rgba(0,0,0,0) 0%, rgba(255,255,255,0.05) 10%, rgba(0,0,0,0.1) 100%);
+            opacity: 0.1;
+            animation: scan 6s linear infinite;
+        }
+        @keyframes scan { 0% { top: -100px; } 100% { top: 100%; } }
+
+        #vic-canvas {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            image-rendering: pixelated;
+            image-rendering: crisp-edges;
+            background-color: #000000;
+        }
+
+        .select-card {
+            border: 2px solid var(--c64-border);
+            padding: 20px;
+            cursor: pointer;
+            transition: all 0.2s;
+            width: 250px;
+        }
+        .select-card:hover {
+            border-color: var(--c64-highlight);
+            background: rgba(255,255,255,0.1);
+        }
+        
+        .c64-svg { stroke: var(--c64-highlight); }
+
+        /* Lean-style Proof Stacking Windows */
+        #stacked-windows-container {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            width: calc(100% - 20px);
+            z-index: 20;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            pointer-events: none;
+        }
+        
+        .stacked-window {
+            background: rgba(62, 49, 162, 0.85);
+            border: 2px solid var(--c64-highlight);
+            color: var(--c64-text-light);
+            padding: 10px;
+            font-size: 1.1rem;
+            pointer-events: auto;
+            cursor: pointer;
+            box-shadow: 4px 4px 0px rgba(0,0,0,0.6);
+            transition: transform 0.1s, border-color 0.2s;
+        }
+        
+        .stacked-window:hover {
+            transform: translate(-2px, -2px);
+            border-color: var(--c64-yellow);
+        }
+
+        .step-title { color: var(--c64-yellow); font-weight: bold; border-bottom: 1px solid var(--c64-border); margin-bottom: 5px; padding-bottom: 2px; }
+        .tactic-goal { color: var(--c64-green); font-weight: bold; }
+        .tactic-hyp { color: var(--c64-text-light); }
+        .tactic-cmd { color: var(--c64-highlight); margin-top: 5px; font-weight: bold; }
+
+        /* Inspector Styles */
+        .inspector-equation {
+            color: var(--c64-green);
+            font-size: 1.5rem;
+            text-align: center;
+            margin: 15px 0;
+            background: #000;
+            border: 1px solid var(--c64-border);
+            padding: 10px;
+            word-wrap: break-word;
+        }
+
+        .inspector-visual {
+            height: 180px;
+            border: 2px solid var(--c64-highlight);
+            margin: 15px 0;
+            background: #000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .inspector-desc {
+            color: var(--c64-text-light);
+            margin-bottom: 10px;
+        }
+
+        /* Textarea Editor */
+        #cartridge-textarea {
+            flex-grow: 1;
+            background: rgba(0,0,0,0.8);
+            border: 2px solid var(--c64-highlight);
+            color: var(--c64-highlight);
+            font-family: 'VT323', monospace;
+            font-size: 1.1rem;
+            padding: 10px;
+            resize: none;
+            outline: none;
+        }
+
+        /* Grapher Specific */
+        .grapher-step-btn {
+            background: rgba(0,0,0,0.5);
+            border: 1px solid var(--c64-border);
+            color: var(--c64-text-light);
+            padding: 8px;
+            margin-bottom: 8px;
+            cursor: pointer;
+            text-align: left;
+            transition: all 0.2s;
+        }
+        .grapher-step-btn:hover, .grapher-step-btn.active {
+            border-color: var(--c64-yellow);
+            color: var(--c64-yellow);
+            background: rgba(0,0,0,0.8);
+        }
+    </style>
+</head>
+<body>
+    <input type="file" id="cartridge-upload" accept=".json" style="display: none;">
+
+    <div class="crt">
+        <div class="scanline"></div>
+        <div class="screen">
+            <!-- Left Panel: Terminal -->
+            <div class="panel w-1/2">
+                <div class="flex justify-between items-center mb-4 border-b-2 border-[var(--c64-highlight)] pb-2 flex-wrap gap-2">
+                    <div class="flex gap-2 flex-wrap">
+                        <button class="btn-retro" onclick="document.getElementById('cartridge-upload').click()">INSERT CARTRIDGE</button>
+                        <button class="btn-retro" onclick="document.getElementById('editor-modal').style.display='flex'">EDITOR</button>
+                        <button class="btn-retro" onclick="document.getElementById('proof-viewer-modal').style.display='flex'">VIEW PROOF</button>
+                        <button class="btn-retro" onclick="openGrapher()" style="color: var(--c64-yellow); border-color: var(--c64-yellow);">GRAPHER</button>
+                    </div>
+                </div>
+                <div id="terminal-output"></div>
+                <div class="input-line" id="interactive-input-container" style="display: none;">
+                    <span class="prompt">]</span>
+                    <input type="text" id="cmd-input" autocomplete="off" spellcheck="false" autofocus>
+                </div>
+            </div>
+
+            <div class="border-divider"></div>
+
+            <!-- Right Panel: Visualization -->
+            <div class="panel w-1/2 bg-black relative" id="visual-panel" style="background-color: #000000; padding: 0;">
+                <div class="absolute top-2 right-2 text-[var(--c64-highlight)] text-sm z-10 flex items-center bg-black/50 px-2 py-1 border border-[var(--c64-border)]">
+                    <span id="status-indicator">PROOFER IDLE</span>
+                </div>
+                
+                <div id="stacked-windows-container"></div>
+
+                <canvas id="vic-canvas"></canvas>
+            </div>
+        </div>
+
+        <!-- Familiar Widget -->
+        <div id="familiar-widget">
+            <div id="familiar-header">
+                <span id="fam-title">GUIDE</span>
+                <span class="cursor-pointer hover:text-white" onclick="hideFamiliar()">[X]</span>
+            </div>
+            <div class="familiar-body">
+                <div id="familiar-svg"></div>
+                <div id="familiar-text"></div>
+            </div>
+        </div>
+
+        <!-- Selection Modal -->
+        <div id="selection-modal">
+            <div class="max-w-4xl w-full">
+                <h1 class="text-4xl text-[var(--c64-yellow)] mb-2">**** SHD-CCP FORMAL PROOFER ****</h1>
+                <h2 class="text-2xl mb-8">SELECT YOUR VERIFICATION ASSISTANT</h2>
+                
+                <div class="flex justify-center gap-8">
+                    <div class="select-card" onclick="selectFamiliar('cat')">
+                        <svg viewBox="0 0 100 100" class="w-24 h-24 mx-auto mb-4 c64-svg">
+                            <path stroke-width="1.5" fill="none" d="M50,85 L25,60 L45,50 Z M50,85 L75,60 L55,50 Z M45,50 L55,50 M25,60 L15,15 L40,35 L50,25 L60,35 L85,15 L75,60 M15,15 L50,85 L85,15"/>
+                            <path stroke-width="2" fill="none" d="M50,35 L45,42 L50,50 L55,42 Z" stroke="var(--c64-yellow)"/>
+                        </svg>
+                        <h3 class="text-xl text-[var(--c64-yellow)] mb-2">[1] FELIS ARCANA</h3>
+                        <p class="text-sm">ROLE: TOPOLOGICAL ANALYST</p>
+                    </div>
+
+                    <div class="select-card" onclick="selectFamiliar('mastiff')">
+                        <svg viewBox="0 0 100 100" class="w-24 h-24 mx-auto mb-4 c64-svg">
+                            <path stroke-width="1.5" fill="none" d="M35,90 L65,90 L80,65 L70,25 L60,35 L50,25 L40,35 L30,25 L20,65 Z M35,90 L40,70 L60,70 L65,90 M40,70 L50,55 L60,70 M20,65 L40,50 L60,50 L80,65 M30,25 L45,45 M70,25 L55,45 M45,45 L55,45"/>
+                            <path stroke-width="2" fill="none" d="M50,30 L45,35 L50,42 L55,35 Z" stroke="var(--c64-yellow)"/>
+                        </svg>
+                        <h3 class="text-xl text-[var(--c64-yellow)] mb-2">[2] CANIS AEGIS</h3>
+                        <p class="text-sm">ROLE: RIGOROUS VERIFIER</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Proof Viewer Modal -->
+        <div id="proof-viewer-modal">
+            <div class="modal-header">
+                <span id="proof-title">NO PROOF LOADED</span>
+                <span class="modal-close" onclick="document.getElementById('proof-viewer-modal').style.display='none'">[X] CLOSE</span>
+            </div>
+            <div class="modal-body" id="proof-content">
+                PLEASE INSERT A .C64cartridge.json FILE OR TYPE 'LOAD TTMPT' FOR DEFAULT.
+            </div>
+        </div>
+
+        <!-- Inspector Modal -->
+        <div id="inspector-modal">
+            <div class="modal-header">
+                <span id="inspector-title">INSPECTOR</span>
+                <span class="modal-close" onclick="document.getElementById('inspector-modal').style.display='none'">[X] CLOSE</span>
+            </div>
+            <div class="modal-body" id="inspector-content">
+                <!-- Injected dynamically -->
+            </div>
+        </div>
+
+        <!-- Editor Modal -->
+        <div id="editor-modal">
+            <div class="modal-header">
+                <span id="editor-title">CARTRIDGE EDITOR</span>
+                <span class="modal-close" onclick="document.getElementById('editor-modal').style.display='none'">[X] CLOSE</span>
+            </div>
+            <div class="modal-body" style="display: flex; flex-direction: column; gap: 10px;">
+                <div class="flex flex-wrap gap-2 justify-between">
+                    <div class="flex gap-2">
+                        <button class="btn-retro" onclick="loadEditorTemplate()">LOAD TEMPLATE</button>
+                        <button class="btn-retro" onclick="formatCartridge()" style="color: var(--c64-yellow); border-color: var(--c64-yellow);">FORMAT & FIX LATEX</button>
+                    </div>
+                    <div class="flex gap-2">
+                        <button class="btn-retro" onclick="applyCartridge()">APPLY TO MEMORY</button>
+                        <button class="btn-retro" onclick="exportCartridge()" style="color: var(--c64-green); border-color: var(--c64-green);">EXPORT .JSON</button>
+                    </div>
+                </div>
+                <div id="editor-error" style="color: var(--c64-red); background: #000; padding: 5px; display: none;"></div>
+                <textarea id="cartridge-textarea" spellcheck="false" placeholder="Paste your .C64cartridge.json code here..."></textarea>
+            </div>
+        </div>
+
+        <!-- Graphing Calculator Modal -->
+        <div id="grapher-modal">
+            <div class="modal-header" style="background-color: var(--c64-yellow); color: var(--c64-bg);">
+                <span id="grapher-title">CARTOGRAPHY ENGINE / GRAPH PLOTTER</span>
+                <span class="modal-close" onclick="closeGrapher()" style="color: var(--c64-bg);">[X] CLOSE</span>
+            </div>
+            <div class="modal-body" style="display: flex; flex-direction: row; gap: 20px; padding: 0;">
+                <!-- Left Sidebar: Equations -->
+                <div style="width: 280px; border-right: 4px solid var(--c64-yellow); padding: 20px; background: rgba(0,0,0,0.6); display: flex; flex-direction: column; overflow-y: auto;">
+                    <h3 class="text-xl text-[var(--c64-yellow)] mb-4 border-b border-[var(--c64-yellow)] pb-2">CARTRIDGE EQUATIONS</h3>
+                    <div id="grapher-steps-list">
+                        <div class="text-[var(--c64-text)]">LOAD PROOF TO POPULATE.</div>
+                    </div>
+                </div>
+                
+                <!-- Right Main: Graph & Controls -->
+                <div style="flex-grow: 1; display: flex; flex-direction: column; padding: 20px;">
+                    <div style="flex-grow: 1; border: 2px solid var(--c64-highlight); background: #000; position: relative;">
+                        <canvas id="grapher-canvas" style="width: 100%; height: 100%;"></canvas>
+                        <div class="absolute top-2 right-2 text-[var(--c64-highlight)] bg-black/80 px-2 py-1 border border-[var(--c64-border)] text-sm">
+                            <span id="grapher-mode-indicator">CARTESIAN MODE</span>
+                        </div>
+                    </div>
+                    
+                    <div style="margin-top: 15px; background: rgba(0,0,0,0.5); border: 1px solid var(--c64-border); padding: 15px;">
+                        <div class="flex gap-4">
+                            <div class="flex-1">
+                                <label class="text-[var(--c64-green)] text-sm">CARTESIAN: Y(x) = </label>
+                                <input type="text" id="graph-eq-y" class="c64-input text-[var(--c64-green)]" placeholder="e.g. sin(x - time) * exp(-x/5)">
+                            </div>
+                        </div>
+                        <div class="flex gap-4 mt-2">
+                            <div class="flex-1">
+                                <label class="text-[var(--c64-yellow)] text-sm">PARAMETRIC: X(t) = </label>
+                                <input type="text" id="graph-eq-xt" class="c64-input text-[var(--c64-yellow)]" placeholder="e.g. sin(t) + 2*sin(2*t)">
+                            </div>
+                            <div class="flex-1">
+                                <label class="text-[var(--c64-yellow)] text-sm">PARAMETRIC: Y(t) = </label>
+                                <input type="text" id="graph-eq-yt" class="c64-input text-[var(--c64-yellow)]" placeholder="e.g. cos(t) - 2*cos(2*t)">
+                            </div>
+                        </div>
+                        <div class="mt-4 flex gap-4">
+                            <button class="btn-retro" onclick="applyGraphInputs()" style="color: var(--c64-yellow); border-color: var(--c64-yellow);">PLOT FUNCTION</button>
+                            <span class="text-[var(--c64-text)] text-sm self-center">VARIABLES SUPPORTED: x, t, time. MATH FUNCTIONS AUTO-EVALUATED (sin, cos, exp, pi).</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        // --- Core Elements ---
+        const terminalOutput = document.getElementById('terminal-output');
+        const cmdInput = document.getElementById('cmd-input');
+        const inputContainer = document.getElementById('interactive-input-container');
+        const canvas = document.getElementById('vic-canvas');
+        const ctx = canvas.getContext('2d');
+        const statusIndicator = document.getElementById('status-indicator');
+        const stackContainer = document.getElementById('stacked-windows-container');
+
+        // State Variables
+        let isBooting = true;
+        let proofLoaded = false;
+        let loadedCartridge = null; 
+        let isVerifying = false;
+        let verificationStep = 0;
+        let verificationInterval = null;
+        
+        // Render State
+        let renderMode = 'IDLE'; 
+        let time = 0;
+        let camX, camY, camZ = 12;
+        const FOV = 200;
+
+        function resizeCanvas() {
+            const panel = document.getElementById('visual-panel');
+            canvas.width = panel.clientWidth;
+            canvas.height = panel.clientHeight;
+            camX = canvas.width / 2;
+            camY = canvas.height / 2;
+
+            const graphCanvas = document.getElementById('grapher-canvas');
+            if(graphCanvas && graphCanvas.parentElement) {
+                graphCanvas.width = graphCanvas.parentElement.clientWidth;
+                graphCanvas.height = graphCanvas.parentElement.clientHeight;
+            }
+        }
+        window.addEventListener('resize', resizeCanvas);
+        setTimeout(resizeCanvas, 50);
+
+        // --- Familiar Logic ---
+        let currentFamiliar = null;
+        let typingTimeout = null;
+
+        const familiars = {
+            cat: {
+                id: "cat",
+                name: "FELIS ARCANA",
+                svg: `
+                    <svg viewBox="0 0 100 100" class="w-full h-full" style="stroke: var(--c64-highlight);">
+                        <path stroke-width="2" fill="none" d="M50,85 L25,60 L45,50 Z M50,85 L75,60 L55,50 Z M45,50 L55,50 M25,60 L15,15 L40,35 L50,25 L60,35 L85,15 L75,60 M15,15 L50,85 L85,15"/>
+                        <path stroke-width="2" fill="none" d="M50,35 L45,42 L50,50 L55,42 Z" stroke="var(--c64-yellow)"/>
+                    </svg>`,
+                lines: {
+                    boot: "Purr... Lean-SHD kernel online. I am the Observer. Ready to evaluate your topological manifolds. INSERT CARTRIDGE to begin.",
+                    error: "My whiskers twitch... that is not a valid formal tactic or command. Type HELP."
+                }
+            },
+            mastiff: {
+                id: "mastiff",
+                name: "CANIS AEGIS",
+                svg: `
+                    <svg viewBox="0 0 100 100" class="w-full h-full" style="stroke: var(--c64-highlight);">
+                        <path stroke-width="2" fill="none" d="M35,90 L65,90 L80,65 L70,25 L60,35 L50,25 L40,35 L30,25 L20,65 Z M35,90 L40,70 L60,70 L65,90 M40,70 L50,55 L60,70 M20,65 L40,50 L60,50 L80,65 M30,25 L45,45 M70,25 L55,45 M45,45 L55,45"/>
+                        <path stroke-width="2" fill="none" d="M50,30 L45,35 L50,42 L55,35 Z" stroke="var(--c64-yellow)"/>
+                    </svg>`,
+                lines: {
+                    boot: "System secured. Formal verification engine initialized. I am the Guardian. Awaiting INSERT CARTRIDGE signal.",
+                    error: "Syntax error. Command rejected by the formal verifier. Check your spelling."
+                }
+            }
+        };
+
+        function selectFamiliar(type) {
+            currentFamiliar = familiars[type];
+            document.getElementById('selection-modal').style.display = 'none';
+            document.getElementById('fam-title').innerText = currentFamiliar.name;
+            document.getElementById('familiar-svg').innerHTML = currentFamiliar.svg;
+            runBootSequence();
+        }
+
+        function familiarSpeak(lineKey, customText = null) {
+            const widget = document.getElementById('familiar-widget');
+            const textBox = document.getElementById('familiar-text');
+            widget.style.display = 'flex';
+            if(typingTimeout) clearTimeout(typingTimeout);
+            textBox.innerHTML = '';
+
+            const text = customText || currentFamiliar.lines[lineKey] || currentFamiliar.lines.error;
+            let i = 0;
+
+            function typeWriter() {
+                if (i < text.length) {
+                    textBox.innerHTML = text.substring(0, i+1) + '<span class="cursor"></span>';
+                    i++;
+                    typingTimeout = setTimeout(typeWriter, 30);
+                } else {
+                    textBox.innerHTML = text; 
+                }
+            }
+            typeWriter();
+        }
+
+        function hideFamiliar() {
+            document.getElementById('familiar-widget').style.display = 'none';
+        }
+
+        function printLine(text, color = 'var(--c64-text-light)') {
+            const line = document.createElement('div');
+            line.style.color = color;
+            line.textContent = text;
+            terminalOutput.appendChild(line);
+            terminalOutput.scrollTop = terminalOutput.scrollHeight;
+        }
+
+        function runBootSequence() {
+            isBooting = true;
+            terminalOutput.innerHTML = '';
+            
+            const bootText = [
+                "    **** SHD-CCP FORMAL PROOFER V1.0 ****",
+                " ",
+                " 64K RAM SYSTEM  38911 BASIC BYTES FREE",
+                " LEAN-SHD KERNEL INJECTED.",
+                " ",
+                "READY."
+            ];
+
+            let i = 0;
+            function printBootLine() {
+                if (i < bootText.length) {
+                    printLine(bootText[i], 'var(--c64-highlight)');
+                    i++;
+                    setTimeout(printBootLine, 150);
+                } else {
+                    setTimeout(initSystem, 400);
+                }
+            }
+            printBootLine();
+        }
+
+        function initSystem() {
+            inputContainer.style.display = 'flex';
+            isBooting = false;
+            cmdInput.focus();
+            renderVICII();
+            requestAnimationFrame(graphRenderLoop); 
+            setTimeout(() => familiarSpeak('boot'), 1000);
+        }
+
+        // --- Utility: Markdown & Formatting ---
+        function parseProofText(text) {
+            if (!text) return "";
+            let html = text
+                .replace(/^### (.*?)$/gm, '<h3>$1</h3>')
+                .replace(/^## (.*?)$/gm, '<h2>$1</h2>')
+                .replace(/^# (.*?)$/gm, '<h1>$1</h1>')
+                .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                .replace(/\*(.*?)\*/g, '<em>$1</em>')
+                .replace(/^\* (.*?)$/gm, '<li>$1</li>')
+                .replace(/\n\n/g, '</p><p>')
+                .replace(/\n/g, '<br>');
+            
+            html = html.replace(/(<li>.*?<\/li>)/gs, '<ul>$1</ul>').replace(/<\/ul><ul>/g, '');
+            return `<p>${html}</p>`;
+        }
+
+        function typesetMath(elementId) {
+            if (window.MathJax && MathJax.typesetPromise) {
+                const el = document.getElementById(elementId);
+                if (el) {
+                    if (MathJax.typesetClear) MathJax.typesetClear([el]);
+                    MathJax.typesetPromise([el]).catch(err => console.log('MathJax Error:', err));
+                }
+            }
+        }
+
+        // --- JSON Cartridge Editor & Loader Logic ---
+        function loadEditorTemplate() {
+            const template = {
+              "cartridge_metadata": {
+                "proof_name": "NEW THEOREM",
+                "short_name": "ACRONYM",
+                "author": "AUTHOR NAME",
+                "target_system": "SHD-CCP Formal Proofer v1.0",
+                "version": "1.0"
+              },
+              "raw_proof_text": "# Abstract\nPaste your formal proof here.",
+              "familiar_initialization": {
+                "cat": { "load_dialogue": "Felis Arcana persona: Acknowledge the loading of the proof." },
+                "mastiff": { "load_dialogue": "Canis Aegis persona: Acknowledge the loading of the proof." }
+              },
+              "verification_steps": [
+                {
+                  "step_id": 1,
+                  "window_title": "STATE SPACE",
+                  "lean_shd_hud": {
+                    "goal": "\\vdash [LATEX GOAL EQUATION]",
+                    "hypotheses": [ "variable1 : [LATEX DEFINITION]" ],
+                    "tactic": "apply [pseudo_tactic_name]"
+                  },
+                  "terminal_logs": [ "[CHECKING] 1.1 Section Name... [OK]" ],
+                  "familiar_dialogues": {
+                    "cat": "Felis Arcana observing the step.",
+                    "mastiff": "Canis Aegis verifying the step."
+                  },
+                  "visual_render_mode": "LATTICE",
+                  "inspector_data": {
+                    "modal_title": "INSPECTOR: 1.1 TITLE",
+                    "description_top": "Brief conceptual explanation.",
+                    "equation_top": "$$[LATEX EQUATION]$$",
+                    "svg_code": "<svg viewBox=\"0 0 200 100\" style=\"width: 100%; height: 100%;\"><circle cx=\"100\" cy=\"50\" r=\"20\" fill=\"none\" stroke=\"var(--c64-highlight)\" stroke-width=\"2\"/></svg>",
+                    "description_bottom": "Explanation of the outcome.",
+                    "equation_bottom": "$$[LATEX EQUATION OF RESULT]$$",
+                    "graph_equations": {
+                        "type": "cartesian",
+                        "y": "sin(x - time) * exp(-abs(x)/5)"
+                    }
+                  }
+                }
+              ]
+            };
+            document.getElementById('cartridge-textarea').value = JSON.stringify(template, null, 4);
+            document.getElementById('editor-error').style.display = 'none';
+        }
+
+        function formatCartridge() {
+            const textarea = document.getElementById('cartridge-textarea');
+            const errDiv = document.getElementById('editor-error');
+            let text = textarea.value;
+
+            if (!text.trim()) return null;
+            text = text.replace(/\\(?![\\"'ntrbf])/g, '\\\\');
+
+            try {
+                const parsed = JSON.parse(text);
+                textarea.value = JSON.stringify(parsed, null, 4);
+                errDiv.style.display = 'none';
+                return parsed;
+            } catch (e) {
+                errDiv.innerText = "JSON FORMAT ERROR: " + e.message;
+                errDiv.style.display = 'block';
+                return null;
+            }
+        }
+
+        function applyCartridge() {
+            const parsed = formatCartridge();
+            if (parsed) {
+                processLoadedCartridge(parsed);
+                document.getElementById('editor-modal').style.display = 'none';
+            }
+        }
+
+        function exportCartridge() {
+            const parsed = formatCartridge();
+            if (parsed) {
+                const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(parsed, null, 4));
+                const downloadAnchorNode = document.createElement('a');
+                downloadAnchorNode.setAttribute("href", dataStr);
+                const fileName = (parsed.cartridge_metadata && parsed.cartridge_metadata.short_name) ? 
+                                 parsed.cartridge_metadata.short_name + ".C64cartridge.json" : 
+                                 "custom_proof.C64cartridge.json";
+                downloadAnchorNode.setAttribute("download", fileName);
+                document.body.appendChild(downloadAnchorNode); 
+                downloadAnchorNode.click();
+                downloadAnchorNode.remove();
+            }
+        }
+        
+        document.getElementById('cartridge-upload').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const json = JSON.parse(e.target.result);
+                    processLoadedCartridge(json);
+                } catch(err) {
+                    printLine("?CARTRIDGE FORMAT ERROR - INVALID JSON", 'var(--c64-red)');
+                }
+            };
+            reader.readAsText(file);
+            this.value = '';
+        });
+
+        function processLoadedCartridge(data) {
+            if (!data.cartridge_metadata || !data.verification_steps) {
+                printLine("?CARTRIDGE REJECTED - MISSING REQUIRED MANIFOLDS", 'var(--c64-red)');
+                return;
+            }
+
+            loadedCartridge = data;
+            proofLoaded = true;
+            document.getElementById('proof-title').innerText = `${data.cartridge_metadata.short_name} PROOF - LOADED`;
+            
+            document.getElementById('proof-content').innerHTML = parseProofText(data.raw_proof_text);
+            typesetMath('proof-content');
+            
+            printLine(`> CARTRIDGE INSERTED: ${data.cartridge_metadata.short_name}`, 'var(--c64-yellow)');
+            printLine(`MOUNTING: ${data.cartridge_metadata.proof_name}...`, 'var(--c64-text)');
+            
+            populateGrapherSidebar(); // Automatically load equations to the graphing calculator
+
+            setTimeout(() => {
+                printLine("READY.", 'var(--c64-highlight)');
+                const loadDialogue = data.familiar_initialization?.[currentFamiliar.id]?.load_dialogue;
+                familiarSpeak('custom', loadDialogue || "Cartridge validated. Awaiting VERIFY command.");
+            }, 800);
+        }
+
+        // Complete Default TTMPT Mock Proof with Graph Equations
+        const mockTTMPT = {
+            "cartridge_metadata": { "proof_name": "Torsional Trefoil Markov Pump Theorem", "short_name": "TTMPT" },
+            "raw_proof_text": "# Abstract\nThe Torsional Trefoil Markov Pump Theorem (TTMPT) establishes a deterministic mathematical framework...\n\n## 1. Axiomatic Foundations\nWe rigorously define the localized state space as a 12-channel lattice Hilbert space:\n$$H_{\\Lambda_{12}} \\cong \\mathbb{C}^{12}$$\n\n(DEFAULT TTMPT LOADED)",
+            "familiar_initialization": {
+                "cat": { "load_dialogue": "Excellent. The TTMPT is loaded into memory. I can already see the 12-channel Hilbert space." },
+                "mastiff": { "load_dialogue": "TTMPT acquired. I have scanned the text. The boundary conditions appear rigorous. Awaiting VERIFY command." }
+            },
+            "verification_steps": [
+                {
+                    "step_id": 1, "window_title": "STATE SPACE",
+                    "lean_shd_hud": { "goal": "\\vdash 1\\text{ goal}", "hypotheses": ["\\text{state\\_space} : H_{\\Lambda_{12}} \\cong \\mathbb{C}^{12}"], "tactic": "apply lattice_projection" },
+                    "terminal_logs": ["[CHECKING] 1.1 The Rigorous State Space... [OK]"],
+                    "familiar_dialogues": { "cat": "Step 1: Axiomatic Foundations. We project the 12-channel Hilbert space.", "mastiff": "Phase 1: Establishing the structural bedrock. Conservation holds." },
+                    "visual_render_mode": "LATTICE",
+                    "inspector_data": { 
+                        "modal_title": "INSPECTOR: 1.1 AXIOMATIC FOUNDATIONS", 
+                        "description_top": "Rigorous definition of the 12-channel lattice mapping.", 
+                        "equation_top": "$$H_{\\Lambda_{12}} \\cong \\mathbb{C}^{12}$$", 
+                        "svg_code": `<svg viewBox="0 0 200 100" style="width: 100%; height: 100%;">
+                            <circle cx="40" cy="50" r="20" fill="none" stroke="var(--c64-highlight)" stroke-width="2" stroke-dasharray="4"/>
+                            <circle cx="40" cy="30" r="4" fill="var(--c64-highlight)"/><circle cx="40" cy="70" r="4" fill="var(--c64-highlight)"/>
+                            <circle cx="20" cy="50" r="4" fill="var(--c64-highlight)"/><circle cx="60" cy="50" r="4" fill="var(--c64-highlight)"/>
+                            <text x="40" y="55" fill="var(--c64-highlight)" font-family="VT323" font-size="16" text-anchor="middle">α</text>
+                            <circle cx="100" cy="50" r="20" fill="none" stroke="var(--c64-green)" stroke-width="2" stroke-dasharray="4"/>
+                            <circle cx="100" cy="30" r="4" fill="var(--c64-green)"/><circle cx="100" cy="70" r="4" fill="var(--c64-green)"/>
+                            <circle cx="80" cy="50" r="4" fill="var(--c64-green)"/><circle cx="120" cy="50" r="4" fill="var(--c64-green)"/>
+                            <text x="100" y="55" fill="var(--c64-green)" font-family="VT323" font-size="16" text-anchor="middle">β</text>
+                            <circle cx="160" cy="50" r="20" fill="none" stroke="var(--c64-yellow)" stroke-width="2" stroke-dasharray="4"/>
+                            <circle cx="160" cy="30" r="4" fill="var(--c64-yellow)"/><circle cx="160" cy="70" r="4" fill="var(--c64-yellow)"/>
+                            <circle cx="140" cy="50" r="4" fill="var(--c64-yellow)"/><circle cx="180" cy="50" r="4" fill="var(--c64-yellow)"/>
+                            <text x="160" y="55" fill="var(--c64-yellow)" font-family="VT323" font-size="16" text-anchor="middle">γ</text>
+                        </svg>`,
+                        "description_bottom": "State vectors superimpose.", 
+                        "equation_bottom": "$$|\\psi_n\\rangle = \\sum c e$$",
+                        "graph_equations": {
+                            "type": "parametric",
+                            "x": "sin(t) + 2*sin(2*t)",
+                            "y": "cos(t) - 2*cos(2*t)"
+                        }
+                    }
+                },
+                {
+                    "step_id": 2, "window_title": "TOPOLOGICAL ASYMMETRY",
+                    "lean_shd_hud": { "goal": "\\vdash J_{ij} > 0", "hypotheses": ["K_{ij} > 0"], "tactic": "exact asymmetric_kernel_lemma" },
+                    "terminal_logs": ["[CHECKING] 2.1 Probability Bridge... [OK]"],
+                    "familiar_dialogues": { "cat": "Step 2: Topological Asymmetry. Detailed balance is broken.", "mastiff": "Phase 2: Checking the asymmetric kernel. Flow is choked." },
+                    "visual_render_mode": "TREFOIL",
+                    "inspector_data": { 
+                        "modal_title": "INSPECTOR: 2.2 TOPOLOGICAL ASYMMETRY", 
+                        "description_top": "The Markovian kernel breaks detailed balance.", 
+                        "equation_top": "$$K_{ji} = K_{ij} e^{-\\lambda A_{ij}}$$", 
+                        "svg_code": `<svg viewBox="0 0 200 100" style="width: 100%; height: 100%;">
+                            <circle cx="50" cy="50" r="15" fill="var(--c64-bg)" stroke="var(--c64-highlight)" stroke-width="2"/>
+                            <text x="50" y="55" fill="var(--c64-highlight)" font-family="VT323" font-size="20" text-anchor="middle">i</text>
+                            <circle cx="150" cy="50" r="15" fill="var(--c64-bg)" stroke="var(--c64-highlight)" stroke-width="2"/>
+                            <text x="150" y="55" fill="var(--c64-highlight)" font-family="VT323" font-size="20" text-anchor="middle">j</text>
+                            <path d="M 65 40 L 135 40" stroke="var(--c64-green)" stroke-width="4"/>
+                            <polygon points="135,35 145,40 135,45" fill="var(--c64-green)"/>
+                            <text x="100" y="30" fill="var(--c64-green)" font-family="VT323" font-size="14" text-anchor="middle">K_{ij} > 0</text>
+                            <path d="M 135 60 L 65 60" stroke="var(--c64-red)" stroke-width="1" stroke-dasharray="2 2"/>
+                            <polygon points="65,55 55,60 65,65" fill="var(--c64-red)"/>
+                            <text x="100" y="80" fill="var(--c64-red)" font-family="VT323" font-size="14" text-anchor="middle">K_{ji} (Suppressed)</text>
+                        </svg>`,
+                        "description_bottom": "Positive net probability current.", 
+                        "equation_bottom": "$$J > 0$$",
+                        "graph_equations": {
+                            "type": "cartesian",
+                            "y": "exp(-abs(x)/2) * sin(x*5 - time*2)"
+                        }
+                    }
+                },
+                {
+                    "step_id": 3, "window_title": "MACRO-CYCLE PUMP",
+                    "lean_shd_hud": { "goal": "\\vdash \\frac{d}{dt} E_{rev}(t) \\le 0", "hypotheses": ["s = \\sin^2(2\\pi/3) = 3/4"], "tactic": "apply double_toroidal_collapse" },
+                    "terminal_logs": ["[CHECKING] 3.1 Compression & Frame 5 Solver... [OK]"],
+                    "familiar_dialogues": { "cat": "Step 3: The 10-Step Macro-Cycle. The Frame 5 solver is enforcing the 120-degree phase lock.", "mastiff": "Phase 3: Core Pump Stroke. Dissipation verified. The reverse variance is bleeding away." },
+                    "visual_render_mode": "PUMP",
+                    "inspector_data": { 
+                        "modal_title": "INSPECTOR: 3.3 DOUBLE TOROIDAL COLLAPSE", 
+                        "description_top": "Dissipation of reverse-variance into orthogonal heat sinks:", 
+                        "equation_top": "$$\\frac{d}{dt} E_{rev}(t) = -\\sum A_{ij} R_{ij}(t)^2 \\le 0$$", 
+                        "svg_code": `<svg viewBox="0 0 200 100" style="width: 100%; height: 100%;">
+                            <ellipse cx="100" cy="50" rx="80" ry="40" fill="none" stroke="var(--c64-border)" stroke-width="1" stroke-dasharray="4"/>
+                            <ellipse cx="100" cy="50" rx="60" ry="30" fill="none" stroke="var(--c64-highlight)" stroke-width="2"/>
+                            <path d="M 100 10 L 100 35 M 100 90 L 100 65 M 20 50 L 55 50 M 180 50 L 145 50" stroke="var(--c64-yellow)" stroke-width="2"/>
+                            <polygon points="95,30 100,40 105,30" fill="var(--c64-yellow)"/>
+                            <polygon points="95,70 100,60 105,70" fill="var(--c64-yellow)"/>
+                            <polygon points="45,45 55,50 45,55" fill="var(--c64-yellow)"/>
+                            <polygon points="155,45 145,50 155,55" fill="var(--c64-yellow)"/>
+                            <circle cx="100" cy="50" r="10" fill="var(--c64-red)"/>
+                        </svg>`,
+                        "description_bottom": "Driven by the geometric phase-lock:", 
+                        "equation_bottom": "$$s = \\sin^2(2\\pi/3) = 3/4$$",
+                        "graph_equations": {
+                            "type": "parametric",
+                            "x": "(3 + cos(t*10 + time*5)) * cos(t)",
+                            "y": "(3 + cos(t*10 + time*5)) * sin(t)"
+                        }
+                    }
+                },
+                {
+                    "step_id": 4, "window_title": "Q.E.D. RESOLUTION",
+                    "lean_shd_hud": { "goal": "\\vdash \\text{Proof complete!}", "hypotheses": ["B(t_7) > B(t_5)", "\\Theta_{10} \\equiv \\Theta_0"], "tactic": "exact Q.E.D." },
+                    "terminal_logs": ["[CHECKING] 4.1 TTMPT Core Integration... [OK]"],
+                    "familiar_dialogues": { "cat": "Step 4: Q.E.D. The continuous forward probability current $J(t) > 0$ is confirmed.", "mastiff": "Phase 4: Encapsulation. The scalar field B has strictly advanced. Residual rotation is zero." },
+                    "visual_render_mode": "PROVEN",
+                    "inspector_data": { 
+                        "modal_title": "INSPECTOR: 4.1 Q.E.D. RESOLUTION", 
+                        "description_top": "The longitudinal scalar field strictly advances:", 
+                        "equation_top": "$$B(t_7) > B(t_5)$$", 
+                        "svg_code": `<svg viewBox="0 0 200 100" style="width: 100%; height: 100%;">
+                            <path d="M 20 80 Q 60 20 100 50 T 180 20" fill="none" stroke="var(--c64-green)" stroke-width="3"/>
+                            <path d="M 20 80 L 20 50 M 180 20 L 180 50" stroke="var(--c64-highlight)" stroke-dasharray="2 2" stroke-width="1"/>
+                            <text x="20" y="95" fill="var(--c64-text)" font-family="VT323" font-size="14" text-anchor="middle">t_5</text>
+                            <text x="180" y="95" fill="var(--c64-text)" font-family="VT323" font-size="14" text-anchor="middle">t_7</text>
+                            <circle cx="100" cy="50" r="25" fill="none" stroke="var(--c64-yellow)" stroke-width="2"/>
+                            <line x1="100" y1="50" x2="100" y2="25" stroke="var(--c64-yellow)" stroke-width="2"/>
+                            <circle cx="100" cy="50" r="3" fill="var(--c64-yellow)"/>
+                        </svg>`,
+                        "description_bottom": "While successfully encapsulating the residual modular rotation:", 
+                        "equation_bottom": "$$\\Theta_{10} \\equiv \\Theta_0 \\pmod{2\\pi}$$",
+                        "graph_equations": {
+                            "type": "cartesian",
+                            "y": "x + sin(x*3 - time*4)*1.5"
+                        }
+                    }
+                }
+            ]
+        };
+
+        // --- Proofer Logic ---
+        
+        function runVerification() {
+            if (!proofLoaded || !loadedCartridge) {
+                printLine("?NO PROOF LOADED IN MEMORY. INSERT CARTRIDGE.", 'var(--c64-red)');
+                return;
+            }
+            if (isVerifying) return;
+
+            isVerifying = true;
+            verificationStep = 0;
+            renderMode = 'IDLE';
+            stackContainer.innerHTML = ''; 
+            
+            statusIndicator.innerText = "COMPILING PROOF...";
+            statusIndicator.style.color = 'var(--c64-yellow)';
+            
+            printLine("> VERIFY", 'var(--c64-yellow)');
+            printLine(`INITIATING FORMAL VERIFICATION OF ${loadedCartridge.cartridge_metadata.short_name}...`, 'var(--c64-green)');
+
+            stepVerification();
+        }
+
+        function addStackedWindow(stepNum, title, goal, hypArray, tactic) {
+            const win = document.createElement('div');
+            win.className = 'stacked-window';
+            
+            const hypHTML = hypArray.map(h => `<div class="tactic-hyp">$$${h}$$</div>`).join('');
+            
+            win.innerHTML = `
+                <div class="step-title">STEP ${stepNum}: ${title} <span style="float:right; font-size:0.8rem; color:var(--c64-highlight);">[CLICK TO INSPECT]</span></div>
+                <div class="tactic-goal">$$${goal}$$</div>
+                ${hypHTML}
+                <div class="tactic-cmd">=> ${tactic}</div>
+            `;
+            win.onclick = () => openInspector(stepNum);
+            stackContainer.appendChild(win);
+            
+            typesetMath('stacked-windows-container');
+        }
+
+        function stepVerification() {
+            if (verificationStep < loadedCartridge.verification_steps.length) {
+                const stepData = loadedCartridge.verification_steps[verificationStep];
+                
+                addStackedWindow(
+                    stepData.step_id, 
+                    stepData.window_title, 
+                    stepData.lean_shd_hud.goal, 
+                    stepData.lean_shd_hud.hypotheses,
+                    stepData.lean_shd_hud.tactic
+                );
+                
+                stepData.terminal_logs.forEach(log => printLine(log, 'var(--c64-text)'));
+                
+                renderMode = stepData.visual_render_mode || 'IDLE';
+                const dialog = stepData.familiar_dialogues[currentFamiliar.id] || "Analyzing sequence...";
+                familiarSpeak('custom', dialog);
+                
+                verificationStep++;
+                verificationInterval = setTimeout(stepVerification, 5000);
+            } else {
+                printLine(" ", 'var(--c64-bg)');
+                printLine("*** THEOREM VERIFIED: NO ERRORS ***", 'var(--c64-green)');
+                renderMode = 'PROVEN';
+                statusIndicator.innerText = "PROOFER IDLE - Q.E.D.";
+                statusIndicator.style.color = 'var(--c64-green)';
+                familiarSpeak('custom', "Q.E.D. The formal compilation is strictly complete and bounded.");
+                isVerifying = false;
+            }
+        }
+
+        function openInspector(stepId) {
+            const modal = document.getElementById('inspector-modal');
+            const title = document.getElementById('inspector-title');
+            const body = document.getElementById('inspector-content');
+            
+            const stepData = loadedCartridge.verification_steps.find(s => s.step_id === stepId);
+            if (!stepData || !stepData.inspector_data) return;
+
+            const d = stepData.inspector_data;
+            title.innerText = d.modal_title;
+            
+            let visualHTML = '';
+            if (d.svg_code) {
+                visualHTML = `<div class="inspector-visual">${d.svg_code}</div>`;
+            } else if (d.visual_generation_instructions) {
+                const v = d.visual_generation_instructions;
+                visualHTML = `
+                    <div class="inspector-visual-buffer">
+                        <span style="color:var(--c64-green);">>> INJECTING RENDER BLUEPRINT...</span><br><br>
+                        <span style="color:var(--c64-yellow);">[CONCEPT]</span> ${v.concept}<br><br>
+                        <span style="color:var(--c64-yellow);">[PALETTE]</span> ${(v.c64_palette_required||[]).join(', ')}<br><br>
+                        <span style="color:var(--c64-yellow);">[GEOMETRIC LAYOUT ENGINE]</span><br>
+                        <span style="color:var(--c64-text-light);">${v.layout}</span>
+                    </div>
+                `;
+            }
+
+            body.innerHTML = `
+                <div class="inspector-desc">${d.description_top}</div>
+                <div class="inspector-equation">${d.equation_top}</div>
+                ${visualHTML}
+                <div class="inspector-desc">${d.description_bottom}</div>
+                <div class="inspector-equation">${d.equation_bottom}</div>
+            `;
+            
+            modal.style.display = 'flex';
+            typesetMath('inspector-content');
+        }
+
+        // --- CARTOGRAPHY ENGINE / GRAPHER ---
+        
+        let graphState = {
+            mode: 'cartesian', 
+            yEq: '',
+            xEq: '',
+            ytEq: ''
+        };
+
+        function openGrapher() {
+            document.getElementById('grapher-modal').style.display = 'flex';
+            // Wait for flex layout to compute before sizing the canvas
+            setTimeout(resizeCanvas, 50); 
+        }
+
+        function closeGrapher() {
+            document.getElementById('grapher-modal').style.display = 'none';
+        }
+
+        function populateGrapherSidebar() {
+            const list = document.getElementById('grapher-steps-list');
+            list.innerHTML = '';
+            
+            if (!loadedCartridge || !loadedCartridge.verification_steps) {
+                list.innerHTML = '<div class="text-[var(--c64-text)]">NO PROOF DATA.</div>';
+                return;
+            }
+
+            let firstBtn = null;
+
+            loadedCartridge.verification_steps.forEach(step => {
+                const eq = step.inspector_data?.graph_equations;
+                
+                // We now ensure every step generates a button, even if graph_equations is missing
+                const btn = document.createElement('div');
+                btn.className = 'grapher-step-btn';
+                btn.innerText = `STEP ${step.step_id}: ${step.window_title}`;
+                btn.onclick = () => {
+                    document.querySelectorAll('.grapher-step-btn').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    
+                    if (eq && eq.type === 'parametric') {
+                        document.getElementById('graph-eq-y').value = '';
+                        document.getElementById('graph-eq-xt').value = eq.x || '';
+                        document.getElementById('graph-eq-yt').value = eq.y || '';
+                    } else if (eq && eq.type === 'cartesian') {
+                        document.getElementById('graph-eq-y').value = eq.y || '';
+                        document.getElementById('graph-eq-xt').value = '';
+                        document.getElementById('graph-eq-yt').value = '';
+                    } else {
+                        // Fallback equation if the cartridge omitted graphing data for this step
+                        document.getElementById('graph-eq-y').value = 'sin(x*2 - time) * exp(-abs(x)/5)';
+                        document.getElementById('graph-eq-xt').value = '';
+                        document.getElementById('graph-eq-yt').value = '';
+                    }
+                    
+                    applyGraphInputs();
+                };
+                list.appendChild(btn);
+                if (!firstBtn) firstBtn = btn;
+            });
+
+            // Automatically load and plot the first equation set when the proof is mounted
+            if (firstBtn) {
+                firstBtn.click();
+            } else {
+                list.innerHTML = '<div class="text-[var(--c64-text)]">NO GRAPH EQUATIONS IN THIS CARTRIDGE.</div>';
+            }
+        }
+
+        function applyGraphInputs() {
+            const yVal = document.getElementById('graph-eq-y').value.trim();
+            const xtVal = document.getElementById('graph-eq-xt').value.trim();
+            const ytVal = document.getElementById('graph-eq-yt').value.trim();
+
+            if (xtVal && ytVal) {
+                graphState.mode = 'parametric';
+                graphState.xEq = xtVal;
+                graphState.ytEq = ytVal;
+                document.getElementById('grapher-mode-indicator').innerText = "PARAMETRIC MODE";
+            } else if (yVal) {
+                graphState.mode = 'cartesian';
+                graphState.yEq = yVal;
+                document.getElementById('grapher-mode-indicator').innerText = "CARTESIAN MODE";
+            } else {
+                graphState.mode = 'none';
+                document.getElementById('grapher-mode-indicator').innerText = "AWAITING INPUT";
+            }
+        }
+
+        function safeEvalMath(formula, variableName, variableValue, globalTime) {
+            if (!formula) return NaN;
+            try {
+                // Upgraded to strict word boundaries (\b) to prevent partial replacements
+                let parsed = formula
+                    .replace(/Math\./g, '') 
+                    .replace(/\bsin\b/g, 'Math.sin')
+                    .replace(/\bcos\b/g, 'Math.cos')
+                    .replace(/\btan\b/g, 'Math.tan')
+                    .replace(/\bexp\b/g, 'Math.exp')
+                    .replace(/\babs\b/g, 'Math.abs')
+                    .replace(/\bsqrt\b/g, 'Math.sqrt')
+                    .replace(/\bpi\b/gi, 'Math.PI')
+                    .replace(/\^/g, '**');
+
+                const func = new Function(variableName, 'time', `return ${parsed};`);
+                return func(variableValue, globalTime);
+            } catch (e) {
+                return NaN;
+            }
+        }
+
+        function graphRenderLoop() {
+            const canvas = document.getElementById('grapher-canvas');
+            if (document.getElementById('grapher-modal').style.display === 'flex') {
+                const parent = canvas.parentElement;
+                
+                // Dynamic resilient resizing to prevent 0x0 flexbox race conditions
+                if (canvas.width !== parent.clientWidth || canvas.height !== parent.clientHeight) {
+                    canvas.width = parent.clientWidth;
+                    canvas.height = parent.clientHeight;
+                }
+
+                const ctx = canvas.getContext('2d');
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+                ctx.strokeStyle = 'rgba(139, 139, 180, 0.2)';
+                ctx.lineWidth = 1;
+                const midX = canvas.width / 2;
+                const midY = canvas.height / 2;
+                const scale = 30; // pixels per unit
+
+                ctx.beginPath();
+                for(let x = 0; x < canvas.width; x += scale) {
+                    ctx.moveTo(x, 0); ctx.lineTo(x, canvas.height);
+                }
+                for(let y = 0; y < canvas.height; y += scale) {
+                    ctx.moveTo(0, y); ctx.lineTo(canvas.width, y);
+                }
+                ctx.stroke();
+
+                // Explicit Hex colors used instead of CSS vars to guarantee canvas API compatibility
+                ctx.strokeStyle = '#7c70da'; // var(--c64-text)
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.moveTo(0, midY); ctx.lineTo(canvas.width, midY);
+                ctx.moveTo(midX, 0); ctx.lineTo(midX, canvas.height);
+                ctx.stroke();
+
+                // Draw Math lines safely handling asymptotes/NaNs
+                if (graphState.mode === 'cartesian' && graphState.yEq) {
+                    ctx.strokeStyle = '#55a049'; // var(--c64-green)
+                    ctx.lineWidth = 2;
+                    ctx.beginPath();
+                    let first = true;
+                    
+                    for(let px = 0; px < canvas.width; px += 2) {
+                        let mathX = (px - midX) / scale;
+                        let mathY = safeEvalMath(graphState.yEq, 'x', mathX, time);
+                        
+                        if (!isNaN(mathY) && isFinite(mathY)) {
+                            let py = midY - (mathY * scale);
+                            if (first) { ctx.moveTo(px, py); first = false; }
+                            else { ctx.lineTo(px, py); }
+                        } else {
+                            first = true; // Break line across asymptote
+                        }
+                    }
+                    ctx.stroke();
+
+                } else if (graphState.mode === 'parametric' && graphState.xEq && graphState.ytEq) {
+                    ctx.strokeStyle = '#bfce72'; // var(--c64-yellow)
+                    ctx.lineWidth = 2;
+                    ctx.beginPath();
+                    let first = true;
+                    
+                    for(let t = 0; t <= Math.PI * 4; t += 0.05) {
+                        let mathX = safeEvalMath(graphState.xEq, 't', t, time);
+                        let mathY = safeEvalMath(graphState.ytEq, 't', t, time);
+                        
+                        if (!isNaN(mathX) && !isNaN(mathY) && isFinite(mathX) && isFinite(mathY)) {
+                            let px = midX + (mathX * scale);
+                            let py = midY - (mathY * scale);
+                            if (first) { ctx.moveTo(px, py); first = false; }
+                            else { ctx.lineTo(px, py); }
+                        } else {
+                            first = true;
+                        }
+                    }
+                    ctx.stroke();
+                }
+            }
+
+            requestAnimationFrame(graphRenderLoop);
+        }
+
+        function handleCommand(cmdStr) {
+            const args = cmdStr.trim().toUpperCase().split(' ');
+            const cmd = args[0];
+
+            if (cmd !== '') printLine(`] ${cmdStr}`);
+
+            switch (cmd) {
+                case '': break;
+                case 'HELP':
+                    familiarSpeak('custom', "Commands: INSERT CARTRIDGE (via button), VERIFY to compile, GRAPHER to plot.");
+                    printLine("--- PROOFER COMMANDS ---", 'var(--c64-highlight)');
+                    printLine("INSERT CARTRIDGE - Load a JSON proof.", 'var(--c64-text)');
+                    printLine("LOAD TTMPT       - Loads the default built-in proof.", 'var(--c64-text)');
+                    printLine("VERIFY           - Runs the Lean-SHD compilation.", 'var(--c64-text)');
+                    printLine("GRAPHER          - Opens the live Cartesian/Parametric Plotter.", 'var(--c64-text)');
+                    printLine("CLEAR            - Clear terminal & reset states", 'var(--c64-text)');
+                    break;
+                case 'LOAD':
+                    if (args[1] === 'TTMPT') {
+                        processLoadedCartridge(mockTTMPT);
+                    } else {
+                        printLine("?FILE NOT FOUND. PLEASE USE 'INSERT CARTRIDGE' BUTTON.", 'var(--c64-red)');
+                    }
+                    break;
+                case 'VERIFY':
+                    runVerification();
+                    break;
+                case 'GRAPHER':
+                    openGrapher();
+                    break;
+                case 'CLEAR':
+                    terminalOutput.innerHTML = '';
+                    stackContainer.innerHTML = '';
+                    renderMode = 'IDLE';
+                    if (verificationInterval) {
+                        clearTimeout(verificationInterval);
+                        isVerifying = false;
+                    }
+                    break;
+                default:
+                    familiarSpeak('error');
+                    printLine(`?SYNTAX ERROR`, 'var(--c64-highlight)');
+                    printLine("READY.", 'var(--c64-highlight)');
+            }
+        }
+
+        cmdInput.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') {
+                const val = this.value;
+                this.value = '';
+                handleCommand(val);
+            }
+        });
+
+        document.addEventListener('click', (e) => {
+            if (!isBooting && e.target.tagName !== 'BUTTON' && !e.target.classList.contains('modal-close') && !e.target.classList.contains('stacked-window') && e.target.tagName !== 'INPUT') {
+                if(document.getElementById('grapher-modal').style.display !== 'flex' && document.getElementById('editor-modal').style.display !== 'flex'){
+                     cmdInput.focus();
+                }
+            }
+        });
+
+        // --- Standard Visualization Library (VisLib) ---
+        function project(x, y, z) {
+            const d = FOV / (z + camZ);
+            return { x: x * d + camX, y: y * d + camY };
+        }
+
+        const VisLib = {
+            LATTICE: function(ctx, t) {
+                let points = [];
+                for(let i=0; i <= 12; i++) {
+                    let theta = (i / 12) * Math.PI * 2;
+                    let x = Math.sin(theta) + 2 * Math.sin(2*theta);
+                    let y = Math.cos(theta) - 2 * Math.cos(2*theta);
+                    let z = -Math.sin(3*theta);
+                    
+                    let rx = x * Math.cos(t) - z * Math.sin(t);
+                    let rz = x * Math.sin(t) + z * Math.cos(t);
+                    let ry = y * Math.cos(t*0.5) - rz * Math.sin(t*0.5);
+                    rz = y * Math.sin(t*0.5) + rz * Math.cos(t*0.5);
+                    
+                    points.push(project(rx, ry, rz));
+                }
+                ctx.fillStyle = 'var(--c64-highlight)';
+                points.forEach(p => {
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, 4, 0, Math.PI*2);
+                    ctx.fill();
+                });
+            },
+            
+            TREFOIL: function(ctx, t) {
+                let points = [];
+                for(let i=0; i <= 60; i++) {
+                    let theta = (i / 60) * Math.PI * 2;
+                    let x = Math.sin(theta) + 2 * Math.sin(2*theta);
+                    let y = Math.cos(theta) - 2 * Math.cos(2*theta);
+                    let z = -Math.sin(3*theta);
+                    
+                    let rx = x * Math.cos(t) - z * Math.sin(t);
+                    let rz = x * Math.sin(t) + z * Math.cos(t);
+                    let ry = y * Math.cos(t*0.5) - rz * Math.sin(t*0.5);
+                    rz = y * Math.sin(t*0.5) + rz * Math.cos(t*0.5);
+                    
+                    points.push(project(rx, ry, rz));
+                }
+                ctx.strokeStyle = 'var(--c64-highlight)';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.moveTo(points[0].x, points[0].y);
+                for(let i=1; i<points.length; i++) ctx.lineTo(points[i].x, points[i].y);
+                ctx.stroke();
+            },
+
+            PUMP: function(ctx, t) {
+                this.TREFOIL(ctx, t); 
+                let points = [];
+                for(let i=0; i <= 60; i++) {
+                    let theta = (i / 60) * Math.PI * 2;
+                    let x = Math.sin(theta) + 2 * Math.sin(2*theta);
+                    let y = Math.cos(theta) - 2 * Math.cos(2*theta);
+                    let z = -Math.sin(3*theta);
+                    
+                    let rx = x * Math.cos(t) - z * Math.sin(t);
+                    let rz = x * Math.sin(t) + z * Math.cos(t);
+                    let ry = y * Math.cos(t*0.5) - rz * Math.sin(t*0.5);
+                    rz = y * Math.sin(t*0.5) + rz * Math.cos(t*0.5);
+
+                    let u = Math.PI * 2 + Math.sin(t * 3 + theta) * 0.5; 
+                    let v = Math.sqrt(Math.PI) + Math.cos(t * 3 + theta) * 0.5;
+                    rx += Math.cos(theta * 12) * 0.5 * (u/10);
+                    ry += Math.sin(theta * 12) * 0.5 * (v/2);
+                    
+                    points.push(project(rx, ry, rz));
+                }
+                ctx.strokeStyle = 'var(--c64-yellow)';
+                ctx.lineWidth = 0.5;
+                for(let i=0; i<points.length; i+=5) {
+                    for(let j=i+5; j<points.length; j+=15) {
+                        ctx.beginPath();
+                        ctx.moveTo(points[i].x, points[i].y);
+                        ctx.lineTo(points[j].x, points[j].y);
+                        ctx.stroke();
+                    }
+                }
+            },
+
+            PROVEN: function(ctx, t) {
+                this.PUMP(ctx, t); 
+                
+                ctx.fillStyle = `rgba(85, 160, 73, ${0.5 + 0.5*Math.sin(t*5)})`; 
+                let p = project(0, 0, 0);
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, 20, 0, Math.PI*2);
+                ctx.fill();
+                
+                ctx.strokeStyle = 'var(--c64-highlight)';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, 20, 0, Math.PI*2);
+                ctx.stroke();
+            }
+        };
+
+        function renderVICII() {
+            ctx.fillStyle = '#000000';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            time += 0.02;
+
+            if (renderMode !== 'IDLE' && VisLib[renderMode]) {
+                VisLib[renderMode](ctx, time);
+            } else if (renderMode !== 'IDLE') {
+                VisLib.TREFOIL(ctx, time);
+            }
+
+            requestAnimationFrame(renderVICII);
+        }
+    </script>
+</body>
+</html>
