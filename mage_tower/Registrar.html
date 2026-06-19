@@ -11,7 +11,7 @@
 
     <style>
         :root {
-            --void: #05030a;
+            --void: #0f0d1f;
             --gold: #D4AF37;
             --gold-light: #FFF8DC;
             --cyan: #00d4ff;
@@ -20,7 +20,7 @@
         body {
             background-color: var(--void); color: #e2e8f0;
             font-family: 'Inter', sans-serif;
-            background: radial-gradient(circle at 50% 10%, rgba(138,43,226,0.08), var(--void) 80%);
+            background: radial-gradient(circle at 50% 10%, rgba(138,43,226,0.20), var(--void) 80%);
             min-height: 100vh; margin: 0;
         }
         h1, h2, h3, .mystical { font-family: 'Cinzel', serif; }
@@ -30,9 +30,9 @@
             -webkit-background-clip: text; background-clip: text; color: transparent;
         }
         .glass {
-            background: rgba(10, 6, 22, 0.6); backdrop-filter: blur(16px);
-            border: 1px solid rgba(212, 175, 55, 0.18);
-            box-shadow: 0 10px 40px -10px rgba(0,0,0,0.8);
+            background: rgba(10, 6, 22, 0.82); backdrop-filter: blur(16px);
+            border: 1px solid rgba(212, 175, 55, 0.28);
+            box-shadow: 0 8px 32px -4px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.04);
         }
         .sigil-svg { filter: drop-shadow(0 0 12px rgba(212,175,55,0.4)); }
         .pulse-ring { animation: pulse 3s ease-in-out infinite; }
@@ -180,7 +180,7 @@
         </div>
 
         <div class="text-center mt-12">
-            <a href="../Learning-Hub.html" class="text-[10px] mono text-gray-500 hover:text-gray-300 uppercase tracking-[0.3em]">← Grand Hall</a> <a href="Tower_Guide.html" class="text-[10px] mono text-yellow-600 hover:text-yellow-300 uppercase tracking-[0.3em]">⬡ Guide</a>
+            <a href="../Learning-Hub.html" class="text-[10px] mono text-gray-500 hover:text-gray-300 uppercase tracking-[0.3em]">← Grand Hall</a> <a href="Tower_Guide.html" class="text-[10px] mono text-yellow-600 hover:text-yellow-300 uppercase tracking-[0.3em]">⬡ Guide</a> <a href="Traceability.html" style="font-family:JetBrains Mono,monospace;font-size:10px;letter-spacing:0.2em;text-transform:uppercase;color:rgba(212,175,55,0.6);text-decoration:none;border:1px solid rgba(212,175,55,0.2);padding:3px 8px;border-radius:4px;">TRACE ◈</a>
         </div>
 
     </main>
@@ -253,5 +253,37 @@
             exportLocalBackup();
         });
     </script>
+<script>
+window.TUTORIAL_CONFIG = {
+  title: "Forging Your Cosmological ID",
+  familiar: "#D4AF37",
+  slides: [
+    {
+      heading: "What is a Cosmological ID?",
+      body: "Your immutable geometric fingerprint — a 64-character hex hash derived from your chosen seed phrase. It signs every tome, artifact, and rank you ever accumulate. It can only be set once — choose deliberately."
+    },
+    {
+      heading: "The Seed Phrase",
+      body: "Your ledger seed is any phrase, sigil string, or constant you provide. It is hashed (SHA-256) into your Cosmological ID. The longer and more unique your seed, the more collision-resistant your ID.",
+      highlight: "CosmologicalID = SHA256(seedPhrase).hex()"
+    },
+    {
+      heading: "Lattice Space",
+      body: "You choose a geometric lattice type when registering. This determines your coordinate space (Hyperbolic / Euclidean / Spherical) which shapes your sigil's N, K, T parameters and which dimensional planes align naturally to your geometry."
+    },
+    {
+      heading: "The Sigil",
+      body: "Your sigil is generated from your cosmological ID's N/K/T manifold coordinates via the sigil-renderer. It is a string-art polygon — the same geometry used by the Engram Mind Eye for familiar manifolds. No two IDs produce the same sigil.",
+      highlight: "sigil = generateManifoldSVG(N, K, T)  // from cosmological hash"
+    },
+    {
+      heading: "After Registration",
+      body: "Your ID is stored in Firestore at users/{uid}/profile/main.cosmologicalId. The Codex reads it. The Genesis Forge signs it. Every tome you author carries it as provenance. You cannot change it.",
+      highlight: "Firestore: users/{uid}/profile/main → { cosmologicalId, lattice, coords }"
+    }
+  ]
+};
+</script>
+<script src="tutorial_engine.js"></script>
 </body>
 </html>

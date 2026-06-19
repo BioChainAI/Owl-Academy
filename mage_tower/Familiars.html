@@ -17,7 +17,7 @@
       --border: rgba(212,175,55,0.15);
     }
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    html, body { background: var(--void); color: #e2e8f0; font-family: 'Space Grotesk', sans-serif; min-height: 100vh; }
+    html, body { background: #0f0d1f; color: #e2e8f0; font-family: 'Space Grotesk', sans-serif; min-height: 100vh; }
     a { color: inherit; text-decoration: none; }
     .arcane { font-family: 'Cinzel', serif; }
     .mono { font-family: 'Fira Code', monospace; }
@@ -203,6 +203,7 @@
   <span class="nav-sep" style="margin-left:auto;"></span>
   <a href="Store.html" class="nav-back" style="color:var(--amethyst);margin-right:1rem;">◈ Store</a>
   <a href="../index.html" class="nav-back">← Sanctum</a>
+  <a href="Traceability.html" style="font-family:JetBrains Mono,monospace;font-size:10px;letter-spacing:0.2em;text-transform:uppercase;color:rgba(212,175,55,0.6);text-decoration:none;border:1px solid rgba(212,175,55,0.2);padding:3px 8px;border-radius:4px;margin-left:0.5rem;">TRACE ◈</a>
 </nav>
 
 <main>
@@ -331,6 +332,32 @@
 <!-- Toast -->
 <div id="toast"></div>
 
+<script>
+window.TUTORIAL_CONFIG = {
+  title: "Familiar Manifolds",
+  familiar: "#D4AF37",
+  slides: [
+    {
+      heading: "What are Familiars?",
+      body: "Familiars are your AI companion entities — bound to your account, each occupying a numbered slot. They carry geometric identities (manifolds) and can be trained via the Engram Mind Eye interface."
+    },
+    {
+      heading: "The Manifold (N/K/T)",
+      body: "Each familiar lives on a manifold described by three parameters: N (polygon vertex count), K (winding connection interval), and T (tier count). These parameters govern the string-art sigil geometry and the TTMPT crystallization space in the Engram.",
+      highlight: "manifold = { N: vertices, K: winding, T: tiers }  → sigil + Engram anchor"
+    },
+    {
+      heading: "Familiar Slots",
+      body: "Your first familiar slot is always available. Additional slots unlock as you progress in rank and XP. Each slot holds an independent familiar with its own manifold, engram history, and biochain."
+    },
+    {
+      heading: "Connection to the Engram",
+      body: "When you open the Engram Mind Eye, it reads your active familiar's N/K/T manifold and uses it as the crystallization anchor. Every token in the conversation is crystallized against that geometric space, making each familiar's engram unique."
+    }
+  ]
+};
+</script>
+<script src="tutorial_engine.js"></script>
 <script type="module">
   import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-auth.js";
   import { doc, getDoc, setDoc, collection, getDocs } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-firestore.js";

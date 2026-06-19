@@ -11,10 +11,10 @@
 
     <style>
         body {
-            background-color: #05030a;
+            background-color: #0f0d1f;
             color: #e2e8f0;
             font-family: 'Inter', sans-serif;
-            background: radial-gradient(circle at 50% 0%, rgba(212,175,55,0.06), #05030a 80%);
+            background: radial-gradient(circle at 50% 0%, rgba(212,175,55,0.20), #0f0d1f 80%);
             min-height: 100vh;
         }
         h1, h2, h3, .mystical { font-family: 'Cinzel', serif; }
@@ -24,8 +24,9 @@
             -webkit-background-clip: text; background-clip: text; color: transparent;
         }
         .glass {
-            background: rgba(10, 6, 22, 0.6); backdrop-filter: blur(16px);
-            border: 1px solid rgba(212, 175, 55, 0.18);
+            background: rgba(10, 6, 22, 0.82); backdrop-filter: blur(16px);
+            border: 1px solid rgba(212, 175, 55, 0.28);
+            box-shadow: 0 8px 32px -4px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.04);
         }
         .glass-cyan { background: rgba(10,6,22,0.6); backdrop-filter: blur(16px); border: 1px solid rgba(0,212,255,0.18); }
 
@@ -94,6 +95,7 @@
     <span class="text-white/20">›</span>
     <span class="mystical text-white/50 text-sm tracking-widest">Mage Tower Store</span>
     <a href="../index.html" class="ml-auto text-[10px] text-slate-500 hover:text-yellow-400 transition uppercase tracking-widest">← Sanctum</a>
+    <a href="Traceability.html" style="font-family:JetBrains Mono,monospace;font-size:10px;letter-spacing:0.2em;text-transform:uppercase;color:rgba(212,175,55,0.6);text-decoration:none;border:1px solid rgba(212,175,55,0.2);padding:3px 8px;border-radius:4px;">TRACE ◈</a>
 </nav>
 
 <main class="max-w-5xl mx-auto px-4 md:px-8 py-10">
@@ -498,5 +500,27 @@
         }
     });
 </script>
+<script>
+window.TUTORIAL_CONFIG = {
+  title: "The Vis Economy",
+  familiar: "#D4AF37",
+  slides: [
+    {
+      heading: "What is Vis?",
+      body: "Vis (◈) is the Academy's internal currency. You earn Vis by completing tome chapters, submitting artifacts, achieving rank milestones, and anti-spam daily interactions. It accumulates in your Codex profile."
+    },
+    {
+      heading: "Spending Vis",
+      body: "Vis can be spent on cosmetic upgrades (avatar frames, sigil color), functional expansions (additional familiar slots), and limited-edition academy artifacts. All transactions are logged to your Codex transaction history.",
+      highlight: "Vis earned ← tome completion, rank-up, daily interactions"
+    },
+    {
+      heading: "Economy Design",
+      body: "The Vis system is deliberately slow to accumulate and fast to verify — it rewards sustained engagement over grinding. Each item's Vis cost is set by Archons in the Admin Console artifact configuration."
+    }
+  ]
+};
+</script>
+<script src="tutorial_engine.js"></script>
 </body>
 </html>

@@ -11,9 +11,9 @@
 
     <style>
         body {
-            background-color: #05030a; color: #e2e8f0;
+            background-color: #0f0d1f; color: #e2e8f0;
             font-family: 'Inter', sans-serif;
-            background: radial-gradient(circle at 50% 10%, rgba(212,175,55,0.07), #05030a 80%);
+            background: radial-gradient(circle at 50% 10%, rgba(212,175,55,0.20), #0f0d1f 80%);
             min-height: 100vh; margin: 0;
         }
         h1, h2, h3, .mystical { font-family: 'Cinzel', serif; }
@@ -23,12 +23,14 @@
             -webkit-background-clip: text; background-clip: text; color: transparent;
         }
         .glass {
-            background: rgba(8, 12, 22, 0.70); backdrop-filter: blur(16px);
-            border: 1px solid rgba(212,175,55,0.22);
+            background: rgba(8, 12, 22, 0.82); backdrop-filter: blur(16px);
+            border: 1px solid rgba(212,175,55,0.32);
+            box-shadow: 0 8px 32px -4px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.04);
         }
         .glass-cyan {
-            background: rgba(8, 12, 22, 0.65); backdrop-filter: blur(12px);
-            border: 1px solid rgba(0,212,255,0.22);
+            background: rgba(8, 12, 22, 0.82); backdrop-filter: blur(12px);
+            border: 1px solid rgba(0,212,255,0.32);
+            box-shadow: 0 8px 32px -4px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.04);
         }
         input, textarea, select {
             background: #060e1a; color: #FFF8DC;
@@ -164,6 +166,7 @@
                 <a href="Instructor_Console.html" class="btn-ghost px-3 py-1.5 rounded-lg text-xs mono">⬢ Authoring</a>
                 <a href="Genesis_Forge.html" id="forgeLink" class="hidden btn-gold px-3 py-1.5 rounded-lg text-xs mono">♛ Genesis Forge</a>
                 <a href="Codex.html" class="btn-ghost px-3 py-1.5 rounded-lg text-xs mono">Codex</a>
+                <a href="Traceability.html" style="font-family:JetBrains Mono,monospace;font-size:10px;letter-spacing:0.2em;text-transform:uppercase;color:rgba(212,175,55,0.6);text-decoration:none;border:1px solid rgba(212,175,55,0.2);padding:3px 8px;border-radius:4px;">TRACE ◈</a>
             </div>
         </div>
 
@@ -1145,5 +1148,35 @@ window.applyDeniedCert = async function() {
 };
 </script>
 
+<script>
+window.TUTORIAL_CONFIG = {
+  title: "Configuring the Academy",
+  familiar: "#e81cff",
+  slides: [
+    {
+      heading: "Your Role as Archon",
+      body: "The Admin Console is the control layer for the entire Academy. Here you define the planes (departments) that all other systems reference, configure artifacts, view the tome registry, and audit the genesis authority chain."
+    },
+    {
+      heading: "Planes / Departments",
+      body: "Every tome and every Genesis cert must reference a plane. You define planes here — name, description, and cosmological glyph. Planes appear as options in the Genesis Forge and Instructor Console automatically."
+    },
+    {
+      heading: "Tome Registry",
+      body: "A read-only view of every tome published across all planes and all instructors. You can filter by plane, priority, or instructor. This is your audit surface for content quality control."
+    },
+    {
+      heading: "Instructor Election",
+      body: "You can issue Genesis certs directly from the Admin Console (equivalent to the Genesis Forge). You can also revoke instructor status, which flags their tomes for re-review in the registry."
+    },
+    {
+      heading: "Genesis Chain Audit",
+      body: "A lineage view showing every certificate ever issued — who issued to whom, for which plane, when. This lets you trace any instructor or tome back to the root Archon signature and identify any broken links.",
+      highlight: "Root → [cert₁] → Archon A → [cert₂] → Instructor B → Tome C"
+    }
+  ]
+};
+</script>
+<script src="tutorial_engine.js"></script>
 </body>
 </html>
