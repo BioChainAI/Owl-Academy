@@ -16,7 +16,7 @@ const GENESIS_TIER_META = {
 
 // ── Configuration: easy to extend with new departments/tools ──────────────────
 const LIBRARY_DEPARTMENTS = [
-  { id: "dept-1", title: "Department I",   subtitle: "Foundations",      icon: "✦", path: "Library/DepartmentI/",        color: "#D4AF37" },
+  { id: "dept-1", title: "Department I",   subtitle: "Foundations",      icon: "✦", path: "https://biochainai.github.io/Owl-Academy/Library/DepartmentI/Sacred_Geometry/SG_Main.html", color: "#D4AF37" },
   { id: "dept-2", title: "Department II",  subtitle: "Geometric Theory", icon: "✧", path: "Library/DepartmentII/",       color: "#00d4ff" },
   { id: "dept-3", title: "Department III", subtitle: "Topology",         icon: "❖", path: "Library/Department III/",     color: "#8A2BE2" },
   { id: "dept-4", title: "Department IV",  subtitle: "Analysis",         icon: "✺", path: "Library/Department IV/",      color: "#00ff88" },
