@@ -232,7 +232,7 @@
                             <div class="text-center my-4 font-mono text-cyan-300">
                                 $$\\|q^{(12)}_n\\| = \\|q^{(10)}_m\\| = \\|q^{(8)}_\\ell\\| = 1$$
                             </div>
-                            <p class="text-xs text-slate-400">By restricting our state vector $q$ to unit length, we define a continuous manifold of free 3D rotation, enabling the topological stability required for the Markov Pump framework.</p>
+                            <p class="text-xs text-slate-400">By restricting our state vector \\( q \\) to unit length, we define a continuous manifold of free 3D rotation, enabling the topological stability required for the Markov Pump framework.</p>
                         </div>
                     </div>
                 `,
@@ -249,7 +249,7 @@
                     <div class="space-y-4 text-sm text-slate-300 leading-relaxed">
                         <p>A rotating system can be described by storing every full orientation, but a smarter model stores the <strong>small changes</strong> between orientations and rebuilds the full motion when needed.</p>
                         
-                        <p>If one frame has orientation $q_k$ and the next has orientation $q_{k+1}$, the rotational change between them is defined as the Delta ($\\Delta q_k$). Because quaternion multiplication is strictly order-sensitive, we must carefully define the mathematical update rule.</p>
+                        <p>If one frame has orientation \\( q_k \\) and the next has orientation \\( q_{k+1} \\), the rotational change between them is defined as the Delta (\\( \\Delta q_k \\)). Because quaternion multiplication is strictly order-sensitive, we must carefully define the mathematical update rule.</p>
                         
                         <div class="bg-black/40 border border-white/10 rounded p-4 mt-4">
                             <h3 class="text-white font-bold border-b border-purple-500/30 pb-2 mb-3 tracking-wide">The Delta Operation</h3>
@@ -281,9 +281,9 @@
                             <h3 class="text-white font-bold border-b border-amber-500/30 pb-2 mb-3 tracking-wide">The Triple Quaternion Chain</h3>
                             
                             <ul class="space-y-3 text-xs text-slate-400">
-                                <li><strong class="text-amber-400">Outer Gear (12-point):</strong> 720 frames. The high-resolution memory layer. Holds $q^{(12)}_n$ where $n = 0 \\dots 719$.</li>
-                                <li><strong class="text-amber-400">Middle Gear (10-point):</strong> 72 frames. The compressed <em>inverse</em> correction chain. Holds $q^{(10)}_m$. Because $72/10 = 7.2$ (non-integer), it phase-shears to prevent rapid repetitive alignment.</li>
-                                <li><strong class="text-amber-400">Inner Gear (8-point):</strong> 10 frames. The lowest resolution, serving as the coarse torsional anchor holding $q^{(8)}_\\ell$.</li>
+                                <li><strong class="text-amber-400">Outer Gear (12-point):</strong> 720 frames. The high-resolution memory layer. Holds \\( q^{(12)}_n \\) where \\( n = 0 \\dots 719 \\).</li>
+                                <li><strong class="text-amber-400">Middle Gear (10-point):</strong> 72 frames. The compressed <em>inverse</em> correction chain. Holds \\( q^{(10)}_m \\). Because \\( 72/10 = 7.2 \\) (non-integer), it phase-shears to prevent rapid repetitive alignment.</li>
+                                <li><strong class="text-amber-400">Inner Gear (8-point):</strong> 10 frames. The lowest resolution, serving as the coarse torsional anchor holding \\( q^{(8)}_\\ell \\).</li>
                             </ul>
                             
                             <div class="text-center text-xs font-mono text-amber-300 mt-4 code-block">
@@ -307,12 +307,12 @@
                         
                         <div class="bg-black/40 border border-white/10 rounded p-4 mt-4">
                             <h3 class="text-white font-bold border-b border-emerald-500/30 pb-2 mb-3 tracking-wide">The Projection Rule</h3>
-                            <p class="text-xs text-slate-400 mb-3">The scale map bridging the 12-point gear to the 10-point gear is defined as $P_{12 \\to 10}(n) = \\lfloor n/10 \\rfloor$.</p>
+                            <p class="text-xs text-slate-400 mb-3">The scale map bridging the 12-point gear to the 10-point gear is defined as \\( P_{12 \\to 10}(n) = \\lfloor n/10 \\rfloor \\).</p>
                             
                             <p class="text-xs text-slate-400 mb-3">To compress the outer chain, we multiply the sequential deltas (preserving strict chronological order from right to left due to non-commutativity):</p>
                             
                             <div class="text-center font-mono text-emerald-300 text-sm mb-3 code-block">
-                                $$\\Delta Q^{(12 \\to 10)}_m = \\Delta q^{(12)}_{10m+9} \\Delta q^{(12)}_{10m+8} \\cdots \\Delta q^{(12)}_{10m}$$
+                                $$\\Delta Q^{(12 \\to 10)}_m = \\Delta q^{(12)}_{10m+9} \\Delta q^{(12)}_{10m+8} \\dots \\Delta q^{(12)}_{10m}$$
                             </div>
 
                             <p class="text-xs text-slate-400">This consolidates 10 micro-twists into a single coarse rotational shift for the lower gear.</p>
@@ -334,7 +334,7 @@
                         
                         <div class="bg-black/40 border border-white/10 rounded p-4 mt-4">
                             <h3 class="text-white font-bold border-b border-rose-500/30 pb-2 mb-3 tracking-wide">Reversing the Delta</h3>
-                            <p class="text-xs text-slate-400 mb-3">The word "inverse" can be mathematically modeled by using inverse quaternions. A unit quaternion multiplied by its inverse always yields the Identity rotation ($qq^{-1} = 1$).</p>
+                            <p class="text-xs text-slate-400 mb-3">The word "inverse" can be mathematically modeled by using inverse quaternions. A unit quaternion multiplied by its inverse always yields the Identity rotation (\\( qq^{-1} = 1 \\)).</p>
                             
                             <p class="text-xs text-slate-400 mb-3">The middle layer stores the <em>compensating inverse</em> of the projected block from the outer layer:</p>
                             
@@ -361,7 +361,7 @@
                         
                         <div class="bg-black/40 border border-white/10 rounded p-4 mt-4">
                             <h3 class="text-white font-bold border-b border-cyan-500/30 pb-2 mb-3 tracking-wide">Breaking Detailed Balance</h3>
-                            <p class="text-xs text-slate-400 mb-3">Let $\\pi_i$ be the chance of being in state $i$, and $K_{ij}$ be the transition rate from state $i$ to $j$. The directed probability current is defined as:</p>
+                            <p class="text-xs text-slate-400 mb-3">Let \\( \\pi_i \\) be the chance of being in state \\( i \\), and \\( K_{ij} \\) be the transition rate from state \\( i \\) to \\( j \\). The directed probability current is defined as:</p>
                             
                             <div class="text-center font-mono text-cyan-300 text-sm mb-3 code-block">
                                 $$J_{ij} = \\pi_i K_{ij} - \\pi_j K_{ji}$$
@@ -373,7 +373,7 @@
                                 $$J_{12,10} + J_{10,8} + J_{8,12} > 0$$
                             </div>
                             
-                            <p class="text-xs text-slate-400">We construct the transition matrix $K$ such that backward transitions ($K_{ji}$) are highly penalized, creating a one-way stochastic Tesla-valve.</p>
+                            <p class="text-xs text-slate-400">We construct the transition matrix \\( K \\) such that backward transitions (\\( K_{ji} \\)) are highly penalized, creating a one-way stochastic Tesla-valve.</p>
                         </div>
                     </div>
                 `,
@@ -392,7 +392,7 @@
                         
                         <div class="bg-black/40 border border-white/10 rounded p-4 mt-4">
                             <h3 class="text-white font-bold border-b border-purple-500/30 pb-2 mb-3 tracking-wide">Exponential Quaternionic Lifting</h3>
-                            <p class="text-xs text-slate-400 mb-3">To recreate fine deltas from a large coarse delta step, we apply a fractional interpolation weight $w$. For unit quaternions, fractional powers are perfectly handled via the exponential and logarithm maps of the Lie Algebra.</p>
+                            <p class="text-xs text-slate-400 mb-3">To recreate fine deltas from a large coarse delta step, we apply a fractional interpolation weight \\( w \\). For unit quaternions, fractional powers are perfectly handled via the exponential and logarithm maps of the Lie Algebra.</p>
                             
                             <div class="text-center font-mono text-purple-300 text-sm mb-3 code-block">
                                 $$q^w = \\exp \\left( w \\log q \\right)$$
@@ -404,7 +404,7 @@
                                 $$\\widehat{\\Delta q}^{(10)}_m = \\left( \\Delta q^{(8)}_{\\ell(m)} \\right)^{w_m}$$
                             </div>
                             
-                            <p class="text-xs text-slate-400">This continuous mapping effectively flows information: $10 \\to 72 \\to 720$.</p>
+                            <p class="text-xs text-slate-400">This continuous mapping effectively flows information: \\( 10 \\to 72 \\to 720 \\).</p>
                         </div>
                     </div>
                 `,
@@ -423,13 +423,13 @@
                         
                         <div class="bg-black/40 border border-white/10 rounded p-4 mt-4">
                             <h3 class="text-white font-bold border-b border-emerald-500/30 pb-2 mb-3 tracking-wide">Global Holonomy & Drift Correction</h3>
-                            <p class="text-xs text-slate-400 mb-3">After one full loop, the cyclic product must return precisely to the identity rotation. The total system holonomy $\\mathcal{H}$ must satisfy:</p>
+                            <p class="text-xs text-slate-400 mb-3">After one full loop, the cyclic product must return precisely to the identity rotation. The total system holonomy \\( \\mathcal{H} \\) must satisfy:</p>
                             
                             <div class="text-center font-mono text-emerald-300 text-sm mb-3 code-block">
                                 $$\\mathcal{H} = Q^{(8)} Q^{(10)} Q^{(12)} \\approx 1$$
                             </div>
 
-                            <p class="text-xs text-slate-400 mb-3">Any residual drift is measured as $\\epsilon = \\log \\mathcal{H}$. The system then executes periodic corrections, distributing this error back across the chain layers while violently renormalizing all quaternions to strictly length 1:</p>
+                            <p class="text-xs text-slate-400 mb-3">Any residual drift is measured as \\( \\epsilon = \\log \\mathcal{H} \\). The system then executes periodic corrections, distributing this error back across the chain layers while violently renormalizing all quaternions to strictly length 1:</p>
 
                             <div class="text-center font-mono text-emerald-300 text-sm mb-3 code-block">
                                 $$q \\leftarrow \\frac{q}{\\|q\\|}$$
@@ -437,14 +437,131 @@
                             
                             <p class="text-xs text-slate-400">This locks the Torsional Markov Pump into permanent, stable resonance.</p>
                         </div>
+                        
+                        <div class="mt-6 p-4 bg-purple-900/20 border border-purple-500/40 rounded text-center shadow-[0_0_20px_rgba(138,43,226,0.15)]">
+                            <h4 class="text-white font-bold mb-2 text-sm">ADVANCED CURRICULUM UNLOCKED</h4>
+                            <p class="text-xs text-slate-400 mb-4">You have mastered the foundational Markov Pump. Proceed to the Riemann-Zeta Resonance Handshake architecture.</p>
+                            <button id="unlock-mod2-btn" class="px-5 py-2.5 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-mono text-[10px] tracking-[0.2em] rounded transition-all shadow-[0_0_15px_rgba(138,43,226,0.6)]">
+                                INITIATE MODULE 2
+                            </button>
+                        </div>
                     </div>
                 `,
                 visTitle: "Cyclic Identity Closure & Error Flushing",
                 initScene: initPhase7
+            },
+            {
+                id: "phase-8",
+                badge: "Phase 8",
+                badgeColor: "amber",
+                title: "Golden Quadrance & $\\pi^6$ Resonance",
+                objective: "Scale geometric memory using golden quadrance until the $\\pi^6$ resonance handshake is achieved.",
+                content: `
+                    <div class="space-y-4 text-sm text-slate-300 leading-relaxed">
+                        <p>In Module 2, we upgrade the offload mechanism. Memory states are no longer evaluated by simple length, but by <strong>Quadrance</strong> \\( Q(x,y) = \\|x-y\\|^2 \\), scaling outward by the golden ratio \\( \\varphi = \\frac{1+\\sqrt{5}}{2} \\).</p>
+                        
+                        <div class="bg-black/40 border border-white/10 rounded p-4 mt-4">
+                            <h3 class="text-white font-bold border-b border-amber-500/30 pb-2 mb-3 tracking-wide">The \\( \\pi^6 \\) Resonance Handshake</h3>
+                            <p class="text-xs text-slate-400 mb-3">The system expands geometrically across 3 steps, dividing into quadrant triangles: \\( Q_{r+1} = \\varphi^2 Q_r \\). The expansion halts when it perfectly aligns with the normalized Riemann-zeta resonance shell at \\( \\zeta(6) \\):</p>
+                            
+                            <div class="text-center font-mono text-amber-300 text-sm mb-3 code-block">
+                                $$\\left| \\varphi^{2r}Q_0 - \\pi^6 \\right| < \\varepsilon$$
+                            </div>
+
+                            <p class="text-xs text-slate-400">At this precise \\( \\pi^6 \\) apex, the quaternionic state \\( u \\) and \\( v \\) must also achieve exact orthogonality: \\( \\operatorname{Re}(u\\overline{v}) = 0 \\).</p>
+                        </div>
+                    </div>
+                `,
+                visTitle: "Golden Quadrance Triangulation to π⁶",
+                initScene: initPhase8
+            },
+            {
+                id: "phase-9",
+                badge: "Phase 9",
+                badgeColor: "cyan",
+                title: "Riemann Spectral Stability",
+                objective: "Filter memory modes along the Riemann critical line to ensure spectral balance.",
+                content: `
+                    <div class="space-y-4 text-sm text-slate-300 leading-relaxed">
+                        <p>A memory state is only permitted to offload if it possesses spectral stability. We model each memory mode across 6 full wave cycles as a point \\( s \\) evaluated by the Riemann Zeta function.</p>
+                        
+                        <div class="bg-black/40 border border-white/10 rounded p-4 mt-4">
+                            <h3 class="text-white font-bold border-b border-cyan-500/30 pb-2 mb-3 tracking-wide">The Critical Line Condition</h3>
+                            <p class="text-xs text-slate-400 mb-3">Following the Riemann Hypothesis, stable modes exist exclusively on the critical line. Most nodes remain bound to this planar manifold:</p>
+                            
+                            <div class="text-center font-mono text-cyan-300 text-sm mb-3 code-block">
+                                $$\\operatorname{Re}(s) = \\frac{1}{2}$$
+                            </div>
+
+                            <p class="text-xs text-slate-400">However, when the coherence score nears a zeta zero (indicating perfect balance between expansion and contraction), the node accumulates <em>resonant energy</em> and escapes the manifold, raising up into a higher dimensional tier.</p>
+
+                            <div class="text-center font-mono text-cyan-300 text-sm mb-3 code-block">
+                                $$\\left| \\zeta\\left(\\frac{1}{2} + it_k\\right) \\right| < \\tau$$
+                            </div>
+                        </div>
+                    </div>
+                `,
+                visTitle: "Spectral Escape on Re(s) = 0.5",
+                initScene: initPhase9
+            },
+            {
+                id: "phase-10",
+                badge: "Phase 10",
+                badgeColor: "purple",
+                title: "The 7-Point Reflective Sieve",
+                objective: "Observe how prime numbers emerge through cyclic reflections in the D7 group.",
+                content: `
+                    <div class="space-y-4 text-sm text-slate-300 leading-relaxed">
+                        <p>When resonant energy escapes from Phase 9, it is fired into a 7-point sieve modeled by the cyclic-reflective group \\( D_7 \\). The energy bounces between vertices.</p>
+                        
+                        <div class="bg-black/40 border border-white/10 rounded p-4 mt-4">
+                            <h3 class="text-white font-bold border-b border-purple-500/30 pb-2 mb-3 tracking-wide">The Geometric Handshake & Prime Emergence</h3>
+                            <p class="text-xs text-slate-400 mb-3">As the energy reflects cyclically, mathematical prime numbers mathematically <strong>emerge</strong> because their structural indivisibility allows them to perfectly reflect on the geometric handshake without destructive interference.</p>
+                            
+                            <div class="text-center font-mono text-purple-300 text-sm mb-3 code-block">
+                                $$S_7(\\mathcal{C}) = \\prod_{k=0}^{6} s_k(\\mathcal{C}) = 1$$
+                            </div>
+
+                            <p class="text-xs text-slate-400">If the energy path hits a non-prime resonance, the sequence is rejected (\\( s_k = 0 \\)), forcing the energy to fold downward.</p>
+                        </div>
+                    </div>
+                `,
+                visTitle: "D7 Cyclic-Reflective Sieve",
+                initScene: initPhase10
+            },
+            {
+                id: "phase-11",
+                badge: "Phase 11",
+                badgeColor: "rose",
+                title: "Binary Offload Decision",
+                objective: "Execute the final expansion (1008) or fold (8) based on prime resonance.",
+                content: `
+                    <div class="space-y-4 text-sm text-slate-300 leading-relaxed">
+                        <p>All conditions culminate in a single binary decision variable \\( \\mathcal{D} \\in \\{0,1\\} \\), continuously powered by the three Markov pumps (\\( J_{\\text{total}} > 0 \\)).</p>
+                        
+                        <div class="bg-black/40 border border-white/10 rounded p-4 mt-4">
+                            <h3 class="text-white font-bold border-b border-rose-500/30 pb-2 mb-3 tracking-wide">Upward Expansion vs. Downward Fold</h3>
+                            <p class="text-xs text-slate-400 mb-3">If \\( \\mathcal{D} = 1 \\) (Prime Resonance Achieved), the sequence perfectly clears the 7-point sieve and explodes upward into the 1008-state offload shell:</p>
+                            
+                            <div class="text-center font-mono text-emerald-300 text-sm mb-3 code-block">
+                                $$8 \\xrightarrow{\\times 3} 24 \\xrightarrow{\\times 6} 144 \\xrightarrow{\\times 7} 1008$$
+                            </div>
+
+                            <p class="text-xs text-slate-400 mb-3">If \\( \\mathcal{D} = 0 \\) (Non-Prime/Resonance Failed), the data safely collapses back to the 8-state equilibrium layer:</p>
+
+                            <div class="text-center font-mono text-rose-300 text-sm mb-3 code-block">
+                                $$720 \\xrightarrow{/6} 120 \\xrightarrow{/5} 24 \\xrightarrow{/3} 8$$
+                            </div>
+                        </div>
+                    </div>
+                `,
+                visTitle: "Prime Expansion (1008) & Collapse (8)",
+                initScene: initPhase11
             }
         ];
 
         let activePhaseIndex = 0;
+        let module2Unlocked = false;
 
         // ==========================================
         // 2. THREE.JS GLOBAL SETUP
@@ -883,6 +1000,279 @@
             };
         }
 
+        // Phase 8: Golden Quadrance Expansion (3 Squares -> Triangles)
+        function initPhase8(group) {
+            const squares = [];
+            const colors = [0x00d4ff, 0x10b981, 0xf59e0b];
+            
+            for (let i = 0; i < 3; i++) {
+                const sqGroup = new THREE.Group();
+                
+                // Construct square from 4 triangles (quadrants) meeting at center
+                const pts = [
+                    new THREE.Vector3(-1, 1, 0), new THREE.Vector3(1, 1, 0),
+                    new THREE.Vector3(1, -1, 0), new THREE.Vector3(-1, -1, 0),
+                    new THREE.Vector3(0, 0, 0) // center
+                ];
+                const indices = [ 0,4,1,  1,4,2,  2,4,3,  3,4,0 ];
+                
+                const geo = new THREE.BufferGeometry().setFromPoints(pts);
+                geo.setIndex(indices);
+                geo.computeVertexNormals();
+                
+                const wireMat = new THREE.MeshBasicMaterial({ color: colors[i], wireframe: true, transparent: true, opacity: 0.8 });
+                const fillMat = new THREE.MeshBasicMaterial({ color: colors[i], transparent: true, opacity: 0.1, side: THREE.DoubleSide });
+                
+                const mesh = new THREE.Mesh(geo, fillMat);
+                const wire = new THREE.Mesh(geo, wireMat);
+                sqGroup.add(mesh);
+                sqGroup.add(wire);
+                
+                // Stack them slightly in Z space
+                sqGroup.position.z = -i * 1.5; 
+                squares.push(sqGroup);
+                group.add(sqGroup);
+            }
+
+            // Reference Shell
+            const shellGeo = new THREE.SphereGeometry(6, 32, 32);
+            const shellMat = new THREE.MeshBasicMaterial({color: 0xf59e0b, transparent: true, opacity: 0.05, wireframe: true});
+            const pi6Shell = new THREE.Mesh(shellGeo, shellMat);
+            group.add(pi6Shell);
+
+            const hudData = document.getElementById('vis-overlay-data');
+            
+            currentCustomAnimate = (elapsed) => {
+                // 3 discrete steps for the 3 squares
+                const cycle = (elapsed * 0.5) % 3.0; 
+                
+                squares.forEach((sq, i) => {
+                    if (cycle > i) {
+                        const localT = Math.min(cycle - i, 1.0);
+                        // Golden ratio expansion simulation (phi^2)
+                        const scale = 1 + (Math.pow(1.618, localT * 2.5)); 
+                        sq.scale.setScalar(scale);
+                        sq.visible = true;
+                        sq.rotation.z = localT * Math.PI / 4;
+                    } else {
+                        sq.visible = false;
+                        sq.scale.setScalar(1);
+                    }
+                });
+                
+                group.rotation.x = Math.sin(elapsed * 0.2) * 0.5;
+                group.rotation.y = Math.cos(elapsed * 0.2) * 0.5;
+
+                hudData.innerHTML = `
+                    EXPANSION STEP: <span class="text-amber-400">${Math.floor(cycle) + 1}/3</span><br>
+                    RESONANCE: <span class="text-white">Forming Quadrant Triangles</span><br>
+                    TARGET SHELL: <span class="text-amber-400">π⁶ ≈ 961.38</span>
+                `;
+            };
+        }
+
+        // Phase 9: Riemann Spectral Stability (6 Cycles & Escaping Nodes)
+        function initPhase9(group) {
+            const manifold = new THREE.Group();
+            group.add(manifold);
+            
+            // Draw 6 sine wave cycles
+            const points = [];
+            for(let i=0; i<=120; i++) {
+                const x = (i/120) * 24 - 12; // spread across -12 to 12
+                const y = Math.sin((i/120) * Math.PI * 12); // 6 cycles (12 PI)
+                points.push(new THREE.Vector3(x, y, 0));
+            }
+            const lineGeo = new THREE.BufferGeometry().setFromPoints(points);
+            const lineMat = new THREE.LineBasicMaterial({color: 0x00d4ff, transparent:true, opacity:0.3});
+            manifold.add(new THREE.Line(lineGeo, lineMat));
+
+            // Create specific evaluating nodes
+            const nodes = [];
+            const pGeo = new THREE.SphereGeometry(0.3, 16, 16);
+            for(let i=0; i<=6; i++) {
+                const x = (i/6) * 24 - 12;
+                // Specific nodes representing primes/resonant zeros
+                const isResonant = [2, 3, 5].includes(i); 
+                
+                const mat = new THREE.MeshPhysicalMaterial({color: isResonant ? 0xf59e0b : 0x8A2BE2});
+                const mesh = new THREE.Mesh(pGeo, mat);
+                mesh.position.set(x, 0, 0); // Start on the critical line
+                manifold.add(mesh);
+                nodes.push({mesh, x, isResonant, baseColor: isResonant ? 0xf59e0b : 0x8A2BE2});
+            }
+
+            const hudData = document.getElementById('vis-overlay-data');
+
+            currentCustomAnimate = (elapsed) => {
+                // An energy wave traveling across the 6 cycles
+                const waveX = (elapsed * 3) % 28 - 14; 
+                
+                nodes.forEach(n => {
+                    const dist = Math.abs(n.x - waveX);
+                    if (dist < 1.5) {
+                        if (n.isResonant) {
+                            // Resonant energy escapes the 2D manifold to a higher tier
+                            n.mesh.position.y = THREE.MathUtils.lerp(n.mesh.position.y, 4, 0.1);
+                            n.mesh.position.z = THREE.MathUtils.lerp(n.mesh.position.z, 3, 0.1);
+                            n.mesh.material.color.setHex(0xffffff);
+                            n.mesh.scale.setScalar(1.5);
+                        } else {
+                            // Non-resonant nodes just pulse and stay bound to Re(s)=0.5
+                            n.mesh.scale.setScalar(1.2);
+                            n.mesh.material.color.setHex(0x00d4ff);
+                        }
+                    } else {
+                        // Return to base state
+                        n.mesh.position.y = THREE.MathUtils.lerp(n.mesh.position.y, 0, 0.05);
+                        n.mesh.position.z = THREE.MathUtils.lerp(n.mesh.position.z, 0, 0.05);
+                        n.mesh.scale.setScalar(1.0);
+                        n.mesh.material.color.setHex(n.baseColor);
+                    }
+                });
+
+                group.rotation.x = 0.3;
+                group.rotation.y = elapsed * 0.1;
+
+                hudData.innerHTML = `
+                    MANIFOLD: <span class="text-cyan-400">6 Full Cycles Evaluated</span><br>
+                    CRITICAL LINE: <span class="text-white">Re(s) = 1/2</span><br>
+                    RESONANT ESCAPE: <span class="text-amber-400">Raising to Higher Tier</span>
+                `;
+            };
+        }
+
+        // Phase 10: 7-Point Reflective Sieve & Prime Emergence
+        function initPhase10(group) {
+            const radius = 5;
+            const geo = new THREE.RingGeometry(radius-0.1, radius+0.1, 7);
+            const mat = new THREE.MeshBasicMaterial({color: 0x8A2BE2, wireframe: true});
+            const heptagon = new THREE.Mesh(geo, mat);
+            group.add(heptagon);
+
+            // 7 Nodes representing the D7 Group
+            const nodes = [];
+            for(let i=0; i<7; i++) {
+                const angle = (i/7) * Math.PI * 2 + Math.PI/2;
+                const node = new THREE.Mesh(new THREE.SphereGeometry(0.4, 8, 8), new THREE.MeshBasicMaterial({color: 0x334155}));
+                node.position.set(Math.cos(angle)*radius, Math.sin(angle)*radius, 0);
+                group.add(node);
+                nodes.push({mesh: node, pos: node.position.clone()});
+            }
+
+            // Escaped Energy Particle from Phase 9
+            const energy = new THREE.Mesh(new THREE.SphereGeometry(0.5, 16, 16), new THREE.MeshBasicMaterial({color: 0xffffff}));
+            group.add(energy);
+
+            const hudData = document.getElementById('vis-overlay-data');
+            let bounceLog = [];
+            let lastTarget = -1;
+
+            currentCustomAnimate = (elapsed) => {
+                const speed = 1.5;
+                const step = Math.floor(elapsed * speed);
+                const t = (elapsed * speed) % 1.0;
+                
+                // Define true mathematical primes in our cyclic range
+                const primes = [2, 3, 5, 7];
+                
+                // Deterministic bouncing pattern simulating geometric handshake
+                const currentIdx = (step * 3) % 7; 
+                const nextIdx = ((step + 1) * 3) % 7;
+                
+                const start = nodes[currentIdx].pos;
+                const end = nodes[nextIdx].pos;
+                
+                energy.position.lerpVectors(start, end, t);
+
+                if (currentIdx !== lastTarget) {
+                    lastTarget = currentIdx;
+                    const isPrime = primes.includes(currentIdx + 1); // 1-indexed for logging
+                    
+                    if (isPrime) {
+                        bounceLog.unshift(`Resonance at Node ${currentIdx + 1} [PRIME EMERGENCE]`);
+                    } else {
+                        bounceLog.unshift(`Reflection at Node ${currentIdx + 1} (Rejected)`);
+                    }
+                    if (bounceLog.length > 5) bounceLog.pop();
+                }
+
+                nodes.forEach((n, i) => {
+                    if (i === currentIdx) {
+                        const isPrime = primes.includes(i + 1);
+                        n.mesh.material.color.setHex(isPrime ? 0xffffff : 0xf43f5e);
+                        n.mesh.scale.setScalar(1.5 + Math.sin(t * Math.PI));
+                    } else {
+                        n.mesh.material.color.setHex(0x334155);
+                        n.mesh.scale.setScalar(1.0);
+                    }
+                });
+
+                hudData.innerHTML = `
+                    INCOMING: <span class="text-amber-400">Resonant Energy from Ph. 9</span><br>
+                    <div class="text-xs text-slate-400 mt-2 space-y-1">
+                        ${bounceLog.map(l => l.includes('PRIME') ? `<span class="text-emerald-400 font-bold">${l}</span>` : `<span class="text-slate-500">${l}</span>`).join('<br>')}
+                    </div>
+                `;
+            };
+        }
+
+        // Phase 11: Binary Offload Decision (Prime Triggers)
+        function initPhase11(group) {
+            const centerGeo = new THREE.IcosahedronGeometry(1.5, 1);
+            const centerMat = new THREE.MeshPhysicalMaterial({color: 0xffffff, transparent:true, opacity:0.8});
+            const center = new THREE.Mesh(centerGeo, centerMat);
+            group.add(center);
+
+            // Upward 1008 Expansion
+            const upPts = [];
+            for(let i=0; i<150; i++) {
+                upPts.push(new THREE.Vector3((Math.random()-0.5)*8, Math.random()*12, (Math.random()-0.5)*8));
+            }
+            const upNodes = new THREE.Points(
+                new THREE.BufferGeometry().setFromPoints(upPts),
+                new THREE.PointsMaterial({color: 0x10b981, size: 0.2})
+            );
+            group.add(upNodes);
+
+            // Downward 8 Collapse
+            const downPts = [];
+            for(let i=0; i<8; i++) {
+                downPts.push(new THREE.Vector3((Math.random()-0.5)*2, -Math.random()*5, (Math.random()-0.5)*2));
+            }
+            const downNodes = new THREE.Points(
+                new THREE.BufferGeometry().setFromPoints(downPts),
+                new THREE.PointsMaterial({color: 0xf43f5e, size: 0.4})
+            );
+            group.add(downNodes);
+
+            const hudData = document.getElementById('vis-overlay-data');
+
+            currentCustomAnimate = (elapsed) => {
+                // Switch between Prime expansion and Non-prime fold every 3 seconds
+                const decision = Math.floor(elapsed / 3) % 2 === 0 ? 1 : 0; 
+                
+                if (decision === 1) {
+                    center.material.color.setHex(0x10b981);
+                    upNodes.position.y = (elapsed * 3) % 6; // Fast upward explosion
+                    upNodes.visible = true;
+                    downNodes.visible = false;
+                } else {
+                    center.material.color.setHex(0xf43f5e);
+                    downNodes.position.y = -(elapsed * 1.5) % 3; // Slow dense collapse
+                    upNodes.visible = false;
+                    downNodes.visible = true;
+                }
+
+                hudData.innerHTML = `
+                    TRIGGER: <span class="text-amber-400">${decision ? 'Prime Emergence Verified' : 'Non-Prime Geometry'}</span><br>
+                    DECISION 𝒟: <span class="text-white font-bold">${decision}</span><br>
+                    PATH: <span class="${decision ? 'text-emerald-400' : 'text-rose-400'}">${decision ? '8 → 1008 (Expansion)' : '720 → 8 (Collapse)'}</span><br>
+                    J_total: <span class="text-cyan-400">> 0 (Pumping)</span>
+                `;
+            };
+        }
+
         // ==========================================
         // 4. UI & LOGIC INTEGRATION
         // ==========================================
@@ -911,6 +1301,8 @@
             navContainer.appendChild(header);
 
             phasesData.forEach((phase, index) => {
+                if (!module2Unlocked && index > 7) return; // Hide Module 2 if locked
+
                 const btn = document.createElement('button');
                 
                 let btnStyle = 'text-slate-400';
@@ -919,7 +1311,7 @@
                 }
 
                 btn.className = `nav-item w-full text-left px-4 py-3 text-sm font-mono tracking-wide ${btnStyle}`;
-                btn.innerHTML = `<span class="font-bold opacity-50 mr-2">0${index}</span> ${phase.badge}`;
+                btn.innerHTML = `<span class="font-bold opacity-50 mr-2">${index.toString().padStart(2, '0')}</span> ${phase.badge}`;
                 
                 btn.onclick = () => loadPhase(index);
                 
@@ -941,7 +1333,7 @@
             phaseBadge.className = `inline-block px-2 py-0.5 border rounded text-[9px] tracking-widest uppercase mb-2 font-mono ${colorMap[phase.badgeColor]}`;
 
             renderNav();
-            
+
             // Rerun MathJax for dynamic content
             if(window.MathJax && typeof MathJax.typesetPromise === 'function') {
                 MathJax.typesetPromise([phaseContent]).catch((err) => console.log(err.message));
@@ -957,6 +1349,18 @@
             
             // In phase 5 (Nodes) move camera a bit closer
             if(index === 5) camera.position.set(0, 5, 15);
+
+            // Bind Module 2 unlock button if on phase 7
+            if (index === 7) {
+                const unlockBtn = document.getElementById('unlock-mod2-btn');
+                if (unlockBtn) {
+                    unlockBtn.onclick = () => {
+                        module2Unlocked = true;
+                        renderNav();
+                        loadPhase(8);
+                    };
+                }
+            }
         }
 
         // ==========================================
