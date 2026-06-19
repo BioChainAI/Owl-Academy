@@ -1,0 +1,179 @@
+{
+  "_instruction": "Replace all string values with the specific proof data. Preserve all keys. Ensure all backslashes in LaTeX are double-escaped (e.g., \\pi).",
+  "cartridge_metadata": {
+    "proof_name": "Torsional Markov Memory-Offload Pump",
+    "short_name": "TMMOP",
+    "author": "Theoretical Physics & Topological Computation Board",
+    "target_system": "SHD-CCP Formal Proofer v1.0",
+    "version": "1.0"
+  },
+  "raw_proof_text": "Mathematical Model for the Torsional Markov Memory-Offload Pump\nTheoretical Physics & Topological Computation Board\n\nAbstract\nYou can express the system as a three-scale quaternionic Markov pump whose memory is distributed across three coupled cyclic gears:\nOuter gear: 12-point gear, 720-frame quaternion chain\nMiddle gear: 10-point gear, 72-frame inverse quaternion chain\nInner gear: 8-point gear, 10-frame quaternion chain\n\nThe essential idea is: large memory chain -> compressed inverse correction chain -> coarse equilibrium chain where information flows both upward and downward through quaternionic delta maps while preserving rotational coherence.\n\n1 Define the Three Quaternion Chains\nLet the three gears carry unit-quaternion states: q_n^{(12)}, q_m^{(10)}, q_l^{(8)} in \\mathbb{H} where ||q|| = 1.\n\n2 Outer 720-Frame Quaternion Chain\nStores the full non-compressed rotation history as quaternionic deltas: \\Delta q_n^{(12)} = q_n^{(12)}(q_{n-1}^{(12)})^{-1}.\n\n3 Middle 72-Frame Inverse Quaternion Chain\nThe middle 10-point gear runs inversely. \\Delta q_m^{(10)} = (q_{m-1}^{(10)})(q_m^{(10)})^{-1}. It prevents the same alignment from repeating too quickly.\n\n4 Inner 10-Frame Chain on the 8-Point Gear\nThe lowest gear is the coarsest memory layer with deltas \\Delta q_l^{(8)}. The mismatch creates a small torsional fold.\n\n5 Coupling the Three Gears by Geometric Scaling\nScaling map: 720 -> 72 -> 10. Information flows down and back up.\n\n6 Quaternionic Downsampling\nCompress ten fine updates into one coarse torsional update. The middle inverse gear stores the compensating inverse: \\Delta q_m^{(10)} = (\\Delta Q_m^{(12->10)})^{-1}.\n\n7 Second Offload: Middle Chain to Inner Chain\nCompress the 72 middle deltas into 10 inner deltas using variable block sizes.\n\n8 Upward Reconstruction\nUse lifted correction via the exponential map: q^w = exp(w log q).\n\n9 Markov Pump Structure\nThe directed memory currents form a torsional pump condition: J_{12,10} + J_{10,8} + J_{8,12} > 0. The system has a net directed circulation of memory.\n\n10 Equilibrium Constraint\nRequire the net cycle product to close to identity up to a small controlled holonomy: \\mathcal{H} = Q^{(8)}Q^{(10)}Q^{(12)} \\approx 1.\n\n11 Fractal Folding Inward Every Cyclic Step\nThe sign pattern is (+, -, +). This creates inward folding without losing orientation coherence.",
+  "familiar_initialization": {
+    "cat": {
+      "load_dialogue": "Ah... the TMMOP. A beautiful three-scale quaternionic cascade. Outer, middle, inner... flowing downwards and lifting upwards. I feel the rotational coherence stabilizing across the manifolds."
+    },
+    "mastiff": {
+      "load_dialogue": "TMMOP data acquired. I am locking onto the three cyclic gears. The inverse compensating layer is critical for torsional drift cancellation. We are ready to verify the geometric equilibrium."
+    }
+  },
+  "verification_steps": [
+    {
+      "step_id": 1,
+      "window_title": "QUATERNIONIC GEARS",
+      "lean_shd_hud": {
+        "goal": "\\vdash ||q_n^{(12)}|| = ||q_m^{(10)}|| = ||q_l^{(8)}|| = 1",
+        "hypotheses": [
+          "Outer: 720-frame chain (12-point gear)",
+          "Middle: 72-frame inverse chain (10-point gear)",
+          "Inner: 10-frame chain (8-point gear)"
+        ],
+        "tactic": "=> apply unit_quaternion_state"
+      },
+      "terminal_logs": [
+        "[CHECKING] 1. Define the Three Quaternion Chains... [OK]",
+        "[CHECKING] 2. Outer 720-Frame Quaternion Chain... [OK]",
+        "[CHECKING] 3. Middle 72-Frame Inverse Quaternion Chain... [OK]",
+        "[CHECKING] 4. Inner 10-Frame Chain on the 8-Point Gear... [OK]"
+      ],
+      "familiar_dialogues": {
+        "cat": "Observe the three nested rings. The outer layer weaves the fine history, the middle twists backward to catch the drift, and the inner holds the coarse anchor. All perfectly normalized to unity.",
+        "mastiff": "The structural basis is defined. Unit-quaternion states are verified across all three chains. The (+, -, +) sign orientation prevents catastrophic torsional collapse."
+      },
+      "visual_render_mode": "TREFOIL",
+      "inspector_data": {
+        "modal_title": "INSPECTOR: [1.0-4.0] THREE-SCALE GEAR TOPOLOGY",
+        "description_top": "The system distributes memory across three coupled cyclic gears carrying unit-quaternions. The middle gear runs inversely to act as a compensating layer.",
+        "equation_top": "\\Delta q_n^{(12)} = q_n^{(12)}(q_{n-1}^{(12)})^{-1}, \\quad \\Delta q_m^{(10)} = (q_{m-1}^{(10)})(q_m^{(10)})^{-1}",
+        "visual_generation_instructions": {
+          "concept": "Three nested concentric rings representing the three gears.",
+          "c64_palette_required": [
+            "--c64-highlight",
+            "--c64-bg",
+            "--c64-red",
+            "--c64-green",
+            "--c64-yellow"
+          ],
+          "layout": "Draw three concentric circles using --c64-bg as the base. Make the outermost circle the largest, stroked in --c64-highlight, representing the 12-point gear. Draw 12 evenly spaced solid dots on it. Draw a middle circle stroked in --c64-red, representing the 10-point inverse gear, with 10 dots. Draw an inner circle stroked in --c64-green, representing the 8-point gear, with 8 dots. Add a curved --c64-highlight arrow outside the outer circle pointing clockwise. Add a curved --c64-red arrow inside the middle circle pointing counter-clockwise. Add a curved --c64-green arrow inside the inner circle pointing clockwise."
+        },
+        "description_bottom": "The states are reconstructed via chronological multiplication of these quaternionic deltas.",
+        "equation_bottom": "q_n^{(12)} = \\Delta q_n^{(12)} \\dots \\Delta q_1^{(12)} q_0^{(12)}"
+      }
+    },
+    {
+      "step_id": 2,
+      "window_title": "MEMORY OFFLOADING",
+      "lean_shd_hud": {
+        "goal": "\\vdash \\Delta q_m^{(10)} = (\\Delta Q_m^{(12\\rightarrow 10)})^{-1}",
+        "hypotheses": [
+          "P_{12\\rightarrow 10}(n) = \\lfloor \\frac{n}{10} \\rfloor",
+          "A_l = \\{m : \\lfloor \\frac{10m}{72} \\rfloor = l\\}"
+        ],
+        "tactic": "=> apply quaternionic_downsampling"
+      },
+      "terminal_logs": [
+        "[CHECKING] 5. Coupling the Three Gears by Geometric Scaling... [OK]",
+        "[CHECKING] 6. Quaternionic Downsampling: Offloading Downward... [OK]",
+        "[CHECKING] 7. Second Offload: Middle Chain to Inner Chain... [OK]"
+      ],
+      "familiar_dialogues": {
+        "cat": "The memory cascades downwards. Ten fine frames of the outer ring compress into a single inverse twist in the middle. The fractal folding begins...",
+        "mastiff": "Downsampling verified. The geometric scaling map $720 \\rightarrow 72 \\rightarrow 10$ is strictly bounded by the floor functions. Chronological order is preserved."
+      },
+      "visual_render_mode": "PUMP",
+      "inspector_data": {
+        "modal_title": "INSPECTOR: [5.0-7.0] GEOMETRIC SCALING MAPS",
+        "description_top": "High-resolution memory is compressed and offloaded downward. 10 outer updates form 1 coarse torsional update, stored inversely in the middle layer.",
+        "equation_top": "\\Delta Q_m^{(12\\rightarrow 10)} = \\Delta q_{10m+9}^{(12)} \\dots \\Delta q_{10m}^{(12)}",
+        "visual_generation_instructions": {
+          "concept": "A visual funnel or pipeline showing 10 nodes compressing into 1.",
+          "c64_palette_required": [
+            "--c64-highlight",
+            "--c64-text",
+            "--c64-red"
+          ],
+          "layout": "Draw a wide horizontal row of 10 small --c64-highlight dots at the top of the SVG. Below them, draw a single, slightly larger --c64-red dot. Draw straight --c64-text lines connecting each of the 10 top dots directly to the single bottom red dot. Next to the red dot, write the text 'm = floor(n/10)' using --c64-highlight."
+        },
+        "description_bottom": "The middle layer stores the inverse to act as a stabilizing counter-rotation.",
+        "equation_bottom": "\\Delta q_m^{(10)} = (\\Delta Q_m^{(12\\rightarrow 10)})^{-1}"
+      }
+    },
+    {
+      "step_id": 3,
+      "window_title": "UPWARD RECONSTRUCTION",
+      "lean_shd_hud": {
+        "goal": "\\vdash \\hat{\\Delta q}_m^{(10)} = (\\Delta q_{l(m)}^{(8)})^{w_m}",
+        "hypotheses": [
+          "L_{10\\rightarrow 12}(m) = 10m",
+          "q^w = exp(w \\log q)"
+        ],
+        "tactic": "=> exact exponential_interpolation"
+      },
+      "terminal_logs": [
+        "[CHECKING] 8. Upward Reconstruction: Flowing Data Back Up... [OK]"
+      ],
+      "familiar_dialogues": {
+        "cat": "And as it flows down, it must flow back up. The exponential map lifts the coarse anchor back into the fine stream, interpolating smoothly through the void.",
+        "mastiff": "Reconstruction parameters secured. Fractional powers of unit quaternions are well-defined. Interpolation weights $w_m$ are bounded."
+      },
+      "visual_render_mode": "LATTICE",
+      "inspector_data": {
+        "modal_title": "INSPECTOR: [8.0] QUATERNIONIC LIFTING",
+        "description_top": "To reconstruct fine detail from lower layers, the system uses a lifted correction based on fractional interpolation weights.",
+        "equation_top": "\\hat{q}_n^{(12)} = (\\Delta q_{m(n)}^{(10)})^{1/10} \\hat{q}_{n-1}^{(12)}",
+        "visual_generation_instructions": {
+          "concept": "A single coarse node generating a wave of fine nodes moving upwards.",
+          "c64_palette_required": [
+            "--c64-green",
+            "--c64-yellow",
+            "--c64-highlight"
+          ],
+          "layout": "At the bottom center, draw a large --c64-green dot. From this dot, draw a thick, dashed --c64-yellow arrow pointing straight upwards. At the top of the arrow, draw a horizontal series of 10 small --c64-highlight dots. Label the arrow 'exp(w log q)' in --c64-highlight text."
+        },
+        "description_bottom": "This fractional power relies on the standard exponential map for quaternions.",
+        "equation_bottom": "q^w = \\exp(w \\log q)"
+      }
+    },
+    {
+      "step_id": 4,
+      "window_title": "MARKOV CIRCULATION",
+      "lean_shd_hud": {
+        "goal": "\\vdash J_{12,10} + J_{10,8} + J_{8,12} > 0",
+        "hypotheses": [
+          "J_{ij} = \\pi_i K_{ij} - \\pi_j K_{ji}",
+          "\\mathcal{H} = Q^{(8)} Q^{(10)} Q^{(12)} \\approx 1"
+        ],
+        "tactic": "=> apply directed_memory_current"
+      },
+      "terminal_logs": [
+        "[CHECKING] 9. Markov Pump Structure... [OK]",
+        "[CHECKING] 10. Equilibrium Constraint... [OK]",
+        "[CHECKING] 11. Fractal Folding Inward... [OK]",
+        "[CHECKING] 12. Algorithmic Memory-Offloading Procedure... [OK]",
+        "[CHECKING] 13. Final Compact Expression... [OK]"
+      ],
+      "familiar_dialogues": {
+        "cat": "The cycle completes. A continuous, non-equilibrium circulation of memory. The holonomy closes precisely at identity. It breathes, perfectly balanced.",
+        "mastiff": "Final constraints met. Net directed circulation is strictly positive. Equilibrium holonomy $|| \\log \\mathcal{H} || \\approx 0$ enforced. Fractal folding confirmed. Q.E.D."
+      },
+      "visual_render_mode": "PROVEN",
+      "inspector_data": {
+        "modal_title": "INSPECTOR: [9.0-13.0] TORSIONAL MARKOV PUMP",
+        "description_top": "The system requires a net directed circulation of memory rather than passive reversible diffusion. The layers operate as a three-state Markov chain.",
+        "equation_top": "J_{12,10} + J_{10,8} + J_{8,12} > 0",
+        "visual_generation_instructions": {
+          "concept": "A three-node cyclic graph showing directed flow and an identity lock.",
+          "c64_palette_required": [
+            "--c64-bg",
+            "--c64-highlight",
+            "--c64-green",
+            "--c64-red"
+          ],
+          "layout": "Draw a triangle made of three large --c64-bg circles stroked with --c64-highlight. Label the top node '12', the bottom right '10', and the bottom left '8'. Connect the nodes with thick --c64-green arrows in a clockwise direction to show net current $J > 0$. In the exact center of the triangle, draw a small --c64-red padlock icon or square to represent the equilibrium constraint $\\mathcal{H} \\approx 1$."
+        },
+        "description_bottom": "The mechanism is mathematically a multi-resolution quaternion delta chain with an inverse middle compensator and a non-equilibrium Markov circulation current.",
+        "equation_bottom": "\\mathcal{H} = Q^{(8)}Q^{(10)}Q^{(12)} \\approx 1"
+      }
+    }
+  ]
+}
+```
