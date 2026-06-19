@@ -801,7 +801,11 @@
                     "equation_bottom": "$$[LATEX EQUATION OF RESULT]$$",
                     "graph_equations": {
                         "type": "cartesian",
-                        "y": "sin(x - time) * exp(-abs(x)/5)"
+                        "y": "sin(x - time) * exp(-abs(x)/5)",
+                        "familiar_dialogues": {
+                            "cat": "Observe the oscillating decay... the wave settles into the void.",
+                            "mastiff": "Amplitude bounded by the exponential envelope. Stability confirmed."
+                        }
                     }
                   }
                 }
@@ -887,7 +891,7 @@
             printLine(`> CARTRIDGE INSERTED: ${data.cartridge_metadata.short_name}`, 'var(--c64-yellow)');
             printLine(`MOUNTING: ${data.cartridge_metadata.proof_name}...`, 'var(--c64-text)');
             
-            populateGrapherSidebar(); // Automatically load equations to the graphing calculator
+            populateGrapherSidebar(); 
 
             setTimeout(() => {
                 printLine("READY.", 'var(--c64-highlight)');
@@ -896,7 +900,7 @@
             }, 800);
         }
 
-        // Complete Default TTMPT Mock Proof with Graph Equations
+        // Complete Default TTMPT Mock Proof with Graph Equations & Dialogues
         const mockTTMPT = {
             "cartridge_metadata": { "proof_name": "Torsional Trefoil Markov Pump Theorem", "short_name": "TTMPT" },
             "raw_proof_text": "# Abstract\nThe Torsional Trefoil Markov Pump Theorem (TTMPT) establishes a deterministic mathematical framework...\n\n## 1. Axiomatic Foundations\nWe rigorously define the localized state space as a 12-channel lattice Hilbert space:\n$$H_{\\Lambda_{12}} \\cong \\mathbb{C}^{12}$$\n\n(DEFAULT TTMPT LOADED)",
@@ -934,7 +938,11 @@
                         "graph_equations": {
                             "type": "parametric",
                             "x": "sin(t) + 2*sin(2*t)",
-                            "y": "cos(t) - 2*cos(2*t)"
+                            "y": "cos(t) - 2*cos(2*t)",
+                            "familiar_dialogues": {
+                                "cat": "Observe the parametric trefoil... the knot weaves itself into existence over time.",
+                                "mastiff": "Parametric bounds verified. The coordinate trajectory remains fully stable."
+                            }
                         }
                     }
                 },
@@ -964,7 +972,11 @@
                         "equation_bottom": "$$J > 0$$",
                         "graph_equations": {
                             "type": "cartesian",
-                            "y": "exp(-abs(x)/2) * sin(x*5 - time*2)"
+                            "y": "exp(-abs(x)/2) * sin(x*5 - time*2)",
+                            "familiar_dialogues": {
+                                "cat": "The waves propagate, yet their energy dissipates outward into the void. Beautiful.",
+                                "mastiff": "Exponential decay envelope active. Reverse current is strictly suppressed."
+                            }
                         }
                     }
                 },
@@ -993,7 +1005,11 @@
                         "graph_equations": {
                             "type": "parametric",
                             "x": "(3 + cos(t*10 + time*5)) * cos(t)",
-                            "y": "(3 + cos(t*10 + time*5)) * sin(t)"
+                            "y": "(3 + cos(t*10 + time*5)) * sin(t)",
+                            "familiar_dialogues": {
+                                "cat": "The manifold breathes! A toroidal projection shifting in pure geometric harmony.",
+                                "mastiff": "Orthogonal vibration detected. The heat sink is successfully absorbing the variance."
+                            }
                         }
                     }
                 },
@@ -1020,7 +1036,11 @@
                         "equation_bottom": "$$\\Theta_{10} \\equiv \\Theta_0 \\pmod{2\\pi}$$",
                         "graph_equations": {
                             "type": "cartesian",
-                            "y": "x + sin(x*3 - time*4)*1.5"
+                            "y": "x + sin(x*3 - time*4)*1.5",
+                            "familiar_dialogues": {
+                                "cat": "An ascending scalar field. The oscillations ride the current endlessly forward.",
+                                "mastiff": "Linear advancement confirmed. The scalar value strictly increases over the interval."
+                            }
                         }
                     }
                 }
@@ -1149,7 +1169,6 @@
 
         function openGrapher() {
             document.getElementById('grapher-modal').style.display = 'flex';
-            // Wait for flex layout to compute before sizing the canvas
             setTimeout(resizeCanvas, 50); 
         }
 
@@ -1170,37 +1189,37 @@
 
             loadedCartridge.verification_steps.forEach(step => {
                 const eq = step.inspector_data?.graph_equations;
-                
-                // We now ensure every step generates a button, even if graph_equations is missing
-                const btn = document.createElement('div');
-                btn.className = 'grapher-step-btn';
-                btn.innerText = `STEP ${step.step_id}: ${step.window_title}`;
-                btn.onclick = () => {
-                    document.querySelectorAll('.grapher-step-btn').forEach(b => b.classList.remove('active'));
-                    btn.classList.add('active');
-                    
-                    if (eq && eq.type === 'parametric') {
-                        document.getElementById('graph-eq-y').value = '';
-                        document.getElementById('graph-eq-xt').value = eq.x || '';
-                        document.getElementById('graph-eq-yt').value = eq.y || '';
-                    } else if (eq && eq.type === 'cartesian') {
-                        document.getElementById('graph-eq-y').value = eq.y || '';
-                        document.getElementById('graph-eq-xt').value = '';
-                        document.getElementById('graph-eq-yt').value = '';
-                    } else {
-                        // Fallback equation if the cartridge omitted graphing data for this step
-                        document.getElementById('graph-eq-y').value = 'sin(x*2 - time) * exp(-abs(x)/5)';
-                        document.getElementById('graph-eq-xt').value = '';
-                        document.getElementById('graph-eq-yt').value = '';
-                    }
-                    
-                    applyGraphInputs();
-                };
-                list.appendChild(btn);
-                if (!firstBtn) firstBtn = btn;
+                if (eq) {
+                    const btn = document.createElement('div');
+                    btn.className = 'grapher-step-btn';
+                    btn.innerText = `STEP ${step.step_id}: ${step.window_title}`;
+                    btn.onclick = () => {
+                        document.querySelectorAll('.grapher-step-btn').forEach(b => b.classList.remove('active'));
+                        btn.classList.add('active');
+                        
+                        if (eq.type === 'parametric') {
+                            document.getElementById('graph-eq-y').value = '';
+                            document.getElementById('graph-eq-xt').value = eq.x || '';
+                            document.getElementById('graph-eq-yt').value = eq.y || '';
+                        } else {
+                            document.getElementById('graph-eq-y').value = eq.y || '';
+                            document.getElementById('graph-eq-xt').value = '';
+                            document.getElementById('graph-eq-yt').value = '';
+                        }
+                        
+                        applyGraphInputs();
+
+                        // Trigger Familiar Reaction to this specific graph
+                        if (eq.familiar_dialogues && currentFamiliar) {
+                            const diag = eq.familiar_dialogues[currentFamiliar.id];
+                            if (diag) familiarSpeak('custom', diag);
+                        }
+                    };
+                    list.appendChild(btn);
+                    if (!firstBtn) firstBtn = btn;
+                }
             });
 
-            // Automatically load and plot the first equation set when the proof is mounted
             if (firstBtn) {
                 firstBtn.click();
             } else {
@@ -1231,16 +1250,15 @@
         function safeEvalMath(formula, variableName, variableValue, globalTime) {
             if (!formula) return NaN;
             try {
-                // Upgraded to strict word boundaries (\b) to prevent partial replacements
                 let parsed = formula
                     .replace(/Math\./g, '') 
-                    .replace(/\bsin\b/g, 'Math.sin')
-                    .replace(/\bcos\b/g, 'Math.cos')
-                    .replace(/\btan\b/g, 'Math.tan')
-                    .replace(/\bexp\b/g, 'Math.exp')
-                    .replace(/\babs\b/g, 'Math.abs')
-                    .replace(/\bsqrt\b/g, 'Math.sqrt')
-                    .replace(/\bpi\b/gi, 'Math.PI')
+                    .replace(/sin/g, 'Math.sin')
+                    .replace(/cos/g, 'Math.cos')
+                    .replace(/tan/g, 'Math.tan')
+                    .replace(/exp/g, 'Math.exp')
+                    .replace(/abs/g, 'Math.abs')
+                    .replace(/sqrt/g, 'Math.sqrt')
+                    .replace(/pi/gi, 'Math.PI')
                     .replace(/\^/g, '**');
 
                 const func = new Function(variableName, 'time', `return ${parsed};`);
@@ -1253,14 +1271,6 @@
         function graphRenderLoop() {
             const canvas = document.getElementById('grapher-canvas');
             if (document.getElementById('grapher-modal').style.display === 'flex') {
-                const parent = canvas.parentElement;
-                
-                // Dynamic resilient resizing to prevent 0x0 flexbox race conditions
-                if (canvas.width !== parent.clientWidth || canvas.height !== parent.clientHeight) {
-                    canvas.width = parent.clientWidth;
-                    canvas.height = parent.clientHeight;
-                }
-
                 const ctx = canvas.getContext('2d');
                 ctx.clearRect(0, 0, canvas.width, canvas.height);
 
@@ -1279,17 +1289,15 @@
                 }
                 ctx.stroke();
 
-                // Explicit Hex colors used instead of CSS vars to guarantee canvas API compatibility
-                ctx.strokeStyle = '#7c70da'; // var(--c64-text)
+                ctx.strokeStyle = 'var(--c64-text)';
                 ctx.lineWidth = 2;
                 ctx.beginPath();
                 ctx.moveTo(0, midY); ctx.lineTo(canvas.width, midY);
                 ctx.moveTo(midX, 0); ctx.lineTo(midX, canvas.height);
                 ctx.stroke();
 
-                // Draw Math lines safely handling asymptotes/NaNs
                 if (graphState.mode === 'cartesian' && graphState.yEq) {
-                    ctx.strokeStyle = '#55a049'; // var(--c64-green)
+                    ctx.strokeStyle = 'var(--c64-green)';
                     ctx.lineWidth = 2;
                     ctx.beginPath();
                     let first = true;
@@ -1303,13 +1311,13 @@
                             if (first) { ctx.moveTo(px, py); first = false; }
                             else { ctx.lineTo(px, py); }
                         } else {
-                            first = true; // Break line across asymptote
+                            first = true; 
                         }
                     }
                     ctx.stroke();
 
                 } else if (graphState.mode === 'parametric' && graphState.xEq && graphState.ytEq) {
-                    ctx.strokeStyle = '#bfce72'; // var(--c64-yellow)
+                    ctx.strokeStyle = 'var(--c64-yellow)';
                     ctx.lineWidth = 2;
                     ctx.beginPath();
                     let first = true;
@@ -1503,7 +1511,7 @@
             ctx.fillStyle = '#000000';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-            time += 0.02;
+            time += 0.02; 
 
             if (renderMode !== 'IDLE' && VisLib[renderMode]) {
                 VisLib[renderMode](ctx, time);
