@@ -11,9 +11,9 @@
 
     <style>
         body {
-            background-color: #05030a; color: #e2e8f0;
+            background-color: #0f0d1f; color: #e2e8f0;
             font-family: 'Inter', sans-serif;
-            background: radial-gradient(circle at 50% 10%, rgba(0,212,255,0.08), #05030a 80%);
+            background: radial-gradient(circle at 50% 10%, rgba(0,212,255,0.18), #0f0d1f 80%);
             min-height: 100vh; margin: 0;
         }
         h1, h2, h3, .mystical { font-family: 'Cinzel', serif; }
@@ -23,8 +23,9 @@
             -webkit-background-clip: text; background-clip: text; color: transparent;
         }
         .glass {
-            background: rgba(8, 12, 22, 0.65); backdrop-filter: blur(16px);
-            border: 1px solid rgba(0, 212, 255, 0.22);
+            background: rgba(8, 12, 22, 0.82); backdrop-filter: blur(16px);
+            border: 1px solid rgba(0, 212, 255, 0.32);
+            box-shadow: 0 8px 32px -4px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.04);
         }
         input, textarea, select {
             background: #060e1a; color: #FFF8DC;
@@ -83,6 +84,7 @@
                 <div class="flex gap-3">
                     <a href="Admin_Console.html" class="text-[10px] mono text-yellow-600 hover:text-yellow-300 uppercase tracking-widest">♛ Admin</a>
                     <a href="Codex.html" class="text-[10px] mono text-gray-500 hover:text-cyan-300 uppercase tracking-widest">→ Codex</a>
+                    <a href="Traceability.html" style="font-family:JetBrains Mono,monospace;font-size:10px;letter-spacing:0.2em;text-transform:uppercase;color:rgba(212,175,55,0.6);text-decoration:none;border:1px solid rgba(212,175,55,0.2);padding:3px 8px;border-radius:4px;">TRACE ◈</a>
                 </div>
             </div>
 
@@ -181,7 +183,7 @@
         </div>
 
         <div class="text-center mt-12">
-            <a href="../Learning-Hub.html" class="text-[10px] mono text-gray-500 hover:text-gray-300 uppercase tracking-[0.3em]">← Grand Hall</a> <a href="Tower_Guide.html" class="text-[10px] mono text-yellow-600 hover:text-yellow-300 uppercase tracking-[0.3em]">⬡ Guide</a>
+            <a href="../Learning-Hub.html" class="text-[10px] mono text-gray-500 hover:text-gray-300 uppercase tracking-[0.3em]">← Grand Hall</a> <a href="Tower_Guide.html" class="text-[10px] mono text-yellow-600 hover:text-yellow-300 uppercase tracking-[0.3em]">⬡ Guide</a> <a href="Traceability.html" style="font-family:JetBrains Mono,monospace;font-size:10px;letter-spacing:0.2em;text-transform:uppercase;color:rgba(212,175,55,0.6);text-decoration:none;border:1px solid rgba(212,175,55,0.2);padding:3px 8px;border-radius:4px;">TRACE ◈</a>
         </div>
     </main>
 
@@ -357,5 +359,40 @@
             return (s || "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c]));
         }
     </script>
+<script>
+window.TUTORIAL_CONFIG = {
+  title: "Authoring Tomes & Artifacts",
+  familiar: "#00d4ff",
+  slides: [
+    {
+      heading: "What are Dimensional Planes?",
+      body: "Planes are the dimensional departments of the Academy — Mathematics, Physics, Computation, and others defined by Archons. Every tome must belong to a plane. You can only publish in planes your Genesis cert covers."
+    },
+    {
+      heading: "How the Seed Forms Your Authority",
+      body: "Your Genesis certificate (visible in the Codex) specifies which plane you are certified in. This certificate was issued in the Genesis Forge by an Archon who signed your Cosmological ID into it. Without this cert you are Acolyte — you can read but not publish.",
+      highlight: "authority = genesisCert.plane ∩ userCertifiedPlanes"
+    },
+    {
+      heading: "What is a Tome?",
+      body: "A tome is a knowledge artifact — text, markdown, or HTML — that students study. It has a title, description, body, priority level (Canonical / Validated / Experimental), and a dimensional plane. When published, your Cosmological ID is embedded as the author signature."
+    },
+    {
+      heading: "Priority Levels",
+      body: "Canonical (gold) tomes are the authoritative texts — peer-reviewed, high confidence. Validated (cyan) are instructor-vetted. Experimental (fuchsia) are exploratory works. Students see priority to calibrate trust.",
+      highlight: "Canonical ▶ Validated ▶ Experimental  (trust descending)"
+    },
+    {
+      heading: "What is an Artifact?",
+      body: "Artifacts are companion content — exercises, problem sets, data files, or interactive modules — minted alongside tomes. They appear in your Codex artifact count and can be collected by students."
+    },
+    {
+      heading: "The XP Loop",
+      body: "Every published tome and minted artifact increments your Codex XP. XP drives rank progression visible in the Constellation Map. The Instructor Console is where your knowledge contributions crystallize into permanent academy record."
+    }
+  ]
+};
+</script>
+<script src="tutorial_engine.js"></script>
 </body>
 </html>

@@ -11,9 +11,9 @@
 
     <style>
         body {
-            background-color: #05030a; color: #e2e8f0;
+            background-color: #0f0d1f; color: #e2e8f0;
             font-family: 'Inter', sans-serif;
-            background: radial-gradient(circle at 50% 10%, rgba(232,28,255,0.10), #05030a 80%);
+            background: radial-gradient(circle at 50% 10%, rgba(232,28,255,0.20), #0f0d1f 80%);
             min-height: 100vh; margin: 0;
         }
         h1, h2, h3, .mystical { font-family: 'Cinzel', serif; }
@@ -23,9 +23,9 @@
             -webkit-background-clip: text; background-clip: text; color: transparent;
         }
         .glass {
-            background: rgba(15, 5, 25, 0.65); backdrop-filter: blur(16px);
-            border: 1px solid rgba(232, 28, 255, 0.22);
-            box-shadow: 0 10px 40px -10px rgba(0,0,0,0.85);
+            background: rgba(15, 5, 25, 0.82); backdrop-filter: blur(16px);
+            border: 1px solid rgba(232, 28, 255, 0.32);
+            box-shadow: 0 8px 32px -4px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.04);
         }
         .crown-glow { animation: crownPulse 4s ease-in-out infinite; }
         @keyframes crownPulse {
@@ -168,7 +168,7 @@
         </div>
 
         <div class="text-center mt-12">
-            <a href="../Learning-Hub.html" class="text-[10px] mono text-gray-500 hover:text-gray-300 uppercase tracking-[0.3em]">← Grand Hall</a> <a href="Tower_Guide.html" class="text-[10px] mono text-yellow-600 hover:text-yellow-300 uppercase tracking-[0.3em]">⬡ Guide</a>
+            <a href="../Learning-Hub.html" class="text-[10px] mono text-gray-500 hover:text-gray-300 uppercase tracking-[0.3em]">← Grand Hall</a> <a href="Tower_Guide.html" class="text-[10px] mono text-yellow-600 hover:text-yellow-300 uppercase tracking-[0.3em]">⬡ Guide</a> <a href="Traceability.html" style="font-family:JetBrains Mono,monospace;font-size:10px;letter-spacing:0.2em;text-transform:uppercase;color:rgba(212,175,55,0.6);text-decoration:none;border:1px solid rgba(212,175,55,0.2);padding:3px 8px;border-radius:4px;">TRACE ◈</a>
         </div>
     </main>
 
@@ -252,5 +252,37 @@
             URL.revokeObjectURL(url);
         });
     </script>
+<script>
+window.TUTORIAL_CONFIG = {
+  title: "The Chain of Authority",
+  familiar: "#e81cff",
+  slides: [
+    {
+      heading: "What is a Genesis Seed?",
+      body: "A Genesis Seed is a signed certificate that elevates a user's tier. It contains the recipient's Cosmological ID, the certified plane, the issuer's ID, their tier, and a timestamp. It is the root of all authority in the Academy.",
+      highlight: "{ tier, plane, recipientId, issuerId, issuerTier, issued }"
+    },
+    {
+      heading: "Bootstrap: Self-Signing",
+      body: "Root Archons are designated by their Firebase UID in the GENESIS_MASTER_UIDS array in scripts/genesis-registrar.js. A root Archon can sign their own certificate to bootstrap the chain — this is the only self-signing permitted."
+    },
+    {
+      heading: "Minting a Certificate",
+      body: "You enter the recipient's UID and select the plane and tier to certify. The Forge signs the certificate with your Cosmological ID and writes it to Firestore at the recipient's profile. The recipient applies it via their Codex.",
+      highlight: "Firestore: users/{recipientUid}/profile/main.pendingCert = cert"
+    },
+    {
+      heading: "The Chain of Trust",
+      body: "Every Archon traces back to a root. Every Instructor traces back to an Archon. Every tome traces to an Instructor cert. If any link in the chain is revoked, downstream authority cascades for audit. The Genesis Chain Audit in the Admin Console visualizes this.",
+      highlight: "Root Archon → Archon Cert → Instructor Cert → Tome Authorship"
+    },
+    {
+      heading: "Why This Matters",
+      body: "The chain means authority is accountable. If an Archon is removed, the Admin Console can trace every cert they issued and every tome those instructors published. Nothing is anonymous — everything traces to a root signature."
+    }
+  ]
+};
+</script>
+<script src="tutorial_engine.js"></script>
 </body>
 </html>

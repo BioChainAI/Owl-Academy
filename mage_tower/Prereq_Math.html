@@ -10,13 +10,13 @@
     <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
 
     <style>
-        body { background:#05030a; color:#e2e8f0; font-family:'Inter',sans-serif;
-            background:radial-gradient(circle at 50% 0%,rgba(100,180,255,0.05),#05030a 70%); min-height:100vh; margin:0; }
+        body { background:#0f0d1f; color:#e2e8f0; font-family:'Inter',sans-serif;
+            background:radial-gradient(circle at 50% 0%,rgba(100,180,255,0.20),#0f0d1f 70%); min-height:100vh; margin:0; }
         h1,h2,h3,.mystical { font-family:'Cinzel',serif; }
         .mono { font-family:'JetBrains Mono',monospace; }
         .blue-gradient { background:linear-gradient(to right,#60a5fa,#c4b5fd,#60a5fa);
             -webkit-background-clip:text; background-clip:text; color:transparent; }
-        .glass { background:rgba(8,12,22,0.75); backdrop-filter:blur(16px); border:1px solid rgba(96,165,250,0.18); }
+        .glass { background:rgba(8,12,22,0.82); backdrop-filter:blur(16px); border:1px solid rgba(96,165,250,0.28); box-shadow:0 8px 32px -4px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.04); }
         .glass-gold { background:rgba(8,12,22,0.75); backdrop-filter:blur(16px); border:1px solid rgba(212,175,55,0.22); }
         .glass-green { background:rgba(8,12,22,0.75); backdrop-filter:blur(16px); border:1px solid rgba(0,255,120,0.2); }
         input,textarea,select { background:#060e1a; color:#FFF8DC; border:1px solid rgba(96,165,250,0.2); }
@@ -61,6 +61,8 @@
             <a href="../Learning-Hub.html" class="text-slate-500 hover:text-slate-300 text-xs mono transition-colors">← Learning Hub</a>
             <span class="text-slate-700">|</span>
             <a href="../Library/Community &amp; Research/Independent_Learning.html" class="text-blue-400/70 hover:text-blue-300 text-xs mono transition-colors">◯ Public Library Page →</a>
+            <span class="text-slate-700">|</span>
+            <a href="Traceability.html" style="font-family:JetBrains Mono,monospace;font-size:10px;letter-spacing:0.2em;text-transform:uppercase;color:rgba(212,175,55,0.6);text-decoration:none;border:1px solid rgba(212,175,55,0.2);padding:3px 8px;border-radius:4px;">TRACE ◈</a>
         </div>
         <div class="inline-flex items-center gap-2 px-3 py-1 border border-blue-500/30 rounded-full bg-blue-950/20 text-blue-300 text-[10px] tracking-[0.2em] uppercase mono mb-4">
             ◯ Sovereign Knowledge — Mage Tower
@@ -778,5 +780,27 @@ function extractVideoId(url, platform) {
 }
 function escHtml(s) { return String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
 </script>
+<script>
+window.TUTORIAL_CONFIG = {
+  title: "Community Certification",
+  familiar: "#00d4ff",
+  slides: [
+    {
+      heading: "What This Is",
+      body: "A community-driven library of prerequisite mathematics video tomes. Anyone can submit a video resource. Instructors and Archons can certify submissions, elevating them to the main curriculum."
+    },
+    {
+      heading: "Submission Flow",
+      body: "Submit a video link, title, and description. Your submission is tagged as Experimental. When an Instructor or Archon certifies it, it upgrades to Validated or Canonical. Your Cosmological ID is recorded as the submitter.",
+      highlight: "Submit → [Instructor review] → Validated → [Archon review] → Canonical"
+    },
+    {
+      heading: "Why It Matters",
+      body: "The prerequisite layer is the foundation of the Academy curriculum. A solid prereq library means students arrive at higher tomes prepared. Community certification distributes the curation burden across the instructor corps."
+    }
+  ]
+};
+</script>
+<script src="tutorial_engine.js"></script>
 </body>
 </html>

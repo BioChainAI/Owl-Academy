@@ -9,7 +9,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/tween.js/18.6.4/tween.umd.js"></script>
   <style>
     :root {
-      --void: #03020a;
+      --void: #0f0d1f;
       --gold: #D4AF37;
       --cyan: #00d4ff;
       --purple: #8A2BE2;
@@ -330,6 +330,7 @@
 <div id="nav-controls">
   <button class="ctrl-btn" id="btn-reset">↺ Reset View</button>
   <button class="ctrl-btn" id="btn-center">⬡ My Node</button>
+  <a href="Traceability.html" style="font-family:JetBrains Mono,monospace;font-size:10px;letter-spacing:0.2em;text-transform:uppercase;color:rgba(212,175,55,0.6);text-decoration:none;border:1px solid rgba(212,175,55,0.2);padding:3px 8px;border-radius:4px;display:block;text-align:center;">TRACE ◈</a>
 </div>
 
 <div id="my-pos" class="hidden"></div>
@@ -368,8 +369,8 @@ let dragMoved   = false;
 // ── Three.js Scene ───────────────────────────────────────────────────────────
 const container = document.getElementById('canvas-container');
 const scene     = new THREE.Scene();
-scene.background = new THREE.Color(0x03020a);
-scene.fog = new THREE.FogExp2(0x03020a, 0.00018);
+scene.background = new THREE.Color(0x0f0d1f);
+scene.fog = new THREE.FogExp2(0x0f0d1f, 0.00018);
 
 const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 1, 8000);
 const renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -968,5 +969,30 @@ function animate() {
 updateCamera();
 animate();
 </script>
+<script>
+window.TUTORIAL_CONFIG = {
+  title: "The Living Network",
+  familiar: "#00d4ff",
+  slides: [
+    {
+      heading: "What You're Seeing",
+      body: "Every registered Academy user is a node. Archons appear at the center, Instructors in the middle ring, Acolytes in the outer ring. Node size reflects XP. Edges connect issuers to recipients along Genesis cert chains."
+    },
+    {
+      heading: "Reading Connections",
+      body: "An edge from node A to node B means A issued a Genesis cert to B. The edge color shows the certified tier — fuchsia for Archon certs, cyan for Instructor certs. Disconnected Acolyte nodes have no edges."
+    },
+    {
+      heading: "Selecting a Node",
+      body: "Click any node to see that user's tier, cosmological ID, certified planes, and tome count. This is a public-read view — no sensitive data is exposed. The constellation is the social geometry of the Academy."
+    },
+    {
+      heading: "Network Health",
+      body: "Healthy academies show a broad, well-connected instructor ring with multiple Archon nodes. A single Archon with no successors is a single point of failure. The constellation lets you identify gaps in the authority topology."
+    }
+  ]
+};
+</script>
+<script src="tutorial_engine.js"></script>
 </body>
 </html>

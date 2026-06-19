@@ -1,0 +1,728 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Owl Academy | Traceability Pipeline — Data Flow & Provenance Map</title>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --gold:    #D4AF37;
+            --cyan:    #00d4ff;
+            --fuchsia: #e81cff;
+            --emerald: #00e5a0;
+            --bg:      #0f0d1f;
+        }
+        body {
+            background-color: var(--bg); color: #e2e8f0;
+            font-family: 'Inter', sans-serif; margin: 0;
+            background: radial-gradient(circle at 50% 0%, rgba(212,175,55,0.18), var(--bg) 70%);
+            min-height: 100vh;
+        }
+        h1,h2,h3,.mystical { font-family: 'Cinzel', serif; }
+        .mono { font-family: 'JetBrains Mono', monospace; }
+        .gold-gradient {
+            background: linear-gradient(to right, var(--gold), #FFF8DC, var(--gold));
+            -webkit-background-clip: text; background-clip: text; color: transparent;
+        }
+        .glass {
+            background: rgba(10,6,22,0.82); backdrop-filter: blur(16px);
+            border: 1px solid rgba(212,175,55,0.28);
+            box-shadow: 0 8px 32px -4px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.04);
+            border-radius: 12px;
+        }
+        .glass-cyan {
+            background: rgba(8,12,22,0.82); backdrop-filter: blur(16px);
+            border: 1px solid rgba(0,212,255,0.32);
+            box-shadow: 0 8px 32px -4px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.04);
+            border-radius: 12px;
+        }
+        .glass-fuchsia {
+            background: rgba(10,4,22,0.82); backdrop-filter: blur(16px);
+            border: 1px solid rgba(232,28,255,0.32);
+            box-shadow: 0 8px 32px -4px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.04);
+            border-radius: 12px;
+        }
+        .glass-emerald {
+            background: rgba(4,16,14,0.82); backdrop-filter: blur(16px);
+            border: 1px solid rgba(0,229,160,0.28);
+            box-shadow: 0 8px 32px -4px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.04);
+            border-radius: 12px;
+        }
+
+        /* Top nav */
+        .top-nav {
+            position: sticky; top: 0; z-index: 100;
+            background: rgba(10,6,22,0.95); backdrop-filter: blur(20px);
+            border-bottom: 1px solid rgba(212,175,55,0.15);
+            padding: 10px 24px;
+            display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+        }
+        .top-nav a {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 10px; letter-spacing: 0.15em; text-transform: uppercase;
+            color: rgba(212,175,55,0.55); text-decoration: none;
+            padding: 3px 8px; border-radius: 4px;
+            border: 1px solid rgba(212,175,55,0.15);
+            transition: all 0.2s;
+        }
+        .top-nav a:hover { color: var(--gold); border-color: rgba(212,175,55,0.4); }
+        .top-nav .back-link { color: rgba(212,175,55,0.8); border-color: rgba(212,175,55,0.3); }
+
+        /* Pipeline diagram */
+        .pipeline-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 0;
+            position: relative;
+        }
+        .pipe-node {
+            padding: 14px 16px; border-radius: 10px;
+            text-align: center; position: relative;
+            text-decoration: none; display: block;
+            transition: all 0.2s; margin: 6px;
+        }
+        .pipe-node:hover { transform: translateY(-2px); filter: brightness(1.15); }
+        .pipe-node-label {
+            font-family: 'Cinzel', serif;
+            font-size: 0.72rem; letter-spacing: 0.1em;
+            text-transform: uppercase; font-weight: 600;
+            display: block; margin-bottom: 4px;
+        }
+        .pipe-node-sub {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.62rem; opacity: 0.7; display: block;
+        }
+        .node-gold    { background: rgba(212,175,55,0.12); border: 1px solid rgba(212,175,55,0.4); color: var(--gold); }
+        .node-fuchsia { background: rgba(232,28,255,0.10); border: 1px solid rgba(232,28,255,0.4); color: var(--fuchsia); }
+        .node-cyan    { background: rgba(0,212,255,0.10);  border: 1px solid rgba(0,212,255,0.4);  color: var(--cyan); }
+        .node-emerald { background: rgba(0,229,160,0.10);  border: 1px solid rgba(0,229,160,0.4);  color: var(--emerald); }
+
+        .pipe-arrow {
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.2rem; color: rgba(255,255,255,0.2);
+            padding: 4px;
+        }
+        .pipe-label {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.58rem; color: rgba(255,255,255,0.35);
+            text-align: center; letter-spacing: 0.08em;
+        }
+
+        /* SVG arrows for the flow */
+        .flow-svg { width: 100%; overflow: visible; }
+
+        /* Table */
+        .trace-table { width: 100%; border-collapse: collapse; }
+        .trace-table th {
+            font-family: 'Cinzel', serif; font-size: 0.72rem;
+            letter-spacing: 0.1em; text-transform: uppercase;
+            color: var(--gold); padding: 10px 14px;
+            border-bottom: 1px solid rgba(212,175,55,0.25);
+            text-align: left;
+        }
+        .trace-table td {
+            padding: 10px 14px; font-size: 0.8rem;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+            vertical-align: top;
+        }
+        .trace-table tr:last-child td { border-bottom: none; }
+        .trace-table tr:hover td { background: rgba(212,175,55,0.04); }
+        .trace-table .mono { font-size: 0.72rem; color: rgba(0,212,255,0.8); }
+        .trace-table .entity-name { color: var(--gold); font-weight: 600; }
+        .trace-table .source { color: rgba(232,28,255,0.8); }
+        .trace-table .consumer { color: rgba(0,229,160,0.8); }
+
+        /* Trust chain */
+        .trust-chain {
+            display: flex; flex-direction: column; align-items: flex-start;
+            gap: 0; position: relative;
+        }
+        .trust-node {
+            display: flex; align-items: center; gap: 16px;
+            padding: 12px 20px; border-radius: 8px;
+            background: rgba(10,6,22,0.6);
+            border: 1px solid rgba(212,175,55,0.15);
+            min-width: 340px; position: relative;
+        }
+        .trust-node .trust-icon { font-size: 1.1rem; width: 24px; text-align: center; }
+        .trust-node .trust-label {
+            font-family: 'Cinzel', serif; font-size: 0.82rem;
+            letter-spacing: 0.08em;
+        }
+        .trust-node .trust-detail {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.65rem; color: rgba(255,255,255,0.4);
+            margin-left: auto;
+        }
+        .trust-connector {
+            display: flex; align-items: center; gap: 12px;
+            padding: 0 0 0 32px;
+        }
+        .trust-connector-line {
+            width: 2px; height: 28px;
+            background: linear-gradient(to bottom, rgba(212,175,55,0.3), rgba(212,175,55,0.05));
+            margin-left: 20px;
+        }
+        .trust-connector-label {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.62rem; color: rgba(212,175,55,0.4);
+            letter-spacing: 0.1em;
+        }
+
+        /* Walkthrough steps */
+        .step-item {
+            display: flex; gap: 16px; align-items: flex-start;
+            padding: 14px 20px; border-radius: 8px;
+            background: rgba(10,6,22,0.6);
+            border: 1px solid rgba(212,175,55,0.12);
+            transition: border-color 0.2s;
+        }
+        .step-item:hover { border-color: rgba(212,175,55,0.28); }
+        .step-num {
+            font-family: 'JetBrains Mono', monospace; font-size: 0.7rem;
+            color: rgba(212,175,55,0.5); width: 28px; flex-shrink: 0;
+            padding-top: 2px;
+        }
+        .step-content { flex: 1; }
+        .step-title {
+            font-family: 'Cinzel', serif; font-size: 0.82rem;
+            color: #FFF8DC; margin-bottom: 4px; letter-spacing: 0.04em;
+        }
+        .step-detail {
+            font-size: 0.78rem; color: rgba(200,210,220,0.7); line-height: 1.5;
+        }
+        .step-code {
+            font-family: 'JetBrains Mono', monospace; font-size: 0.7rem;
+            color: rgba(0,212,255,0.7); margin-top: 4px; display: block;
+        }
+
+        /* Section headers */
+        .section-header {
+            display: flex; align-items: center; gap: 12px;
+            margin-bottom: 24px;
+        }
+        .section-num {
+            font-family: 'JetBrains Mono', monospace; font-size: 0.65rem;
+            color: rgba(212,175,55,0.4); letter-spacing: 0.2em;
+            border: 1px solid rgba(212,175,55,0.2); border-radius: 4px;
+            padding: 2px 8px;
+        }
+        .section-title {
+            font-family: 'Cinzel', serif; font-size: 1.1rem;
+            color: #FFF8DC; letter-spacing: 0.1em;
+        }
+
+        /* Layer legend */
+        .legend-item { display: flex; align-items: center; gap: 8px; }
+        .legend-dot { width: 10px; height: 10px; border-radius: 50%; }
+    </style>
+</head>
+<body class="antialiased">
+
+<!-- Top Navigation -->
+<nav class="top-nav">
+    <a href="Tower_Guide.html" class="back-link">← Tower Guide</a>
+    <span style="color:rgba(255,255,255,0.1);">|</span>
+    <a href="Registrar.html">Registrar</a>
+    <a href="Codex.html">Codex</a>
+    <a href="Genesis_Forge.html">Genesis Forge</a>
+    <a href="Admin_Console.html">Admin Console</a>
+    <a href="Instructor_Console.html">Instructor Console</a>
+    <a href="Prereq_Math.html">Prereq Math</a>
+    <a href="Familiars.html">Familiars</a>
+    <a href="Store.html">Store</a>
+    <a href="Constellation_Map.html">Constellation</a>
+</nav>
+
+<main class="max-w-6xl mx-auto px-4 md:px-8 py-12">
+
+    <!-- Page Header -->
+    <header class="text-center mb-14">
+        <div class="inline-block px-3 py-1 mono text-[10px] tracking-[0.3em] uppercase text-amber-400/60 border border-amber-500/20 rounded-full mb-4">
+            Mage Tower · Data Provenance
+        </div>
+        <h1 class="text-3xl md:text-5xl font-bold tracking-[0.12em] mystical">
+            TRACEABILITY <span class="gold-gradient">PIPELINE</span>
+        </h1>
+        <p class="text-sm text-gray-400 max-w-2xl mx-auto mt-4 leading-relaxed">
+            Data flow, entity provenance, and trust chain visualization for the Owl Academy Mage Tower.
+            Every record traces to a cryptographic root.
+        </p>
+        <!-- Layer legend -->
+        <div class="flex flex-wrap justify-center gap-6 mt-6">
+            <div class="legend-item"><div class="legend-dot" style="background:var(--gold);"></div><span class="text-xs text-gray-400">Identity layer</span></div>
+            <div class="legend-item"><div class="legend-dot" style="background:var(--fuchsia);"></div><span class="text-xs text-gray-400">Authority layer</span></div>
+            <div class="legend-item"><div class="legend-dot" style="background:var(--cyan);"></div><span class="text-xs text-gray-400">Knowledge layer</span></div>
+            <div class="legend-item"><div class="legend-dot" style="background:var(--emerald);"></div><span class="text-xs text-gray-400">Social layer</span></div>
+        </div>
+    </header>
+
+    <!-- ────────────────────────────────────────────────────────────────────── -->
+    <!-- SECTION 1: Pipeline Overview Diagram                                   -->
+    <!-- ────────────────────────────────────────────────────────────────────── -->
+    <section class="mb-16">
+        <div class="section-header">
+            <span class="section-num">01</span>
+            <h2 class="section-title">Pipeline Overview Diagram</h2>
+        </div>
+
+        <div class="glass p-8">
+            <!-- Row 1: Identity -->
+            <div class="mb-2">
+                <div class="text-[10px] mono text-amber-500/50 tracking-widest uppercase mb-3">Identity Layer</div>
+                <div style="display:grid;grid-template-columns:1fr auto 1fr auto 1fr;align-items:center;gap:8px;">
+                    <a href="Registrar.html" class="pipe-node node-gold">
+                        <span class="pipe-node-label">Registrar</span>
+                        <span class="pipe-node-sub">Forges CosmologicalID</span>
+                    </a>
+                    <div style="text-align:center;">
+                        <div class="pipe-label">CosmologicalID →</div>
+                        <div style="font-size:1.4rem;color:rgba(212,175,55,0.4);">→</div>
+                    </div>
+                    <a href="Codex.html" class="pipe-node node-gold" style="border-color:rgba(212,175,55,0.6);">
+                        <span class="pipe-node-label">Codex</span>
+                        <span class="pipe-node-sub">Lineage record / junction</span>
+                    </a>
+                    <div style="text-align:center;">
+                        <div class="pipe-label">← GenesisCert</div>
+                        <div style="font-size:1.4rem;color:rgba(232,28,255,0.4);">←</div>
+                    </div>
+                    <a href="Genesis_Forge.html" class="pipe-node node-fuchsia">
+                        <span class="pipe-node-label">Genesis Forge</span>
+                        <span class="pipe-node-sub">Mints authority certs</span>
+                    </a>
+                </div>
+            </div>
+
+            <!-- Row 2: arrows down -->
+            <div style="display:grid;grid-template-columns:1fr auto 1fr auto 1fr;gap:8px;margin-bottom:2px;">
+                <div></div>
+                <div></div>
+                <div style="text-align:center;padding:4px 0;">
+                    <div class="pipe-label">planes / tier ↓</div>
+                    <div style="font-size:1.2rem;color:rgba(212,175,55,0.3);">↓</div>
+                    <div class="pipe-label">↑ defines planes</div>
+                </div>
+                <div></div>
+                <div style="text-align:center;padding:4px 0;">
+                    <div style="font-size:1.2rem;color:rgba(232,28,255,0.3);">↑</div>
+                    <div class="pipe-label">configures</div>
+                </div>
+            </div>
+
+            <!-- Row 3: Authority / Knowledge -->
+            <div style="display:grid;grid-template-columns:1fr auto 1fr auto 1fr;align-items:center;gap:8px;margin-bottom:2px;">
+                <div class="mb-2">
+                    <div class="text-[10px] mono text-fuchsia-500/50 tracking-widest uppercase mb-3">Authority Layer</div>
+                    <a href="Admin_Console.html" class="pipe-node node-fuchsia">
+                        <span class="pipe-node-label">Admin Console</span>
+                        <span class="pipe-node-sub">Defines planes, audits chain</span>
+                    </a>
+                </div>
+                <div></div>
+                <div>
+                    <div class="text-[10px] mono text-cyan-500/50 tracking-widest uppercase mb-3">Knowledge Layer</div>
+                    <a href="Instructor_Console.html" class="pipe-node node-cyan">
+                        <span class="pipe-node-label">Instructor Console</span>
+                        <span class="pipe-node-sub">Tome authorship, XP, artifacts</span>
+                    </a>
+                </div>
+                <div></div>
+                <div></div>
+            </div>
+
+            <!-- Row 4: arrows down from Instructor -->
+            <div style="display:grid;grid-template-columns:1fr auto 1fr auto 1fr;gap:8px;margin-bottom:2px;">
+                <div></div>
+                <div></div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+                    <div style="text-align:center;">
+                        <div style="font-size:1.2rem;color:rgba(0,212,255,0.3);">↙</div>
+                        <div class="pipe-label">community cert</div>
+                    </div>
+                    <div style="text-align:center;">
+                        <div style="font-size:1.2rem;color:rgba(0,212,255,0.3);">↘</div>
+                        <div class="pipe-label">published tomes</div>
+                    </div>
+                </div>
+                <div></div>
+                <div></div>
+            </div>
+
+            <!-- Row 5: Prereq + Learning Hub -->
+            <div style="display:grid;grid-template-columns:1fr auto 3fr;align-items:start;gap:8px;margin-bottom:2px;">
+                <div></div>
+                <div></div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+                    <a href="Prereq_Math.html" class="pipe-node node-cyan">
+                        <span class="pipe-node-label">Prereq Math</span>
+                        <span class="pipe-node-sub">Community video library</span>
+                    </a>
+                    <div class="pipe-node" style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.12);color:rgba(255,255,255,0.4);">
+                        <span class="pipe-node-label" style="font-family:'Cinzel',serif;">Learning Hub</span>
+                        <span class="pipe-node-sub">Student tome access</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Arrow down to social -->
+            <div style="text-align:center;padding:4px 0;">
+                <div style="font-size:1.2rem;color:rgba(0,229,160,0.3);">↓</div>
+                <div class="pipe-label">familiar slots / social layer</div>
+            </div>
+
+            <!-- Row 6: Social layer -->
+            <div>
+                <div class="text-[10px] mono text-emerald-500/50 tracking-widest uppercase mb-3">Social Layer</div>
+                <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;">
+                    <a href="Familiars.html" class="pipe-node node-emerald">
+                        <span class="pipe-node-label">Familiars</span>
+                        <span class="pipe-node-sub">Manifold companions</span>
+                    </a>
+                    <a href="Store.html" class="pipe-node node-emerald">
+                        <span class="pipe-node-label">Store</span>
+                        <span class="pipe-node-sub">Vis economy</span>
+                    </a>
+                    <a href="Constellation_Map.html" class="pipe-node node-emerald">
+                        <span class="pipe-node-label">Constellation Map</span>
+                        <span class="pipe-node-sub">Network visualization</span>
+                    </a>
+                </div>
+            </div>
+
+            <!-- Arrow down to Engram -->
+            <div style="text-align:center;padding:6px 0;">
+                <div style="font-size:1.2rem;color:rgba(0,229,160,0.3);">↓</div>
+                <div class="pipe-label">familiar manifold → crystallization anchor</div>
+            </div>
+
+            <!-- Row 7: Engram -->
+            <div class="pipe-node node-emerald" style="max-width:320px;margin:0 auto;">
+                <span class="pipe-node-label">Engram Mind Eye</span>
+                <span class="pipe-node-sub">N/K/T crystallization · packet chain export</span>
+            </div>
+        </div>
+    </section>
+
+    <!-- ────────────────────────────────────────────────────────────────────── -->
+    <!-- SECTION 2: Data Entity Reference Table                                 -->
+    <!-- ────────────────────────────────────────────────────────────────────── -->
+    <section class="mb-16">
+        <div class="section-header">
+            <span class="section-num">02</span>
+            <h2 class="section-title">Data Entity Reference</h2>
+        </div>
+
+        <div class="glass overflow-x-auto">
+            <table class="trace-table">
+                <thead>
+                    <tr>
+                        <th>Entity</th>
+                        <th>Created In</th>
+                        <th>Firestore Path</th>
+                        <th>Consumed By</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td class="entity-name">Cosmological ID</td>
+                        <td class="source">Registrar</td>
+                        <td><code class="mono">users/{uid}/profile/main<br>.cosmologicalId</code></td>
+                        <td class="consumer">Codex, Instructor Console, Genesis Forge, Constellation Map</td>
+                    </tr>
+                    <tr>
+                        <td class="entity-name">Lattice / Coords</td>
+                        <td class="source">Registrar</td>
+                        <td><code class="mono">users/{uid}/profile/main<br>.{lattice, coords}</code></td>
+                        <td class="consumer">Codex (sigil), Familiars</td>
+                    </tr>
+                    <tr>
+                        <td class="entity-name">Genesis Certificate</td>
+                        <td class="source">Genesis Forge</td>
+                        <td><code class="mono">users/{uid}/profile/main<br>.genesisCert</code></td>
+                        <td class="consumer">Codex (tier), Instructor Console (auth)</td>
+                    </tr>
+                    <tr>
+                        <td class="entity-name">Dimensional Planes</td>
+                        <td class="source">Admin Console</td>
+                        <td><code class="mono">academy/config/planes[]</code></td>
+                        <td class="consumer">Genesis Forge, Instructor Console</td>
+                    </tr>
+                    <tr>
+                        <td class="entity-name">Tome</td>
+                        <td class="source">Instructor Console</td>
+                        <td><code class="mono">tomes/{tomeId}</code></td>
+                        <td class="consumer">Learning Hub, Admin Registry, Codex XP</td>
+                    </tr>
+                    <tr>
+                        <td class="entity-name">Artifact</td>
+                        <td class="source">Instructor Console</td>
+                        <td><code class="mono">artifacts/{id}</code></td>
+                        <td class="consumer">Store, Codex artifacts count</td>
+                    </tr>
+                    <tr>
+                        <td class="entity-name">Vis Balance</td>
+                        <td class="source">Vis Service</td>
+                        <td><code class="mono">users/{uid}/vis/balance</code></td>
+                        <td class="consumer">Store, Codex</td>
+                    </tr>
+                    <tr>
+                        <td class="entity-name">Familiar Manifold</td>
+                        <td class="source">Familiars</td>
+                        <td><code class="mono">users/{uid}/profile/main<br>.familiarManifolds[slot]</code></td>
+                        <td class="consumer">Engram Mind Eye</td>
+                    </tr>
+                    <tr>
+                        <td class="entity-name">Packet Chain</td>
+                        <td class="source">Engram Mind Eye</td>
+                        <td><code class="mono">localStorage</code></td>
+                        <td class="consumer">O1 Compressor, Blackwell Architect</td>
+                    </tr>
+                    <tr>
+                        <td class="entity-name">Biochain</td>
+                        <td class="source">Engram Mind Eye</td>
+                        <td><code class="mono">localStorage</code></td>
+                        <td class="consumer">STRIX personality</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <!-- ────────────────────────────────────────────────────────────────────── -->
+    <!-- SECTION 3: Trust Chain Diagram                                         -->
+    <!-- ────────────────────────────────────────────────────────────────────── -->
+    <section class="mb-16">
+        <div class="section-header">
+            <span class="section-num">03</span>
+            <h2 class="section-title">Trust Chain Diagram</h2>
+        </div>
+
+        <div class="glass-fuchsia p-8">
+            <div class="trust-chain">
+
+                <!-- Root constant -->
+                <div class="trust-node" style="border-color:rgba(212,175,55,0.4);">
+                    <span class="trust-icon" style="color:var(--gold);">⬡</span>
+                    <div>
+                        <div class="trust-label" style="color:var(--gold);">GENESIS_MASTER_UIDS</div>
+                        <div style="font-family:'JetBrains Mono',monospace;font-size:0.65rem;color:rgba(212,175,55,0.5);margin-top:2px;">code constant · scripts/genesis-registrar.js</div>
+                    </div>
+                    <span class="trust-detail">bootstrap anchor</span>
+                </div>
+
+                <div class="trust-connector-line" style="margin-left:20px;"></div>
+                <div style="display:flex;align-items:center;gap:8px;padding-left:28px;margin-bottom:4px;">
+                    <span style="font-size:0.7rem;color:rgba(212,175,55,0.4);">↓ self-signs (bootstrap only)</span>
+                </div>
+
+                <!-- Root Archon -->
+                <div class="trust-node" style="border-color:rgba(212,175,55,0.5);">
+                    <span class="trust-icon" style="color:var(--gold);">♛</span>
+                    <div>
+                        <div class="trust-label" style="color:var(--gold);">Root Archon</div>
+                        <div style="font-family:'JetBrains Mono',monospace;font-size:0.65rem;color:rgba(212,175,55,0.5);margin-top:2px;">self-signed cert · tier: ARCHON</div>
+                    </div>
+                    <span class="trust-detail">→ Admin Console, Genesis Forge</span>
+                </div>
+
+                <div class="trust-connector-line" style="margin-left:20px;"></div>
+                <div style="display:flex;align-items:center;gap:8px;padding-left:28px;margin-bottom:4px;">
+                    <span style="font-size:0.7rem;color:rgba(232,28,255,0.5);">↓ signs Archon Certificate</span>
+                </div>
+
+                <!-- Archon cert -->
+                <div class="trust-node" style="border-color:rgba(232,28,255,0.4);">
+                    <span class="trust-icon" style="color:var(--fuchsia);">♛</span>
+                    <div>
+                        <div class="trust-label" style="color:var(--fuchsia);">Archon Certificate</div>
+                        <div style="font-family:'JetBrains Mono',monospace;font-size:0.65rem;color:rgba(232,28,255,0.5);margin-top:2px;">{ tier: ARCHON, plane, recipientId, issuerId, issued }</div>
+                    </div>
+                    <span class="trust-detail">→ recipient becomes Archon</span>
+                </div>
+
+                <div class="trust-connector-line" style="margin-left:20px;"></div>
+                <div style="display:flex;align-items:center;gap:8px;padding-left:28px;margin-bottom:4px;">
+                    <span style="font-size:0.7rem;color:rgba(0,212,255,0.5);">↓ signs Instructor Certificate</span>
+                </div>
+
+                <!-- Instructor cert -->
+                <div class="trust-node" style="border-color:rgba(0,212,255,0.4);">
+                    <span class="trust-icon" style="color:var(--cyan);">⬢</span>
+                    <div>
+                        <div class="trust-label" style="color:var(--cyan);">Instructor Certificate</div>
+                        <div style="font-family:'JetBrains Mono',monospace;font-size:0.65rem;color:rgba(0,212,255,0.5);margin-top:2px;">{ tier: INSTRUCTOR, plane, recipientId, issuerId, issued }</div>
+                    </div>
+                    <span class="trust-detail">→ recipient becomes Instructor</span>
+                </div>
+
+                <div class="trust-connector-line" style="margin-left:20px;"></div>
+                <div style="display:flex;align-items:center;gap:8px;padding-left:28px;margin-bottom:4px;">
+                    <span style="font-size:0.7rem;color:rgba(0,229,160,0.5);">↓ signs Tome (via Cosmological ID)</span>
+                </div>
+
+                <!-- Tome -->
+                <div class="trust-node" style="border-color:rgba(0,229,160,0.35);">
+                    <span class="trust-icon" style="color:var(--emerald);">📜</span>
+                    <div>
+                        <div class="trust-label" style="color:var(--emerald);">Tome / Artifact</div>
+                        <div style="font-family:'JetBrains Mono',monospace;font-size:0.65rem;color:rgba(0,229,160,0.5);margin-top:2px;">authorCosmologicalId embedded · plane certified · tomes/{id}</div>
+                    </div>
+                    <span class="trust-detail">→ Learning Hub</span>
+                </div>
+
+            </div>
+
+            <!-- Highlight box -->
+            <div style="margin-top:24px;padding:14px;background:rgba(5,3,15,0.8);border-left:3px solid rgba(232,28,255,0.5);border-radius:0 8px 8px 0;font-family:'JetBrains Mono',monospace;font-size:0.75rem;color:rgba(232,28,255,0.8);">
+                Root Archon → [cert₁] → Archon A → [cert₂] → Instructor B → Tome C
+            </div>
+        </div>
+    </section>
+
+    <!-- ────────────────────────────────────────────────────────────────────── -->
+    <!-- SECTION 4: Step-by-Step Walkthrough                                    -->
+    <!-- ────────────────────────────────────────────────────────────────────── -->
+    <section class="mb-16">
+        <div class="section-header">
+            <span class="section-num">04</span>
+            <h2 class="section-title">Pipeline Step-by-Step Walkthrough</h2>
+        </div>
+
+        <div class="space-y-3">
+
+            <div class="step-item">
+                <div class="step-num">01</div>
+                <div class="step-content">
+                    <div class="step-title">Sign Up → Firebase Auth</div>
+                    <div class="step-detail">Create an account via Firebase Authentication. A unique <code class="step-code">uid</code> is assigned — this is the Firestore document key for all your records.</div>
+                </div>
+            </div>
+
+            <div class="step-item">
+                <div class="step-num">02</div>
+                <div class="step-content">
+                    <div class="step-title">Open Registrar → Forge Cosmological ID → Firestore Write</div>
+                    <div class="step-detail">Submit a ledger seed phrase and choose a lattice space. The Registrar hashes it into a 64-char hex ID and writes it to Firestore.</div>
+                    <code class="step-code">Firestore write: users/{uid}/profile/main.cosmologicalId</code>
+                </div>
+            </div>
+
+            <div class="step-item">
+                <div class="step-num">03</div>
+                <div class="step-content">
+                    <div class="step-title">Open Codex → View ID, Acolyte Tier</div>
+                    <div class="step-detail">The Codex reads your Firestore profile and renders your sigil, ID, lattice, coords, and tier. At this point tier = ACOLYTE — no authorship rights.</div>
+                </div>
+            </div>
+
+            <div class="step-item">
+                <div class="step-num">04</div>
+                <div class="step-content">
+                    <div class="step-title">Archon Opens Genesis Forge → Mints Instructor Cert → Firestore Write</div>
+                    <div class="step-detail">An Archon enters your UID, selects a plane and tier. The Forge signs a certificate with their Cosmological ID and writes it to your profile.</div>
+                    <code class="step-code">Firestore write: users/{yourUid}/profile/main.pendingCert = cert</code>
+                </div>
+            </div>
+
+            <div class="step-item">
+                <div class="step-num">05</div>
+                <div class="step-content">
+                    <div class="step-title">Open Codex → Apply Cert → Tier Upgrades to Instructor</div>
+                    <div class="step-detail">You paste the certificate JSON into the Codex apply form. Firestore updates your tier to INSTRUCTOR. The certified plane is now in your profile.</div>
+                    <code class="step-code">Firestore write: users/{uid}/profile/main.tier = "INSTRUCTOR"</code>
+                </div>
+            </div>
+
+            <div class="step-item">
+                <div class="step-num">06</div>
+                <div class="step-content">
+                    <div class="step-title">Open Instructor Console → Author a Tome → Firestore Write</div>
+                    <div class="step-detail">The Instructor Console shows your certified planes. Fill in the tome form — title, body, plane, priority. Submit. Your Cosmological ID is embedded as the author signature.</div>
+                    <code class="step-code">Firestore write: tomes/{tomeId} → { authorCosmologicalId, plane, priority, ... }</code>
+                </div>
+            </div>
+
+            <div class="step-item">
+                <div class="step-num">07</div>
+                <div class="step-content">
+                    <div class="step-title">Tome Appears in Learning Hub</div>
+                    <div class="step-detail">The Learning Hub queries the <code style="font-family:'JetBrains Mono',monospace;font-size:0.72rem;color:rgba(0,212,255,0.7);">tomes</code> collection and surfaces your tome under its dimensional plane for students to study.</div>
+                </div>
+            </div>
+
+            <div class="step-item">
+                <div class="step-num">08</div>
+                <div class="step-content">
+                    <div class="step-title">Open Familiars → Assign Manifold to Familiar Slot</div>
+                    <div class="step-detail">In the Manifold Forge, tune N (vertices), K (winding), T (tiers) for your active familiar slot. Save to Firestore.</div>
+                    <code class="step-code">Firestore write: users/{uid}/profile/main.familiarManifolds[0] = { N, K, T }</code>
+                </div>
+            </div>
+
+            <div class="step-item">
+                <div class="step-num">09</div>
+                <div class="step-content">
+                    <div class="step-title">Open Engram Mind Eye → Binds to Familiar Manifold → Begin Crystallization</div>
+                    <div class="step-detail">The Engram reads your active familiar's N/K/T from Firestore and uses it as the crystallization anchor. Every conversation packet is crystallized against that geometric space.</div>
+                </div>
+            </div>
+
+            <div class="step-item">
+                <div class="step-num">10</div>
+                <div class="step-content">
+                    <div class="step-title">Export Packet Chain → Import to O1 Compressor or Blackwell Architect</div>
+                    <div class="step-detail">The Engram exports a compressed packet chain to localStorage. The O1 Compressor or Blackwell Architect can import this chain to resume or extend the crystallization session.</div>
+                    <code class="step-code">localStorage: packetChain → { packets[], manifest, familiarManifold }</code>
+                </div>
+            </div>
+
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="text-center pt-8 border-t border-yellow-500/10">
+        <div class="flex flex-wrap justify-center gap-4">
+            <a href="Tower_Guide.html" class="text-[10px] mono text-yellow-600 hover:text-yellow-300 uppercase tracking-[0.3em]">← Tower Guide</a>
+            <a href="Registrar.html"   class="text-[10px] mono text-gray-500 hover:text-gray-300 uppercase tracking-[0.3em]">Registrar</a>
+            <a href="Codex.html"       class="text-[10px] mono text-gray-500 hover:text-gray-300 uppercase tracking-[0.3em]">Codex</a>
+            <a href="Genesis_Forge.html" class="text-[10px] mono text-gray-500 hover:text-gray-300 uppercase tracking-[0.3em]">Genesis Forge</a>
+            <a href="Admin_Console.html" class="text-[10px] mono text-gray-500 hover:text-gray-300 uppercase tracking-[0.3em]">Admin Console</a>
+            <a href="../Learning-Hub.html" class="text-[10px] mono text-gray-500 hover:text-gray-300 uppercase tracking-[0.3em]">← Grand Hall</a>
+        </div>
+    </footer>
+
+</main>
+
+<script>
+window.TUTORIAL_CONFIG = {
+  title: "Traceability Pipeline",
+  familiar: "#D4AF37",
+  slides: [
+    {
+      heading: "What You're Reading",
+      body: "This page maps how data flows through the entire Mage Tower — from identity forging through authority chains to knowledge publication and social layers. Every record has a traceable origin."
+    },
+    {
+      heading: "The Four Layers",
+      body: "Gold = Identity (Registrar, Codex). Fuchsia = Authority (Genesis Forge, Admin Console). Cyan = Knowledge (Instructor Console, Prereq Math). Emerald = Social (Familiars, Store, Constellation Map)."
+    },
+    {
+      heading: "How to Read the Entity Table",
+      body: "Each row shows a data entity — where it's created, its Firestore path, and which pages consume it. Follow any entity back through the table to trace its provenance to a root signature."
+    },
+    {
+      heading: "The Chain Is the Security Model",
+      body: "Nothing in the Academy is anonymous. Every tome traces to an Instructor cert, which traces to an Archon cert, which traces to a GENESIS_MASTER_UID. The chain is the audit surface."
+    }
+  ]
+};
+</script>
+<script src="tutorial_engine.js"></script>
+
+</body>
+</html>
