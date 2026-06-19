@@ -119,11 +119,41 @@
         </div>
         
         <div class="flex items-center gap-3">
+            <button id="video-toggle" class="flex items-center gap-2 font-mono text-xs text-yellow-300 border border-yellow-500/30 px-3 py-1.5 rounded bg-yellow-900/20 hover:bg-yellow-900/40 transition-colors">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+                SOURCE MATERIAL
+            </button>
             <div class="font-mono text-xs text-purple-300 border border-purple-500/30 px-3 py-1.5 rounded bg-purple-900/20 hidden md:block">
                 MODULE: <span class="text-white">TORSIONAL MARKOV PUMP</span>
             </div>
         </div>
     </header>
+
+    <!-- Source Material Modal/Dropdown -->
+    <div id="video-dropdown" class="hidden absolute top-20 right-6 w-[600px] h-[450px] glass-panel rounded-xl z-[200] flex flex-col overflow-hidden shadow-2xl border border-yellow-500/30">
+        <!-- Header & Tabs -->
+        <div class="flex justify-between items-center bg-black/80 border-b border-white/10">
+            <div class="flex">
+                <button id="tab-video" class="px-4 py-3 text-[10px] font-mono font-bold bg-yellow-500/20 text-yellow-300 transition-colors border-r border-white/10">VIDEO LECTURE</button>
+                <button id="tab-pdf" class="px-4 py-3 text-[10px] font-mono font-bold text-slate-400 hover:text-white transition-colors border-r border-white/10">RESEARCH PAPER</button>
+            </div>
+            <button id="video-close" class="p-3 text-slate-400 hover:text-white transition-colors">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+            </button>
+        </div>
+        
+        <!-- Content -->
+        <div class="flex-1 bg-black/90 relative">
+            <!-- Video iframe -->
+            <div id="ref-video" class="absolute inset-0 w-full h-full">
+                <iframe class="w-full h-full" src="https://www.youtube.com/embed/8NQ5FsRPl7M" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+            </div>
+            <!-- PDF iframe -->
+            <div id="ref-pdf" class="absolute inset-0 w-full h-full hidden bg-white">
+                <iframe class="w-full h-full" src="https://biochainai.github.io/Owl-Academy/Library/Community%20&%20Research/Independent_Learning/Torsional_Markov_Pump/Mathematical%20Model%20for%20the%20Torsional%20Markov%20Pump.pdf" frameborder="0"></iframe>
+            </div>
+        </div>
+    </div>
 
     <!-- Main Application Area -->
     <div class="flex-1 flex overflow-hidden relative z-10 p-4 gap-4">
@@ -930,7 +960,44 @@
         }
 
         // ==========================================
-        // 5. MAIN RENDER LOOP & EVENT LISTENERS
+        // 5. MODAL LOGIC (VIDEO / PDF)
+        // ==========================================
+        const videoToggle = document.getElementById('video-toggle');
+        const videoDropdown = document.getElementById('video-dropdown');
+        const videoClose = document.getElementById('video-close');
+        const tabVideo = document.getElementById('tab-video');
+        const tabPdf = document.getElementById('tab-pdf');
+        const refVideo = document.getElementById('ref-video');
+        const refPdf = document.getElementById('ref-pdf');
+
+        if(videoToggle && videoDropdown && videoClose) {
+            videoToggle.addEventListener('click', () => {
+                videoDropdown.classList.toggle('hidden');
+            });
+            videoClose.addEventListener('click', () => {
+                videoDropdown.classList.add('hidden');
+            });
+            
+            // Handle Video vs PDF tab switching
+            tabVideo.addEventListener('click', () => {
+                refVideo.classList.remove('hidden');
+                refPdf.classList.add('hidden');
+                
+                tabVideo.className = "px-4 py-3 text-[10px] font-mono font-bold bg-yellow-500/20 text-yellow-300 transition-colors border-r border-white/10";
+                tabPdf.className = "px-4 py-3 text-[10px] font-mono font-bold text-slate-400 hover:text-white transition-colors border-r border-white/10";
+            });
+
+            tabPdf.addEventListener('click', () => {
+                refPdf.classList.remove('hidden');
+                refVideo.classList.add('hidden');
+                
+                tabPdf.className = "px-4 py-3 text-[10px] font-mono font-bold bg-yellow-500/20 text-yellow-300 transition-colors border-r border-white/10";
+                tabVideo.className = "px-4 py-3 text-[10px] font-mono font-bold text-slate-400 hover:text-white transition-colors border-r border-white/10";
+            });
+        }
+
+        // ==========================================
+        // 6. MAIN RENDER LOOP & EVENT LISTENERS
         // ==========================================
         function animate() {
             animationFrameId = requestAnimationFrame(animate);
