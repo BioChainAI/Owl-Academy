@@ -216,7 +216,7 @@
                     
                     <div id="log-window">
                         <div>SYSTEM READY. AWAITING DATA...</div>
-                        <div style="color: var(--c64-yellow); margin-top: 5px;">* NOTE: The compiler has been updated to generate 'graph_equations' utilizing variables 'x', 't', and 'time' for the Cartography Engine.</div>
+                        <div style="color: var(--c64-yellow); margin-top: 5px;">* NOTE: The compiler has been updated to generate 'graph_equations' with specific 'familiar_dialogues' for the Cartography Engine.</div>
                     </div>
 
                     <div class="mt-4">
@@ -372,7 +372,15 @@
                                         properties: {
                                             type: { type: "STRING", description: "'cartesian' or 'parametric'" },
                                             x: { type: "STRING", description: "Parametric X equation using 't' and 'time'." },
-                                            y: { type: "STRING", description: "Cartesian Y equation using 'x' and 'time', or Parametric Y equation using 't' and 'time'." }
+                                            y: { type: "STRING", description: "Cartesian Y equation using 'x' and 'time', or Parametric Y equation using 't' and 'time'." },
+                                            familiar_dialogues: {
+                                                type: "OBJECT",
+                                                properties: {
+                                                    cat: { type: "STRING" },
+                                                    mastiff: { type: "STRING" }
+                                                },
+                                                description: "Commentary triggered when plotting this specific graph."
+                                            }
                                         }
                                     },
                                     description_bottom: { type: "STRING" },
@@ -404,7 +412,8 @@ CRITICAL GRAPHING RULES (For the Cartography Engine):
 9. VARIABLES:
    - For 'cartesian': define 'y' using 'x' as the independent variable.
    - For 'parametric': define 'x' and 'y' using 't' as the independent variable.
-   - For ANIMATION: In either mode, you may include the variable 'time' to make the graph animated (e.g. "sin(x - time)").`;
+   - For ANIMATION: In either mode, you may include the variable 'time' to make the graph animated (e.g. "sin(x - time)").
+10. Include 'familiar_dialogues' inside 'graph_equations' containing brief, persona-specific commentary on the visual shape of the mathematical graph (e.g., Cat: "Watch the waves fold over the manifold...", Mastiff: "Asymptotes are strictly bounded. Decay is active...").`;
 
         // Exponential Backoff Fetch
         async function fetchWithRetry(url, options, maxRetries = 5) {
@@ -481,7 +490,6 @@ CRITICAL GRAPHING RULES (For the Cartography Engine):
             navigator.clipboard.writeText(outputJson.value).then(() => {
                 log("CARTRIDGE COPIED TO CLIPBOARD.", 'var(--c64-highlight)');
             }).catch(err => {
-                // Fallback for older browsers / iframe restrictions
                 const textArea = document.createElement("textarea");
                 textArea.value = outputJson.value;
                 document.body.appendChild(textArea);
