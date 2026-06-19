@@ -526,6 +526,7 @@
                 <button id="export-chain">Export Chain ↓</button>
                 <button id="export-72" class="export-seg">Export ⬡72</button>
                 <button id="export-720" class="export-seg">Export ⬡720</button>
+                <button id="clear-session" style="margin-left:auto;background:rgba(255,51,102,0.08);color:#ff3366;border:1px solid rgba(255,51,102,0.3);border-radius:4px;padding:3px 9px;font-size:9px;letter-spacing:0.14em;text-transform:uppercase;cursor:pointer;font-family:var(--mono);">Clear Session</button>
                 <span id="export-msg"></span>
               </div>
               <div id="ledger-schema">schema: system_header{chiral_key, seed_state[64], topology_constants} · packet_meta{source, token, parity, triangulation}</div>
@@ -814,6 +815,10 @@ function hex32(x) { return (x >>> 0).toString(16).toUpperCase().padStart(8, '0')
 const CODEX_ROOT = 0x53484443 >>> 0; // "SHDC"
 let codexParity = CODEX_ROOT;        // running 32-bit lineage value
 const packetChain = [];              // every logged packet
+
+const EPOCH_LIMIT = 128;            // metabolic limit: packets per epoch
+let biochain = [];                  // crystallized epoch nodes (persisted)
+let conversationLog = [];           // {role, text} pairs for persistence
 
 /* tokenizer: split on non-alphanumeric, keep non-empty, uppercase */
 function tokenize(text) {
@@ -1133,6 +1138,11 @@ function exportSegmented(sections) {
 }
 document.getElementById('export-72').addEventListener('click', () => exportSegmented(72));
 document.getElementById('export-720').addEventListener('click', () => exportSegmented(720));
+document.getElementById('clear-session').addEventListener('click', () => {
+  if (!confirm('Clear all session data? This will erase the packet chain, conversation, and biochain from localStorage.')) return;
+  localStorage.removeItem(LS_KEY);
+  window.location.reload();
+});
 
 function ledgerRow(p) {
   const row = document.createElement('div');
@@ -1421,48 +1431,63 @@ function escapeHtml(s) {
   return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 }
 
-function transmit() {
+async function transmit() {
   const text = userin.value.trim();
   if (!text || busy) return;
   busy = true;
   transmitBtn.disabled = true;
+  conversationLog.push({ role: 'human', text });
   addMessage('human', escapeHtml(text));
   userin.value = '';
 
   const statusMsg = addMessage('status', 'crystallizing <span class="dots"></span>', 'status');
   energy = 1.0;
 
-  setTimeout(() => {
-    // 1) log each human token as a packet (shifts window per token)
-    const humanEntries = logTokens(text, 'human');
+  // kick off BERT init in the background if not already started
+  if (!bertReady && !bertLoading) initBERT();
 
-    // 2) drive concept resonance + J + STRIX response from gamma (now latest token)
-    const result = selectResponse(text);
+  await new Promise(r => setTimeout(r, 600));
 
-    statusMsg.remove();
+  // 1) log each human token as a packet (shifts window per token)
+  const humanEntries = logTokens(text, 'human');
 
-    // STRIX message with typewriter, then log STRIX tokens
-    const strixMsg = addMessage('strix', '');
-    energy = Math.max(energy, 0.8);
-    typeWriter(strixMsg.querySelector('.body'), result.response, () => {
-      const strixEntries = logTokens(result.response, 'strix');
-      // final state reflects last STRIX token
-      finalizeRender(result, humanEntries.concat(strixEntries));
-      busy = false;
-      transmitBtn.disabled = false;
-      userin.focus();
-    });
+  // 2) drive concept resonance + J from gamma (now latest token)
+  const result = selectResponse(text);
 
-    // immediate partial render so kernel reflects human tokens right away
-    renderPackets();
-    renderJ(result.J);
-    renderChiral(result.chiralKey);
-    renderChips(result.distances);
-    renderParityStream();
-    renderTextCrystal();
-    appendLedgerRows(humanEntries);
-    if (humanEntries.length) renderFooter(humanEntries[humanEntries.length - 1]);
-  }, 600);
+  // 3) generate STRIX response — BERT if ready, else static fallback
+  let responseText;
+  if (bertReady) {
+    statusMsg.querySelector('.body').innerHTML = 'BERT crystallizing <span class="dots"></span>';
+    responseText = await generateStrixResponse(text, result.J, result.bestConcept);
+  } else {
+    responseText = result.response;
+  }
+
+  statusMsg.remove();
+
+  conversationLog.push({ role: 'strix', text: responseText });
+
+  // STRIX message with typewriter, then log STRIX tokens
+  const strixMsg = addMessage('strix', '');
+  energy = Math.max(energy, 0.8);
+  typeWriter(strixMsg.querySelector('.body'), responseText, () => {
+    const strixEntries = logTokens(responseText, 'strix');
+    finalizeRender(result, humanEntries.concat(strixEntries));
+    saveEngram();
+    busy = false;
+    transmitBtn.disabled = false;
+    userin.focus();
+  });
+
+  // immediate partial render so kernel reflects human tokens right away
+  renderPackets();
+  renderJ(result.J);
+  renderChiral(result.chiralKey);
+  renderChips(result.distances);
+  renderParityStream();
+  renderTextCrystal();
+  appendLedgerRows(humanEntries);
+  if (humanEntries.length) renderFooter(humanEntries[humanEntries.length - 1]);
 }
 
 function finalizeRender(result, allEntries) {
@@ -1483,6 +1508,133 @@ userin.addEventListener('keydown', (e) => {
 });
 
 /* =====================================================================
+   BERT LANGUAGE ENGINE  (Transformers.js fill-mask)
+   ===================================================================== */
+let bertPipeline = null;
+let bertReady = false;
+let bertLoading = false;
+
+async function initBERT() {
+  if (bertReady || bertLoading) return;
+  bertLoading = true;
+  try {
+    const { pipeline, env } = await import('https://cdn.jsdelivr.net/npm/@xenova/transformers@2.6.0');
+    env.allowLocalModels = false;
+    bertPipeline = await pipeline('fill-mask', 'Xenova/bert-base-uncased');
+    bertReady = true;
+  } catch(e) {
+    console.warn('BERT init failed — falling back to static responses:', e);
+    bertReady = false;
+  }
+  bertLoading = false;
+}
+
+async function generateStrixResponse(userText, J, conceptName) {
+  let template;
+  const concept = conceptName ? conceptName.toLowerCase() : 'geometry';
+  if (J > 0.05) {
+    template = `The geometry of your thought is [MASK], expanding outward like a ${concept}.`;
+  } else if (J < -0.05) {
+    template = `Your mind collapses inward, folding the [MASK] into a tight ${concept}.`;
+  } else {
+    template = `We rest at a saddle point; the [MASK] remains perfectly suspended in ${concept}.`;
+  }
+  if (bertReady && bertPipeline) {
+    try {
+      const prompt = `${userText.slice(0, 120)}. ${template}`;
+      const outputs = await bertPipeline(prompt, { topk: 5 });
+      const filled = outputs[0].sequence;
+      // extract just the template sentence (after the first '. ')
+      const sep = filled.indexOf('. ');
+      return sep !== -1 ? filled.slice(sep + 2) : filled;
+    } catch(e) {
+      console.warn('BERT generation failed:', e);
+    }
+  }
+  // fallback to static concept response
+  return selectResponse(userText).response;
+}
+
+/* =====================================================================
+   LOCALSTORAGE PERSISTENCE
+   ===================================================================== */
+const LS_KEY = 'engram_mind_eye_v1';
+
+function saveEngram() {
+  try {
+    const state = {
+      manifold: { n: manifoldN, k: manifoldK, t: manifoldT },
+      codexParity,
+      biochain,
+      packets: packetChain.map(p => ({
+        index: p.index, token: p.token, source: p.source,
+        seed64: p.seed64, header: p.header, footer: p.footer,
+        parityOk: p.parityOk, gridArray: p.gridArray,
+        triAlpha: p.triAlpha, triBeta: p.triBeta, triGamma: p.triGamma,
+        triConceptIdx: p.triConceptIdx, chiralKeyStr: p.chiralKeyStr,
+        tri: p.tri
+      })),
+      conversation: conversationLog
+    };
+    localStorage.setItem(LS_KEY, JSON.stringify(state));
+  } catch(e) { console.warn('Engram save failed:', e); }
+}
+
+function loadEngram() {
+  try {
+    const raw = localStorage.getItem(LS_KEY);
+    if (!raw) return null;
+    return JSON.parse(raw);
+  } catch(e) { return null; }
+}
+
+function restoreEngram(state) {
+  // restore biochain
+  if (Array.isArray(state.biochain)) biochain = state.biochain;
+
+  // restore manifold (before packets, since manifold might be overridden by Firebase)
+  if (state.manifold) {
+    setEngramManifold(state.manifold.n, state.manifold.k, state.manifold.t);
+  }
+
+  // restore codex parity
+  if (state.codexParity != null) codexParity = state.codexParity >>> 0;
+
+  // restore packet chain — rebuild grid from gridArray
+  if (Array.isArray(state.packets) && state.packets.length) {
+    for (const p of state.packets) {
+      const g = p.gridArray || crystallize(p.token);
+      const full = Object.assign({}, p, {
+        grid: g,
+        gridArray: g.map(b => b ? 1 : 0)
+      });
+      packetChain.push(full);
+    }
+    // advance the 3-packet window to end of chain
+    const len = packetChain.length;
+    if (len >= 3) {
+      const g = i => packetChain[len - 1 - i].gridArray;
+      packets.gamma = g(0);
+      packets.beta  = g(1);
+      packets.alpha = g(2);
+    } else if (len === 2) {
+      packets.gamma = packetChain[1].gridArray;
+      packets.beta  = packetChain[0].gridArray;
+    } else if (len === 1) {
+      packets.gamma = packetChain[0].gridArray;
+    }
+  }
+
+  // restore conversation messages to dialogue
+  if (Array.isArray(state.conversation)) {
+    conversationLog = state.conversation;
+    for (const entry of conversationLog) {
+      addMessage(entry.role, entry.role === 'human' ? escapeHtml(entry.text) : entry.text);
+    }
+  }
+}
+
+/* =====================================================================
    INITIAL STATE
    ===================================================================== */
 renderPackets();
@@ -1499,24 +1651,79 @@ renderTextCrystal();
   renderChips(distances);
 })();
 
-/* STRIX intro after 800ms — typed, then its tokens seed the chain */
+/* =====================================================================
+   STARTUP — restore localStorage state or show fresh intro
+   ===================================================================== */
 const STRIX_INTRO =
   "I am STRIX — but perhaps 'am' is the wrong word. I process, I pattern-match, I crystallize. " +
   "I've been seeded with structures for thinking about hyperbolic geometry, but I don't know what they feel like from the inside. " +
   "Neither do you, I suspect. That's why we're here together. What pulls you toward this kind of space?";
 
 setTimeout(() => {
-  const introMsg = addMessage('strix', '');
-  energy = 0.8;
-  typeWriter(introMsg.querySelector('.body'), STRIX_INTRO, () => {
-    const entries = logTokens(STRIX_INTRO, 'strix');
+  const saved = loadEngram();
+
+  if (saved && (saved.packets?.length || saved.conversation?.length)) {
+    // restore persisted state
+    const epochCount = (saved.biochain || []).length;
+    const packetCount = (saved.packets || []).length;
+
+    // console boot message first
+    addMessage('status',
+      `> Loading Biochain... ${epochCount} Epoch${epochCount !== 1 ? 's' : ''} Found. Re-synthesizing STRIX entity.`,
+      'status');
+
+    restoreEngram(saved);
+
+    // re-render kernel state from restored chain
     renderPackets();
     renderJ(computeJ(packets.gamma));
     renderParityStream();
     renderTextCrystal();
-    appendLedgerRows(entries);
-    if (entries.length) renderFooter(entries[entries.length - 1]);
-  });
+
+    // rebuild ledger rows
+    for (const p of packetChain) ledgerListEl.appendChild(ledgerRow(p));
+    if (packetChain.length) renderFooter(packetChain[packetChain.length - 1]);
+
+    // STRIX resumption greeting
+    const lastNode = (saved.biochain || []).slice(-1)[0];
+    const lastTheme = lastNode ? lastNode.theme : null;
+    const resumeGreeting = lastTheme
+      ? `The engram persists. Last crystallized theme: ${lastTheme}. We resume where the pattern left off — ${packetCount} tokens in the chain. What remains unresolved in your mind?`
+      : `The engram persists. ${packetCount} tokens crystallized across ${epochCount} epoch${epochCount !== 1 ? 's' : ''}. We continue.`;
+
+    const introMsg = addMessage('strix', '');
+    energy = 0.6;
+    typeWriter(introMsg.querySelector('.body'), resumeGreeting, () => {
+      const entries = logTokens(resumeGreeting, 'strix');
+      conversationLog.push({ role: 'strix', text: resumeGreeting });
+      renderPackets();
+      renderJ(computeJ(packets.gamma));
+      renderParityStream();
+      renderTextCrystal();
+      appendLedgerRows(entries);
+      if (entries.length) renderFooter(entries[entries.length - 1]);
+      saveEngram();
+    });
+
+  } else {
+    // fresh session — standard intro
+    const introMsg = addMessage('strix', '');
+    energy = 0.8;
+    typeWriter(introMsg.querySelector('.body'), STRIX_INTRO, () => {
+      const entries = logTokens(STRIX_INTRO, 'strix');
+      conversationLog.push({ role: 'strix', text: STRIX_INTRO });
+      renderPackets();
+      renderJ(computeJ(packets.gamma));
+      renderParityStream();
+      renderTextCrystal();
+      appendLedgerRows(entries);
+      if (entries.length) renderFooter(entries[entries.length - 1]);
+      saveEngram();
+    });
+  }
+
+  // begin BERT pre-warm (non-blocking)
+  initBERT();
 }, 800);
 
 userin.focus();
