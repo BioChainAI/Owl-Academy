@@ -1,0 +1,960 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Owl Academy | Torsional Markov Pump</title>
+    
+    <!-- External Libraries -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Inter:wght@300;400;500;600&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+    
+    <!-- MathJax Configuration -->
+    <script>
+        window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']] } };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+    <style>
+        :root {
+            --color-void: #05030a;
+            --color-primary: #D4AF37;
+            --color-primary-light: #FFF8DC;
+            --color-holo-cyan: #00d4ff;
+            --color-holo-purple: #8A2BE2;
+            --color-holo-emerald: #10b981;
+            --color-holo-rose: #f43f5e;
+            --color-holo-amber: #f59e0b;
+        }
+
+        body {
+            background-color: var(--color-void);
+            color: #e2e8f0;
+            font-family: 'Inter', sans-serif;
+            background: radial-gradient(circle at 50% 0%, color-mix(in srgb, var(--color-holo-purple) 10%, var(--color-void)), var(--color-void) 80%);
+            min-height: 100vh;
+            margin: 0;
+            overflow-x: hidden;
+            line-height: 1.6;
+        }
+
+        .starfield {
+            position: fixed; inset: 0;
+            background-image:
+                radial-gradient(2px 2px at 20px 30px, var(--color-holo-purple), rgba(0,0,0,0)),
+                radial-gradient(2px 2px at 40px 70px, #fff, rgba(0,0,0,0)),
+                radial-gradient(2px 2px at 50px 160px, rgba(255,255,255,0.8), rgba(0,0,0,0)),
+                radial-gradient(2px 2px at 90px 40px, #fff, rgba(0,0,0,0)),
+                radial-gradient(2px 2px at 130px 80px, var(--color-holo-cyan), rgba(0,0,0,0));
+            background-repeat: repeat; background-size: 250px 250px;
+            animation: twinkle 8s infinite alternate;
+            opacity: 0.15; z-index: -2; pointer-events: none;
+        }
+
+        @keyframes twinkle { 0% { opacity: 0.05; } 100% { opacity: 0.2; } }
+
+        h1, h2, h3, h4, h5, .mystical-font { font-family: 'Cinzel', serif; }
+
+        .gold-gradient {
+            background: linear-gradient(to right, var(--color-holo-cyan), var(--color-primary-light), var(--color-holo-purple));
+            -webkit-background-clip: text; background-clip: text;
+            color: transparent; text-shadow: 0 0 15px color-mix(in srgb, var(--color-holo-cyan) 30%, transparent);
+        }
+
+        .glass-panel {
+            background: rgba(10, 8, 20, 0.65);
+            backdrop-filter: blur(16px);
+            border: 1px solid color-mix(in srgb, var(--color-holo-purple) 25%, transparent);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5);
+        }
+
+        /* Sidebar Nav Styles */
+        .nav-item {
+            transition: all 0.3s ease;
+            border-left: 2px solid transparent;
+        }
+        .nav-item.active {
+            background: linear-gradient(90deg, rgba(138, 43, 226, 0.15) 0%, transparent 100%);
+            border-left-color: var(--color-holo-purple);
+            color: var(--color-holo-purple);
+        }
+        .nav-item:hover:not(.active) {
+            background: rgba(255,255,255,0.05);
+            border-left-color: rgba(0, 212, 255, 0.4);
+        }
+
+        /* Content Scrollbar */
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-track { background: rgba(0,0,0,0.3); }
+        ::-webkit-scrollbar-thumb { background: color-mix(in srgb, var(--color-holo-purple) 40%, transparent); border-radius: 10px; }
+
+        .code-block {
+            font-family: 'Fira Code', monospace;
+            background: rgba(0,0,0,0.5);
+            border: 1px solid rgba(255,255,255,0.1);
+            padding: 1rem;
+            border-radius: 0.5rem;
+            font-size: 0.75rem;
+            color: #a5b4fc;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body class="antialiased flex flex-col h-screen overflow-hidden">
+
+    <!-- Atmospheric Background -->
+    <div class="starfield"></div>
+
+    <!-- Header -->
+    <header class="flex-shrink-0 w-full py-4 px-6 relative border-b border-purple-600/20 bg-[#05030a]/80 backdrop-blur-md z-[100] flex justify-between items-center shadow-lg">
+        <div>
+            <div class="text-[10px] text-purple-400/80 tracking-[0.3em] uppercase font-mono mb-1">
+                Advanced Mathematics &gt; Rotational State Encoding
+            </div>
+            <h1 class="text-xl md:text-2xl font-bold tracking-[0.2em] gold-gradient">OWL ACADEMY</h1>
+        </div>
+        
+        <div class="flex items-center gap-3">
+            <div class="font-mono text-xs text-purple-300 border border-purple-500/30 px-3 py-1.5 rounded bg-purple-900/20 hidden md:block">
+                MODULE: <span class="text-white">TORSIONAL MARKOV PUMP</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Application Area -->
+    <div class="flex-1 flex overflow-hidden relative z-10 p-4 gap-4">
+        
+        <!-- Sidebar Navigation -->
+        <aside class="w-1/4 max-w-[300px] glass-panel rounded-xl flex flex-col overflow-hidden h-full">
+            <div class="p-4 border-b border-white/10">
+                <h2 class="text-sm font-bold text-white tracking-widest mystical-font">Module Phases</h2>
+            </div>
+            <nav class="flex-1 overflow-y-auto py-2" id="nav-container">
+                <!-- Nav items generated via JS -->
+            </nav>
+        </aside>
+
+        <!-- Content Area -->
+        <main class="flex-1 flex flex-col gap-4 h-full overflow-hidden">
+            
+            <!-- Interactive Visualization Panel -->
+            <div class="w-full h-1/2 lg:h-[55%] min-h-[250px] glass-panel rounded-xl relative overflow-hidden shadow-[0_0_40px_rgba(138,43,226,0.1)_inset] flex-shrink-0">
+                <!-- 3D Canvas -->
+                <div id="canvas-container" class="w-full h-full"></div>
+                
+                <!-- Vis HUD -->
+                <div class="absolute top-4 left-4 z-20 font-mono text-[10px] bg-black/60 px-3 py-1.5 rounded border border-white/10 text-slate-300 backdrop-blur-md">
+                    <span class="text-white font-bold" id="vis-title">Live Visualization</span><br>
+                    <span class="text-slate-500">Interact with mouse to rotate/zoom</span>
+                </div>
+                
+                <div id="vis-overlay-data" class="absolute bottom-4 right-4 z-20 font-mono text-[10px] bg-black/80 px-3 py-2 rounded border border-purple-500/30 text-right backdrop-blur-md text-purple-300">
+                    <!-- Dynamic HUD data per phase -->
+                </div>
+            </div>
+
+            <!-- Explainer Text Panel -->
+            <div class="w-full flex-1 glass-panel rounded-xl flex flex-col overflow-hidden">
+                <div class="p-4 md:p-6 border-b border-white/10 bg-black/40 flex-shrink-0">
+                    <div id="phase-badge" class="inline-block px-2 py-0.5 border border-purple-500/30 rounded text-purple-400 text-[9px] tracking-widest uppercase mb-2 font-mono">Phase 0</div>
+                    <h2 id="phase-title" class="text-xl md:text-2xl font-bold text-white mystical-font leading-tight">Concept Title</h2>
+                    <p id="phase-objective" class="text-xs md:text-sm text-slate-400 mt-2 italic border-l-2 border-purple-600/50 pl-3">Objective description here.</p>
+                </div>
+                
+                <div class="p-4 md:p-6 overflow-y-auto flex-1 custom-scrollbar" id="phase-content">
+                    <!-- Content generated via JS -->
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <!-- Application Script -->
+    <script>
+        // ==========================================
+        // 1. DATA: Phase Content Definitions
+        // ==========================================
+        const phasesData = [
+            {
+                id: "phase-0",
+                badge: "Phase 0",
+                badgeColor: "cyan",
+                title: "Unit Quaternions & Rotational State",
+                objective: "Understand how a moving orientation is encoded natively avoiding Gimbal Lock.",
+                content: `
+                    <div class="space-y-4 text-sm text-slate-300 leading-relaxed">
+                        <p>To mathematically represent a rotating system, one might rely on standard pitch, yaw, and roll angles. However, these methods suffer from <em>axis-locking</em> problems in three-dimensional space.</p>
+                        
+                        <p>Instead, we encode orientations as <strong>Unit Quaternions</strong>. A quaternion is a four-number rotation code:</p>
+                        
+                        <div class="text-center font-mono text-cyan-300 mb-2 code-block">
+                            $$q = (w, x, y, z)$$
+                        </div>
+
+                        <p>To qualify as a valid geometric rotation rather than a spatial scaling operation, the quaternion must be normalized. Its magnitude must equal exactly one:</p>
+                        
+                        <div class="bg-black/40 border border-white/10 rounded p-4 mt-4">
+                            <h3 class="text-white font-bold border-b border-cyan-500/30 pb-2 mb-3 tracking-wide">The Normalization Constraint</h3>
+                            <div class="text-center my-4 font-mono text-cyan-300">
+                                $$\\|q^{(12)}_n\\| = \\|q^{(10)}_m\\| = \\|q^{(8)}_\\ell\\| = 1$$
+                            </div>
+                            <p class="text-xs text-slate-400">By restricting our state vector $q$ to unit length, we define a continuous manifold of free 3D rotation, enabling the topological stability required for the Markov Pump framework.</p>
+                        </div>
+                    </div>
+                `,
+                visTitle: "Unit Quaternion Space",
+                initScene: initPhase0
+            },
+            {
+                id: "phase-1",
+                badge: "Phase 1",
+                badgeColor: "purple",
+                title: "Delta Encoding: Twists Over Time",
+                objective: "Learn to store structural changes (deltas) instead of entirely new rotational states.",
+                content: `
+                    <div class="space-y-4 text-sm text-slate-300 leading-relaxed">
+                        <p>A rotating system can be described by storing every full orientation, but a smarter model stores the <strong>small changes</strong> between orientations and rebuilds the full motion when needed.</p>
+                        
+                        <p>If one frame has orientation $q_k$ and the next has orientation $q_{k+1}$, the rotational change between them is defined as the Delta ($\\Delta q_k$). Because quaternion multiplication is strictly order-sensitive, we must carefully define the mathematical update rule.</p>
+                        
+                        <div class="bg-black/40 border border-white/10 rounded p-4 mt-4">
+                            <h3 class="text-white font-bold border-b border-purple-500/30 pb-2 mb-3 tracking-wide">The Delta Operation</h3>
+                            <p class="text-xs text-slate-400 mb-2">The change from one frame to the next is extracted by right-multiplying the new state by the inverse of the old state:</p>
+                            <div class="text-center font-mono text-purple-300 text-lg mb-2">
+                                $$\\Delta q_k = q_{k+1} q_k^{-1}$$
+                            </div>
+                            <p class="text-xs text-slate-400 mb-2 mt-4">To reconstruct the next frame dynamically from a stream of deltas, we walk through the rotation history:</p>
+                            <div class="text-center font-mono text-purple-300 text-lg mb-2">
+                                $$q_{k+1} = \\Delta q_k q_k$$
+                            </div>
+                        </div>
+                    </div>
+                `,
+                visTitle: "Extracting the Rotational Twist",
+                initScene: initPhase1
+            },
+            {
+                id: "phase-2",
+                badge: "Phase 2",
+                badgeColor: "amber",
+                title: "The Three-Scale Cyclic Gears",
+                objective: "Define the distributed memory chains across outer, middle, and inner orbital gears.",
+                content: `
+                    <div class="space-y-4 text-sm text-slate-300 leading-relaxed">
+                        <p>The core of the Torsional Pump divides memory across three mathematically coupled cyclic gears. This allows high-resolution frame data to be stored, offset, and stabilized.</p>
+                        
+                        <div class="bg-black/40 border border-white/10 rounded p-4 mt-4">
+                            <h3 class="text-white font-bold border-b border-amber-500/30 pb-2 mb-3 tracking-wide">The Triple Quaternion Chain</h3>
+                            
+                            <ul class="space-y-3 text-xs text-slate-400">
+                                <li><strong class="text-amber-400">Outer Gear (12-point):</strong> 720 frames. The high-resolution memory layer. Holds $q^{(12)}_n$ where $n = 0 \\dots 719$.</li>
+                                <li><strong class="text-amber-400">Middle Gear (10-point):</strong> 72 frames. The compressed <em>inverse</em> correction chain. Holds $q^{(10)}_m$. Because $72/10 = 7.2$ (non-integer), it phase-shears to prevent rapid repetitive alignment.</li>
+                                <li><strong class="text-amber-400">Inner Gear (8-point):</strong> 10 frames. The lowest resolution, serving as the coarse torsional anchor holding $q^{(8)}_\\ell$.</li>
+                            </ul>
+                            
+                            <div class="text-center text-xs font-mono text-amber-300 mt-4 code-block">
+                                $$\\text{High-Res Chain} \\longleftrightarrow \\text{Inverse Correction} \\longleftrightarrow \\text{Coarse Equilibrium}$$
+                            </div>
+                        </div>
+                    </div>
+                `,
+                visTitle: "Nested 12/10/8 Gear Topology",
+                initScene: initPhase2
+            },
+            {
+                id: "phase-3",
+                badge: "Phase 3",
+                badgeColor: "emerald",
+                title: "Quaternionic Downsampling",
+                objective: "Offload fine resolution memory by projecting into a coarser geometric state.",
+                content: `
+                    <div class="space-y-4 text-sm text-slate-300 leading-relaxed">
+                        <p>To offload the outer 720-frame memory chain into the middle 72-frame chain, we employ a geometric scaling projection. We take a block of 10 outer deltas and group them together.</p>
+                        
+                        <div class="bg-black/40 border border-white/10 rounded p-4 mt-4">
+                            <h3 class="text-white font-bold border-b border-emerald-500/30 pb-2 mb-3 tracking-wide">The Projection Rule</h3>
+                            <p class="text-xs text-slate-400 mb-3">The scale map bridging the 12-point gear to the 10-point gear is defined as $P_{12 \\to 10}(n) = \\lfloor n/10 \\rfloor$.</p>
+                            
+                            <p class="text-xs text-slate-400 mb-3">To compress the outer chain, we multiply the sequential deltas (preserving strict chronological order from right to left due to non-commutativity):</p>
+                            
+                            <div class="text-center font-mono text-emerald-300 text-sm mb-3 code-block">
+                                $$\\Delta Q^{(12 \\to 10)}_m = \\Delta q^{(12)}_{10m+9} \\Delta q^{(12)}_{10m+8} \\cdots \\Delta q^{(12)}_{10m}$$
+                            </div>
+
+                            <p class="text-xs text-slate-400">This consolidates 10 micro-twists into a single coarse rotational shift for the lower gear.</p>
+                        </div>
+                    </div>
+                `,
+                visTitle: "10-to-1 Frame Projection",
+                initScene: initPhase3
+            },
+            {
+                id: "phase-4",
+                badge: "Phase 4",
+                badgeColor: "rose",
+                title: "The Inverse Compensator",
+                objective: "Stabilize rotational drift by reversing the direction on the middle chain.",
+                content: `
+                    <div class="space-y-4 text-sm text-slate-300 leading-relaxed">
+                        <p>If all gears moved forward sequentially, cumulative topological drift would eventually fracture the system. We resolve this by forcing the middle 72-frame chain to run <strong>inversely</strong>.</p>
+                        
+                        <div class="bg-black/40 border border-white/10 rounded p-4 mt-4">
+                            <h3 class="text-white font-bold border-b border-rose-500/30 pb-2 mb-3 tracking-wide">Reversing the Delta</h3>
+                            <p class="text-xs text-slate-400 mb-3">The word "inverse" can be mathematically modeled by using inverse quaternions. A unit quaternion multiplied by its inverse always yields the Identity rotation ($qq^{-1} = 1$).</p>
+                            
+                            <p class="text-xs text-slate-400 mb-3">The middle layer stores the <em>compensating inverse</em> of the projected block from the outer layer:</p>
+                            
+                            <div class="text-center font-mono text-rose-300 text-sm mb-3 code-block">
+                                $$\\Delta q^{(10)}_m = \\left( \\Delta Q^{(12 \\to 10)}_m \\right)^{-1}$$
+                            </div>
+
+                            <p class="text-xs text-slate-400">Thus, the middle chain actively absorbs and cancels torsional drift originating from the high-resolution outer sequence.</p>
+                        </div>
+                    </div>
+                `,
+                visTitle: "Identity Cancellation & Counter-Rotation",
+                initScene: initPhase4
+            },
+            {
+                id: "phase-5",
+                badge: "Phase 5",
+                badgeColor: "cyan",
+                title: "The Directed Markov Pump",
+                objective: "Break detailed balance to force unidirectional progression using a Tesla-valve topology.",
+                content: `
+                    <div class="space-y-4 text-sm text-slate-300 leading-relaxed">
+                        <p>To be a true "pump" rather than a passive, diffusing system, we must ensure memory and structural data physically flows in one cyclic direction. We map this system to a continuous <strong>Markov Chain</strong> where transitions between states (gears) carry our quaternion delta labels.</p>
+                        
+                        <div class="bg-black/40 border border-white/10 rounded p-4 mt-4">
+                            <h3 class="text-white font-bold border-b border-cyan-500/30 pb-2 mb-3 tracking-wide">Breaking Detailed Balance</h3>
+                            <p class="text-xs text-slate-400 mb-3">Let $\\pi_i$ be the chance of being in state $i$, and $K_{ij}$ be the transition rate from state $i$ to $j$. The directed probability current is defined as:</p>
+                            
+                            <div class="text-center font-mono text-cyan-300 text-sm mb-3 code-block">
+                                $$J_{ij} = \\pi_i K_{ij} - \\pi_j K_{ji}$$
+                            </div>
+
+                            <p class="text-xs text-slate-400">A successful torsional pump guarantees a strict, non-equilibrium forward circulation:</p>
+                            
+                            <div class="text-center font-mono text-cyan-300 text-sm mb-3 code-block">
+                                $$J_{12,10} + J_{10,8} + J_{8,12} > 0$$
+                            </div>
+                            
+                            <p class="text-xs text-slate-400">We construct the transition matrix $K$ such that backward transitions ($K_{ji}$) are highly penalized, creating a one-way stochastic Tesla-valve.</p>
+                        </div>
+                    </div>
+                `,
+                visTitle: "Stochastic Forward Circulation (J > 0)",
+                initScene: initPhase5
+            },
+            {
+                id: "phase-6",
+                badge: "Phase 6",
+                badgeColor: "purple",
+                title: "Upward Fractional Reconstruction",
+                objective: "Re-inflate coarse memory back up the chain using quaternionic interpolation.",
+                content: `
+                    <div class="space-y-4 text-sm text-slate-300 leading-relaxed">
+                        <p>When the system requires detailed state access that was previously offloaded to the coarse 10-frame inner gear, it must reconstruct the data upwards.</p>
+                        
+                        <div class="bg-black/40 border border-white/10 rounded p-4 mt-4">
+                            <h3 class="text-white font-bold border-b border-purple-500/30 pb-2 mb-3 tracking-wide">Exponential Quaternionic Lifting</h3>
+                            <p class="text-xs text-slate-400 mb-3">To recreate fine deltas from a large coarse delta step, we apply a fractional interpolation weight $w$. For unit quaternions, fractional powers are perfectly handled via the exponential and logarithm maps of the Lie Algebra.</p>
+                            
+                            <div class="text-center font-mono text-purple-300 text-sm mb-3 code-block">
+                                $$q^w = \\exp \\left( w \\log q \\right)$$
+                            </div>
+
+                            <p class="text-xs text-slate-400">Thus, to lift the coarse inner state back into the middle inverse state, we define:</p>
+                            
+                            <div class="text-center font-mono text-purple-300 text-sm mb-3 code-block">
+                                $$\\widehat{\\Delta q}^{(10)}_m = \\left( \\Delta q^{(8)}_{\\ell(m)} \\right)^{w_m}$$
+                            </div>
+                            
+                            <p class="text-xs text-slate-400">This continuous mapping effectively flows information: $10 \\to 72 \\to 720$.</p>
+                        </div>
+                    </div>
+                `,
+                visTitle: "Interpolation & Information Lifting",
+                initScene: initPhase6
+            },
+            {
+                id: "phase-7",
+                badge: "Phase 7",
+                badgeColor: "emerald",
+                title: "Equilibrium Closure & Renormalization",
+                objective: "Lock the macro-cycle by ensuring global topological stability.",
+                content: `
+                    <div class="space-y-4 text-sm text-slate-300 leading-relaxed">
+                        <p>Numerical rounding errors and stochastic sampling will gradually distort our carefully generated rotations. Perfect equilibrium is not automatic. The model requires <strong>closure conditions</strong> to prevent catastrophic failure.</p>
+                        
+                        <div class="bg-black/40 border border-white/10 rounded p-4 mt-4">
+                            <h3 class="text-white font-bold border-b border-emerald-500/30 pb-2 mb-3 tracking-wide">Global Holonomy & Drift Correction</h3>
+                            <p class="text-xs text-slate-400 mb-3">After one full loop, the cyclic product must return precisely to the identity rotation. The total system holonomy $\\mathcal{H}$ must satisfy:</p>
+                            
+                            <div class="text-center font-mono text-emerald-300 text-sm mb-3 code-block">
+                                $$\\mathcal{H} = Q^{(8)} Q^{(10)} Q^{(12)} \\approx 1$$
+                            </div>
+
+                            <p class="text-xs text-slate-400 mb-3">Any residual drift is measured as $\\epsilon = \\log \\mathcal{H}$. The system then executes periodic corrections, distributing this error back across the chain layers while violently renormalizing all quaternions to strictly length 1:</p>
+
+                            <div class="text-center font-mono text-emerald-300 text-sm mb-3 code-block">
+                                $$q \\leftarrow \\frac{q}{\\|q\\|}$$
+                            </div>
+                            
+                            <p class="text-xs text-slate-400">This locks the Torsional Markov Pump into permanent, stable resonance.</p>
+                        </div>
+                    </div>
+                `,
+                visTitle: "Cyclic Identity Closure & Error Flushing",
+                initScene: initPhase7
+            }
+        ];
+
+        let activePhaseIndex = 0;
+
+        // ==========================================
+        // 2. THREE.JS GLOBAL SETUP
+        // ==========================================
+        const canvasContainer = document.getElementById('canvas-container');
+        const scene = new THREE.Scene();
+        scene.fog = new THREE.FogExp2(0x05030a, 0.015);
+
+        const camera = new THREE.PerspectiveCamera(45, canvasContainer.clientWidth / canvasContainer.clientHeight, 0.1, 1000);
+        camera.position.set(0, 10, 25);
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        renderer.setSize(canvasContainer.clientWidth, canvasContainer.clientHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        canvasContainer.appendChild(renderer.domElement);
+
+        const controls = new THREE.OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.05;
+        controls.autoRotate = false;
+
+        // Global Lighting
+        const ambLight = new THREE.AmbientLight(0xffffff, 0.4);
+        const dirLight = new THREE.DirectionalLight(0xe2e8f0, 1.2);
+        dirLight.position.set(10, 20, 15);
+        const rimLight = new THREE.DirectionalLight(0x8A2BE2, 2.0);
+        rimLight.position.set(-15, -10, -15);
+        scene.add(ambLight, dirLight, rimLight);
+
+        // Container for phase-specific objects
+        const phaseGroup = new THREE.Group();
+        scene.add(phaseGroup);
+
+        let animationFrameId;
+        let clock = new THREE.Clock();
+        let currentCustomAnimate = null; 
+
+        // ==========================================
+        // 3. PHASE SCENE INITIALIZERS
+        // ==========================================
+
+        function clearPhaseGroup() {
+            while(phaseGroup.children.length > 0){ 
+                const child = phaseGroup.children[0];
+                phaseGroup.remove(child); 
+                child.traverse((node) => {
+                    if (node.isMesh || node.isLine || node.isPoints) {
+                        if(node.geometry) node.geometry.dispose();
+                        if(node.material) {
+                            if(Array.isArray(node.material)) node.material.forEach(m => m.dispose());
+                            else node.material.dispose();
+                        }
+                    }
+                });
+            }
+            currentCustomAnimate = null;
+        }
+
+        // Phase 0: Unit Quaternions
+        function initPhase0(group) {
+            const geo = new THREE.IcosahedronGeometry(4, 1);
+            const mat = new THREE.MeshPhysicalMaterial({
+                color: 0x00d4ff,
+                wireframe: true,
+                transparent: true,
+                opacity: 0.8
+            });
+            const mesh = new THREE.Mesh(geo, mat);
+            group.add(mesh);
+
+            // Add axis visualizers to show the state vector
+            const axisHelper = new THREE.AxesHelper(6);
+            mesh.add(axisHelper);
+
+            // Sphere showing the boundary ||q|| = 1
+            const boundaryGeo = new THREE.SphereGeometry(6, 32, 32);
+            const boundaryMat = new THREE.MeshBasicMaterial({color: 0x8A2BE2, transparent: true, opacity: 0.1, wireframe: true});
+            const boundary = new THREE.Mesh(boundaryGeo, boundaryMat);
+            group.add(boundary);
+
+            const hudData = document.getElementById('vis-overlay-data');
+
+            currentCustomAnimate = (elapsed) => {
+                // Complex rotation simulating arbitrary quaternion state
+                mesh.rotation.x = Math.sin(elapsed * 0.5) * Math.PI;
+                mesh.rotation.y = elapsed * 0.8;
+                mesh.rotation.z = Math.cos(elapsed * 0.3) * Math.PI;
+
+                // Emulate quaternion extraction for HUD
+                const q = new THREE.Quaternion().setFromEuler(mesh.rotation);
+                const norm = Math.sqrt(q.w*q.w + q.x*q.x + q.y*q.y + q.z*q.z);
+
+                hudData.innerHTML = `
+                    ROTATIONAL STATE: <span class="text-white">Active</span><br>
+                    W: ${q.w.toFixed(3)} | X: ${q.x.toFixed(3)}<br>
+                    Y: ${q.y.toFixed(3)} | Z: ${q.z.toFixed(3)}<br>
+                    LENGTH ||q||: <span class="text-cyan-400">${norm.toFixed(6)}</span>
+                `;
+            };
+        }
+
+        // Phase 1: Delta Encoding
+        function initPhase1(group) {
+            const sGeo = new THREE.SphereGeometry(2, 16, 16);
+            
+            // Frame K
+            const matK = new THREE.MeshPhysicalMaterial({color: 0x3b82f6, transparent:true, opacity:0.5});
+            const meshK = new THREE.Mesh(sGeo, matK);
+            meshK.position.set(-5, 0, 0);
+            meshK.add(new THREE.AxesHelper(3));
+            group.add(meshK);
+
+            // Frame K+1
+            const matK1 = new THREE.MeshPhysicalMaterial({color: 0xa855f7, transparent:true, opacity:0.8});
+            const meshK1 = new THREE.Mesh(sGeo, matK1);
+            meshK1.position.set(5, 0, 0);
+            meshK1.add(new THREE.AxesHelper(3));
+            group.add(meshK1);
+
+            // Delta Arc
+            const curve = new THREE.QuadraticBezierCurve3(
+                new THREE.Vector3(-5, 2, 0),
+                new THREE.Vector3(0, 6, 0),
+                new THREE.Vector3(5, 2, 0)
+            );
+            const tubeGeo = new THREE.TubeGeometry(curve, 20, 0.2, 8, false);
+            const tubeMat = new THREE.MeshBasicMaterial({color: 0x00d4ff});
+            const tube = new THREE.Mesh(tubeGeo, tubeMat);
+            group.add(tube);
+
+            const hudData = document.getElementById('vis-overlay-data');
+
+            currentCustomAnimate = (elapsed) => {
+                // Static base rotation
+                meshK.rotation.set(0, 0, 0);
+                
+                // K+1 twists away
+                const twist = Math.sin(elapsed) * Math.PI;
+                meshK1.rotation.set(twist, twist * 0.5, 0);
+
+                // Pulse the delta tube when twist is high
+                tube.scale.setScalar(1 + Math.abs(Math.sin(elapsed))*0.5);
+                tubeMat.color.setHSL((Math.sin(elapsed)+1)*0.5, 1, 0.5);
+
+                hudData.innerHTML = `
+                    FRAME k: <span class="text-blue-400">Identity</span><br>
+                    FRAME k+1: <span class="text-purple-400">Target</span><br>
+                    Δq (TWIST): <span class="text-cyan-400">${Math.abs(twist).toFixed(2)} rad</span>
+                `;
+            };
+        }
+
+        // Phase 2: Three Scale Cyclic Gears
+        function initPhase2(group) {
+            const gears = [
+                { r: 8, points: 12, color: 0x00d4ff, speed: 1.0, name: "Outer (720)" },
+                { r: 5, points: 10, color: 0xf59e0b, speed: -0.6, name: "Middle (72 inv)" },
+                { r: 2, points: 8, color: 0x8A2BE2, speed: 0.2, name: "Inner (10)" }
+            ];
+
+            const gearMeshes = [];
+
+            gears.forEach(g => {
+                const ringGeo = new THREE.RingGeometry(g.r - 0.1, g.r + 0.1, 64);
+                const ringMat = new THREE.MeshBasicMaterial({color: g.color, side: THREE.DoubleSide, transparent:true, opacity:0.3});
+                const ring = new THREE.Mesh(ringGeo, ringMat);
+                ring.rotation.x = Math.PI / 2;
+                
+                // Add points
+                for(let i=0; i<g.points; i++) {
+                    const angle = (i / g.points) * Math.PI * 2;
+                    const dot = new THREE.Mesh(new THREE.SphereGeometry(0.3, 8, 8), new THREE.MeshBasicMaterial({color: 0xffffff}));
+                    dot.position.set(Math.cos(angle)*g.r, 0, Math.sin(angle)*g.r);
+                    ring.add(dot);
+                }
+                
+                group.add(ring);
+                gearMeshes.push({ mesh: ring, speed: g.speed, name: g.name });
+            });
+
+            const hudData = document.getElementById('vis-overlay-data');
+
+            currentCustomAnimate = (elapsed) => {
+                gearMeshes.forEach(g => {
+                    g.mesh.rotation.z = elapsed * g.speed; // Z because of ring rotation
+                });
+
+                group.rotation.x = 0.2;
+
+                hudData.innerHTML = `
+                    GEAR ARCHITECTURE:<br>
+                    OUTER: <span class="text-cyan-400">12-pt | High-Res</span><br>
+                    MIDDLE: <span class="text-amber-400">10-pt | Inverse</span><br>
+                    INNER: <span class="text-purple-400">8-pt | Anchor</span>
+                `;
+            };
+        }
+
+        // Phase 3: Quaternionic Downsampling
+        function initPhase3(group) {
+            // Visualizing the sum/product of 10 points on an arc into 1
+            const arcRadius = 6;
+            const points = [];
+            const pGeo = new THREE.SphereGeometry(0.2, 8, 8);
+            const pMat = new THREE.MeshBasicMaterial({color: 0x00d4ff});
+
+            for(let i=0; i<10; i++) {
+                const angle = (i/10) * Math.PI - (Math.PI/2);
+                const mesh = new THREE.Mesh(pGeo, pMat);
+                mesh.position.set(Math.cos(angle)*arcRadius, Math.sin(angle)*arcRadius, 0);
+                group.add(mesh);
+                points.push({ mesh, startPos: mesh.position.clone() });
+            }
+
+            const targetMat = new THREE.MeshBasicMaterial({color: 0x10b981});
+            const targetMesh = new THREE.Mesh(new THREE.SphereGeometry(0.8, 16, 16), targetMat);
+            targetMesh.position.set(0, -2, 0);
+            group.add(targetMesh);
+
+            const lineMat = new THREE.LineBasicMaterial({color: 0x334155, transparent:true, opacity:0.5});
+            const lines = [];
+            for(let i=0; i<10; i++) {
+                const lGeo = new THREE.BufferGeometry().setFromPoints([points[i].startPos, targetMesh.position]);
+                const line = new THREE.Line(lGeo, lineMat);
+                group.add(line);
+                lines.push(line);
+            }
+
+            const hudData = document.getElementById('vis-overlay-data');
+
+            currentCustomAnimate = (elapsed) => {
+                const loop = (elapsed * 0.5) % 1.0;
+                
+                // Particles fly toward target to represent product rule
+                points.forEach(p => {
+                    p.mesh.position.lerpVectors(p.startPos, targetMesh.position, loop);
+                });
+
+                // Target pulses
+                const scale = 1 + loop * 0.5;
+                targetMesh.scale.setScalar(scale);
+
+                hudData.innerHTML = `
+                    PROJECTION: <span class="text-emerald-400">12 → 10 Gear</span><br>
+                    FINE DELTAS: <span class="text-cyan-400">10 grouped</span><br>
+                    COARSE DELTA: <span class="text-white">Generated</span>
+                `;
+            };
+        }
+
+        // Phase 4: Inverse Compensator
+        function initPhase4(group) {
+            // Forward Ring
+            const r1 = new THREE.Mesh(new THREE.TorusGeometry(5, 0.2, 16, 64), new THREE.MeshBasicMaterial({color: 0x00d4ff}));
+            const d1 = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), new THREE.MeshBasicMaterial({color: 0xffffff}));
+            d1.position.set(5,0,0);
+            r1.add(d1);
+            group.add(r1);
+
+            // Inverse Ring
+            const r2 = new THREE.Mesh(new THREE.TorusGeometry(4, 0.2, 16, 64), new THREE.MeshBasicMaterial({color: 0xf43f5e}));
+            const d2 = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), new THREE.MeshBasicMaterial({color: 0xffffff}));
+            d2.position.set(4,0,0);
+            r2.add(d2);
+            group.add(r2);
+
+            const hudData = document.getElementById('vis-overlay-data');
+
+            currentCustomAnimate = (elapsed) => {
+                const drift = Math.sin(elapsed) * Math.PI;
+                
+                r1.rotation.z = drift; // Forward
+                r2.rotation.z = -drift; // Inverse compensation
+
+                hudData.innerHTML = `
+                    OUTER GEAR: <span class="text-cyan-400">+${drift.toFixed(2)} rad</span><br>
+                    MIDDLE GEAR: <span class="text-rose-400">${(-drift).toFixed(2)} rad</span><br>
+                    NET DRIFT: <span class="text-white">0.00 (Cancelled)</span>
+                `;
+            };
+        }
+
+        // Phase 5: Directed Markov Pump
+        function initPhase5(group) {
+            // 3 Nodes
+            const nodes = [
+                { pos: new THREE.Vector3(0, 4, 0), color: 0x00d4ff }, // 12
+                { pos: new THREE.Vector3(-4, -2, 0), color: 0xf59e0b }, // 10
+                { pos: new THREE.Vector3(4, -2, 0), color: 0x8A2BE2 }  // 8
+            ];
+
+            const nodeMeshes = [];
+            nodes.forEach(n => {
+                const mesh = new THREE.Mesh(new THREE.SphereGeometry(0.8, 16, 16), new THREE.MeshBasicMaterial({color: n.color}));
+                mesh.position.copy(n.pos);
+                group.add(mesh);
+                nodeMeshes.push(mesh);
+            });
+
+            // Directed edges (arrows)
+            const dir1 = new THREE.Vector3().subVectors(nodes[1].pos, nodes[0].pos).normalize();
+            const arr1 = new THREE.ArrowHelper(dir1, nodes[0].pos, 5, 0xffffff, 0.8, 0.8);
+            
+            const dir2 = new THREE.Vector3().subVectors(nodes[2].pos, nodes[1].pos).normalize();
+            const arr2 = new THREE.ArrowHelper(dir2, nodes[1].pos, 5, 0xffffff, 0.8, 0.8);
+
+            const dir3 = new THREE.Vector3().subVectors(nodes[0].pos, nodes[2].pos).normalize();
+            const arr3 = new THREE.ArrowHelper(dir3, nodes[2].pos, 5, 0xffffff, 0.8, 0.8);
+
+            group.add(arr1, arr2, arr3);
+
+            // Flow particle
+            const p = new THREE.Mesh(new THREE.SphereGeometry(0.4, 8, 8), new THREE.MeshBasicMaterial({color: 0xffffff}));
+            group.add(p);
+
+            const hudData = document.getElementById('vis-overlay-data');
+
+            currentCustomAnimate = (elapsed) => {
+                // Animate particle flowing circularly
+                const cycle = (elapsed * 0.5) % 3;
+                let start, end, t;
+                if (cycle < 1) { start = nodes[0].pos; end = nodes[1].pos; t = cycle; }
+                else if (cycle < 2) { start = nodes[1].pos; end = nodes[2].pos; t = cycle - 1; }
+                else { start = nodes[2].pos; end = nodes[0].pos; t = cycle - 2; }
+
+                p.position.lerpVectors(start, end, t);
+
+                hudData.innerHTML = `
+                    MARKOV KERNEL: <span class="text-white">Asymmetric</span><br>
+                    PROBABILITY CURRENT J: <span class="text-emerald-400">> 0</span><br>
+                    STATE FLOW: <span class="text-cyan-400">Unidirectional Pump</span>
+                `;
+            };
+        }
+
+        // Phase 6: Upward Fractional Reconstruction
+        function initPhase6(group) {
+            // One large coarse rotation broken into steps
+            const coarseCurve = new THREE.QuadraticBezierCurve3(
+                new THREE.Vector3(-6, 0, 0),
+                new THREE.Vector3(0, 4, 0),
+                new THREE.Vector3(6, 0, 0)
+            );
+            
+            const coarseMat = new THREE.LineBasicMaterial({color: 0x334155, linewidth: 2});
+            const coarseLine = new THREE.Line(new THREE.BufferGeometry().setFromPoints(coarseCurve.getPoints(50)), coarseMat);
+            group.add(coarseLine);
+
+            const fractionalPoints = coarseCurve.getPoints(10); // Interpolated fractions
+            const pGeo = new THREE.SphereGeometry(0.3, 8, 8);
+            const pMat = new THREE.MeshBasicMaterial({color: 0x8A2BE2});
+
+            const fracMeshes = [];
+            fractionalPoints.forEach(pt => {
+                const mesh = new THREE.Mesh(pGeo, pMat);
+                mesh.position.copy(pt);
+                group.add(mesh);
+                fracMeshes.push(mesh);
+            });
+
+            const sweepMat = new THREE.MeshBasicMaterial({color: 0xffffff});
+            const sweepMesh = new THREE.Mesh(new THREE.SphereGeometry(0.5, 16, 16), sweepMat);
+            group.add(sweepMesh);
+
+            const hudData = document.getElementById('vis-overlay-data');
+
+            currentCustomAnimate = (elapsed) => {
+                const t = (Math.sin(elapsed) + 1) / 2; // sweep back and forth
+                const pos = coarseCurve.getPointAt(t);
+                sweepMesh.position.copy(pos);
+
+                fracMeshes.forEach((mesh, i) => {
+                    const fracT = i / 10;
+                    if(Math.abs(fracT - t) < 0.1) {
+                        mesh.scale.setScalar(1.5);
+                        mesh.material.color.setHex(0x00d4ff);
+                    } else {
+                        mesh.scale.setScalar(1.0);
+                        mesh.material.color.setHex(0x8A2BE2);
+                    }
+                });
+
+                hudData.innerHTML = `
+                    LIFTING: <span class="text-purple-400">Inner → Middle</span><br>
+                    INTERPOLATION: <span class="text-white">q^w = exp(w log q)</span><br>
+                    FRACTION w: <span class="text-cyan-400">${t.toFixed(2)}</span>
+                `;
+            };
+        }
+
+        // Phase 7: Equilibrium Closure
+        function initPhase7(group) {
+            // A ring that is slightly broken (drift) then snaps shut
+            const radius = 5;
+            const geo = new THREE.TorusGeometry(radius, 0.3, 16, 100, Math.PI * 1.8); // Deliberately broken
+            const mat = new THREE.MeshPhysicalMaterial({color: 0x10b981, transparent:true, opacity: 0.8});
+            const ring = new THREE.Mesh(geo, mat);
+            group.add(ring);
+
+            // Closure gap indicator
+            const gapGeo = new THREE.CylinderGeometry(0.1, 0.1, 3);
+            const gapMat = new THREE.MeshBasicMaterial({color: 0xf43f5e});
+            const gapLine = new THREE.Mesh(gapGeo, gapMat);
+            gapLine.position.set(radius, 0, 0); // Position at start of ring
+            gapLine.rotation.z = Math.PI / 2;
+            group.add(gapLine);
+
+            const hudData = document.getElementById('vis-overlay-data');
+
+            currentCustomAnimate = (elapsed) => {
+                // Simulate drift accumulating then flushing
+                const cycle = (elapsed * 0.5) % 1.0;
+                
+                if (cycle < 0.8) {
+                    // Drifting (gap is open)
+                    ring.geometry.dispose();
+                    ring.geometry = new THREE.TorusGeometry(radius, 0.3, 16, 100, Math.PI * 2 * (0.8 + cycle*0.15));
+                    gapMat.color.setHex(0xf43f5e); // Red error
+                    gapLine.scale.x = 1.0;
+                } else {
+                    // Renormalization snap!
+                    ring.geometry.dispose();
+                    ring.geometry = new THREE.TorusGeometry(radius, 0.3, 16, 100, Math.PI * 2);
+                    gapMat.color.setHex(0xffffff); // Flash white
+                    gapLine.scale.x = 2.0;
+                }
+
+                group.rotation.x = 0.5;
+                group.rotation.y = elapsed * 0.5;
+
+                hudData.innerHTML = `
+                    HOLONOMY ℋ: <span class="text-white">Cycle Product</span><br>
+                    DRIFT ERROR: <span class="${cycle < 0.8 ? 'text-rose-400' : 'text-emerald-400'}">${cycle < 0.8 ? 'Accumulating' : 'Flushed!'}</span><br>
+                    RENORMALIZATION: <span class="text-white">q = q/||q||</span>
+                `;
+            };
+        }
+
+        // ==========================================
+        // 4. UI & LOGIC INTEGRATION
+        // ==========================================
+        const navContainer = document.getElementById('nav-container');
+        const phaseTitle = document.getElementById('phase-title');
+        const phaseObjective = document.getElementById('phase-objective');
+        const phaseBadge = document.getElementById('phase-badge');
+        const phaseContent = document.getElementById('phase-content');
+        const visTitle = document.getElementById('vis-title');
+
+        // Color map for Tailwind classes
+        const colorMap = {
+            'cyan': 'text-cyan-400 border-cyan-500/30',
+            'amber': 'text-amber-400 border-amber-500/30',
+            'emerald': 'text-emerald-400 border-emerald-500/30',
+            'rose': 'text-rose-400 border-rose-500/30',
+            'purple': 'text-purple-400 border-purple-500/30'
+        };
+
+        function renderNav() {
+            navContainer.innerHTML = '';
+
+            const header = document.createElement('div');
+            header.className = "px-4 py-2 text-[9px] font-bold text-slate-500 uppercase tracking-widest font-mono mt-2 mb-1";
+            header.innerText = "Curriculum Flow";
+            navContainer.appendChild(header);
+
+            phasesData.forEach((phase, index) => {
+                const btn = document.createElement('button');
+                
+                let btnStyle = 'text-slate-400';
+                if (index === activePhaseIndex) {
+                    btnStyle = 'active';
+                }
+
+                btn.className = `nav-item w-full text-left px-4 py-3 text-sm font-mono tracking-wide ${btnStyle}`;
+                btn.innerHTML = `<span class="font-bold opacity-50 mr-2">0${index}</span> ${phase.badge}`;
+                
+                btn.onclick = () => loadPhase(index);
+                
+                navContainer.appendChild(btn);
+            });
+        }
+
+        function loadPhase(index) {
+            activePhaseIndex = index;
+            const phase = phasesData[index];
+            
+            // Update UI text
+            phaseTitle.innerText = phase.title;
+            phaseObjective.innerText = phase.objective;
+            phaseContent.innerHTML = phase.content;
+            visTitle.innerText = phase.visTitle;
+            
+            phaseBadge.innerText = phase.badge;
+            phaseBadge.className = `inline-block px-2 py-0.5 border rounded text-[9px] tracking-widest uppercase mb-2 font-mono ${colorMap[phase.badgeColor]}`;
+
+            renderNav();
+            
+            // Rerun MathJax for dynamic content
+            if(window.MathJax && typeof MathJax.typesetPromise === 'function') {
+                MathJax.typesetPromise([phaseContent]).catch((err) => console.log(err.message));
+            }
+
+            // Update 3D Scene
+            clearPhaseGroup();
+            phase.initScene(phaseGroup);
+            
+            // Reset camera for consistent viewing
+            controls.reset();
+            camera.position.set(0, 10, 25);
+            
+            // In phase 5 (Nodes) move camera a bit closer
+            if(index === 5) camera.position.set(0, 5, 15);
+        }
+
+        // ==========================================
+        // 5. MAIN RENDER LOOP & EVENT LISTENERS
+        // ==========================================
+        function animate() {
+            animationFrameId = requestAnimationFrame(animate);
+            const elapsed = clock.getElapsedTime();
+            
+            if (currentCustomAnimate) {
+                currentCustomAnimate(elapsed);
+            }
+
+            controls.update();
+            renderer.render(scene, camera);
+        }
+
+        // Handle Window Resize
+        window.addEventListener('resize', () => {
+            camera.aspect = canvasContainer.clientWidth / canvasContainer.clientHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(canvasContainer.clientWidth, canvasContainer.clientHeight);
+        });
+
+        // Initialize App
+        loadPhase(0);
+        animate();
+
+    </script>
+</body>
+</html>
