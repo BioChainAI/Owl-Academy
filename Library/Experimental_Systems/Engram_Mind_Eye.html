@@ -89,6 +89,27 @@
   #parity-hex.pulse { animation: paritypulse 0.5s ease; }
   #parity-strip .pcount { margin-left: auto; font-size: 9px; color: var(--dim); letter-spacing: 0.14em; white-space: nowrap; }
 
+  /* BERT status + sync-api selector */
+  #bert-strip { display: flex; align-items: center; gap: 8px; padding-left: 12px; margin-left: 12px; border-left: 1px solid var(--edge-soft); }
+  #bert-status { display: flex; align-items: center; gap: 5px; font-size: 9px; letter-spacing: 0.16em; text-transform: uppercase; white-space: nowrap; }
+  #bert-status .bdot { width: 7px; height: 7px; border-radius: 50%; flex: 0 0 7px; transition: background 0.3s, box-shadow 0.3s; }
+  #bert-status.bert-idle    { color: var(--dim); }
+  #bert-status.bert-idle    .bdot { background: #3a4258; }
+  #bert-status.bert-loading { color: var(--gold); }
+  #bert-status.bert-loading .bdot { background: var(--gold); box-shadow: 0 0 6px var(--gold); animation: blink 0.9s infinite; }
+  #bert-status.bert-ready   { color: var(--emerald); }
+  #bert-status.bert-ready   .bdot { background: var(--emerald); box-shadow: 0 0 6px var(--emerald); }
+  #bert-status.bert-error   { color: var(--crimson); }
+  #bert-status.bert-error   .bdot { background: var(--crimson); box-shadow: 0 0 6px var(--crimson); }
+  .bert-api-lbl { font-size: 8px; letter-spacing: 0.16em; color: var(--cyan); text-transform: uppercase; }
+  #bert-backend {
+    background: #131a2a; color: var(--cyan); border: 1px solid var(--edge);
+    border-radius: 4px; padding: 2px 5px; font-family: var(--mono); font-size: 9px;
+    letter-spacing: 0.08em; outline: none; cursor: pointer;
+  }
+  #bert-backend:focus { border-color: var(--amethyst); }
+  #bert-backend:disabled { opacity: 0.5; cursor: default; }
+
   /* ---------- app layout ---------- */
   #app { display: flex; flex-direction: column; height: 100%; }
   #main { display: flex; flex: 1 1 auto; min-height: 0; }
@@ -463,6 +484,15 @@
       <div id="parity-bits"></div>
       <span id="parity-hex">0x53484443</span>
       <span class="pcount" id="parity-count">0 packets</span>
+      <span id="bert-strip">
+        <span id="bert-status" class="bert-idle"><span class="bdot"></span><span id="bert-label">BERT IDLE</span></span>
+        <label class="bert-api-lbl">SYNC API</label>
+        <select id="bert-backend">
+          <option value="wasm">WASM · CPU</option>
+          <option value="quantized">QUANTIZED · CPU</option>
+          <option value="webgpu">WEBGPU · GPU</option>
+        </select>
+      </span>
     </div>
   </header>
 
@@ -1513,21 +1543,53 @@ userin.addEventListener('keydown', (e) => {
 let bertPipeline = null;
 let bertReady = false;
 let bertLoading = false;
+let bertBackend = 'wasm';   // sync API: 'wasm' | 'quantized' | 'webgpu'
 
-async function initBERT() {
-  if (bertReady || bertLoading) return;
+const bertStatusEl = document.getElementById('bert-status');
+const bertLabelEl  = document.getElementById('bert-label');
+const bertBackendSel = document.getElementById('bert-backend');
+
+function setBertStatus(state, label) {
+  bertStatusEl.className = 'bert-' + state;
+  bertLabelEl.textContent = label;
+}
+
+async function initBERT(force) {
+  if (bertLoading) return;
+  if (bertReady && !force) return;
   bertLoading = true;
+  bertReady = false;
+  bertPipeline = null;
+  bertBackendSel.disabled = true;
+  setBertStatus('loading', 'BERT LOADING…');
   try {
     const { pipeline, env } = await import('https://cdn.jsdelivr.net/npm/@xenova/transformers@2.6.0');
     env.allowLocalModels = false;
-    bertPipeline = await pipeline('fill-mask', 'Xenova/bert-base-uncased');
+
+    // sync API options — Transformers.js inference backend
+    const opts = { quantized: bertBackend === 'quantized' };
+    if (bertBackend === 'webgpu') {
+      opts.device = 'webgpu';      // GPU-accelerated (falls back to WASM if unsupported)
+      opts.quantized = false;
+    }
+    bertPipeline = await pipeline('fill-mask', 'Xenova/bert-base-uncased', opts);
     bertReady = true;
+    const tag = bertBackend === 'webgpu' ? 'WEBGPU' : bertBackend === 'quantized' ? 'QUANT' : 'WASM';
+    setBertStatus('ready', 'BERT READY · ' + tag);
   } catch(e) {
     console.warn('BERT init failed — falling back to static responses:', e);
     bertReady = false;
+    setBertStatus('error', 'BERT OFFLINE');
   }
   bertLoading = false;
+  bertBackendSel.disabled = false;
 }
+
+/* switching the sync API reloads the pipeline on the chosen backend */
+bertBackendSel.addEventListener('change', () => {
+  bertBackend = bertBackendSel.value;
+  initBERT(true);
+});
 
 async function generateStrixResponse(userText, J, conceptName) {
   let template;
