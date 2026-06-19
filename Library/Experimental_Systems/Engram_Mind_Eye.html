@@ -356,6 +356,97 @@
 </style>
 </head>
 <body>
+<div id="engram-user-panel" style="
+  position: relative; z-index: 50;
+  max-width: 1200px; margin: 0 auto;
+  padding: 0.6rem 1.5rem;
+  display: flex; align-items: center; gap: 0.75rem;
+  flex-wrap: wrap;
+  border-bottom: 1px solid rgba(139,92,246,0.12);
+  background: rgba(6,4,15,0.85);
+  backdrop-filter: blur(8px);
+">
+  <!-- Left: identity -->
+  <div id="emp-identity" style="display:flex;align-items:center;gap:0.6rem;min-width:0;">
+    <!-- filled by JS -->
+    <div style="width:32px;height:32px;border-radius:50%;background:rgba(139,92,246,0.15);border:1px solid rgba(139,92,246,0.4);display:flex;align-items:center;justify-content:center;color:#b026ff;font-size:14px;flex-shrink:0;">⬡</div>
+    <div id="emp-name" style="font-size:0.75rem;color:#e2e8f0;font-family:serif;letter-spacing:0.05em;">Loading…</div>
+  </div>
+
+  <!-- Stats row -->
+  <div id="emp-stats" style="display:flex;align-items:center;gap:0.9rem;font-family:monospace;font-size:0.65rem;margin-left:0.5rem;">
+    <span id="emp-vis" style="color:#d4af37;">— ◈</span>
+    <span id="emp-xp"  style="color:#00d4ff;">— XP</span>
+    <span id="emp-lvl" style="color:rgba(255,255,255,0.4);">Lv —</span>
+  </div>
+
+  <!-- Spacer -->
+  <div style="flex:1;"></div>
+
+  <!-- Shortcut nav links -->
+  <nav style="display:flex;align-items:center;gap:0.4rem;flex-wrap:wrap;">
+
+    <a href="../../index.html" style="
+      font-family:monospace;font-size:0.6rem;letter-spacing:0.2em;text-transform:uppercase;
+      color:rgba(212,175,55,0.7);border:1px solid rgba(212,175,55,0.25);
+      padding:0.2em 0.65em;border-radius:999px;text-decoration:none;
+      transition:color 0.2s,border-color 0.2s;white-space:nowrap;
+    " onmouseover="this.style.color='#d4af37';this.style.borderColor='rgba(212,175,55,0.6)'"
+       onmouseout="this.style.color='rgba(212,175,55,0.7)';this.style.borderColor='rgba(212,175,55,0.25)'">
+      ◉ Grand Hall
+    </a>
+
+    <a href="../../Learning-Hub.html" style="
+      font-family:monospace;font-size:0.6rem;letter-spacing:0.2em;text-transform:uppercase;
+      color:rgba(0,212,255,0.7);border:1px solid rgba(0,212,255,0.25);
+      padding:0.2em 0.65em;border-radius:999px;text-decoration:none;
+      transition:color 0.2s,border-color 0.2s;white-space:nowrap;
+    " onmouseover="this.style.color='#00d4ff';this.style.borderColor='rgba(0,212,255,0.6)'"
+       onmouseout="this.style.color='rgba(0,212,255,0.7)';this.style.borderColor='rgba(0,212,255,0.25)'">
+      ⬡ Learning Hub
+    </a>
+
+    <a href="../Grand_Archives.html" style="
+      font-family:monospace;font-size:0.6rem;letter-spacing:0.2em;text-transform:uppercase;
+      color:rgba(212,175,55,0.55);border:1px solid rgba(212,175,55,0.2);
+      padding:0.2em 0.65em;border-radius:999px;text-decoration:none;
+      transition:color 0.2s,border-color 0.2s;white-space:nowrap;
+    " onmouseover="this.style.color='#d4af37';this.style.borderColor='rgba(212,175,55,0.5)'"
+       onmouseout="this.style.color='rgba(212,175,55,0.55)';this.style.borderColor='rgba(212,175,55,0.2)'">
+      ⬡ Archives
+    </a>
+
+    <a href="TTMPT_O1_Compressor.html" style="
+      font-family:monospace;font-size:0.6rem;letter-spacing:0.2em;text-transform:uppercase;
+      color:rgba(139,92,246,0.7);border:1px solid rgba(139,92,246,0.25);
+      padding:0.2em 0.65em;border-radius:999px;text-decoration:none;
+      transition:color 0.2s,border-color 0.2s;white-space:nowrap;
+    " onmouseover="this.style.color='#8b5cf6';this.style.borderColor='rgba(139,92,246,0.6)'"
+       onmouseout="this.style.color='rgba(139,92,246,0.7)';this.style.borderColor='rgba(139,92,246,0.25)'">
+      ◈ O1 Compressor
+    </a>
+
+    <a href="TTMPT_Blackwell_Architect.html" style="
+      font-family:monospace;font-size:0.6rem;letter-spacing:0.2em;text-transform:uppercase;
+      color:rgba(139,92,246,0.7);border:1px solid rgba(139,92,246,0.25);
+      padding:0.2em 0.65em;border-radius:999px;text-decoration:none;
+      transition:color 0.2s,border-color 0.2s;white-space:nowrap;
+    " onmouseover="this.style.color='#8b5cf6';this.style.borderColor='rgba(139,92,246,0.6)'"
+       onmouseout="this.style.color='rgba(139,92,246,0.7)';this.style.borderColor='rgba(139,92,246,0.25)'">
+      ⬡ Blackwell
+    </a>
+
+    <button id="emp-signout" style="
+      font-family:monospace;font-size:0.6rem;letter-spacing:0.2em;text-transform:uppercase;
+      color:rgba(148,163,184,0.4);border:1px solid rgba(148,163,184,0.15);
+      padding:0.2em 0.65em;border-radius:999px;background:none;cursor:pointer;white-space:nowrap;
+      transition:color 0.2s,border-color 0.2s;
+    " onmouseover="this.style.color='#f87171';this.style.borderColor='rgba(248,113,113,0.4)'"
+       onmouseout="this.style.color='rgba(148,163,184,0.4)';this.style.borderColor='rgba(148,163,184,0.15)'">
+      Sign Out
+    </button>
+  </nav>
+</div>
 <div id="scan"></div>
 
 <div id="app">
@@ -1436,16 +1527,45 @@ userin.focus();
 import { auth, db } from '../../scripts/firebase/config.js';
 import { onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/12.15.0/firebase-auth.js';
 import { doc, getDoc } from 'https://www.gstatic.com/firebasejs/12.15.0/firebase-firestore.js';
+import { signOut } from 'https://www.gstatic.com/firebasejs/12.15.0/firebase-auth.js';
+import { getTotalXP } from '../../scripts/services/user.service.js';
+import { getLevelInfo } from '../../scripts/services/vis.service.js';
 
 onAuthStateChanged(auth, async (user) => {
   if (!user) {
     // signed out — manual fallback, leave defaults
+    document.getElementById('emp-name').textContent = 'Guest';
+    document.getElementById('emp-vis').textContent = '— ◈';
+    document.getElementById('emp-xp').textContent = '— XP';
+    document.getElementById('emp-lvl').textContent = 'Lv —';
     if (window.setManifoldStatus) window.setManifoldStatus(false);
     return;
   }
   try {
     const snap = await getDoc(doc(db, 'users', user.uid, 'profile', 'main'));
     const profile = snap.exists() ? snap.data() : {};
+
+    // Populate user panel
+    const displayName = profile?.displayName || user.displayName || user.email?.split('@')[0] || 'Acolyte';
+    const vis = profile?.vis ?? 0;
+    const totalXP = getTotalXP(profile?.arts ?? {});
+    const { level } = getLevelInfo(totalXP);
+
+    document.getElementById('emp-name').textContent = displayName;
+    document.getElementById('emp-vis').textContent = `${vis} ◈`;
+    document.getElementById('emp-xp').textContent = `${totalXP} XP`;
+    document.getElementById('emp-lvl').textContent = `Lv ${level}`;
+    // Update avatar: if profile has avatarUrl, replace the placeholder ⬡ icon
+    if (profile?.avatarUrl) {
+      const id = document.getElementById('emp-identity');
+      const firstChild = id.firstElementChild;
+      const img = document.createElement('img');
+      img.src = profile.avatarUrl;
+      img.style.cssText = 'width:32px;height:32px;border-radius:50%;border:1px solid rgba(139,92,246,0.4);object-fit:cover;flex-shrink:0;';
+      img.onerror = () => { img.replaceWith(firstChild); };
+      id.replaceChild(img, firstChild);
+    }
+
     const activeSlot = profile.activeFamiliarSlot ?? 0;
     const manifoldConfig = (profile.familiarManifolds ?? {})[String(activeSlot)] ?? null;
     if (manifoldConfig &&
@@ -1459,6 +1579,10 @@ onAuthStateChanged(auth, async (user) => {
     console.warn('Engram familiar bind failed:', e);
     if (window.setManifoldStatus) window.setManifoldStatus(false);
   }
+});
+
+document.getElementById('emp-signout')?.addEventListener('click', () => {
+  signOut(auth).then(() => { window.location.href = '../../index.html'; });
 });
 </script>
 </body>
