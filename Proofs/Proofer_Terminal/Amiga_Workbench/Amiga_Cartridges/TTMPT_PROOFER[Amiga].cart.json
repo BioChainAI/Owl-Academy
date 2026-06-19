@@ -1,0 +1,200 @@
+{
+    "cartridge_metadata": {
+        "proof_name": "The Torsional Trefoil Markov Pump Theorem (TTMPT)",
+        "short_name": "TTMPT_PROOFER",
+        "author": "SHD-CCP AMIGA COMPILER",
+        "target_system": "Amiga Workbench v1.3",
+        "version": "1.3.0"
+    },
+    "raw_proof_text": "# THE TORSIONAL TREFOIL MARKOV PUMP THEOREM (TTMPT)\n\n## ABSTRACT\nA formal proof establishing a deterministic framework for a one-way stochastic pump acting on a longitudinal binding-scalar field. The system operates over a 12-channel lattice Hilbert space, breaking detailed balance through a topological 'Tesla-valve' Markovian kernel.\n\n## PHASES\n1. Axiomatic Foundation of $\\mathcal{H}_{12}$\n2. Hilbert-to-Markov Mapping\n3. Detailed Balance Violation\n4. Frame 5 Compression\n5. Pump Stroke Dynamics\n6. Dissipative Toroidal Collapse\n7. Phase Identity Reset",
+    "familiar_initialization": {
+        "cat": {
+            "load_dialogue": "Meow. Initializing the 12-channel lattice. Watch the phases spin."
+        },
+        "mastiff": {
+            "load_dialogue": "HARRUMPH. SYSTEM ARMED. PREPARING TO BREAK DETAILED BALANCE."
+        }
+    },
+    "verification_steps": [
+        {
+            "step_id": 1,
+            "window_title": "Lattice Initialization",
+            "lean_shd_hud": {
+                "goal": "Define state space \\mathcal{H}_{12}",
+                "hypotheses": [
+                    "\\dim(\\mathcal{H}) = 12",
+                    "\\phi \\in \\{A, B, C\\}"
+                ],
+                "tactic": "apply HilbertBasis(12)"
+            },
+            "terminal_logs": [
+                "Allocating 12 channels...",
+                "Setting basis vectors for phases A, B, C...",
+                "Normalization constraint: \\sum |c_i|^2 = 1"
+            ],
+            "familiar_dialogues": {
+                "cat": "The lattice looks so... orthogonal. Perfect for scratching.",
+                "mastiff": "STAY IN FORMATION. THE LATTICE MUST HOLD."
+            },
+            "visual_render_mode": "LATTICE",
+            "inspector_data": {
+                "description_bottom": "The 12-channel lattice Hilbert space forms the foundation for the triple-trefoil skeleton.",
+                "description_top": "Axiomatic Foundation",
+                "equation_bottom": "\\sum_{i=1}^{12} |\\psi_i|^2 = 1",
+                "equation_top": "|\\Psi\\rangle = \\sum_{j=1}^{12} c_j |e_j\\rangle",
+                "graph_equations": {
+                    "familiar_dialogues": {
+                        "cat": "Look at the little dots!",
+                        "mastiff": "THEY ARE DISCRETE PROBABILITIES, KITTY."
+                    },
+                    "type": "cartesian",
+                    "y": "sin(x + time) * cos(x)"
+                },
+                "modal_title": "Hilbert Space Definition",
+                "visual_generation_instructions": {
+                    "c64_palette_required": [
+                        "--amiga-blue",
+                        "--amiga-white"
+                    ],
+                    "concept": "A 12x12 grid representing the lattice channels.",
+                    "layout": "centered"
+                }
+            }
+        },
+        {
+            "step_id": 2,
+            "window_title": "Markov Bridge",
+            "lean_shd_hud": {
+                "goal": "Project \\mathcal{H}_{12} \\to \\Delta_{12}",
+                "hypotheses": [
+                    "p_i = |\\psi_i|^2"
+                ],
+                "tactic": "intro MarkovProjection"
+            },
+            "terminal_logs": [
+                "Mapping quantum amplitudes to classical probabilities...",
+                "Checking row-stochasticity of kernel P..."
+            ],
+            "familiar_dialogues": {
+                "cat": "Lost the phase information? Oh well, we only need the magnitude.",
+                "mastiff": "SQUASHING THE WAVEFUNCTION. PROBABILITY IS NOW REAL."
+            },
+            "visual_render_mode": "TREFOIL",
+            "inspector_data": {
+                "description_bottom": "Mapping Hilbert space amplitudes to classical Markov probabilities via P = |psi|^2.",
+                "description_top": "Classical Bridge",
+                "equation_bottom": "p_{i}(t+1) = \\sum_j P_{ij} p_j(t)",
+                "equation_top": "p_i = |\\langle e_i | \\Psi \\rangle|^2",
+                "graph_equations": {
+                    "familiar_dialogues": {
+                        "cat": "It's a knot! A knot!",
+                        "mastiff": "A TREFOIL TOPOLOGY FOR FLOW ASYMMETRY."
+                    },
+                    "type": "parametric",
+                    "x": "sin(t) + 2*sin(2*t)",
+                    "y": "cos(t) - 2*cos(2*t)"
+                },
+                "modal_title": "Probability Mapping",
+                "visual_generation_instructions": {
+                    "c64_palette_required": [
+                        "--amiga-orange",
+                        "--amiga-black"
+                    ],
+                    "concept": "A trefoil knot representing the flow path.",
+                    "layout": "full_screen"
+                }
+            }
+        },
+        {
+            "step_id": 3,
+            "window_title": "Symmetry Breaking",
+            "lean_shd_hud": {
+                "goal": "Prove J_{net} > 0",
+                "hypotheses": [
+                    "P_{ij} > P_{ji} \\text{ for oriented edges}"
+                ],
+                "tactic": "refine Lemma_2_1"
+            },
+            "terminal_logs": [
+                "Checking Detailed Balance...",
+                "Found asymmetry in kernel P...",
+                "Topological suppression active: \\sigma_{ji} \\ll 1"
+            ],
+            "familiar_dialogues": {
+                "cat": "One-way street! No U-turns allowed in this kernel.",
+                "mastiff": "THE TESLA VALVE PRINCIPLE. REVERSE FLOW IS DISSIPATED."
+            },
+            "visual_render_mode": "PUMP",
+            "inspector_data": {
+                "description_bottom": "Net probability current is strictly positive due to the asymmetric Markovian kernel.",
+                "description_top": "Breaking Detailed Balance",
+                "equation_bottom": "J_{net} = \\sum_{e \\in E^+} (\\pi_i P_{ij} - \\pi_j P_{ji}) > 0",
+                "equation_top": "\\pi_i P_{ij} = \\pi_j P_{ji} \\implies \\text{False}",
+                "graph_equations": {
+                    "familiar_dialogues": {
+                        "cat": "Push it forward!",
+                        "mastiff": "STEADY PRESSURE DETECTED."
+                    },
+                    "type": "cartesian",
+                    "y": "1 / (1 + exp(-x + 3 * sin(time)))"
+                },
+                "modal_title": "Current Analysis",
+                "visual_generation_instructions": {
+                    "c64_palette_required": [
+                        "--amiga-white",
+                        "--amiga-blue",
+                        "--amiga-orange"
+                    ],
+                    "concept": "Animated flow vectors moving through a narrowed tube.",
+                    "layout": "split_view"
+                }
+            }
+        },
+        {
+            "step_id": 4,
+            "window_title": "Theorem Q.E.D.",
+            "lean_shd_hud": {
+                "goal": "\\Delta S > 0, \\phi_{final} = \\phi_{init}",
+                "hypotheses": [
+                    "Phase closure constraint met"
+                ],
+                "tactic": "exact TTMPT_Final"
+            },
+            "terminal_logs": [
+                "Integrating current over 10-step cycle...",
+                "Scalar field S incremented: S_1 > S_0",
+                "Modular phase reset to identity...",
+                "PROOF COMPLETE."
+            ],
+            "familiar_dialogues": {
+                "cat": "We did it! The pump is pumping and the field is growing.",
+                "mastiff": "MISSION ACCOMPLISHED. SYSTEM STABLE. PHASE IDENTIFIED."
+            },
+            "visual_render_mode": "PROVEN",
+            "inspector_data": {
+                "description_bottom": "Final verification: The 10-step macro-cycle resets the phase while advancing the scalar field.",
+                "description_top": "TTMPT Conclusion",
+                "equation_bottom": "S(T) = S(0) + \\int_0^T J_{net}(t) dt > S(0)",
+                "equation_top": "\\phi(10) \\equiv \\phi(0) \\pmod{2\\pi}",
+                "graph_equations": {
+                    "familiar_dialogues": {
+                        "cat": "It's a straight line up!",
+                        "mastiff": "LINEAR PROGRESSION IN A ROTATIONAL SYSTEM. ELEGANT."
+                    },
+                    "type": "cartesian",
+                    "y": "0.5 * x + abs(sin(time))"
+                },
+                "modal_title": "Theorem Verification",
+                "visual_generation_instructions": {
+                    "c64_palette_required": [
+                        "--amiga-grey",
+                        "--amiga-white",
+                        "--amiga-blue"
+                    ],
+                    "concept": "A glowing 'OK' status with the Amiga checkmark.",
+                    "layout": "centered"
+                }
+            }
+        }
+    ]
+}
