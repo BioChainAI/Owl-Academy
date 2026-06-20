@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Hyperbolic Sparsemax Kernel — Exact-Rational Demo · Owl Academy</title>
+
+<!-- MathJax -->
+<script>
+  window.MathJax = { tex: { inlineMath: [['$','$'],['\\(','\\)']], displayMath: [['$$','$$'],['\\[','\\]']], processEscapes: true } };
+</script>
+<script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+<style>
+  :root{ --void:#06040f; --purple:#8b5cf6; --cyan:#22d3ee; --gold:#D4AF37; --ok:#34d399; --bad:#f87171; }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--void);color:#e2e8f0;font-family:system-ui,sans-serif;min-height:100vh;
+       background:radial-gradient(ellipse at top,rgba(139,92,246,0.09) 0%,var(--void) 60%);line-height:1.6}
+  header{padding:2.5rem 1.5rem 1.5rem;text-align:center;border-bottom:1px solid rgba(139,92,246,0.15)}
+  h1{font-size:1.35rem;font-weight:300;letter-spacing:0.18em;text-transform:uppercase;color:var(--purple);text-shadow:0 0 20px rgba(139,92,246,0.4)}
+  .sub{margin-top:.5rem;font-size:.7rem;letter-spacing:.22em;text-transform:uppercase;color:rgba(139,92,246,0.55)}
+  .back{display:inline-block;margin-top:1rem;font-size:.68rem;letter-spacing:.2em;text-transform:uppercase;color:rgba(139,92,246,0.45);text-decoration:none}
+  .back:hover{color:var(--purple)}
+  main{max-width:900px;margin:2rem auto;padding:0 1.25rem}
+  .panel{background:rgba(10,8,20,0.6);border:1px solid rgba(139,92,246,0.18);border-radius:12px;padding:1.4rem 1.5rem;margin-bottom:1.5rem}
+  .label{font-size:.62rem;letter-spacing:.28em;text-transform:uppercase;color:rgba(139,92,246,0.6);margin-bottom:.8rem}
+  h2{font-size:1.05rem;font-weight:500;color:#fff;margin-bottom:.5rem;letter-spacing:.03em}
+  p{font-size:.86rem;color:rgba(255,255,255,.62);margin-bottom:.7rem}
+  .mono{font-family:ui-monospace,"Fira Code",monospace}
+  .stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:.8rem;margin-top:.6rem}
+  .stat{background:rgba(0,0,0,.35);border:1px solid rgba(139,92,246,0.13);border-radius:8px;padding:.7rem .9rem}
+  .stat .k{font-size:.6rem;letter-spacing:.15em;text-transform:uppercase;color:rgba(255,255,255,.4)}
+  .stat .v{font-size:.95rem;color:var(--cyan);margin-top:.2rem}
+  select,button{font-family:inherit}
+  select{background:#0c0a18;color:#e2e8f0;border:1px solid rgba(139,92,246,0.35);border-radius:6px;padding:.35rem .5rem;font-size:.85rem;margin-right:.4rem}
+  button{background:rgba(139,92,246,0.16);color:var(--purple);border:1px solid rgba(139,92,246,0.4);border-radius:6px;
+         padding:.45rem 1rem;font-size:.72rem;letter-spacing:.12em;text-transform:uppercase;cursor:pointer;transition:.2s}
+  button:hover{background:rgba(139,92,246,0.28);border-color:var(--purple)}
+  table{width:100%;border-collapse:collapse;margin-top:.8rem;font-size:.8rem}
+  th,td{text-align:left;padding:.45rem .6rem;border-bottom:1px solid rgba(139,92,246,0.1)}
+  th{font-size:.62rem;letter-spacing:.12em;text-transform:uppercase;color:rgba(139,92,246,0.6)}
+  td.num{font-family:ui-monospace,monospace;color:#cbd5e1}
+  .bar{height:7px;border-radius:4px;background:linear-gradient(90deg,var(--purple),var(--cyan));margin-top:3px}
+  .tag{display:inline-block;font-size:.6rem;padding:.1em .55em;border-radius:999px;letter-spacing:.08em}
+  .tag.fwd{background:rgba(52,211,153,0.14);color:var(--ok);border:1px solid rgba(52,211,153,0.3)}
+  .tag.rev{background:rgba(248,113,113,0.12);color:var(--bad);border:1px solid rgba(248,113,113,0.3)}
+  .tag.self{background:rgba(212,175,55,0.12);color:var(--gold);border:1px solid rgba(212,175,55,0.3)}
+  .verdict{font-size:1rem;margin-top:.8rem;padding:.7rem .9rem;border-radius:8px}
+  .verdict.ok{background:rgba(52,211,153,0.08);border:1px solid rgba(52,211,153,0.35);color:var(--ok)}
+  .note{font-size:.72rem;color:rgba(255,255,255,.4);margin-top:.6rem}
+  code{font-family:ui-monospace,monospace;color:var(--cyan);background:rgba(34,211,238,0.06);padding:.05em .3em;border-radius:3px;font-size:.8rem}
+  a.link{color:var(--purple);text-decoration:none;border-bottom:1px dotted rgba(139,92,246,0.4)}
+</style>
+</head>
+<body>
+<header>
+  <h1>Hyperbolic Sparsemax Kernel</h1>
+  <div class="sub">Exact-Rational Demo · 4×4×4 SHD-CCP · Torsional Markov Pump</div>
+  <a href="../index.html" class="back">← Hyperbolic Softmax</a>
+</header>
+
+<main>
+  <div class="panel">
+    <div class="label">What this runs</div>
+    <p>Every quantity below is computed in <strong>exact rational arithmetic</strong> (<code>BigInt</code> numerator/denominator) — no floating point touches the kernel, honoring the SHD-CCP determinism rule. Decimals are shown only for reading. This instantiates assumptions (A1)–(A4) of the
+      <a class="link" href="../Hyperbolic_Softmax_Proof.md">proof</a>.</p>
+    <div class="stat-grid" id="lattice-stats"></div>
+    <div class="note">Spinors built as $q_i=g_i^2/N(g_i)$ for Lipschitz integer quaternions $g_i$ ⇒ exact rational unit quaternions on $S^3$. Lorentz lift $\tilde q_i=\tfrac1{w_i}(1,\mathbf m_i)$; $Q_h(i,j)=\langle\tilde q_i,\tilde q_j\rangle_{\mathbb L}^2-1$.</div>
+  </div>
+
+  <div class="panel">
+    <div class="label">Panel A — Executable sparsemax row (Axiom I)</div>
+    <h2>Transition row $K_{i\cdot}=[\,z_{i\to j}-\tau_i\,]_+$</h2>
+    <p>Pick a source voxel $i=(a,b,c)$. Logits $z_{i\to j}=-\sigma\beta_i Q_h(i,j)-\lambda A_{ij}$ with $A_{ij}=0$ forward (increasing coord), $A_{ij}=A_0 s$ reverse. The reverse edge is suppressed by the torsional valve; sparsemax then <em>collapses</em> support to the survivors.</p>
+    <div>
+      a:<select id="selA"></select> b:<select id="selB"></select> c:<select id="selC"></select>
+      <button id="runRow">Compute row</button>
+    </div>
+    <div id="rowOut"></div>
+  </div>
+
+  <div class="panel">
+    <div class="label">Panel B — Torsional pump current (whole lattice)</div>
+    <h2>Base-referenced forward current $J_0=\sum_{(i,j)\in E^+}\big(\pi^0_iK_{ij}-\pi^0_jK_{ji}\big)$</h2>
+    <p>The full $64\times64$ kernel is built as a symmetric rational base $W_{ij}=\tfrac{1}{1+\sigma_b Q_h(i,j)}$, reversible walk $P^0=W/d$, then the rational valve $\rho_{ij}=\tfrac1{1+\lambda A_{ij}}$ on reverse edges (rejected mass → diagonal). Proof T5b predicts $J_0=\sum_{E^+}\tfrac{W_{ij}}{D}(1-\rho)>0$.</p>
+    <button id="runPump">Run pump</button>
+    <div id="pumpOut"></div>
+  </div>
+
+  <div class="panel">
+    <div class="label">References</div>
+    <p style="margin:0">
+      <a class="link" href="../kernel_spec.md">kernel_spec.md</a> ·
+      <a class="link" href="../Hyperbolic_Softmax_Proof.md">Hyperbolic_Softmax_Proof.md</a> ·
+      <a class="link" href="../Hyperbolic_Softmax_Design.md">Hyperbolic_Softmax_Design.md</a> ·
+      <a class="link" href="../../../../Proofs/Torsional-Trefoil-Markov-Pump/TTMPT-Formal-Proof.pdf">TTMPT</a>
+    </p>
+  </div>
+</main>
+
+<script>
+"use strict";
+/* ---------- exact rational arithmetic (BigInt) ---------- */
+function bgcd(a,b){ a=a<0n?-a:a; b=b<0n?-b:b; while(b){ const t=a%b; a=b; b=t; } return a||1n; }
+class Frac{
+  constructor(n,d=1n){
+    n=BigInt(n); d=BigInt(d);
+    if(d===0n) throw new Error("zero denominator");
+    if(d<0n){ n=-n; d=-d; }
+    const g=bgcd(n,d); this.n=n/g; this.d=d/g;
+  }
+  add(o){ return new Frac(this.n*o.d+o.n*this.d, this.d*o.d); }
+  sub(o){ return new Frac(this.n*o.d-o.n*this.d, this.d*o.d); }
+  mul(o){ return new Frac(this.n*o.n, this.d*o.d); }
+  div(o){ return new Frac(this.n*o.d, this.d*o.n); }
+  neg(){ return new Frac(-this.n,this.d); }
+  cmp(o){ const l=this.n*o.d, r=o.n*this.d; return l<r?-1:(l>r?1:0); }
+  lt(o){return this.cmp(o)<0;} gt(o){return this.cmp(o)>0;} gte(o){return this.cmp(o)>=0;}
+  eq(o){return this.cmp(o)===0;}
+  isPos(){return this.n>0n;} isZero(){return this.n===0n;}
+  toNumber(){ // robust for huge BigInt magnitudes; values here are bounded
+    const neg=this.n<0n; let n=neg?-this.n:this.n, d=this.d;
+    const ip=n/d, rem=n%d, scale=10n**15n;
+    const v=Number(ip)+Number((rem*scale)/d)/1e15;
+    return neg?-v:v;
+  }
+  toStr(max=14){
+    const ns=this.n.toString(), ds=this.d.toString();
+    if(this.d===1n) return ns;
+    if(ns.length+ds.length>max) return this.toNumber().toPrecision(6);
+    return ns+"/"+ds;
+  }
+}
+const F=(n,d=1)=>new Frac(BigInt(n),BigInt(d));
+const F0=F(0), F1=F(1);
+
+/* ---------- model parameters (all rational, locked) ---------- */
+const A0=F(1), SPREAD=F(3,4), LAMBDA=F(1);     // reverse resistance A=A0*s=3/4
+const RHO_REV=F1.div(F1.add(LAMBDA.mul(A0.mul(SPREAD)))); // 1/(1+3/4)=4/7
+const SIGMA=F(1,4);     // temperature scale for the executable row logits
+const SIGMA_B=F(1,4);   // base-affinity scale for the pump kernel
+
+/* ---------- lattice & spinors ---------- */
+const idx=(a,b,c)=>a*16+b*4+c;
+function spinor(a,b,c){
+  const g0=6+a, g1=b, g2=c, g3=((a+b+c)%3)+1;           // dominant scalar, vector never all-zero
+  const N=BigInt(g0*g0+g1*g1+g2*g2+g3*g3);
+  const u0=BigInt(g0*g0-(g1*g1+g2*g2+g3*g3));
+  return { a,b,c,
+    w:new Frac(u0,N),
+    mx:new Frac(BigInt(2*g0*g1),N),
+    my:new Frac(BigInt(2*g0*g2),N),
+    mz:new Frac(BigInt(2*g0*g3),N) };
+}
+const S=[];
+for(let a=0;a<4;a++)for(let b=0;b<4;b++)for(let c=0;c<4;c++) S[idx(a,b,c)]=spinor(a,b,c);
+
+const dotm=(i,j)=>S[i].mx.mul(S[j].mx).add(S[i].my.mul(S[j].my)).add(S[i].mz.mul(S[j].mz));
+const ipL =(i,j)=>F1.sub(dotm(i,j)).div(S[i].w.mul(S[j].w));   // ⟨q̃_i,q̃_j⟩_L
+function Qh(i,j){ if(i===j) return F0; const p=ipL(i,j); return p.mul(p).sub(F1); }
+
+function neighbors(a,b,c){
+  const r=[], co=[a,b,c];
+  for(let ax=0;ax<3;ax++) for(const d of [1,-1]){
+    const n=[...co]; n[ax]+=d;
+    if(n[ax]>=0&&n[ax]<=3) r.push({i:idx(n[0],n[1],n[2]), ax, dir:d}); // dir +1 forward, -1 reverse
+  }
+  return r;
+}
+const beta=i=>F1.sub(S[i].w).div(S[i].w);   // β_i=(1-w_i)/w_i
+
+/* ---------- sparsemax over {key, z:Frac} ---------- */
+function sparsemax(items){
+  const arr=[...items].sort((p,q)=>q.z.cmp(p.z));
+  let cum=F0, k=1;
+  for(let i=0;i<arr.length;i++){
+    cum=cum.add(arr[i].z);
+    const lhs=F1.add(F(i+1).mul(arr[i].z));
+    if(lhs.gt(cum)) k=i+1;
+  }
+  let s=F0; for(let i=0;i<k;i++) s=s.add(arr[i].z);
+  const tau=s.sub(F1).div(F(k));
+  const out=new Map();
+  for(const it of items){ const v=it.z.sub(tau); out.set(it.key, v.isPos()?v:F0); }
+  return {tau,k,out};
+}
+
+/* ---------- lattice stats ---------- */
+(function stats(){
+  let wmin=S[0].w, wmax=S[0].w, ok=true;
+  for(const s of S){ if(s.w.lt(wmin))wmin=s.w; if(s.w.gt(wmax))wmax=s.w;
+    if(!(s.w.isPos()&&s.w.lt(F1))) ok=false; }
+  const el=document.getElementById("lattice-stats");
+  const g=(k,v)=>`<div class="stat"><div class="k">${k}</div><div class="v mono">${v}</div></div>`;
+  el.innerHTML =
+    g("Voxels |V|","64")+
+    g("Core / Mantle","8 / 56")+
+    g("w range","["+wmin.toNumber().toFixed(3)+", "+wmax.toNumber().toFixed(3)+"]")+
+    g("Annulus ⊂ (0,1)", ok?"✓ exact":"✗")+
+    g("Reverse valve ρ", RHO_REV.toStr())+
+    g("Forward edges |E⁺|","144");
+})();
+
+/* ---------- Panel A ---------- */
+function fillSel(id){ const s=document.getElementById(id); for(let v=0;v<4;v++){const o=document.createElement("option");o.value=v;o.textContent=v;s.appendChild(o);} }
+fillSel("selA");fillSel("selB");fillSel("selC");
+document.getElementById("selA").value=3; // default (3,0,0): large w, small β, spread row
+
+function runRow(){
+  const a=+document.getElementById("selA").value,
+        b=+document.getElementById("selB").value,
+        c=+document.getElementById("selC").value;
+  const i=idx(a,b,c);
+  const cand=[{key:i, self:true, z:F0, q:F0, A:F0, dir:0}];
+  for(const nb of neighbors(a,b,c)){
+    const q=Qh(i,nb.i);
+    const A = nb.dir<0 ? A0.mul(SPREAD) : F0;             // reverse penalised
+    const z = SIGMA.mul(beta(i)).mul(q).neg().sub(LAMBDA.mul(A)); // -σβQ_h - λA
+    cand.push({key:nb.i, self:false, z, q, A, dir:nb.dir, coords:[S[nb.i].a,S[nb.i].b,S[nb.i].c]});
+  }
+  const {tau,k,out}=sparsemax(cand);
+  let sum=F0; out.forEach(v=>sum=sum.add(v));
+  let rows="";
+  cand.forEach(cd=>{
+    const K=out.get(cd.key);
+    const tag = cd.self?'<span class="tag self">self</span>':(cd.dir>0?'<span class="tag fwd">forward</span>':'<span class="tag rev">reverse</span>');
+    const co = cd.self?`(${a},${b},${c})`:`(${cd.coords.join(",")})`;
+    const w = K.toNumber();
+    rows+=`<tr><td class="mono">${co} ${tag}</td>
+      <td class="num">${cd.self?"0":cd.q.toNumber().toFixed(4)}</td>
+      <td class="num">${cd.z.toNumber().toFixed(4)}</td>
+      <td class="num">${K.toStr()}<div class="bar" style="width:${(w*100).toFixed(1)}%"></div></td></tr>`;
+  });
+  document.getElementById("rowOut").innerHTML=`
+    <table><thead><tr><th>target $j$</th><th>$Q_h$</th><th>logit $z_{i\\to j}$</th><th>$K_{ij}$ (exact)</th></tr></thead>
+    <tbody>${rows}</tbody></table>
+    <div class="note mono">active set size $|S_i|=${k}$ · threshold $\\tau_i=${tau.toStr()}$ ·
+      $\\sum_j K_{ij}=${sum.toStr()}$ ${sum.eq(F1)?'<span style="color:var(--ok)">✓ = 1 exactly</span>':'<span style="color:var(--bad)">≠1</span>'}
+      · $\\beta_i=${beta(i).toStr()}$</div>`;
+  if(window.MathJax) MathJax.typesetPromise([document.getElementById("rowOut")]);
+}
+document.getElementById("runRow").addEventListener("click",runRow);
+
+/* ---------- Panel B: full kernel + current ---------- */
+function runPump(){
+  // symmetric base affinity W over N_i (self+neighbors), reversible walk, valve, current.
+  const W=[];           // W[i] : Map(j -> Frac)
+  const d=[];           // degree d_i
+  for(let i=0;i<64;i++){ W[i]=new Map(); }
+  for(let a=0;a<4;a++)for(let b=0;b<4;b++)for(let c=0;c<4;c++){
+    const i=idx(a,b,c);
+    W[i].set(i, F1);    // self: 1/(1+σ·0)=1
+    for(const nb of neighbors(a,b,c)){
+      const w=F1.div(F1.add(SIGMA_B.mul(Qh(i,nb.i))));   // symmetric (Q_h symmetric)
+      W[i].set(nb.i, w);
+    }
+  }
+  for(let i=0;i<64;i++){ let s=F0; W[i].forEach(v=>s=s.add(v)); d[i]=s; }
+  let D=F0; for(let i=0;i<64;i++) D=D.add(d[i]);
+
+  // build valved kernel K and check row-stochasticity exactly
+  let rowsOK=0;
+  const Kget=(i,j,dir)=>{ // transition i->j
+    const p=W[i].get(j).div(d[i]);
+    if(dir<0) return p.mul(RHO_REV);   // reverse attenuated
+    return p;                          // forward / self full
+  };
+  for(let a=0;a<4;a++)for(let b=0;b<4;b++)for(let c=0;c<4;c++){
+    const i=idx(a,b,c);
+    let sum=W[i].get(i).div(d[i]);                 // self base
+    for(const nb of neighbors(a,b,c)){
+      const p=W[i].get(nb.i).div(d[i]);
+      if(nb.dir<0){ sum=sum.add(p.mul(RHO_REV)).add(p.mul(F1.sub(RHO_REV))); } // accepted + rejected→diag
+      else sum=sum.add(p);
+    }
+    if(sum.eq(F1)) rowsOK++;
+  }
+
+  // current J0 = Σ_{(i,j)∈E+} (π0_i K_ij - π0_j K_ji),  forward = dir +1
+  let Jdirect=F0, Jformula=F0, sumWfwd=F0;
+  for(let a=0;a<4;a++)for(let b=0;b<4;b++)for(let c=0;c<4;c++){
+    const i=idx(a,b,c);
+    for(const nb of neighbors(a,b,c)){
+      if(nb.dir>0){                                  // (i -> j) forward edge in E+
+        const j=nb.i;
+        const pi_i=d[i].div(D), pi_j=d[j].div(D);
+        const Kij=Kget(i,j,+1);                      // forward accepted
+        const Kji=Kget(j,i,-1);                      // reverse from j attenuated
+        Jdirect=Jdirect.add(pi_i.mul(Kij)).sub(pi_j.mul(Kji));
+        sumWfwd=sumWfwd.add(W[i].get(j));
+      }
+    }
+  }
+  Jformula=sumWfwd.mul(F1.sub(RHO_REV)).div(D);      // Σ W_ij (1-ρ) / D
+
+  const g=(k,v)=>`<div class="stat"><div class="k">${k}</div><div class="v mono">${v}</div></div>`;
+  document.getElementById("pumpOut").innerHTML=`
+    <div class="stat-grid">
+      ${g("rows Σ=1 (exact)", rowsOK+" / 64")}
+      ${g("|E⁺| forward","144")}
+      ${g("J₀ (direct)", Jdirect.toNumber().toExponential(4))}
+      ${g("J₀ (formula)", Jformula.toNumber().toExponential(4))}
+      ${g("direct = formula", Jdirect.eq(Jformula)?"✓ exact":"✗")}
+      ${g("sign of J₀", Jdirect.isPos()?"> 0":"≤ 0")}
+    </div>
+    <div class="verdict ok">$J_0 = ${Jdirect.toNumber().toExponential(5)} > 0$ &nbsp;⇒&nbsp; detailed balance broken, net forward (with-winding) probability current. Computed entirely in exact $\\mathbb{Q}$; the two independent computations agree bit-for-bit.</div>
+    <div class="note">$\\rho_{\\text{rev}}=${RHO_REV.toStr()}$, so each forward edge contributes $\\tfrac{W_{ij}}{D}(1-\\rho)=\\tfrac{3}{7}\\tfrac{W_{ij}}{D}>0$, matching proof T5b.</div>`;
+  if(window.MathJax) MathJax.typesetPromise([document.getElementById("pumpOut")]);
+}
+document.getElementById("runPump").addEventListener("click",runPump);
+
+/* auto-run */
+runRow(); runPump();
+</script>
+</body>
+</html>

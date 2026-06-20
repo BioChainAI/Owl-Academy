@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Hyperbolic Softmax — Owl Academy · Experimental Systems</title>
+<script>
+  window.MathJax = { tex: { inlineMath: [['$','$'],['\\(','\\)']], displayMath: [['$$','$$'],['\\[','\\]']], processEscapes: true } };
+</script>
+<script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+<style>
+  :root{ --void:#06040f; --purple:#8b5cf6; --cyan:#22d3ee; --gold:#D4AF37; --ok:#34d399; --bad:#f87171; }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--void);color:#e2e8f0;font-family:system-ui,sans-serif;min-height:100vh;line-height:1.65;
+       background:radial-gradient(ellipse at top,rgba(139,92,246,0.09) 0%,var(--void) 60%)}
+  header{padding:3rem 1.5rem 1.6rem;text-align:center;border-bottom:1px solid rgba(139,92,246,0.15)}
+  .eyemark{width:46px;height:46px;margin:0 auto 1rem;border:2px solid rgba(139,92,246,0.5);border-radius:50%;
+           display:flex;align-items:center;justify-content:center;background:rgba(139,92,246,0.08)}
+  h1{font-size:1.55rem;font-weight:300;letter-spacing:0.2em;text-transform:uppercase;color:var(--purple);text-shadow:0 0 22px rgba(139,92,246,0.4)}
+  .sub{margin-top:.5rem;font-size:.7rem;letter-spacing:.24em;text-transform:uppercase;color:rgba(139,92,246,0.55)}
+  .back{display:inline-block;margin-top:1.2rem;font-size:.68rem;letter-spacing:.2em;text-transform:uppercase;color:rgba(139,92,246,0.45);text-decoration:none}
+  .back:hover{color:var(--purple)}
+  main{max-width:880px;margin:2.2rem auto;padding:0 1.25rem}
+  .label{font-size:.62rem;letter-spacing:.3em;text-transform:uppercase;color:rgba(139,92,246,0.6);margin:0 0 .9rem}
+  .panel{background:rgba(10,8,20,0.6);border:1px solid rgba(139,92,246,0.18);border-radius:12px;padding:1.5rem 1.6rem;margin-bottom:1.6rem}
+  h2{font-size:1.1rem;font-weight:500;color:#fff;margin-bottom:.6rem;letter-spacing:.02em}
+  p{font-size:.9rem;color:rgba(255,255,255,.66);margin-bottom:.8rem}
+  .lead{font-size:.95rem;color:rgba(255,255,255,.78)}
+  ol.conflict{list-style:none;counter-reset:c;padding:0}
+  ol.conflict li{counter-increment:c;position:relative;padding:.55rem 0 .55rem 2.4rem;font-size:.88rem;color:rgba(255,255,255,.66);border-bottom:1px solid rgba(139,92,246,0.08)}
+  ol.conflict li:last-child{border-bottom:none}
+  ol.conflict li::before{content:counter(c);position:absolute;left:0;top:.5rem;width:1.6rem;height:1.6rem;border-radius:50%;
+    background:rgba(248,113,113,0.12);border:1px solid rgba(248,113,113,0.35);color:var(--bad);font-size:.72rem;display:flex;align-items:center;justify-content:center}
+  ol.conflict strong{color:#fbbf24}
+  pre{background:#05030a;border:1px solid rgba(34,211,238,0.16);border-radius:8px;padding:1rem;overflow-x:auto;
+      font-family:ui-monospace,"Fira Code",monospace;font-size:.72rem;color:#9fb4c8;line-height:1.5}
+  table{width:100%;border-collapse:collapse;margin-top:.4rem;font-size:.83rem}
+  th,td{text-align:left;padding:.5rem .6rem;border-bottom:1px solid rgba(139,92,246,0.1);vertical-align:top}
+  th{font-size:.62rem;letter-spacing:.12em;text-transform:uppercase;color:rgba(139,92,246,0.6)}
+  td.k{color:#fff;white-space:nowrap}
+  .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:1rem}
+  a.card{display:block;text-decoration:none;background:rgba(139,92,246,0.06);border:1px solid rgba(139,92,246,0.22);
+         border-radius:10px;padding:1.1rem 1.2rem;transition:.22s}
+  a.card:hover{border-color:rgba(139,92,246,0.55);background:rgba(139,92,246,0.1);transform:translateY(-2px);box-shadow:0 0 26px rgba(139,92,246,0.12)}
+  a.card.sim{border-color:rgba(34,211,238,0.3);background:rgba(34,211,238,0.05)}
+  a.card.sim:hover{border-color:var(--cyan);box-shadow:0 0 26px rgba(34,211,238,0.14)}
+  .card .ico{font-size:1.1rem;color:var(--purple);margin-bottom:.5rem}
+  .card .nm{color:#fff;font-size:.92rem;margin-bottom:.25rem}
+  .card .ds{font-size:.74rem;color:rgba(255,255,255,.42);line-height:1.5}
+  .pill{display:inline-block;font-size:.6rem;letter-spacing:.1em;padding:.12em .6em;border-radius:999px;margin:.15rem .25rem .15rem 0;
+        background:rgba(34,211,238,0.08);border:1px solid rgba(34,211,238,0.25);color:var(--cyan)}
+  .note{font-size:.74rem;color:rgba(255,255,255,.4);margin-top:.7rem}
+</style>
+</head>
+<body>
+<header>
+  <div class="eyemark">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#8b5cf6" stroke-width="1.5">
+      <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+      <circle cx="12" cy="12" r="3"/>
+    </svg>
+  </div>
+  <h1>Hyperbolic Softmax</h1>
+  <div class="sub">Hyperbolic Sparsemax · Torsional Markov Pump · SHD-CCP 4×4×4</div>
+  <a href="../index.html" class="back">← Experimental Systems</a>
+</header>
+
+<main>
+  <div class="panel">
+    <div class="label">Premise</div>
+    <p class="lead">A transition kernel for the SHD-CCP $4\times4\times4$ ($64$-voxel) packet that scores in <strong>hyperbolic</strong> geometry, runs a <strong>torsional Markov pump</strong> (broken detailed balance), and stays <strong>exactly rational</strong> so it survives the SHD-CCP handshake. The deterministic, on-chain normalizer is <strong>sparsemax</strong> ($\alpha$-entmax, $\alpha=2$); the word <em>softmax</em> is reserved for the analytic Axiom-II limit.</p>
+  </div>
+
+  <div class="panel">
+    <div class="label">Why a vanilla softmax is the wrong shape</div>
+    <ol class="conflict">
+      <li><strong>Transcendental ⇒ breaks the handshake.</strong> $e^{x}$ is float-dependent, so nodes disagree and fail <code>torusWinding(mantle) % 7 == core</code> → entropic collapse.</li>
+      <li><strong>Statistical ⇒ violates the substrate.</strong> The breathing substrate demands exact topological resolution, not a dense probabilistic smear.</li>
+      <li><strong>Reversible ⇒ cannot pump.</strong> A symmetric similarity is detailed-balanced; the pump needs $J&gt;0$.</li>
+      <li><strong>Euclidean &amp; scalar ⇒ Derrick-unstable.</strong> A flat scalar logit field collapses or diffuses; no escape valve.</li>
+    </ol>
+    <p class="note">Resolution: a normalizer that is hyperbolic (geometry), asymmetric (pump), rational (determinism), and $w$-stabilized (Derrick).</p>
+  </div>
+
+  <div class="panel">
+    <div class="label">Pipeline</div>
+    <pre>
+ q_i ∈ S³∩ℚ⁴ ──Φ──► Lorentz lift  q̃_i = (1/w_i)(1, m_i) ∈ ℍ³            [T1]
+                              │
+       neighbor q̃_j           ▼
+                    Q_h(i,j) = ⟨q̃_i, q̃_j⟩_L² − 1  ∈ ℚ≥0               [T2]
+                              │
+  z_{i→j} = −β_i·Q_h(i,j) − λ·A_ij      (A_ij = A₀·s·χ_ij, rational)     [valve]
+                              │
+            sparsemax:  K_ij = [ z_{i→j} − τ_i ]_+ ,  Σ_j K_ij = 1       [T3]  (exact ℚ)
+                              │           ╲  Gibbs limit  K ∝ e^{z}       [Axiom II, ℝ]
+       irrational ε_ij ──► Octet(8)  (never re-enters the kernel)        [T4]
+                              ▼
+   torsional pump  K(t) ─► π, J(t) ─► B(t₇) > B(t₅),  Θ₁₀ ≡ Θ₀           [T5–T7]
+    </pre>
+  </div>
+
+  <div class="panel">
+    <div class="label">Locked decisions</div>
+    <table>
+      <thead><tr><th>Element</th><th>Lock</th></tr></thead>
+      <tbody>
+        <tr><td class="k">Model</td><td>Lorentz/hyperboloid; $S^3$ spinor $q_i$ kept distinct from lift $\tilde q_i=\tfrac1{w_i}(1,\mathbf m_i)$ (closed rational form).</td></tr>
+        <tr><td class="k">Normalizer</td><td>sparsemax ($\alpha=2$) executable; softmax/Gibbs analytic only.</td></tr>
+        <tr><td class="k">Valve</td><td>Analytic $e^{-\lambda A_{ij}}$; executable rational $\rho_{ij}=\tfrac{1}{1+\lambda A_{ij}}$.</td></tr>
+        <tr><td class="k">12↔64</td><td>3 arms = axes $x,y,z$; 4 phases = coordinate positions; 6 signed directions lifted by chirality into 12 channels.</td></tr>
+        <tr><td class="k">Residuals</td><td>Octet(8) quarantine; never perturb the 64-node rational kernel.</td></tr>
+        <tr><td class="k">Temperature</td><td>$\beta_i=\tfrac{1-w_i}{w_i}$ on a Derrick-safe annulus $w\in[w_{\min},w_{\max}]\subset(0,1)$.</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="panel">
+    <div class="label">Verified (exact rational demo)</div>
+    <p>The <a class="card" style="display:inline;padding:0;border:none;background:none;color:var(--cyan)" href="sim/index.html">simulation</a> instantiates the locked spec with <code>BigInt</code> rationals:</p>
+    <span class="pill">64 spinors exactly on $S^3$</span>
+    <span class="pill">$w\in[7/29,\,40/41]\subset(0,1)$</span>
+    <span class="pill">all 64 rows $\sum=1$ exactly</span>
+    <span class="pill">reverse edge → 0 (valve)</span>
+    <span class="pill">$J_0\approx0.172&gt;0$</span>
+    <span class="pill">direct = formula (bit-exact)</span>
+  </div>
+
+  <div class="panel">
+    <div class="label">Artifacts</div>
+    <div class="cards">
+      <a class="card" href="kernel_spec.md">
+        <div class="ico">◈</div><div class="nm">kernel_spec.md</div>
+        <div class="ds">Frozen invariants: state set, rational lift, $Q_h$, valve, sparsemax row, parity & octet rules.</div>
+      </a>
+      <a class="card" href="Hyperbolic_Softmax_Proof.md">
+        <div class="ico">⊢</div><div class="nm">Hyperbolic_Softmax_Proof.md</div>
+        <div class="ds">Theorems T1–T7 + Main Theorem: lift, quadrance, sparsemax, determinism, broken balance & current, stability, phase reset.</div>
+      </a>
+      <a class="card" href="Hyperbolic_Softmax_Design.md">
+        <div class="ico">✦</div><div class="nm">Hyperbolic_Softmax_Design.md</div>
+        <div class="ds">The design narrative — conflict, pipeline, locked decisions, handshake/axiom conformance, open items.</div>
+      </a>
+      <a class="card sim" href="sim/index.html">
+        <div class="ico" style="color:var(--cyan)">▶</div><div class="nm">sim/ — interactive demo</div>
+        <div class="ds">Exact-rational 4×4×4: compute a sparsemax row and the pump current $J_0$ live in the browser.</div>
+      </a>
+    </div>
+    <p class="note">Upstream law: <a class="card" style="display:inline;padding:0;border:none;background:none;color:var(--purple)" href="../../../Proofs/Torsional-Trefoil-Markov-Pump/TTMPT-Formal-Proof.pdf">TTMPT formal proof</a>.</p>
+  </div>
+</main>
+</body>
+</html>
