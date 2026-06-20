@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Proof Workbench (Amiga-class) — Owl Academy Proofs Workshop</title>
+
+<!-- ── SECURITY: Genesis auth gate ── -->
+<script type="module" src="../../scripts/auth-guard.js"></script>
+
+<script>window.MathJax={tex:{inlineMath:[['$','$'],['\\(','\\)']],displayMath:[['$$','$$'],['\\[','\\]']]}};</script>
+<script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+<style>
+  :root{ --void:#06040f; --abg:#0a0f2c; --afg:#c9d4ff; --orange:#ff8a1e; --gold:#D4AF37; --purple:#8b5cf6; --ok:#34d399; --bad:#f87171; }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--void);color:#e2e8f0;font-family:system-ui,sans-serif;min-height:100vh;
+       background:radial-gradient(ellipse at top,rgba(255,138,30,0.09),var(--void) 60%)}
+  .mono{font-family:ui-monospace,"Fira Code",monospace}
+  .secbar{display:flex;align-items:center;justify-content:space-between;gap:1rem;padding:.55rem 1.1rem;
+          background:rgba(8,12,22,0.85);border-bottom:1px solid rgba(212,175,55,0.25);position:sticky;top:0;z-index:30;backdrop-filter:blur(8px)}
+  .seal{display:flex;align-items:center;gap:.55rem;font-size:.66rem;letter-spacing:.18em;text-transform:uppercase;color:var(--gold)}
+  .seal .glyph{width:22px;height:22px;border:1px solid var(--gold);border-radius:50%;display:flex;align-items:center;justify-content:center;box-shadow:0 0 12px rgba(212,175,55,0.3)}
+  .who{font-size:.64rem;color:rgba(255,255,255,.4);letter-spacing:.1em}
+  .btn{background:rgba(255,138,30,0.16);color:#ffd2a3;border:1px solid rgba(255,138,30,0.5);border-radius:6px;
+       padding:.4rem .9rem;font-size:.64rem;letter-spacing:.12em;text-transform:uppercase;cursor:pointer;transition:.2s;font-family:inherit}
+  .btn:hover{background:rgba(255,138,30,0.3)}
+  header{text-align:center;padding:2rem 1rem 1rem}
+  .kick{font-size:.62rem;letter-spacing:.3em;text-transform:uppercase;color:var(--orange)}
+  h1{font-weight:300;letter-spacing:.1em;color:#fff;margin-top:.4rem;font-size:1.5rem}
+  h1 b{color:var(--orange)}
+  .back{display:inline-block;margin-top:.7rem;font-size:.64rem;letter-spacing:.2em;text-transform:uppercase;color:rgba(255,138,30,0.75);text-decoration:none}
+  main{max-width:820px;margin:1.4rem auto 3rem;padding:0 1.1rem}
+
+  /* workbench window */
+  .wb{border:2px solid #c9d4ff;border-radius:4px;background:#9aa6cf;box-shadow:0 16px 50px rgba(0,0,0,.55)}
+  .titlebar{display:flex;align-items:center;justify-content:space-between;background:linear-gradient(180deg,#dfe6ff,#aeb9e6);
+            padding:.3rem .6rem;border-bottom:2px solid #c9d4ff}
+  .titlebar .t{font-size:.7rem;color:#1b2350;font-weight:700;letter-spacing:.06em}
+  .titlebar .dots{display:flex;gap:.3rem}.titlebar .dots span{width:11px;height:11px;border:1px solid #1b2350;background:#dfe6ff;border-radius:2px}
+  .screen{background:var(--abg);min-height:340px;max-height:60vh;overflow:auto;padding:1rem 1.1rem;color:var(--afg)}
+  .screen pre.boot{font-family:ui-monospace,monospace;font-size:.8rem;white-space:pre-wrap;color:var(--afg)}
+  .screen pre.boot .ok{color:#9affc0} .screen pre.boot .err{color:#ff9aa8} .screen pre.boot.err{color:#ff9aa8}
+  .blink{animation:bl 1s steps(1) infinite}@keyframes bl{50%{opacity:0}}
+  .cart-view{margin-top:1rem;border-top:1px dashed rgba(201,212,255,.35);padding-top:1rem}
+  .cart-head{display:flex;justify-content:space-between;align-items:center;font-size:.6rem;letter-spacing:.1em;text-transform:uppercase}
+  .cart-id{color:#9fb4ff;font-family:ui-monospace,monospace}
+  .cart-prio{border:1px solid;border-radius:999px;padding:.1em .55em;font-size:.58rem}
+  .cart-title{color:#fff;font-size:1.3rem;margin:.5rem 0;font-weight:500}
+  .cart-abstract{color:#c7d2ff;font-size:.88rem;margin-bottom:.8rem;font-style:italic}
+  .cart-body{color:#e2e9ff;font-size:.9rem;line-height:1.75}
+  .cart-body h2{font-size:1.1rem;color:#fff;margin:.9rem 0 .3rem} .cart-body h3{font-size:.98rem;color:#dde4ff;margin:.7rem 0 .3rem}
+  .cart-body code{background:rgba(0,0,0,.35);padding:.05em .3em;border-radius:3px;font-family:ui-monospace,monospace;color:#ffd2a3}
+  .cart-note{margin-top:.9rem;font-size:.76rem;color:#ffd9a8;border:1px solid rgba(255,138,30,.45);border-radius:6px;padding:.5rem .7rem}
+  .cart-foot{margin-top:1rem;font-size:.66rem;color:rgba(201,212,255,.55);font-family:ui-monospace,monospace}
+
+  .deck{display:flex;flex-wrap:wrap;gap:.6rem;margin-top:1rem;align-items:center}
+  .slot{flex:1;min-width:220px;border:1px dashed rgba(255,138,30,0.5);border-radius:8px;padding:.7rem .9rem;font-size:.72rem;color:rgba(255,255,255,.55)}
+  .status{margin-top:.7rem;font-size:.72rem;color:rgba(255,255,255,.5)}
+  .status b.ok{color:var(--ok)} .status b.bad{color:var(--bad)} .status b.warn{color:#ffb454}
+</style>
+</head>
+<body>
+<div class="secbar">
+  <div class="seal"><span class="glyph">♛</span> Genesis-Sealed</div>
+  <div class="who mono" id="secWho">secure session · authenticating…</div>
+  <button class="btn" onclick="globalLogout()">Log out</button>
+</div>
+
+<header>
+  <div class="kick">Proofs Workshop · Emulator</div>
+  <h1>Proof <b>Workbench</b></h1>
+  <a class="back" href="../index.html">← Workshop</a>
+</header>
+
+<main>
+  <div class="wb">
+    <div class="titlebar">
+      <div class="t">Proof Workbench 1.3 :: cartridge0</div>
+      <div class="dots"><span></span><span></span></div>
+    </div>
+    <div class="screen" id="screen"><pre class="boot">booting…</pre></div>
+  </div>
+
+  <div class="deck">
+    <div class="slot">⬢ Drawer — open a <span class="mono">.crt.json</span> proof cartridge from the
+      <a href="../cartridge-makers/Amiga_Cartridge_Maker.html" style="color:var(--orange)">Workbench Cartridge Maker</a>.</div>
+    <label class="btn" for="file">Open cartridge…</label>
+    <input id="file" type="file" accept=".json,.crt,application/json" hidden />
+    <button class="btn" id="demo">Load demo</button>
+    <button class="btn" id="eject">Eject</button>
+  </div>
+  <div class="status mono" id="status">No cartridge inserted.</div>
+</main>
+
+<script type="module">
+  import { auth } from "../../scripts/firebase/config.js";
+  import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-auth.js";
+  import { resolveTier } from "../../scripts/genesis-registrar.js";
+  onAuthStateChanged(auth, async (u) => {
+    if (!u) return;
+    let t = "ACOLYTE"; try { t = await resolveTier(u.uid); } catch (_) {}
+    const s = t === "ARCHON" ? "♛" : t === "INSTRUCTOR" ? "⬢" : "◯";
+    document.getElementById("secWho").textContent = `secure session · ${s} ${t} · ${u.uid.slice(0,10)}…`;
+  });
+</script>
+
+<script type="module">
+  import { bootCartridge, parseCartridge, sealCartridge } from "../cartridge.js";
+  const MACHINE = "amiga";
+  const screen = document.getElementById("screen");
+  const status = document.getElementById("status");
+  function show(cart){
+    const r = bootCartridge({ cart, screenEl: screen, machine: MACHINE });
+    if (r.status === "empty") status.innerHTML = "No cartridge inserted.";
+    else if (r.status === "invalid") status.innerHTML = `<b class="bad">✗ invalid cartridge</b> — ${r.errors.join("; ")}`;
+    else if (r.status === "quarantine") status.innerHTML = `<b class="warn">⚠ seal mismatch</b> — loaded read-only in quarantine.`;
+    else status.innerHTML = `<b class="ok">✓ booted</b> — seal verified, cartridge trusted.`;
+    if (window.MathJax && window.MathJax.typesetPromise) MathJax.typesetPromise([screen]).catch(()=>{});
+  }
+  show(null);
+  document.getElementById("file").addEventListener("change", async (e) => {
+    const f = e.target.files[0]; if (!f) return;
+    try { show(parseCartridge(await f.text())); }
+    catch (err) { status.innerHTML = `<b class="bad">✗ could not read cartridge</b> — ${err.message}`; }
+  });
+  document.getElementById("eject").addEventListener("click", () => show(null));
+  document.getElementById("demo").addEventListener("click", () => {
+    show(sealCartridge({
+      format: "owl-proof-cartridge", version: 1, machine: "amiga",
+      id: "demo-hyperbolic-lift", title: "Demo · Rational Lorentz Lift",
+      abstract: "The S³ spinor lifts to the hyperboloid with an exact rational form.",
+      tags: ["hyperbolic","lift","demo"],
+      author: { genesisId: "0xDEMO0000CARTRIDGE", tier: "INSTRUCTOR" },
+      priority: "validated",
+      createdAt: new Date().toISOString(),
+      payload: { kind: "proof", body:
+        "## Lift\nFor $q_i=(w_i,\\mathbf m_i)\\in S^3$ with $w_i>0$:\n\n- $\\tilde q_i=\\tfrac1{w_i}(1,\\mathbf m_i)$ satisfies $\\langle\\tilde q_i,\\tilde q_i\\rangle_{\\mathbb L}=1$.\n- Hence $Q_h(i,j)=\\langle\\tilde q_i,\\tilde q_j\\rangle_{\\mathbb L}^2-1\\in\\mathbb{Q}_{\\ge0}$.\n\n*(Replace this demo with a real cartridge from the maker.)*",
+        program: "" }
+    }));
+  });
+</script>
+</body>
+</html>

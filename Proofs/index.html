@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Proofs Workshop — Owl Academy</title>
+
+<!-- ── SECURITY: gate the page behind Genesis auth (hides body until resolved) ── -->
+<script type="module" src="../scripts/auth-guard.js"></script>
+
+<style>
+  :root{
+    --void:#06040f; --gold:#D4AF37; --purple:#8b5cf6; --cyan:#22d3ee;
+    --c64:#6c5cf0; --amiga:#ff8a1e; --ok:#34d399; --bad:#f87171;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--void);color:#e2e8f0;font-family:system-ui,sans-serif;min-height:100vh;line-height:1.6;
+       background:radial-gradient(ellipse at top,rgba(139,92,246,0.10) 0%,var(--void) 55%)}
+  .mono{font-family:ui-monospace,"Fira Code",monospace}
+
+  /* ── Security strip ── */
+  .secbar{display:flex;align-items:center;justify-content:space-between;gap:1rem;padding:.55rem 1.1rem;
+          background:rgba(8,12,22,0.85);border-bottom:1px solid rgba(212,175,55,0.25);position:sticky;top:0;z-index:30;backdrop-filter:blur(8px)}
+  .seal{display:flex;align-items:center;gap:.55rem;font-size:.66rem;letter-spacing:.18em;text-transform:uppercase;color:var(--gold)}
+  .seal .glyph{width:22px;height:22px;border:1px solid var(--gold);border-radius:50%;display:flex;align-items:center;justify-content:center;
+               box-shadow:0 0 12px rgba(212,175,55,0.3)}
+  .secbar .who{font-size:.64rem;color:rgba(255,255,255,.4);letter-spacing:.1em}
+  .btn{background:rgba(139,92,246,0.16);color:var(--purple);border:1px solid rgba(139,92,246,0.4);border-radius:6px;
+       padding:.35rem .85rem;font-size:.62rem;letter-spacing:.14em;text-transform:uppercase;cursor:pointer;transition:.2s;font-family:inherit}
+  .btn:hover{background:rgba(139,92,246,0.3);border-color:var(--purple)}
+
+  header{padding:3rem 1.5rem 1.4rem;text-align:center;border-bottom:1px solid rgba(139,92,246,0.15)}
+  .kicker{font-size:.66rem;letter-spacing:.34em;text-transform:uppercase;color:rgba(212,175,55,0.7);margin-bottom:.8rem}
+  h1{font-size:2rem;font-weight:300;letter-spacing:.16em;text-transform:uppercase;color:#fff;text-shadow:0 0 26px rgba(139,92,246,0.4)}
+  h1 b{color:var(--gold);font-weight:600}
+  .lede{max-width:640px;margin:1rem auto 0;font-size:.92rem;color:rgba(255,255,255,.6)}
+  .back{display:inline-block;margin-top:1.2rem;font-size:.66rem;letter-spacing:.2em;text-transform:uppercase;color:rgba(139,92,246,0.5);text-decoration:none}
+  .back:hover{color:var(--purple)}
+
+  main{max-width:980px;margin:2.4rem auto;padding:0 1.25rem}
+  .label{font-size:.62rem;letter-spacing:.3em;text-transform:uppercase;color:rgba(139,92,246,0.6);margin:0 0 1rem}
+  section{margin-bottom:2.6rem}
+
+  .grid{display:grid;gap:1.2rem}
+  .g2{grid-template-columns:repeat(auto-fit,minmax(280px,1fr))}
+  .g3{grid-template-columns:repeat(auto-fit,minmax(210px,1fr))}
+
+  a.machine{display:block;text-decoration:none;border-radius:14px;padding:1.6rem;position:relative;overflow:hidden;
+            border:1px solid rgba(255,255,255,0.12);background:rgba(10,8,20,0.6);transition:.25s}
+  a.machine:hover{transform:translateY(-3px)}
+  a.machine .scr{height:88px;border-radius:8px;margin-bottom:1rem;padding:.7rem .8rem;font-size:.62rem;line-height:1.5;
+                 font-family:ui-monospace,monospace;overflow:hidden}
+  a.machine .ttl{font-size:1.15rem;color:#fff;margin-bottom:.2rem;letter-spacing:.04em}
+  a.machine .ds{font-size:.78rem;color:rgba(255,255,255,.5);line-height:1.5}
+  a.machine .go{display:inline-block;margin-top:.9rem;font-size:.64rem;letter-spacing:.18em;text-transform:uppercase}
+  a.c64{border-color:rgba(108,92,240,0.4)} a.c64:hover{box-shadow:0 0 34px rgba(108,92,240,0.2);border-color:var(--c64)}
+  a.c64 .scr{background:#3b30a8;color:#b1a7f4;border:3px solid #6c5cf0} a.c64 .go{color:var(--c64)}
+  a.amiga{border-color:rgba(255,138,30,0.35)} a.amiga:hover{box-shadow:0 0 34px rgba(255,138,30,0.18);border-color:var(--amiga)}
+  a.amiga .scr{background:#0a0f2c;color:#c9d4ff;border:3px solid #ff8a1e} a.amiga .go{color:var(--amiga)}
+
+  a.tool{display:block;text-decoration:none;background:rgba(139,92,246,0.06);border:1px solid rgba(139,92,246,0.22);
+         border-radius:11px;padding:1.2rem 1.3rem;transition:.22s}
+  a.tool:hover{border-color:rgba(139,92,246,0.55);background:rgba(139,92,246,0.1);transform:translateY(-2px)}
+  a.tool .ico{font-size:1.2rem;margin-bottom:.5rem}
+  a.tool .nm{color:#fff;font-size:.95rem;margin-bottom:.25rem}
+  a.tool .ds{font-size:.76rem;color:rgba(255,255,255,.45);line-height:1.5}
+  .lock{float:right;font-size:.56rem;letter-spacing:.12em;color:var(--gold);border:1px solid rgba(212,175,55,0.3);border-radius:999px;padding:.1em .55em}
+
+  .cartrow{display:grid;gap:.8rem;grid-template-columns:repeat(auto-fill,minmax(220px,1fr))}
+  .cart{background:rgba(0,0,0,.35);border:1px solid rgba(34,211,238,0.18);border-radius:9px;padding:1rem;text-decoration:none;display:block;transition:.2s}
+  .cart:hover{border-color:var(--cyan);background:rgba(34,211,238,0.05)}
+  .cart .lbl{font-size:.56rem;letter-spacing:.18em;text-transform:uppercase;color:var(--cyan);margin-bottom:.4rem}
+  .cart .nm{color:#e2e8f0;font-size:.86rem}
+  .cart .meta{font-size:.68rem;color:rgba(255,255,255,.35);margin-top:.35rem}
+  .cart.ghost{border-style:dashed;border-color:rgba(255,255,255,0.12);color:rgba(255,255,255,.3);cursor:default}
+  .cart.ghost .nm{color:rgba(255,255,255,.32)}
+
+  .panel{background:rgba(10,8,20,0.55);border:1px solid rgba(139,92,246,0.16);border-radius:12px;padding:1.4rem 1.5rem}
+  pre.schema{background:#05030a;border:1px solid rgba(34,211,238,0.16);border-radius:8px;padding:1rem;overflow-x:auto;
+             font-family:ui-monospace,monospace;font-size:.72rem;color:#9fb4c8;line-height:1.5;margin-top:.6rem}
+  .note{font-size:.74rem;color:rgba(255,255,255,.4);margin-top:.7rem}
+  footer{max-width:980px;margin:0 auto 3rem;padding:1.4rem 1.25rem 0;border-top:1px solid rgba(139,92,246,0.12);
+         font-size:.72rem;color:rgba(255,255,255,.35)}
+</style>
+</head>
+<body>
+
+<!-- ── SECURITY STRIP (present on every workshop page) ── -->
+<div class="secbar">
+  <div class="seal"><span class="glyph">♛</span> Genesis-Sealed Workshop</div>
+  <div class="who mono" id="secWho">secure session · authenticating…</div>
+  <button class="btn" onclick="globalLogout()">Log out</button>
+</div>
+
+<header>
+  <div class="kicker">Owl Academy · Department of Proof</div>
+  <h1>Proofs <b>Workshop</b></h1>
+  <p class="lede">Boot, inspect, and author topological proofs as <strong>cartridges</strong>. Load them into the retro
+    proof <strong>emulators</strong>, or forge new ones in the <strong>cartridge makers</strong>. Every page is sealed behind
+    your Genesis identity.</p>
+  <a class="back" href="../Library/Grand_Archives.html">← Grand Archives</a>
+</header>
+
+<main>
+  <!-- ── EMULATORS ── -->
+  <section>
+    <div class="label">Feature · Emulators</div>
+    <div class="grid g2">
+      <a class="machine c64" href="emulators/C64_Proof_Emulator.html">
+        <div class="scr mono">**** OWL PROOF-64 BASIC V2 ****<br>64K RAM &nbsp;38911 LATTICE BYTES FREE<br><br>READY.<br>█</div>
+        <div class="ttl">PROOF-64 Emulator</div>
+        <div class="ds">Commodore-class proof machine. Insert a <span class="mono">.crt.json</span> proof cartridge and RUN it on the trefoil substrate. Seal-verified at boot.</div>
+        <span class="go">Power on →</span>
+      </a>
+      <a class="machine amiga" href="emulators/Amiga_Proof_Emulator.html">
+        <div class="scr mono">Owl Amiga Proof Workbench 1.3<br>Topology.library v33<br>Trefoil.device v33<br><br>Insert proof cartridge ▸</div>
+        <div class="ttl">Proof Workbench (Amiga-class)</div>
+        <div class="ds">16-bit class workbench for richer, interactive proof cartridges. Same cartridge format, deeper rendering surface.</div>
+        <span class="go">Boot Workbench →</span>
+      </a>
+    </div>
+  </section>
+
+  <!-- ── CARTRIDGE MAKERS ── -->
+  <section>
+    <div class="label">Feature · Cartridge Makers</div>
+    <div class="grid g2">
+      <a class="tool" href="cartridge-makers/C64_Cartridge_Maker.html">
+        <span class="lock">⬢ Instructor+ to seal</span>
+        <div class="ico" style="color:var(--c64)">◈</div>
+        <div class="nm">PROOF-64 Cartridge Maker</div>
+        <div class="ds">Author a proof, stamp it with your Genesis ID &amp; tier, and export a sealed <span class="mono">.crt.json</span> the PROOF-64 can boot.</div>
+      </a>
+      <a class="tool" href="cartridge-makers/Amiga_Cartridge_Maker.html">
+        <span class="lock">⬢ Instructor+ to seal</span>
+        <div class="ico" style="color:var(--amiga)">◈</div>
+        <div class="nm">Workbench Cartridge Maker</div>
+        <div class="ds">Build richer Amiga-class cartridges (abstract, body, tags, interactive flag) with the same seal + priority stamping.</div>
+      </a>
+    </div>
+  </section>
+
+  <!-- ── CARTRIDGE LIBRARY ── -->
+  <section>
+    <div class="label">Cartridge Library</div>
+    <div class="cartrow">
+      <a class="cart" href="Torsional-Trefoil-Markov-Pump/TTMPT-Formal-Proof.pdf">
+        <div class="lbl">Proof · Canonical</div>
+        <div class="nm">Torsional Trefoil Markov Pump</div>
+        <div class="meta mono">TTMPT · pump theorem</div>
+      </a>
+      <a class="cart" href="../Library/Experimental_Systems/Hyperbolic_Softmax/index.html">
+        <div class="lbl">Proof · Experimental</div>
+        <div class="nm">Hyperbolic Sparsemax Pump</div>
+        <div class="meta mono">SHD-CCP · 4×4×4 kernel</div>
+      </a>
+      <div class="cart ghost"><div class="lbl">Empty slot</div><div class="nm">＋ Insert cartridge later</div><div class="meta mono">build in a maker</div></div>
+      <div class="cart ghost"><div class="lbl">Empty slot</div><div class="nm">＋ Insert cartridge later</div><div class="meta mono">build in a maker</div></div>
+    </div>
+    <p class="note">The library will fill as you author cartridges — these slots are placeholders you can populate later.</p>
+  </section>
+
+  <!-- ── FORMAT ── -->
+  <section>
+    <div class="label">Cartridge Format</div>
+    <div class="panel">
+      <p style="font-size:.86rem;color:rgba(255,255,255,.62)">Emulators and makers share one self-describing JSON artifact (<span class="mono">cartridge.js</span>). It carries a tamper-evident <strong>seal</strong> and the author's tier-based <strong>priority</strong>, so trust travels with the proof.</p>
+      <pre class="schema">{
+  "format": "owl-proof-cartridge", "version": 1,
+  "machine": "c64" | "amiga",
+  "id": "ttmpt-pump", "title": "…", "abstract": "…", "tags": ["…"],
+  "author":   { "genesisId": "0x…", "tier": "ARCHON|INSTRUCTOR|ACOLYTE" },
+  "priority": "canonical | validated | experimental",
+  "payload":  { "kind": "proof|interactive", "body": "…markdown…", "program": "" },
+  "seal":     "fnv1a-of-canonical-content"
+}</pre>
+      <p class="note">Security: the emulator recomputes <span class="mono">seal</span> and quarantines any altered cartridge; payload bodies render escaped (never raw HTML) and <span class="mono">program</span> is not evaluated.</p>
+    </div>
+  </section>
+</main>
+
+<footer class="mono">Owl Academy · Proofs Workshop · all pages Genesis-sealed via auth-guard</footer>
+
+<!-- ── SECURITY: reflect the authenticated identity into the strip ── -->
+<script type="module">
+  import { auth } from "../scripts/firebase/config.js";
+  import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-auth.js";
+  import { resolveTier } from "../scripts/genesis-registrar.js";
+  const who = document.getElementById("secWho");
+  onAuthStateChanged(auth, async (user) => {
+    if (!user) return; // auth-guard handles redirect
+    let tier = "ACOLYTE";
+    try { tier = await resolveTier(user.uid); } catch (_) {}
+    const sym = tier === "ARCHON" ? "♛" : tier === "INSTRUCTOR" ? "⬢" : "◯";
+    who.textContent = `secure session · ${sym} ${tier} · ${user.uid.slice(0, 10)}…`;
+  });
+</script>
+</body>
+</html>
