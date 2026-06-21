@@ -1,0 +1,587 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Owl Academy: C64 Cartridge Tracker</title>
+
+    <!-- SECURITY: Genesis auth gate — hides body until Firebase auth resolves, else redirects to login -->
+    <script type="module" src="../../scripts/auth-guard.js"></script>
+
+    <!-- Tailwind (the terminal markup uses Tailwind utility classes throughout) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Retro Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
+    
+    <!-- MathJax for rendering LaTeX -->
+    <script>
+        window.MathJax = {
+            tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']] },
+            startup: { typeset: false } // We will trigger typesetting manually
+        };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+    <style>
+        :root {
+            /* SHD-CCP Strict C64 Palette Guidelines */
+            --c64-bg: #352879;
+            --c64-border: #6C5EB5;
+            --c64-highlight: #FFFFFF;
+            --c64-text: #AA55AA;      /* Medium Purple */
+            --c64-text-light: #FF77FF; /* Light Purple */
+            --c64-red: #880000;
+            --c64-green: #55CC55;
+            --c64-yellow: #EEEE77;
+            --c64-cyan: #AAFFEE;
+        }
+
+        * { box-sizing: border-box; }
+
+        body, html {
+            margin: 0; padding: 0; height: 100%;
+            font-family: 'VT323', monospace;
+            display: flex; justify-content: center; align-items: center;
+            color: var(--c64-highlight);
+            background-color: #020a02;
+        }
+
+        /* Green Matrix Vector Field Background */
+        .vector-field {
+            position: fixed; inset: 0; z-index: -1;
+            background-color: #020a02;
+            overflow: hidden;
+            perspective: 800px;
+        }
+        
+        .vector-grid {
+            position: absolute; width: 300%; height: 300%;
+            bottom: -50%; left: -100%;
+            background-image: 
+                linear-gradient(rgba(0, 255, 0, 0.4) 2px, transparent 2px),
+                linear-gradient(90deg, rgba(0, 255, 0, 0.4) 2px, transparent 2px);
+            background-size: 60px 60px;
+            transform: rotateX(75deg);
+            animation: scrollGrid 4s linear infinite;
+        }
+
+        /* Adds a fading vignette so the grid fades into the horizon */
+        .vector-grid::after {
+            content: ''; position: absolute; inset: 0;
+            background: radial-gradient(circle at 50% 30%, transparent 10%, #020a02 60%);
+        }
+
+        @keyframes scrollGrid {
+            0% { transform: rotateX(75deg) translateY(0); }
+            100% { transform: rotateX(75deg) translateY(60px); }
+        }
+
+        /* CRT Monitor Effect */
+        .crt-monitor {
+            width: 100%; max-width: 1200px; height: 100%; max-height: 850px;
+            background-color: var(--c64-border);
+            padding: 20px; border-radius: 12px;
+            position: relative; overflow: hidden;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.8), inset 0 0 50px rgba(0,0,0,0.8);
+            display: flex; flex-direction: column;
+            z-index: 10;
+        }
+
+        .crt-screen {
+            background-color: var(--c64-bg);
+            flex: 1; border: 4px solid #000;
+            padding: 15px; position: relative;
+            display: flex; flex-direction: column;
+            overflow: hidden;
+        }
+
+        /* Scanlines Overlay */
+        .crt-screen::before {
+            content: " "; display: block; position: absolute; top: 0; left: 0; bottom: 0; right: 0;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+            z-index: 50; background-size: 100% 4px, 6px 100%; pointer-events: none;
+        }
+
+        /* Typography & Layout */
+        h1, h2, h3 { margin: 0; text-transform: uppercase; font-weight: normal; }
+        .header { display: flex; justify-content: space-between; border-bottom: 2px solid var(--c64-highlight); padding-bottom: 10px; margin-bottom: 15px; }
+        .title { color: var(--c64-highlight); font-size: 24px; text-shadow: 2px 2px 0px var(--c64-text); }
+        .mem-status { color: var(--c64-cyan); font-size: 20px; }
+
+        .tabs { display: flex; gap: 10px; margin-bottom: 15px; z-index: 10; position: relative; }
+        .tab-btn {
+            background: transparent; color: var(--c64-border); border: 2px solid var(--c64-border);
+            padding: 5px 15px; font-family: 'VT323', monospace; font-size: 18px; cursor: pointer; text-transform: uppercase;
+        }
+        .tab-btn.active { background: var(--c64-border); color: var(--c64-highlight); }
+        .tab-btn:hover:not(.active) { background: var(--c64-text); color: var(--c64-highlight); border-color: var(--c64-text); }
+
+        .view { display: none; flex: 1; flex-direction: column; z-index: 10; position: relative; overflow: hidden; }
+        .view.active { display: flex; }
+
+        /* Simulator Grid */
+        .simulator-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; flex: 1; overflow: hidden; }
+        
+        /* Panels */
+        .panel { border: 2px solid var(--c64-border); padding: 15px; display: flex; flex-direction: column; overflow-y: auto; background: rgba(0,0,0,0.2); }
+        .panel-title { color: var(--c64-cyan); font-size: 22px; margin-bottom: 10px; border-bottom: 1px dashed var(--c64-cyan); padding-bottom: 5px; }
+        
+        .hud-block { margin-bottom: 15px; }
+        .hud-label { color: var(--c64-yellow); font-size: 18px; text-transform: uppercase; margin-bottom: 5px; }
+        .hud-math { font-size: 22px; background: rgba(0,0,0,0.4); padding: 10px; border: 1px solid var(--c64-border); color: var(--c64-highlight); min-height: 48px; }
+        .hud-tactic { font-size: 20px; color: var(--c64-green); background: #000; padding: 10px; border: 1px solid var(--c64-green); }
+
+        /* Commentary Personas */
+        .persona-block { margin-bottom: 15px; padding: 10px; border: 1px solid; background: rgba(0,0,0,0.5); }
+        .persona-felis { border-color: var(--c64-text-light); border-left-width: 4px; }
+        .persona-canis { border-color: var(--c64-red); border-left-width: 4px; }
+        .persona-name { font-size: 16px; margin-bottom: 5px; text-transform: uppercase; }
+        .persona-felis .persona-name { color: var(--c64-text-light); }
+        .persona-canis .persona-name { color: var(--c64-red); }
+        .persona-text { font-size: 18px; color: var(--c64-highlight); line-height: 1.2; }
+
+        /* Visual Inspector */
+        .visual-box { border: 1px solid var(--c64-yellow); padding: 10px; background: #000; margin-top: 10px; }
+        .visual-header { color: var(--c64-yellow); font-size: 16px; margin-bottom: 5px; }
+        .visual-text { color: var(--c64-cyan); font-size: 18px; line-height: 1.2; }
+
+        /* Controls */
+        .controls { display: flex; gap: 10px; margin-top: 15px; padding-top: 15px; border-top: 2px solid var(--c64-highlight); z-index: 10; position: relative; }
+        .btn { background: #000; color: var(--c64-highlight); border: 2px solid var(--c64-highlight); padding: 8px 15px; font-family: 'VT323', monospace; font-size: 20px; cursor: pointer; text-transform: uppercase; transition: all 0.1s; }
+        .btn:hover { background: var(--c64-highlight); color: #000; }
+        .btn:disabled { border-color: var(--c64-border); color: var(--c64-border); cursor: not-allowed; background: transparent; }
+        
+        .step-indicator { margin-left: auto; font-size: 24px; color: var(--c64-cyan); align-self: center; }
+
+        /* Issuer View */
+        .textarea-code { width: 100%; flex: 1; background: #000; color: var(--c64-green); font-family: 'VT323', monospace; font-size: 18px; border: 2px solid var(--c64-border); padding: 10px; resize: none; outline: none; }
+        .textarea-code:focus { border-color: var(--c64-highlight); }
+        
+        /* Modals/Overlays */
+        .modal-overlay { position: absolute; inset: 0; background: rgba(53, 40, 121, 0.9); z-index: 100; justify-content: center; align-items: center; flex-direction: column; padding: 20px; display: none; }
+        .modal-box { border: 2px solid var(--c64-highlight); background: #000; padding: 20px; width: 100%; max-width: 600px; }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar { width: 12px; }
+        ::-webkit-scrollbar-track { background: var(--c64-bg); border-left: 2px solid var(--c64-border); }
+        ::-webkit-scrollbar-thumb { background: var(--c64-border); }
+        ::-webkit-scrollbar-thumb:hover { background: var(--c64-highlight); }
+    </style>
+</head>
+<body>
+
+<!-- Green Matrix Vector Field -->
+<div class="vector-field">
+    <div class="vector-grid"></div>
+</div>
+
+<div class="crt-monitor">
+    <div class="crt-screen">
+        
+        <!-- Header -->
+        <div class="header z-10 relative">
+            <div class="title">*** UNIVERSAL SHD-CCP TRACKER TERMINAL ***</div>
+            <div class="mem-status" id="memStatus">AKASHIC UPLINK: AUTHENTICATING…</div>
+        </div>
+
+        <div class="tabs">
+            <button class="tab-btn active" onclick="switchTab('simulator')">RUN SIMULATION</button>
+            <button class="tab-btn" onclick="switchTab('issuer')">ISSUE CHAINED SEED</button>
+        </div>
+
+        <!-- VIEW 1: SIMULATOR -->
+        <div id="view-simulator" class="view active">
+            <div class="simulator-grid">
+                
+                <!-- Left Panel: Lean-SHD HUD -->
+                <div class="panel">
+                    <div class="panel-title flex justify-between">
+                        <span>LEAN-SHD PROOF STATE</span>
+                        <span id="tracker-stamp" class="text-[var(--c64-green)] text-sm border border-[var(--c64-green)] px-2 rounded hidden">VIEW STAMPED</span>
+                    </div>
+                    
+                    <div class="hud-block">
+                        <div class="hud-label">Current Goal</div>
+                        <div class="hud-math" id="hud-goal">AWAITING CARTRIDGE...</div>
+                    </div>
+                    
+                    <div class="hud-block">
+                        <div class="hud-label">Hypotheses (Memory)</div>
+                        <div class="hud-math" id="hud-hypotheses">EMPTY</div>
+                    </div>
+
+                    <div class="hud-block mt-auto">
+                        <div class="hud-label">Tactic Executed</div>
+                        <div class="hud-tactic" id="hud-tactic">=> None</div>
+                    </div>
+                </div>
+
+                <!-- Right Panel: Inspector -->
+                <div class="panel">
+                    <div class="panel-title">INSPECTOR & TELEMETRY</div>
+                    
+                    <div id="commentary-container">
+                        <!-- Felis Arcana -->
+                        <div class="persona-block persona-felis">
+                            <div class="persona-name"> Felis Arcana (Topological Analyst)</div>
+                            <div class="persona-text" id="comm-felis">...</div>
+                        </div>
+                        
+                        <!-- Canis Aegis -->
+                        <div class="persona-block persona-canis">
+                            <div class="persona-name"> Canis Aegis (Rigorous Verifier)</div>
+                            <div class="persona-text" id="comm-canis">...</div>
+                        </div>
+                    </div>
+
+                    <div class="visual-box mt-auto">
+                        <div class="visual-header">SVG GENERATION INSTRUCTIONS:</div>
+                        <div class="visual-text" id="visual-inst">Waiting for matrix parameters...</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Simulator Controls -->
+            <div class="controls">
+                <button class="btn" onclick="openLoadModal()">LOAD CARTRIDGE</button>
+                <button class="btn" id="btn-prev" onclick="stepProof(-1)" disabled><< PREV</button>
+                <button class="btn" id="btn-next" onclick="stepProof(1)" disabled>NEXT >></button>
+                <div class="step-indicator" id="step-count">STEP: 0/0</div>
+            </div>
+        </div>
+
+        <!-- VIEW 2: ISSUER -->
+        <div id="view-issuer" class="view">
+            <div class="panel" style="flex: 1; border: none; padding: 0;">
+                <div class="panel-title mb-2">SHD-CCP IMMUTABLE SEED ISSUER</div>
+                <div class="text-[var(--c64-highlight)] mb-4 text-lg">Initialize a universal tracking matrix. This will generate a wrapped JSON payload combining user telemetry, the previous knowledge seed, and the target simulation environment.</div>
+                
+                <div class="grid grid-cols-2 gap-3 mb-4 text-[var(--c64-highlight)]">
+                    <input type="text" id="issuer-userid" class="bg-black border-2 border-[var(--c64-border)] text-[var(--c64-highlight)] p-2 font-['VT323'] text-xl outline-none" placeholder="Issuer User ID (e.g. USER-774A)">
+                    
+                    <select id="issuer-env" class="bg-black border-2 border-[var(--c64-border)] text-[var(--c64-green)] p-2 font-['VT323'] text-xl outline-none">
+                        <option value="Commodore_64">Target System: C64 Simulator</option>
+                        <option value="Windows_95" disabled>Target System: Windows 95 (Upcoming)</option>
+                        <option value="MS_DOS" disabled>Target System: MS-DOS 6.22 (Upcoming)</option>
+                        <option value="AmigaOS" disabled>Target System: AmigaOS (Upcoming)</option>
+                    </select>
+
+                    <input type="text" id="issuer-title" class="bg-black border-2 border-[var(--c64-border)] text-[var(--c64-highlight)] p-2 font-['VT323'] text-xl outline-none" placeholder="Target Proof Name (e.g. Riemann L-Functions)">
+                    
+                    <input type="text" id="issuer-prevseed" class="bg-black border-2 border-[var(--c64-border)] text-[var(--c64-highlight)] p-2 font-['VT323'] text-xl outline-none" placeholder="Akashic Chain Link (Previous Seed Hash)">
+                </div>
+                
+                <button class="btn w-full mb-4 !bg-[var(--c64-border)] hover:!bg-[var(--c64-highlight)]" onclick="generateSeed()">GENERATE CHAINED SEED</button>
+                
+                <textarea id="issuer-output" class="textarea-code" readonly placeholder="Wrapped immutable .JSON schema will appear here..."></textarea>
+            </div>
+            
+            <div class="controls">
+                <button class="btn" onclick="copyIssuerCode()">COPY TO CLIPBOARD</button>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<!-- Load Modal -->
+<div id="load-modal" class="modal-overlay">
+    <div class="modal-box">
+        <h2 class="title" style="margin-bottom: 10px;">MOUNT KNOWLEDGE CARTRIDGE</h2>
+        <p style="font-size: 18px; margin-bottom: 15px; color: var(--c64-text-light);">Paste the wrapped JSON payload or upload a .json file to mount, stamp, and verify the chain.</p>
+        
+        <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+            <button class="btn" style="flex: 1; border-color: var(--c64-cyan); color: var(--c64-cyan);" onclick="document.getElementById('file-upload').click()">UPLOAD .JSON FILE</button>
+            <input type="file" id="file-upload" accept=".json" style="display: none;" onchange="handleFileUpload(event)">
+        </div>
+
+        <textarea id="load-textarea" class="textarea-code" style="height: 200px; margin-bottom: 15px;" placeholder="Paste Wrapped JSON Cartridge..."></textarea>
+        <div class="flex gap-10">
+            <button class="btn" onclick="mountCartridge()">MOUNT & STAMP</button>
+            <button class="btn" style="color: var(--c64-yellow); border-color: var(--c64-yellow);" onclick="loadDiagnostic()">LOAD DIAGNOSTIC ROM</button>
+            <button class="btn" style="margin-left: auto; color: var(--c64-red); border-color: var(--c64-red);" onclick="closeLoadModal()">CANCEL</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    // --- STREAMING_CHUNK:Initializing state variables... ---
+    let activeCartridge = null;
+    let currentStepIndex = 0;
+
+    // --- STREAMING_CHUNK:Defining tab logic... ---
+    function switchTab(tabId) {
+        document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        document.getElementById('view-' + tabId).classList.add('active');
+        event.target.classList.add('active');
+    }
+
+    // --- STREAMING_CHUNK:Defining simulator load modal logic... ---
+    function openLoadModal() {
+        document.getElementById('load-textarea').value = '';
+        document.getElementById('load-modal').style.display = 'flex';
+    }
+
+    function closeLoadModal() {
+        document.getElementById('load-modal').style.display = 'none';
+    }
+
+    function handleFileUpload(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            document.getElementById('load-textarea').value = e.target.result;
+        };
+        reader.readAsText(file);
+        event.target.value = ''; // Reset input to allow re-uploading the same file
+    }
+
+    // --- STREAMING_CHUNK:Defining diagnostic cartridge load... ---
+    function loadDiagnostic() {
+        // Built-in Diagnostic Proof testing Hopf Fibration continuity, fully wrapped for the universal tracker
+        const diagnosticROM = {
+            "shd_tracker_header": {
+                "ledger_timestamp": new Date().toISOString(),
+                "user_id": "SYS_ADMIN",
+                "target_environment": "Commodore_64",
+                "previous_seed_link": "GENESIS_NODE_0000",
+                "action_stamp": "KNOWLEDGE_VIEW_ISSUED",
+                "status": "CHAIN_VERIFIED"
+            },
+            "cartridge_payload": {
+                "formal_proof": "The Hopf Fibration Continuity",
+                "steps": [
+                    {
+                        "step_number": 1,
+                        "goal": "\\vdash \\pi_3(S^2) \\cong \\mathbb{Z}",
+                        "hypotheses": "S^3 \\subset \\mathbb{R}^4, S^2 \\subset \\mathbb{R}^3",
+                        "tactic": "=> apply hopf_fibration_construction",
+                        "commentary": {
+                            "felis_arcana": "Observe the continuous weave... mapping the hypersphere down to the 2-sphere. The fibers twist infinitely, yet smoothly. A beautiful knot.",
+                            "canis_aegis": "Mapping established. Boundaries are strictly conserved. Projection parameters verified."
+                        },
+                        "visual_generation_instructions": "Draw a large circle using var(--c64-bg) with a var(--c64-highlight) stroke. Inside, draw a twisted infinity symbol using var(--c64-text-light) stroke to represent the Hopf link."
+                    },
+                    {
+                        "step_number": 2,
+                        "goal": "\\vdash \\forall \\epsilon > 0, \\exists \\delta > 0 : d(p_1, p_2) < \\delta \\implies d(f(p_1), f(p_2)) < \\epsilon",
+                        "hypotheses": "p_1, p_2 \\in S^3, f: S^3 \\to S^2",
+                        "tactic": "=> exact topological_continuity_lemma",
+                        "commentary": {
+                            "felis_arcana": "The flow is unbroken. Points that wander together, map together. No tears in the fabric of the manifold.",
+                            "canis_aegis": "Epsilon-delta thresholds met. Ruptures rejected. Structural integrity holds strictly across the mapping."
+                        },
+                        "visual_generation_instructions": "Draw two solid circles representing points using var(--c64-border). Outline them in var(--c64-red). Connect them with a dashed var(--c64-green) line denoting distance limits."
+                    },
+                    {
+                        "step_number": 3,
+                        "goal": "\\vdash \\text{Proof Complete}",
+                        "hypotheses": "f \\text{ is continuous}, \\pi_3(S^2) \\text{ generator isolated}",
+                        "tactic": "=> Qed.",
+                        "commentary": {
+                            "felis_arcana": "The cycle is complete. The void is filled with structure. We rest.",
+                            "canis_aegis": "Proof verified. Memory secured. Terminating active verification matrix."
+                        },
+                        "visual_generation_instructions": "Draw a large solid var(--c64-green) square with a var(--c64-highlight) border. Write 'Q.E.D.' in the center using var(--c64-bg)."
+                    }
+                ]
+            },
+            "shd_tracker_footer": {
+                "cryptographic_signature": "0x8F9B2C...",
+                "immutability_flag": true
+            }
+        };
+        document.getElementById('load-textarea').value = JSON.stringify(diagnosticROM, null, 2);
+    }
+
+    // --- STREAMING_CHUNK:Defining cartridge mounting logic... ---
+    function mountCartridge() {
+        const raw = document.getElementById('load-textarea').value;
+        try {
+            const parsed = JSON.parse(raw);
+            
+            // Compatibility logic: Support both universal tracking chains and flat legacy payloads
+            const cartridgeData = parsed.cartridge_payload || parsed;
+
+            // Support both "steps" and "verification_steps" structures
+            const stepsArray = cartridgeData.steps || cartridgeData.verification_steps;
+
+            if (!stepsArray || !Array.isArray(stepsArray)) {
+                throw new Error("Invalid cartridge format: Missing 'steps' or 'verification_steps' array.");
+            }
+            
+            activeCartridge = cartridgeData;
+            activeCartridge.steps = stepsArray; // normalize
+            currentStepIndex = 0;
+            
+            // Render the "View Stamp" if header exists
+            if(parsed.shd_tracker_header) {
+                const stamp = document.getElementById('tracker-stamp');
+                stamp.classList.remove('hidden');
+                stamp.innerText = `VIEWER: ${parsed.shd_tracker_header.user_id} | OFF-CHAIN READY`;
+            } else {
+                document.getElementById('tracker-stamp').classList.add('hidden');
+            }
+
+            closeLoadModal();
+            renderCurrentStep();
+            
+            // Notification Update (Detects nested proofs or metadata block titles)
+            let title = activeCartridge.formal_proof || activeCartridge.proof_name;
+            if(!title && parsed.cartridge_metadata) title = parsed.cartridge_metadata.proof_name;
+            document.querySelector('.title').innerText = `*** ${(title || 'UNKNOWN PROOF').toUpperCase()} ***`;
+        } catch (e) {
+            alert("MOUNT ERROR: " + e.message);
+        }
+    }
+
+    // --- STREAMING_CHUNK:Defining step rendering logic... ---
+    function renderCurrentStep() {
+        if (!activeCartridge) return;
+
+        const step = activeCartridge.steps[currentStepIndex];
+        
+        // Universal Schema Mapper (Handles V1 and V2 Cartridges)
+        let goalText = step.goal || (step.lean_shd_hud && step.lean_shd_hud.goal) || "N/A";
+        
+        let hypData = step.hypotheses || (step.lean_shd_hud && step.lean_shd_hud.hypotheses) || "N/A";
+        let hypText = Array.isArray(hypData) ? hypData.join(", ") : hypData;
+        
+        let tacticText = step.tactic || (step.lean_shd_hud && step.lean_shd_hud.tactic) || "N/A";
+        
+        let felisText = "N/A";
+        let canisText = "N/A";
+        if (step.commentary) {
+            felisText = step.commentary.felis_arcana || "N/A";
+            canisText = step.commentary.canis_aegis || "N/A";
+        } else if (step.familiar_dialogues) {
+            felisText = step.familiar_dialogues.cat || step.familiar_dialogues.felis_arcana || "N/A";
+            canisText = step.familiar_dialogues.mastiff || step.familiar_dialogues.canis_aegis || "N/A";
+        }
+        
+        let visualText = step.visual_generation_instructions;
+        if (!visualText && step.inspector_data && step.inspector_data.visual_generation_instructions) {
+            let vgi = step.inspector_data.visual_generation_instructions;
+            visualText = typeof vgi === 'string' ? vgi : (vgi.layout || JSON.stringify(vgi));
+        }
+
+        // Wrap LaTeX strings in display math delimiters for MathJax
+        document.getElementById('hud-goal').innerText = `$$${goalText}$$`;
+        document.getElementById('hud-hypotheses').innerText = `$$${hypText}$$`;
+        
+        document.getElementById('hud-tactic').innerText = tacticText;
+        
+        document.getElementById('comm-felis').innerText = felisText;
+        document.getElementById('comm-canis').innerText = canisText;
+        
+        document.getElementById('visual-inst').innerText = visualText || "Waiting for matrix parameters...";
+
+        document.getElementById('step-count').innerText = `STEP: ${currentStepIndex + 1}/${activeCartridge.steps.length}`;
+
+        // Controls
+        document.getElementById('btn-prev').disabled = (currentStepIndex === 0);
+        document.getElementById('btn-next').disabled = (currentStepIndex === activeCartridge.steps.length - 1);
+
+        // Trigger MathJax to process the new text
+        if (window.MathJax && window.MathJax.typesetPromise) {
+            window.MathJax.typesetPromise([document.getElementById('hud-goal'), document.getElementById('hud-hypotheses')])
+                .catch((err) => console.log('MathJax error: ', err));
+        }
+    }
+
+    function stepProof(dir) {
+        if (!activeCartridge) return;
+        const newIndex = currentStepIndex + dir;
+        if (newIndex >= 0 && newIndex < activeCartridge.steps.length) {
+            currentStepIndex = newIndex;
+            renderCurrentStep();
+        }
+    }
+
+    // --- STREAMING_CHUNK:Defining seed issuer logic... ---
+    // --- ISSUER LOGIC (UNIVERSAL TRACKER OFF-CHAIN WRAPPER) ---
+    function generateSeed() {
+        let title = document.getElementById('issuer-title').value.trim() || "INSERT_PROOF_NAME";
+        let userId = document.getElementById('issuer-userid').value.trim() || "[USER_IDENTIFIER]";
+        let prevSeed = document.getElementById('issuer-prevseed').value.trim() || "[PREVIOUS_SEED_HASH]";
+        let envTarget = document.getElementById('issuer-env').value;
+
+        const template = {
+            "shd_tracker_header": {
+                "ledger_timestamp": new Date().toISOString(),
+                "user_id": userId,
+                "target_environment": envTarget,
+                "previous_seed_link": prevSeed,
+                "action_stamp": "KNOWLEDGE_VIEW_ISSUED",
+                "status": "AWAITING_CHAIN_OFFLOAD"
+            },
+            "cartridge_payload": {
+                "formal_proof": title,
+                "steps": [
+                    {
+                        "step_number": 1,
+                        "goal": "\\\\vdash INSERT_DOUBLE_ESCAPED_LATEX",
+                        "hypotheses": "INSERT_DOUBLE_ESCAPED_LATEX",
+                        "tactic": "=> apply your_tactic",
+                        "commentary": {
+                            "felis_arcana": "Insert mystical topological observation here...",
+                            "canis_aegis": "Insert strict rigorous verification here..."
+                        },
+                        "visual_generation_instructions": "Draw [Shape] using var(--c64-[color]) to represent..."
+                    }
+                ]
+            },
+            "shd_tracker_footer": {
+                "cryptographic_signature": "PENDING_LLM_COMPILATION",
+                "immutability_flag": true
+            }
+        };
+
+        document.getElementById('issuer-output').value = JSON.stringify(template, null, 2);
+    }
+
+    function copyIssuerCode() {
+        const text = document.getElementById('issuer-output').value;
+        if (!text) return;
+        navigator.clipboard.writeText(text).then(() => {
+            alert("WRAPPED SEED COPIED TO CLIPBOARD. HAND TO LLM COMPILER.");
+        }).catch(err => {
+            console.error("Clipboard failed", err);
+        });
+    }
+
+    // Initialize UI state
+    document.getElementById('btn-prev').disabled = true;
+    document.getElementById('btn-next').disabled = true;
+
+</script>
+
+<!-- SECURITY + workshop integration (additive; reflects Genesis identity, logout, #issuer deep-link) -->
+<script type="module">
+    import { auth } from "../../scripts/firebase/config.js";
+    import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-auth.js";
+    import { resolveTier } from "../../scripts/genesis-registrar.js";
+
+    // Deep-link: opening Proofer_Terminal.html#issuer jumps straight to the cartridge-maker tab
+    if ((location.hash || '').toLowerCase().includes('issuer')) {
+        const issuerTab = document.querySelectorAll('.tab-btn')[1];
+        if (issuerTab) issuerTab.click();
+    }
+
+    // Reflect the authenticated Genesis identity into the terminal header + offer logout
+    onAuthStateChanged(auth, async (user) => {
+        if (!user) return; // auth-guard handles the redirect when logged out
+        let tier = 'ACOLYTE';
+        try { tier = await resolveTier(user.uid); } catch (_) {}
+        const sym = tier === 'ARCHON' ? '♛' : tier === 'INSTRUCTOR' ? '⬢' : '◯';
+        const el = document.getElementById('memStatus');
+        if (el) el.innerHTML =
+            `AKASHIC UPLINK: ${sym} ${tier} · ${user.uid.slice(0, 8)}… · ` +
+            `<span style="cursor:pointer;text-decoration:underline" onclick="globalLogout()">LOGOUT</span>`;
+    });
+</script>
+</body>
+</html>
