@@ -6,12 +6,11 @@
 import { auth } from "./firebase/config.js";
 import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-auth.js";
 
-// Resolve login.html relative to the current page. Pages in mage_tower/
-// need one step up; all other pages live at the project root alongside it.
+// Resolve login.html relative to THIS module's own URL (always
+// <root>/scripts/auth-guard.js), so the redirect lands on <root>/login.html
+// from any page depth — root, mage_tower/, Proofs/emulators/, etc.
 function loginUrl() {
-  return window.location.pathname.includes("/mage_tower/")
-    ? "../login.html"
-    : "login.html";
+  return new URL("../login.html", import.meta.url).href;
 }
 
 // Expose a global logout for inline `onclick="globalLogout()"` buttons across legacy pages

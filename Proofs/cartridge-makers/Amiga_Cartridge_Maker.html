@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Workbench Cartridge Maker — Owl Academy Proofs Workshop</title>
+
+<!-- ── SECURITY: Genesis auth gate ── -->
+<script type="module" src="../../scripts/auth-guard.js"></script>
+
+<script>window.MathJax={tex:{inlineMath:[['$','$'],['\\(','\\)']],displayMath:[['$$','$$'],['\\[','\\]']]}};</script>
+<script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+<style>
+  :root{ --void:#06040f; --orange:#ff8a1e; --abg:#0a0f2c; --afg:#c9d4ff; --gold:#D4AF37; --purple:#8b5cf6; --ok:#34d399; --bad:#f87171; }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--void);color:#e2e8f0;font-family:system-ui,sans-serif;min-height:100vh;
+       background:radial-gradient(ellipse at top,rgba(255,138,30,0.09),var(--void) 60%)}
+  .mono{font-family:ui-monospace,"Fira Code",monospace}
+  .secbar{display:flex;align-items:center;justify-content:space-between;gap:1rem;padding:.55rem 1.1rem;
+          background:rgba(8,12,22,0.85);border-bottom:1px solid rgba(212,175,55,0.25);position:sticky;top:0;z-index:30;backdrop-filter:blur(8px)}
+  .seal{display:flex;align-items:center;gap:.55rem;font-size:.66rem;letter-spacing:.18em;text-transform:uppercase;color:var(--gold)}
+  .seal .glyph{width:22px;height:22px;border:1px solid var(--gold);border-radius:50%;display:flex;align-items:center;justify-content:center;box-shadow:0 0 12px rgba(212,175,55,0.3)}
+  .who{font-size:.64rem;color:rgba(255,255,255,.4);letter-spacing:.1em}
+  .btn{background:rgba(255,138,30,0.16);color:#ffd2a3;border:1px solid rgba(255,138,30,0.5);border-radius:6px;
+       padding:.45rem 1rem;font-size:.64rem;letter-spacing:.12em;text-transform:uppercase;cursor:pointer;transition:.2s;font-family:inherit}
+  .btn:hover{background:rgba(255,138,30,0.3)} .btn[disabled]{opacity:.4;cursor:not-allowed}
+  .btn.primary{background:rgba(52,211,153,0.16);color:#9affc0;border-color:rgba(52,211,153,0.5)}
+  header{text-align:center;padding:2rem 1rem .8rem}
+  .kick{font-size:.62rem;letter-spacing:.3em;text-transform:uppercase;color:var(--orange)}
+  h1{font-weight:300;letter-spacing:.08em;color:#fff;margin-top:.4rem;font-size:1.4rem}h1 b{color:var(--orange)}
+  .back{display:inline-block;margin-top:.6rem;font-size:.64rem;letter-spacing:.2em;text-transform:uppercase;color:rgba(255,138,30,0.78);text-decoration:none}
+  main{max-width:980px;margin:1.2rem auto 3rem;padding:0 1.1rem;display:grid;grid-template-columns:1fr 1fr;gap:1.4rem}
+  @media(max-width:760px){main{grid-template-columns:1fr}}
+  .panel{background:rgba(10,8,20,0.6);border:1px solid rgba(255,138,30,0.22);border-radius:12px;padding:1.3rem 1.4rem}
+  .label{font-size:.6rem;letter-spacing:.26em;text-transform:uppercase;color:rgba(255,138,30,0.75);margin-bottom:.8rem}
+  label.f{display:block;font-size:.66rem;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.5);margin:.8rem 0 .25rem}
+  input,textarea,select{width:100%;background:#0c0a18;color:#e2e8f0;border:1px solid rgba(255,138,30,0.32);border-radius:6px;padding:.5rem .6rem;font-size:.85rem;font-family:inherit}
+  textarea{min-height:120px;font-family:ui-monospace,monospace;font-size:.8rem;line-height:1.5;resize:vertical}
+  .row{display:flex;gap:.7rem;flex-wrap:wrap;margin-top:1.1rem}
+  .tierbox{display:flex;align-items:center;justify-content:space-between;gap:.6rem;background:rgba(0,0,0,.3);border:1px solid rgba(212,175,55,0.2);border-radius:8px;padding:.6rem .8rem;font-size:.72rem;margin-bottom:.6rem}
+  .pill{border:1px solid;border-radius:999px;padding:.12em .6em;font-size:.62rem}
+  .gate{font-size:.72rem;color:#ffd9a8;border:1px solid rgba(255,138,30,.4);border-radius:6px;padding:.55rem .7rem;margin-top:.6rem;display:none}
+  .screen{background:var(--abg);border:8px solid var(--orange);border-radius:6px;min-height:300px;max-height:54vh;overflow:auto;padding:.9rem 1rem;color:var(--afg)}
+  .screen pre.boot{font-family:ui-monospace,monospace;font-size:.76rem;white-space:pre-wrap}
+  .screen pre.boot .ok{color:#9affc0}.screen pre.boot .err{color:#ff9aa8}.screen pre.boot.err{color:#ff9aa8}
+  .cart-view{margin-top:.9rem;border-top:1px dashed rgba(201,212,255,.35);padding-top:.9rem}
+  .cart-head{display:flex;justify-content:space-between;font-size:.58rem;letter-spacing:.1em;text-transform:uppercase}
+  .cart-id{color:#9fb4ff;font-family:ui-monospace,monospace}.cart-prio{border:1px solid;border-radius:999px;padding:.1em .5em}
+  .cart-title{color:#fff;font-size:1.2rem;margin:.4rem 0;font-weight:500}.cart-abstract{color:#c7d2ff;font-size:.82rem;font-style:italic;margin-bottom:.6rem}
+  .cart-body{color:#e2e9ff;font-size:.85rem;line-height:1.68}.cart-body h2{font-size:1.02rem;color:#fff;margin:.6rem 0 .2rem}.cart-body h3{font-size:.92rem;margin:.5rem 0 .2rem}
+  .cart-body code{background:rgba(0,0,0,.35);padding:.05em .3em;border-radius:3px;font-family:ui-monospace,monospace;color:#ffd2a3}
+  .cart-note{margin-top:.7rem;font-size:.7rem;color:#ffd9a8;border:1px solid rgba(255,138,30,.45);border-radius:6px;padding:.4rem .6rem}
+  .cart-foot{margin-top:.8rem;font-size:.62rem;color:rgba(201,212,255,.55);font-family:ui-monospace,monospace}
+  .msg{font-size:.72rem;margin-top:.6rem}.msg.ok{color:var(--ok)}.msg.bad{color:var(--bad)}
+</style>
+</head>
+<body>
+<div class="secbar">
+  <div class="seal"><span class="glyph">♛</span> Genesis-Sealed</div>
+  <div class="who mono" id="secWho">secure session · authenticating…</div>
+  <button class="btn" onclick="globalLogout()">Log out</button>
+</div>
+
+<header>
+  <div class="kick">Proofs Workshop · Cartridge Maker</div>
+  <h1>Workbench <b>Cartridge Maker</b></h1>
+  <a class="back" href="../index.html">← Workshop</a>
+</header>
+
+<main>
+  <div class="panel">
+    <div class="label">Forge a cartridge</div>
+    <div class="tierbox">
+      <span>Sealing identity</span>
+      <span id="tierPill" class="pill mono" style="color:#94a3b8;border-color:#94a3b8">◯ resolving…</span>
+    </div>
+    <div class="gate" id="gate">⬢ You are an <b>Acolyte</b>. Cartridges seal as <b>experimental</b>; Instructor+ unlocks <b>validated</b> / <b>canonical</b>.</div>
+
+    <label class="f" for="title">Title</label>
+    <input id="title" placeholder="Hyperbolic Sparsemax Pump" />
+    <label class="f" for="id">Cartridge ID (kebab-case)</label>
+    <input id="id" placeholder="hyperbolic-sparsemax" />
+    <label class="f" for="abstract">Abstract</label>
+    <input id="abstract" placeholder="One-line summary shown on the cartridge label." />
+    <label class="f" for="tags">Tags (comma-separated)</label>
+    <input id="tags" placeholder="hyperbolic, sparsemax, SHD-CCP" />
+    <label class="f" for="body">Proof body (mini-markdown: # ## ### **bold** `code`, $math$)</label>
+    <textarea id="body" placeholder="## Theorem&#10;…&#10;&#10;**Proof.** …"></textarea>
+    <label class="f" for="program">Interactive program (optional — stored, NOT executed)</label>
+    <textarea id="program" style="min-height:70px" placeholder="// reserved for the gated runtime"></textarea>
+
+    <div class="row">
+      <button class="btn primary" id="build">Build &amp; preview</button>
+      <button class="btn" id="download" disabled>Download .crt.json</button>
+    </div>
+    <div class="msg" id="msg"></div>
+  </div>
+
+  <div class="panel">
+    <div class="label">Preview (as the Workbench boots it)</div>
+    <div class="screen" id="screen"><pre class="boot">Build a cartridge to preview…</pre></div>
+  </div>
+</main>
+
+<script type="module">
+  import { auth } from "../../scripts/firebase/config.js";
+  import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-auth.js";
+  import { resolveTier, stampPriority } from "../../scripts/genesis-registrar.js";
+  import { getDocument } from "../../scripts/firebase/firestore.js";
+  import { bootCartridge, sealCartridge, serializeCartridge, validateCartridge } from "../cartridge.js";
+
+  const MACHINE = "amiga";
+  let TIER = "ACOLYTE", GENESIS_ID = null, built = null;
+  const $ = (id) => document.getElementById(id);
+
+  onAuthStateChanged(auth, async (u) => {
+    if (!u) return;
+    try { TIER = await resolveTier(u.uid); } catch (_) {}
+    try { const reg = await getDocument(`users/${u.uid}/registrar/main`); GENESIS_ID = reg?.cosmologicalId || null; } catch (_) {}
+    const sym = TIER === "ARCHON" ? "♛" : TIER === "INSTRUCTOR" ? "⬢" : "◯";
+    const col = TIER === "ARCHON" ? "#D4AF37" : TIER === "INSTRUCTOR" ? "#22d3ee" : "#94a3b8";
+    $("secWho").textContent = `secure session · ${sym} ${TIER} · ${u.uid.slice(0,10)}…`;
+    const pill = $("tierPill"); pill.textContent = `${sym} ${TIER} → ${stampPriority(TIER)}`;
+    pill.style.color = col; pill.style.borderColor = col;
+    if (TIER === "ACOLYTE") $("gate").style.display = "block";
+  });
+
+  function kebab(s){ return s.toLowerCase().trim().replace(/[^a-z0-9]+/g,"-").replace(/^-+|-+$/g,""); }
+  $("title").addEventListener("input", () => { if (!$("id").dataset.touched) $("id").value = kebab($("title").value); });
+  $("id").addEventListener("input", () => { $("id").dataset.touched = "1"; });
+
+  function assemble(){
+    return sealCartridge({
+      format: "owl-proof-cartridge", version: 1, machine: MACHINE,
+      id: kebab($("id").value || $("title").value),
+      title: $("title").value.trim(), abstract: $("abstract").value.trim(),
+      tags: $("tags").value.split(",").map(t=>t.trim()).filter(Boolean),
+      author: { genesisId: GENESIS_ID, tier: TIER },
+      priority: stampPriority(TIER),
+      createdAt: new Date().toISOString(),
+      payload: { kind: $("program").value.trim() ? "interactive" : "proof",
+                 body: $("body").value, program: $("program").value.trim() },
+    });
+  }
+
+  $("build").addEventListener("click", () => {
+    built = assemble();
+    const v = validateCartridge(built);
+    if (!v.ok){ $("msg").className="msg bad"; $("msg").textContent="Cannot seal: "+v.errors.join("; "); $("download").disabled=true; return; }
+    bootCartridge({ cart: built, screenEl: $("screen"), machine: MACHINE });
+    if (window.MathJax?.typesetPromise) MathJax.typesetPromise([$("screen")]).catch(()=>{});
+    $("msg").className="msg ok"; $("msg").textContent=`Sealed ✓ ${built.seal} · ${built.priority} · ready to download.`;
+    $("download").disabled=false;
+  });
+  $("download").addEventListener("click", () => {
+    if (!built) return;
+    const blob = new Blob([serializeCartridge(built)], { type:"application/json" });
+    const a = document.createElement("a"); a.href = URL.createObjectURL(blob);
+    a.download = `${built.id || "cartridge"}.crt.json`; a.click(); URL.revokeObjectURL(a.href);
+  });
+</script>
+</body>
+</html>

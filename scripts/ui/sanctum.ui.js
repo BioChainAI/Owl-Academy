@@ -30,7 +30,7 @@ const ACADEMY_TOOLS = [
   { id: "biochain",  title: "BioChain Integration", desc: "Living architecture interface for SPIRE",    path: "BioChain-AI/BioChain_SPIRE/integration.html",    color: "#00ff88" },
   { id: "archives",  title: "Grand Archives",       desc: "Master library map and index",               path: "Library/Grand_Archives.html",                    color: "#FFF8DC" },
   { id: "hyperbolic", title: "Hyperbolic Systems",  desc: "Advanced reading pathways for topologists",  path: "Library/Hyperbolic_Systems_Learning/",           color: "#8A2BE2" },
-  { id: "proofs",    title: "Proof Workshop",       desc: "Trefoil pump and topological proofs",        path: "Proofs/Torsional-Trefoil-Markov-Pump/",          color: "#ff6b35" },
+  { id: "proofs",    title: "Proofs Workshop",      desc: "Proof emulators, cartridge makers & topological proofs", path: "Proofs/index.html",                  color: "#ff6b35" },
   { id: "constellation", title: "Constellation Map", desc: "Live 3D map of all Genesis seeds on the SPIRE manifold", path: "mage_tower/Constellation_Map.html", color: "#8A2BE2" },
   { id: "familiars",    title: "Familiar Selection", desc: "Bind your genesis seed to a familiar archetype and generate your User Sigil", path: "mage_tower/Familiars.html", color: "#b026ff" },
   { id: "store",        title: "Mage Tower Store",   desc: "Exchange Vis tokens for familiars, cosmetics, and academy privileges",       path: "mage_tower/Store.html",    color: "#D4AF37" },
