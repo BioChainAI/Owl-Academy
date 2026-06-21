@@ -1,0 +1,764 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Owl Academy | Torsional Markov Pump Explainer</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        darkbg: '#030206',
+                        owl: { gold: '#D4AF37', lightgold: '#FFF8DC', darkgold: '#aa771c' },
+                        holo: { cyan: '#00d4ff', purple: '#8A2BE2', emerald: '#10b981', alert: '#ef4444' }
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <!-- MathJax -->
+    <script>
+        window.MathJax = {
+            tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']] }
+        };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+    <!-- Three.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Inter:wght@300;400;600&family=JetBrains+Mono:wght@400;700&display=swap');
+        
+        body { margin: 0; font-family: 'Inter', sans-serif; background: #030206; color: #e2e8f0; overflow: hidden; user-select: none; }
+        .font-mono { font-family: 'JetBrains Mono', monospace; }
+        .font-mystical { font-family: 'Cinzel', serif; }
+
+        #canvas-container { position: absolute; inset: 0; z-index: 1; cursor: grab; }
+        #canvas-container:active { cursor: grabbing; }
+        
+        #ui-layer { position: absolute; inset: 0; z-index: 10; pointer-events: none; display: flex; padding: 1.5rem; gap: 1.5rem; }
+
+        .glass-panel {
+            background: rgba(8, 5, 16, 0.75);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(212, 175, 55, 0.2);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.8);
+            border-radius: 0.75rem;
+            pointer-events: auto;
+        }
+
+        .gold-gradient {
+            background: linear-gradient(to right, #D4AF37, #FFF8DC, #D4AF37);
+            -webkit-background-clip: text; background-clip: text;
+            color: transparent;
+        }
+
+        /* Timeline Styles */
+        .step-node { display: flex; align-items: flex-start; gap: 1rem; position: relative; opacity: 0.4; transition: all 0.4s; cursor: pointer; }
+        .step-node:hover { opacity: 0.8; }
+        .step-node.active { opacity: 1; }
+        .step-node:not(:last-child)::after {
+            content: ''; position: absolute; left: 15px; top: 32px; bottom: -24px;
+            width: 2px; background: rgba(0, 212, 255, 0.2);
+        }
+        .step-node.active:not(:last-child)::after { background: rgba(212, 175, 55, 0.6); }
+        
+        .step-indicator {
+            width: 32px; height: 32px; border-radius: 50%;
+            background: #030206; border: 2px solid rgba(0, 212, 255, 0.4);
+            display: flex; align-items: center; justify-content: center;
+            font-family: 'Cinzel', serif; font-size: 14px; color: #00d4ff;
+            transition: all 0.3s ease; z-index: 5; flex-shrink: 0;
+            box-shadow: inset 0 0 10px rgba(0,212,255,0.1);
+        }
+        .step-node.active .step-indicator {
+            background: #D4AF37; color: #030206;
+            box-shadow: 0 0 15px #D4AF37; border-color: #FFF8DC;
+        }
+
+        .lore-callout {
+            margin: 1rem 0; padding: 1rem 1.5rem;
+            background: linear-gradient(90deg, rgba(212, 175, 55, 0.1), transparent);
+            border-left: 3px solid #D4AF37;
+            position: relative; border-radius: 0 8px 8px 0;
+        }
+
+        #log-container { max-height: 120px; overflow-y: hidden; display: flex; flex-direction: column-reverse; }
+        .log-entry { font-family: 'JetBrains Mono', monospace; font-size: 10px; margin-bottom: 4px; animation: fadein 0.3s ease-out; }
+        @keyframes fadein { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: rgba(0,0,0,0.3); }
+        ::-webkit-scrollbar-thumb { background: rgba(212, 175, 55, 0.4); border-radius: 10px; }
+    </style>
+</head>
+<body>
+
+    <!-- 3D Canvas -->
+    <div id="canvas-container"></div>
+
+    <!-- UI Overlay -->
+    <div id="ui-layer" class="flex-col md:flex-row">
+        
+        <!-- Left Panel: Curriculum Timeline -->
+        <aside class="w-full md:w-[460px] flex flex-col gap-4 flex-shrink-0 overflow-y-auto custom-scrollbar pr-2 h-full">
+            
+            <!-- Header -->
+            <div class="glass-panel p-5 flex-shrink-0">
+                <div class="text-[9px] text-holo-cyan/60 tracking-[0.2em] uppercase font-mono mb-1 text-center w-full">
+                    Department 1: Celestial Topology
+                </div>
+                <h1 class="text-2xl font-bold tracking-widest gold-gradient font-mystical mb-1 text-center">Torsional Markov Pump</h1>
+                <p class="text-[10px] text-slate-400 font-mono uppercase tracking-wider text-center">Theorem Formalization Engine</p>
+            </div>
+
+            <!-- Timeline -->
+            <div class="glass-panel p-5 flex-shrink-0">
+                <h3 class="text-[11px] text-holo-cyan font-bold uppercase tracking-widest mb-4 font-mono border-b border-holo-cyan/20 pb-2">TTMPT Formal Proof</h3>
+                <div class="space-y-4">
+                    <div class="step-node active" data-step="1" onclick="goToStep(1)">
+                        <div class="step-indicator">I</div>
+                        <div>
+                            <h4 class="text-xs font-bold text-white font-mystical">Axiomatic State Space</h4>
+                            <p class="text-[10px] text-slate-400 mt-1">12-Channel Lattice Hilbert Space.</p>
+                        </div>
+                    </div>
+                    <div class="step-node" data-step="2" onclick="goToStep(2)">
+                        <div class="step-indicator">II</div>
+                        <div>
+                            <h4 class="text-xs font-bold text-white font-mystical">Transverse Variables</h4>
+                            <p class="text-[10px] text-slate-400 mt-1">Orthogonal heat sinks and variance.</p>
+                        </div>
+                    </div>
+                    <div class="step-node" data-step="3" onclick="goToStep(3)">
+                        <div class="step-indicator">III</div>
+                        <div>
+                            <h4 class="text-xs font-bold text-white font-mystical">Frame 5 Compression</h4>
+                            <p class="text-[10px] text-slate-400 mt-1">Symmetric phase lock & algebraic spread.</p>
+                        </div>
+                    </div>
+                    <div class="step-node" data-step="4" onclick="goToStep(4)">
+                        <div class="step-indicator">IV</div>
+                        <div>
+                            <h4 class="text-xs font-bold text-white font-mystical">Core Pump Stroke</h4>
+                            <p class="text-[10px] text-slate-400 mt-1">Asymmetric Markovian kernel generating current.</p>
+                        </div>
+                    </div>
+                    <div class="step-node" data-step="5" onclick="goToStep(5)">
+                        <div class="step-indicator">V</div>
+                        <div>
+                            <h4 class="text-xs font-bold text-white font-mystical">Double Toroidal Collapse</h4>
+                            <p class="text-[10px] text-slate-400 mt-1">Crushing 720 nodes down to exactly 72.</p>
+                        </div>
+                    </div>
+                    <div class="step-node" data-step="6" onclick="goToStep(6)">
+                        <div class="step-indicator">VI</div>
+                        <div>
+                            <h4 class="text-xs font-bold text-white font-mystical">Phase Encapsulation</h4>
+                            <p class="text-[10px] text-slate-400 mt-1">3-tier pump & scalar collapse to substrate.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Dynamic Content Panel -->
+            <div class="glass-panel p-5 flex-shrink-0 flex-grow" id="content-panel">
+                <!-- Content injected via JS -->
+            </div>
+            
+            <!-- Controls -->
+            <div class="flex gap-3 flex-shrink-0 mt-auto pb-4 pointer-events-auto">
+                <button id="btn-prev" onclick="prevStep()" class="flex-1 bg-black/50 border border-holo-cyan/30 text-holo-cyan text-[10px] font-bold py-3 rounded transition-all uppercase tracking-widest disabled:opacity-30 disabled:cursor-not-allowed hover:bg-black">
+                    ← Revert
+                </button>
+                <button id="btn-next" onclick="nextStep()" class="flex-1 bg-owl-gold/10 border border-owl-gold/50 text-owl-gold text-[10px] font-bold py-3 rounded transition-all uppercase tracking-widest shadow-[0_0_10px_rgba(212,175,55,0.2)] hover:bg-owl-gold/20">
+                    Advance →
+                </button>
+            </div>
+        </aside>
+
+        <!-- Right Panel: Telemetry & Interactive Logs (Hidden on small screens) -->
+        <aside class="hidden md:flex w-[300px] flex-col gap-4 ml-auto h-full pointer-events-none">
+            
+            <!-- Toggles -->
+            <div class="flex gap-2 pointer-events-auto">
+                <button onclick="controls.autoRotate = !controls.autoRotate;" class="flex-1 py-2 rounded bg-black/60 border border-holo-cyan/40 text-[9px] font-mono text-holo-cyan hover:bg-black backdrop-blur">
+                    TOGGLE AUTO-PAN
+                </button>
+            </div>
+
+            <div class="glass-panel p-4 pointer-events-auto">
+                <div class="text-[10px] text-owl-gold font-mono uppercase tracking-wider mb-2 border-b border-owl-gold/20 pb-2">Topological Telemetry</div>
+                
+                <div class="flex justify-between text-xs font-mono mb-1 mt-2">
+                    <span class="text-slate-400">Hilbert State:</span>
+                    <span id="tel-hilbert" class="text-holo-cyan">Superposition</span>
+                </div>
+                <div class="flex justify-between text-xs font-mono mb-1">
+                    <span class="text-slate-400">Phase Lock:</span>
+                    <span id="tel-phase" class="text-holo-purple">Unbound</span>
+                </div>
+                <div class="flex justify-between text-xs font-mono mb-1">
+                    <span class="text-slate-400">Net Current J(t):</span>
+                    <span id="tel-current" class="text-holo-emerald">0.00</span>
+                </div>
+                <div class="flex justify-between text-xs font-mono">
+                    <span class="text-slate-400">Modular Phase:</span>
+                    <span id="tel-mod" class="text-owl-gold">ω_k</span>
+                </div>
+            </div>
+
+            <div class="glass-panel p-4 pointer-events-auto mt-auto mb-4" id="log-panel">
+                <div class="text-[10px] text-holo-cyan font-mono uppercase tracking-wider mb-2 border-b border-holo-cyan/20 pb-1">Formal Engine Logs</div>
+                <div id="log-container">
+                    <div class="log-entry text-slate-400">System initialized. Awaiting TTMPT formalization.</div>
+                </div>
+            </div>
+        </aside>
+    </div>
+
+    <!-- Explainer Content Templates -->
+    <script>
+        const contentTemplates = {
+            1: `
+                <h2 class="text-lg font-bold text-holo-cyan mb-2 font-mystical">Axiomatic Foundations and State Space</h2>
+                <p class="text-xs text-slate-300 font-light mb-2 leading-relaxed">
+                    The structural bedrock of the system consists of a triple-trefoil skeleton. We rigorously define the localized state space as a 12-channel lattice Hilbert space:
+                </p>
+                <div class="bg-black/40 p-2 rounded border border-holo-cyan/20 font-mono text-[11px] text-center text-holo-cyan mb-2 shadow-inner">
+                    $$\\mathcal{H}_{\\Lambda_{12}} \\cong \\mathbb{C}^{12}$$
+                </div>
+                <p class="text-xs text-slate-300 font-light leading-relaxed">
+                    The space operates using an explicit basis representing three coupled 4-phase streams ($\\alpha, \\beta, \\gamma$). A state vector at macro-step $n$ is defined as the normalized superposition:
+                </p>
+                <div class="bg-black/40 p-2 rounded border border-holo-cyan/20 font-mono text-[10px] text-center text-holo-cyan shadow-inner mt-2">
+                    $$|\\psi_n\\rangle = \\sum_{g \\in \\{\\alpha, \\beta, \\gamma\\}} \\sum_{r=1}^{4} c_{g,r}^{(n)} e_{g,r}$$
+                </div>
+            `,
+            2: `
+                <h2 class="text-lg font-bold text-holo-purple mb-2 font-mystical">Dynamical Transverse Variables</h2>
+                <p class="text-xs text-slate-300 font-light mb-2 leading-relaxed">
+                    To govern the continuous spatial scaling orthogonal to the central longitudinal binding field $B_n$, we introduce a scalar deformation parameter $\\delta$ alongside topological perturbation modes $\\hat{u}_n$ and $\\hat{v}_n$.
+                </p>
+                <div class="bg-black/40 p-2 rounded border border-holo-purple/20 font-mono text-[10px] text-center text-holo-purple mb-2 shadow-inner overflow-x-auto whitespace-nowrap">
+                    $$u_n = \\pi^2 + \\delta \\hat{u}_n \\quad \\text{(Outer Variance)}$$
+                    <br>
+                    $$v_n = \\sqrt{\\pi} + \\delta \\hat{v}_n \\quad \\text{(Inner Winding)}$$
+                </div>
+                <p class="text-xs text-slate-300 font-light leading-relaxed">
+                    These act as independent <strong>orthogonal heat sinks</strong>. They dictate the continuous deformation of the Clifford-torus during the stochastic pump cycle, absorbing reverse-propagating current to avoid circular dependencies.
+                </p>
+            `,
+            3: `
+                <h2 class="text-lg font-bold text-owl-gold mb-2 font-mystical">Phase I: Compression & Frame 5</h2>
+                <p class="text-xs text-slate-300 font-light mb-2 leading-relaxed">
+                    The 12-channel state is compressed via successive orthogonal projection operators $P_k$. During this compression, the system invokes the <strong>Frame 5 Algebraic Solver</strong> to encode a symmetric phase lock.
+                </p>
+                <div class="bg-black/40 p-2 rounded border border-owl-gold/20 font-mono text-[11px] text-center text-owl-gold mb-2 shadow-inner">
+                    $$s = 1 - \\frac{(Q_\\alpha + Q_\\beta - Q_\\gamma)^2}{4 Q_\\alpha Q_\\beta}$$
+                </div>
+                <p class="text-xs text-slate-300 font-light leading-relaxed">
+                    To formally enforce the $120^\\circ$ symmetric phase lock necessary for the triple-trefoil, we impose the strict symmetry condition $\\theta = \\frac{2\\pi}{3}$, yielding exact algebraic tension: 
+                    <br><br><center class="font-mono text-white text-[11px]">$$s = \\sin^2\\left(\\frac{2\\pi}{3}\\right) = \\frac{3}{4}$$</center>
+                </p>
+            `,
+            4: `
+                <h2 class="text-lg font-bold text-holo-emerald mb-2 font-mystical">Phase II: Core Pump Stroke</h2>
+                <p class="text-xs text-slate-300 font-light mb-2 leading-relaxed">
+                    To connect quantum-like state vectors to classical stochastic dynamics, we bridge Hilbert-space amplitudes to Markov probabilities: $p_{g,r}^{(n)} = |c_{g,r}^{(n)}|^2$.
+                </p>
+                <p class="text-xs text-slate-300 font-light mb-2 leading-relaxed">
+                    The system rigorously breaks detailed balance using an <strong>Asymmetric Markovian Kernel</strong> (a topological "Tesla-valve"). 
+                </p>
+                <div class="lore-callout text-[10px] !py-2 !my-1" style="border-left-color: #10b981; background: linear-gradient(90deg, rgba(16,185,129,0.1), transparent);">
+                    "The net probability current $J(t)$ becomes strictly positive. <strong>720 spatial nodes</strong> map out a massive 4-wrap helix, sequentially firing to perfectly record every micro-step of the forward pump stroke."
+                </div>
+            `,
+            5: `
+                <h2 class="text-lg font-bold text-alert mb-2 font-mystical">Phase III: Double Toroidal Collapse</h2>
+                <p class="text-xs text-slate-300 font-light mb-2 leading-relaxed">
+                    As the probability current surges forward, the spatial geometry must react to the immense localized energy.
+                </p>
+                <p class="text-xs text-slate-300 font-light mb-2 leading-relaxed">
+                    The 720 nodes that recorded the core pump stroke undergo the <strong>Double Toroidal Collapse</strong>. The structure mathematically folds twice—each side is divided by 5, and then by 2.
+                </p>
+                <div class="bg-black/40 p-2 rounded border border-alert/20 font-mono text-[11px] text-center text-alert mb-2 shadow-inner">
+                    $$T_{\\text{outer}}^{720} \\xrightarrow{\\div 5, \\div 2} T_{\\text{inner}}^{72} \\otimes (\\delta\\hat{u}_n, \\delta\\hat{v}_n)$$
+                </div>
+                <p class="text-xs text-slate-300 font-light leading-relaxed">
+                    This completely crushes the outer manifold into a $\\frac{1}{2}$ scaled inner toroid. The 720 distinct tracking positions converge seamlessly into exactly <strong>72 super-dense nodes</strong>.
+                </p>
+            `,
+            6: `
+                <h2 class="text-lg font-bold text-white mb-2 font-mystical">Phase VI: Phase Encapsulation</h2>
+                <p class="text-xs text-slate-300 font-light mb-2 leading-relaxed">
+                    The encapsulation of the 10-step macro-cycle manifests as a <strong>Three-Tier Torsional Markov Pump</strong>.
+                </p>
+                <p class="text-xs text-slate-300 font-light mb-2 leading-relaxed">
+                    This structure uses three rings at different modulo systems ($\\gamma_\\text{out}:12$, $\\beta_\\text{mid}:10$, $\\alpha_\\text{in}:8$) framing an internal core of three trefoil knots representing the $720:1$ spin ratio stacking.
+                </p>
+                <div class="bg-black/40 p-2 rounded border border-slate-400/20 font-mono text-[11px] text-center text-white mb-2 shadow-inner">
+                    $$\\sum_{k=0}^{9} \\omega_k \\xrightarrow{\\text{collapse}} \\mathcal{L}_{substrate}$$
+                </div>
+                <p class="text-xs text-slate-300 font-light leading-relaxed">
+                    As the residual modular rotation neutralizes, a <strong>Scalar Collapse</strong> occurs. Data offsets downwards, translating directly into the geometric substrate lattice structure.
+                </p>
+            `
+        };
+
+        // --- Explainer State ---
+        let currentStep = 1;
+        const totalSteps = 6;
+        let animationTime = 0;
+        let currentPhase = 1;
+        let targetPhase = 1;
+
+        // --- Three.js Setup ---
+        const container = document.getElementById('canvas-container');
+        const scene = new THREE.Scene();
+        scene.fog = new THREE.FogExp2(0x030206, 0.02);
+        
+        const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.set(0, 15, 40);
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        container.appendChild(renderer.domElement);
+
+        const controls = new THREE.OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.05;
+        controls.autoRotate = true;
+        controls.autoRotateSpeed = 1.0;
+
+        // --- Lighting ---
+        scene.add(new THREE.AmbientLight(0xffffff, 0.2));
+        const pl1 = new THREE.PointLight(0x00d4ff, 1.5, 50); pl1.position.set(-10, 5, 0); scene.add(pl1);
+        const pl2 = new THREE.PointLight(0xD4AF37, 1.5, 50); pl2.position.set(10, -5, 0); scene.add(pl2);
+
+        // --- Visual Engine Elements ---
+        const pumpEngine = new THREE.Group();
+        scene.add(pumpEngine);
+
+        // Group 1: Triple-Trefoil Skeleton (Step 1 & 3)
+        const group1 = new THREE.Group();
+        const ringColors = [0x00d4ff, 0x8A2BE2, 0x10b981];
+        for(let g=0; g<3; g++) {
+            const ring = new THREE.Mesh(
+                new THREE.TorusGeometry(6, 0.05, 8, 64), 
+                new THREE.MeshBasicMaterial({ color: ringColors[g], transparent: true, opacity: 0.2 })
+            );
+            ring.rotation.x = Math.PI/2;
+            ring.rotation.y = (Math.PI/3) * g;
+            
+            for(let r=0; r<4; r++) {
+                const channel = new THREE.Mesh(
+                    new THREE.SphereGeometry(0.3, 16, 16), 
+                    new THREE.MeshBasicMaterial({ color: ringColors[g] })
+                );
+                const angle = (r / 4) * Math.PI * 2;
+                channel.position.set(Math.cos(angle)*6, Math.sin(angle)*6, 0);
+                channel.userData = { group: g, baseAngle: angle };
+                ring.add(channel);
+            }
+            group1.add(ring);
+        }
+        pumpEngine.add(group1);
+
+        // Group 2: Transverse Variables (Step 2)
+        const group2 = new THREE.Group();
+        const tGeo = new THREE.PlaneGeometry(25, 25, 10, 10);
+        const tMat = new THREE.MeshBasicMaterial({ color: 0x8A2BE2, wireframe: true, transparent: true, opacity: 0.15 });
+        const gridU = new THREE.Mesh(tGeo, tMat); gridU.rotation.x = Math.PI/2; gridU.position.y = -4;
+        const gridV = new THREE.Mesh(tGeo, tMat); gridV.rotation.x = Math.PI/2; gridV.position.y = 4;
+        group2.add(gridU); group2.add(gridV);
+        pumpEngine.add(group2);
+
+        // Group 4: Asymmetric Kernel / Funnel (Step 4)
+        const group4 = new THREE.Group();
+        const particles = [];
+        for(let i=0; i<40; i++) {
+            const p = new THREE.Mesh(new THREE.SphereGeometry(0.15, 8, 8), new THREE.MeshBasicMaterial({ color: 0xD4AF37 }));
+            p.position.set((Math.random()-0.5)*4, -10 + Math.random()*20, (Math.random()-0.5)*4);
+            p.userData = { speed: 0.05 + Math.random()*0.1, xOffset: p.position.x, zOffset: p.position.z };
+            group4.add(p);
+            particles.push(p);
+        }
+        const funnel = new THREE.Mesh(
+            new THREE.CylinderGeometry(5, 1, 12, 16, 1, true), 
+            new THREE.MeshBasicMaterial({ color: 0x10b981, wireframe: true, transparent: true, opacity: 0.1 })
+        );
+        group4.add(funnel);
+        pumpEngine.add(group4);
+
+        // Group 5: Double Toroidal Collapse & 720 Nodes (Step 4 & 5)
+        const group5 = new THREE.Group();
+        const outerTor = new THREE.Mesh(
+            new THREE.TorusGeometry(8, 2, 16, 64), 
+            new THREE.MeshBasicMaterial({ color: 0xff4444, wireframe: true, transparent: true, opacity: 0.2 })
+        );
+        outerTor.rotation.x = Math.PI/2;
+        outerTor.material.userData = { baseOpac: 0.2 };
+        
+        const innerTor = new THREE.Mesh(
+            new THREE.TorusGeometry(4, 1, 16, 64), 
+            new THREE.MeshPhongMaterial({ color: 0x10b981, transparent: true, opacity: 0.2, wireframe: true })
+        );
+        innerTor.rotation.x = Math.PI/2;
+        innerTor.material.userData = { baseOpac: 0.2 };
+        
+        group5.add(outerTor); group5.add(innerTor);
+
+        // 720 Instanced Nodes
+        const nodeCount = 720;
+        const collapseNodes = new THREE.InstancedMesh(
+            new THREE.SphereGeometry(0.15, 8, 8), 
+            new THREE.MeshPhongMaterial({ color: 0xffffff, emissive: 0x000000 }), 
+            nodeCount
+        );
+        const outPos = []; const inPos = []; const dummy = new THREE.Object3D();
+        
+        for (let i = 0; i < nodeCount; i++) {
+            // Outer 4-wrap helix
+            const tOut = (i / nodeCount) * Math.PI * 2;
+            const pOut = (i / nodeCount) * 4 * Math.PI * 2;
+            outPos.push(new THREE.Vector3(
+                (8 + 2 * Math.cos(pOut)) * Math.cos(tOut),
+                (8 + 2 * Math.cos(pOut)) * Math.sin(tOut),
+                2 * Math.sin(pOut)
+            ));
+            
+            // Inner 72-node folded toroid
+            const k = Math.floor(i / 10);
+            const tIn = (k / 72) * Math.PI * 2;
+            const pIn = (k / 72) * 2 * Math.PI * 2;
+            inPos.push(new THREE.Vector3(
+                (4 + 1 * Math.cos(pIn)) * Math.cos(tIn),
+                (4 + 1 * Math.cos(pIn)) * Math.sin(tIn),
+                1 * Math.sin(pIn)
+            ));
+
+            dummy.position.copy(outPos[i]); dummy.updateMatrix();
+            collapseNodes.setMatrixAt(i, dummy.matrix);
+            collapseNodes.setColorAt(i, new THREE.Color(0xff4444));
+        }
+        collapseNodes.rotation.x = Math.PI/2;
+        group5.add(collapseNodes);
+        pumpEngine.add(group5);
+
+        // Group 6: Phase Encapsulation (Three-Tier Pump & Substrate)
+        const group6 = new THREE.Group();
+        
+        // 3 Tiers (Gamma, Beta, Alpha)
+        const tiers = [
+            { r: 7.0, nodes: 12, color: 0x3b82f6, name: "Gamma (Outer)" },
+            { r: 5.5, nodes: 10, color: 0xf59e0b, name: "Beta (Mid)" },
+            { r: 4.0, nodes: 8,  color: 0x10b981, name: "Alpha (Inner)" }
+        ];
+        const pumpRings = [];
+        
+        tiers.forEach((t, tierIdx) => {
+            const tGroup = new THREE.Group();
+            
+            // The ring path
+            const path = new THREE.Mesh(
+                new THREE.TorusGeometry(t.r, 0.05, 16, 64),
+                new THREE.MeshBasicMaterial({color: t.color, transparent: true, opacity: 0.5})
+            );
+            path.rotation.x = Math.PI/2;
+            tGroup.add(path);
+
+            // The nodes
+            for(let i=0; i<t.nodes; i++) {
+                const node = new THREE.Mesh(
+                    new THREE.SphereGeometry(0.3, 16, 16),
+                    new THREE.MeshPhongMaterial({color: t.color, transparent: true, opacity: 0.9, emissive: t.color, emissiveIntensity: 0.5})
+                );
+                const angle = (i/t.nodes) * Math.PI * 2;
+                node.position.set(Math.cos(angle)*t.r, 0, Math.sin(angle)*t.r);
+                
+                // Draw arc to next node to match diagram
+                const nextAngle = ((i+1)/t.nodes) * Math.PI * 2;
+                const arcGeo = new THREE.BufferGeometry().setFromPoints([
+                    new THREE.Vector3(Math.cos(angle)*t.r, 0, Math.sin(angle)*t.r),
+                    new THREE.Vector3(Math.cos(nextAngle)*t.r, 0, Math.sin(nextAngle)*t.r)
+                ]);
+                const arc = new THREE.Line(arcGeo, new THREE.LineBasicMaterial({color: t.color, transparent: true, opacity: 0.8}));
+                tGroup.add(arc);
+                
+                tGroup.add(node);
+            }
+            
+            tGroup.userData = { speed: (tierIdx%2===0?1:-1) * (1.0 - tierIdx*0.2) };
+            pumpRings.push(tGroup);
+            group6.add(tGroup);
+        });
+
+        // 3 Trefoils in the center (720:1 stacking ratio)
+        const trefoilColors = [0x00d4ff, 0x8A2BE2, 0xD4AF37];
+        const trefoils = [];
+        for(let i=0; i<3; i++) {
+            const tk = new THREE.Mesh(
+                new THREE.TorusKnotGeometry(1.2, 0.15, 100, 16, 2, 3),
+                new THREE.MeshPhongMaterial({color: trefoilColors[i], transparent: true, opacity: 0.9, shininess: 100})
+            );
+            tk.rotation.x = Math.PI/2;
+            tk.position.y = (i - 1) * 1.5; 
+            trefoils.push(tk);
+            group6.add(tk);
+        }
+
+        // Substrate Grid
+        const substrate = new THREE.GridHelper(24, 24, 0x10b981, 0x10b981);
+        substrate.position.y = -8;
+        substrate.material.transparent = true;
+        substrate.material.opacity = 0.3;
+        group6.add(substrate);
+
+        // Data streams falling from Alpha ring to substrate
+        const streamGeo = new THREE.BufferGeometry();
+        const streamPts = new Float32Array(8 * 2 * 3); 
+        streamGeo.setAttribute('position', new THREE.BufferAttribute(streamPts, 3));
+        const streamMat = new THREE.LineBasicMaterial({ color: 0x10b981, transparent: true, opacity: 0.6 });
+        const dataStreams = new THREE.LineSegments(streamGeo, streamMat);
+        group6.add(dataStreams);
+
+        pumpEngine.add(group6);
+
+        // --- Logic Functions ---
+
+        function updateDOM() {
+            document.querySelectorAll('.step-node').forEach(node => {
+                parseInt(node.getAttribute('data-step')) === currentStep ? node.classList.add('active') : node.classList.remove('active');
+            });
+            const contentPanel = document.getElementById('content-panel');
+            contentPanel.innerHTML = contentTemplates[currentStep];
+            
+            if (window.MathJax && typeof window.MathJax.typesetPromise === 'function') {
+                window.MathJax.typesetPromise([contentPanel]).catch(console.error);
+            }
+
+            document.getElementById('btn-prev').disabled = currentStep === 1;
+            document.getElementById('btn-next').disabled = currentStep === totalSteps;
+
+            targetPhase = currentStep;
+
+            if (controls) {
+                if(currentStep === 1) { camera.position.set(0, 15, 30); controls.target.set(0,0,0); logMessage("Loaded 12-Channel Hilbert Space."); }
+                if(currentStep === 2) { camera.position.set(20, 10, 20); controls.target.set(0,0,0); logMessage("Transverse deformation active: \\delta \\hat{u}_n."); }
+                if(currentStep === 3) { camera.position.set(0, 25, 0.1); controls.target.set(0,0,0); logMessage("Frame 5 Solver: Symmetric 120° Lock engaged."); }
+                if(currentStep === 4) { camera.position.set(15, 0, 25); controls.target.set(0,0,0); logMessage("Detailed balance broken. 720 nodes mapping current."); }
+                if(currentStep === 5) { camera.position.set(0, 20, 20); controls.target.set(0,0,0); logMessage("Initiating topological outer torus collapse. Div 5, Div 2."); }
+                if(currentStep === 6) { camera.position.set(0, 25, 30); controls.target.set(0,-2,0); logMessage("3-Tier Modulo 8/10/12 pump active. Scalar collapse to substrate."); }
+            }
+        }
+
+        function nextStep() { if (currentStep < totalSteps) { currentStep++; updateDOM(); } }
+        function prevStep() { if (currentStep > 1) { currentStep--; updateDOM(); } }
+        function goToStep(step) { currentStep = step; updateDOM(); }
+
+        function logMessage(msg, colorClass = "text-slate-300") {
+            const container = document.getElementById('log-container');
+            const el = document.createElement('div');
+            el.className = `log-entry ${colorClass}`;
+            el.innerText = `> ${msg}`;
+            container.prepend(el);
+            if(container.children.length > 8) container.removeChild(container.lastChild);
+        }
+
+        function getPhaseWeight(step) {
+            return Math.max(0, 1.0 - Math.abs(currentPhase - step));
+        }
+
+        function applyOpacity(group, targetOpacity) {
+            group.visible = targetOpacity > 0.01;
+            group.traverse(child => {
+                if (child.material && child !== outerTor && child !== innerTor && child.type !== 'LineBasicMaterial') {
+                    if (child.material.userData.baseOpac === undefined) {
+                        child.material.userData.baseOpac = child.material.opacity !== undefined ? child.material.opacity : 1.0;
+                    }
+                    child.material.transparent = true;
+                    child.material.opacity = child.material.userData.baseOpac * targetOpacity;
+                }
+            });
+        }
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        // Initialize DOM
+        updateDOM();
+
+        // --- Main Animation Loop ---
+        function animate() {
+            requestAnimationFrame(animate);
+            animationTime += 0.015;
+            controls.update();
+
+            // Fluid Phase Transition
+            currentPhase += (targetPhase - currentPhase) * 0.1;
+            
+            const w1 = getPhaseWeight(1);
+            const w2 = getPhaseWeight(2);
+            const w3 = getPhaseWeight(3);
+            const w4 = getPhaseWeight(4);
+            const w5 = getPhaseWeight(5);
+            const w6 = getPhaseWeight(6);
+
+            // Phase Visibilities
+            applyOpacity(group1, Math.max(w1, w2, w3, w4));
+            applyOpacity(group2, Math.max(w2, w3));
+            applyOpacity(group4, w4);
+            
+            // Group 5 visible in steps 4 and 5
+            const g5Weight = Math.max(w4, w5);
+            applyOpacity(group5, g5Weight);
+            
+            // Group 6 visible in step 6
+            applyOpacity(group6, w6);
+
+            let tHil = "Superposition", tPhase = "Unbound", tCur = "0.00", tMod = "ω_k (Variable)";
+
+            // Step 1 & 3: Frame 5 Encoding
+            if (w1 > 0.01 || w2 > 0.01 || w3 > 0.01 || w4 > 0.01) {
+                group1.children.forEach((ring, i) => {
+                    if (currentPhase < 3) {
+                        ring.rotation.z += 0.01 * (i+1);
+                    } else {
+                        // Frame 5 Lock
+                        ring.rotation.y = THREE.MathUtils.lerp(ring.rotation.y, (Math.PI*2/3)*i, 0.1);
+                        ring.rotation.z = THREE.MathUtils.lerp(ring.rotation.z, 0, 0.1);
+                    }
+                    ring.children.forEach(ch => {
+                        ch.position.z = Math.sin(animationTime * 2 + ch.userData.baseAngle) * 0.5;
+                    });
+                });
+                if (w3 > 0.5) { tHil = "Frame 5 Encoded"; tPhase = "s = 3/4 (Locked)"; }
+            }
+
+            // Step 2: Transverse
+            if (w2 > 0.01) {
+                const expansion = Math.sin(animationTime * 3) * 2;
+                gridU.position.y = -4 - expansion;
+                gridV.position.y = 4 + expansion;
+                tHil = "Orthogonal Deformation";
+            }
+
+            // Step 4: Asymmetric Kernel
+            if (w4 > 0.01) {
+                group4.rotation.y += 0.02;
+                particles.forEach(p => {
+                    p.position.y += p.userData.speed;
+                    const squeeze = Math.max(0.5, Math.abs(p.position.y) / 5);
+                    p.position.x = p.userData.xOffset * squeeze;
+                    p.position.z = p.userData.zOffset * squeeze;
+                    if (p.position.y > 10) p.position.y = -10; 
+                });
+                tHil = "Asymmetric Kernel"; tPhase = "K_ji < K_ij";
+                tCur = "+" + (Math.sin(animationTime*5)*0.2 + 1.0).toFixed(2) + " J(t)";
+            }
+
+            // Step 5: Double Toroidal Collapse (using foldPhase mapped between step 4 and 5)
+            if (g5Weight > 0.01) {
+                group5.rotation.y = animationTime * 0.5;
+                group5.rotation.x = Math.sin(animationTime) * 0.2;
+                
+                const foldPhase = Math.max(0, Math.min(1, currentPhase - 4));
+                
+                const colorOuter = new THREE.Color(0xff4444);
+                const colorInner = new THREE.Color(0x10b981);
+                const colorCurrent = new THREE.Color();
+                colorCurrent.lerpColors(colorOuter, colorInner, foldPhase);
+                
+                for (let i = 0; i < nodeCount; i++) {
+                    dummy.position.lerpVectors(outPos[i], inPos[i], foldPhase);
+                    let scale = 1.0;
+                    
+                    if (foldPhase === 0) {
+                        const seq = Math.floor((animationTime * 150) % nodeCount);
+                        if (Math.abs(i - seq) < 15 || Math.abs(i - seq) > (nodeCount - 15)) scale = 2.5; 
+                    } else if (foldPhase > 0 && foldPhase < 1) {
+                        const chaos = Math.sin(animationTime * 20 + i) * Math.sin(foldPhase * Math.PI) * 0.5;
+                        dummy.position.x += chaos; dummy.position.y += chaos; dummy.position.z += chaos;
+                    } else if (foldPhase === 1) {
+                        scale = 1.8 + Math.sin(animationTime * 10 + Math.floor(i/10)) * 0.4;
+                    }
+                    
+                    dummy.scale.setScalar(scale); dummy.updateMatrix();
+                    collapseNodes.setMatrixAt(i, dummy.matrix); collapseNodes.setColorAt(i, colorCurrent);
+                }
+                collapseNodes.instanceMatrix.needsUpdate = true;
+                if(collapseNodes.instanceColor) collapseNodes.instanceColor.needsUpdate = true;
+                
+                outerTor.scale.setScalar(1.0 - (0.5 * foldPhase));
+                outerTor.material.opacity = 0.2 * g5Weight * (1 - foldPhase);
+                innerTor.material.opacity = 0.2 * g5Weight * foldPhase;
+
+                if (foldPhase > 0.5) {
+                    tHil = "Orthogonal Heat Sink"; tPhase = "T_outer -> T_inner"; tCur = "720 → 72 (Crushed)";
+                }
+            }
+
+            // Step 6: 3-Tier Modulo Pump & Scalar Collapse
+            if (w6 > 0.01) {
+                // Spin 3 rings
+                pumpRings.forEach(g => {
+                    g.rotation.y += g.userData.speed * 0.02;
+                });
+                
+                // Spin Trefoils
+                trefoils.forEach((tk, i) => {
+                    tk.rotation.z = animationTime * 5 * (i%2===0?1:-1);
+                });
+
+                // Drop Data Streams from Inner Alpha ring to Substrate
+                const pts = dataStreams.geometry.attributes.position.array;
+                const innerRing = pumpRings[2]; // Alpha (r=4, nodes=8)
+                for(let i=0; i<8; i++) {
+                    const angle = (i/8)*Math.PI*2 + innerRing.rotation.y;
+                    const r = 4;
+                    const x = Math.cos(angle)*r;
+                    const z = Math.sin(angle)*r;
+                    const startY = 0;
+                    const floorY = -8;
+                    
+                    const dropOffset = (animationTime * 8 + i) % 8;
+                    
+                    pts[i*6] = x; pts[i*6+1] = startY; pts[i*6+2] = z;
+                    pts[i*6+3] = x; pts[i*6+4] = Math.max(floorY, startY - dropOffset); pts[i*6+5] = z;
+                }
+                dataStreams.geometry.attributes.position.needsUpdate = true;
+                
+                substrate.material.opacity = (0.2 + Math.sin(animationTime * 5) * 0.2) * w6;
+                controls.autoRotateSpeed = THREE.MathUtils.lerp(controls.autoRotateSpeed, 0.2, 0.05);
+
+                tHil = "3-Tier Torsional Pump"; tPhase = "Modulo 8, 10, 12"; 
+                tCur = "Scalar Collapse"; tMod = "Substrate Translation";
+            } else {
+                controls.autoRotateSpeed = 1.0;
+            }
+
+            document.getElementById('tel-hilbert').innerText = tHil;
+            document.getElementById('tel-phase').innerText = tPhase;
+            document.getElementById('tel-current').innerText = tCur;
+            document.getElementById('tel-mod').innerText = tMod;
+
+            renderer.render(scene, camera);
+        }
+
+        animate();
+    </script>
+</body>
+</html>
