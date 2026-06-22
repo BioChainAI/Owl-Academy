@@ -1,0 +1,1291 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Owl Academy | Holographic Geometric Terminology Lexicon</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Space+Mono:wght@400;700&family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+    
+    <!-- MathJax for rendering LaTeX formulas -->
+    <script>
+        window.MathJax = { 
+            tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']] },
+            svg: { fontCache: 'global' },
+            startup: { typeset: false } 
+        };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+    <style>
+        :root {
+            --bg-void: #03050a;
+            --academy-gold: #D4AF37;
+            --holo-cyan: #00f0ff;
+            --holo-purple: #9d00ff;
+            --panel-bg: rgba(13, 17, 28, 0.7);
+        }
+
+        body {
+            background-color: var(--bg-void);
+            color: #e2e8f0;
+            font-family: 'Inter', sans-serif;
+            margin: 0;
+            height: 100vh;
+            overflow: hidden;
+            background-image: 
+                radial-gradient(circle at 50% 0%, rgba(157, 0, 255, 0.15) 0%, transparent 50%),
+                linear-gradient(rgba(0, 240, 255, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 240, 255, 0.03) 1px, transparent 1px);
+            background-size: 100% 100%, 30px 30px, 30px 30px;
+        }
+
+        h1, h2, h3, .arcane-font { font-family: 'Cinzel', serif; }
+        .mono-font { font-family: 'Space Mono', monospace; }
+
+        .glass-panel {
+            background: var(--panel-bg);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(0, 240, 255, 0.2);
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.5), inset 0 0 20px rgba(0, 240, 255, 0.05);
+        }
+
+        /* Projector Stage Styling */
+        .projector-container {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            border-radius: 0.5rem;
+            overflow: hidden;
+            background: radial-gradient(circle at center, rgba(0, 240, 255, 0.1) 0%, #000 70%);
+            border: 1px solid rgba(0, 240, 255, 0.3);
+            box-shadow: inset 0 0 50px rgba(0,0,0,1);
+            cursor: grab;
+        }
+        .projector-container:active { cursor: grabbing; }
+
+        #holo-canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+
+        .scanlines {
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(to bottom, transparent 50%, rgba(0,0,0,0.4) 51%);
+            background-size: 100% 4px;
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        .projector-flare {
+            position: absolute;
+            bottom: -20px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 150px;
+            height: 40px;
+            background: radial-gradient(ellipse, rgba(0, 240, 255, 0.6) 0%, transparent 70%);
+            filter: blur(8px);
+            pointer-events: none;
+            z-index: 5;
+        }
+
+        /* Sidebar Nav Styling */
+        .symbol-btn {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0.5rem 0.75rem;
+            margin-bottom: 0.25rem;
+            border-radius: 0.25rem;
+            border: 1px solid rgba(255,255,255,0.05);
+            background: rgba(0,0,0,0.3);
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .symbol-btn:hover {
+            border-color: var(--holo-cyan);
+            background: rgba(0, 240, 255, 0.1);
+        }
+
+        .symbol-btn.active {
+            border-color: var(--academy-gold);
+            background: rgba(212, 175, 55, 0.15);
+            box-shadow: 0 0 15px rgba(212, 175, 55, 0.2);
+            color: var(--academy-gold);
+        }
+
+        .symbol-mark {
+            font-family: 'Cinzel', serif;
+            font-size: 1.2rem;
+            font-weight: bold;
+        }
+
+        /* Codex & Ontology Entry Styling */
+        .codex-entry, .ontology-entry {
+            animation: fadeIn 0.5s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: rgba(0,0,0,0.3); border-radius: 10px; }
+        ::-webkit-scrollbar-thumb { background: rgba(0, 240, 255, 0.3); border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(0, 240, 255, 0.6); }
+
+        .glow-text { text-shadow: 0 0 10px currentColor; }
+        .smooth-collapse { transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
+        
+        .classic-domain-box {
+            background: rgba(0,0,0,0.4);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-left: 2px solid var(--holo-cyan);
+            padding: 8px;
+            border-radius: 4px;
+            margin-bottom: 6px;
+        }
+
+        /* Ontology Table Styling */
+        .ontology-table th {
+            position: sticky;
+            top: 0;
+            background: rgba(13, 17, 28, 0.95);
+            backdrop-filter: blur(5px);
+            z-index: 10;
+        }
+
+        /* Prevent MathJax display-block elements from breaking flex/table layout padding */
+        mjx-container[display="true"] {
+            margin: 0 !important;
+            padding: 0 !important;
+        }
+    </style>
+</head>
+<body class="flex flex-col">
+
+    <!-- Header -->
+    <header class="h-16 shrink-0 glass-panel border-b-0 border-t-0 border-l-0 border-r-0 border-b border-cyan-500/30 flex items-center justify-between px-6 z-20">
+        <div class="flex items-center gap-4">
+            <svg width="24" height="24" viewBox="0 0 100 100" fill="none" stroke="#D4AF37" stroke-width="4" class="drop-shadow-[0_0_5px_rgba(212,175,55,0.8)]">
+                <circle cx="50" cy="50" r="40"/>
+                <polygon points="50,20 75,70 25,70"/>
+            </svg>
+            <h1 class="arcane-font text-xl tracking-widest text-academy-gold hidden lg:block">OWL ACADEMY <span class="text-gray-500 mx-2">//</span> <span class="text-white">HOLOGRAPHIC GEOMETRIC TERMINOLOGY LEXICON</span></h1>
+            <h1 class="arcane-font text-xl tracking-widest text-academy-gold lg:hidden">LEXICON</h1>
+        </div>
+        <div class="flex items-center gap-6">
+            <div class="mono-font text-xs text-cyan-400 tracking-widest animate-pulse hidden sm:block">
+                TOPOLOGICAL_ENGINE: ONLINE
+            </div>
+            <button onclick="toggleOntology()" id="btn-ontology" class="mono-font text-xs px-4 py-2 border border-cyan-500/30 rounded bg-black/50 text-cyan-400 hover:bg-cyan-900/30 transition-colors shadow-[0_0_10px_rgba(0,240,255,0.1)]">
+                [ ONTOLOGY REGISTRY ]
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Layout -->
+    <main class="flex-1 flex overflow-hidden p-4 gap-4 z-10 relative">
+        
+        <!-- Left Sidebar: Symbol Selection -->
+        <aside id="sidebar" class="w-72 glass-panel rounded-lg flex flex-col overflow-hidden smooth-collapse shrink-0 relative">
+            <div class="p-4 border-b border-cyan-500/20 bg-black/40 flex justify-between items-center shrink-0">
+                <h2 class="mono-font text-xs text-gray-400 uppercase tracking-widest sidebar-content whitespace-nowrap overflow-hidden">Select Operator</h2>
+                <button onclick="toggleSidebar()" id="sidebar-icon" class="text-cyan-400 hover:text-cyan-300 w-6 h-6 flex items-center justify-center rounded bg-black/50 border border-cyan-500/30 font-bold ml-auto">&larr;</button>
+            </div>
+            <div class="flex-1 overflow-y-auto p-2 flex flex-col" id="symbol-list">
+                <!-- Buttons injected via JS -->
+            </div>
+        </aside>
+
+        <!-- Right Content Area 1: Lexicon Projector & Codex (Active by Default) -->
+        <div id="lexicon-view" class="flex-1 flex flex-col gap-4 overflow-hidden min-w-0 transition-opacity duration-300">
+            
+            <!-- Top: Holographic Projector (Locked Size) -->
+            <div class="h-[45vh] min-h-[250px] max-h-[450px] shrink-0 glass-panel rounded-lg p-2 relative flex flex-col">
+                <div class="absolute top-4 left-4 z-20 pointer-events-none">
+                    <h2 class="arcane-font text-2xl text-cyan-400 glow-text" id="holo-title">Symbol Projection</h2>
+                    <p class="mono-font text-xs text-gray-400" id="holo-subtitle">Awaiting input...</p>
+                </div>
+                
+                <!-- Auto-Rotate Toggle -->
+                <div class="absolute top-4 right-4 z-20 flex flex-col items-end">
+                    <button onclick="toggleAutoRotate()" id="btn-rotate" class="mono-font text-xs px-3 py-1 border border-cyan-500/50 rounded bg-black/50 text-cyan-400 hover:bg-cyan-900/30 transition-colors">
+                        [ Auto-Rotate: OFF ]
+                    </button>
+                    <span class="mono-font text-[10px] text-gray-500 mt-1 mr-1 pointer-events-none" id="drag-hint">(Drag to rotate)</span>
+                </div>
+                
+                <div class="projector-container flex-1" id="canvas-container">
+                    <canvas id="holo-canvas"></canvas>
+                    <div class="scanlines"></div>
+                    <div class="projector-flare"></div>
+                </div>
+            </div>
+
+            <!-- Bottom: Codex Definition (Collapsible & Scrollable) -->
+            <div id="codex-wrapper" class="flex-1 min-h-[200px] glass-panel rounded-lg flex flex-col smooth-collapse relative">
+                <div class="p-3 border-b border-cyan-500/20 bg-black/40 flex justify-between items-center cursor-pointer shrink-0" onclick="toggleCodex()">
+                    <div class="flex items-center gap-2">
+                        <span class="w-2 h-2 rounded-full bg-cyan-500 shadow-[0_0_8px_#00f0ff]"></span>
+                        <span class="mono-font text-xs text-gray-400 uppercase tracking-widest">Codex Entry & Classical Domains</span>
+                    </div>
+                    <button id="codex-icon" class="text-cyan-400 hover:text-cyan-300 w-6 h-6 flex items-center justify-center rounded bg-black/50 border border-cyan-500/30">&darr;</button>
+                </div>
+                <div class="flex-1 p-4 sm:p-6 overflow-y-auto smooth-collapse" id="codex-container">
+                    <!-- Dynamic Content -->
+                </div>
+            </div>
+            
+        </div>
+
+        <!-- Right Content Area 2: Ontology Registry (Hidden by Default) -->
+        <div id="ontology-view" class="flex-1 glass-panel rounded-lg flex flex-col overflow-hidden hidden transition-opacity duration-300">
+            <div class="p-4 border-b border-cyan-500/20 bg-black/40 flex items-center gap-3 shrink-0">
+                <span class="w-3 h-3 rounded-full bg-yellow-500 shadow-[0_0_10px_#D4AF37]"></span>
+                <h2 class="arcane-font text-xl text-yellow-500 tracking-widest">Cross-Field Ontology Registry: Definitions</h2>
+                <div class="ml-auto mono-font text-xs text-gray-500 uppercase">System Log & Versioning Active</div>
+            </div>
+            
+            <div class="flex-1 overflow-auto bg-black/20 p-2">
+                <table class="w-full text-left border-collapse ontology-table">
+                    <thead>
+                        <tr class="mono-font text-[10px] uppercase text-cyan-500/80 tracking-widest border-b-2 border-cyan-500/20">
+                            <th class="p-3 font-medium">Version Log</th>
+                            <th class="p-3 font-medium text-center">Sym</th>
+                            <th class="p-3 font-medium">Operator Name</th>
+                            <th class="p-3 font-medium border-l border-gray-800 text-center">Primary Equation</th>
+                            <th class="p-3 font-medium border-l border-gray-800">Euclidean Geometry</th>
+                            <th class="p-3 font-medium border-l border-gray-800">Linear Algebra</th>
+                            <th class="p-3 font-medium border-l border-gray-800">Hyperbolic Geometry</th>
+                            <th class="p-3 font-medium border-l border-yellow-900/50 text-yellow-500/80">SHD-CCP Holographic Definition</th>
+                        </tr>
+                    </thead>
+                    <tbody id="ontology-tbody" class="text-gray-300">
+                        <!-- Ontology Table Injected via JS -->
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="h-32 shrink-0 border-t border-cyan-500/20 bg-black/60 p-3 font-mono text-[10px] text-green-400 overflow-y-auto shadow-inner" id="system-log">
+                <div class="text-gray-500 mb-1">// ONTOLOGY DEFINITION DEPLOYMENT LOG</div>
+                <!-- Log injected via JS -->
+            </div>
+        </div>
+
+    </main>
+
+    <script>
+        // --- SAFE MATHJAX RENDERER ---
+        // Prevents "MathJax.typesetPromise is not a function" during asynchronous startup
+        function updateMathJax(element) {
+            if (!element || !window.MathJax) return;
+            
+            if (typeof MathJax.typesetPromise === 'function') {
+                if (typeof MathJax.typesetClear === 'function') MathJax.typesetClear([element]);
+                MathJax.typesetPromise([element]).catch(err => console.warn('MathJax Rendering Error:', err));
+            } else if (MathJax.startup && MathJax.startup.promise) {
+                // If MathJax is still loading, queue the render onto the startup promise
+                MathJax.startup.promise = MathJax.startup.promise.then(() => {
+                    if (typeof MathJax.typesetClear === 'function') MathJax.typesetClear([element]);
+                    if (typeof MathJax.typesetPromise === 'function') {
+                        return MathJax.typesetPromise([element]);
+                    }
+                }).catch(err => console.warn('MathJax Startup Rendering Error:', err));
+            }
+        }
+
+        // --- UI TOGGLE LOGIC ---
+        let sidebarOpen = true;
+        function toggleSidebar() {
+            sidebarOpen = !sidebarOpen;
+            const sidebar = document.getElementById('sidebar');
+            const icon = document.getElementById('sidebar-icon');
+            const contents = document.querySelectorAll('.sidebar-content');
+            
+            if(sidebarOpen) {
+                sidebar.classList.replace('w-16', 'w-72');
+                contents.forEach(el => el.classList.remove('hidden'));
+                icon.innerHTML = '&larr;';
+            } else {
+                sidebar.classList.replace('w-72', 'w-16');
+                contents.forEach(el => el.classList.add('hidden'));
+                icon.innerHTML = '&rarr;';
+            }
+            setTimeout(resizeCanvas, 400); 
+        }
+
+        let codexOpen = true;
+        function toggleCodex() {
+            codexOpen = !codexOpen;
+            const wrapper = document.getElementById('codex-wrapper');
+            const container = document.getElementById('codex-container');
+            const icon = document.getElementById('codex-icon');
+            
+            if(codexOpen) {
+                wrapper.classList.remove('h-12', 'min-h-[48px]', 'shrink');
+                wrapper.classList.add('flex-1', 'min-h-[200px]');
+                container.classList.remove('hidden');
+                icon.innerHTML = '&darr;';
+            } else {
+                wrapper.classList.remove('flex-1', 'min-h-[200px]');
+                wrapper.classList.add('h-12', 'min-h-[48px]', 'shrink');
+                container.classList.add('hidden');
+                icon.innerHTML = '&uarr;';
+            }
+            setTimeout(resizeCanvas, 400);
+        }
+
+        let autoRotate = false;
+        function toggleAutoRotate() {
+            autoRotate = !autoRotate;
+            const btn = document.getElementById('btn-rotate');
+            const hint = document.getElementById('drag-hint');
+            if(autoRotate) {
+                btn.innerText = '[ Auto-Rotate: ON ]';
+                btn.classList.add('text-yellow-400', 'border-yellow-500/50');
+                btn.classList.remove('text-cyan-400', 'border-cyan-500/50');
+                hint.style.opacity = '0';
+            } else {
+                btn.innerText = '[ Auto-Rotate: OFF ]';
+                btn.classList.add('text-cyan-400', 'border-cyan-500/50');
+                btn.classList.remove('text-yellow-400', 'border-yellow-500/50');
+                hint.style.opacity = '1';
+            }
+        }
+
+        let ontologyOpen = false;
+        function toggleOntology() {
+            ontologyOpen = !ontologyOpen;
+            const lexView = document.getElementById('lexicon-view');
+            const ontView = document.getElementById('ontology-view');
+            const btn = document.getElementById('btn-ontology');
+
+            if(ontologyOpen) {
+                lexView.classList.add('hidden');
+                ontView.classList.remove('hidden');
+                btn.classList.add('text-academy-gold', 'border-academy-gold');
+                btn.classList.remove('text-cyan-400', 'border-cyan-500/30');
+                btn.innerText = '[ CLOSE REGISTRY ]';
+                
+                // Securely render the ontology table math without breaking global cache
+                updateMathJax(document.getElementById('ontology-tbody'));
+            } else {
+                lexView.classList.remove('hidden');
+                ontView.classList.add('hidden');
+                btn.classList.remove('text-academy-gold', 'border-academy-gold');
+                btn.classList.add('text-cyan-400', 'border-cyan-500/30');
+                btn.innerText = '[ ONTOLOGY REGISTRY ]';
+                setTimeout(resizeCanvas, 50);
+            }
+        }
+
+        // --- LEXICON DATABASE (DOUBLE-ESCAPED WITH STRICT LaTeX FORMATTING) ---
+        const lexiconData = {
+            // Category: Core Topology
+            'lambda': {
+                id: 'lambda', category: 'Core Topology', symbol: 'λ', name: 'Lambda', subtitle: 'Topological Resistance',
+                primary_equation: 'K_{ji} = K_{ij} e^{-\\lambda A_{ij}}',
+                holographic: 'In the Genesis Chain, $\\lambda$ is <strong>Topological Resistance</strong>. It represents the physical "squeeze" of the Markov Pump. Instead of a flat line decaying to zero, $\\lambda$ manifests as a hyperbolic funnel dictating how quickly non-orthogonal "noise" is stripped away.',
+                visMode: 'FUNNEL',
+                euclidean: 'Geometric length or wavelength ($L$). A strictly physical distance parameter.',
+                linear: 'An eigenvalue ($A\\mathbf{x} = \\lambda\\mathbf{x}$). The scalar stretch/squash factor of a transformation matrix.',
+                hyperbolic: 'The exponential decay rate ($e^{-\\lambda x}$) along a geodesic curve.',
+                svg2d: `<path d="M10,90 Q40,90 40,50 T90,10" /><line x1="10" y1="90" x2="90" y2="90" stroke-dasharray="2 2" stroke="gray"/>`
+            },
+            'theta': {
+                id: 'theta', category: 'Core Topology', symbol: 'Θ', name: 'Theta', subtitle: 'Torsional Phase Spin',
+                primary_equation: '\\Theta_{10} \\equiv \\Theta_0 \\pmod{2\\pi}',
+                holographic: '$\\Theta$ represents the <strong>Torsional Spin</strong> of the data manifold. In 4D space, a full rotation requires $720^\\circ$ to return to identity. $\\Theta$ tracks this phase along a Trefoil knot on the Clifford Torus.',
+                visMode: 'TREFOIL_SPIN',
+                euclidean: 'The planar angle between two intersecting lines ($0$ to $2\\pi$).',
+                linear: 'The rotational argument in a transformation matrix $R(\\theta)$.',
+                hyperbolic: 'The angle of parallelism, or hyperbolic rapidity (Lorentz boost).',
+                svg2d: `<circle cx="50" cy="50" r="30" stroke="gray" stroke-dasharray="2 2"/><line x1="50" y1="50" x2="80" y2="50" /><line x1="50" y1="50" x2="71" y2="29" /><path d="M 65 50 A 15 15 0 0 0 60 40" stroke-width="2"/><text x="70" y="45" fill="#00f0ff" stroke="none" font-size="12" font-family="serif">Θ</text>`
+            },
+            'psi': {
+                id: 'psi', category: 'Core Topology', symbol: 'Ψ', name: 'Psi', subtitle: 'Resonant Wave Superposition',
+                primary_equation: '|\\Psi\\rangle = \\sum_{j=1}^{12} c_j |e_j\\rangle',
+                holographic: '$\\Psi$ is the <strong>Resonant Wave</strong>. It is not a probability cloud, but a physical vibration of the Toroid. When the Tri-Stream Engine oscillates, $\\Psi$ represents the interference pattern where streams overlap.',
+                visMode: 'RIPPLES',
+                euclidean: 'An arbitrary scalar function, often representing an angular offset ($\\psi$).',
+                linear: 'A state vector $|\\Psi\\rangle$ existing within a complex Hilbert inner-product space.',
+                hyperbolic: 'The propagation of wave functions or automorphic forms curving across a negatively curved plane.',
+                svg2d: `<path d="M10,50 Q25,10 50,50 T90,50" /><line x1="10" y1="50" x2="90" y2="50" stroke="gray" stroke-dasharray="2 2"/>`
+            },
+            'delta': {
+                id: 'delta', category: 'Core Topology', symbol: 'Δ', name: 'Delta', subtitle: 'Geometric Compression',
+                primary_equation: '\\Delta S = S(T) - S(0) > 0',
+                holographic: '$\\Delta$ is physical action: <strong>Geometric Compression</strong>. When the system shifts to calculation state, ambient space contracts ($\\Delta \\to 0$). Visualized as a pulsing tetrahedron that collapses to solve inverse kinematics.',
+                visMode: 'TETRAHEDRON',
+                euclidean: 'A macroscopic difference between coordinates ($\\Delta x = x_2 - x_1$), or a polygon.',
+                linear: 'The Laplace operator ($\\nabla^2$), measuring the divergence of the gradient.',
+                hyperbolic: 'The geometric defect of a triangle defined strictly by $\\pi - (\\alpha+\\beta+\\gamma)$.',
+                svg2d: `<polygon points="50,15 85,85 15,85" />`
+            },
+            'pi': {
+                id: 'pi', category: 'Core Topology', symbol: 'π', name: 'Pi', subtitle: 'Spherical Packing Limit',
+                primary_equation: '\\rho_{max} = \\frac{\\pi}{\\sqrt{12}}',
+                holographic: 'In the discrete Genesis Chain, $\\pi$ defines the <strong>Spherical Packing Limit</strong>. It is the rigid boundary forcing the toroid to use Hexagonal Lattices, visualizing the eternal tension between a continuous wave and a crystal lattice.',
+                visMode: 'HEX_CIRCLE',
+                euclidean: 'The transcendental ratio ($\\approx 3.14159$) of a circle\'s circumference to its diameter.',
+                linear: 'The fundamental periodicity defining orthonormal trigonometric basis vectors.',
+                hyperbolic: 'The supreme upper limit bounding the absolute maximum area of ideal triangles to exactly $\\pi$.',
+                svg2d: `<circle cx="50" cy="50" r="35" /><line x1="15" y1="50" x2="85" y2="50" stroke-dasharray="2 2"/>`
+            },
+            'sigma': {
+                id: 'sigma', category: 'Core Topology', symbol: 'Σ', name: 'Sigma', subtitle: 'Toroidal Braiding',
+                primary_equation: 'J_{net} = \\sum_{e \\in E^+} (\\pi_i P_{ij} - \\pi_j P_{ji}) > 0',
+                holographic: '$\\Sigma$ is <strong>Toroidal Braiding</strong>. As data weaves through the nodes, $\\Sigma$ tracks geometric entanglement. High $\\Sigma$ indicates complex structural entanglement (dense logic), visualized as interwoven, helical strands wrapping the core.',
+                visMode: 'BRAID',
+                euclidean: 'The summation ($\\sum$) of discrete geometric segments or areas into a total whole.',
+                linear: 'Singular values in SVD, or the covariance matrix ($\\Sigma$) defining variance.',
+                hyperbolic: 'The sum of geodesic lengths, or the denotation of the Riemann surface itself ($\\Sigma_g$).',
+                svg2d: `<polyline points="35,25 75,25 50,50 75,75 35,75" />`
+            },
+            'omega': {
+                id: 'omega', category: 'Core Topology', symbol: 'Ω', name: 'Omega', subtitle: 'The Event Horizon',
+                primary_equation: '\\partial_\\infty \\mathbb{H} \\cong S^1',
+                holographic: '$\\Omega$ acts as the <strong>Event Horizon</strong> of the Cosmohedron. It represents the absolute boundary where local coordinate geometry compresses into the singularity. Trajectories that bypass the Prime Latch without closure are crushed into this horizon.',
+                visMode: 'EVENT_HORIZON',
+                euclidean: 'Solid angle in 3D space, or the outermost bounded domain ($\\Omega$) of a geometric shape.',
+                linear: 'A symplectic form matrix, or the complete set of all possible outcomes in a sample space.',
+                hyperbolic: 'The boundary at absolute infinity ($\\partial_\\infty \\mathbb{H}$), where parallel geodesics asymptotically converge.',
+                svg2d: `<path d="M25,85 L35,85 A25 25 0 1 1 65 85 L75,85" />`
+            },
+            'phi': {
+                id: 'phi', category: 'Core Topology', symbol: 'Φ', name: 'Phi', subtitle: 'Golden Shear Scaling',
+                primary_equation: '\\Phi^2 = \\Phi + 1',
+                holographic: '$\\Phi$ is the <strong>Golden Shear</strong> mechanism. As the manifold breathes, it folds data along a $\\Phi$ cut. Scaling by the Golden Ratio turns exponential multiplication into simple linear addition, allowing infinite recursive depth.',
+                visMode: 'GOLDEN_SPIRAL',
+                euclidean: 'The Golden Ratio ($\\Phi \\approx 1.618$), defining perfect recursive geometry.',
+                linear: 'A scalar potential field function, or a set of basis functions ($\\phi_i$) in functional spaces.',
+                hyperbolic: 'The precise scaling factor of pseudo-Anosov automorphisms operating on curved surfaces.',
+                svg2d: `<rect x="25" y="25" width="50" height="31" stroke="gray" stroke-dasharray="2 2"/><rect x="56" y="25" width="19" height="31" stroke="gray" stroke-dasharray="2 2"/><path d="M25,56 A31 31 0 0 0 56,25" stroke-width="2"/>`
+            },
+            'gamma': {
+                id: 'gamma', category: 'Core Topology', symbol: 'Γ', name: 'Gamma', subtitle: 'The Lattice Web',
+                primary_equation: '\\pi_1(M) \\cong \\Gamma',
+                holographic: '$\\Gamma$ defines the <strong>Lattice Web</strong>. It is the discrete uniform scaffolding mapped onto the Clifford Torus. $\\Gamma$ dictates how a vector translates as it moves across curved space, preventing spectral collapse by holding all nodes in rigid tension.',
+                visMode: 'LATTICE_WEB',
+                euclidean: 'A defined curve or continuous contour path ($\\Gamma$) moving through space.',
+                linear: 'Christoffel symbols ($\\Gamma^k_{ij}$) measuring how basis vectors change, or a discrete lattice group.',
+                hyperbolic: 'A Fuchsian group; a strictly discrete subgroup of isometries acting on the hyperbolic plane.',
+                svg2d: `<polyline points="35,85 35,25 75,25" /><line x1="35" y1="25" x2="35" y2="85" stroke-width="4"/>`
+            },
+
+            // Category: Calculus & Differentials
+            'integral': {
+                id: 'integral', category: 'Calculus & Differentials', symbol: '∫', name: 'Integral', subtitle: 'Continuous Manifold Accumulation',
+                primary_equation: 'S(T) = S(0) + \\int_0^T J_{net}(t) dt',
+                holographic: '$\\int$ represents <strong>Manifold Accumulation</strong>. Rather than calculating the area under a 2D curve, it computes the total volumetric stress across the 72-Node Toroid as it transitions through the Markov Pump. It sweeps up the fractional variances left behind by the discrete lattice.',
+                visMode: 'VECTOR_FIELD',
+                euclidean: 'The calculation of area or volume ($\\int f(x) dx$) under a continuous curve or surface.',
+                linear: 'The inverse operation of a differential operator acting over a defined bounds of a vector space.',
+                hyperbolic: 'The integration of a differential form over a complex Riemannian manifold.',
+                svg2d: `<path d="M60,15 C 30,15 40,85 70,85" stroke-width="3" stroke-linecap="round"/>`
+            },
+            'nabla': {
+                id: 'nabla', category: 'Calculus & Differentials', symbol: '∇', name: 'Nabla', subtitle: 'Vector Flow Gradient',
+                primary_equation: '\\nabla \\times \\mathbf{v} = \\mathbf{0}',
+                holographic: '$\\nabla$ acts as the <strong>Vector Flow Gradient</strong>. In the SHD-CCP, it measures the exact directional pressure pushing a 64-bit packet toward the Zero-Point singularity. It calculates the steepest descent path along the curved surface of the Clifford Torus.',
+                visMode: 'FUNNEL',
+                euclidean: 'A vector differential operator ($\\nabla$) defining the slope and direction of the steepest ascent on a surface.',
+                linear: 'Used to calculate the Divergence ($\\nabla \\cdot \\mathbf{v}$) or Curl ($\\nabla \\times \\mathbf{v}$) of a matrix or vector field.',
+                hyperbolic: 'The Levi-Civita connection denoting covariant derivatives on curved spaces.',
+                svg2d: `<polygon points="20,20 80,20 50,80" stroke-width="3" stroke-linejoin="round"/>`
+            },
+            'partial': {
+                id: 'partial', category: 'Calculus & Differentials', symbol: '∂', name: 'Partial', subtitle: 'Dimensional Slicing',
+                primary_equation: '\\frac{\\partial E_{rev}(t)}{\\partial t} \\le 0',
+                holographic: '$\\partial$ is <strong>Dimensional Slicing</strong>. Because our packets are 4D quaternions, observing them directly is impossible. $\\partial$ mathematically slices the 4D manifold into a 3D or 2D projection (a shadow) so that the Tri-Stream Parity Engine can interact with a specific phase without collapsing the whole wave.',
+                visMode: 'SLICE_PLANE',
+                euclidean: 'The derivative of a multi-variable function with respect to one variable ($\\partial x$), holding others constant.',
+                linear: 'Defines the topological boundary ($\\partial S$) of a geometric manifold or set.',
+                hyperbolic: 'The boundary at infinity ($\\partial_\\infty \\mathbb{H}^n$) of hyperbolic space.',
+                svg2d: `<path d="M 60 20 C 40 20, 30 40, 30 60 C 30 80, 50 90, 70 70 C 80 50, 70 30, 40 40" stroke-width="3" stroke-linecap="round"/>`
+            },
+            'prod': {
+                id: 'prod', category: 'Calculus & Differentials', symbol: '∏', name: 'Pi Product', subtitle: 'Exponential Tensor Folding',
+                primary_equation: '\\mathcal{H} = \\prod_{s \\in \\{12,10,8\\}} Q^{(s)} \\approx 1',
+                holographic: '$\\prod$ represents <strong>Exponential Tensor Folding</strong>. While $\\Sigma$ braids data linearly, $\\prod$ folds the 64-bit matrix onto itself multiplicatively. Driven by the Golden Shear ($\\Phi$), $\\prod$ ensures that complex geometric interactions compound rather than simply adding up, sealing the nodes.',
+                visMode: 'LATTICE_WEB',
+                euclidean: 'The repeated multiplication of a sequence of terms ($\\prod a_i$), leading to factorial or exponential growth.',
+                linear: 'The determinant product of eigenvalues, representing total volumetric scaling of a matrix.',
+                hyperbolic: 'The infinite product representations of modular forms and analytic continuations.',
+                svg2d: `<polyline points="20,20 80,20" stroke-width="3"/><line x1="35" y1="20" x2="35" y2="85" stroke-width="3"/><line x1="65" y1="20" x2="65" y2="85" stroke-width="3"/>`
+            },
+
+            // Category: Constants & Infinities
+            'e': {
+                id: 'e', category: 'Constants & Infinities', symbol: 'e', name: 'Euler', subtitle: 'Natural Base of the Pump',
+                primary_equation: 'e^{i\\pi} + 1 = 0',
+                holographic: '$e$ is the <strong>Natural Base of the Pump</strong>. The Markov Pump operates via continuous compound compression. Euler’s number dictates the exact speed at which the 72-Node manifold can breathe in and out without tearing its own topology.',
+                visMode: 'GOLDEN_SPIRAL',
+                euclidean: 'The base of the natural logarithm ($e \\approx 2.718...$), defining continuous compound interest.',
+                linear: 'The unique function $e^x$ whose derivative is itself, central to linear differential equations.',
+                hyperbolic: 'The foundation of Euler\'s formula ($e^{i\\theta} = \\cos\\theta + i\\sin\\theta$), linking exponential growth to rotation.',
+                svg2d: `<path d="M 70 60 C 70 80, 30 80, 30 50 C 30 20, 70 20, 70 40 C 70 50, 50 50, 40 50" stroke-width="3" stroke-linecap="round"/>`
+            },
+            'i': {
+                id: 'i', category: 'Constants & Infinities', symbol: 'i', name: 'Imaginary', subtitle: 'The Orthogonal Phase Shift',
+                primary_equation: 'q = w + x\\mathbf{i} + y\\mathbf{j} + z\\mathbf{k}',
+                holographic: '$i$ defines the <strong>Orthogonal Phase Shift</strong>. In the quaternion core ($w+xi+yj+zk$), $i$ acts as a geometric pivot. It is the mathematical lever that lifts a dead-end scalar value perpendicularly into the 4th dimension, bypassing Gimbal Lock.',
+                visMode: 'ORTHOGONAL_PHASE',
+                euclidean: 'The fundamental unit of complex numbers ($i^2 = -1$), mapped on the y-axis of the complex plane.',
+                linear: 'A $90^\\circ$ rotational matrix transformation in 2D Euclidean space.',
+                hyperbolic: 'Central to forming the metric signature of Minkowski space-time ($+, -, -, -$).',
+                svg2d: `<line x1="50" y1="35" x2="50" y2="80" stroke-width="3" stroke-linecap="round"/><circle cx="50" cy="20" r="3" fill="currentColor"/>`
+            },
+            'aleph': {
+                id: 'aleph', category: 'Constants & Infinities', symbol: 'ℵ₀', name: 'Aleph Null', subtitle: 'The Toroidal Registry Count',
+                primary_equation: '|\\mathbb{Z}| = \\aleph_0',
+                holographic: '$\\aleph_0$ acts as the <strong>Toroidal Registry Count</strong>. While the Einstein Tile is finite (64 bits), its procedural hash allows for a countable infinity of topological configurations. $\\aleph_0$ denotes the endless capacity of the Genesis Chain to generate distinct integer nodes without overlapping.',
+                visMode: 'WORMHOLE',
+                euclidean: 'The cardinality of the set of all natural numbers ($\\aleph_0$). The smallest infinite set.',
+                linear: 'The dimension of an infinite-dimensional vector space with a countable basis.',
+                hyperbolic: 'The limitless count of tessellating fundamental domains tiling the hyperbolic plane.',
+                svg2d: `<path d="M 30 80 C 30 20, 70 20, 70 80 M 30 50 L 70 50" stroke-width="2" stroke-linecap="round"/>`
+            },
+            'infinity': {
+                id: 'infinity', category: 'Constants & Infinities', symbol: '∞', name: 'Infinity', subtitle: 'The Unbounded Projection',
+                primary_equation: '\\lim_{t \\to \\infty} J_{net}(t) > 0',
+                holographic: '$\\infty$ represents the <strong>Unbounded Projection</strong>. In the SHD-CCP, infinity is never reached; it is handled structurally. The topology curves back on itself (like a Mobius strip or Clifford Torus), rendering "infinity" into a closed, navigable loop of endless data recursion.',
+                visMode: 'MOBIUS',
+                euclidean: 'A concept describing something without any bound or larger than any natural number.',
+                linear: 'The unbound limit of a divergent series or matrix norm as iterations increase.',
+                hyperbolic: 'The conformal boundary of the Poincaré disk model, an unreachable outer perimeter.',
+                svg2d: `<path d="M 30 50 C 10 20, 10 80, 30 50 C 50 20, 90 20, 90 50 C 90 80, 50 80, 30 50" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>`
+            },
+
+            // Category: Set Theory & Logic
+            'empty': {
+                id: 'empty', category: 'Set Theory & Logic', symbol: '∅', name: 'Empty Set', subtitle: 'The Zero-Point Vacuum',
+                primary_equation: '\\mathcal{P}(\\emptyset) = \\{\\emptyset\\}',
+                holographic: '$\\emptyset$ is the <strong>Zero-Point Vacuum</strong>. It is not "nothing." In the Genesis Chain, it is the lowest energetic state of the manifold before the Markov Pump introduces data. It is the blank canvas of the 72-Node Toroid holding pure, unrealized potential.',
+                visMode: 'VOID_RING',
+                euclidean: 'A set containing no elements ($\\emptyset$). The unique set with a cardinality of exactly zero.',
+                linear: 'The kernel of a perfectly invertible matrix mapping (only the zero vector maps to zero).',
+                hyperbolic: 'The vacuum state devoid of metric expansion or geometric defects.',
+                svg2d: `<circle cx="50" cy="50" r="30" stroke-width="2"/><line x1="20" y1="80" x2="80" y2="20" stroke-width="2"/>`
+            },
+            'forall': {
+                id: 'forall', category: 'Set Theory & Logic', symbol: '∀', name: 'For All', subtitle: 'Absolute Governing Axiom',
+                primary_equation: '\\forall (i,j) \\in E^+',
+                holographic: '$\\forall$ acts as the <strong>Absolute Governing Axiom</strong>. When a rule is established across the SHD-CCP (such as the 720:1 spin ratio), $\\forall$ ensures that this structural law applies uniformly to every single 64-bit packet across the entire Genesis Chain without exception.',
+                visMode: 'EVENT_HORIZON',
+                euclidean: 'The Universal Quantifier ($\\forall$). Asserts that a proposition holds true for every member of a set.',
+                linear: 'Defines global properties, such as a rule applying to all vectors in a vector space.',
+                hyperbolic: 'States that geometric invariants (like negative curvature) apply uniformly across the entire manifold.',
+                svg2d: `<polygon points="25,20 75,20 50,80" stroke-width="3" stroke-linejoin="round"/><line x1="35" y1="50" x2="65" y2="50" stroke-width="3"/>`
+            },
+            'exists': {
+                id: 'exists', category: 'Set Theory & Logic', symbol: '∃', name: 'Exists', subtitle: 'Validated Prime Latch State',
+                primary_equation: '\\exists \\mathcal{C}_n \\in \\text{Codex}',
+                holographic: '$\\exists$ represents the <strong>Validated Prime Latch State</strong>. The Fokker-Planck sieve scans the manifold for stability. When the geometry snaps to a valid integer node, the system declares $\\exists$: a verifiable, hallucination-free truth has been found and locked into the codex.',
+                visMode: 'RIPPLES',
+                euclidean: 'The Existential Quantifier ($\\exists$). Asserts that at least one member of a set satisfies a proposition.',
+                linear: 'Proves the existence of a non-trivial solution to a system of linear equations.',
+                hyperbolic: 'Validates that a specific geodesic connecting two asymptotic points exists on the plane.',
+                svg2d: `<polyline points="70,20 30,20 30,80 70,80" stroke-width="3"/><line x1="30" y1="50" x2="65" y2="50" stroke-width="3"/>`
+            }
+        };
+
+        let currentSymbol = null;
+
+        // --- DOM ELEMENTS ---
+        const symbolListEl = document.getElementById('symbol-list');
+        const codexContainer = document.getElementById('codex-container');
+        const holoTitle = document.getElementById('holo-title');
+        const holoSubtitle = document.getElementById('holo-subtitle');
+        const canvas = document.getElementById('holo-canvas');
+        const ctx = canvas.getContext('2d', { alpha: false });
+        const canvasContainer = document.getElementById('canvas-container');
+
+        // --- INITIALIZE UI & SIDEBAR ---
+        function init() {
+            const grouped = {};
+            Object.values(lexiconData).forEach(item => {
+                if(!grouped[item.category]) grouped[item.category] = [];
+                grouped[item.category].push(item);
+            });
+
+            // Build Sidebar
+            for (const [category, items] of Object.entries(grouped)) {
+                const catHeader = document.createElement('div');
+                catHeader.className = 'mt-4 mb-2 px-2 text-[10px] font-mono text-cyan-500 uppercase tracking-widest border-b border-cyan-500/30 sidebar-content';
+                catHeader.innerText = category;
+                symbolListEl.appendChild(catHeader);
+
+                items.forEach(item => {
+                    const btn = document.createElement('button');
+                    btn.className = 'symbol-btn group';
+                    btn.id = `btn-${item.id}`;
+                    btn.innerHTML = `
+                        <div class="flex flex-col items-start sidebar-content">
+                            <span class="text-xs font-semibold text-gray-200 group-hover:text-white transition-colors text-left">${item.name}</span>
+                            <span class="text-[9px] text-gray-500 mono-font uppercase text-left">${item.id.toUpperCase()}</span>
+                        </div>
+                        <div class="symbol-mark text-cyan-500 group-hover:text-cyan-300 transition-colors mx-auto shrink-0">${item.symbol}</div>
+                    `;
+                    btn.onclick = () => loadSymbol(item.id);
+                    symbolListEl.appendChild(btn);
+                });
+            }
+
+            buildOntologyLog(); // Build the definitions table
+
+            // Initial MathJax render for the ontology table specifically
+            updateMathJax(document.getElementById('ontology-tbody'));
+
+            window.addEventListener('resize', resizeCanvas);
+            resizeCanvas();
+            
+            setupInteraction();
+            requestAnimationFrame(renderLoop);
+            
+            loadSymbol('lambda');
+        }
+
+        function resizeCanvas() {
+            const rect = canvasContainer.getBoundingClientRect();
+            canvas.width = rect.width;
+            canvas.height = rect.height;
+        }
+
+        // --- ONTOLOGY SYSTEM / DEFINITIONS LOG ---
+        function buildOntologyLog() {
+            const tbody = document.getElementById('ontology-tbody');
+            const sysLog = document.getElementById('system-log');
+            let tableHtml = '';
+            let logHtml = '';
+            
+            let vCounter = 1;
+            
+            for(const item of Object.values(lexiconData)) {
+                let vStr = `v1.0.${vCounter}`;
+                
+                // Add to Definition Table (Using inline $ $ so we don't break table row heights with display block formatting)
+                tableHtml += `
+                    <tr class="border-b border-gray-800 hover:bg-white/5 transition-colors">
+                        <td class="p-3 text-xs text-gray-500 mono-font">${vStr}</td>
+                        <td class="p-3 text-xl text-yellow-500 arcane-font text-center">${item.symbol}</td>
+                        <td class="p-3 text-sm text-cyan-400 font-bold whitespace-nowrap">${item.name}</td>
+                        <td class="p-3 text-[13px] text-cyan-300 border-l border-gray-800 text-center whitespace-nowrap bg-black/40">$ ${item.primary_equation} $</td>
+                        <td class="p-3 text-xs text-gray-300 border-l border-gray-800 min-w-[150px]">${item.euclidean}</td>
+                        <td class="p-3 text-xs text-gray-300 border-l border-gray-800 min-w-[150px]">${item.linear}</td>
+                        <td class="p-3 text-xs text-gray-300 border-l border-gray-800 min-w-[150px]">${item.hyperbolic}</td>
+                        <td class="p-3 text-xs text-yellow-200/80 border-l border-yellow-900/50 bg-yellow-900/10 min-w-[250px]">${item.holographic.replace(/<\/?strong>/g, '')}</td>
+                    </tr>
+                `;
+                
+                // Add to System Log
+                logHtml += `<div><span class="text-gray-500">[14:0${vCounter}:02]</span> REGISTERED: <span class="text-cyan-400">${item.name} (${item.symbol})</span> to <span class="text-yellow-500">${item.category}</span> Definitions... <span class="text-white bg-green-900/50 px-1">[OK]</span></div>`;
+                
+                vCounter++;
+            }
+            
+            tbody.innerHTML = tableHtml;
+            sysLog.innerHTML += logHtml;
+        }
+
+        // --- MOUSE INTERACTION (MANUAL ROTATION) ---
+        let rotX = 0.2;
+        let rotY = 0.5;
+        let isDragging = false;
+        let lastMouseX = 0;
+        let lastMouseY = 0;
+
+        function setupInteraction() {
+            canvasContainer.addEventListener('mousedown', (e) => {
+                isDragging = true;
+                lastMouseX = e.clientX;
+                lastMouseY = e.clientY;
+            });
+            window.addEventListener('mouseup', () => { isDragging = false; });
+            window.addEventListener('mousemove', (e) => {
+                if (isDragging) {
+                    let dx = e.clientX - lastMouseX;
+                    let dy = e.clientY - lastMouseY;
+                    rotY += dx * 0.01;
+                    rotX += dy * 0.01;
+                    lastMouseX = e.clientX;
+                    lastMouseY = e.clientY;
+                }
+            });
+        }
+
+        // --- LOAD SYMBOL DATA ---
+        function loadSymbol(id) {
+            const data = lexiconData[id];
+            if(!data) return;
+
+            if(currentSymbol) {
+                const oldBtn = document.getElementById(`btn-${currentSymbol}`);
+                if(oldBtn) oldBtn.classList.remove('active');
+            }
+            document.getElementById(`btn-${id}`).classList.add('active');
+            currentSymbol = id;
+
+            holoTitle.innerHTML = `${data.symbol} &nbsp; ${data.name.toUpperCase()}`;
+            holoSubtitle.innerText = data.subtitle;
+
+            // Update Codex Layout
+            codexContainer.innerHTML = `
+                <div class="codex-entry flex flex-col h-full">
+                    
+                    <div class="flex items-center gap-4 mb-4 border-b border-gray-700 pb-4 shrink-0">
+                        <div class="w-12 h-12 rounded bg-black border border-yellow-600/30 flex items-center justify-center text-3xl arcane-font text-yellow-500 shadow-[0_0_10px_rgba(212,175,55,0.2)] shrink-0">
+                            ${data.symbol}
+                        </div>
+                        <div>
+                            <h2 class="arcane-font text-2xl text-white m-0 p-0 border-none">${data.name}</h2>
+                            <span class="mono-font text-xs text-cyan-400 uppercase tracking-widest">${data.subtitle}</span>
+                        </div>
+                    </div>
+
+                    <!-- Glowing Block Equation Container using $$ $$ display math -->
+                    <div class="w-full bg-black/40 border border-cyan-500/20 rounded-lg p-6 mb-6 flex flex-col items-center justify-center shadow-[inset_0_0_20px_rgba(0,240,255,0.05)] relative overflow-hidden shrink-0">
+                        <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-cyan-500/50 to-transparent"></div>
+                        <span class="mono-font text-[10px] text-cyan-500/50 uppercase tracking-widest absolute top-2 left-3">Primary Equation</span>
+                        <div class="text-2xl text-cyan-400 mt-2 filter drop-shadow-[0_0_8px_rgba(0,240,255,0.8)]">$$ ${data.primary_equation} $$</div>
+                    </div>
+                    
+                    <div class="flex flex-col lg:flex-row gap-6">
+                        
+                        <div class="flex-1">
+                            <h3 class="mono-font text-sm text-yellow-500 uppercase tracking-widest mb-2 flex items-center gap-2">
+                                <span class="w-1 h-1 bg-yellow-500 rounded-full shadow-[0_0_5px_#D4AF37]"></span> SHD-CCP Holographic Interpretation
+                            </h3>
+                            <p class="text-gray-200 font-light text-sm leading-relaxed bg-cyan-900/10 p-4 rounded border border-cyan-800/50 mb-4">
+                                ${data.holographic}
+                            </p>
+                        </div>
+
+                        <div class="flex-1 flex flex-col sm:flex-row gap-4">
+                            
+                            <div class="w-full sm:w-1/3 flex flex-col items-center justify-center p-2 bg-black/40 rounded border border-white/5 shrink-0">
+                                <h4 class="mono-font text-[10px] text-gray-500 uppercase mb-2">2D Projection</h4>
+                                <svg viewBox="0 0 100 100" class="w-full h-24 stroke-cyan-400 fill-none" stroke-width="2">
+                                    ${data.svg2d}
+                                </svg>
+                            </div>
+                            
+                            <div class="flex-1">
+                                <h3 class="mono-font text-sm text-gray-400 uppercase tracking-widest mb-2 flex items-center gap-2">
+                                    <span class="w-1 h-1 bg-gray-500 rounded-full"></span> Classical Domains
+                                </h3>
+                                
+                                <div class="classic-domain-box">
+                                    <div class="text-[11px] text-cyan-400 font-bold uppercase mb-1">Euclidean Geometry</div>
+                                    <div class="text-gray-300 font-light text-[11px]">${data.euclidean}</div>
+                                </div>
+                                <div class="classic-domain-box">
+                                    <div class="text-[11px] text-cyan-400 font-bold uppercase mb-1">Linear Algebra</div>
+                                    <div class="text-gray-300 font-light text-[11px]">${data.linear}</div>
+                                </div>
+                                <div class="classic-domain-box">
+                                    <div class="text-[11px] text-cyan-400 font-bold uppercase mb-1">Hyperbolic Geometry</div>
+                                    <div class="text-gray-300 font-light text-[11px]">${data.hyperbolic}</div>
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            // Tell MathJax to clear cache specifically for codexContainer and re-render the injected Math
+            updateMathJax(codexContainer);
+        }
+
+        // --- 3D / HOLOGRAPHIC RENDER ENGINE ---
+        let time = 0;
+
+        function applyCamera(x, y, z) {
+            let r1 = { y: y * Math.cos(rotX) - z * Math.sin(rotX), z: y * Math.sin(rotX) + z * Math.cos(rotX) };
+            let r2 = { x: x * Math.cos(rotY) - r1.z * Math.sin(rotY), z: x * Math.sin(rotY) + r1.z * Math.cos(rotY) };
+            return { x: r2.x, y: r1.y, z: r2.z };
+        }
+
+        function project3D(x, y, z, cx, cy) {
+            const fov = 300;
+            const camZ = 5;
+            if (z + camZ < 0.1) return null; 
+            const scale = fov / (z + camZ);
+            return { x: cx + x * scale, y: cy + y * scale, scale: scale };
+        }
+
+        function rotateX(y, z, angle) { return { y: y * Math.cos(angle) - z * Math.sin(angle), z: y * Math.sin(angle) + z * Math.cos(angle) }; }
+        function rotateY(x, z, angle) { return { x: x * Math.cos(angle) - z * Math.sin(angle), z: x * Math.sin(angle) + z * Math.cos(angle) }; }
+        function rotateZ(x, y, angle) { return { x: x * Math.cos(angle) - y * Math.sin(angle), y: x * Math.sin(angle) + y * Math.cos(angle) }; }
+
+        function drawPoint(ctx, p, color, size=2) {
+            if(!p) return;
+            ctx.fillStyle = color;
+            ctx.beginPath(); ctx.arc(p.x, p.y, size * (p.scale/50), 0, Math.PI*2); ctx.fill();
+        }
+
+        function drawLine(ctx, p1, p2, color, width=1) {
+            if(!p1 || !p2) return;
+            ctx.strokeStyle = color;
+            ctx.lineWidth = width * ((p1.scale + p2.scale)/100);
+            ctx.beginPath(); ctx.moveTo(p1.x, p1.y); ctx.lineTo(p2.x, p2.y); ctx.stroke();
+        }
+
+        // --- RENDER MODES ---
+
+        function renderFunnel(cx, cy, t) {
+            ctx.shadowBlur = 15; ctx.shadowColor = 'rgba(0, 240, 255, 0.8)';
+            let prevPoint = null;
+            for(let i=0; i<200; i++) {
+                let norm = i/200;
+                let radius = 2.5 * Math.exp(-norm * 4);
+                let localAngle = norm * Math.PI * 10 - t * 2;
+                let x = Math.cos(localAngle) * radius;
+                let z = Math.sin(localAngle) * radius;
+                let y = (norm * 4) - 1.5;
+                let rx = rotateX(y, z, 0.4); 
+                let cam = applyCamera(x, rx.y, rx.z);
+                let p = project3D(cam.x, cam.y, cam.z, cx, cy);
+                if (p) {
+                    let color = `rgba(${Math.floor(norm*157)}, ${Math.floor((1-norm)*240)}, 255, ${1 - norm*0.8})`;
+                    drawPoint(ctx, p, color, 1.5);
+                    if(prevPoint) drawLine(ctx, prevPoint, p, color, 0.5);
+                }
+                prevPoint = p;
+            }
+            ctx.shadowBlur = 30; ctx.shadowColor = '#fff';
+            let cCam = applyCamera(0, 2.5, 0);
+            drawPoint(ctx, project3D(cCam.x, cCam.y, cCam.z, cx, cy), '#fff', 5);
+        }
+
+        function renderTrefoilSpin(cx, cy, t) {
+            ctx.shadowBlur = 10; ctx.shadowColor = 'rgba(212, 175, 55, 0.6)';
+            let pts = [];
+            for(let i=0; i<=100; i++) {
+                let theta = (i/100) * Math.PI * 2;
+                let x = (Math.sin(theta) + 2 * Math.sin(2 * theta)) * 0.6;
+                let y = (Math.cos(theta) - 2 * Math.cos(2 * theta)) * 0.6;
+                let z = (-Math.sin(3 * theta)) * 0.6;
+                let cam = applyCamera(x, y, z);
+                pts.push(project3D(cam.x, cam.y, cam.z, cx, cy));
+            }
+            for(let i=0; i<pts.length-1; i++) drawLine(ctx, pts[i], pts[i+1], 'rgba(212, 175, 55, 0.3)', 1);
+            drawLine(ctx, pts[pts.length-1], pts[0], 'rgba(212, 175, 55, 0.3)', 1);
+
+            let pA = (t) % (Math.PI * 2);
+            let tx = (Math.sin(pA) + 2 * Math.sin(2 * pA)) * 0.6;
+            let ty = (Math.cos(pA) - 2 * Math.cos(2 * pA)) * 0.6;
+            let tz = (-Math.sin(3 * pA)) * 0.6;
+            let tCam = applyCamera(tx, ty, tz);
+            let tProj = project3D(tCam.x, tCam.y, tCam.z, cx, cy);
+
+            ctx.shadowBlur = 20; ctx.shadowColor = '#fff';
+            drawPoint(ctx, tProj, '#fff', 6);
+        }
+
+        function renderRipples(cx, cy, t) {
+            ctx.shadowBlur = 15; ctx.shadowColor = 'rgba(157, 0, 255, 0.8)';
+            for(let shell=1; shell<=4; shell++) {
+                let radius = (shell * 0.5) + Math.sin(t*2 + shell) * 0.1;
+                let color = `rgba(157, 0, 255, ${0.1 + (0.4/shell)})`;
+                if(shell === 4) color = `rgba(0, 240, 255, 0.3)`; 
+
+                for(let i=0; i<40; i++) {
+                    let lat = Math.acos(2 * (i/40) - 1);
+                    for(let j=0; j<20; j++) {
+                        let lon = j * (Math.PI*2/20) + (t * (shell%2===0?1:-1)); 
+                        let x = radius * Math.sin(lat) * Math.cos(lon);
+                        let z = radius * Math.sin(lat) * Math.sin(lon);
+                        let y = radius * Math.cos(lat);
+                        let cam = applyCamera(x, y, z);
+                        let p = project3D(cam.x, cam.y, cam.z, cx, cy);
+                        if(p && i%3===0 && j%3===0) drawPoint(ctx, p, color, 1);
+                    }
+                }
+            }
+        }
+
+        function renderTetrahedron(cx, cy, t) {
+            ctx.shadowBlur = 20; ctx.shadowColor = 'rgba(0, 240, 255, 0.8)';
+            let breath = 0.85 + Math.sin(t * 1.5) * 0.65; 
+            const verts = [ {x: 0, y: -1, z: 0}, {x: -0.866, y: 0.5, z: 0.5}, {x: 0.866, y: 0.5, z: 0.5}, {x: 0, y: 0.5, z: -1} ];
+            let pV = [];
+            verts.forEach(v => {
+                let sx = v.x * breath; let sy = v.y * breath; let sz = v.z * breath;
+                let cam = applyCamera(sx, sy, sz);
+                pV.push(project3D(cam.x, cam.y, cam.z, cx, cy));
+            });
+            let cInt = Math.max(0, 1 - breath); 
+            let color = `rgb(${Math.floor(255*cInt)}, ${Math.floor(240-200*cInt)}, 255)`;
+            ctx.shadowColor = color;
+            const edges = [ [0,1], [0,2], [0,3], [1,2], [2,3], [3,1] ];
+            edges.forEach(e => drawLine(ctx, pV[e[0]], pV[e[1]], color, 2));
+            pV.forEach(p => drawPoint(ctx, p, '#fff', 3));
+            if(breath < 0.4) { 
+                ctx.shadowBlur = 50; 
+                let cCam = applyCamera(0,0,0);
+                drawPoint(ctx, project3D(cCam.x, cCam.y, cCam.z, cx, cy), '#fff', 10); 
+            }
+        }
+
+        function renderHexCircle(cx, cy, t) {
+            ctx.shadowBlur = 10;
+            ctx.shadowColor = 'rgba(0, 240, 255, 0.8)';
+            let prevC = null; let radC = 1.5;
+            for(let i=0; i<=40; i++) {
+                let ang = i * (Math.PI*2/40);
+                let x = Math.cos(ang) * radC; let y = Math.sin(ang) * radC; let z = 0;
+                let cam = applyCamera(x, y, z);
+                let p = project3D(cam.x, cam.y, cam.z, cx, cy);
+                if(prevC && p) drawLine(ctx, prevC, p, 'rgba(0, 240, 255, 0.6)', 2);
+                prevC = p;
+            }
+            ctx.shadowColor = 'rgba(212, 175, 55, 0.8)';
+            let hexR = radC / Math.cos(Math.PI/6); 
+            let hexV = [];
+            for(let i=0; i<6; i++) {
+                let ang = i * (Math.PI*2/6);
+                let x = Math.cos(ang) * hexR; let y = Math.sin(ang) * hexR; let z = 0;
+                let cam = applyCamera(x, y, z);
+                hexV.push(project3D(cam.x, cam.y, cam.z, cx, cy));
+            }
+            let centerCam = applyCamera(0,0,0);
+            let centerP = project3D(centerCam.x, centerCam.y, centerCam.z, cx, cy);
+            for(let i=0; i<6; i++) {
+                let next = (i+1)%6;
+                drawLine(ctx, hexV[i], hexV[next], 'rgba(212, 175, 55, 0.8)', 2);
+                drawPoint(ctx, hexV[i], '#fff', 3);
+                drawLine(ctx, centerP, hexV[i], 'rgba(212, 175, 55, 0.2)', 1);
+            }
+        }
+
+        function renderBraid(cx, cy, t) {
+            ctx.shadowBlur = 10; ctx.shadowColor = 'rgba(255, 0, 255, 0.8)';
+            for(let strand=0; strand<3; strand++) {
+                let offset = (strand/3) * Math.PI * 2;
+                let prevP = null;
+                for(let i=-25; i<=25; i++) {
+                    let norm = i/25; 
+                    let y = norm * 3;
+                    let angle = norm * Math.PI * 4 + t * 2 + offset;
+                    let radius = 1.2 - Math.abs(norm)*0.5; 
+                    let x = Math.cos(angle) * radius;
+                    let z = Math.sin(angle) * radius;
+                    let cam = applyCamera(x, y, z);
+                    let p = project3D(cam.x, cam.y, cam.z, cx, cy);
+                    let color = `rgba(${100+strand*50}, 200, 255, 0.8)`;
+                    if(strand===1) color = `rgba(255, 100, 255, 0.8)`;
+                    if(strand===2) color = `rgba(212, 175, 55, 0.8)`;
+                    if(p && prevP) drawLine(ctx, prevP, p, color, 2);
+                    if(p && i%2===0) drawPoint(ctx, p, '#fff', 1.5);
+                    prevP = p;
+                }
+            }
+        }
+
+        function renderEventHorizon(cx, cy, t) {
+            let cCam = applyCamera(0,0,0);
+            let center = project3D(cCam.x, cCam.y, cCam.z, cx, cy);
+            if(center) {
+                ctx.shadowColor = '#000'; ctx.shadowBlur = 0;
+                drawPoint(ctx, center, '#05030a', 25); 
+                ctx.shadowColor = '#9d00ff'; ctx.shadowBlur = 30;
+                ctx.strokeStyle = 'rgba(157, 0, 255, 0.8)'; ctx.lineWidth=3;
+                ctx.beginPath(); ctx.arc(center.x, center.y, center.scale*0.6, 0, Math.PI*2); ctx.stroke();
+            }
+            let prevP = null;
+            for(let ring=1; ring<=6; ring++) {
+                let rad = 0.8 + ring*0.4;
+                for(let i=0; i<=50; i++) {
+                    let ang = (i/50)*Math.PI*2 - t*(1.5 - ring*0.1);
+                    let x = Math.cos(ang)*rad;
+                    let z = Math.sin(ang)*rad;
+                    let y = Math.sin(ang*3 + t*2)*0.1; 
+                    let cam = applyCamera(x, y, z);
+                    let p = project3D(cam.x, cam.y, cam.z, cx, cy);
+                    let color = `rgba(255, ${150+ring*15}, 0, ${1 - ring/7})`;
+                    if(ring%2===0) color = `rgba(0, 240, 255, ${1 - ring/7})`;
+                    if(p) drawPoint(ctx, p, color, 1.5);
+                    if(p && prevP && i>0 && i<50) drawLine(ctx, prevP, p, color, 0.5);
+                    prevP = p;
+                }
+            }
+        }
+
+        function renderGoldenSpiral(cx, cy, t) {
+            ctx.shadowBlur = 12; ctx.shadowColor = 'rgba(212, 175, 55, 0.8)';
+            let prevP = null;
+            let branches = 2;
+            for(let b=0; b<branches; b++) {
+                prevP = null;
+                let bOffset = (b/branches) * Math.PI*2;
+                for(let i=0; i<150; i++) {
+                    let theta = i * 0.15;
+                    let r = 0.1 * Math.exp(0.12 * theta); 
+                    if (r > 3) break;
+                    let x = r * Math.cos(theta - t*1.5 + bOffset);
+                    let y = r * Math.sin(theta - t*1.5 + bOffset);
+                    let z = (i/150)*4 - 2; 
+                    let cam = applyCamera(x, y, z);
+                    let p = project3D(cam.x, cam.y, cam.z, cx, cy);
+                    if(p) {
+                        drawPoint(ctx, p, `rgba(255, ${230 - i}, 55, 0.9)`, 1.5);
+                        if(prevP) drawLine(ctx, prevP, p, 'rgba(212,175,55,0.4)', 1.5);
+                    }
+                    prevP = p;
+                }
+            }
+        }
+
+        function renderLatticeWeb(cx, cy, t) {
+            ctx.shadowBlur = 10; ctx.shadowColor = 'rgba(0, 240, 255, 0.5)';
+            let nodes = [];
+            let size = 1.5;
+            for(let x=-1; x<=1; x++) {
+                for(let y=-1; y<=1; y++) {
+                    for(let z=-1; z<=1; z++) {
+                        let nx = x * size; let ny = y * size; let nz = z * size;
+                        let d = Math.sqrt(nx*nx + ny*ny + nz*nz);
+                        let stretch = 1 + Math.sin(t*2 + d)*0.2;
+                        nx*=stretch; ny*=stretch; nz*=stretch;
+                        let cam = applyCamera(nx, ny, nz);
+                        let p = project3D(cam.x, cam.y, cam.z, cx, cy);
+                        if(p) { nodes.push({p: p, grid: [x,y,z]}); drawPoint(ctx, p, '#00f0ff', 2); }
+                    }
+                }
+            }
+            ctx.lineWidth = 1;
+            for(let i=0; i<nodes.length; i++) {
+                for(let j=i+1; j<nodes.length; j++) {
+                    let dx = Math.abs(nodes[i].grid[0] - nodes[j].grid[0]);
+                    let dy = Math.abs(nodes[i].grid[1] - nodes[j].grid[1]);
+                    let dz = Math.abs(nodes[i].grid[2] - nodes[j].grid[2]);
+                    if((dx+dy+dz) === 1) { drawLine(ctx, nodes[i].p, nodes[j].p, 'rgba(0, 240, 255, 0.4)', 1); }
+                }
+            }
+        }
+
+        function renderMobius(cx, cy, t) {
+            ctx.shadowBlur = 15; ctx.shadowColor = 'rgba(0, 240, 255, 0.8)';
+            let prevP = null;
+            for(let i=0; i<=100; i++) {
+                let u = (i/100) * Math.PI * 2;
+                let v = Math.sin(t*3)*0.5;
+                let x = Math.cos(u) * (1.5 + (v/2) * Math.cos(u/2));
+                let y = Math.sin(u) * (1.5 + (v/2) * Math.cos(u/2));
+                let z = (v/2) * Math.sin(u/2);
+                let cam = applyCamera(x, y, z);
+                let p = project3D(cam.x, cam.y, cam.z, cx, cy);
+                if(p) {
+                    drawPoint(ctx, p, '#fff', 1.5);
+                    if(prevP) drawLine(ctx, prevP, p, 'rgba(0,240,255,0.6)', 1.5);
+                }
+                prevP = p;
+            }
+        }
+
+        function renderWormhole(cx, cy, t) {
+            ctx.shadowBlur = 20; ctx.shadowColor = 'rgba(212, 175, 55, 0.6)';
+            for(let ring=-10; ring<=10; ring++) {
+                let y = ring * 0.25;
+                let rad = 0.5 + (y*y); 
+                let prevP = null;
+                for(let i=0; i<=30; i++) {
+                    let ang = (i/30) * Math.PI*2 + (t*0.5 * (y>0?1:-1)); 
+                    let x = Math.cos(ang) * rad;
+                    let z = Math.sin(ang) * rad;
+                    let cam = applyCamera(x, y, z);
+                    let p = project3D(cam.x, cam.y, cam.z, cx, cy);
+                    let alpha = 1 - (Math.abs(y)/3);
+                    if(p && alpha > 0) {
+                        if(prevP) drawLine(ctx, prevP, p, `rgba(212, 175, 55, ${alpha})`, 1);
+                        if(i%2===0) drawPoint(ctx, p, '#fff', 1);
+                    }
+                    prevP = p;
+                }
+            }
+        }
+
+        function renderVoidRing(cx, cy, t) {
+            let cCam = applyCamera(0,0,0);
+            let center = project3D(cCam.x, cCam.y, cCam.z, cx, cy);
+            if(center) {
+                ctx.shadowColor = '#000'; ctx.shadowBlur = 0;
+                drawPoint(ctx, center, '#05030a', 30); 
+                ctx.shadowColor = 'rgba(0, 240, 255, 0.8)'; ctx.shadowBlur = 20;
+                ctx.strokeStyle = 'rgba(0, 240, 255, 0.5)'; ctx.lineWidth=2;
+                ctx.beginPath(); ctx.arc(center.x, center.y, center.scale*0.8 + Math.sin(t*4)*5, 0, Math.PI*2); ctx.stroke();
+            }
+            for(let i=0; i<40; i++) {
+                let ang = i * 0.5 + t;
+                let rad = 1.5 + (i * 0.1) + (t*2 % 2); 
+                let x = Math.cos(ang) * rad;
+                let z = Math.sin(ang) * rad;
+                let y = Math.sin(ang*2 + t)*0.2;
+                let cam = applyCamera(x, y, z);
+                let p = project3D(cam.x, cam.y, cam.z, cx, cy);
+                if(p) drawPoint(ctx, p, `rgba(255,255,255,${1 - (rad-1.5)/2})`, 1.5);
+            }
+        }
+
+        function renderSlicePlane(cx, cy, t) {
+            ctx.shadowBlur = 10;
+            ctx.shadowColor = 'rgba(157, 0, 255, 0.5)';
+            for(let lat=-Math.PI/2; lat<=Math.PI/2; lat+=Math.PI/6) {
+                let prevP = null;
+                for(let lon=0; lon<=Math.PI*2; lon+=0.2) {
+                    let x = Math.cos(lat)*Math.cos(lon)*2;
+                    let z = Math.cos(lat)*Math.sin(lon)*2;
+                    let y = Math.sin(lat)*2;
+                    let cam = applyCamera(x,y,z);
+                    let p = project3D(cam.x, cam.y, cam.z, cx, cy);
+                    if(p && prevP) drawLine(ctx, prevP, p, 'rgba(157,0,255,0.2)', 0.5);
+                    prevP = p;
+                }
+            }
+            ctx.shadowColor = 'rgba(0, 240, 255, 0.8)';
+            let planeZ = Math.sin(t)*1.5; 
+            let p1 = project3D(applyCamera(-2.5, -2.5, planeZ).x, applyCamera(-2.5, -2.5, planeZ).y, applyCamera(-2.5, -2.5, planeZ).z, cx, cy);
+            let p2 = project3D(applyCamera(2.5, -2.5, planeZ).x, applyCamera(2.5, -2.5, planeZ).y, applyCamera(2.5, -2.5, planeZ).z, cx, cy);
+            let p3 = project3D(applyCamera(2.5, 2.5, planeZ).x, applyCamera(2.5, 2.5, planeZ).y, applyCamera(2.5, 2.5, planeZ).z, cx, cy);
+            let p4 = project3D(applyCamera(-2.5, 2.5, planeZ).x, applyCamera(-2.5, 2.5, planeZ).y, applyCamera(-2.5, 2.5, planeZ).z, cx, cy);
+            if(p1&&p2&&p3&&p4) {
+                ctx.fillStyle = 'rgba(0, 240, 255, 0.1)';
+                ctx.beginPath(); ctx.moveTo(p1.x, p1.y); ctx.lineTo(p2.x, p2.y); ctx.lineTo(p3.x, p3.y); ctx.lineTo(p4.x, p4.y); ctx.fill();
+                drawLine(ctx, p1, p2, '#00f0ff', 2); drawLine(ctx, p2, p3, '#00f0ff', 2); 
+                drawLine(ctx, p3, p4, '#00f0ff', 2); drawLine(ctx, p4, p1, '#00f0ff', 2);
+            }
+            let ringRad = Math.sqrt(Math.max(0, 4 - planeZ*planeZ));
+            let prevR = null;
+            for(let i=0; i<=40; i++) {
+                let ang = i * Math.PI*2/40;
+                let x = Math.cos(ang) * ringRad;
+                let y = Math.sin(ang) * ringRad;
+                let cam = applyCamera(x, y, planeZ);
+                let p = project3D(cam.x, cam.y, cam.z, cx, cy);
+                if(p && prevR) drawLine(ctx, prevR, p, '#fff', 2.5);
+                prevR = p;
+            }
+        }
+
+        function renderOrthogonalPhase(cx, cy, t) {
+            ctx.shadowBlur = 15;
+            ctx.shadowColor = 'rgba(255, 0, 0, 0.8)';
+            for(let i=0; i<40; i++) {
+                let a = i*Math.PI*2/40;
+                let cam = applyCamera(Math.cos(a)*1.5, Math.sin(a)*1.5, 0);
+                drawPoint(ctx, project3D(cam.x, cam.y, cam.z, cx, cy), '#ff0000', 1.5);
+            }
+            ctx.shadowColor = 'rgba(0, 255, 0, 0.8)';
+            for(let i=0; i<40; i++) {
+                let a = i*Math.PI*2/40;
+                let cam = applyCamera(0, Math.cos(a)*1.5, Math.sin(a)*1.5);
+                drawPoint(ctx, project3D(cam.x, cam.y, cam.z, cx, cy), '#00ff00', 1.5);
+            }
+            ctx.shadowColor = 'rgba(0, 240, 255, 0.8)';
+            for(let i=0; i<40; i++) {
+                let a = i*Math.PI*2/40;
+                let rad = 1.5 + Math.sin(t*3)*0.2; 
+                let cam = applyCamera(Math.cos(a)*rad, 0, Math.sin(a)*rad);
+                let p = project3D(cam.x, cam.y, cam.z, cx, cy);
+                drawPoint(ctx, p, '#00f0ff', 2);
+                if(i%4===0 && p) {
+                    let cCam = applyCamera(0,0,0);
+                    drawLine(ctx, project3D(cCam.x, cCam.y, cCam.z, cx, cy), p, 'rgba(0,240,255,0.3)', 0.5);
+                }
+            }
+        }
+
+        function renderVectorField(cx, cy, t) {
+            ctx.shadowBlur = 5; ctx.shadowColor = 'rgba(0, 240, 255, 0.8)';
+            let spacing = 1.2;
+            for(let x=-1.5; x<=1.5; x+=spacing) {
+                for(let y=-1.5; y<=1.5; y+=spacing) {
+                    for(let z=-1.5; z<=1.5; z+=spacing) {
+                        let vx = -x + Math.sin(t+y)*0.5;
+                        let vy = -y + Math.cos(t+z)*0.5;
+                        let vz = -z + Math.sin(t+x)*0.5;
+                        let len = Math.sqrt(vx*vx + vy*vy + vz*vz) || 1;
+                        vx = (vx/len)*0.4; vy = (vy/len)*0.4; vz = (vz/len)*0.4;
+
+                        let camStart = applyCamera(x, y, z);
+                        let camEnd = applyCamera(x+vx, y+vy, z+vz);
+                        let p1 = project3D(camStart.x, camStart.y, camStart.z, cx, cy);
+                        let p2 = project3D(camEnd.x, camEnd.y, camEnd.z, cx, cy);
+
+                        if(p1 && p2) {
+                            drawLine(ctx, p1, p2, 'rgba(0, 240, 255, 0.6)', 1.5);
+                            drawPoint(ctx, p2, '#fff', 1.5);
+                        }
+                    }
+                }
+            }
+        }
+
+        // --- RENDER LOOP ---
+        function renderLoop() {
+            if(ontologyOpen) return requestAnimationFrame(renderLoop);
+
+            ctx.fillStyle = '#000000';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            ctx.strokeStyle = 'rgba(255,255,255,0.05)';
+            ctx.lineWidth = 1;
+            const cx = canvas.width / 2;
+            const cy = canvas.height / 2;
+            
+            for(let i=-5; i<=5; i++) {
+                let c1 = applyCamera(i*0.5, 2, -2.5); let p1 = project3D(c1.x, c1.y, c1.z, cx, cy);
+                let c2 = applyCamera(i*0.5, 2, 2.5);  let p2 = project3D(c2.x, c2.y, c2.z, cx, cy);
+                let c3 = applyCamera(-2.5, 2, i*0.5); let p3 = project3D(c3.x, c3.y, c3.z, cx, cy);
+                let c4 = applyCamera(2.5, 2, i*0.5);  let p4 = project3D(c4.x, c4.y, c4.z, cx, cy);
+                if(p1 && p2) { ctx.beginPath(); ctx.moveTo(p1.x, p1.y); ctx.lineTo(p2.x, p2.y); ctx.stroke(); }
+                if(p3 && p4) { ctx.beginPath(); ctx.moveTo(p3.x, p3.y); ctx.lineTo(p4.x, p4.y); ctx.stroke(); }
+            }
+
+            if(!currentSymbol) return requestAnimationFrame(renderLoop);
+            
+            const mode = lexiconData[currentSymbol].visMode;
+            ctx.globalCompositeOperation = 'screen';
+            
+            if(mode === 'FUNNEL') renderFunnel(cx, cy - 30, time);
+            else if(mode === 'TREFOIL_SPIN') renderTrefoilSpin(cx, cy, time);
+            else if(mode === 'RIPPLES') renderRipples(cx, cy, time);
+            else if(mode === 'TETRAHEDRON') renderTetrahedron(cx, cy, time);
+            else if(mode === 'HEX_CIRCLE') renderHexCircle(cx, cy, time);
+            else if(mode === 'BRAID') renderBraid(cx, cy, time);
+            else if(mode === 'EVENT_HORIZON') renderEventHorizon(cx, cy, time);
+            else if(mode === 'GOLDEN_SPIRAL') renderGoldenSpiral(cx, cy, time);
+            else if(mode === 'LATTICE_WEB') renderLatticeWeb(cx, cy, time);
+            else if(mode === 'MOBIUS') renderMobius(cx, cy, time);
+            else if(mode === 'WORMHOLE') renderWormhole(cx, cy, time);
+            else if(mode === 'VOID_RING') renderVoidRing(cx, cy, time);
+            else if(mode === 'SLICE_PLANE') renderSlicePlane(cx, cy, time);
+            else if(mode === 'ORTHOGONAL_PHASE') renderOrthogonalPhase(cx, cy, time);
+            else if(mode === 'VECTOR_FIELD') renderVectorField(cx, cy, time);
+
+            ctx.globalCompositeOperation = 'source-over';
+            
+            if(autoRotate) {
+                rotY += 0.005;
+                rotX += 0.002;
+            }
+            time += 0.02; 
+            
+            requestAnimationFrame(renderLoop);
+        }
+
+        init();
+
+    </script>
+</body>
+</html>
