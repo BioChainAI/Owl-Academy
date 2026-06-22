@@ -1,0 +1,866 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Enterprise AI | Traceability & Decentralization Simulator</title>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --gold:    #D4AF37;
+            --cyan:    #00d4ff;
+            --fuchsia: #e81cff;
+            --emerald: #00e5a0;
+            --alert:   #ff3366;
+            --bg:      #030508;
+        }
+        body {
+            background-color: var(--bg); color: #e2e8f0;
+            font-family: 'Inter', sans-serif; margin: 0;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+        
+        /* Background Canvas */
+        #network-canvas {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            z-index: -2; pointer-events: none;
+        }
+        /* Connections Canvas */
+        #connections-canvas {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            z-index: -1; pointer-events: none;
+        }
+
+        h1,h2,h3,.mystical { font-family: 'Cinzel', serif; }
+        .mono { font-family: 'JetBrains Mono', monospace; }
+
+        .glass-panel {
+            background: rgba(10,6,22,0.85); backdrop-filter: blur(20px);
+            border: 1px solid rgba(0,212,255,0.2);
+            box-shadow: 0 8px 32px -4px rgba(0,0,0,0.8), inset 0 1px 0 rgba(255,255,255,0.05);
+            border-radius: 12px;
+        }
+
+        /* Top Navigation */
+        .top-nav {
+            position: sticky; top: 0; z-index: 100;
+            background: rgba(10,6,22,0.95); backdrop-filter: blur(20px);
+            border-bottom: 1px solid rgba(0,212,255,0.15);
+            padding: 10px 24px;
+            display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+            justify-content: center;
+        }
+        .top-nav a {
+            font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: 0.15em; text-transform: uppercase;
+            color: rgba(0,212,255,0.55); text-decoration: none;
+            padding: 4px 10px; border-radius: 4px;
+            border: 1px solid rgba(0,212,255,0.15); transition: all 0.2s;
+        }
+        .top-nav a:hover, .top-nav a.active { 
+            color: var(--cyan); border-color: rgba(0,212,255,0.4); background: rgba(0,212,255,0.05); 
+        }
+
+        /* Terminal Window */
+        .terminal {
+            background: #050a0f; border: 1px solid rgba(0,212,255,0.3);
+            border-radius: 8px; padding: 12px; height: 280px; overflow-y: auto;
+            font-family: 'JetBrains Mono', monospace; font-size: 0.75rem;
+            box-shadow: inset 0 0 20px rgba(0,0,0,0.8);
+            scroll-behavior: smooth;
+        }
+        .term-line { margin-bottom: 4px; opacity: 0; animation: fadeIn 0.3s forwards; }
+        .term-time { color: rgba(255,255,255,0.4); margin-right: 8px; }
+        .term-info { color: var(--cyan); }
+        .term-success { color: var(--emerald); }
+        .term-alert { color: var(--alert); }
+        .term-hash { color: var(--gold); word-break: break-all; font-size: 0.65rem;}
+        
+        @keyframes fadeIn { to { opacity: 1; } }
+
+        /* Buttons */
+        .sim-btn {
+            width: 100%; padding: 12px 16px; border-radius: 6px;
+            font-family: 'JetBrains Mono', monospace; font-size: 0.8rem; font-weight: bold; text-transform: uppercase; letter-spacing: 0.1em;
+            transition: all 0.2s; cursor: pointer; display: flex; justify-content: space-between; align-items: center;
+            position: relative; overflow: hidden;
+        }
+        .sim-btn::before {
+            content: ''; position: absolute; top: 0; left: -100%; width: 100%; height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
+            transition: left 0.5s;
+        }
+        .sim-btn:hover::before { left: 100%; }
+        
+        .btn-sign { background: rgba(0,229,160,0.1); border: 1px solid var(--emerald); color: var(--emerald); }
+        .btn-sign:hover { background: rgba(0,229,160,0.2); box-shadow: 0 0 15px rgba(0,229,160,0.4); }
+        
+        .btn-audit { background: rgba(212,175,55,0.1); border: 1px solid var(--gold); color: var(--gold); }
+        .btn-audit:hover { background: rgba(212,175,55,0.2); box-shadow: 0 0 15px rgba(212,175,55,0.4); }
+
+        .btn-decentralize { background: rgba(232,28,255,0.1); border: 1px solid var(--fuchsia); color: var(--fuchsia); }
+        .btn-decentralize:hover { background: rgba(232,28,255,0.2); box-shadow: 0 0 15px rgba(232,28,255,0.4); }
+
+        .btn-next { background: var(--cyan); border: 1px solid var(--cyan); color: #000; box-shadow: 0 0 15px rgba(0,212,255,0.6); }
+        .btn-next:hover { background: #33e0ff; box-shadow: 0 0 25px rgba(0,212,255,0.8); }
+
+        /* Graph Nodes */
+        .graph-container {
+            position: relative; height: 600px; display: flex; flex-direction: column; justify-content: space-between;
+        }
+        .graph-row {
+            display: flex; justify-content: space-around; align-items: center; width: 100%; z-index: 10;
+        }
+        .node {
+            width: 140px; padding: 12px; border-radius: 8px; text-align: center;
+            background: rgba(10,6,22,0.9); border: 2px solid #333;
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            position: relative; cursor: default;
+        }
+        .node-icon { font-size: 1.5rem; margin-bottom: 4px; display: block; }
+        .node-title { font-family: 'Cinzel', serif; font-size: 0.75rem; font-weight: bold; color: #fff; letter-spacing: 0.05em; }
+        .node-sub { font-family: 'JetBrains Mono', monospace; font-size: 0.6rem; color: rgba(255,255,255,0.5); margin-top: 4px; }
+        
+        /* Node States */
+        .node.active-root { border-color: var(--cyan); box-shadow: 0 0 20px rgba(0,212,255,0.3); }
+        .node.active-admin { border-color: var(--fuchsia); box-shadow: 0 0 20px rgba(232,28,255,0.3); }
+        .node.active-sme { border-color: var(--emerald); box-shadow: 0 0 20px rgba(0,229,160,0.3); }
+        .node.active-doc { border-color: var(--gold); box-shadow: 0 0 20px rgba(212,175,55,0.3); }
+        
+        .node.pulse { animation: nodePulse 1s infinite alternate; }
+        @keyframes nodePulse { from { transform: scale(1); } to { transform: scale(1.05); } }
+
+        .node.error { border-color: var(--alert); box-shadow: 0 0 20px rgba(255,51,102,0.5); animation: shake 0.5s; background: rgba(50,0,10,0.9); }
+        @keyframes shake {
+            0% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            50% { transform: translateX(5px); }
+            75% { transform: translateX(-5px); }
+            100% { transform: translateX(0); }
+        }
+
+        /* Replica Nodes (Decentralization) */
+        .replica {
+            position: absolute; opacity: 0; transform: scale(0.5);
+            width: 100px; padding: 8px; border-radius: 6px;
+            background: rgba(10,6,22,0.9); border: 1px dashed var(--cyan);
+            font-size: 0.6rem; transition: all 0.5s; z-index: 5;
+        }
+        .replica.show { opacity: 0.8; transform: scale(1); }
+        
+        /* Layout */
+        .dashboard-grid {
+            display: grid; grid-template-columns: 1fr; gap: 24px;
+        }
+        @media (min-width: 1024px) {
+            .dashboard-grid { grid-template-columns: 350px 1fr; }
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: rgba(0,0,0,0.2); }
+        ::-webkit-scrollbar-thumb { background: rgba(0,212,255,0.3); border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(0,212,255,0.6); }
+    </style>
+</head>
+<body>
+
+<!-- Background Animation Canvas -->
+<canvas id="network-canvas"></canvas>
+
+<nav class="top-nav">
+    <a href="commercialization_map.html">← Architecture Map</a>
+    <a href="#" class="active">Interactive Simulator (Step-by-Step)</a>
+    <a href="#">Deployment Guide</a>
+</nav>
+
+<main class="max-w-7xl mx-auto px-4 py-8">
+    
+    <header class="mb-8">
+        <h1 class="text-3xl font-bold tracking-[0.1em] mystical text-white">
+            TRACEABILITY <span style="color: var(--cyan)">SIMULATOR</span>
+        </h1>
+        <p class="text-sm text-gray-400 mt-2 font-mono">Live Simulation: Zero-Trust Cryptographic Data Supply Chain & Validator Topologies.</p>
+    </header>
+
+    <div class="dashboard-grid">
+        
+        <!-- Left Column: Controls & Logs -->
+        <div class="flex flex-col gap-6">
+            
+            <div class="glass-panel p-6">
+                <h2 class="font-bold text-lg mb-4 text-white font-['Inter'] flex items-center gap-2">
+                    <svg class="w-5 h-5 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"></path></svg>
+                    Simulation Controls
+                </h2>
+                
+                <div class="space-y-4" id="primary-controls">
+                    <button class="sim-btn btn-sign" onclick="startSimulation('ingest')">
+                        <span>1. Simulate Data Ingestion</span>
+                        <span>→</span>
+                    </button>
+                    <div class="text-[10px] text-gray-500 font-mono -mt-2 mb-2 px-2">Creates a Tome signed by a verified SME.</div>
+
+                    <button class="sim-btn btn-audit" onclick="startSimulation('audit')">
+                        <span>2. Trigger Full Trace Audit</span>
+                        <span>↻</span>
+                    </button>
+                    <div class="text-[10px] text-gray-500 font-mono -mt-2 mb-2 px-2">Reverses the pipeline to verify origin identity.</div>
+
+                    <button class="sim-btn btn-decentralize" onclick="startSimulation('decentralize')">
+                        <span>3. Test Decentralized Topology</span>
+                        <span>⬡</span>
+                    </button>
+                    <div class="text-[10px] text-gray-500 font-mono -mt-2 mb-2 px-2">Simulates node failure and consensus replica spin-up.</div>
+                    
+                    <button class="sim-btn border border-gray-600 text-gray-400 hover:bg-gray-800" onclick="resetSimulation()">
+                        <span>Reset Environment</span>
+                        <span>⟲</span>
+                    </button>
+                </div>
+
+                <!-- Step Control (Hidden initially) -->
+                <div id="step-controls" class="mt-4 hidden border-t border-cyan-500/30 pt-4">
+                    <p class="text-[10px] text-cyan-400 font-mono mb-2 text-center uppercase tracking-widest" id="step-indicator">Step 1 of 4</p>
+                    <button id="next-step-btn" class="sim-btn btn-next" onclick="advanceSimulation()">
+                        <span>NEXT STEP</span>
+                        <span>➔</span>
+                    </button>
+                    <button class="sim-btn border border-gray-600 text-gray-400 hover:bg-gray-800 mt-3" onclick="abortSimulation()">
+                        <span>Cancel Simulation</span>
+                        <span>✕</span>
+                    </button>
+                </div>
+
+            </div>
+
+            <div class="glass-panel p-4 flex-grow flex flex-col">
+                <h2 class="font-bold text-sm mb-2 text-white font-['JetBrains_Mono'] uppercase tracking-widest flex justify-between">
+                    <span>System Output Log</span>
+                    <span id="log-status" class="text-emerald-400">IDLE</span>
+                </h2>
+                <div id="terminal" class="terminal flex-grow">
+                    <div class="term-line"><span class="term-time">[SYSTEM]</span><span class="text-gray-500">Awaiting simulation trigger...</span></div>
+                </div>
+            </div>
+            
+        </div>
+
+        <!-- Right Column: Visualizer -->
+        <div class="glass-panel p-6 relative">
+            
+            <div class="absolute top-4 right-4 flex gap-3">
+                <div class="flex items-center gap-1 text-[10px] font-mono text-gray-400"><span class="w-2 h-2 rounded-full bg-emerald-400"></span> Active Node</div>
+                <div class="flex items-center gap-1 text-[10px] font-mono text-gray-400"><span class="w-2 h-2 rounded-full bg-alert"></span> Offline</div>
+                <div class="flex items-center gap-1 text-[10px] font-mono text-gray-400"><span class="w-2 h-2 border border-cyan-400 rounded-sm"></span> Replica</div>
+            </div>
+
+            <!-- Overlay canvas for drawing lines -->
+            <canvas id="connections-canvas"></canvas>
+
+            <div class="graph-container" id="graph-container">
+                
+                <!-- Layer 1: Root -->
+                <div class="graph-row">
+                    <div class="node active-root" id="node-root">
+                        <span class="node-icon text-cyan-400">⬡</span>
+                        <div class="node-title text-cyan-400">Root CA</div>
+                        <div class="node-sub">Genesis Ledger</div>
+                    </div>
+                </div>
+
+                <!-- Layer 2: Admins -->
+                <div class="graph-row">
+                    <div class="node active-admin" id="node-admin-1">
+                        <span class="node-icon text-fuchsia-400">♛</span>
+                        <div class="node-title text-fuchsia-400">Archon Node Alpha</div>
+                        <div class="node-sub">SysAdmin_ID: 8x2...</div>
+                    </div>
+                </div>
+
+                <!-- Layer 3: SMEs -->
+                <div class="graph-row">
+                    <div class="node" id="node-sme-1">
+                        <span class="node-icon text-emerald-400">⬢</span>
+                        <div class="node-title text-emerald-400">Instructor Node</div>
+                        <div class="node-sub">Verified SME</div>
+                        <div class="node-sub text-[8px] mt-1" id="sme-cert-status">Status: Awaiting Cert</div>
+                    </div>
+                    <div class="node" id="node-sme-2">
+                        <span class="node-icon text-emerald-400">⬢</span>
+                        <div class="node-title text-emerald-400">Analyst Node</div>
+                        <div class="node-sub">Verified SME</div>
+                        <div class="node-sub text-[8px] mt-1">Status: Offline</div>
+                    </div>
+                </div>
+
+                <!-- Layer 4: Documents (VKAs) -->
+                <div class="graph-row">
+                    <div class="node" id="node-doc-1">
+                        <span class="node-icon text-gold">📜</span>
+                        <div class="node-title text-gold">Knowledge Asset</div>
+                        <div class="node-sub">Tome / RAG Data</div>
+                        <div class="node-sub text-[8px] mt-1" id="doc-hash-status">Unsigned</div>
+                    </div>
+                </div>
+
+                <!-- Layer 5: AI Output -->
+                <div class="graph-row">
+                    <div class="node" id="node-ai-1">
+                        <span class="node-icon text-white">⚙️</span>
+                        <div class="node-title">Hyperbolic AI</div>
+                        <div class="node-sub">Agent Output</div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+    </div>
+
+</main>
+
+<script>
+    // --- GLOBAL STATE VARIABLES ---
+    var isRunning = false;
+    var currentReplicas = [];
+    var activeConnections = [];
+    var activeSim = null;
+    var currentStep = 1;
+
+    // --- UTILS & LOGGING ---
+    const terminal = document.getElementById('terminal');
+    const logStatus = document.getElementById('log-status');
+    const stepControls = document.getElementById('step-controls');
+    const primaryControls = document.getElementById('primary-controls');
+    const stepIndicator = document.getElementById('step-indicator');
+    const nextBtn = document.getElementById('next-step-btn');
+
+    function getTimestamp() {
+        const now = new Date();
+        return `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}:${now.getSeconds().toString().padStart(2, '0')}.${now.getMilliseconds().toString().padStart(3, '0')}`;
+    }
+
+    function logTerminal(message, type = 'info') {
+        const div = document.createElement('div');
+        div.className = 'term-line';
+        
+        let colorClass = 'term-info';
+        if (type === 'success') colorClass = 'term-success';
+        if (type === 'alert') colorClass = 'term-alert';
+        if (type === 'hash') colorClass = 'term-hash';
+        
+        div.innerHTML = `<span class="term-time">[${getTimestamp()}]</span><span class="${colorClass}">${message}</span>`;
+        terminal.appendChild(div);
+        terminal.scrollTop = terminal.scrollHeight;
+    }
+
+    function generateFakeHash() {
+        const chars = '0123456789abcdef';
+        let hash = '0x';
+        for(let i=0; i<64; i++) hash += chars[Math.floor(Math.random() * chars.length)];
+        return hash;
+    }
+
+    // --- VISUAL GRAPH CONNECTIONS ---
+    const connectionsCanvas = document.getElementById('connections-canvas');
+    const ctxConn = connectionsCanvas.getContext('2d');
+    const graphContainer = document.getElementById('graph-container');
+    
+    function resizeConnectionsCanvas() {
+        connectionsCanvas.width = graphContainer.offsetWidth;
+        connectionsCanvas.height = graphContainer.offsetHeight;
+    }
+    window.addEventListener('resize', resizeConnectionsCanvas);
+    resizeConnectionsCanvas();
+
+    function getCenter(el) {
+        const rect = el.getBoundingClientRect();
+        const containerRect = graphContainer.getBoundingClientRect();
+        return {
+            x: rect.left - containerRect.left + rect.width / 2,
+            y: rect.top - containerRect.top + rect.height / 2
+        };
+    }
+
+    function drawConnections() {
+        ctxConn.clearRect(0, 0, connectionsCanvas.width, connectionsCanvas.height);
+        
+        // Draw static base connections
+        ctxConn.lineWidth = 1;
+        // Removed setLineDash system entirely to fix canvas crash. 
+        // Using faint solid structural lines instead.
+        
+        const root = document.getElementById('node-root');
+        const admin = document.getElementById('node-admin-1');
+        const sme1 = document.getElementById('node-sme-1');
+        const sme2 = document.getElementById('node-sme-2');
+        const doc = document.getElementById('node-doc-1');
+        const ai = document.getElementById('node-ai-1');
+        
+        // Default thin lines showing architecture structure
+        drawLine(root, admin, 'rgba(0,212,255,0.1)');
+        drawLine(admin, sme1, 'rgba(232,28,255,0.1)');
+        drawLine(admin, sme2, 'rgba(232,28,255,0.1)');
+        drawLine(sme1, doc, 'rgba(0,229,160,0.1)');
+        drawLine(doc, ai, 'rgba(212,175,55,0.1)');
+
+        // Draw active animated connections
+        activeConnections.forEach(conn => {
+            const el1 = document.getElementById(conn.from);
+            const el2 = document.getElementById(conn.to);
+            if(!el1 || !el2) return;
+
+            const p1 = getCenter(el1);
+            const p2 = getCenter(el2);
+
+            // Draw glowing solid line
+            ctxConn.beginPath();
+            ctxConn.moveTo(p1.x, p1.y);
+            ctxConn.lineTo(p2.x, p2.y);
+            ctxConn.strokeStyle = conn.color;
+            ctxConn.lineWidth = 2;
+            ctxConn.shadowBlur = 10;
+            ctxConn.shadowColor = conn.color;
+            ctxConn.stroke();
+            ctxConn.shadowBlur = 0; // reset
+
+            // Animate particles along path
+            conn.particles.forEach((p, index) => {
+                p.progress += p.speed;
+                if (p.progress > 1) {
+                    p.progress = 0; // reset particle
+                }
+                
+                const x = p1.x + (p2.x - p1.x) * p.progress;
+                const y = p1.y + (p2.y - p1.y) * p.progress;
+
+                ctxConn.beginPath();
+                ctxConn.arc(x, y, 3, 0, Math.PI * 2);
+                ctxConn.fillStyle = '#FFF';
+                ctxConn.shadowBlur = 15;
+                ctxConn.shadowColor = '#FFF';
+                ctxConn.fill();
+                ctxConn.shadowBlur = 0;
+            });
+        });
+
+        requestAnimationFrame(drawConnections);
+    }
+    
+    function drawLine(el1, el2, color) {
+        if(!el1 || !el2) return;
+        const p1 = getCenter(el1);
+        const p2 = getCenter(el2);
+        ctxConn.beginPath();
+        ctxConn.moveTo(p1.x, p1.y);
+        ctxConn.lineTo(p2.x, p2.y);
+        ctxConn.strokeStyle = color;
+        ctxConn.stroke();
+    }
+
+    drawConnections(); // Start loop
+
+    function addActiveConnection(fromId, toId, color, reverse = false) {
+        // Remove existing identical connection
+        activeConnections = activeConnections.filter(c => !(c.from === fromId && c.to === toId));
+        
+        let particles = [];
+        for(let i=0; i<3; i++) {
+            particles.push({
+                progress: i * 0.33,
+                speed: (reverse ? -0.015 : 0.015) * (Math.random() * 0.5 + 0.8)
+            });
+            if(reverse) particles[i].progress = 1 - particles[i].progress;
+        }
+
+        activeConnections.push({ from: fromId, to: toId, color: color, particles: particles });
+    }
+
+    function clearConnections() {
+        activeConnections = [];
+    }
+
+    function setNodeState(id, stateClass, textUpdateId = null, text = null) {
+        const node = document.getElementById(id);
+        if (node) {
+            // retain base classes
+            node.className = `node ${stateClass}`;
+            if (textUpdateId && text) {
+                document.getElementById(textUpdateId).innerText = text;
+            }
+        }
+    }
+
+
+    // --- SIMULATION STEP MACHINE ---
+
+    function startSimulation(type) {
+        // FIX: Removed the error block that stopped the Audit. 
+        // We will now auto-mock the prerequisite state visually so you can run an audit at any time.
+
+        resetSimulation(false);
+
+        activeSim = type;
+        currentStep = 1;
+        
+        // Setup UI for step-by-step
+        primaryControls.classList.add('hidden');
+        stepControls.classList.remove('hidden');
+        nextBtn.classList.remove('hidden');
+        
+        logStatus.innerText = "SIMULATION ACTIVE";
+        logStatus.className = "text-cyan-400 pulse";
+
+        if (type === 'ingest') {
+            logTerminal("--- INITIALIZING SECURE INGESTION PIPELINE ---");
+            logTerminal("Click 'NEXT STEP' to begin node authentication.", "info");
+            updateStepIndicator(1, 4);
+        } else if (type === 'audit') {
+            logTerminal("--- INITIALIZING TRACEABILITY AUDIT ---", "alert");
+            logTerminal("Click 'NEXT STEP' to begin backward lineage trace.", "info");
+            updateStepIndicator(1, 3);
+            
+            // PRE-SETUP: Visually prep the board so the backward trace makes sense
+            setNodeState('node-sme-1', '', 'sme-cert-status', 'Cert: VALIDATED');
+            setNodeState('node-doc-1', '', 'doc-hash-status', 'Signed & Verified');
+            
+            // Establish faint baseline connections to show full forward pipeline before we audit backward
+            addActiveConnection('node-root', 'node-admin-1', 'rgba(0,212,255,0.2)');
+            addActiveConnection('node-admin-1', 'node-sme-1', 'rgba(232,28,255,0.2)');
+            addActiveConnection('node-sme-1', 'node-doc-1', 'rgba(0,229,160,0.2)');
+            addActiveConnection('node-doc-1', 'node-ai-1', 'rgba(212,175,55,0.2)');
+
+        } else if (type === 'decentralize') {
+            logTerminal("--- INITIALIZING DECENTRALIZED TOPOLOGY TEST ---", "alert");
+            logTerminal("Click 'NEXT STEP' to verify network baseline.", "info");
+            updateStepIndicator(1, 3);
+        }
+    }
+
+    function updateStepIndicator(current, total) {
+        stepIndicator.innerText = `Step ${current} of ${total}`;
+    }
+
+    function abortSimulation() {
+        resetSimulation(true);
+        logTerminal("Simulation Aborted.", "alert");
+    }
+
+    function advanceSimulation() {
+        if (isRunning) return;
+        isRunning = true;
+        
+        // Remove old pulses
+        document.querySelectorAll('.pulse').forEach(el => {
+            if(el.id !== 'log-status') el.classList.remove('pulse');
+        });
+
+        if (activeSim === 'ingest') stepIngest();
+        else if (activeSim === 'audit') stepAudit();
+        else if (activeSim === 'decentralize') stepDecentralize();
+    }
+
+    // -- INGEST STEPS (4 steps) --
+    function stepIngest() {
+        if (currentStep === 1) {
+            logTerminal("STEP 1: Authenticating Root CA & Archon permissions...");
+            setNodeState('node-root', 'active-root pulse');
+            setTimeout(() => {
+                addActiveConnection('node-root', 'node-admin-1', 'rgba(0,212,255,0.8)');
+                setNodeState('node-admin-1', 'active-admin pulse');
+                logTerminal("SysAdmin_ID verified. Validating Subject Matter Expert...", "success");
+                endStep(4);
+            }, 600);
+        } 
+        else if (currentStep === 2) {
+            logTerminal("STEP 2: Issuing Zero-Trust Certificate to SME Node.");
+            addActiveConnection('node-admin-1', 'node-sme-1', 'rgba(232,28,255,0.8)');
+            setNodeState('node-sme-1', 'active-sme pulse', 'sme-cert-status', 'Cert: VALIDATED');
+            setTimeout(() => {
+                logTerminal("Instructor Cert issued to SME via Cosmological ID.", "success");
+                logTerminal(`SME_PubKey: ${generateFakeHash()}`, "hash");
+                endStep(4);
+            }, 600);
+        }
+        else if (currentStep === 3) {
+            logTerminal("STEP 3: SME Sign & Upload Knowledge Asset (Tome).");
+            addActiveConnection('node-sme-1', 'node-doc-1', 'rgba(0,229,160,0.8)');
+            setNodeState('node-doc-1', 'active-doc pulse');
+            
+            setTimeout(() => {
+                const docHash = generateFakeHash();
+                logTerminal("Generating cryptographic signature bound to document payload...");
+                logTerminal(`Signature: ${docHash}`, "hash");
+                setNodeState('node-doc-1', 'active-doc', 'doc-hash-status', 'Signed & Verified');
+                logTerminal("Knowledge Asset ingested securely.", "success");
+                endStep(4);
+            }, 800);
+        }
+        else if (currentStep === 4) {
+            logTerminal("STEP 4: Feed to AI Engine.");
+            logTerminal("Initializing Hyperbolic Vector Embedding for RAG consumption...");
+            addActiveConnection('node-doc-1', 'node-ai-1', 'rgba(212,175,55,0.8)');
+            setNodeState('node-ai-1', 'active-root pulse');
+            setTimeout(() => {
+                logTerminal("AI Agent context updated with verified ground truth.", "success");
+                completeSimulation();
+            }, 600);
+        }
+    }
+
+    // -- AUDIT STEPS (3 steps) --
+    function stepAudit() {
+        if (currentStep === 1) {
+            logTerminal("STEP 1: Requesting lineage for AI Output ID #88492...");
+            setNodeState('node-ai-1', 'active-root pulse');
+            addActiveConnection('node-doc-1', 'node-ai-1', 'rgba(212,175,55,1)', true); // Reverse flow
+            
+            setTimeout(() => {
+                logTerminal("Found Verifiable Knowledge Asset binding.", "success");
+                setNodeState('node-doc-1', 'active-doc pulse');
+                endStep(3);
+            }, 800);
+        }
+        else if (currentStep === 2) {
+            logTerminal("STEP 2: Tracing Document Signature...");
+            addActiveConnection('node-sme-1', 'node-doc-1', 'rgba(0,229,160,1)', true);
+            
+            setTimeout(() => {
+                logTerminal("Document Signature resolved to SME_ID (Instructor Node).");
+                logTerminal(`Verifying ECDSA Signature against public ledger...`);
+                setNodeState('node-sme-1', 'active-sme pulse');
+                logTerminal("Signature MATCH. Provenance confirmed.", "success");
+                endStep(3);
+            }, 800);
+        }
+        else if (currentStep === 3) {
+            logTerminal("STEP 3: Checking Authorization Chain...");
+            addActiveConnection('node-admin-1', 'node-sme-1', 'rgba(232,28,255,1)', true);
+            setNodeState('node-admin-1', 'active-admin pulse');
+            
+            setTimeout(() => {
+                logTerminal("Archon Node Alpha issued SME credentials validly.");
+                addActiveConnection('node-root', 'node-admin-1', 'rgba(0,212,255,1)', true);
+                setNodeState('node-root', 'active-root pulse');
+                logTerminal("Root CA validated. AUDIT COMPLETE. 100% Traceability Confirmed.", "success");
+                completeSimulation();
+            }, 800);
+        }
+    }
+
+    // -- DECENTRALIZE STEPS (3 steps) --
+    function stepDecentralize() {
+        if (currentStep === 1) {
+            logTerminal("STEP 1: Analyzing Validator Node baseline...");
+            setNodeState('node-admin-1', 'active-admin');
+            addActiveConnection('node-root', 'node-admin-1', 'rgba(0,212,255,0.6)');
+            
+            setTimeout(() => {
+                logTerminal("Network operating normally.", "success");
+                endStep(3);
+            }, 600);
+        }
+        else if (currentStep === 2) {
+            logTerminal("STEP 2: Simulating Failure Event...");
+            logTerminal("WARNING: DDoS or hardware failure detected at Archon Node Alpha!", "alert");
+            setNodeState('node-admin-1', 'error');
+            clearConnections(); // Connections drop
+            
+            setTimeout(() => {
+                logTerminal("Primary authority node is OFFLINE. System halting signature creation...", "alert");
+                endStep(3);
+            }, 800);
+        }
+        else if (currentStep === 3) {
+            logTerminal("STEP 3: Spinning up Decentralized Validator Replicas...");
+            logTerminal("Consensus Protocol Triggered.", "info");
+            
+            const adminNode = document.getElementById('node-admin-1');
+            const adminRect = adminNode.getBoundingClientRect();
+            const containerRect = graphContainer.getBoundingClientRect();
+            const centerX = adminRect.left - containerRect.left;
+            const centerY = adminRect.top - containerRect.top;
+
+            // Create replicas
+            const positions = [
+                {x: centerX - 120, y: centerY + 20},
+                {x: centerX + 180, y: centerY + 20},
+                {x: centerX + 30, y: centerY - 60}
+            ];
+
+            positions.forEach((pos, i) => {
+                const el = document.createElement('div');
+                el.className = 'replica';
+                el.id = `replica-${i}`;
+                el.style.left = `${pos.x}px`;
+                el.style.top = `${pos.y}px`;
+                el.innerHTML = `⬡ Validator<br>Shard_0${i+1}`;
+                graphContainer.appendChild(el);
+                currentReplicas.push(el);
+                
+                setTimeout(() => el.classList.add('show'), i * 300);
+            });
+
+            setTimeout(() => {
+                logTerminal("Replicas synced. Byzantine Fault Tolerance achieved.", "success");
+                logTerminal("Rerouting trust chain through decentralized validators...");
+                
+                currentReplicas.forEach(rep => {
+                    rep.style.borderColor = 'var(--emerald)';
+                    rep.style.color = 'var(--emerald)';
+                    addActiveConnection('node-root', rep.id, 'rgba(0,212,255,0.4)');
+                    addActiveConnection(rep.id, 'node-sme-1', 'rgba(232,28,255,0.4)');
+                });
+
+                logTerminal("Topology stabilized. Decentralized pipeline is active.", "success");
+                completeSimulation();
+            }, 1200);
+        }
+    }
+
+    function endStep(totalSteps) {
+        currentStep++;
+        updateStepIndicator(currentStep, totalSteps);
+        isRunning = false;
+        logTerminal("Awaiting next step...", "info");
+    }
+
+    function completeSimulation() {
+        isRunning = false;
+        nextBtn.classList.add('hidden');
+        stepIndicator.innerText = "Simulation Complete";
+        logStatus.innerText = "IDLE";
+        logStatus.className = "text-emerald-400";
+        
+        setTimeout(() => {
+            document.querySelectorAll('.pulse').forEach(el => {
+                if(el.id !== 'log-status') el.classList.remove('pulse');
+            });
+            // Show reset/go back button
+            document.querySelector('#step-controls button:last-child span:first-child').innerText = "Return to Main Menu";
+        }, 1500);
+    }
+
+    function resetSimulation(restoreUI = true) {
+        clearConnections();
+        activeSim = null;
+        currentStep = 1;
+        isRunning = false;
+        
+        if (restoreUI) {
+            terminal.innerHTML = '<div class="term-line"><span class="term-time">[SYSTEM]</span><span class="text-gray-500">Environment Reset. Awaiting simulation trigger...</span></div>';
+            stepControls.classList.add('hidden');
+            primaryControls.classList.remove('hidden');
+            document.querySelector('#step-controls button:last-child span:first-child').innerText = "Cancel Simulation";
+        }
+        
+        logStatus.innerText = "IDLE";
+        logStatus.className = "text-emerald-400";
+
+        document.querySelectorAll('.node').forEach(node => {
+            node.className = 'node';
+        });
+        
+        document.getElementById('sme-cert-status').innerText = 'Status: Awaiting Cert';
+        document.getElementById('doc-hash-status').innerText = 'Unsigned';
+
+        // Remove replicas
+        currentReplicas.forEach(rep => rep.remove());
+        currentReplicas = [];
+    }
+
+    // --- BACKGROUND CANVAS ---
+    const canvas = document.getElementById('network-canvas');
+    const ctx = canvas.getContext('2d');
+    let width, height;
+
+    function resizeBg() {
+        width = canvas.width = window.innerWidth;
+        height = canvas.height = window.innerHeight;
+    }
+    window.addEventListener('resize', resizeBg);
+    resizeBg();
+
+    const particles = [];
+    const particleCount = Math.floor((window.innerWidth * window.innerHeight) / 12000); 
+
+    class Particle {
+        constructor() {
+            this.x = Math.random() * width;
+            this.y = Math.random() * height;
+            this.vx = (Math.random() - 0.5) * 0.4;
+            this.vy = (Math.random() - 0.5) * 0.4;
+            this.radius = Math.random() * 1.5 + 0.5;
+            this.flash = 0;
+        }
+        update() {
+            this.x += this.vx;
+            this.y += this.vy;
+            if (this.x < 0 || this.x > width) this.vx *= -1;
+            if (this.y < 0 || this.y > height) this.vy *= -1;
+            if (Math.random() < 0.001) this.flash = 1.0;
+            if (this.flash > 0) this.flash -= 0.015;
+            if (this.flash < 0) this.flash = 0;
+        }
+        draw() {
+            ctx.beginPath();
+            ctx.arc(this.x, this.y, this.radius + (this.flash * 1.5), 0, Math.PI * 2);
+            if (this.flash > 0) {
+                ctx.fillStyle = `rgba(0, 229, 160, ${0.4 + this.flash * 0.6})`;
+                ctx.shadowBlur = 15 * this.flash;
+                ctx.shadowColor = '#00e5a0';
+            } else {
+                ctx.fillStyle = 'rgba(0, 212, 255, 0.15)';
+                ctx.shadowBlur = 0;
+            }
+            ctx.fill();
+        }
+    }
+
+    for (let i = 0; i < particleCount; i++) {
+        particles.push(new Particle());
+    }
+
+    function animateBg() {
+        ctx.fillStyle = 'rgba(3, 5, 8, 1)'; 
+        ctx.fillRect(0, 0, width, height);
+
+        for (let i = 0; i < particles.length; i++) {
+            particles[i].update();
+            particles[i].draw();
+
+            for (let j = i + 1; j < particles.length; j++) {
+                const dx = particles[i].x - particles[j].x;
+                const dy = particles[i].y - particles[j].y;
+                const distSq = dx * dx + dy * dy;
+
+                if (distSq < 15000) {
+                    const opacity = 1 - (distSq / 15000);
+                    ctx.beginPath();
+                    ctx.moveTo(particles[i].x, particles[i].y);
+                    ctx.lineTo(particles[j].x, particles[j].y);
+                    
+                    const maxFlash = Math.max(particles[i].flash, particles[j].flash);
+                    if (maxFlash > 0.1) {
+                        ctx.strokeStyle = `rgba(0, 229, 160, ${opacity * maxFlash})`;
+                        ctx.lineWidth = 1 + maxFlash;
+                    } else {
+                        ctx.strokeStyle = `rgba(0, 212, 255, ${opacity * 0.1})`;
+                        ctx.lineWidth = 0.5;
+                    }
+                    ctx.stroke();
+                }
+            }
+        }
+        requestAnimationFrame(animateBg);
+    }
+    
+    animateBg();
+</script>
+
+</body>
+</html>
