@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Owl Academy | Holographic Geometric Terminology Lexicon</title>
+    <title>Owl Academy | Root Ontology Creator</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Space+Mono:wght@400;700&family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
@@ -24,7 +24,7 @@
             --academy-gold: #D4AF37;
             --holo-cyan: #00f0ff;
             --holo-purple: #9d00ff;
-            --panel-bg: rgba(13, 17, 28, 0.7);
+            --panel-bg: rgba(13, 17, 28, 0.85);
         }
 
         body {
@@ -35,10 +35,10 @@
             height: 100vh;
             overflow: hidden;
             background-image: 
-                radial-gradient(circle at 50% 0%, rgba(157, 0, 255, 0.15) 0%, transparent 50%),
-                linear-gradient(rgba(0, 240, 255, 0.03) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(0, 240, 255, 0.03) 1px, transparent 1px);
-            background-size: 100% 100%, 30px 30px, 30px 30px;
+                radial-gradient(circle at 50% 0%, rgba(157, 0, 255, 0.2) 0%, transparent 60%),
+                linear-gradient(rgba(157, 0, 255, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(157, 0, 255, 0.03) 1px, transparent 1px);
+            background-size: 100% 100%, 40px 40px, 40px 40px;
         }
 
         h1, h2, h3, .arcane-font { font-family: 'Cinzel', serif; }
@@ -46,9 +46,9 @@
 
         .glass-panel {
             background: var(--panel-bg);
-            backdrop-filter: blur(12px);
-            border: 1px solid rgba(0, 240, 255, 0.2);
-            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.5), inset 0 0 20px rgba(0, 240, 255, 0.05);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(157, 0, 255, 0.2);
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.5), inset 0 0 20px rgba(157, 0, 255, 0.05);
         }
 
         /* Projector Stage Styling */
@@ -65,172 +65,287 @@
         }
         .projector-container:active { cursor: grabbing; }
 
-        #holo-canvas {
-            display: block;
-            width: 100%;
-            height: 100%;
-        }
+        #holo-canvas { display: block; width: 100%; height: 100%; }
 
         .scanlines {
-            position: absolute;
-            inset: 0;
+            position: absolute; inset: 0;
             background: linear-gradient(to bottom, transparent 50%, rgba(0,0,0,0.4) 51%);
-            background-size: 100% 4px;
-            pointer-events: none;
-            z-index: 10;
-        }
-
-        .projector-flare {
-            position: absolute;
-            bottom: -20px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 150px;
-            height: 40px;
-            background: radial-gradient(ellipse, rgba(0, 240, 255, 0.6) 0%, transparent 70%);
-            filter: blur(8px);
-            pointer-events: none;
-            z-index: 5;
+            background-size: 100% 4px; pointer-events: none; z-index: 10;
         }
 
         /* Sidebar Nav Styling */
         .symbol-btn {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 0.5rem 0.75rem;
-            margin-bottom: 0.25rem;
-            border-radius: 0.25rem;
-            border: 1px solid rgba(255,255,255,0.05);
-            background: rgba(0,0,0,0.3);
-            cursor: pointer;
-            transition: all 0.3s ease;
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 0.5rem 0.75rem; margin-bottom: 0.25rem;
+            border-radius: 0.25rem; border: 1px solid rgba(255,255,255,0.05);
+            background: rgba(0,0,0,0.3); cursor: pointer; transition: all 0.3s ease;
         }
-
-        .symbol-btn:hover {
-            border-color: var(--holo-cyan);
-            background: rgba(0, 240, 255, 0.1);
-        }
-
+        .symbol-btn:hover { border-color: var(--holo-cyan); background: rgba(0, 240, 255, 0.1); }
         .symbol-btn.active {
-            border-color: var(--academy-gold);
-            background: rgba(212, 175, 55, 0.15);
-            box-shadow: 0 0 15px rgba(212, 175, 55, 0.2);
-            color: var(--academy-gold);
-        }
-
-        .symbol-mark {
-            font-family: 'Cinzel', serif;
-            font-size: 1.2rem;
-            font-weight: bold;
-        }
-
-        /* Codex & Ontology Entry Styling */
-        .codex-entry, .ontology-entry {
-            animation: fadeIn 0.5s ease-out;
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
+            border-color: var(--holo-purple); background: rgba(157, 0, 255, 0.15);
+            box-shadow: 0 0 15px rgba(157, 0, 255, 0.3); color: #fff;
         }
 
         /* Custom Scrollbar */
         ::-webkit-scrollbar { width: 6px; height: 6px; }
         ::-webkit-scrollbar-track { background: rgba(0,0,0,0.3); border-radius: 10px; }
-        ::-webkit-scrollbar-thumb { background: rgba(0, 240, 255, 0.3); border-radius: 10px; }
-        ::-webkit-scrollbar-thumb:hover { background: rgba(0, 240, 255, 0.6); }
+        ::-webkit-scrollbar-thumb { background: rgba(157, 0, 255, 0.3); border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(157, 0, 255, 0.6); }
 
         .glow-text { text-shadow: 0 0 10px currentColor; }
-        .smooth-collapse { transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
         
-        .classic-domain-box {
-            background: rgba(0,0,0,0.4);
-            border: 1px solid rgba(255,255,255,0.1);
-            border-left: 2px solid var(--holo-cyan);
-            padding: 8px;
-            border-radius: 4px;
-            margin-bottom: 6px;
-        }
-
-        /* Ontology Table Styling */
-        .ontology-table th {
-            position: sticky;
-            top: 0;
-            background: rgba(13, 17, 28, 0.95);
-            backdrop-filter: blur(5px);
-            z-index: 10;
-        }
-
-        /* Prevent MathJax display-block elements from breaking flex/table layout padding */
-        mjx-container[display="true"] {
-            margin: 0 !important;
-            padding: 0 !important;
-        }
-
         /* Creator Styles */
         .creator-input {
-            background: rgba(0,0,0,0.5);
-            border: 1px solid rgba(0, 240, 255, 0.3);
-            color: #fff;
-            padding: 0.5rem;
-            border-radius: 4px;
-            width: 100%;
-            font-family: 'Space Mono', monospace;
-            font-size: 0.85rem;
-            outline: none;
-            transition: all 0.2s;
+            background: rgba(0,0,0,0.6);
+            border: 1px solid rgba(157, 0, 255, 0.3);
+            color: #fff; padding: 0.6rem; border-radius: 4px; width: 100%;
+            font-family: 'Space Mono', monospace; font-size: 0.85rem;
+            outline: none; transition: all 0.2s;
         }
         .creator-input:focus {
-            border-color: var(--academy-gold);
-            box-shadow: 0 0 10px rgba(212, 175, 55, 0.2);
+            border-color: var(--holo-cyan); box-shadow: 0 0 10px rgba(0, 240, 255, 0.2);
         }
+        .creator-input::placeholder { color: rgba(255,255,255,0.2); }
         
-        .semiotic-tier {
-            transition: all 0.3s;
-            cursor: pointer;
+        .semiotic-tier { transition: all 0.3s; cursor: pointer; }
+        .semiotic-tier:hover { fill: rgba(157, 0, 255, 0.3); stroke: var(--holo-cyan); }
+
+        .step-badge {
+            display: inline-flex; align-items: center; justify-content: center;
+            width: 1.5rem; height: 1.5rem; border-radius: 50%;
+            background: var(--holo-purple); color: white;
+            font-family: 'Space Mono', monospace; font-size: 0.7rem; font-weight: bold;
+            margin-right: 0.5rem; box-shadow: 0 0 10px var(--holo-purple);
         }
-        .semiotic-tier:hover {
-            fill: rgba(0, 240, 255, 0.3);
-            stroke: var(--academy-gold);
+
+        mjx-container[display="true"] { margin: 0 !important; padding: 0 !important; }
+        .smooth-collapse { transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
+        
+        /* Ontology Table Styling */
+        .ontology-table th {
+            position: sticky; top: 0; background: rgba(13, 17, 28, 0.95);
+            backdrop-filter: blur(5px); z-index: 10;
         }
     </style>
 </head>
 <body class="flex flex-col">
 
     <!-- Header -->
-    <header class="h-16 shrink-0 glass-panel border-b-0 border-t-0 border-l-0 border-r-0 border-b border-cyan-500/30 flex items-center justify-between px-6 z-20">
+    <header class="h-16 shrink-0 glass-panel border-b-0 border-t-0 border-l-0 border-r-0 border-b border-purple-500/30 flex items-center justify-between px-6 z-20">
         <div class="flex items-center gap-4">
-            <svg width="24" height="24" viewBox="0 0 100 100" fill="none" stroke="#D4AF37" stroke-width="4" class="drop-shadow-[0_0_5px_rgba(212,175,55,0.8)]">
-                <circle cx="50" cy="50" r="40"/>
-                <polygon points="50,20 75,70 25,70"/>
+            <svg width="24" height="24" viewBox="0 0 100 100" fill="none" stroke="#9d00ff" stroke-width="4" class="drop-shadow-[0_0_5px_rgba(157,0,255,0.8)]">
+                <polygon points="50,10 90,90 10,90"/>
+                <polygon points="50,35 75,80 25,80"/>
+                <polygon points="50,60 60,75 40,75"/>
             </svg>
-            <h1 class="arcane-font text-xl tracking-widest text-academy-gold hidden lg:block">OWL ACADEMY <span class="text-gray-500 mx-2">//</span> <span class="text-white">HOLOGRAPHIC GEOMETRIC TERMINOLOGY LEXICON</span></h1>
-            <h1 class="arcane-font text-xl tracking-widest text-academy-gold lg:hidden">LEXICON</h1>
+            <h1 class="arcane-font text-xl tracking-widest text-purple-400 hidden lg:block">OWL ACADEMY <span class="text-gray-500 mx-2">//</span> <span class="text-white">ROOT ONTOLOGY CREATOR</span></h1>
+            <h1 class="arcane-font text-xl tracking-widest text-purple-400 lg:hidden">ONTOLOGY CREATOR</h1>
         </div>
         <div class="flex items-center gap-4">
-            <div class="mono-font text-[10px] text-cyan-400 tracking-widest animate-pulse hidden xl:block mr-4">
-                TOPOLOGICAL_ENGINE: ONLINE
-            </div>
-            <button onclick="setView('lexicon')" id="btn-nav-lexicon" class="mono-font text-[10px] sm:text-xs px-3 py-1.5 sm:px-4 sm:py-2 border rounded transition-colors shadow-[0_0_10px_rgba(212,175,55,0.2)] text-academy-gold border-academy-gold bg-academy-gold/10">
-                [ PROJECTOR ]
+            <button onclick="setView('creator')" id="btn-nav-creator" class="mono-font text-[10px] sm:text-xs px-3 py-1.5 sm:px-4 sm:py-2 border rounded transition-colors shadow-[0_0_15px_rgba(157,0,255,0.4)] text-purple-300 border-purple-400 bg-purple-900/40">
+                [ 1. ENGRAM CREATOR ]
             </button>
             <button onclick="setView('ontology')" id="btn-nav-ontology" class="mono-font text-[10px] sm:text-xs px-3 py-1.5 sm:px-4 sm:py-2 border border-cyan-500/30 rounded bg-black/50 text-cyan-400 hover:bg-cyan-900/30 transition-colors shadow-[0_0_10px_rgba(0,240,255,0.1)]">
-                [ REGISTRY ]
+                [ 2. ADMIN REGISTRY ]
             </button>
-            <button onclick="setView('creator')" id="btn-nav-creator" class="mono-font text-[10px] sm:text-xs px-3 py-1.5 sm:px-4 sm:py-2 border border-purple-500/30 rounded bg-black/50 text-purple-400 hover:bg-purple-900/30 transition-colors shadow-[0_0_10px_rgba(157,0,255,0.1)]">
-                [ ENGRAM CREATOR ]
+            <button onclick="setView('lexicon')" id="btn-nav-lexicon" class="mono-font text-[10px] sm:text-xs px-3 py-1.5 sm:px-4 sm:py-2 border border-cyan-500/30 rounded bg-black/50 text-cyan-400 hover:bg-cyan-900/30 transition-colors shadow-[0_0_10px_rgba(0,240,255,0.1)]">
+                [ 3. PROJECTOR ]
             </button>
         </div>
     </header>
 
     <!-- Main Layout -->
     <main class="flex-1 flex overflow-hidden p-4 gap-4 z-10 relative">
-        
-        <!-- Left Sidebar: Symbol Selection -->
-        <aside id="sidebar" class="w-72 glass-panel rounded-lg flex flex-col overflow-hidden smooth-collapse shrink-0 relative">
+
+        <!-- Right Content Area 1: Engram Creator (Active by Default) -->
+        <div id="creator-view" class="flex-1 glass-panel rounded-lg flex flex-col xl:flex-row overflow-hidden transition-opacity duration-300">
+            
+            <!-- Left Side: Nested Triangles of Semiotics -->
+            <div class="w-full xl:w-5/12 border-b xl:border-b-0 xl:border-r border-purple-500/30 bg-black/40 flex flex-col relative overflow-hidden shrink-0">
+                <div class="p-4 border-b border-purple-500/20 flex items-center justify-between z-10 shrink-0 bg-black/60">
+                    <h2 class="arcane-font text-lg text-purple-400 tracking-widest">Semiotics Blueprint</h2>
+                    <div class="flex gap-2">
+                        <button onclick="exportOntology()" class="mono-font text-[10px] px-3 py-1.5 border border-green-500/50 rounded text-green-400 hover:bg-green-900/30 transition-colors uppercase shadow-[0_0_8px_rgba(34,197,94,0.2)]">
+                            Export .JSON
+                        </button>
+                        <label class="mono-font text-[10px] px-3 py-1.5 border border-blue-500/50 rounded text-blue-400 hover:bg-blue-900/30 transition-colors uppercase text-center cursor-pointer shadow-[0_0_8px_rgba(59,130,246,0.2)]">
+                            Import .JSON
+                            <input type="file" id="import-upload" accept=".json" class="hidden">
+                        </label>
+                    </div>
+                </div>
+                
+                <div class="flex-1 p-6 flex flex-col items-center justify-center relative z-10 overflow-y-auto">
+                    <!-- SVG Nested Pyramid -->
+                    <svg viewBox="0 0 100 100" class="w-full max-w-[350px] drop-shadow-[0_0_20px_rgba(157,0,255,0.3)] mb-6">
+                        <!-- Tier 1: Root Domain -->
+                        <polygon id="svg-tier-1" points="50,5 65,30 35,30" class="semiotic-tier fill-purple-900/30 stroke-purple-400 stroke-[0.5]" />
+                        <text id="svg-text-1" x="50" y="22" font-family="Space Mono, monospace" font-size="4" fill="#e2e8f0" text-anchor="middle" class="pointer-events-none uppercase drop-shadow-md">ROOT DOMAIN</text>
+                        
+                        <!-- Tier 2: Field/Discipline -->
+                        <polygon id="svg-tier-2" points="35,30 65,30 75,50 25,50" class="semiotic-tier fill-purple-900/20 stroke-purple-500 stroke-[0.5]" />
+                        <text id="svg-text-2" x="50" y="42" font-family="Space Mono, monospace" font-size="4" fill="#a5b4fc" text-anchor="middle" class="pointer-events-none uppercase">DISCIPLINE</text>
+
+                        <!-- Tier 3: Concept/Mechanism -->
+                        <polygon id="svg-tier-3" points="25,50 75,50 85,70 15,70" class="semiotic-tier fill-purple-900/10 stroke-purple-600 stroke-[0.5]" />
+                        <text id="svg-text-3" x="50" y="62" font-family="Space Mono, monospace" font-size="4" fill="#818cf8" text-anchor="middle" class="pointer-events-none uppercase">CONCEPTUAL MECHANISM</text>
+
+                        <!-- Tier 4: Operator/Engram -->
+                        <polygon id="svg-tier-4" points="15,70 85,70 95,95 5,95" class="semiotic-tier fill-black/60 stroke-cyan-500 stroke-[0.5]" />
+                        <text id="svg-text-4-sym" x="50" y="82" font-family="Cinzel, serif" font-size="8" font-weight="bold" fill="#00f0ff" text-anchor="middle" class="pointer-events-none drop-shadow-[0_0_5px_rgba(0,240,255,0.8)]">SYM</text>
+                        <text id="svg-text-4-name" x="50" y="88" font-family="Space Mono, monospace" font-size="3" fill="#00f0ff" text-anchor="middle" class="pointer-events-none uppercase">ENGRAM OPERATOR</text>
+                    </svg>
+
+                    <div class="text-center px-8 text-gray-400 font-mono text-[10px] leading-relaxed mt-auto pt-4">
+                        <span class="text-purple-400">ONTOLOGICAL DESCENT:</span> The Semiotic Blueprint enforces hierarchical rigor. You must map the universal concept (Tier 1) down to a specific, executable mathematical operator (Tier 4).
+                    </div>
+                </div>
+                
+                <div class="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_rgba(157,0,255,0.05)_0%,_transparent_70%)] pointer-events-none"></div>
+            </div>
+
+            <!-- Right Side: Creation Form (The Tutorial) -->
+            <div class="flex-1 flex flex-col bg-black/20 relative min-h-0 overflow-hidden">
+                <div class="flex-1 overflow-y-auto p-6 lg:p-8 space-y-8">
+                    
+                    <div class="bg-purple-900/20 border-l-2 border-purple-500 p-4 text-xs text-purple-200 leading-relaxed rounded-r shadow-inner flex justify-between items-center">
+                       <div>
+                           <strong class="text-purple-400 text-sm font-arcane tracking-widest block mb-1" id="creator-header-title">Ontology Creation Tutorial Initiated</strong> 
+                           <span id="creator-header-desc">To construct a valid SHD-CCP Ontology, descend from a universal pillar down to a specific mathematical geometric operator.</span>
+                       </div>
+                    </div>
+
+                    <!-- STEP 1 & 2 -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 bg-white/5 p-5 rounded border border-white/10 relative">
+                        <div class="absolute -top-3 left-4 bg-black px-2 text-[10px] font-mono text-gray-400">MACRO CLASSIFICATION</div>
+                        <div>
+                            <label class="flex items-center mono-font text-[11px] text-purple-300 mb-2">
+                                <span class="step-badge">1</span> Tier 1: Root Domain (The 12 Pillars)
+                            </label>
+                            <select id="c-domain" class="creator-input" onchange="updateSvgText()">
+                                <option value="Mathematics">Mathematics</option>
+                                <option value="Geometry">Geometry</option>
+                                <option value="Physics">Physics</option>
+                                <option value="Computer Science">Computer Science</option>
+                                <option value="Biology">Biology</option>
+                                <option value="Chemistry">Chemistry</option>
+                                <option value="Art">Art</option>
+                                <option value="Philosophy">Philosophy</option>
+                                <option value="Theology">Theology</option>
+                                <option value="Linguistics">Linguistics</option>
+                                <option value="Sociology">Sociology</option>
+                                <option value="Economics">Economics</option>
+                            </select>
+                            <p class="text-[9px] text-gray-500 mt-1 font-mono">Select the broadest universal category.</p>
+                        </div>
+                        <div>
+                            <label class="flex items-center mono-font text-[11px] text-purple-300 mb-2">
+                                <span class="step-badge">2</span> Tier 2: Field / Discipline
+                            </label>
+                            <input type="text" id="c-field" class="creator-input" placeholder="e.g. Topology, Semantics, Fluid Dynamics" onkeyup="updateSvgText()">
+                            <p class="text-[9px] text-gray-500 mt-1 font-mono">The specific sub-field of study.</p>
+                        </div>
+                    </div>
+
+                    <!-- STEP 3 & 4 -->
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 bg-white/5 p-5 rounded border border-white/10 relative">
+                        <div class="absolute -top-3 left-4 bg-black px-2 text-[10px] font-mono text-gray-400">MICRO DEFINITION</div>
+                        <div class="md:col-span-2">
+                            <label class="flex items-center mono-font text-[11px] text-purple-300 mb-2">
+                                <span class="step-badge">3</span> Tier 3: Conceptual Mechanism
+                            </label>
+                            <input type="text" id="c-subtitle" class="creator-input" placeholder="e.g. Torsional Phase Spin, Geometric Compression" onkeyup="updateSvgText()">
+                            <p class="text-[9px] text-gray-500 mt-1 font-mono">What does this operator actually *do* structurally?</p>
+                        </div>
+                        <div>
+                            <label class="flex items-center mono-font text-[11px] text-cyan-400 mb-2">
+                                <span class="step-badge bg-cyan-600">4</span> Tier 4: Symbol
+                            </label>
+                            <input type="text" id="c-symbol" class="creator-input border-cyan-500/50 text-cyan-400 text-center text-lg font-arcane" placeholder="Θ, ∫, Ω" onkeyup="updateSvgText()">
+                        </div>
+                    </div>
+
+                    <!-- STEP 5 -->
+                    <div class="bg-cyan-900/10 p-5 rounded border border-cyan-500/20 relative">
+                        <div class="absolute -top-3 left-4 bg-black px-2 text-[10px] font-mono text-cyan-500">MATHEMATICAL EXECUTION</div>
+                        <div class="mb-4">
+                            <label class="flex items-center mono-font text-[11px] text-cyan-400 mb-2">
+                                <span class="step-badge bg-cyan-600">5</span> Engram Name & Primary Equation (LaTeX)
+                            </label>
+                            <div class="flex gap-4">
+                                <input type="text" id="c-name" class="creator-input w-1/3" placeholder="Name (e.g. Theta)" onkeyup="updateSvgText()">
+                                <input type="text" id="c-equation" class="creator-input w-2/3 font-mono text-yellow-300" placeholder="e.g. \\Theta_{10} \\equiv \\Theta_0 \\pmod{2\\pi} (Use \\\\ for macros)">
+                            </div>
+                            <p class="text-[9px] text-gray-500 mt-1 font-mono">Provide the formal equation. Double-escape backslashes (e.g. \\pi instead of \pi).</p>
+                        </div>
+
+                        <div>
+                            <label class="flex items-center mono-font text-[11px] text-cyan-400 mb-2">
+                                <span class="step-badge bg-cyan-600">6</span> 3D Holographic Projection Mode
+                            </label>
+                            <select id="c-vis" class="creator-input border-cyan-500/50 text-cyan-300">
+                                <option value="FUNNEL">FUNNEL (Singularity/Gradient/Resistance)</option>
+                                <option value="TREFOIL_SPIN">TREFOIL_SPIN (Torsion/Knot/Spin)</option>
+                                <option value="RIPPLES">RIPPLES (Waves/Interference/Superposition)</option>
+                                <option value="TETRAHEDRON">TETRAHEDRON (Compression/Expansion)</option>
+                                <option value="HEX_CIRCLE">HEX_CIRCLE (Packing/Limits/Boundaries)</option>
+                                <option value="BRAID">BRAID (Entanglement/Entropy/Summation)</option>
+                                <option value="EVENT_HORIZON">EVENT_HORIZON (Absolute Bounds/Black Holes)</option>
+                                <option value="GOLDEN_SPIRAL">GOLDEN_SPIRAL (Recursive Scaling/Growth)</option>
+                                <option value="LATTICE_WEB">LATTICE_WEB (Scaffolding/Graphs/Products)</option>
+                                <option value="MOBIUS">MOBIUS (Infinity/Looping)</option>
+                                <option value="WORMHOLE">WORMHOLE (Countable Infinity/Bridges)</option>
+                                <option value="VOID_RING">VOID_RING (Vacuum/Empty Sets)</option>
+                                <option value="SLICE_PLANE">SLICE_PLANE (Dimensional Slicing/Derivatives)</option>
+                                <option value="ORTHOGONAL_PHASE">ORTHOGONAL_PHASE (Imaginary/Orthogonal)</option>
+                                <option value="VECTOR_FIELD">VECTOR_FIELD (Flow/Integrals)</option>
+                            </select>
+                            <p class="text-[9px] text-gray-500 mt-1 font-mono">Select the geometric topology that best visually represents this mechanism.</p>
+                        </div>
+                    </div>
+
+                    <!-- STEP 7 & 8 -->
+                    <div class="space-y-4">
+                        <div>
+                            <label class="flex items-center mono-font text-[11px] text-yellow-500 mb-2">
+                                <span class="step-badge bg-yellow-600 text-black">7</span> SHD-CCP Holographic Interpretation
+                            </label>
+                            <textarea id="c-holo" class="creator-input h-24 border-yellow-500/30 focus:border-yellow-500" placeholder="Describe how this engram operates within the 72-Node Genesis Chain. How does it physically move or govern data?"></textarea>
+                        </div>
+
+                        <div>
+                            <label class="flex items-center mono-font text-[11px] text-gray-300 mb-2">
+                                <span class="step-badge bg-gray-600">8</span> Classical Domain Translations
+                            </label>
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <textarea id="c-euc" class="creator-input h-20 text-[10px]" placeholder="Euclidean Geometry meaning..."></textarea>
+                                <textarea id="c-lin" class="creator-input h-20 text-[10px]" placeholder="Linear Algebra meaning..."></textarea>
+                                <textarea id="c-hyp" class="creator-input h-20 text-[10px]" placeholder="Hyperbolic Geometry meaning..."></textarea>
+                            </div>
+                            <p class="text-[9px] text-gray-500 mt-1 font-mono">Translate the concept back to standard mathematics for cross-field compatibility.</p>
+                        </div>
+                    </div>
+
+                    <div class="pt-6 pb-8 flex gap-4">
+                        <button id="btn-cancel-edit" onclick="cancelEdit()" class="hidden w-1/3 mono-font text-sm px-4 py-4 border border-red-500 rounded bg-red-900/40 text-white hover:bg-red-600/50 transition-all uppercase tracking-widest">
+                            Cancel
+                        </button>
+                        <button id="btn-encode" onclick="encodeEngram()" class="w-full mono-font text-sm px-4 py-4 border border-purple-500 rounded bg-purple-900/60 text-white hover:bg-purple-600/80 transition-all shadow-[0_0_20px_rgba(157,0,255,0.6)] uppercase font-bold tracking-[0.2em] hover:scale-[1.01] active:scale-[0.99]">
+                            Encode Engram to Registry
+                        </button>
+                    </div>
+                    <div id="encode-success" class="text-center mono-font text-xs text-green-400 mt-3 opacity-0 transition-opacity tracking-widest bg-green-900/20 py-2 rounded border border-green-500/30">
+                        Engram Successfully Encoded. Ontology Substrate Rebuilt.
+                    </div>
+
+                </div>
+            </div>
+        </div>
+
+        <!-- Left Sidebar: Symbol Selection (Appears in Lexicon/Registry views) -->
+        <aside id="sidebar" class="w-72 glass-panel rounded-lg flex flex-col overflow-hidden smooth-collapse shrink-0 relative hidden opacity-0">
             <div class="p-4 border-b border-cyan-500/20 bg-black/40 flex justify-between items-center shrink-0">
-                <h2 class="mono-font text-xs text-gray-400 uppercase tracking-widest sidebar-content whitespace-nowrap overflow-hidden">Select Operator</h2>
+                <h2 class="mono-font text-xs text-gray-400 uppercase tracking-widest sidebar-content whitespace-nowrap overflow-hidden">Encoded Engrams</h2>
                 <button onclick="toggleSidebar()" id="sidebar-icon" class="text-cyan-400 hover:text-cyan-300 w-6 h-6 flex items-center justify-center rounded bg-black/50 border border-cyan-500/30 font-bold ml-auto">&larr;</button>
             </div>
             <div class="flex-1 overflow-y-auto p-2 flex flex-col" id="symbol-list">
@@ -238,8 +353,8 @@
             </div>
         </aside>
 
-        <!-- Right Content Area 1: Lexicon Projector & Codex -->
-        <div id="lexicon-view" class="flex-1 flex flex-col gap-4 overflow-hidden min-w-0 transition-opacity duration-300">
+        <!-- Right Content Area 2: Lexicon Projector & Codex -->
+        <div id="lexicon-view" class="flex-1 flex flex-col gap-4 overflow-hidden min-w-0 transition-opacity duration-300 hidden opacity-0">
             
             <!-- Top: Holographic Projector (Locked Size) -->
             <div class="h-[45vh] min-h-[250px] max-h-[450px] shrink-0 glass-panel rounded-lg p-2 relative flex flex-col">
@@ -248,7 +363,6 @@
                     <p class="mono-font text-xs text-gray-400" id="holo-subtitle">Awaiting input...</p>
                 </div>
                 
-                <!-- Auto-Rotate Toggle -->
                 <div class="absolute top-4 right-4 z-20 flex flex-col items-end">
                     <button onclick="toggleAutoRotate()" id="btn-rotate" class="mono-font text-xs px-3 py-1 border border-cyan-500/50 rounded bg-black/50 text-cyan-400 hover:bg-cyan-900/30 transition-colors">
                         [ Auto-Rotate: OFF ]
@@ -263,9 +377,9 @@
                 </div>
             </div>
 
-            <!-- Bottom: Codex Definition (Collapsible & Scrollable) -->
+            <!-- Bottom: Codex Definition -->
             <div id="codex-wrapper" class="flex-1 min-h-[200px] glass-panel rounded-lg flex flex-col smooth-collapse relative">
-                <div class="p-3 border-b border-cyan-500/20 bg-black/40 flex justify-between items-center cursor-pointer shrink-0" onclick="toggleCodex()">
+                <div class="p-3 border-b border-cyan-500/20 bg-black/40 flex justify-between items-center shrink-0 cursor-pointer" onclick="toggleCodex()">
                     <div class="flex items-center gap-2">
                         <span class="w-2 h-2 rounded-full bg-cyan-500 shadow-[0_0_8px_#00f0ff]"></span>
                         <span class="mono-font text-xs text-gray-400 uppercase tracking-widest">Codex Entry & Classical Domains</span>
@@ -273,17 +387,19 @@
                     <button id="codex-icon" class="text-cyan-400 hover:text-cyan-300 w-6 h-6 flex items-center justify-center rounded bg-black/50 border border-cyan-500/30">&darr;</button>
                 </div>
                 <div class="flex-1 p-4 sm:p-6 overflow-y-auto smooth-collapse" id="codex-container">
-                    <!-- Dynamic Content -->
+                    <div class="flex h-full items-center justify-center text-gray-500 mono-font text-sm">
+                        Select an encoded engram from the sidebar to project its data...
+                    </div>
                 </div>
             </div>
             
         </div>
 
-        <!-- Right Content Area 2: Ontology Registry -->
-        <div id="ontology-view" class="flex-1 glass-panel rounded-lg flex flex-col overflow-hidden hidden transition-opacity duration-300">
+        <!-- Right Content Area 3: Ontology Registry (Admin Panel) -->
+        <div id="ontology-view" class="flex-1 glass-panel rounded-lg flex flex-col overflow-hidden transition-opacity duration-300 hidden opacity-0">
             <div class="p-4 border-b border-cyan-500/20 bg-black/40 flex items-center gap-3 shrink-0">
                 <span class="w-3 h-3 rounded-full bg-yellow-500 shadow-[0_0_10px_#D4AF37]"></span>
-                <h2 class="arcane-font text-xl text-yellow-500 tracking-widest">Cross-Field Ontology Registry: Definitions</h2>
+                <h2 class="arcane-font text-xl text-yellow-500 tracking-widest">Cross-Field Ontology Registry: Admin Panel</h2>
                 <div class="ml-auto mono-font text-xs text-gray-500 uppercase hidden sm:block">System Log & Versioning Active</div>
             </div>
             
@@ -295,6 +411,8 @@
                             <th class="p-3 font-medium text-center">Sym</th>
                             <th class="p-3 font-medium">Operator Name</th>
                             <th class="p-3 font-medium border-l border-gray-800 text-center">Primary Equation</th>
+                            <th class="p-3 font-medium border-l border-gray-800">Origin</th>
+                            <th class="p-3 font-medium border-l border-gray-800 text-center">Admin</th>
                             <th class="p-3 font-medium border-l border-gray-800">Euclidean Geometry</th>
                             <th class="p-3 font-medium border-l border-gray-800">Linear Algebra</th>
                             <th class="p-3 font-medium border-l border-gray-800">Hyperbolic Geometry</th>
@@ -310,153 +428,6 @@
             <div class="h-32 shrink-0 border-t border-cyan-500/20 bg-black/60 p-3 font-mono text-[10px] text-green-400 overflow-y-auto shadow-inner" id="system-log">
                 <div class="text-gray-500 mb-1">// ONTOLOGY DEFINITION DEPLOYMENT LOG</div>
                 <!-- Log injected via JS -->
-            </div>
-        </div>
-
-        <!-- Right Content Area 3: Engram Creator -->
-        <div id="creator-view" class="flex-1 glass-panel rounded-lg flex flex-col md:flex-row overflow-hidden hidden transition-opacity duration-300">
-            
-            <!-- Left Side: Nested Triangles of Semiotics -->
-            <div class="w-full md:w-5/12 border-b md:border-b-0 md:border-r border-purple-500/30 bg-black/40 flex flex-col relative overflow-hidden">
-                <div class="p-4 border-b border-purple-500/20 flex items-center justify-between z-10 shrink-0">
-                    <h2 class="arcane-font text-lg text-purple-400 tracking-widest">Semiotics Blueprint</h2>
-                    <span class="w-2 h-2 rounded-full bg-purple-500 animate-pulse shadow-[0_0_8px_#9d00ff]"></span>
-                </div>
-                
-                <div class="flex-1 p-6 flex items-center justify-center relative z-10">
-                    <!-- SVG Nested Pyramid -->
-                    <svg viewBox="0 0 100 100" class="w-full max-w-[300px] drop-shadow-[0_0_15px_rgba(157,0,255,0.4)]">
-                        <!-- Tier 1: Root Domain -->
-                        <polygon id="svg-tier-1" points="50,5 65,30 35,30" class="semiotic-tier fill-purple-900/20 stroke-purple-500 stroke-[0.5]" />
-                        <text id="svg-text-1" x="50" y="22" font-family="Space Mono, monospace" font-size="4" fill="#a5b4fc" text-anchor="middle" class="pointer-events-none uppercase">ROOT DOMAIN</text>
-                        
-                        <!-- Tier 2: Field/Discipline -->
-                        <polygon id="svg-tier-2" points="35,30 65,30 75,50 25,50" class="semiotic-tier fill-purple-900/20 stroke-purple-500 stroke-[0.5]" />
-                        <text id="svg-text-2" x="50" y="42" font-family="Space Mono, monospace" font-size="4" fill="#a5b4fc" text-anchor="middle" class="pointer-events-none uppercase">DISCIPLINE</text>
-
-                        <!-- Tier 3: Concept/Mechanism -->
-                        <polygon id="svg-tier-3" points="25,50 75,50 85,70 15,70" class="semiotic-tier fill-purple-900/20 stroke-purple-500 stroke-[0.5]" />
-                        <text id="svg-text-3" x="50" y="62" font-family="Space Mono, monospace" font-size="4" fill="#a5b4fc" text-anchor="middle" class="pointer-events-none uppercase">CONCEPTUAL MECHANISM</text>
-
-                        <!-- Tier 4: Operator/Engram -->
-                        <polygon id="svg-tier-4" points="15,70 85,70 95,95 5,95" class="semiotic-tier fill-purple-900/20 stroke-purple-500 stroke-[0.5]" />
-                        <text id="svg-text-4-sym" x="50" y="82" font-family="Cinzel, serif" font-size="8" font-weight="bold" fill="#D4AF37" text-anchor="middle" class="pointer-events-none">SYM</text>
-                        <text id="svg-text-4-name" x="50" y="88" font-family="Space Mono, monospace" font-size="4" fill="#D4AF37" text-anchor="middle" class="pointer-events-none uppercase">ENGRAM OPERATOR</text>
-                    </svg>
-                </div>
-                
-                <div class="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_rgba(157,0,255,0.1)_0%,_transparent_70%)] pointer-events-none"></div>
-            </div>
-
-            <!-- Right Side: Creation Form & I/O Pipeline -->
-            <div class="flex-1 flex flex-col bg-black/20">
-                
-                <div class="p-4 border-b border-purple-500/20 flex gap-4 bg-black/60 shrink-0">
-                    <button onclick="exportOntology()" class="flex-1 mono-font text-[10px] px-3 py-2 border border-green-500/50 rounded text-green-400 hover:bg-green-900/30 transition-colors uppercase">
-                        [ Export Ontology JSON ]
-                    </button>
-                    <label class="flex-1 mono-font text-[10px] px-3 py-2 border border-blue-500/50 rounded text-blue-400 hover:bg-blue-900/30 transition-colors uppercase text-center cursor-pointer">
-                        [ Import Ontology JSON ]
-                        <input type="file" id="import-upload" accept=".json" class="hidden">
-                    </label>
-                </div>
-
-                <div class="flex-1 overflow-y-auto p-6 space-y-4">
-                    
-                    <div class="grid grid-cols-2 gap-4">
-                        <div>
-                            <label class="block mono-font text-[10px] text-purple-400 mb-1">Tier 1: Root Domain (12 Pillars)</label>
-                            <select id="c-domain" class="creator-input" onchange="updateSvgText()">
-                                <option value="Mathematics">Mathematics</option>
-                                <option value="Geometry">Geometry</option>
-                                <option value="Physics">Physics</option>
-                                <option value="Computer Science">Computer Science</option>
-                                <option value="Biology">Biology</option>
-                                <option value="Chemistry">Chemistry</option>
-                                <option value="Art">Art</option>
-                                <option value="Philosophy">Philosophy</option>
-                                <option value="Theology">Theology</option>
-                                <option value="Linguistics">Linguistics</option>
-                                <option value="Sociology">Sociology</option>
-                                <option value="Economics">Economics</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label class="block mono-font text-[10px] text-purple-400 mb-1">Tier 2: Field / Discipline</label>
-                            <input type="text" id="c-field" class="creator-input" placeholder="e.g. Topology, Semantics" onkeyup="updateSvgText()">
-                        </div>
-                    </div>
-
-                    <div class="grid grid-cols-3 gap-4">
-                        <div class="col-span-2">
-                            <label class="block mono-font text-[10px] text-purple-400 mb-1">Tier 3: Conceptual Mechanism</label>
-                            <input type="text" id="c-subtitle" class="creator-input" placeholder="e.g. Torsional Phase Spin" onkeyup="updateSvgText()">
-                        </div>
-                        <div>
-                            <label class="block mono-font text-[10px] text-yellow-400 mb-1">Tier 4: Operator Symbol</label>
-                            <input type="text" id="c-symbol" class="creator-input border-yellow-500/50 text-yellow-400" placeholder="e.g. Θ, Ω, \Psi" onkeyup="updateSvgText()">
-                        </div>
-                    </div>
-
-                    <div>
-                        <label class="block mono-font text-[10px] text-yellow-400 mb-1">Tier 4: Engram Name</label>
-                        <input type="text" id="c-name" class="creator-input border-yellow-500/50" placeholder="e.g. Theta" onkeyup="updateSvgText()">
-                    </div>
-
-                    <div>
-                        <label class="block mono-font text-[10px] text-cyan-400 mb-1">Primary Mathematical Equation (LaTeX)</label>
-                        <input type="text" id="c-equation" class="creator-input" placeholder="e.g. E = mc^2  (Do not include $$)">
-                    </div>
-
-                    <div>
-                        <label class="block mono-font text-[10px] text-cyan-400 mb-1">3D Holographic Projection Mode</label>
-                        <select id="c-vis" class="creator-input">
-                            <option value="FUNNEL">FUNNEL (Singularity/Gradient)</option>
-                            <option value="TREFOIL_SPIN">TREFOIL_SPIN (Torsion/Knot)</option>
-                            <option value="RIPPLES">RIPPLES (Waves/Interference)</option>
-                            <option value="TETRAHEDRON">TETRAHEDRON (Compression)</option>
-                            <option value="HEX_CIRCLE">HEX_CIRCLE (Packing/Limits)</option>
-                            <option value="BRAID">BRAID (Entanglement/Entropy)</option>
-                            <option value="EVENT_HORIZON">EVENT_HORIZON (Absolute Bounds)</option>
-                            <option value="GOLDEN_SPIRAL">GOLDEN_SPIRAL (Recursive Scaling)</option>
-                            <option value="LATTICE_WEB">LATTICE_WEB (Scaffolding/Graphs)</option>
-                            <option value="MOBIUS">MOBIUS (Infinity/Looping)</option>
-                            <option value="WORMHOLE">WORMHOLE (Countable Infinity/Bridges)</option>
-                            <option value="VOID_RING">VOID_RING (Vacuum/Empty Sets)</option>
-                            <option value="SLICE_PLANE">SLICE_PLANE (Dimensional Slicing/Derivatives)</option>
-                            <option value="ORTHOGONAL_PHASE">ORTHOGONAL_PHASE (Imaginary/Orthogonal)</option>
-                            <option value="VECTOR_FIELD">VECTOR_FIELD (Flow/Integrals)</option>
-                        </select>
-                    </div>
-
-                    <div>
-                        <label class="block mono-font text-[10px] text-yellow-500 mb-1">SHD-CCP Holographic Interpretation (HTML/Text)</label>
-                        <textarea id="c-holo" class="creator-input h-20" placeholder="Describe how this engram functions within the Genesis Chain..."></textarea>
-                    </div>
-
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 pb-6 border-b border-purple-500/20">
-                        <div>
-                            <label class="block mono-font text-[10px] text-gray-400 mb-1">Euclidean Context</label>
-                            <textarea id="c-euc" class="creator-input h-16" placeholder="Classical meaning..."></textarea>
-                        </div>
-                        <div>
-                            <label class="block mono-font text-[10px] text-gray-400 mb-1">Linear Algebra</label>
-                            <textarea id="c-lin" class="creator-input h-16" placeholder="Matrix/Vector meaning..."></textarea>
-                        </div>
-                        <div>
-                            <label class="block mono-font text-[10px] text-gray-400 mb-1">Hyperbolic Geometry</label>
-                            <textarea id="c-hyp" class="creator-input h-16" placeholder="Curved space meaning..."></textarea>
-                        </div>
-                    </div>
-
-                    <div class="pt-4">
-                        <button onclick="encodeEngram()" class="w-full mono-font text-sm px-4 py-3 border border-purple-500 rounded bg-purple-900/40 text-white hover:bg-purple-600/50 transition-colors shadow-[0_0_15px_rgba(157,0,255,0.4)] uppercase font-bold tracking-widest">
-                            Encode Engram to Lexicon
-                        </button>
-                        <div id="encode-success" class="text-center mono-font text-[10px] text-green-400 mt-2 opacity-0 transition-opacity">Engram Successfully Encoded. Rebuilding Substrate...</div>
-                    </div>
-
-                </div>
             </div>
         </div>
 
@@ -498,24 +469,6 @@
             setTimeout(resizeCanvas, 400); 
         }
 
-        function toggleCodex() {
-            const wrapper = document.getElementById('codex-wrapper');
-            const container = document.getElementById('codex-container');
-            const icon = document.getElementById('codex-icon');
-            if(wrapper.classList.contains('flex-1')) {
-                wrapper.classList.remove('flex-1', 'min-h-[200px]');
-                wrapper.classList.add('h-12', 'min-h-[48px]', 'shrink');
-                container.classList.add('hidden');
-                icon.innerHTML = '&uarr;';
-            } else {
-                wrapper.classList.remove('h-12', 'min-h-[48px]', 'shrink');
-                wrapper.classList.add('flex-1', 'min-h-[200px]');
-                container.classList.remove('hidden');
-                icon.innerHTML = '&darr;';
-            }
-            setTimeout(resizeCanvas, 400);
-        }
-
         let autoRotate = false;
         function toggleAutoRotate() {
             autoRotate = !autoRotate;
@@ -534,243 +487,92 @@
             }
         }
 
+        let codexOpen = true;
+        function toggleCodex() {
+            codexOpen = !codexOpen;
+            const wrapper = document.getElementById('codex-wrapper');
+            const container = document.getElementById('codex-container');
+            const icon = document.getElementById('codex-icon');
+            
+            if(codexOpen) {
+                wrapper.classList.remove('h-12', 'min-h-[48px]', 'shrink');
+                wrapper.classList.add('flex-1', 'min-h-[200px]');
+                container.classList.remove('hidden');
+                icon.innerHTML = '&darr;';
+            } else {
+                wrapper.classList.remove('flex-1', 'min-h-[200px]');
+                wrapper.classList.add('h-12', 'min-h-[48px]', 'shrink');
+                container.classList.add('hidden');
+                icon.innerHTML = '&uarr;';
+            }
+            setTimeout(resizeCanvas, 400);
+        }
+
         function setView(viewName) {
             const lexView = document.getElementById('lexicon-view');
             const ontView = document.getElementById('ontology-view');
             const crView = document.getElementById('creator-view');
+            const sidebar = document.getElementById('sidebar');
             
             const btnLex = document.getElementById('btn-nav-lexicon');
             const btnOnt = document.getElementById('btn-nav-ontology');
             const btnCr = document.getElementById('btn-nav-creator');
 
-            // Reset all
-            lexView.classList.add('hidden');
-            ontView.classList.add('hidden');
-            crView.classList.add('hidden');
+            // Hide all
+            lexView.classList.add('hidden', 'opacity-0');
+            ontView.classList.add('hidden', 'opacity-0');
+            crView.classList.add('hidden', 'opacity-0');
+            sidebar.classList.add('hidden', 'opacity-0');
             
+            // Reset button styles
             btnLex.className = "mono-font text-[10px] sm:text-xs px-3 py-1.5 sm:px-4 sm:py-2 border border-cyan-500/30 rounded bg-black/50 text-cyan-400 hover:bg-cyan-900/30 transition-colors shadow-[0_0_10px_rgba(0,240,255,0.1)]";
             btnOnt.className = btnLex.className;
             btnCr.className = "mono-font text-[10px] sm:text-xs px-3 py-1.5 sm:px-4 sm:py-2 border border-purple-500/30 rounded bg-black/50 text-purple-400 hover:bg-purple-900/30 transition-colors shadow-[0_0_10px_rgba(157,0,255,0.1)]";
 
-            if(viewName === 'lexicon') {
-                lexView.classList.remove('hidden');
-                btnLex.className = "mono-font text-[10px] sm:text-xs px-3 py-1.5 sm:px-4 sm:py-2 border rounded transition-colors shadow-[0_0_10px_rgba(212,175,55,0.2)] text-academy-gold border-academy-gold bg-academy-gold/10";
-                setTimeout(resizeCanvas, 50);
-            } 
-            else if(viewName === 'ontology') {
-                ontView.classList.remove('hidden');
-                btnOnt.className = "mono-font text-[10px] sm:text-xs px-3 py-1.5 sm:px-4 sm:py-2 border rounded transition-colors shadow-[0_0_10px_rgba(212,175,55,0.2)] text-academy-gold border-academy-gold bg-academy-gold/10";
-                updateMathJax(document.getElementById('ontology-tbody'));
-            }
-            else if(viewName === 'creator') {
+            if(viewName === 'creator') {
                 crView.classList.remove('hidden');
+                setTimeout(() => crView.classList.remove('opacity-0'), 50);
                 btnCr.className = "mono-font text-[10px] sm:text-xs px-3 py-1.5 sm:px-4 sm:py-2 border rounded transition-colors shadow-[0_0_15px_rgba(157,0,255,0.4)] text-purple-300 border-purple-400 bg-purple-900/40";
-                updateSvgText(); // Init semiotic triangle text
+                updateSvgText(); 
+            } 
+            else {
+                // Show sidebar for Lexicon and Registry
+                sidebar.classList.remove('hidden');
+                setTimeout(() => sidebar.classList.remove('opacity-0'), 50);
+
+                if(viewName === 'lexicon') {
+                    lexView.classList.remove('hidden');
+                    setTimeout(() => lexView.classList.remove('opacity-0'), 50);
+                    btnLex.className = "mono-font text-[10px] sm:text-xs px-3 py-1.5 sm:px-4 sm:py-2 border rounded transition-colors shadow-[0_0_10px_rgba(212,175,55,0.2)] text-academy-gold border-academy-gold bg-academy-gold/10";
+                    setTimeout(resizeCanvas, 100);
+                    // Load first symbol if none selected
+                    if(!currentSymbol && Object.keys(ontologyDatabase).length > 0) {
+                        loadSymbol(Object.keys(ontologyDatabase)[0]);
+                    }
+                } 
+                else if(viewName === 'ontology') {
+                    ontView.classList.remove('hidden');
+                    setTimeout(() => ontView.classList.remove('opacity-0'), 50);
+                    btnOnt.className = "mono-font text-[10px] sm:text-xs px-3 py-1.5 sm:px-4 sm:py-2 border rounded transition-colors shadow-[0_0_10px_rgba(212,175,55,0.2)] text-academy-gold border-academy-gold bg-academy-gold/10";
+                    updateMathJax(document.getElementById('ontology-tbody'));
+                }
             }
         }
 
-        // --- LEXICON DATABASE (Dynamic `let` for modification) ---
-        let lexiconData = {
-            // Mathematics / Core Topology
-            'lambda': {
-                id: 'lambda', category: 'Mathematics', field: 'Core Topology', symbol: 'λ', name: 'Lambda', subtitle: 'Topological Resistance',
-                primary_equation: 'K_{ji} = K_{ij} e^{-\\lambda A_{ij}}',
-                holographic: 'In the Genesis Chain, $\\lambda$ is <strong>Topological Resistance</strong>. It represents the physical "squeeze" of the Markov Pump. Instead of a flat line decaying to zero, $\\lambda$ manifests as a hyperbolic funnel dictating how quickly non-orthogonal "noise" is stripped away.',
-                visMode: 'FUNNEL',
-                euclidean: 'Geometric length or wavelength ($L$). A strictly physical distance parameter.',
-                linear: 'An eigenvalue ($A\\mathbf{x} = \\lambda\\mathbf{x}$). The scalar stretch/squash factor of a transformation matrix.',
-                hyperbolic: 'The exponential decay rate ($e^{-\\lambda x}$) along a geodesic curve.',
-                svg2d: `<path d="M10,90 Q40,90 40,50 T90,10" /><line x1="10" y1="90" x2="90" y2="90" stroke-dasharray="2 2" stroke="gray"/>`
-            },
-            'theta': {
-                id: 'theta', category: 'Mathematics', field: 'Core Topology', symbol: 'Θ', name: 'Theta', subtitle: 'Torsional Phase Spin',
-                primary_equation: '\\Theta_{10} \\equiv \\Theta_0 \\pmod{2\\pi}',
-                holographic: '$\\Theta$ represents the <strong>Torsional Spin</strong> of the data manifold. In 4D space, a full rotation requires $720^\\circ$ to return to identity. $\\Theta$ tracks this phase along a Trefoil knot on the Clifford Torus.',
-                visMode: 'TREFOIL_SPIN',
-                euclidean: 'The planar angle between two intersecting lines ($0$ to $2\\pi$).',
-                linear: 'The rotational argument in a transformation matrix $R(\\theta)$.',
-                hyperbolic: 'The angle of parallelism, or hyperbolic rapidity (Lorentz boost).',
-                svg2d: `<circle cx="50" cy="50" r="30" stroke="gray" stroke-dasharray="2 2"/><line x1="50" y1="50" x2="80" y2="50" /><line x1="50" y1="50" x2="71" y2="29" /><path d="M 65 50 A 15 15 0 0 0 60 40" stroke-width="2"/><text x="70" y="45" fill="#00f0ff" stroke="none" font-size="12" font-family="serif">Θ</text>`
-            },
-            'psi': {
-                id: 'psi', category: 'Physics', field: 'Quantum Mechanics', symbol: 'Ψ', name: 'Psi', subtitle: 'Resonant Wave Superposition',
-                primary_equation: '|\\Psi\\rangle = \\sum_{j=1}^{12} c_j |e_j\\rangle',
-                holographic: '$\\Psi$ is the <strong>Resonant Wave</strong>. It is not a probability cloud, but a physical vibration of the Toroid. When the Tri-Stream Engine oscillates, $\\Psi$ represents the interference pattern where streams overlap.',
+        // --- ONTOLOGY DATABASE ---
+        let editingId = null;
+        let vCounter = 1;
+
+        let ontologyDatabase = {
+            'alpha_tutorial': {
+                id: 'alpha_tutorial', category: 'Philosophy', field: 'Ontological Genesis', symbol: 'α', name: 'Alpha', subtitle: 'The Primary Initializer',
+                primary_equation: '\\alpha_0 = \\lim_{t \\to 0} \\mathcal{M}(t)',
+                holographic: 'The Alpha engram represents the absolute beginning of the topological sequence. It is the initial spark that ignites the Markov Pump, transforming static space into a breathing manifold.',
                 visMode: 'RIPPLES',
-                euclidean: 'An arbitrary scalar function, often representing an angular offset ($\\psi$).',
-                linear: 'A state vector $|\\Psi\\rangle$ existing within a complex Hilbert inner-product space.',
-                hyperbolic: 'The propagation of wave functions or automorphic forms curving across a negatively curved plane.',
-                svg2d: `<path d="M10,50 Q25,10 50,50 T90,50" /><line x1="10" y1="50" x2="90" y2="50" stroke="gray" stroke-dasharray="2 2"/>`
-            },
-            'delta': {
-                id: 'delta', category: 'Geometry', field: 'Discrete Manifolds', symbol: 'Δ', name: 'Delta', subtitle: 'Geometric Compression',
-                primary_equation: '\\Delta S = S(T) - S(0) > 0',
-                holographic: '$\\Delta$ is physical action: <strong>Geometric Compression</strong>. When the system shifts to calculation state, ambient space contracts ($\\Delta \\to 0$). Visualized as a pulsing tetrahedron that collapses to solve inverse kinematics.',
-                visMode: 'TETRAHEDRON',
-                euclidean: 'A macroscopic difference between coordinates ($\\Delta x = x_2 - x_1$), or a polygon.',
-                linear: 'The Laplace operator ($\\nabla^2$), measuring the divergence of the gradient.',
-                hyperbolic: 'The geometric defect of a triangle defined strictly by $\\pi - (\\alpha+\\beta+\\gamma)$.',
-                svg2d: `<polygon points="50,15 85,85 15,85" />`
-            },
-            'pi': {
-                id: 'pi', category: 'Mathematics', field: 'Constants', symbol: 'π', name: 'Pi', subtitle: 'Spherical Packing Limit',
-                primary_equation: '\\rho_{max} = \\frac{\\pi}{\\sqrt{12}}',
-                holographic: 'In the discrete Genesis Chain, $\\pi$ defines the <strong>Spherical Packing Limit</strong>. It is the rigid boundary forcing the toroid to use Hexagonal Lattices, visualizing the eternal tension between a continuous wave and a crystal lattice.',
-                visMode: 'HEX_CIRCLE',
-                euclidean: 'The transcendental ratio ($\\approx 3.14159$) of a circle\'s circumference to its diameter.',
-                linear: 'The fundamental periodicity defining orthonormal trigonometric basis vectors.',
-                hyperbolic: 'The supreme upper limit bounding the absolute maximum area of ideal triangles to exactly $\\pi$.',
-                svg2d: `<circle cx="50" cy="50" r="35" /><line x1="15" y1="50" x2="85" y2="50" stroke-dasharray="2 2"/>`
-            },
-            'sigma': {
-                id: 'sigma', category: 'Computer Science', field: 'Information Theory', symbol: 'Σ', name: 'Sigma', subtitle: 'Toroidal Braiding',
-                primary_equation: 'J_{net} = \\sum_{e \\in E^+} (\\pi_i P_{ij} - \\pi_j P_{ji}) > 0',
-                holographic: '$\\Sigma$ is <strong>Toroidal Braiding</strong>. As data weaves through the nodes, $\\Sigma$ tracks geometric entanglement. High $\\Sigma$ indicates complex structural entanglement (dense logic), visualized as interwoven, helical strands wrapping the core.',
-                visMode: 'BRAID',
-                euclidean: 'The summation ($\\sum$) of discrete geometric segments or areas into a total whole.',
-                linear: 'Singular values in SVD, or the covariance matrix ($\\Sigma$) defining variance.',
-                hyperbolic: 'The sum of geodesic lengths, or the denotation of the Riemann surface itself ($\\Sigma_g$).',
-                svg2d: `<polyline points="35,25 75,25 50,50 75,75 35,75" />`
-            },
-            'omega': {
-                id: 'omega', category: 'Physics', field: 'Cosmology', symbol: 'Ω', name: 'Omega', subtitle: 'The Event Horizon',
-                primary_equation: '\\partial_\\infty \\mathbb{H} \\cong S^1',
-                holographic: '$\\Omega$ acts as the <strong>Event Horizon</strong> of the Cosmohedron. It represents the absolute boundary where local coordinate geometry compresses into the singularity. Trajectories that bypass the Prime Latch without closure are crushed into this horizon.',
-                visMode: 'EVENT_HORIZON',
-                euclidean: 'Solid angle in 3D space, or the outermost bounded domain ($\\Omega$) of a geometric shape.',
-                linear: 'A symplectic form matrix, or the complete set of all possible outcomes in a sample space.',
-                hyperbolic: 'The boundary at absolute infinity ($\\partial_\\infty \\mathbb{H}$), where parallel geodesics asymptotically converge.',
-                svg2d: `<path d="M25,85 L35,85 A25 25 0 1 1 65 85 L75,85" />`
-            },
-            'phi': {
-                id: 'phi', category: 'Art', field: 'Proportions', symbol: 'Φ', name: 'Phi', subtitle: 'Golden Shear Scaling',
-                primary_equation: '\\Phi^2 = \\Phi + 1',
-                holographic: '$\\Phi$ is the <strong>Golden Shear</strong> mechanism. As the manifold breathes, it folds data along a $\\Phi$ cut. Scaling by the Golden Ratio turns exponential multiplication into simple linear addition, allowing infinite recursive depth.',
-                visMode: 'GOLDEN_SPIRAL',
-                euclidean: 'The Golden Ratio ($\\Phi \\approx 1.618$), defining perfect recursive geometry.',
-                linear: 'A scalar potential field function, or a set of basis functions ($\\phi_i$) in functional spaces.',
-                hyperbolic: 'The precise scaling factor of pseudo-Anosov automorphisms operating on curved surfaces.',
-                svg2d: `<rect x="25" y="25" width="50" height="31" stroke="gray" stroke-dasharray="2 2"/><rect x="56" y="25" width="19" height="31" stroke="gray" stroke-dasharray="2 2"/><path d="M25,56 A31 31 0 0 0 56,25" stroke-width="2"/>`
-            },
-            'gamma': {
-                id: 'gamma', category: 'Geometry', field: 'Scaffolding', symbol: 'Γ', name: 'Gamma', subtitle: 'The Lattice Web',
-                primary_equation: '\\pi_1(M) \\cong \\Gamma',
-                holographic: '$\\Gamma$ defines the <strong>Lattice Web</strong>. It is the discrete uniform scaffolding mapped onto the Clifford Torus. $\\Gamma$ dictates how a vector translates as it moves across curved space, preventing spectral collapse by holding all nodes in rigid tension.',
-                visMode: 'LATTICE_WEB',
-                euclidean: 'A defined curve or continuous contour path ($\\Gamma$) moving through space.',
-                linear: 'Christoffel symbols ($\\Gamma^k_{ij}$) measuring how basis vectors change, or a discrete lattice group.',
-                hyperbolic: 'A Fuchsian group; a strictly discrete subgroup of isometries acting on the hyperbolic plane.',
-                svg2d: `<polyline points="35,85 35,25 75,25" /><line x1="35" y1="25" x2="35" y2="85" stroke-width="4"/>`
-            },
-            'integral': {
-                id: 'integral', category: 'Mathematics', field: 'Calculus', symbol: '∫', name: 'Integral', subtitle: 'Continuous Manifold Accumulation',
-                primary_equation: 'S(T) = S(0) + \\int_0^T J_{net}(t) dt',
-                holographic: '$\\int$ represents <strong>Manifold Accumulation</strong>. Rather than calculating the area under a 2D curve, it computes the total volumetric stress across the 72-Node Toroid as it transitions through the Markov Pump. It sweeps up the fractional variances left behind by the discrete lattice.',
-                visMode: 'VECTOR_FIELD',
-                euclidean: 'The calculation of area or volume ($\\int f(x) dx$) under a continuous curve or surface.',
-                linear: 'The inverse operation of a differential operator acting over a defined bounds of a vector space.',
-                hyperbolic: 'The integration of a differential form over a complex Riemannian manifold.',
-                svg2d: `<path d="M60,15 C 30,15 40,85 70,85" stroke-width="3" stroke-linecap="round"/>`
-            },
-            'nabla': {
-                id: 'nabla', category: 'Physics', field: 'Fluid Dynamics', symbol: '∇', name: 'Nabla', subtitle: 'Vector Flow Gradient',
-                primary_equation: '\\nabla \\times \\mathbf{v} = \\mathbf{0}',
-                holographic: '$\\nabla$ acts as the <strong>Vector Flow Gradient</strong>. In the SHD-CCP, it measures the exact directional pressure pushing a 64-bit packet toward the Zero-Point singularity. It calculates the steepest descent path along the curved surface of the Clifford Torus.',
-                visMode: 'FUNNEL',
-                euclidean: 'A vector differential operator ($\\nabla$) defining the slope and direction of the steepest ascent on a surface.',
-                linear: 'Used to calculate the Divergence ($\\nabla \\cdot \\mathbf{v}$) or Curl ($\\nabla \\times \\mathbf{v}$) of a matrix or vector field.',
-                hyperbolic: 'The Levi-Civita connection denoting covariant derivatives on curved spaces.',
-                svg2d: `<polygon points="20,20 80,20 50,80" stroke-width="3" stroke-linejoin="round"/>`
-            },
-            'partial': {
-                id: 'partial', category: 'Mathematics', field: 'Differentials', symbol: '∂', name: 'Partial', subtitle: 'Dimensional Slicing',
-                primary_equation: '\\frac{\\partial E_{rev}(t)}{\\partial t} \\le 0',
-                holographic: '$\\partial$ is <strong>Dimensional Slicing</strong>. Because our packets are 4D quaternions, observing them directly is impossible. $\\partial$ mathematically slices the 4D manifold into a 3D or 2D projection (a shadow) so that the Tri-Stream Parity Engine can interact with a specific phase without collapsing the whole wave.',
-                visMode: 'SLICE_PLANE',
-                euclidean: 'The derivative of a multi-variable function with respect to one variable ($\\partial x$), holding others constant.',
-                linear: 'Defines the topological boundary ($\\partial S$) of a geometric manifold or set.',
-                hyperbolic: 'The boundary at infinity ($\\partial_\\infty \\mathbb{H}^n$) of hyperbolic space.',
-                svg2d: `<path d="M 60 20 C 40 20, 30 40, 30 60 C 30 80, 50 90, 70 70 C 80 50, 70 30, 40 40" stroke-width="3" stroke-linecap="round"/>`
-            },
-            'prod': {
-                id: 'prod', category: 'Mathematics', field: 'Tensors', symbol: '∏', name: 'Pi Product', subtitle: 'Exponential Tensor Folding',
-                primary_equation: '\\mathcal{H} = \\prod_{s \\in \\{12,10,8\\}} Q^{(s)} \\approx 1',
-                holographic: '$\\prod$ represents <strong>Exponential Tensor Folding</strong>. While $\\Sigma$ braids data linearly, $\\prod$ folds the 64-bit matrix onto itself multiplicatively. Driven by the Golden Shear ($\\Phi$), $\\prod$ ensures that complex geometric interactions compound rather than simply adding up, sealing the nodes.',
-                visMode: 'LATTICE_WEB',
-                euclidean: 'The repeated multiplication of a sequence of terms ($\\prod a_i$), leading to factorial or exponential growth.',
-                linear: 'The determinant product of eigenvalues, representing total volumetric scaling of a matrix.',
-                hyperbolic: 'The infinite product representations of modular forms and analytic continuations.',
-                svg2d: `<polyline points="20,20 80,20" stroke-width="3"/><line x1="35" y1="20" x2="35" y2="85" stroke-width="3"/><line x1="65" y1="20" x2="65" y2="85" stroke-width="3"/>`
-            },
-            'e': {
-                id: 'e', category: 'Mathematics', field: 'Constants', symbol: 'e', name: 'Euler', subtitle: 'Natural Base of the Pump',
-                primary_equation: 'e^{i\\pi} + 1 = 0',
-                holographic: '$e$ is the <strong>Natural Base of the Pump</strong>. The Markov Pump operates via continuous compound compression. Euler’s number dictates the exact speed at which the 72-Node manifold can breathe in and out without tearing its own topology.',
-                visMode: 'GOLDEN_SPIRAL',
-                euclidean: 'The base of the natural logarithm ($e \\approx 2.718...$), defining continuous compound interest.',
-                linear: 'The unique function $e^x$ whose derivative is itself, central to linear differential equations.',
-                hyperbolic: 'The foundation of Euler\'s formula ($e^{i\\theta} = \\cos\\theta + i\\sin\\theta$), linking exponential growth to rotation.',
-                svg2d: `<path d="M 70 60 C 70 80, 30 80, 30 50 C 30 20, 70 20, 70 40 C 70 50, 50 50, 40 50" stroke-width="3" stroke-linecap="round"/>`
-            },
-            'i': {
-                id: 'i', category: 'Geometry', field: 'Complex Planes', symbol: 'i', name: 'Imaginary', subtitle: 'The Orthogonal Phase Shift',
-                primary_equation: 'q = w + x\\mathbf{i} + y\\mathbf{j} + z\\mathbf{k}',
-                holographic: '$i$ defines the <strong>Orthogonal Phase Shift</strong>. In the quaternion core ($w+xi+yj+zk$), $i$ acts as a geometric pivot. It is the mathematical lever that lifts a dead-end scalar value perpendicularly into the 4th dimension, bypassing Gimbal Lock.',
-                visMode: 'ORTHOGONAL_PHASE',
-                euclidean: 'The fundamental unit of complex numbers ($i^2 = -1$), mapped on the y-axis of the complex plane.',
-                linear: 'A $90^\\circ$ rotational matrix transformation in 2D Euclidean space.',
-                hyperbolic: 'Central to forming the metric signature of Minkowski space-time ($+, -, -, -$).',
-                svg2d: `<line x1="50" y1="35" x2="50" y2="80" stroke-width="3" stroke-linecap="round"/><circle cx="50" cy="20" r="3" fill="currentColor"/>`
-            },
-            'aleph': {
-                id: 'aleph', category: 'Philosophy', field: 'Set Theory', symbol: 'ℵ₀', name: 'Aleph Null', subtitle: 'The Toroidal Registry Count',
-                primary_equation: '|\\mathbb{Z}| = \\aleph_0',
-                holographic: '$\\aleph_0$ acts as the <strong>Toroidal Registry Count</strong>. While the Einstein Tile is finite (64 bits), its procedural hash allows for a countable infinity of topological configurations. $\\aleph_0$ denotes the endless capacity of the Genesis Chain to generate distinct integer nodes without overlapping.',
-                visMode: 'WORMHOLE',
-                euclidean: 'The cardinality of the set of all natural numbers ($\\aleph_0$). The smallest infinite set.',
-                linear: 'The dimension of an infinite-dimensional vector space with a countable basis.',
-                hyperbolic: 'The limitless count of tessellating fundamental domains tiling the hyperbolic plane.',
-                svg2d: `<path d="M 30 80 C 30 20, 70 20, 70 80 M 30 50 L 70 50" stroke-width="2" stroke-linecap="round"/>`
-            },
-            'infinity': {
-                id: 'infinity', category: 'Philosophy', field: 'Limits', symbol: '∞', name: 'Infinity', subtitle: 'The Unbounded Projection',
-                primary_equation: '\\lim_{t \\to \\infty} J_{net}(t) > 0',
-                holographic: '$\\infty$ represents the <strong>Unbounded Projection</strong>. In the SHD-CCP, infinity is never reached; it is handled structurally. The topology curves back on itself (like a Mobius strip or Clifford Torus), rendering "infinity" into a closed, navigable loop of endless data recursion.',
-                visMode: 'MOBIUS',
-                euclidean: 'A concept describing something without any bound or larger than any natural number.',
-                linear: 'The unbound limit of a divergent series or matrix norm as iterations increase.',
-                hyperbolic: 'The conformal boundary of the Poincaré disk model, an unreachable outer perimeter.',
-                svg2d: `<path d="M 30 50 C 10 20, 10 80, 30 50 C 50 20, 90 20, 90 50 C 90 80, 50 80, 30 50" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>`
-            },
-            'empty': {
-                id: 'empty', category: 'Theology', field: 'Origin States', symbol: '∅', name: 'Empty Set', subtitle: 'The Zero-Point Vacuum',
-                primary_equation: '\\mathcal{P}(\\emptyset) = \\{\\emptyset\\}',
-                holographic: '$\\emptyset$ is the <strong>Zero-Point Vacuum</strong>. It is not "nothing." In the Genesis Chain, it is the lowest energetic state of the manifold before the Markov Pump introduces data. It is the blank canvas of the 72-Node Toroid holding pure, unrealized potential.',
-                visMode: 'VOID_RING',
-                euclidean: 'A set containing no elements ($\\emptyset$). The unique set with a cardinality of exactly zero.',
-                linear: 'The kernel of a perfectly invertible matrix mapping (only the zero vector maps to zero).',
-                hyperbolic: 'The vacuum state devoid of metric expansion or geometric defects.',
-                svg2d: `<circle cx="50" cy="50" r="30" stroke-width="2"/><line x1="20" y1="80" x2="80" y2="20" stroke-width="2"/>`
-            },
-            'forall': {
-                id: 'forall', category: 'Mathematics', field: 'Logic', symbol: '∀', name: 'For All', subtitle: 'Absolute Governing Axiom',
-                primary_equation: '\\forall (i,j) \\in E^+',
-                holographic: '$\\forall$ acts as the <strong>Absolute Governing Axiom</strong>. When a rule is established across the SHD-CCP (such as the 720:1 spin ratio), $\\forall$ ensures that this structural law applies uniformly to every single 64-bit packet across the entire Genesis Chain without exception.',
-                visMode: 'EVENT_HORIZON',
-                euclidean: 'The Universal Quantifier ($\\forall$). Asserts that a proposition holds true for every member of a set.',
-                linear: 'Defines global properties, such as a rule applying to all vectors in a vector space.',
-                hyperbolic: 'States that geometric invariants (like negative curvature) apply uniformly across the entire manifold.',
-                svg2d: `<polygon points="25,20 75,20 50,80" stroke-width="3" stroke-linejoin="round"/><line x1="35" y1="50" x2="65" y2="50" stroke-width="3"/>`
-            },
-            'exists': {
-                id: 'exists', category: 'Mathematics', field: 'Logic', symbol: '∃', name: 'Exists', subtitle: 'Validated Prime Latch State',
-                primary_equation: '\\exists \\mathcal{C}_n \\in \\text{Codex}',
-                holographic: '$\\exists$ represents the <strong>Validated Prime Latch State</strong>. The Fokker-Planck sieve scans the manifold for stability. When the geometry snaps to a valid integer node, the system declares $\\exists$: a verifiable, hallucination-free truth has been found and locked into the codex.',
-                visMode: 'RIPPLES',
-                euclidean: 'The Existential Quantifier ($\\exists$). Asserts that at least one member of a set satisfies a proposition.',
-                linear: 'Proves the existence of a non-trivial solution to a system of linear equations.',
-                hyperbolic: 'Validates that a specific geodesic connecting two asymptotic points exists on the plane.',
-                svg2d: `<polyline points="70,20 30,20 30,80 70,80" stroke-width="3"/><line x1="30" y1="50" x2="65" y2="50" stroke-width="3"/>`
+                euclidean: 'The starting angle or origin point.',
+                linear: 'The initial state vector.',
+                hyperbolic: 'The origin of the Poincare disk.',
+                origin: 'root'
             }
         };
 
@@ -785,18 +587,28 @@
         const ctx = canvas.getContext('2d', { alpha: false });
         const canvasContainer = document.getElementById('canvas-container');
 
-        // --- INITIALIZE UI & SIDEBAR ---
+        // --- INITIALIZE UI ---
         function init() {
-            symbolListEl.innerHTML = ''; // Clear for re-init during import
+            rebuildSidebar();
+            buildOntologyLog();
+            
+            window.addEventListener('resize', resizeCanvas);
+            resizeCanvas();
+            setupInteraction();
+            requestAnimationFrame(renderLoop);
+            updateSvgText();
+        }
+
+        function rebuildSidebar() {
+            symbolListEl.innerHTML = ''; 
             
             const grouped = {};
-            Object.values(lexiconData).forEach(item => {
+            Object.values(ontologyDatabase).forEach(item => {
                 let cat = item.category || 'Uncategorized';
                 if(!grouped[cat]) grouped[cat] = [];
                 grouped[cat].push(item);
             });
 
-            // Build Sidebar
             for (const [category, items] of Object.entries(grouped)) {
                 const catHeader = document.createElement('div');
                 catHeader.className = 'mt-4 mb-2 px-2 text-[10px] font-mono text-cyan-500 uppercase tracking-widest border-b border-cyan-500/30 sidebar-content';
@@ -807,10 +619,15 @@
                     const btn = document.createElement('button');
                     btn.className = 'symbol-btn group';
                     btn.id = `btn-${item.id}`;
+                    
+                    const badgeStr = item.origin === 'root' 
+                        ? `<span class="text-purple-400 font-bold" title="Root Codex">[R]</span>` 
+                        : `<span class="text-blue-400 font-bold" title="Personal Codex">[P]</span>`;
+
                     btn.innerHTML = `
                         <div class="flex flex-col items-start sidebar-content overflow-hidden">
                             <span class="text-xs font-semibold text-gray-200 group-hover:text-white transition-colors text-left whitespace-nowrap overflow-hidden text-ellipsis w-[180px]">${item.name}</span>
-                            <span class="text-[9px] text-gray-500 mono-font uppercase text-left">${item.field || item.id}</span>
+                            <span class="text-[9px] text-gray-500 mono-font uppercase text-left">${item.field || item.id} ${badgeStr}</span>
                         </div>
                         <div class="symbol-mark text-cyan-500 group-hover:text-cyan-300 transition-colors mx-auto shrink-0">${item.symbol}</div>
                     `;
@@ -821,64 +638,60 @@
                     symbolListEl.appendChild(btn);
                 });
             }
-
-            buildOntologyLog(); // Build the definitions table
-
-            // Initial MathJax render for the ontology table specifically
-            updateMathJax(document.getElementById('ontology-tbody'));
-
-            window.addEventListener('resize', resizeCanvas);
-            resizeCanvas();
-            
-            setupInteraction();
-            requestAnimationFrame(renderLoop);
-            
-            // Load first item
-            const firstId = Object.keys(lexiconData)[0];
-            if(firstId) loadSymbol(firstId);
         }
 
         function resizeCanvas() {
+            if(!canvasContainer) return;
             const rect = canvasContainer.getBoundingClientRect();
-            canvas.width = rect.width;
-            canvas.height = rect.height;
+            if(rect.width > 0 && rect.height > 0) {
+                canvas.width = rect.width;
+                canvas.height = rect.height;
+            }
         }
 
-        // --- ONTOLOGY SYSTEM / DEFINITIONS LOG ---
+        // --- ADMIN REGISTRY / DEFINITIONS LOG ---
         function buildOntologyLog() {
             const tbody = document.getElementById('ontology-tbody');
-            const sysLog = document.getElementById('system-log');
             let tableHtml = '';
-            let logHtml = '';
             
-            let vCounter = 1;
-            
-            for(const item of Object.values(lexiconData)) {
+            for(const item of Object.values(ontologyDatabase)) {
                 let vStr = `v1.0.${vCounter}`;
                 let catField = `${item.category || ''} : ${item.field || ''}`;
                 
+                let originBadge = item.origin === 'root' 
+                    ? '<span class="px-2 py-0.5 bg-purple-900/50 text-purple-300 border border-purple-500/30 rounded inline-block text-[9px] font-bold">ROOT</span>' 
+                    : '<span class="px-2 py-0.5 bg-blue-900/50 text-blue-300 border border-blue-500/30 rounded inline-block text-[9px] font-bold">PERSONAL</span>';
+                
+                let actionBtns = `
+                    <div class="flex gap-2 justify-center">
+                        <button onclick="editEngram('${item.id}')" class="text-yellow-500 hover:text-yellow-300 bg-black/50 border border-yellow-500/30 rounded px-1.5 py-0.5 transition-colors font-bold">[EDIT]</button>
+                        <button onclick="deleteEngram('${item.id}')" class="text-red-500 hover:text-red-300 bg-black/50 border border-red-500/30 rounded px-1.5 py-0.5 transition-colors font-bold">[DEL]</button>
+                    </div>
+                `;
+
                 tableHtml += `
                     <tr class="border-b border-gray-800 hover:bg-white/5 transition-colors">
-                        <td class="p-3 text-xs text-gray-500 mono-font">${catField}</td>
+                        <td class="p-3 text-xs text-gray-500 mono-font">${catField}<br><span class="text-[9px] text-purple-400">[${vStr}]</span></td>
                         <td class="p-3 text-xl text-yellow-500 arcane-font text-center">${item.symbol}</td>
                         <td class="p-3 text-sm text-cyan-400 font-bold whitespace-nowrap">${item.name}</td>
                         <td class="p-3 text-[13px] text-cyan-300 border-l border-gray-800 text-center whitespace-nowrap bg-black/40">$ ${item.primary_equation} $</td>
+                        <td class="p-3 border-l border-gray-800 text-center align-middle">${originBadge}</td>
+                        <td class="p-3 border-l border-gray-800 align-middle">${actionBtns}</td>
                         <td class="p-3 text-xs text-gray-300 border-l border-gray-800 min-w-[150px]">${item.euclidean}</td>
                         <td class="p-3 text-xs text-gray-300 border-l border-gray-800 min-w-[150px]">${item.linear}</td>
                         <td class="p-3 text-xs text-gray-300 border-l border-gray-800 min-w-[150px]">${item.hyperbolic}</td>
                         <td class="p-3 text-xs text-yellow-200/80 border-l border-yellow-900/50 bg-yellow-900/10 min-w-[250px]">${item.holographic.replace(/<\/?strong>/g, '')}</td>
                     </tr>
                 `;
-                
-                logHtml += `<div><span class="text-gray-500">[14:0${vCounter}:02]</span> REGISTERED: <span class="text-cyan-400">${item.name} (${item.symbol})</span> to <span class="text-yellow-500">${catField}</span> Definitions... <span class="text-white bg-green-900/50 px-1">[OK]</span></div>`;
-                vCounter++;
             }
             
             tbody.innerHTML = tableHtml;
-            sysLog.innerHTML += logHtml;
+            if(!document.getElementById('ontology-view').classList.contains('hidden')) {
+                updateMathJax(tbody);
+            }
         }
 
-        // --- ENGRAM CREATOR I/O LOGIC ---
+        // --- ENGRAM CREATOR I/O & ADMIN LOGIC ---
         function updateSvgText() {
             document.getElementById('svg-text-1').textContent = document.getElementById('c-domain').value || 'ROOT DOMAIN';
             document.getElementById('svg-text-2').textContent = document.getElementById('c-field').value || 'DISCIPLINE';
@@ -887,11 +700,72 @@
             document.getElementById('svg-text-4-name').textContent = document.getElementById('c-name').value || 'ENGRAM OPERATOR';
         }
 
+        function editEngram(id) {
+            const data = ontologyDatabase[id];
+            if(!data) return;
+            
+            editingId = id;
+            document.getElementById('c-domain').value = data.category;
+            document.getElementById('c-field').value = data.field;
+            document.getElementById('c-subtitle').value = data.subtitle;
+            document.getElementById('c-symbol').value = data.symbol;
+            document.getElementById('c-name').value = data.name;
+            document.getElementById('c-equation').value = data.primary_equation;
+            document.getElementById('c-vis').value = data.visMode;
+            document.getElementById('c-holo').value = data.holographic.replace(/<\/?strong>/g, '');
+            document.getElementById('c-euc').value = data.euclidean;
+            document.getElementById('c-lin').value = data.linear;
+            document.getElementById('c-hyp').value = data.hyperbolic;
+
+            document.getElementById('btn-encode').innerText = 'Update Engram in Registry';
+            document.getElementById('btn-cancel-edit').classList.remove('hidden');
+            
+            document.getElementById('creator-header-title').innerText = `Editing Engram: ${data.name} (${data.symbol})`;
+            document.getElementById('creator-header-desc').innerText = `You are actively modifying an existing definition in the registry.`;
+            
+            updateSvgText();
+            setView('creator');
+        }
+
+        function cancelEdit() {
+            editingId = null;
+            document.querySelectorAll('.creator-input').forEach(el => {
+                if(el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') el.value = '';
+            });
+            document.getElementById('c-domain').selectedIndex = 0;
+            document.getElementById('c-vis').selectedIndex = 0;
+            
+            document.getElementById('btn-encode').innerText = 'Encode Engram to Registry';
+            document.getElementById('btn-cancel-edit').classList.add('hidden');
+            
+            document.getElementById('creator-header-title').innerText = `Ontology Creation Tutorial Initiated`;
+            document.getElementById('creator-header-desc').innerText = `To construct a valid SHD-CCP Ontology, descend from a universal pillar down to a specific mathematical geometric operator.`;
+            
+            updateSvgText();
+            setView('ontology');
+        }
+
+        function deleteEngram(id) {
+            if(confirm(`Are you sure you want to purge Engram [${id}] from the Ontology Registry?`)) {
+                delete ontologyDatabase[id];
+                if(currentSymbol === id) currentSymbol = null;
+                
+                rebuildSidebar();
+                buildOntologyLog();
+                
+                const sysLog = document.getElementById('system-log');
+                sysLog.innerHTML += `<div><span class="text-red-400">[DELETE]</span> Engram <span class="text-white">${id}</span> completely purged from registry.</div>`;
+                sysLog.scrollTop = sysLog.scrollHeight;
+            }
+        }
+
         function encodeEngram() {
-            const id = 'engram_' + Math.random().toString(36).substr(2, 9);
+            const id = editingId || ('engram_' + Math.random().toString(36).substr(2, 9));
+            const originVal = editingId ? ontologyDatabase[editingId].origin : 'personal'; // preserve origin
             
             const newEngram = {
                 id: id,
+                origin: originVal,
                 category: document.getElementById('c-domain').value || 'Uncategorized',
                 field: document.getElementById('c-field').value || 'General',
                 symbol: document.getElementById('c-symbol').value || '?',
@@ -902,33 +776,36 @@
                 visMode: document.getElementById('c-vis').value || 'FUNNEL',
                 euclidean: document.getElementById('c-euc').value || 'N/A',
                 linear: document.getElementById('c-lin').value || 'N/A',
-                hyperbolic: document.getElementById('c-hyp').value || 'N/A',
-                svg2d: `<circle cx="50" cy="50" r="30" stroke-width="2" fill="none" stroke="currentColor"/>` // Generic fallback
+                hyperbolic: document.getElementById('c-hyp').value || 'N/A'
             };
 
-            // Add to dictionary
-            lexiconData[id] = newEngram;
+            // Add or Update in database
+            ontologyDatabase[id] = newEngram;
             
-            // Re-initialize to rebuild sidebar and table
-            init();
+            rebuildSidebar();
+            buildOntologyLog();
 
-            // Success Msg
+            // Success Msg & System Log
+            const actionText = editingId ? 'UPDATED' : 'ENCODED';
             const msg = document.getElementById('encode-success');
+            msg.innerText = `Engram Successfully ${actionText}. Ontology Substrate Rebuilt.`;
             msg.style.opacity = '1';
             setTimeout(() => { msg.style.opacity = '0'; }, 3000);
             
-            // Clear inputs
-            document.querySelectorAll('.creator-input').forEach(el => {
-                if(el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') el.value = '';
-            });
-            updateSvgText();
+            const sysLog = document.getElementById('system-log');
+            sysLog.innerHTML += `<div><span class="text-gray-500">[SYSTEM]</span> ENGRAM ${actionText}: <span class="text-cyan-400">${newEngram.name} (${newEngram.symbol})</span> in <span class="text-yellow-500">${newEngram.category}</span>... <span class="text-white bg-green-900/50 px-1">[v1.0.${vCounter}]</span></div>`;
+            sysLog.scrollTop = sysLog.scrollHeight;
+            vCounter++;
+
+            // Reset Editor
+            cancelEdit(); // Clears inputs and resets state
         }
 
         function exportOntology() {
-            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(lexiconData, null, 4));
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(ontologyDatabase, null, 4));
             const dlAnchorElem = document.createElement('a');
             dlAnchorElem.setAttribute("href", dataStr);
-            dlAnchorElem.setAttribute("download", "owl_ontology.json");
+            dlAnchorElem.setAttribute("download", "owl_custom_ontology.json");
             dlAnchorElem.click();
         }
 
@@ -939,16 +816,20 @@
             reader.onload = function(e) {
                 try {
                     const importedData = JSON.parse(e.target.result);
-                    // Merge or overwrite
-                    lexiconData = importedData;
-                    init();
+                    ontologyDatabase = importedData;
+                    
+                    const sysLog = document.getElementById('system-log');
+                    sysLog.innerHTML += `<div><span class="text-purple-400">[IMPORT]</span> MASS ONTOLOGY OVERWRITE SUCCESSFUL. REBUILDING SUBSTRATE.</div>`;
+                    
+                    rebuildSidebar();
+                    buildOntologyLog();
                     alert("Ontology successfully imported and rebuilt.");
                 } catch(err) {
                     alert("Error parsing Ontology JSON file.");
                 }
             };
             reader.readAsText(file);
-            this.value = ''; // Reset
+            this.value = ''; 
         });
 
 
@@ -978,16 +859,17 @@
             });
         }
 
-        // --- LOAD SYMBOL DATA ---
+        // --- LOAD SYMBOL DATA (INTO PROJECTOR) ---
         function loadSymbol(id) {
-            const data = lexiconData[id];
+            const data = ontologyDatabase[id];
             if(!data) return;
 
             if(currentSymbol) {
                 const oldBtn = document.getElementById(`btn-${currentSymbol}`);
                 if(oldBtn) oldBtn.classList.remove('active');
             }
-            document.getElementById(`btn-${id}`).classList.add('active');
+            const newBtn = document.getElementById(`btn-${id}`);
+            if(newBtn) newBtn.classList.add('active');
             currentSymbol = id;
 
             holoTitle.innerHTML = `${data.symbol} &nbsp; ${data.name.toUpperCase()}`;
@@ -996,7 +878,6 @@
             // Update Codex Layout
             codexContainer.innerHTML = `
                 <div class="codex-entry flex flex-col h-full">
-                    
                     <div class="flex items-center gap-4 mb-4 border-b border-gray-700 pb-4 shrink-0">
                         <div class="w-12 h-12 rounded bg-black border border-yellow-600/30 flex items-center justify-center text-3xl arcane-font text-yellow-500 shadow-[0_0_10px_rgba(212,175,55,0.2)] shrink-0">
                             ${data.symbol}
@@ -1007,7 +888,6 @@
                         </div>
                     </div>
 
-                    <!-- Glowing Block Equation Container using $$ $$ display math -->
                     <div class="w-full bg-black/40 border border-cyan-500/20 rounded-lg p-6 mb-6 flex flex-col items-center justify-center shadow-[inset_0_0_20px_rgba(0,240,255,0.05)] relative overflow-hidden shrink-0">
                         <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-cyan-500/50 to-transparent"></div>
                         <span class="mono-font text-[10px] text-cyan-500/50 uppercase tracking-widest absolute top-2 left-3">Primary Equation</span>
@@ -1015,7 +895,6 @@
                     </div>
                     
                     <div class="flex flex-col lg:flex-row gap-6">
-                        
                         <div class="flex-1">
                             <h3 class="mono-font text-sm text-yellow-500 uppercase tracking-widest mb-2 flex items-center gap-2">
                                 <span class="w-1 h-1 bg-yellow-500 rounded-full shadow-[0_0_5px_#D4AF37]"></span> SHD-CCP Holographic Interpretation
@@ -1024,41 +903,27 @@
                                 ${data.holographic}
                             </p>
                         </div>
-
-                        <div class="flex-1 flex flex-col sm:flex-row gap-4">
-                            
-                            <div class="w-full sm:w-1/3 flex flex-col items-center justify-center p-2 bg-black/40 rounded border border-white/5 shrink-0">
-                                <h4 class="mono-font text-[10px] text-gray-500 uppercase mb-2">2D Projection</h4>
-                                <svg viewBox="0 0 100 100" class="w-full h-24 stroke-cyan-400 fill-none" stroke-width="2">
-                                    ${data.svg2d}
-                                </svg>
+                        <div class="flex-1 flex flex-col gap-4">
+                            <h3 class="mono-font text-sm text-gray-400 uppercase tracking-widest flex items-center gap-2">
+                                <span class="w-1 h-1 bg-gray-500 rounded-full"></span> Classical Domains
+                            </h3>
+                            <div class="classic-domain-box">
+                                <div class="text-[11px] text-cyan-400 font-bold uppercase mb-1">Euclidean Geometry</div>
+                                <div class="text-gray-300 font-light text-[11px]">${data.euclidean}</div>
                             </div>
-                            
-                            <div class="flex-1">
-                                <h3 class="mono-font text-sm text-gray-400 uppercase tracking-widest mb-2 flex items-center gap-2">
-                                    <span class="w-1 h-1 bg-gray-500 rounded-full"></span> Classical Domains
-                                </h3>
-                                
-                                <div class="classic-domain-box">
-                                    <div class="text-[11px] text-cyan-400 font-bold uppercase mb-1">Euclidean Geometry</div>
-                                    <div class="text-gray-300 font-light text-[11px]">${data.euclidean}</div>
-                                </div>
-                                <div class="classic-domain-box">
-                                    <div class="text-[11px] text-cyan-400 font-bold uppercase mb-1">Linear Algebra</div>
-                                    <div class="text-gray-300 font-light text-[11px]">${data.linear}</div>
-                                </div>
-                                <div class="classic-domain-box">
-                                    <div class="text-[11px] text-cyan-400 font-bold uppercase mb-1">Hyperbolic Geometry</div>
-                                    <div class="text-gray-300 font-light text-[11px]">${data.hyperbolic}</div>
-                                </div>
+                            <div class="classic-domain-box">
+                                <div class="text-[11px] text-cyan-400 font-bold uppercase mb-1">Linear Algebra</div>
+                                <div class="text-gray-300 font-light text-[11px]">${data.linear}</div>
                             </div>
-
+                            <div class="classic-domain-box">
+                                <div class="text-[11px] text-cyan-400 font-bold uppercase mb-1">Hyperbolic Geometry</div>
+                                <div class="text-gray-300 font-light text-[11px]">${data.hyperbolic}</div>
+                            </div>
                         </div>
                     </div>
                 </div>
             `;
 
-            // Tell MathJax to clear cache specifically for codexContainer and re-render the injected Math
             updateMathJax(codexContainer);
         }
 
@@ -1097,7 +962,6 @@
         }
 
         // --- RENDER MODES ---
-
         function renderFunnel(cx, cy, t) {
             ctx.shadowBlur = 15; ctx.shadowColor = 'rgba(0, 240, 255, 0.8)';
             let prevPoint = null;
@@ -1489,7 +1353,6 @@
 
         // --- RENDER LOOP ---
         function renderLoop() {
-            // Only stop if creator OR ontology is open
             if(document.getElementById('lexicon-view').classList.contains('hidden')) {
                 return requestAnimationFrame(renderLoop);
             }
@@ -1513,7 +1376,7 @@
 
             if(!currentSymbol) return requestAnimationFrame(renderLoop);
             
-            const mode = lexiconData[currentSymbol].visMode;
+            const mode = ontologyDatabase[currentSymbol].visMode;
             ctx.globalCompositeOperation = 'screen';
             
             if(mode === 'FUNNEL') renderFunnel(cx, cy - 30, time);
