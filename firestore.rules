@@ -100,6 +100,48 @@ service cloud.firestore {
       allow delete: if isArchon();
     }
 
+    // ─── Tome Seal System ─────────────────────────────────────────────
+    // Minor tomes live at users/{uid}/minorTomes/* (owner-only via the per-user
+    // catch-all above) and hold the ECDSA private key. These are the shared
+    // surfaces that make seals verifiable and unlocks auditable.
+
+    // Public seal registry — verification surface only; never holds a private key.
+    match /seals/{sealId} {
+      allow read:   if isSignedIn();
+      allow create: if isSignedIn() && request.resource.data.ownerUid == request.auth.uid;
+      // Owner may only flip lifecycle status (recall / archive) — content frozen.
+      allow update: if isSignedIn() && resource.data.ownerUid == request.auth.uid
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status','updatedAt','recalledTick']);
+      allow delete: if false; // recall via status, never delete — preserves traceability
+    }
+
+    // Major Tomes — centralized immutable canon. Archons inscribe; no edits/deletes.
+    match /majorTomes/{tomeId} {
+      allow read:   if isSignedIn();
+      allow create: if isArchon() && request.resource.data.creatorUid == request.auth.uid;
+      allow update, delete: if false;
+    }
+
+    // Unlock requests — a student asks for access, signed by their minor tome.
+    match /unlockRequests/{reqId} {
+      allow read:   if isSignedIn() && (resource.data.studentUid == request.auth.uid || isInstructorOrArchon());
+      allow create: if isSignedIn() && request.resource.data.studentUid == request.auth.uid;
+      // Instructors/Archons resolve the request (status fields only).
+      allow update: if isInstructorOrArchon()
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status','resolvedBy','resolvedAt','grantId','updatedAt']);
+      allow delete: if false;
+    }
+
+    // Unlock grants — the combined student×instructor seal. Immutable record.
+    match /tomeUnlocks/{grantId} {
+      allow read:   if isSignedIn();
+      allow create: if isInstructorOrArchon() && request.resource.data.issuerUid == request.auth.uid;
+      // Only an Archon may revoke (status fields only); otherwise frozen.
+      allow update: if isArchon()
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status','revokedBy','revokedAt','updatedAt']);
+      allow delete: if false;
+    }
+
     // ─── Chronicle (audit log, server-side reads only) ────────────────
     match /chronicles/{entry} {
       allow create: if isSignedIn();

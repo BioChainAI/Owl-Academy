@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Unlock Console — Owl Academy</title>
+<script type="module" src="../scripts/auth-guard.js"></script>
+<style>
+  :root{--void:#06040f;--gold:#D4AF37;--purple:#8b5cf6;--cyan:#22d3ee;--ok:#34d399;--bad:#f87171;--warn:#fbbf24}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--void);color:#e2e8f0;font-family:system-ui,sans-serif;min-height:100vh;line-height:1.55;
+       background:radial-gradient(ellipse at top,rgba(34,211,238,0.07),var(--void) 55%)}
+  .mono{font-family:ui-monospace,"Fira Code",monospace}
+  .secbar{display:flex;align-items:center;justify-content:space-between;gap:1rem;padding:.55rem 1.1rem;background:rgba(8,12,22,.85);
+          border-bottom:1px solid rgba(212,175,55,.25);position:sticky;top:0;z-index:30;backdrop-filter:blur(8px)}
+  .seal{display:flex;align-items:center;gap:.5rem;font-size:.64rem;letter-spacing:.16em;text-transform:uppercase;color:var(--gold)}
+  .seal .g{width:20px;height:20px;border:1px solid var(--gold);border-radius:50%;display:flex;align-items:center;justify-content:center}
+  .who{font-size:.62rem;color:rgba(255,255,255,.42)}
+  .btn{background:rgba(34,211,238,.14);color:var(--cyan);border:1px solid rgba(34,211,238,.4);border-radius:6px;padding:.4rem .8rem;
+       font-size:.66rem;letter-spacing:.1em;text-transform:uppercase;cursor:pointer;font-family:inherit;transition:.2s}
+  .btn:hover{background:rgba(34,211,238,.26)} .btn[disabled]{opacity:.4;cursor:not-allowed}
+  .btn.sm{padding:.25rem .55rem;font-size:.58rem} .btn.gold{background:rgba(212,175,55,.14);color:var(--gold);border-color:rgba(212,175,55,.45)}
+  header{text-align:center;padding:2rem 1rem .6rem}
+  .kick{font-size:.6rem;letter-spacing:.3em;text-transform:uppercase;color:rgba(34,211,238,.7)}
+  h1{font-weight:300;letter-spacing:.12em;color:#fff;margin-top:.4rem;font-size:1.6rem}h1 b{color:var(--cyan)}
+  .back{display:inline-block;margin-top:.8rem;font-size:.62rem;letter-spacing:.2em;text-transform:uppercase;color:rgba(139,92,246,.5);text-decoration:none}
+  main{max-width:920px;margin:1.4rem auto;padding:0 1.1rem}
+  .panel{background:rgba(10,8,20,.6);border:1px solid rgba(34,211,238,.16);border-radius:12px;padding:1.1rem 1.3rem;margin-bottom:1.2rem}
+  .label{font-size:.6rem;letter-spacing:.26em;text-transform:uppercase;color:rgba(34,211,238,.7);margin-bottom:.7rem}
+  select,input,textarea{background:#0c0a18;color:#e2e8f0;border:1px solid rgba(139,92,246,.3);border-radius:6px;padding:.4rem .55rem;font-size:.8rem;font-family:inherit;width:100%}
+  label.f{display:block;font-size:.62rem;letter-spacing:.08em;text-transform:uppercase;color:rgba(255,255,255,.5);margin:.6rem 0 .2rem}
+  .req{border:1px solid rgba(139,92,246,.16);border-radius:9px;padding:.8rem .9rem;margin-bottom:.7rem;background:rgba(0,0,0,.25)}
+  .req .t{color:#fff;font-size:.9rem} .req .meta{font-size:.64rem;color:rgba(255,255,255,.4);margin-top:.25rem}
+  .req .act{margin-top:.55rem;display:flex;gap:.5rem;align-items:center;flex-wrap:wrap}
+  .signbar{display:flex;gap:.6rem;align-items:center;flex-wrap:wrap;margin-bottom:.9rem}
+  .signbar label{font-size:.62rem;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.5)}
+  .empty{text-align:center;color:rgba(255,255,255,.4);font-size:.84rem;padding:1.4rem;border:1px dashed rgba(139,92,246,.2);border-radius:10px}
+  .gate{max-width:520px;margin:3rem auto;text-align:center;border:1px solid rgba(248,113,113,.3);border-radius:12px;padding:2rem;color:var(--bad);display:none}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:.6rem}
+  .msg{font-size:.72rem;margin-top:.5rem}.msg.ok{color:var(--ok)}.msg.bad{color:var(--bad)}
+  .hint{font-size:.66rem;color:rgba(255,255,255,.4)}
+  .vok{color:var(--ok)} .vbad{color:var(--bad)}
+</style>
+</head>
+<body>
+<div class="secbar">
+  <div class="seal"><span class="g">♛</span> Genesis-Sealed</div>
+  <div class="who mono" id="who">authenticating…</div>
+  <button class="btn sm" onclick="globalLogout()">Log out</button>
+</div>
+<header>
+  <div class="kick">Mage Tower · Instructor / Archon</div>
+  <h1>Unlock <b>Console</b></h1>
+  <div><a class="back" href="Major_Tome.html">← Major Tome Library</a></div>
+</header>
+
+<div class="gate" id="gate">⬢ Restricted. Only <b>Instructors</b> and <b>Archons</b> may combine seals to unlock Major Tomes.</div>
+
+<main id="main" style="display:none">
+  <div class="panel">
+    <div class="label">Sign off with</div>
+    <div class="signbar">
+      <label>My minor tome</label>
+      <select id="mytome" style="max-width:340px"><option value="">— loading —</option></select>
+      <span class="hint">Your seal combines with the student's to form the 2-of-2 unlock — you are recorded as the issuer.</span>
+    </div>
+    <div class="msg" id="gmsg"></div>
+  </div>
+
+  <div class="panel">
+    <div class="label">Pending unlock requests</div>
+    <div id="reqs"><div class="hint">Loading…</div></div>
+  </div>
+
+  <div class="panel" id="archon-panel" style="display:none">
+    <div class="label">Inscribe a Major Tome (Archon · immutable)</div>
+    <label class="f">Title</label><input id="mt-title" placeholder="e.g. The Gravitoelectromagnetic Canon" />
+    <label class="f">Summary</label><input id="mt-sum" placeholder="One-line description" />
+    <div class="grid2">
+      <div><label class="f">Plane</label><input id="mt-plane" placeholder="dept-III" value="custom" /></div>
+      <div><label class="f">Required tier</label>
+        <select id="mt-tier"><option>ACOLYTE</option><option>INSTRUCTOR</option><option>ARCHON</option></select></div>
+    </div>
+    <div style="margin-top:.8rem"><button class="btn gold" id="inscribe">Inscribe into canon</button></div>
+    <div class="msg" id="imsg"></div>
+  </div>
+
+  <div class="panel">
+    <div class="label">Unlocks I have signed</div>
+    <div id="mine"><div class="hint">Loading…</div></div>
+  </div>
+</main>
+
+<script type="module">
+import { auth } from "../scripts/firebase/config.js";
+import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-auth.js";
+import { resolveTier } from "../scripts/genesis-registrar.js";
+import { listMinorTomes } from "../scripts/minor-tome.js";
+import { listPendingRequests, grantUnlock, listMajorTomes, createMajorTome, listGrantsByIssuer, verifyUnlockGrant } from "../scripts/major-tome.js";
+
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s).replace(/[&<>]/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;" }[c]));
+let UID = null, TIER = "ACOLYTE", tomeTitles = {};
+
+onAuthStateChanged(auth, async (u) => {
+  if (!u) return; UID = u.uid;
+  try { TIER = await resolveTier(u.uid); } catch {}
+  const sym = TIER === "ARCHON" ? "♛" : TIER === "INSTRUCTOR" ? "⬢" : "◯";
+  $("who").textContent = `${sym} ${TIER} · ${u.uid.slice(0,10)}…`;
+  if (TIER !== "INSTRUCTOR" && TIER !== "ARCHON") { $("gate").style.display = "block"; return; }
+  $("main").style.display = "block";
+  if (TIER === "ARCHON") $("archon-panel").style.display = "block";
+  load();
+});
+
+async function load(){
+  const [mine, majors, reqs, grants] = await Promise.all([
+    listMinorTomes(UID).catch(()=>[]), listMajorTomes().catch(()=>[]),
+    listPendingRequests().catch(()=>[]), listGrantsByIssuer(UID).catch(()=>[]),
+  ]);
+  tomeTitles = {}; majors.forEach(m => tomeTitles[m.id] = m.title);
+  const active = mine.filter(t => t.status === "active");
+  $("mytome").innerHTML = active.length
+    ? active.map(t => `<option value="${t.sealId}">${esc(t.label)} · ${t.sealId.slice(0,12)}…</option>`).join("")
+    : `<option value="">— no active minor tomes (forge one in Seal Forge) —</option>`;
+
+  $("reqs").innerHTML = reqs.length ? reqs.map(r => `
+    <div class="req">
+      <div class="t">${esc(tomeTitles[r.majorTomeId] || r.majorTomeId)}</div>
+      <div class="meta mono">student ${esc((r.studentGenesisId||r.studentUid||"").slice(0,18))}… · seal ${esc((r.studentSealId||"").slice(0,14))}… · tick ${esc(r.tickToken||"")}</div>
+      <div class="act"><button class="btn" data-grant="${r.id}">Combine &amp; sign off</button><span class="hint" id="rmsg-${r.id}"></span></div>
+    </div>`).join("") : `<div class="empty">No pending requests.</div>`;
+  $("reqs").querySelectorAll("[data-grant]").forEach(b => b.onclick = () => doGrant(b.dataset.grant, b));
+
+  $("mine").innerHTML = grants.length ? grants.map(g => `
+    <div class="req"><div class="t">${esc(tomeTitles[g.majorTomeId] || g.majorTomeId)}</div>
+      <div class="meta mono">→ student ${esc((g.studentUid||"").slice(0,12))}… · ${esc(g.status)} · <span id="vg-${g.id}">verifying…</span></div></div>`).join("")
+    : `<div class="empty">You haven't signed any unlocks yet.</div>`;
+  grants.forEach(async g => { try { const v = await verifyUnlockGrant(g); const el = $(`vg-${g.id}`); if (el) el.innerHTML = v.valid ? `<span class="vok">2-of-2 verified ✓</span>` : `<span class="vbad">✗ ${esc(v.reason||"invalid")}</span>`; } catch {} });
+}
+
+async function doGrant(requestId, btn){
+  const sid = $("mytome").value;
+  if (!sid) { $("gmsg").className = "msg bad"; $("gmsg").textContent = "Select one of your active minor tomes to sign off."; return; }
+  btn.disabled = true;
+  const m = $(`rmsg-${requestId}`); if (m) m.textContent = "Verifying student seal & combining…";
+  try { await grantUnlock(UID, requestId, sid); if (m) { m.innerHTML = `<span class="vok">unlocked ✓</span>`; } load(); }
+  catch (e) { if (m) m.innerHTML = `<span class="vbad">${esc(e.message)}</span>`; btn.disabled = false; }
+}
+
+$("inscribe").onclick = async () => {
+  $("inscribe").disabled = true; $("imsg").className = "msg"; $("imsg").textContent = "Inscribing…";
+  try {
+    const t = await createMajorTome(UID, { title: $("mt-title").value.trim(), summary: $("mt-sum").value.trim(), plane: $("mt-plane").value.trim() || "custom", requiredTier: $("mt-tier").value });
+    $("imsg").className = "msg ok"; $("imsg").textContent = `Inscribed "${t.title}" into the immutable canon.`;
+    $("mt-title").value = ""; $("mt-sum").value = ""; load();
+  } catch (e) { $("imsg").className = "msg bad"; $("imsg").textContent = e.message; }
+  $("inscribe").disabled = false;
+};
+</script>
+</body>
+</html>
