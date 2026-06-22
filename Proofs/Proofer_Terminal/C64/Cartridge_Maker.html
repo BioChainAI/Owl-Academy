@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SHD-CCP Cartridge Generator & PDF Ingestor</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
+    <!-- PDF.js for client-side PDF parsing -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
+    <script>
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
+    </script>
+    
+    <style>
+        :root {
+            --c64-border: #8b8bb4;
+            --c64-bg: #3e31a2;
+            --c64-text: #7c70da;
+            --c64-text-light: #a4a0e0;
+            --c64-highlight: #c7c7ec;
+            --c64-red: #883932;
+            --c64-green: #55a049;
+            --c64-yellow: #bfce72;
+        }
+
+        body, html {
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+            background-color: #111;
+            font-family: 'VT323', monospace;
+            color: var(--c64-highlight);
+        }
+
+        .crt {
+            position: relative;
+            min-height: 100vh;
+            width: 100vw;
+            background-color: var(--c64-border);
+            padding: 4vh 4vw;
+            box-sizing: border-box;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .screen {
+            background-color: var(--c64-bg);
+            width: 100%;
+            height: 100%;
+            max-width: 1300px;
+            display: flex;
+            flex-direction: column;
+            border: 1px solid rgba(255,255,255,0.1);
+            box-shadow: inset 0 0 20px rgba(0,0,0,0.5), 0 0 30px rgba(0,0,0,0.8);
+            position: relative;
+            z-index: 10;
+        }
+
+        .header {
+            background-color: var(--c64-highlight);
+            color: var(--c64-bg);
+            padding: 10px 20px;
+            font-weight: bold;
+            font-size: 1.5rem;
+            text-transform: uppercase;
+            border-bottom: 4px solid var(--c64-border);
+            text-align: center;
+        }
+
+        .content {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+            flex-direction: column;
+            md:flex-direction: row;
+        }
+
+        .panel {
+            flex: 1;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            border-right: 4px solid var(--c64-border);
+        }
+
+        .panel:last-child {
+            border-right: none;
+        }
+
+        .btn-retro {
+            background-color: var(--c64-bg);
+            color: var(--c64-highlight);
+            border: 2px solid var(--c64-highlight);
+            padding: 8px 12px;
+            font-family: 'VT323', monospace;
+            font-size: 1.2rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-transform: uppercase;
+            box-shadow: 4px 4px 0px rgba(0,0,0,0.3);
+        }
+
+        .btn-retro:hover:not(:disabled) {
+            background-color: var(--c64-highlight);
+            color: var(--c64-bg);
+            transform: translate(-2px, -2px);
+            box-shadow: 6px 6px 0px rgba(0,0,0,0.3);
+        }
+
+        .btn-retro:active:not(:disabled) {
+            transform: translate(2px, 2px);
+            box-shadow: 0px 0px 0px rgba(0,0,0,0.3);
+        }
+
+        .btn-retro:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            border-color: var(--c64-text);
+            color: var(--c64-text);
+        }
+
+        .file-upload-wrapper {
+            position: relative;
+            overflow: hidden;
+            display: inline-block;
+        }
+
+        .file-upload-wrapper input[type=file] {
+            font-size: 100px;
+            position: absolute;
+            left: 0;
+            top: 0;
+            opacity: 0;
+            cursor: pointer;
+        }
+
+        textarea {
+            background-color: rgba(0,0,0,0.4);
+            border: 2px solid var(--c64-border);
+            color: var(--c64-highlight);
+            font-family: 'VT323', monospace;
+            font-size: 1.1rem;
+            padding: 10px;
+            flex-grow: 1;
+            resize: none;
+            outline: none;
+        }
+
+        textarea::-webkit-scrollbar { width: 8px; }
+        textarea::-webkit-scrollbar-thumb { background: var(--c64-highlight); }
+
+        #log-window {
+            background-color: #000;
+            border: 2px solid var(--c64-border);
+            color: var(--c64-green);
+            padding: 10px;
+            height: 150px;
+            overflow-y: auto;
+            font-size: 1.1rem;
+            margin-top: 15px;
+        }
+
+        .scanline {
+            width: 100%;
+            height: 100px;
+            z-index: 55;
+            position: absolute;
+            pointer-events: none;
+            background: linear-gradient(0deg, rgba(0,0,0,0) 0%, rgba(255,255,255,0.05) 10%, rgba(0,0,0,0.1) 100%);
+            opacity: 0.1;
+            animation: scan 6s linear infinite;
+        }
+        @keyframes scan { 0% { top: -100px; } 100% { top: 100%; } }
+
+        /* Loader Animation */
+        .loader {
+            display: none;
+            width: 20px;
+            height: 20px;
+            border: 3px solid var(--c64-bg);
+            border-bottom-color: var(--c64-highlight);
+            border-radius: 50%;
+            display: inline-block;
+            animation: rotation 1s linear infinite;
+        }
+        @keyframes rotation { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+    </style>
+</head>
+<body>
+    <div class="crt">
+        <div class="scanline"></div>
+        <div class="screen">
+            <div class="header">
+                *** SHD-CCP CARTRIDGE GENERATOR ***
+            </div>
+            
+            <div class="flex flex-col md:flex-row flex-1 overflow-hidden">
+                <!-- Left Panel: Input -->
+                <div class="panel">
+                    <h2 class="text-2xl text-[var(--c64-yellow)] mb-2">1. INGEST SOURCE MATERIAL</h2>
+                    <p class="text-sm text-[var(--c64-text-light)] mb-4">Upload a mathematical PDF or paste plaintext. The Gemini compilation engine will extract the logic and build a structured JSON cartridge, complete with geometric blueprints and animated grapher equations.</p>
+                    
+                    <div class="flex gap-4 mb-4">
+                        <div class="file-upload-wrapper">
+                            <button class="btn-retro">UPLOAD .PDF</button>
+                            <input type="file" id="pdf-upload" accept="application/pdf">
+                        </div>
+                        <button class="btn-retro" id="clear-btn" style="border-color: var(--c64-red); color: var(--c64-red);">CLEAR</button>
+                    </div>
+
+                    <textarea id="source-text" placeholder="Or paste raw mathematical proof text here..."></textarea>
+                    
+                    <div id="log-window">
+                        <div>SYSTEM READY. AWAITING DATA...</div>
+                        <div style="color: var(--c64-yellow); margin-top: 5px;">* NOTE: The compiler has been updated to generate 'graph_equations' with specific 'familiar_dialogues' for the Cartography Engine.</div>
+                    </div>
+
+                    <div class="mt-4">
+                        <button class="btn-retro w-full flex justify-center items-center gap-3" id="generate-btn" style="background-color: var(--c64-yellow); color: var(--c64-bg);">
+                            <span id="gen-text">COMPILE TO .C64CARTRIDGE.JSON</span>
+                            <span id="gen-spinner" class="loader" style="display: none;"></span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Right Panel: Output -->
+                <div class="panel">
+                    <h2 class="text-2xl text-[var(--c64-green)] mb-2">2. OUTPUT CARTRIDGE</h2>
+                    <p class="text-sm text-[var(--c64-text-light)] mb-4">Strictly formatted JSON ready for insertion into the Formal Proofer Terminal.</p>
+                    
+                    <textarea id="output-json" placeholder="Generated cartridge JSON will appear here..." readonly></textarea>
+                    
+                    <div class="mt-4 flex gap-4">
+                        <button class="btn-retro flex-1" id="copy-btn" disabled>COPY TO CLIPBOARD</button>
+                        <button class="btn-retro flex-1" id="download-btn" disabled style="color: var(--c64-highlight); border-color: var(--c64-green);">DOWNLOAD .JSON</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // API Configuration - Set implicitly by environment execution
+        const apiKey = ""; 
+
+        const pdfUpload = document.getElementById('pdf-upload');
+        const sourceText = document.getElementById('source-text');
+        const outputJson = document.getElementById('output-json');
+        const logWindow = document.getElementById('log-window');
+        const generateBtn = document.getElementById('generate-btn');
+        const copyBtn = document.getElementById('copy-btn');
+        const downloadBtn = document.getElementById('download-btn');
+        const clearBtn = document.getElementById('clear-btn');
+        const genText = document.getElementById('gen-text');
+        const genSpinner = document.getElementById('gen-spinner');
+
+        let generatedData = null;
+
+        function log(message, color = 'var(--c64-highlight)') {
+            const div = document.createElement('div');
+            div.style.color = color;
+            div.innerText = `> ${message}`;
+            logWindow.appendChild(div);
+            logWindow.scrollTop = logWindow.scrollHeight;
+        }
+
+        // PDF Ingestion Logic
+        pdfUpload.addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            log(`INGESTING PDF: ${file.name}...`, 'var(--c64-yellow)');
+            sourceText.value = "Extracting text from PDF, please wait...";
+            
+            try {
+                const arrayBuffer = await file.arrayBuffer();
+                const pdf = await pdfjsLib.getDocument({data: arrayBuffer}).promise;
+                let fullText = '';
+                
+                for (let i = 1; i <= pdf.numPages; i++) {
+                    const page = await pdf.getPage(i);
+                    const content = await page.getTextContent();
+                    const strings = content.items.map(item => item.str);
+                    fullText += strings.join(' ') + '\n';
+                }
+                
+                sourceText.value = fullText;
+                log(`PDF EXTRACTION SUCCESS. (${pdf.numPages} PAGES)`, 'var(--c64-green)');
+            } catch (err) {
+                log(`PDF EXTRACTION FAILED: ${err.message}`, 'var(--c64-red)');
+                sourceText.value = "";
+            }
+        });
+
+        clearBtn.addEventListener('click', () => {
+            sourceText.value = '';
+            outputJson.value = '';
+            generatedData = null;
+            copyBtn.disabled = true;
+            downloadBtn.disabled = true;
+            pdfUpload.value = '';
+            log("MEMORY CLEARED.");
+        });
+
+        // JSON Schema for Gemini
+        const cartridgeSchema = {
+            type: "OBJECT",
+            properties: {
+                cartridge_metadata: {
+                    type: "OBJECT",
+                    properties: {
+                        proof_name: { type: "STRING" },
+                        short_name: { type: "STRING" },
+                        author: { type: "STRING" },
+                        target_system: { type: "STRING" },
+                        version: { type: "STRING" }
+                    },
+                    required: ["proof_name", "short_name", "author", "target_system", "version"]
+                },
+                raw_proof_text: { type: "STRING" },
+                familiar_initialization: {
+                    type: "OBJECT",
+                    properties: {
+                        cat: { type: "OBJECT", properties: { load_dialogue: { type: "STRING" } } },
+                        mastiff: { type: "OBJECT", properties: { load_dialogue: { type: "STRING" } } }
+                    }
+                },
+                verification_steps: {
+                    type: "ARRAY",
+                    items: {
+                        type: "OBJECT",
+                        properties: {
+                            step_id: { type: "INTEGER" },
+                            window_title: { type: "STRING" },
+                            lean_shd_hud: {
+                                type: "OBJECT",
+                                properties: {
+                                    goal: { type: "STRING" },
+                                    hypotheses: { type: "ARRAY", items: { type: "STRING" } },
+                                    tactic: { type: "STRING" }
+                                }
+                            },
+                            terminal_logs: { type: "ARRAY", items: { type: "STRING" } },
+                            familiar_dialogues: {
+                                type: "OBJECT",
+                                properties: {
+                                    cat: { type: "STRING" },
+                                    mastiff: { type: "STRING" }
+                                }
+                            },
+                            visual_render_mode: { type: "STRING" },
+                            inspector_data: {
+                                type: "OBJECT",
+                                properties: {
+                                    modal_title: { type: "STRING" },
+                                    description_top: { type: "STRING" },
+                                    equation_top: { type: "STRING" },
+                                    visual_generation_instructions: {
+                                        type: "OBJECT",
+                                        properties: {
+                                            concept: { type: "STRING" },
+                                            c64_palette_required: { type: "ARRAY", items: { type: "STRING" } },
+                                            layout: { type: "STRING" }
+                                        }
+                                    },
+                                    graph_equations: {
+                                        type: "OBJECT",
+                                        properties: {
+                                            type: { type: "STRING", description: "'cartesian' or 'parametric'" },
+                                            x: { type: "STRING", description: "Parametric X equation using 't' and 'time'." },
+                                            y: { type: "STRING", description: "Cartesian Y equation using 'x' and 'time', or Parametric Y equation using 't' and 'time'." },
+                                            familiar_dialogues: {
+                                                type: "OBJECT",
+                                                properties: {
+                                                    cat: { type: "STRING" },
+                                                    mastiff: { type: "STRING" }
+                                                },
+                                                description: "Commentary triggered when plotting this specific graph."
+                                            }
+                                        }
+                                    },
+                                    description_bottom: { type: "STRING" },
+                                    equation_bottom: { type: "STRING" }
+                                }
+                            }
+                        },
+                        required: ["step_id", "window_title", "lean_shd_hud", "terminal_logs", "familiar_dialogues", "visual_render_mode", "inspector_data"]
+                    }
+                }
+            },
+            required: ["cartridge_metadata", "raw_proof_text", "familiar_initialization", "verification_steps"]
+        };
+
+        const systemPrompt = `You are a mathematical compiler for the SHD-CCP Formal Proofer (a C64 Terminal interface). 
+Your task is to ingest a mathematical paper/proof and output a strict JSON cartridge that conforms exactly to the provided schema.
+
+CRITICAL RULES:
+1. Double-escape all LaTeX commands! For example, output \\\\pi instead of \\pi, and \\\\vdash instead of \\vdash. Wrap math blocks in $$ if needed.
+2. The 'raw_proof_text' should contain the plaintext of the paper provided formatted with simple markdown headers.
+3. For familiar dialogues: 'cat' (Felis Arcana) focuses on topology, smooth manifolds, and phases. 'mastiff' (Canis Aegis) focuses on rigid bounds, inequalities, and structural verification.
+4. 'visual_render_mode' must be one of: LATTICE, TREFOIL, PUMP, HOPF, TOROID, PROVEN.
+5. In 'visual_generation_instructions.c64_palette_required', use only these variables: --c64-bg, --c64-border, --c64-highlight, --c64-text, --c64-text-light, --c64-red, --c64-green, --c64-yellow. Provide explicit step-by-step drawing instructions in 'layout'.
+
+CRITICAL GRAPHING RULES (For the Cartography Engine):
+6. If a verification step contains math suitable for 2D graphing, provide a 'graph_equations' object inside 'inspector_data'.
+7. Set 'type' to either 'cartesian' or 'parametric'.
+8. SYNTAX: Use standard JS math without the "Math." prefix (e.g., sin(), cos(), exp(), abs(), sqrt(), pi). Use '^' or '**' for exponents.
+9. VARIABLES:
+   - For 'cartesian': define 'y' using 'x' as the independent variable.
+   - For 'parametric': define 'x' and 'y' using 't' as the independent variable.
+   - For ANIMATION: In either mode, you may include the variable 'time' to make the graph animated (e.g. "sin(x - time)").
+10. Include 'familiar_dialogues' inside 'graph_equations' containing brief, persona-specific commentary on the visual shape of the mathematical graph (e.g., Cat: "Watch the waves fold over the manifold...", Mastiff: "Asymptotes are strictly bounded. Decay is active...").`;
+
+        // Exponential Backoff Fetch
+        async function fetchWithRetry(url, options, maxRetries = 5) {
+            const delays = [1000, 2000, 4000, 8000, 16000];
+            for (let i = 0; i < maxRetries; i++) {
+                try {
+                    const response = await fetch(url, options);
+                    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                    return await response.json();
+                } catch (error) {
+                    log(`API ATTEMPT ${i+1} FAILED. RETRYING...`, 'var(--c64-red)');
+                    if (i === maxRetries - 1) throw error;
+                    await new Promise(resolve => setTimeout(resolve, delays[i]));
+                }
+            }
+        }
+
+        // Compilation Logic
+        generateBtn.addEventListener('click', async () => {
+            const text = sourceText.value.trim();
+            if (!text) {
+                log("ERROR: NO SOURCE MATERIAL TO COMPILE.", 'var(--c64-red)');
+                return;
+            }
+
+            generateBtn.disabled = true;
+            genText.style.display = 'none';
+            genSpinner.style.display = 'inline-block';
+            outputJson.value = "";
+            log("INITIATING GEMINI COMPILATION ENGINE...", 'var(--c64-yellow)');
+
+            const payload = {
+                systemInstruction: { parts: [{ text: systemPrompt }] },
+                contents: [{ parts: [{ text: `Compile the following mathematical proof into a C64 cartridge JSON:\n\n${text}` }] }],
+                generationConfig: {
+                    responseMimeType: "application/json",
+                    responseSchema: cartridgeSchema
+                }
+            };
+
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
+
+            try {
+                const data = await fetchWithRetry(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                const rawJsonStr = data.candidates?.[0]?.content?.parts?.[0]?.text;
+                if (!rawJsonStr) throw new Error("Empty response from API.");
+
+                const parsedJson = JSON.parse(rawJsonStr);
+                generatedData = parsedJson;
+                
+                outputJson.value = JSON.stringify(parsedJson, null, 4);
+                
+                copyBtn.disabled = false;
+                downloadBtn.disabled = false;
+                log("COMPILATION SUCCESSFUL. READY FOR EXPORT.", 'var(--c64-green)');
+
+            } catch (err) {
+                log(`COMPILATION FAILED: ${err.message}`, 'var(--c64-red)');
+            } finally {
+                generateBtn.disabled = false;
+                genText.style.display = 'inline-block';
+                genSpinner.style.display = 'none';
+            }
+        });
+
+        // Copy / Download functionality
+        copyBtn.addEventListener('click', () => {
+            if (!outputJson.value) return;
+            navigator.clipboard.writeText(outputJson.value).then(() => {
+                log("CARTRIDGE COPIED TO CLIPBOARD.", 'var(--c64-highlight)');
+            }).catch(err => {
+                const textArea = document.createElement("textarea");
+                textArea.value = outputJson.value;
+                document.body.appendChild(textArea);
+                textArea.select();
+                try {
+                    document.execCommand('copy');
+                    log("CARTRIDGE COPIED TO CLIPBOARD (FALLBACK).", 'var(--c64-highlight)');
+                } catch (e) {
+                    log("COPY FAILED.", 'var(--c64-red)');
+                }
+                document.body.removeChild(textArea);
+            });
+        });
+
+        downloadBtn.addEventListener('click', () => {
+            if (!generatedData) return;
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(generatedData, null, 4));
+            const downloadAnchorNode = document.createElement('a');
+            downloadAnchorNode.setAttribute("href", dataStr);
+            const fileName = (generatedData.cartridge_metadata && generatedData.cartridge_metadata.short_name) ? 
+                             generatedData.cartridge_metadata.short_name + ".C64cartridge.json" : 
+                             "proof.C64cartridge.json";
+            downloadAnchorNode.setAttribute("download", fileName);
+            document.body.appendChild(downloadAnchorNode); 
+            downloadAnchorNode.click();
+            downloadAnchorNode.remove();
+            log(`DOWNLOADED: ${fileName}`, 'var(--c64-green)');
+        });
+
+    </script>
+</body>
+</html>

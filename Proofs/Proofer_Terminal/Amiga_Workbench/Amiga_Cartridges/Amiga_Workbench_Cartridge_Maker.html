@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SHD-CCP Amiga Cartridge Generator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+    
+    <!-- PDF.js for client-side PDF parsing -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
+    <script>
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
+    </script>
+
+    <style>
+        :root {
+            --amiga-blue: #0055AA;
+            --amiga-white: #FFFFFF;
+            --amiga-black: #000000;
+            --amiga-orange: #FFAA00;
+            --amiga-grey: #AAAAAA;
+        }
+
+        body, html {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            background-color: var(--amiga-blue);
+            font-family: 'Space Mono', monospace;
+            overflow: hidden;
+            color: var(--amiga-black);
+            user-select: none;
+        }
+
+        /* */
+        .top-bar {
+            background-color: var(--amiga-white);
+            color: var(--amiga-blue);
+            height: 24px;
+            display: flex;
+            align-items: center;
+            padding: 0 10px;
+            border-bottom: 2px solid var(--amiga-black);
+            font-weight: bold;
+            z-index: 9999;
+            position: relative;
+        }
+
+        /* */
+        .desktop {
+            position: relative;
+            width: 100%;
+            height: calc(100% - 24px);
+            overflow: hidden;
+        }
+
+        .amiga-window {
+            position: absolute;
+            background-color: var(--amiga-white);
+            border: 2px solid var(--amiga-black);
+            display: flex;
+            flex-direction: column;
+            box-shadow: 5px 5px 0px rgba(0,0,0,0.5);
+            min-width: 300px;
+            min-height: 200px;
+        }
+
+        .window-titlebar {
+            height: 24px;
+            background-color: var(--amiga-white);
+            border-bottom: 2px solid var(--amiga-black);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 4px;
+            cursor: grab;
+            font-weight: bold;
+            color: var(--amiga-blue);
+        }
+        
+        .amiga-window.active .window-titlebar {
+            background-color: var(--amiga-orange);
+            color: var(--amiga-black);
+        }
+
+        .window-gadget {
+            width: 16px;
+            height: 16px;
+            border: 2px solid var(--amiga-black);
+            background-color: var(--amiga-white);
+            cursor: pointer;
+        }
+        .window-gadget:active { background-color: var(--amiga-black); }
+
+        .window-content {
+            flex-grow: 1;
+            padding: 8px;
+            overflow: auto;
+            position: relative;
+            background-color: var(--amiga-white);
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        /* */
+        .window-content::-webkit-scrollbar { width: 16px; height: 16px; }
+        .window-content::-webkit-scrollbar-track { background: var(--amiga-white); border-left: 2px solid var(--amiga-black); }
+        .window-content::-webkit-scrollbar-thumb { background: var(--amiga-blue); border: 2px solid var(--amiga-black); }
+
+        .btn { 
+            background: var(--amiga-white); 
+            border: 2px solid var(--amiga-black); 
+            padding: 4px 8px; 
+            cursor: pointer; 
+            font-family: 'Space Mono', monospace; 
+            font-weight: bold; 
+            box-shadow: 2px 2px 0px rgba(0,0,0,1);
+            text-align: center;
+        }
+        .btn:active:not(:disabled) { 
+            box-shadow: 0px 0px 0px rgba(0,0,0,1); 
+            transform: translate(2px, 2px); 
+        }
+        .btn:disabled {
+            color: var(--amiga-grey);
+            border-color: var(--amiga-grey);
+            box-shadow: 2px 2px 0px var(--amiga-grey);
+            cursor: not-allowed;
+        }
+
+        textarea {
+            background-color: var(--amiga-white);
+            border: 2px solid var(--amiga-black);
+            color: var(--amiga-black);
+            font-family: 'Space Mono', monospace;
+            font-size: 0.9rem;
+            padding: 5px;
+            flex-grow: 1;
+            resize: none;
+            outline: none;
+        }
+        
+        textarea::-webkit-scrollbar { width: 16px; }
+        textarea::-webkit-scrollbar-track { border-left: 2px solid var(--amiga-black); }
+        textarea::-webkit-scrollbar-thumb { background: var(--amiga-orange); border: 2px solid var(--amiga-black); }
+
+        #log-window {
+            background-color: var(--amiga-black);
+            border: 2px solid var(--amiga-black);
+            color: var(--amiga-orange);
+            padding: 5px;
+            height: 100px;
+            overflow-y: auto;
+            font-size: 0.8rem;
+        }
+
+        .loader {
+            display: none;
+            width: 16px;
+            height: 16px;
+            border: 2px solid var(--amiga-bg);
+            border-bottom-color: var(--amiga-black);
+            border-radius: 50%;
+            display: inline-block;
+            animation: rotation 1s linear infinite;
+            margin-left: 10px;
+            vertical-align: middle;
+        }
+        @keyframes rotation { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    </style>
+</head>
+<body>
+    <div class="top-bar">
+        <span class="mr-4 font-bold">Workbench</span>
+        <div style="flex-grow: 1;"></div>
+        <span>SHD-CCP Generator v2.0 (Amiga)</span>
+    </div>
+
+    <div class="desktop" id="desktop">
+        
+        <input type="file" id="pdf-upload" accept="application/pdf" style="display: none;">
+
+        <!-- Window: Ingestion -->
+        <div class="amiga-window active" id="win-ingest" style="top: 20px; left: 20px; width: 450px; height: 500px; z-index: 100;">
+            <div class="window-titlebar">
+                <div class="window-gadget close-gadget"></div>
+                <span>1.TOOL: Source Ingestion</span>
+                <div class="window-gadget depth-gadget" onclick="bringToFront('win-ingest')"></div>
+            </div>
+            <div class="window-content">
+                <div style="font-size: 0.85rem; margin-bottom: 5px;">Upload a mathematical PDF or paste plaintext.</div>
+                
+                <div style="display: flex; gap: 5px;">
+                    <button class="btn" style="flex-grow: 1;" onclick="document.getElementById('pdf-upload').click()">UPLOAD .PDF</button>
+                    <button class="btn" id="clear-btn" style="color: var(--amiga-white); background: var(--amiga-black);">CLEAR</button>
+                </div>
+
+                <textarea id="source-text" placeholder="Or paste raw mathematical proof text here..." spellcheck="false"></textarea>
+                
+                <div id="log-window">
+                    <div style="color: var(--amiga-white);">SYSTEM READY. AWAITING DATA...</div>
+                </div>
+
+                <button class="btn" id="generate-btn" style="background-color: var(--amiga-orange); border-width: 3px;">
+                    <span id="gen-text">COMPILE CARTRIDGE</span>
+                    <span id="gen-spinner" class="loader"></span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Window: Output -->
+        <div class="amiga-window" id="win-output" style="top: 40px; left: 500px; width: 500px; height: 500px; z-index: 99;">
+            <div class="window-titlebar">
+                <div class="window-gadget close-gadget"></div>
+                <span>2.SYS: Output Cartridge</span>
+                <div class="window-gadget depth-gadget" onclick="bringToFront('win-output')"></div>
+            </div>
+            <div class="window-content">
+                <div style="font-size: 0.85rem; margin-bottom: 5px;">Strictly formatted JSON ready for Workbench execution.</div>
+                
+                <textarea id="output-json" placeholder="Generated cartridge JSON will appear here..." readonly spellcheck="false"></textarea>
+                
+                <div style="display: flex; gap: 5px;">
+                    <button class="btn" id="copy-btn" style="flex: 1;" disabled>COPY TO CLIPBOARD</button>
+                    <button class="btn" id="download-btn" style="flex: 1; background-color: var(--amiga-blue); color: var(--amiga-white);" disabled>DOWNLOAD .JSON</button>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        let highestZ = 100;
+        let generatedData = null;
+
+        function makeDraggable(winId) {
+            const win = document.getElementById(winId);
+            const titlebar = win.querySelector('.window-titlebar');
+            let isDragging = false;
+            let startX, startY, initialLeft, initialTop;
+
+            titlebar.addEventListener('mousedown', (e) => {
+                if(e.target.classList.contains('window-gadget')) return;
+                isDragging = true;
+                startX = e.clientX;
+                startY = e.clientY;
+                initialLeft = win.offsetLeft;
+                initialTop = win.offsetTop;
+                bringToFront(winId);
+            });
+
+            document.addEventListener('mousemove', (e) => {
+                if (!isDragging) return;
+                const dx = e.clientX - startX;
+                const dy = e.clientY - startY;
+                win.style.left = `${initialLeft + dx}px`;
+                win.style.top = `${initialTop + dy}px`;
+            });
+
+            document.addEventListener('mouseup', () => { isDragging = false; });
+            win.addEventListener('mousedown', () => bringToFront(winId));
+        }
+
+        function bringToFront(id) {
+            const win = document.getElementById(id);
+            highestZ++;
+            win.style.zIndex = highestZ;
+            document.querySelectorAll('.amiga-window').forEach(w => w.classList.remove('active'));
+            win.classList.add('active');
+        }
+
+        document.querySelectorAll('.amiga-window').forEach(win => {
+            makeDraggable(win.id);
+        });
+
+        const sourceText = document.getElementById('source-text');
+        const outputJson = document.getElementById('output-json');
+        const logWindow = document.getElementById('log-window');
+        const generateBtn = document.getElementById('generate-btn');
+        const copyBtn = document.getElementById('copy-btn');
+        const downloadBtn = document.getElementById('download-btn');
+        const clearBtn = document.getElementById('clear-btn');
+        const pdfUpload = document.getElementById('pdf-upload');
+
+        function log(message, color = 'var(--amiga-white)') {
+            const div = document.createElement('div');
+            div.style.color = color;
+            div.innerText = `> ${message}`;
+            logWindow.appendChild(div);
+            logWindow.scrollTop = logWindow.scrollHeight;
+        }
+
+        pdfUpload.addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            log(`INGESTING PDF: ${file.name}...`, 'var(--amiga-orange)');
+            sourceText.value = "Extracting text from PDF, please wait...";
+            
+            try {
+                const arrayBuffer = await file.arrayBuffer();
+                const pdf = await pdfjsLib.getDocument({data: arrayBuffer}).promise;
+                let fullText = '';
+                
+                for (let i = 1; i <= pdf.numPages; i++) {
+                    const page = await pdf.getPage(i);
+                    const content = await page.getTextContent();
+                    const strings = content.items.map(item => item.str);
+                    fullText += strings.join(' ') + '\n';
+                }
+                
+                sourceText.value = fullText;
+                log(`PDF EXTRACTION SUCCESS. (${pdf.numPages} PAGES)`, '#00FF00');
+            } catch (err) {
+                log(`PDF EXTRACTION FAILED: ${err.message}`, '#FF0000');
+                sourceText.value = "";
+            }
+        });
+
+        clearBtn.addEventListener('click', () => {
+            sourceText.value = '';
+            outputJson.value = '';
+            generatedData = null;
+            copyBtn.disabled = true;
+            downloadBtn.disabled = true;
+            pdfUpload.value = '';
+            logWindow.innerHTML = '<div style="color: var(--amiga-white);">MEMORY CLEARED.</div>';
+        });
+
+        const cartridgeSchema = {
+            type: "OBJECT",
+            properties: {
+                cartridge_metadata: {
+                    type: "OBJECT",
+                    properties: {
+                        proof_name: { type: "STRING" },
+                        short_name: { type: "STRING" },
+                        author: { type: "STRING" },
+                        target_system: { type: "STRING" },
+                        version: { type: "STRING" }
+                    },
+                    required: ["proof_name", "short_name", "author", "target_system", "version"]
+                },
+                raw_proof_text: { type: "STRING" },
+                familiar_initialization: {
+                    type: "OBJECT",
+                    properties: {
+                        cat: { type: "OBJECT", properties: { load_dialogue: { type: "STRING" } } },
+                        mastiff: { type: "OBJECT", properties: { load_dialogue: { type: "STRING" } } }
+                    }
+                },
+                verification_steps: {
+                    type: "ARRAY",
+                    items: {
+                        type: "OBJECT",
+                        properties: {
+                            step_id: { type: "INTEGER" },
+                            window_title: { type: "STRING" },
+                            lean_shd_hud: {
+                                type: "OBJECT",
+                                properties: {
+                                    goal: { type: "STRING" },
+                                    hypotheses: { type: "ARRAY", items: { type: "STRING" } },
+                                    tactic: { type: "STRING" }
+                                }
+                            },
+                            terminal_logs: { type: "ARRAY", items: { type: "STRING" } },
+                            familiar_dialogues: {
+                                type: "OBJECT",
+                                properties: {
+                                    cat: { type: "STRING" },
+                                    mastiff: { type: "STRING" }
+                                }
+                            },
+                            visual_render_mode: { type: "STRING" },
+                            inspector_data: {
+                                type: "OBJECT",
+                                properties: {
+                                    modal_title: { type: "STRING" },
+                                    description_top: { type: "STRING" },
+                                    equation_top: { type: "STRING" },
+                                    visual_generation_instructions: {
+                                        type: "OBJECT",
+                                        properties: {
+                                            concept: { type: "STRING" },
+                                            c64_palette_required: { type: "ARRAY", items: { type: "STRING" } },
+                                            layout: { type: "STRING" }
+                                        }
+                                    },
+                                    graph_equations: {
+                                        type: "OBJECT",
+                                        properties: {
+                                            type: { type: "STRING", description: "'cartesian' or 'parametric'" },
+                                            x: { type: "STRING", description: "Parametric X eq using 't' and 'time'." },
+                                            y: { type: "STRING", description: "Cartesian Y eq using 'x' and 'time', or Parametric Y eq using 't' and 'time'." },
+                                            familiar_dialogues: {
+                                                type: "OBJECT",
+                                                properties: {
+                                                    cat: { type: "STRING" },
+                                                    mastiff: { type: "STRING" }
+                                                }
+                                            }
+                                        }
+                                    },
+                                    description_bottom: { type: "STRING" },
+                                    equation_bottom: { type: "STRING" }
+                                }
+                            }
+                        },
+                        required: ["step_id", "window_title", "lean_shd_hud", "terminal_logs", "familiar_dialogues", "visual_render_mode", "inspector_data"]
+                    }
+                }
+            },
+            required: ["cartridge_metadata", "raw_proof_text", "familiar_initialization", "verification_steps"]
+        };
+
+        const systemPrompt = `You are a mathematical compiler for the SHD-CCP Formal Proofer (Amiga Workbench v1.3 Interface).
+Your task is to ingest a mathematical paper/proof and output a strict JSON cartridge.
+
+CRITICAL FORMATTING RULES:
+1. Double-escape all LaTeX commands! output \\\\pi instead of \\pi. Wrap math blocks in $$ if needed.
+2. 'raw_proof_text' must contain plaintext formatted with simple markdown headers.
+3. 'visual_render_mode' must be one of: LATTICE, TREFOIL, PUMP, PROVEN.
+4. AMIGA PALETTE: In 'visual_generation_instructions.c64_palette_required', use ONLY these variables: --amiga-blue, --amiga-white, --amiga-black, --amiga-orange, --amiga-grey. (We use the 'c64' key name for legacy reasons, but populate it with Amiga colors).
+
+CRITICAL GRAPHING RULES (Cartography Engine):
+5. If a step contains graphable 2D math, provide a 'graph_equations' object.
+6. Set 'type' to 'cartesian' or 'parametric'.
+7. SYNTAX: Use standard JS math without the "Math." prefix (sin, cos, exp, abs, sqrt, pi). Use * for multiplication.
+8. VARIABLES: 'x' (cartesian), 't' (parametric), and 'time' (for animation).
+9. INCLUDE 'familiar_dialogues' inside 'graph_equations' with reactions to the plotted shape.`;
+
+        const apiKey = ""; // Implicitly handled by environment
+
+        async function fetchWithRetry(url, options, maxRetries = 3) {
+            const delays = [2000, 4000, 8000];
+            for (let i = 0; i < maxRetries; i++) {
+                try {
+                    const response = await fetch(url, options);
+                    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                    return await response.json();
+                } catch (error) {
+                    log(`API ATTEMPT ${i+1} FAILED. RETRYING...`, '#FF0000');
+                    if (i === maxRetries - 1) throw error;
+                    await new Promise(resolve => setTimeout(resolve, delays[i]));
+                }
+            }
+        }
+
+        generateBtn.addEventListener('click', async () => {
+            const text = sourceText.value.trim();
+            if (!text) {
+                log("ERROR: NO SOURCE MATERIAL.", '#FF0000');
+                return;
+            }
+
+            generateBtn.disabled = true;
+            document.getElementById('gen-text').style.display = 'none';
+            document.getElementById('gen-spinner').style.display = 'inline-block';
+            outputJson.value = "";
+            log("INITIATING COMPILATION ENGINE...", 'var(--amiga-orange)');
+            bringToFront('win-output');
+
+            const payload = {
+                systemInstruction: { parts: [{ text: systemPrompt }] },
+                contents: [{ parts: [{ text: `Compile the following mathematical proof into an Amiga Cartridge JSON:\n\n${text}` }] }],
+                generationConfig: {
+                    responseMimeType: "application/json",
+                    responseSchema: cartridgeSchema
+                }
+            };
+
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
+
+            try {
+                const data = await fetchWithRetry(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                const rawJsonStr = data.candidates?.[0]?.content?.parts?.[0]?.text;
+                if (!rawJsonStr) throw new Error("Empty response from API.");
+
+                const parsedJson = JSON.parse(rawJsonStr);
+                generatedData = parsedJson;
+                
+                outputJson.value = JSON.stringify(parsedJson, null, 4);
+                
+                copyBtn.disabled = false;
+                downloadBtn.disabled = false;
+                log("COMPILATION SUCCESSFUL. READY FOR EXPORT.", '#00FF00');
+
+            } catch (err) {
+                log(`COMPILATION FAILED: ${err.message}`, '#FF0000');
+            } finally {
+                generateBtn.disabled = false;
+                document.getElementById('gen-text').style.display = 'inline-block';
+                document.getElementById('gen-spinner').style.display = 'none';
+            }
+        });
+
+        copyBtn.addEventListener('click', () => {
+            if (!outputJson.value) return;
+            navigator.clipboard.writeText(outputJson.value).then(() => {
+                log("CARTRIDGE COPIED TO CLIPBOARD.", 'var(--amiga-white)');
+            }).catch(err => {
+                const textArea = document.createElement("textarea");
+                textArea.value = outputJson.value;
+                document.body.appendChild(textArea);
+                textArea.select();
+                try {
+                    document.execCommand('copy');
+                    log("CARTRIDGE COPIED TO CLIPBOARD (FALLBACK).", 'var(--amiga-white)');
+                } catch (e) {
+                    log("COPY FAILED.", '#FF0000');
+                }
+                document.body.removeChild(textArea);
+            });
+        });
+
+        downloadBtn.addEventListener('click', () => {
+            if (!generatedData) return;
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(generatedData, null, 4));
+            const downloadAnchorNode = document.createElement('a');
+            downloadAnchorNode.setAttribute("href", dataStr);
+            const fileName = (generatedData.cartridge_metadata && generatedData.cartridge_metadata.short_name) ? 
+                             generatedData.cartridge_metadata.short_name + ".cart.json" : 
+                             "proof.cart.json";
+            downloadAnchorNode.setAttribute("download", fileName);
+            document.body.appendChild(downloadAnchorNode); 
+            downloadAnchorNode.click();
+            downloadAnchorNode.remove();
+            log(`DOWNLOADED: ${fileName}`, '#00FF00');
+        });
+
+    </script>
+</body>
+</html>
