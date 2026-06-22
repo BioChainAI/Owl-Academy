@@ -1,0 +1,938 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Owl Academy Tutorial: Zeta Resonance</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        arcane: ['Cinzel', 'serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                    },
+                    colors: {
+                        academy: {
+                            dark: '#0a0d14',
+                            panel: '#131826',
+                            gold: '#d4af37',
+                            cyan: '#00f0ff',
+                            amethyst: '#b026ff',
+                            emerald: '#00ff66',
+                            crimson: '#ff3366',
+                            text: '#e2e8f0'
+                        }
+                    },
+                    boxShadow: {
+                        'gold': '0 0 15px rgba(212, 175, 55, 0.3), inset 0 0 20px rgba(212, 175, 55, 0.1)',
+                        'cyan': '0 0 15px rgba(0, 240, 255, 0.3), inset 0 0 20px rgba(0, 240, 255, 0.1)',
+                        'amethyst': '0 0 15px rgba(176, 38, 255, 0.3), inset 0 0 20px rgba(176, 38, 255, 0.1)',
+                        'emerald': '0 0 15px rgba(0, 255, 102, 0.3), inset 0 0 20px rgba(0, 255, 102, 0.1)',
+                        'active-gold': '0 0 25px rgba(212, 175, 55, 0.6), inset 0 0 30px rgba(212, 175, 55, 0.2)',
+                        'active-cyan': '0 0 25px rgba(0, 240, 255, 0.6), inset 0 0 30px rgba(0, 240, 255, 0.2)',
+                        'active-amethyst': '0 0 25px rgba(176, 38, 255, 0.6), inset 0 0 30px rgba(176, 38, 255, 0.2)',
+                        'active-emerald': '0 0 25px rgba(0, 255, 102, 0.6), inset 0 0 30px rgba(0, 255, 102, 0.2)',
+                    }
+                }
+            }
+        }
+    </script>
+
+    <!-- KaTeX for Math Rendering -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <style>
+        body {
+            background-color: #0a0d14;
+            color: #e2e8f0;
+            background-image: 
+                radial-gradient(circle at 50% 0%, rgba(20, 25, 40, 1) 0%, rgba(10, 13, 20, 1) 60%),
+                linear-gradient(0deg, rgba(0,0,0,0.2) 0%, transparent 100%);
+            min-height: 100vh;
+        }
+        
+        .hologram-overlay {
+            background: repeating-linear-gradient(
+                0deg,
+                rgba(0, 0, 0, 0.15),
+                rgba(0, 0, 0, 0.15) 1px,
+                transparent 1px,
+                transparent 2px
+            );
+            pointer-events: none;
+        }
+
+        .grid-bg {
+            background-size: 20px 20px;
+            background-image: 
+                linear-gradient(to right, rgba(176, 38, 255, 0.05) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(176, 38, 255, 0.05) 1px, transparent 1px);
+        }
+
+        /* SVG Animation Keyframes */
+        @keyframes draw-sigil {
+            from { stroke-dashoffset: 400; }
+            to { stroke-dashoffset: 0; }
+        }
+        @keyframes pulse-glow {
+            0%, 100% { opacity: 0.6; filter: drop-shadow(0 0 4px currentColor); }
+            50% { opacity: 1; filter: drop-shadow(0 0 12px currentColor); }
+        }
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-5px); }
+        }
+        @keyframes rotate-slow {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        @keyframes split-left {
+            0%, 20% { transform: translate(0, 0); opacity: 0; }
+            40% { transform: translate(0, 0); opacity: 1; }
+            100% { transform: translate(-40px, 0); opacity: 1; }
+        }
+        @keyframes split-right {
+            0%, 20% { transform: translate(0, 0); opacity: 0; }
+            40% { transform: translate(0, 0); opacity: 1; }
+            100% { transform: translate(40px, 0); opacity: 1; }
+        }
+        @keyframes fade-in-ghost {
+            0%, 60% { opacity: 0; transform: scale(0.8); }
+            100% { opacity: 0.3; transform: scale(1); }
+        }
+        @keyframes snap-lock {
+            0% { transform: rotate(0deg); }
+            20% { transform: rotate(45deg); }
+            40% { transform: rotate(-20deg); }
+            60% { transform: rotate(10deg); }
+            80%, 100% { transform: rotate(0deg); } /* Locks into place */
+        }
+        @keyframes expand-lock-circle {
+            0%, 80% { r: 0; opacity: 0; stroke-width: 0; }
+            90% { r: 35; opacity: 1; stroke-width: 2; }
+            100% { r: 30; opacity: 0.8; stroke-width: 1; }
+        }
+
+        .sigil-path {
+            stroke-dasharray: 400;
+            stroke-dashoffset: 400;
+            animation: draw-sigil 3s ease-in-out forwards;
+        }
+        .sigil-path-delayed {
+            stroke-dasharray: 400;
+            stroke-dashoffset: 400;
+            animation: draw-sigil 3s ease-in-out 1s forwards;
+        }
+        .sigil-path-infinite {
+            stroke-dasharray: 10 10;
+            animation: march 1s linear infinite;
+        }
+        @keyframes march {
+            to { stroke-dashoffset: -20; }
+        }
+
+        .node { animation: pulse-glow 2s infinite ease-in-out; transform-origin: center; }
+        .mandala-bg { animation: float 6s infinite ease-in-out; transform-origin: center; }
+        .spin-slow { animation: rotate-slow 20s linear infinite; transform-origin: center; }
+        .spin-med { animation: rotate-slow 10s linear infinite; transform-origin: center; }
+
+        .anim-split-l { animation: split-left 3s ease-out forwards; }
+        .anim-split-r { animation: split-right 3s ease-out forwards; }
+        .anim-ghost { animation: fade-in-ghost 3.5s ease-out forwards; }
+        .anim-snap { animation: snap-lock 4s ease-in-out infinite; transform-origin: 50px 50px; }
+        .anim-lock-ring { animation: expand-lock-circle 4s ease-in-out infinite; }
+
+        .step-content {
+            display: none;
+            opacity: 0;
+            transition: opacity 0.5s ease-in-out;
+        }
+        .step-content.active {
+            display: block;
+            opacity: 1;
+        }
+        
+        /* Custom scrollbar */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(176, 38, 255, 0.3); border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(176, 38, 255, 0.6); }
+
+        /* Draggable Window */
+        .draggable-window {
+            position: absolute;
+            top: 80px;
+            right: 40px;
+            width: 400px;
+            min-width: 300px;
+            min-height: 250px;
+            height: 500px;
+            resize: both;
+            overflow: auto;
+            z-index: 100;
+            display: none;
+            flex-direction: column;
+        }
+        .draggable-window.visible {
+            display: flex;
+        }
+        .drag-header {
+            cursor: move;
+        }
+    </style>
+</head>
+<body class="flex flex-col h-screen overflow-hidden text-academy-text font-mono">
+
+    <!-- Header -->
+    <header class="bg-academy-dark/80 backdrop-blur-md border-b border-academy-amethyst/20 p-4 relative z-50 shadow-amethyst">
+        <div class="max-w-7xl mx-auto flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <i data-lucide="book-open" class="text-academy-amethyst w-8 h-8 drop-shadow-[0_0_8px_#b026ff]"></i>
+                <div>
+                    <h1 class="text-xl font-arcane font-bold text-slate-100 tracking-widest drop-shadow-[0_0_5px_rgba(176,38,255,0.5)]">Owl Academy <span class="text-academy-amethyst font-normal">| Interactive</span></h1>
+                    <p class="text-xs text-academy-amethyst/70 tracking-wider">Protocol // SHD-CCP_TUTORIAL_ZETA</p>
+                </div>
+            </div>
+            <div class="flex space-x-4">
+                <button onclick="toggleReferenceWindow()" class="hidden sm:flex items-center text-xs bg-academy-cyan/10 hover:bg-academy-cyan/20 px-3 py-1 rounded border border-academy-cyan/50 text-academy-cyan shadow-active-cyan transition-colors font-bold tracking-wider">
+                    <i data-lucide="monitor-play" class="w-4 h-4 mr-2"></i> Ref Matrix
+                </button>
+                <div class="hidden sm:flex items-center text-xs bg-academy-amethyst/10 px-3 py-1 rounded border border-academy-amethyst/30 text-academy-amethyst shadow-[0_0_10px_rgba(176,38,255,0.2)]">
+                    <i data-lucide="cpu" class="w-4 h-4 mr-2"></i> Zeta Resonance
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Draggable Reference Matrix Window -->
+    <div id="reference-window" class="draggable-window bg-academy-panel border border-academy-cyan/50 rounded-xl shadow-active-cyan flex flex-col">
+        <div id="drag-handle" class="drag-header bg-slate-900 border-b border-academy-cyan/30 p-2 flex justify-between items-center rounded-t-xl shrink-0">
+            <div class="flex items-center space-x-2 px-2">
+                <div class="w-2 h-2 rounded-full bg-academy-cyan animate-pulse"></div>
+                <span class="text-[10px] font-mono font-bold text-academy-cyan tracking-widest uppercase">Reference Matrix</span>
+            </div>
+            <button onclick="toggleReferenceWindow()" class="text-gray-400 hover:text-white transition-colors px-2">
+                <i data-lucide="x" class="w-4 h-4"></i>
+            </button>
+        </div>
+        
+        <!-- Tabs -->
+        <div class="flex border-b border-slate-700 bg-black/40 shrink-0">
+            <button id="tab-video" onclick="switchRefTab('video')" class="flex-1 py-2 text-[10px] font-mono tracking-widest uppercase border-b-2 border-academy-cyan text-academy-cyan transition-all">Video Brief</button>
+            <button id="tab-pdf" onclick="switchRefTab('pdf')" class="flex-1 py-2 text-[10px] font-mono tracking-widest uppercase border-b-2 border-transparent text-gray-500 hover:text-gray-300 transition-all">Research Paper</button>
+        </div>
+
+        <!-- Content Area -->
+        <div class="p-3 flex-grow flex flex-col overflow-hidden relative bg-black/20">
+            <!-- Video Explainer Embed -->
+            <div id="ref-video-content" class="w-full h-full flex flex-col">
+                <div class="w-full h-full rounded border border-slate-700 bg-black overflow-hidden relative">
+                    <!-- Fallback/Placeholder for Youtube (use actual embed link in prod) -->
+                    <iframe class="absolute inset-0 w-full h-full" src="https://www.youtube.com/embed/dQw4w9WgXcQ" title="Explanation Video" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+                </div>
+            </div>
+            <!-- PDF Viewer Embed -->
+            <div id="ref-pdf-content" class="w-full h-full flex flex-col hidden">
+                <div class="w-full h-full rounded border border-slate-700 bg-white overflow-hidden relative">
+                    <iframe class="absolute inset-0 w-full h-full" src="about:blank" title="PDF Paper"></iframe>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Workspace -->
+    <main class="flex-grow flex flex-col md:flex-row overflow-hidden relative">
+        <div class="absolute inset-0 hologram-overlay z-0 opacity-50"></div>
+        <div class="absolute inset-0 grid-bg opacity-30 pointer-events-none z-0"></div>
+
+        <!-- Left Panel: Lesson Viewer -->
+        <div class="flex-1 flex flex-col p-4 sm:p-8 overflow-y-auto relative z-10" id="lesson-viewer">
+            <div class="max-w-4xl mx-auto w-full">
+                
+                <!-- STEP 1 -->
+                <div class="step-content active" id="step-1">
+                    <div class="inline-flex items-center px-3 py-1 rounded bg-academy-amethyst/10 text-academy-amethyst text-xs mb-6 tracking-widest border border-academy-amethyst/30 shadow-amethyst uppercase">
+                        Module 1 // Introduction
+                    </div>
+                    <h2 class="font-arcane text-3xl sm:text-4xl font-bold text-white mb-6 drop-shadow-[0_0_8px_rgba(176,38,255,0.3)]">The Zeta Resonance & Normalizer</h2>
+                    
+                    <p class="text-lg text-slate-300 leading-relaxed mb-6 font-sans">
+                        In the design of the <strong class="text-white">Symbolic High Dimensional Context Compression Protocol (SHD-CCP)</strong>, we encounter a fundamental engineering conflict:
+                    </p>
+
+                    <!-- SVG Graphic 1 -->
+                    <div class="w-full h-48 bg-academy-panel border border-academy-amethyst/20 rounded-xl mb-8 flex items-center justify-center relative overflow-hidden shadow-amethyst">
+                        <svg viewBox="0 0 200 100" class="w-full h-full drop-shadow-[0_0_8px_currentColor] text-academy-amethyst">
+                            <circle cx="50" cy="50" r="25" class="stroke-purple-500 fill-purple-500/10 node" stroke-width="1.5" stroke-dasharray="4 2"/>
+                            <text x="50" y="55" text-anchor="middle" class="fill-purple-400 font-arcane text-[10px]">Analytic</text>
+                            
+                            <circle cx="150" cy="50" r="25" class="stroke-emerald-500 fill-emerald-500/10 node" stroke-width="1.5" />
+                            <text x="150" y="55" text-anchor="middle" class="fill-emerald-400 font-mono text-[10px]">Hardware</text>
+
+                            <!-- Connecting bridge -->
+                            <path d="M 75 50 L 90 40 L 100 60 L 110 40 L 125 50" class="stroke-academy-amethyst sigil-path" stroke-width="2" fill="none" />
+                            <circle cx="100" cy="50" r="3" class="fill-white node sigil-path-delayed" />
+                        </svg>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                        <div class="bg-academy-panel p-6 rounded-xl border border-purple-500/30 shadow-[0_0_15px_rgba(168,85,247,0.1)]">
+                            <h3 class="text-purple-400 font-arcane font-bold mb-2 tracking-wider">1. The Physics (Analytic)</h3>
+                            <p class="text-sm text-slate-400">Governed by continuous, infinite, and often irrational topological spaces. Exact in theory, impossible to compute finitely.</p>
+                        </div>
+                        <div class="bg-academy-panel p-6 rounded-xl border border-emerald-500/30 shadow-emerald">
+                            <h3 class="text-emerald-400 font-bold mb-2 tracking-wider">2. The Hardware (Executable)</h3>
+                            <p class="text-sm text-slate-400">Governed by discrete, parity-safe, and strictly rational (\( \mathbb{Q} \)) logic gates. Required to prevent floating-point drift.</p>
+                        </div>
+                    </div>
+
+                    <div class="bg-academy-amethyst/10 border-l-4 border-academy-amethyst p-6 rounded-r-xl shadow-amethyst">
+                        <p class="text-slate-200 font-sans">
+                            How do we safely map the infinite mathematics of prime numbers onto discrete silicon without losing information? The answer requires separating <strong>rigorously proven classical mathematics</strong> from <strong>architectural interpretations</strong>. Let's explore the Cubic Golden-Complement Normalizer.
+                        </p>
+                    </div>
+                </div>
+
+                <!-- STEP 2 -->
+                <div class="step-content" id="step-2">
+                    <div class="inline-flex items-center px-3 py-1 rounded bg-academy-amethyst/10 text-academy-amethyst text-xs mb-6 tracking-widest border border-academy-amethyst/30 shadow-amethyst uppercase">
+                        Module 2 // Foundation
+                    </div>
+                    <h2 class="font-arcane text-3xl sm:text-4xl font-bold text-white mb-6 drop-shadow-[0_0_8px_rgba(176,38,255,0.3)]">The Mathematical Proof</h2>
+                    
+                    <p class="text-lg leading-relaxed mb-6 font-sans text-slate-300">
+                        The path begins with the Riemann zeta function, defined as an infinite sum that converges for values greater than one. For input 6, it evaluates to:
+                    </p>
+
+                    <div class="bg-academy-panel p-6 rounded-xl border border-academy-amethyst/30 flex justify-center mb-6 text-xl sm:text-2xl shadow-[0_0_15px_rgba(255,255,255,0.05)] overflow-x-auto">
+                        $$ \zeta(6) = \frac{1}{1^6} + \frac{1}{2^6} + \frac{1}{3^6} + \cdots $$
+                    </div>
+
+                    <p class="text-lg leading-relaxed mb-6 font-sans text-slate-300">
+                        Euler’s classical formula for even zeta values proves that this infinite series settles exactly at a rational number times a power of \( \pi \):
+                    </p>
+
+                    <div class="bg-academy-panel p-6 rounded-xl border border-academy-amethyst/30 flex justify-center mb-6 text-2xl shadow-amethyst">
+                        $$ \zeta(6) = \frac{\pi^6}{945} $$
+                    </div>
+
+                    <p class="text-lg leading-relaxed mb-6 font-sans text-slate-300">
+                        Multiplying both sides by 945 gives us an exact, proven algebraic identity:
+                    </p>
+
+                    <div class="bg-academy-panel p-6 rounded-xl border border-academy-amethyst/50 flex justify-center mb-6 text-2xl text-academy-amethyst shadow-active-amethyst">
+                        $$ 945 \cdot \zeta(6) = \pi^6 $$
+                    </div>
+
+                    <div class="bg-academy-cyan/10 border-l-4 border-academy-cyan p-4 rounded-r mb-8">
+                        <p class="text-slate-200 font-sans text-sm">
+                            <strong class="text-academy-cyan">Crucial Distinction:</strong> The number 945 is <em>not</em> chosen arbitrarily by geometry in this proof. It is the exact, mathematically proven denominator in Euler's evaluated form. Its factorization (\( 3^3 \cdot 5 \cdot 7 \)) shows its arithmetic structure.
+                        </p>
+                    </div>
+
+                </div>
+
+                <!-- STEP 3 -->
+                <div class="step-content" id="step-3">
+                    <div class="inline-flex items-center px-3 py-1 rounded bg-academy-amethyst/10 text-academy-amethyst text-xs mb-6 tracking-widest border border-academy-amethyst/30 shadow-amethyst uppercase">
+                        Module 3 // Complement
+                    </div>
+                    <h2 class="font-arcane text-3xl sm:text-4xl font-bold text-white mb-6 drop-shadow-[0_0_8px_rgba(176,38,255,0.3)]">The Modulo-12 Architecture</h2>
+                    
+                    <p class="text-lg leading-relaxed mb-6 font-sans text-slate-300">
+                        While the arithmetic structure of 945 is a proven mathematical law, connecting it to SHD-CCP geometry is a <strong>modeling conjecture</strong>. The normalizer splits logically into \( 5 \) and \( 7 \), complementing each other modulo 12 (\( 5 + 7 = 12 \)).
+                    </p>
+
+                    <p class="text-lg leading-relaxed mb-8 font-sans text-slate-300">
+                        The SHD-CCP models its <strong class="text-academy-amethyst">12-channel coupling space</strong> precisely after this arithmetic split.
+                    </p>
+
+                    <!-- SVG Graphic 3: Mod 12 Split -->
+                    <div class="w-full h-56 bg-academy-panel border border-academy-amethyst/20 rounded-xl mb-8 flex items-center justify-center relative overflow-hidden shadow-amethyst">
+                        <svg viewBox="0 0 200 100" class="w-full h-full drop-shadow-[0_0_5px_currentColor]">
+                            <!-- Central Ghost 12 Gear -->
+                            <g class="anim-ghost">
+                                <g class="stroke-gray-500 fill-gray-500/10 spin-slow">
+                                    <circle cx="100" cy="50" r="20" stroke-width="1"/>
+                                    <!-- 12 teeth -->
+                                    <path d="M100,25 L103,30 L97,30 Z" /> <path d="M100,75 L103,70 L97,70 Z" />
+                                    <path d="M125,50 L120,47 L120,53 Z" /> <path d="M75,50 L80,47 L80,53 Z" />
+                                    <path d="M117,33 L113,37 L110,34 Z" /> <path d="M83,67 L87,63 L90,66 Z" />
+                                    <path d="M117,67 L113,63 L110,66 Z" /> <path d="M83,33 L87,37 L90,34 Z" />
+                                    <path d="M108,26 L108,31 L102,31 Z" transform="rotate(15 100 50)"/> <path d="M108,26 L108,31 L102,31 Z" transform="rotate(45 100 50)"/>
+                                    <path d="M108,26 L108,31 L102,31 Z" transform="rotate(75 100 50)"/> <path d="M108,26 L108,31 L102,31 Z" transform="rotate(-15 100 50)"/>
+                                </g>
+                                <!-- Static '12' in the middle -->
+                                <text x="100" y="54" text-anchor="middle" class="fill-gray-400 font-mono text-[14px] font-bold drop-shadow-[0_0_5px_currentColor]">12</text>
+                            </g>
+
+                            <!-- Gold 5 splitting left -->
+                            <g class="anim-split-l">
+                                <circle cx="100" cy="50" r="18" class="stroke-academy-gold fill-academy-gold/20 spin-med" stroke-width="2" stroke-dasharray="10 4"/>
+                                <text x="100" y="54" text-anchor="middle" class="fill-academy-gold font-mono text-[14px] font-bold drop-shadow-[0_0_8px_#d4af37]">5</text>
+                            </g>
+
+                            <!-- Cyan 7 splitting right -->
+                            <g class="anim-split-r">
+                                <circle cx="100" cy="50" r="18" class="stroke-academy-cyan fill-academy-cyan/20 spin-med" stroke-width="2" stroke-dasharray="14 2"/>
+                                <text x="100" y="54" text-anchor="middle" class="fill-academy-cyan font-mono text-[14px] font-bold drop-shadow-[0_0_8px_#00f0ff]">7</text>
+                            </g>
+                        </svg>
+                    </div>
+
+                    <div class="space-y-8">
+                        <!-- 5: Golden Geometry -->
+                        <div class="bg-academy-panel border border-academy-gold/30 p-6 rounded-xl shadow-gold relative overflow-hidden">
+                            <div class="absolute right-0 top-0 bottom-0 w-1/3 opacity-30 flex items-center justify-center pointer-events-none">
+                                <!-- Frame 5 Solver Animation -->
+                                <svg viewBox="0 0 100 100" class="w-full h-full text-academy-gold">
+                                    <g class="anim-snap">
+                                        <!-- Arms 1, 2, 3 (Original Trefoil) -->
+                                        <line x1="50" y1="50" x2="50" y2="15" stroke="currentColor" stroke-width="2"/>
+                                        <line x1="50" y1="50" x2="70.6" y2="78.3" stroke="currentColor" stroke-width="2"/>
+                                        <line x1="50" y1="50" x2="29.4" y2="78.3" stroke="currentColor" stroke-width="2"/>
+                                        
+                                        <!-- Emerging 4th and 5th Phase -->
+                                        <line x1="50" y1="50" x2="83.3" y2="39.2" stroke="currentColor" stroke-width="2" class="sigil-path-delayed"/>
+                                        <line x1="50" y1="50" x2="16.7" y2="39.2" stroke="currentColor" stroke-width="2" class="sigil-path-delayed"/>
+                                        
+                                        <!-- 5-Sided Polygon Emergence -->
+                                        <polygon points="50,15 83.3,39.2 70.6,78.3 29.4,78.3 16.7,39.2" fill="currentColor" fill-opacity="0.1" stroke="currentColor" stroke-width="1.5" class="sigil-path-delayed" />
+                                        
+                                        <!-- Lock Circle -->
+                                        <circle cx="50" cy="50" class="fill-none stroke-current anim-lock-ring"/>
+                                    </g>
+                                </svg>
+                            </div>
+                            <div class="relative z-10 w-2/3">
+                                <div class="flex items-center mb-3">
+                                    <div class="bg-academy-gold/20 text-academy-gold rounded w-8 h-8 flex items-center justify-center font-bold text-xl mr-3 font-arcane shadow-active-gold">5</div>
+                                    <h3 class="text-xl font-bold text-white font-arcane tracking-wider text-academy-gold">Golden Geometry</h3>
+                                </div>
+                                <p class="text-slate-300 font-sans text-sm leading-relaxed mb-2">The conjectured spatial topology layer utilizes a Toroid parameterized by \( \phi \) (discriminant 5).</p>
+                                <p class="text-slate-400 font-mono text-[10px] bg-black/40 p-2 rounded border border-gray-800">Frame 5 Solver locking: \( s = 1 - \frac{(Q_\alpha + Q_\beta - Q_\gamma)^2}{4Q_\alpha Q_\beta} \rightarrow \frac{3}{4} \) (120° Symmetry to 5-Phase)</p>
+                            </div>
+                        </div>
+
+                        <!-- 7: Parity Safety -->
+                        <div class="bg-academy-panel border border-academy-cyan/30 p-6 rounded-xl shadow-cyan relative overflow-hidden">
+                            <div class="flex items-center mb-4 relative z-10">
+                                <div class="bg-academy-cyan/20 text-academy-cyan rounded w-8 h-8 flex items-center justify-center font-bold text-xl mr-3 font-arcane shadow-active-cyan">7</div>
+                                <h3 class="text-xl font-bold text-white font-arcane tracking-wider text-academy-cyan">Parity Safety (Quadrance)</h3>
+                            </div>
+                            <p class="text-slate-300 font-sans text-sm leading-relaxed mb-6 relative z-10 w-3/4">The architectural hardware constraint maps this complement to prevent infinite gridlock, tracking unique spatial quadrances.</p>
+                            
+                            <!-- Quadrance Square Animation SVG -->
+                            <div class="w-full h-48 bg-black/50 rounded-lg border border-academy-cyan/20 relative z-10 flex items-center justify-center mt-2 overflow-hidden">
+                                <svg viewBox="0 0 300 100" class="w-full h-full drop-shadow-[0_0_5px_currentColor]">
+                                    <!-- Background grid/paths -->
+                                    <path d="M70,30 L150,50 L250,50" class="stroke-gray-700" stroke-width="1" fill="none" stroke-dasharray="2 2"/>
+                                    <path d="M30,30 L70,30 L70,70 L30,70 Z" class="stroke-academy-gold/30" stroke-width="1" fill="none"/>
+
+                                    <!-- Quadrance Square (Left) -->
+                                    <g class="text-academy-gold">
+                                        <!-- Top Left 5-gear -->
+                                        <g transform="translate(30,30)">
+                                            <circle cx="0" cy="0" r="8" class="stroke-current fill-none spin-med" stroke-width="1.5" stroke-dasharray="2 3"/>
+                                            <circle cx="0" cy="0" r="2" class="fill-current"/>
+                                        </g>
+                                        <!-- Bottom Left 5-gear -->
+                                        <g transform="translate(30,70)">
+                                            <circle cx="0" cy="0" r="8" class="stroke-current fill-none spin-med" stroke-width="1.5" stroke-dasharray="2 3"/>
+                                            <circle cx="0" cy="0" r="2" class="fill-current"/>
+                                        </g>
+                                        <!-- Bottom Right 5-gear -->
+                                        <g transform="translate(70,70)">
+                                            <circle cx="0" cy="0" r="8" class="stroke-current fill-none spin-med" stroke-width="1.5" stroke-dasharray="2 3"/>
+                                            <circle cx="0" cy="0" r="2" class="fill-current"/>
+                                        </g>
+                                        <!-- Emergent Point (Top Right) -->
+                                        <g transform="translate(70,30)">
+                                            <circle cx="0" cy="0" r="6" class="stroke-white fill-white/20 node" stroke-width="1.5"/>
+                                            <circle cx="0" cy="0" r="2" class="fill-white"/>
+                                        </g>
+                                        <text x="50" y="85" text-anchor="middle" class="fill-academy-gold font-mono text-[8px]">Geo Projections</text>
+                                    </g>
+
+                                    <!-- Central 12-Gear -->
+                                    <g class="text-gray-400" transform="translate(150,50)">
+                                        <circle cx="0" cy="0" r="18" class="stroke-current fill-gray-800/50 spin-slow" stroke-width="1" stroke-dasharray="4 2"/>
+                                        <circle cx="0" cy="0" r="10" class="stroke-current fill-none" stroke-width="0.5"/>
+                                        <text x="0" y="3" text-anchor="middle" class="fill-current font-mono text-[10px]">12</text>
+                                        <text x="0" y="28" text-anchor="middle" class="fill-current font-mono text-[8px]">Manifold</text>
+                                    </g>
+
+                                    <!-- Right 7-Star Parity -->
+                                    <g class="text-academy-cyan" transform="translate(250,50)">
+                                        <!-- 7 point star path -->
+                                        <path d="M 0 -20 L 4 -6 L 19 -4 L 8 4 L 12 18 L 0 10 L -12 18 L -8 4 L -19 -4 L -4 -6 Z" class="stroke-current fill-current/10 node" stroke-width="1.5" />
+                                        <text x="0" y="3" text-anchor="middle" class="fill-white font-mono text-[10px] font-bold">7</text>
+                                        <text x="0" y="28" text-anchor="middle" class="fill-academy-cyan font-mono text-[8px]">Parity Log</text>
+                                    </g>
+                                </svg>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- STEP 4 -->
+                <div class="step-content" id="step-4">
+                    <div class="inline-flex items-center px-3 py-1 rounded bg-academy-amethyst/10 text-academy-amethyst text-xs mb-6 tracking-widest border border-academy-amethyst/30 shadow-amethyst uppercase">
+                        Module 4 // Scaling
+                    </div>
+                    <h2 class="font-arcane text-3xl sm:text-4xl font-bold text-white mb-6 drop-shadow-[0_0_8px_rgba(176,38,255,0.3)]">The Cubic Factor: \( 3^3 \)</h2>
+                    
+                    <p class="text-lg leading-relaxed mb-6 font-sans text-slate-300">
+                        The remaining factor in the 945 structure is the geometric scaling factor: \( 3^3 = 27 \).
+                    </p>
+
+                    <!-- SVG Graphic 4 -->
+                    <div class="w-full h-56 bg-academy-panel border border-academy-amethyst/20 rounded-xl mb-8 flex items-center justify-center relative overflow-hidden shadow-amethyst">
+                        <svg viewBox="0 0 100 100" class="w-full h-full drop-shadow-[0_0_5px_currentColor] text-academy-amethyst">
+                            <g class="sigil-path" stroke="currentColor" stroke-width="1" fill="none">
+                                <!-- Isometric Cube -->
+                                <path d="M50,20 L76,35 L76,65 L50,80 L24,65 L24,35 Z" class="fill-academy-amethyst/5"/>
+                                <path d="M50,20 L50,50 L76,65 M50,50 L24,65" />
+                                <path d="M24,35 L50,50 L76,35" />
+                                
+                                <!-- Axes Labels -->
+                                <text x="50" y="15" text-anchor="middle" class="fill-white font-mono text-[8px] border-none stroke-none">z (γ)</text>
+                                <text x="82" y="50" text-anchor="middle" class="fill-white font-mono text-[8px] border-none stroke-none">y (β)</text>
+                                <text x="18" y="50" text-anchor="middle" class="fill-white font-mono text-[8px] border-none stroke-none">x (α)</text>
+                            </g>
+                        </svg>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                        <div class="bg-academy-panel p-6 rounded-xl border border-gray-700 shadow-[0_0_10px_rgba(255,255,255,0.05)]">
+                            <i data-lucide="box" class="text-emerald-400 w-8 h-8 mb-4"></i>
+                            <h3 class="text-white font-arcane font-bold mb-2">The Lattice</h3>
+                            <p class="text-sm text-slate-400">The SHD-CCP models a \( 4 \times 4 \times 4 \) cubic packet, driven by a triple-trefoil skeleton.</p>
+                        </div>
+                        <div class="bg-academy-panel p-6 rounded-xl border border-gray-700 shadow-[0_0_10px_rgba(255,255,255,0.05)]">
+                            <i data-lucide="git-branch" class="text-purple-400 w-8 h-8 mb-4"></i>
+                            <h3 class="text-white font-arcane font-bold mb-2">The Axes</h3>
+                            <p class="text-sm text-slate-400">The channels are divided into 3 arms (\( \alpha, \beta, \gamma \)), mapped to spatial axes (\( x, y, z \)).</p>
+                        </div>
+                    </div>
+
+                    <div class="p-6 bg-academy-amethyst/10 rounded-xl border border-academy-amethyst/30 shadow-amethyst">
+                        <h3 class="text-xl font-arcane font-bold text-white mb-3 flex items-center">
+                            <i data-lucide="maximize" class="w-5 h-5 mr-2 text-academy-amethyst"></i> Volumetric Amplification
+                        </h3>
+                        <p class="text-slate-300 font-sans text-sm leading-relaxed">
+                            The \( 3^3 \) factor is mapped as the tri-axial volumetric amplification. It acts as the mathematical bridge projecting 1-dimensional analytic properties (prime density) into a 3-dimensional tensor space.
+                        </p>
+                    </div>
+                </div>
+
+                <!-- STEP 5 -->
+                <div class="step-content" id="step-5">
+                    <div class="inline-flex items-center px-3 py-1 rounded bg-academy-amethyst/10 text-academy-amethyst text-xs mb-6 tracking-widest border border-academy-amethyst/30 shadow-amethyst uppercase">
+                        Module 5 // Resonance
+                    </div>
+                    <h2 class="font-arcane text-3xl sm:text-4xl font-bold text-white mb-6 drop-shadow-[0_0_8px_rgba(176,38,255,0.3)]">Quadrance & The Resonance Shell</h2>
+                    
+                    <p class="text-lg leading-relaxed mb-6 font-sans text-slate-300">
+                        In pure geometry, <strong>Quadrance</strong> is simply the square of a distance (\( Q = d^2 \)). A Quadrance Surface fixes one squared distance.
+                    </p>
+
+                    <!-- SVG Graphic 5 -->
+                    <div class="w-full h-56 bg-academy-panel border border-academy-amethyst/20 rounded-xl mb-8 flex items-center justify-center relative overflow-hidden shadow-amethyst">
+                        <svg viewBox="0 0 100 100" class="w-full h-full drop-shadow-[0_0_5px_currentColor] text-academy-amethyst">
+                            <circle cx="50" cy="50" r="3" class="stroke-white fill-white node" />
+                            <circle cx="50" cy="50" r="15" class="stroke-academy-amethyst fill-none sigil-path" stroke-width="1"/>
+                            <circle cx="50" cy="50" r="30" class="stroke-academy-amethyst fill-academy-amethyst/10 sigil-path-delayed" stroke-width="1.5" stroke-dasharray="2 2"/>
+                            
+                            <!-- Converging waves -->
+                            <path d="M 20 50 Q 35 40 50 50" class="stroke-academy-cyan fill-none sigil-path-infinite" stroke-width="1"/>
+                            <path d="M 80 50 Q 65 60 50 50" class="stroke-academy-cyan fill-none sigil-path-infinite" stroke-width="1"/>
+                            <path d="M 50 20 Q 40 35 50 50" class="stroke-academy-gold fill-none sigil-path-infinite" stroke-width="1"/>
+                            <path d="M 50 80 Q 60 65 50 50" class="stroke-academy-gold fill-none sigil-path-infinite" stroke-width="1"/>
+
+                            <!-- Resonance Shell Surface -->
+                            <circle cx="50" cy="50" r="45" class="stroke-academy-cyan fill-none mandala-bg" stroke-width="2"/>
+                            
+                            <text x="50" y="42" text-anchor="middle" class="fill-white font-mono text-[6px]">Prime Collision</text>
+                            <text x="50" y="12" text-anchor="middle" class="fill-academy-cyan font-mono text-[8px] font-bold drop-shadow-[0_0_3px_#00f0ff]">Defined Shell: Q = π⁶</text>
+                        </svg>
+                    </div>
+
+                    <p class="text-slate-300 mb-6 font-sans text-sm leading-relaxed">
+                        The term "Resonance Shell" is <em>not</em> a standard mathematical theorem by itself. To make it rigorous, the architecture explicitly defines it as a named shell whose quadrance equals \( \pi^6 \).
+                    </p>
+
+                    <h3 class="text-xl font-arcane font-bold text-white mb-4">The Architectural Handshake</h3>
+                    <p class="text-slate-300 mb-4 font-sans text-sm">
+                        In the TTMPT analytic layer, continuous transverse foliation variables are locked as:
+                    </p>
+                    
+                    <div class="flex space-x-6 mb-6">
+                        <div class="bg-academy-panel px-6 py-3 rounded-lg border border-academy-cyan/50 text-academy-cyan shadow-active-cyan font-bold text-lg">$$ u = \pi^2 $$</div>
+                        <div class="bg-academy-panel px-6 py-3 rounded-lg border border-academy-amethyst/50 text-academy-amethyst shadow-active-amethyst font-bold text-lg">$$ v = \sqrt{\pi} $$</div>
+                    </div>
+
+                    <div class="mt-6 p-4 bg-academy-panel rounded-lg border-l-4 border-academy-cyan shadow-cyan">
+                        <p class="text-white font-sans text-sm">
+                            <strong class="text-academy-cyan font-mono text-xs uppercase tracking-wider">The Conjectured Link:</strong> If a model defines a handshake level where quadrance is approximately \(\pi^6\), that is an <em>additional modeling choice</em>, not a consequence forced by the zeta identity alone. The volume bounded by the 6 directions of the cube generates \(\pi^6\), defining the shell limit of the pump.
+                        </p>
+                    </div>
+                </div>
+
+                <!-- STEP 6 -->
+                <div class="step-content" id="step-6">
+                    <div class="inline-flex items-center px-3 py-1 rounded bg-academy-amethyst/10 text-academy-amethyst text-xs mb-6 tracking-widest border border-academy-amethyst/30 shadow-amethyst uppercase">
+                        Module 6 // Synthesis
+                    </div>
+                    <h2 class="font-arcane text-3xl sm:text-4xl font-bold text-white mb-6 drop-shadow-[0_0_8px_rgba(176,38,255,0.3)]">Synthesis: The Role of 945</h2>
+                    
+                    <p class="text-lg leading-relaxed mb-6 font-sans text-slate-300">
+                        We now reach the core engineering problem. The executable <strong>Hyperbolic Sparsemax</strong> layer demands that all transitions exist in a purely rational form (\( \mathbb{Q} \)).
+                    </p>
+
+                    <div class="bg-academy-crimson/10 border border-academy-crimson/50 p-5 rounded-xl mb-8 shadow-active-crimson">
+                        <p class="text-red-200 font-sans text-sm leading-relaxed">
+                            <i data-lucide="alert-triangle" class="inline w-5 h-5 mr-2 mb-1 text-academy-crimson"></i>
+                            Because the defined shell \( \pi^6 \approx 961.389... \) is irrational, hardware cannot natively compute it without approximations. Approximations destroy exactness, opening the hardware to fractal exploits.
+                        </p>
+                    </div>
+
+                    <!-- SVG Graphic 6: Emergence of 945 -->
+                    <div class="w-full h-64 bg-academy-panel border border-academy-amethyst/20 rounded-xl mb-8 flex items-center justify-center relative overflow-hidden shadow-amethyst">
+                        <svg viewBox="0 0 300 160" class="w-full h-full drop-shadow-[0_0_5px_currentColor]">
+                            <!-- Connecting Paths -->
+                            <path d="M 60 40 L 150 75" class="stroke-academy-amethyst/50" stroke-width="2" stroke-dasharray="4 4" fill="none"/>
+                            <path d="M 60 120 L 150 75" class="stroke-academy-gold/50" stroke-width="2" stroke-dasharray="4 4" fill="none"/>
+                            <path d="M 240 40 L 150 75" class="stroke-academy-cyan/50" stroke-width="2" stroke-dasharray="4 4" fill="none"/>
+
+                            <!-- 3^3 Node (Top Left) -->
+                            <g transform="translate(60, 40)">
+                                <circle r="18" class="stroke-academy-amethyst fill-academy-amethyst/10 spin-slow" stroke-width="1" stroke-dasharray="4 2"/>
+                                <path d="M0,-6 L8,-2 L8,6 L0,10 L-8,6 L-8,-2 Z M0,-6 L0,2 L8,-2 M0,2 L-8,-2" class="stroke-academy-amethyst fill-none" stroke-width="1"/>
+                                <text y="-25" text-anchor="middle" class="fill-academy-amethyst font-mono text-[10px] font-bold drop-shadow-[0_0_5px_#b026ff]">3³ (27)</text>
+                            </g>
+
+                            <!-- 5 Node (Bottom Left) -->
+                            <g transform="translate(60, 120)">
+                                <circle r="18" class="stroke-academy-gold fill-academy-gold/10 spin-med" stroke-width="1" stroke-dasharray="2 4"/>
+                                <polygon points="0,-8 7.6,-2.5 4.7,6.5 -4.7,6.5 -7.6,-2.5" class="stroke-academy-gold fill-none" stroke-width="1"/>
+                                <text y="28" text-anchor="middle" class="fill-academy-gold font-mono text-[10px] font-bold drop-shadow-[0_0_5px_#d4af37]">5</text>
+                            </g>
+
+                            <!-- 7 Node (Top Right) -->
+                            <g transform="translate(240, 40)">
+                                <circle r="18" class="stroke-academy-cyan fill-academy-cyan/10 spin-slow" stroke-width="1" stroke-dasharray="6 2"/>
+                                <path d="M 0 -8 L 3.5 -2.5 L 8 -1.5 L 4 3 L 5 8 L 0 5 L -5 8 L -4 3 L -8 -1.5 L -3.5 -2.5 Z" class="stroke-academy-cyan fill-none" stroke-width="1"/>
+                                <text y="-25" text-anchor="middle" class="fill-academy-cyan font-mono text-[10px] font-bold drop-shadow-[0_0_5px_#00f0ff]">7</text>
+                            </g>
+
+                            <!-- Center Node: Emergence of 945 -->
+                            <g transform="translate(150, 75)">
+                                <circle r="28" class="stroke-white fill-black/60 node" stroke-width="1.5"/>
+                                <circle r="24" class="stroke-emerald-500 fill-emerald-500/10 spin-slow" stroke-width="1" stroke-dasharray="5 5"/>
+                                
+                                <text y="-4" text-anchor="middle" class="fill-slate-300 font-mono text-[8px]">27 × 5 × 7</text>
+                                <text y="10" text-anchor="middle" class="fill-emerald-400 font-arcane text-[18px] font-bold drop-shadow-[0_0_8px_#34d399]">= 945</text>
+                                
+                                <!-- Output Stream -->
+                                <path d="M 0 28 L 0 50" class="stroke-emerald-500 sigil-path-infinite" stroke-width="1.5" fill="none"/>
+                                <polygon points="-3,45 3,45 0,52" class="fill-emerald-500" />
+                                <rect x="-40" y="55" width="80" height="16" class="fill-black/80 stroke-emerald-500/50" stroke-width="1" rx="2" />
+                                <text y="66" text-anchor="middle" class="fill-emerald-400 font-mono text-[8px] font-bold tracking-wider">Normalizes π⁶ → ℚ</text>
+                            </g>
+                        </svg>
+                    </div>
+
+                    <h3 class="text-2xl font-arcane font-bold text-white mb-4 drop-shadow-[0_0_5px_rgba(255,255,255,0.5)]">Normalizing the Energy</h3>
+
+                    <p class="text-slate-300 mb-6 font-sans text-sm leading-relaxed">
+                        To define a "normalized sixth-order zeta energy" (\( E_{\pi^6} \)), the architecture explicitly defines it as \( 945 \cdot \zeta(6) \). Because of Euler's classical proof, this equals \( \pi^6 \).
+                    </p>
+
+                    <p class="text-slate-300 mb-8 font-sans text-sm leading-relaxed">
+                        By leveraging the identity \( 945\zeta(6) = \pi^6 \), the architecture transforms irrational geometric volume into <strong>exact symbolic quantities</strong>. The mathematical structure of 945 seamlessly mirrors the architectural model (27 volumes, 5 topologies, 7 parities) while keeping operations purely rational.
+                    </p>
+                </div>
+
+                <!-- STEP 7 -->
+                <div class="step-content text-center py-10" id="step-7">
+                    <!-- SVG Graphic 7 -->
+                    <div class="w-48 h-48 mx-auto mb-8 relative">
+                        <div class="absolute inset-0 bg-academy-amethyst/20 rounded-full blur-xl node"></div>
+                        <svg viewBox="0 0 100 100" class="w-full h-full drop-shadow-[0_0_15px_currentColor] text-academy-amethyst relative z-10 spin-slow">
+                            <!-- Strix Lumin Sigil Adapted -->
+                            <path class="sigil-path text-current" stroke="currentColor" stroke-width="1.5" fill="none" d="M50,15 L75,35 L85,65 L50,90 L15,65 L25,35 Z M50,15 L50,35 M85,65 L65,65 M15,65 L35,65"/>
+                            <path class="sigil-path-delayed text-white" stroke="currentColor" stroke-width="2" fill="none" d="M35,45 L45,50 L35,55 Z M65,45 L55,50 L65,55 Z"/>
+                            <g class="text-white fill-current">
+                                <circle class="node" cx="50" cy="15" r="3"/><circle class="node" cx="75" cy="35" r="3"/><circle class="node" cx="85" cy="65" r="3"/><circle class="node" cx="50" cy="90" r="3"/><circle class="node" cx="15" cy="65" r="3"/><circle class="node" cx="25" cy="35" r="3"/>
+                            </g>
+                        </svg>
+                    </div>
+
+                    <h2 class="text-4xl font-arcane font-extrabold text-white mb-6 drop-shadow-[0_0_8px_rgba(176,38,255,0.5)]">Tutorial Complete</h2>
+                    
+                    <p class="text-xl text-slate-300 leading-relaxed max-w-2xl mx-auto mb-8 font-arcane tracking-wider">
+                        The Cubic Golden-Complement Normalizer Theorem<br/>
+                        <span class="text-academy-amethyst font-mono font-bold text-2xl mt-4 block">$$ 945 = 3^3 \cdot 5 \cdot 7 $$</span><br/>
+                        is the <strong class="text-white">Rosetta Stone</strong> of the SHD-CCP architecture. 
+                    </p>
+
+                    <div class="bg-academy-panel border border-academy-amethyst/30 p-8 rounded-2xl max-w-2xl mx-auto text-left shadow-active-amethyst relative overflow-hidden">
+                        <div class="absolute inset-0 bg-academy-amethyst/5 pointer-events-none"></div>
+                        <p class="text-slate-300 font-sans text-sm leading-relaxed relative z-10">
+                            It demonstrates how the system's geometric shape, spatial dimensions, and security parity logically map to the arithmetic structure of the 6th-order Riemann zeta identity. By keeping computations within the exact rational domain (\( \mathbb{Q} \)), the Sparsemax pipeline processes topological relationships deterministically and safely.
+                        </p>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- Right Panel: Familiar Console -->
+        <div class="w-full md:w-80 lg:w-96 bg-academy-panel border-t md:border-t-0 md:border-l border-gray-800 flex flex-col relative z-20 shadow-[-10px_0_20px_rgba(0,0,0,0.5)]">
+            <!-- Familiar Avatar & Info -->
+            <div class="p-6 border-b border-gray-800 flex flex-col items-center justify-center bg-black/40 relative">
+                <div class="absolute inset-0 hologram-overlay opacity-30"></div>
+                <div class="w-24 h-24 rounded-full border border-academy-amethyst shadow-active-amethyst flex items-center justify-center mb-4 relative overflow-hidden bg-academy-dark z-10">
+                    <div class="absolute inset-0 bg-academy-amethyst/10"></div>
+                    <svg viewBox="0 0 100 100" class="w-16 h-16 text-academy-amethyst drop-shadow-[0_0_5px_currentColor]">
+                        <!-- Strix Lumin Minimal -->
+                        <path d="M50,15 L75,35 L85,65 L50,90 L15,65 L25,35 Z" stroke="currentColor" stroke-width="1.5" fill="none" class="sigil-path"/>
+                        <path d="M35,45 L45,50 L35,55 Z M65,45 L55,50 L65,55 Z" stroke="white" stroke-width="1.5" fill="none" class="sigil-path-delayed"/>
+                        <circle cx="50" cy="15" r="3" fill="white" class="node"/>
+                        <circle cx="50" cy="90" r="3" fill="white" class="node"/>
+                    </svg>
+                </div>
+                <h3 class="font-arcane text-xl font-bold text-academy-amethyst tracking-widest drop-shadow-[0_0_5px_currentColor] z-10">Strix Lumin</h3>
+                <p class="text-[10px] font-mono text-gray-400 uppercase tracking-widest z-10">The Scholar // Familiar_003</p>
+            </div>
+
+            <!-- Dialogue Box -->
+            <div class="flex-grow p-6 flex flex-col">
+                <div class="mb-3 flex items-center justify-between border-b border-gray-800 pb-2">
+                    <div class="flex items-center space-x-2">
+                        <div class="w-2 h-2 rounded-full bg-academy-amethyst animate-pulse shadow-[0_0_5px_#b026ff]"></div>
+                        <span class="text-[10px] font-mono text-gray-500 uppercase tracking-widest">Active Link</span>
+                    </div>
+                    <span class="text-[10px] font-mono text-academy-amethyst/50">SYS_UPLINK_OK</span>
+                </div>
+                
+                <div class="flex-grow bg-black/40 rounded border border-gray-800 p-4 mb-6 shadow-inner relative overflow-hidden">
+                    <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-academy-amethyst/50 to-transparent opacity-50"></div>
+                    <p id="dialogue-text" class="text-sm text-slate-300 font-mono leading-relaxed h-full relative z-10">
+                        <!-- Dialogue injected via JS -->
+                    </p>
+                </div>
+
+                <!-- Navigation Controls -->
+                <div class="flex flex-col space-y-3 mt-auto">
+                    <div class="flex items-center justify-between font-mono text-[10px] text-gray-500 mb-1 px-1">
+                        <span>PROGRESS</span>
+                        <span>MOD <span id="step-indicator" class="text-academy-amethyst font-bold text-xs">1</span>/7</span>
+                    </div>
+                    <div class="w-full bg-gray-800 h-1 rounded-full mb-4 overflow-hidden">
+                        <div id="progress-bar" class="bg-academy-amethyst h-full transition-all duration-300 shadow-[0_0_5px_#b026ff]" style="width: 14%;"></div>
+                    </div>
+                    
+                    <button id="next-btn" onclick="navigate(1)" class="w-full py-3 rounded bg-academy-amethyst/10 border border-academy-amethyst text-academy-amethyst font-arcane font-bold tracking-widest hover:bg-academy-amethyst hover:text-white transition-all shadow-[0_0_15px_rgba(176,38,255,0.2)] flex justify-center items-center group">
+                        PROCEED <i data-lucide="arrow-right" class="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform"></i>
+                    </button>
+                    
+                    <button id="prev-btn" onclick="navigate(-1)" class="w-full py-2 rounded border border-gray-800 text-gray-500 font-mono text-[10px] tracking-widest hover:border-gray-600 hover:text-white transition-all disabled:opacity-30 disabled:cursor-not-allowed" disabled>
+                        REVERT
+                    </button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // Initialize Lucide icons
+        lucide.createIcons();
+
+        // Familiar Dialogue Data
+        const dialogueData = {
+            1: "Who approaches? Ah, a seeker of the deep architecture. I am Strix Lumin. Let us unravel the conflict between infinite analytic topology and discrete hardware logic.",
+            2: "Observe the Riemann zeta function. It is an infinite sum that converges. Euler's classical theorem proves the exact denominator is 945. It is not chosen by geometry; it is a proven algebraic truth.",
+            3: "Now we look at interpretation. The 12-channel coupling space splits logically. Five parts golden geometry, seven parts parity constraint. A perfect balance modulo 12. Structure is everything in the void.",
+            4: "Three spatial axes. Three arms to the trefoil. Cubed, they provide the volumetric amplification necessary to project 1D models into our 3D tensor space.",
+            5: "Quadrance is the square of distance. The continuous pump defines a bounding volume... a resonance shell defined strictly as the surface where quadrance exactly equals pi to the sixth power.",
+            6: "But hardware cannot digest the irrational! Watch how exact integers map to our geometry. By synthesizing the lattice volume, golden topology, and parity constraint, the model aligns perfectly with the normalizer 945.",
+            7: "The Rosetta Stone is complete. The infinite math is securely mapped to a discrete, deterministic architecture. Your lesson concludes here, seeker. May your quadrance always find primes."
+        };
+
+        // Tutorial State
+        let currentStep = 1;
+        const totalSteps = 7;
+        let typingTimeout;
+
+        function updateUI() {
+            // Update Indicator and Progress
+            document.getElementById('step-indicator').textContent = currentStep;
+            document.getElementById('progress-bar').style.width = `${(currentStep / totalSteps) * 100}%`;
+
+            // Toggle Content Visibility
+            for(let i = 1; i <= totalSteps; i++) {
+                const el = document.getElementById(`step-${i}`);
+                if(i === currentStep) {
+                    el.classList.add('active');
+                } else {
+                    el.classList.remove('active');
+                }
+            }
+
+            // Update Buttons
+            const prevBtn = document.getElementById('prev-btn');
+            const nextBtn = document.getElementById('next-btn');
+
+            prevBtn.disabled = currentStep === 1;
+            
+            if(currentStep === totalSteps) {
+                nextBtn.innerHTML = 'CONCLUDE <i data-lucide="check" class="w-4 h-4 ml-2"></i>';
+                nextBtn.className = "w-full py-3 rounded bg-emerald-500/20 border border-emerald-500 text-emerald-400 font-arcane font-bold tracking-widest hover:bg-emerald-500 hover:text-white transition-all shadow-[0_0_15px_rgba(16,185,129,0.3)] flex justify-center items-center group";
+                nextBtn.onclick = () => alert("Protocol Terminated. Knowledge assimilated.");
+            } else {
+                nextBtn.innerHTML = 'PROCEED <i data-lucide="arrow-right" class="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform"></i>';
+                nextBtn.className = "w-full py-3 rounded bg-academy-amethyst/10 border border-academy-amethyst text-academy-amethyst font-arcane font-bold tracking-widest hover:bg-academy-amethyst hover:text-white transition-all shadow-[0_0_15px_rgba(176,38,255,0.2)] flex justify-center items-center group";
+                nextBtn.onclick = () => navigate(1);
+            }
+            
+            // Re-render icons on buttons if they changed
+            lucide.createIcons();
+            
+            // Re-trigger KaTeX rendering for the newly visible step
+            renderMath();
+            
+            // Scroll to top of content area
+            document.getElementById('lesson-viewer').scrollTop = 0;
+
+            // Type dialogue
+            typeDialogue(dialogueData[currentStep]);
+        }
+
+        function navigate(dir) {
+            const newStep = currentStep + dir;
+            if(newStep >= 1 && newStep <= totalSteps) {
+                currentStep = newStep;
+                updateUI();
+            }
+        }
+
+        function typeDialogue(text) {
+            const el = document.getElementById('dialogue-text');
+            const nextBtn = document.getElementById('next-btn');
+            
+            el.innerHTML = '<span class="text-academy-amethyst font-bold">> </span>';
+            nextBtn.disabled = true;
+            nextBtn.classList.add('opacity-50', 'cursor-not-allowed', 'pointer-events-none');
+            
+            if(typingTimeout) clearTimeout(typingTimeout);
+            
+            let i = 0;
+            function type() {
+                if (i < text.length) {
+                    el.innerHTML += text.charAt(i);
+                    i++;
+                    typingTimeout = setTimeout(type, 25); // typing speed
+                } else {
+                    nextBtn.disabled = false;
+                    nextBtn.classList.remove('opacity-50', 'cursor-not-allowed', 'pointer-events-none');
+                    el.innerHTML += '<span class="animate-pulse">_</span>';
+                }
+            }
+            type();
+        }
+
+        function renderMath() {
+            renderMathInElement(document.body, {
+                delimiters: [
+                    {left: '$$', right: '$$', display: true},
+                    {left: '\\(', right: '\\)', display: false}
+                ],
+                throwOnError: false,
+                errorColor: '#ff3366'
+            });
+        }
+
+        // Draggable Reference Window Logic
+        const dragItem = document.getElementById("reference-window");
+        const dragHeader = document.getElementById("drag-handle");
+        let isDragging = false;
+        let startX, startY, initialX, initialY;
+
+        dragHeader.addEventListener("mousedown", dragStart);
+
+        function dragStart(e) {
+            // Only allow dragging from header
+            if (e.target.closest('button')) return; 
+            isDragging = true;
+            startX = e.clientX;
+            startY = e.clientY;
+            initialX = dragItem.offsetLeft;
+            initialY = dragItem.offsetTop;
+            document.addEventListener("mousemove", drag);
+            document.addEventListener("mouseup", dragEnd);
+        }
+
+        function drag(e) {
+            if (isDragging) {
+                e.preventDefault();
+                const currentX = e.clientX - startX;
+                const currentY = e.clientY - startY;
+                dragItem.style.left = (initialX + currentX) + "px";
+                dragItem.style.top = (initialY + currentY) + "px";
+                // Reset right/bottom overrides so dragging left/top works
+                dragItem.style.right = "auto";
+                dragItem.style.bottom = "auto";
+            }
+        }
+
+        function dragEnd(e) {
+            isDragging = false;
+            document.removeEventListener("mousemove", drag);
+            document.removeEventListener("mouseup", dragEnd);
+        }
+        
+        function toggleReferenceWindow() {
+            dragItem.classList.toggle("visible");
+        }
+
+        function switchRefTab(tab) {
+            const videoTab = document.getElementById('tab-video');
+            const pdfTab = document.getElementById('tab-pdf');
+            const videoContent = document.getElementById('ref-video-content');
+            const pdfContent = document.getElementById('ref-pdf-content');
+
+            if (tab === 'video') {
+                videoTab.className = "flex-1 py-2 text-[10px] font-mono tracking-widest uppercase border-b-2 border-academy-cyan text-academy-cyan transition-all";
+                pdfTab.className = "flex-1 py-2 text-[10px] font-mono tracking-widest uppercase border-b-2 border-transparent text-gray-500 hover:text-gray-300 transition-all";
+                videoContent.classList.remove('hidden');
+                pdfContent.classList.add('hidden');
+            } else {
+                pdfTab.className = "flex-1 py-2 text-[10px] font-mono tracking-widest uppercase border-b-2 border-academy-cyan text-academy-cyan transition-all";
+                videoTab.className = "flex-1 py-2 text-[10px] font-mono tracking-widest uppercase border-b-2 border-transparent text-gray-500 hover:text-gray-300 transition-all";
+                pdfContent.classList.remove('hidden');
+                videoContent.classList.add('hidden');
+            }
+        }
+
+        // Initialize on load
+        document.addEventListener("DOMContentLoaded", function() {
+            renderMath();
+            updateUI(); // Set initial state and start typing
+        });
+    </script>
+</body>
+</html>
