@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Seal Forge — Owl Academy</title>
+<script type="module" src="../scripts/auth-guard.js"></script>
+<style>
+  :root{--void:#06040f;--gold:#D4AF37;--purple:#8b5cf6;--cyan:#22d3ee;--ok:#34d399;--bad:#f87171;--warn:#fbbf24}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--void);color:#e2e8f0;font-family:system-ui,sans-serif;min-height:100vh;line-height:1.55;
+       background:radial-gradient(ellipse at top,rgba(139,92,246,0.10),var(--void) 55%)}
+  .mono{font-family:ui-monospace,"Fira Code",monospace}
+  .secbar{display:flex;align-items:center;justify-content:space-between;gap:1rem;padding:.55rem 1.1rem;background:rgba(8,12,22,.85);
+          border-bottom:1px solid rgba(212,175,55,.25);position:sticky;top:0;z-index:30;backdrop-filter:blur(8px)}
+  .seal{display:flex;align-items:center;gap:.5rem;font-size:.64rem;letter-spacing:.16em;text-transform:uppercase;color:var(--gold)}
+  .seal .g{width:20px;height:20px;border:1px solid var(--gold);border-radius:50%;display:flex;align-items:center;justify-content:center}
+  .who{font-size:.62rem;color:rgba(255,255,255,.42);letter-spacing:.08em}
+  .btn{background:rgba(139,92,246,.16);color:var(--purple);border:1px solid rgba(139,92,246,.4);border-radius:6px;padding:.4rem .8rem;
+       font-size:.66rem;letter-spacing:.1em;text-transform:uppercase;cursor:pointer;font-family:inherit;transition:.2s}
+  .btn:hover{background:rgba(139,92,246,.3)} .btn[disabled]{opacity:.4;cursor:not-allowed}
+  .btn.gold{background:rgba(212,175,55,.14);color:var(--gold);border-color:rgba(212,175,55,.45)}
+  .btn.sm{padding:.25rem .55rem;font-size:.58rem}
+  header{text-align:center;padding:2rem 1rem .6rem}
+  .kick{font-size:.6rem;letter-spacing:.3em;text-transform:uppercase;color:rgba(212,175,55,.7)}
+  h1{font-weight:300;letter-spacing:.14em;color:#fff;margin-top:.4rem;font-size:1.6rem}h1 b{color:var(--gold)}
+  .schu{margin:.6rem auto 0;max-width:520px;font-size:.66rem;color:var(--cyan);border:1px solid rgba(34,211,238,.25);border-radius:999px;padding:.3rem .9rem;display:inline-flex;gap:.5rem;align-items:center}
+  .back{display:inline-block;margin-top:.8rem;font-size:.62rem;letter-spacing:.2em;text-transform:uppercase;color:rgba(139,92,246,.5);text-decoration:none}
+  main{max-width:1000px;margin:1.6rem auto;padding:0 1.1rem;display:grid;grid-template-columns:1fr 1fr;gap:1.2rem}
+  @media(max-width:820px){main{grid-template-columns:1fr}}
+  .panel{background:rgba(10,8,20,.6);border:1px solid rgba(139,92,246,.18);border-radius:12px;padding:1.2rem 1.3rem}
+  .panel.wide{grid-column:1/-1}
+  .label{font-size:.6rem;letter-spacing:.26em;text-transform:uppercase;color:rgba(139,92,246,.65);margin-bottom:.7rem}
+  label.f{display:block;font-size:.62rem;letter-spacing:.08em;text-transform:uppercase;color:rgba(255,255,255,.5);margin:.7rem 0 .2rem}
+  input,select,textarea{width:100%;background:#0c0a18;color:#e2e8f0;border:1px solid rgba(139,92,246,.3);border-radius:6px;padding:.45rem .55rem;font-size:.82rem;font-family:inherit}
+  textarea{min-height:90px;font-family:ui-monospace,monospace;font-size:.76rem;resize:vertical}
+  .rng{display:flex;align-items:center;gap:.6rem}.rng output{font-family:ui-monospace,monospace;color:var(--cyan);font-size:.78rem;min-width:2.4rem}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:.6rem}
+  .tome{border:1px solid rgba(139,92,246,.16);border-radius:8px;padding:.6rem .7rem;margin-bottom:.55rem;background:rgba(0,0,0,.25)}
+  .tome .top{display:flex;justify-content:space-between;align-items:center;gap:.5rem}
+  .tome .nm{color:#fff;font-size:.84rem}
+  .tome .vec{font-family:ui-monospace,monospace;font-size:.66rem;color:var(--gold);margin-top:.2rem}
+  .tome .meta{font-size:.62rem;color:rgba(255,255,255,.4);margin-top:.2rem}
+  .badge{font-size:.55rem;letter-spacing:.1em;text-transform:uppercase;border:1px solid;border-radius:999px;padding:.1em .5em}
+  .badge.active{color:var(--ok);border-color:var(--ok)} .badge.recalled{color:var(--bad);border-color:var(--bad)} .badge.archived{color:var(--warn);border-color:var(--warn)}
+  pre.out{background:#05030a;border:1px solid rgba(34,211,238,.16);border-radius:8px;padding:.8rem;font-family:ui-monospace,monospace;font-size:.7rem;color:#9fb4c8;white-space:pre-wrap;word-break:break-all;max-height:240px;overflow:auto;margin-top:.6rem}
+  .msg{font-size:.72rem;margin-top:.5rem}.msg.ok{color:var(--ok)}.msg.bad{color:var(--bad)}
+  .verdict{margin-top:.6rem;padding:.6rem .8rem;border-radius:8px;font-size:.8rem}
+  .verdict.ok{background:rgba(52,211,153,.08);border:1px solid rgba(52,211,153,.35);color:var(--ok)}
+  .verdict.bad{background:rgba(248,113,113,.08);border:1px solid rgba(248,113,113,.35);color:var(--bad)}
+  .hint{font-size:.66rem;color:rgba(255,255,255,.4);margin-top:.4rem}
+</style>
+</head>
+<body>
+<div class="secbar">
+  <div class="seal"><span class="g">♛</span> Genesis-Sealed</div>
+  <div class="who mono" id="who">authenticating…</div>
+  <button class="btn sm" onclick="globalLogout()">Log out</button>
+</div>
+
+<header>
+  <div class="kick">Mage Tower · Tome Seal System</div>
+  <h1>Seal <b>Forge</b></h1>
+  <div class="schu mono" id="schu">⌁ Schumann: …</div>
+  <div><a class="back" href="Major_Tome.html">Major Tome Library →</a></div>
+</header>
+
+<main>
+  <!-- Mint -->
+  <div class="panel">
+    <div class="label">Mint a minor tome</div>
+    <label class="f">Label</label>
+    <input id="m-label" placeholder="e.g. Field Marker · GEM lecture" />
+    <div class="grid2">
+      <div><label class="f">Hilbert space (lattice)</label><select id="m-lattice"></select></div>
+      <div><label class="f">Hilbert dim</label><input id="m-dim" type="number" value="64" min="8" max="256" /></div>
+    </div>
+    <label class="f">Manifold</label><select id="m-manifold"></select>
+    <div class="grid2">
+      <div><label class="f">Coherency</label><div class="rng"><input id="m-coh" type="range" min="0" max="1" step="0.05" value="0.75"><output id="m-coh-o">0.75</output></div></div>
+      <div><label class="f">Torsion</label><div class="rng"><input id="m-tor" type="range" min="0" max="1" step="0.05" value="0.5"><output id="m-tor-o">0.50</output></div></div>
+    </div>
+    <div style="margin-top:.9rem"><button class="btn gold" id="mint">Forge minor tome</button></div>
+    <div class="msg" id="mint-msg"></div>
+  </div>
+
+  <!-- My minor tomes -->
+  <div class="panel">
+    <div class="label">My minor tomes <span class="mono" id="tcount" style="color:rgba(255,255,255,.35)"></span></div>
+    <div id="tome-list"><div class="hint">Loading…</div></div>
+  </div>
+
+  <!-- Sign -->
+  <div class="panel">
+    <div class="label">Sign a document / lesson / anything</div>
+    <label class="f">Active minor tome</label><select id="s-tome"></select>
+    <label class="f">Content to seal</label>
+    <textarea id="s-content" placeholder="Paste the lesson body, document text, or any string…"></textarea>
+    <div style="margin-top:.7rem;display:flex;gap:.5rem;flex-wrap:wrap">
+      <button class="btn" id="sign">Affix seal</button>
+      <button class="btn sm" id="dl" disabled>Download .seal.json</button>
+      <button class="btn sm" id="cp" disabled>Copy block</button>
+    </div>
+    <pre class="out" id="s-out" style="display:none"></pre>
+  </div>
+
+  <!-- Verify -->
+  <div class="panel">
+    <div class="label">Verify &amp; trace a seal</div>
+    <label class="f">Seal block (JSON)</label>
+    <textarea id="v-block" placeholder='Paste an owl-seal/1 block…'></textarea>
+    <label class="f">Original content (optional — confirms it signs this exact text)</label>
+    <textarea id="v-content" style="min-height:60px" placeholder="(optional)"></textarea>
+    <div style="margin-top:.7rem"><button class="btn" id="verify">Verify</button></div>
+    <div id="v-out"></div>
+  </div>
+</main>
+
+<script type="module">
+import { auth } from "../scripts/firebase/config.js";
+import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-auth.js";
+import { resolveTier } from "../scripts/genesis-registrar.js";
+import { getTick, tickLabel } from "../scripts/schumann-oracle.js";
+import {
+  mintMinorTome, listMinorTomes, recallMinorTome, archiveMinorTome,
+  signWithMinorTome, verifySealBlock, verifySealAgainstContent,
+  SEAL_LATTICES, MANIFOLDS,
+} from "../scripts/minor-tome.js";
+
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s).replace(/[&<>]/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;" }[c]));
+let UID = null, lastBlock = null;
+
+// populate selects
+for (const [k, v] of Object.entries(SEAL_LATTICES)) $("m-lattice").insertAdjacentHTML("beforeend", `<option value="${k}">${k} · ${v.name}</option>`);
+for (const [k, v] of Object.entries(MANIFOLDS)) $("m-manifold").insertAdjacentHTML("beforeend", `<option value="${k}">${v.name}</option>`);
+$("m-coh").oninput = e => $("m-coh-o").textContent = (+e.target.value).toFixed(2);
+$("m-tor").oninput = e => $("m-tor-o").textContent = (+e.target.value).toFixed(2);
+
+async function refreshSchumann(){ try { const t = await getTick(); $("schu").textContent = "⌁ Schumann: " + tickLabel(t); } catch { $("schu").textContent = "⌁ Schumann: base 7.83 Hz"; } }
+
+onAuthStateChanged(auth, async (u) => {
+  if (!u) return; UID = u.uid;
+  let tier = "ACOLYTE"; try { tier = await resolveTier(u.uid); } catch {}
+  const sym = tier === "ARCHON" ? "♛" : tier === "INSTRUCTOR" ? "⬢" : "◯";
+  $("who").textContent = `${sym} ${tier} · ${u.uid.slice(0,10)}… · LOGOUT`;
+  $("who").innerHTML = `${sym} ${tier} · ${u.uid.slice(0,10)}…`;
+  refreshSchumann(); loadTomes();
+});
+setInterval(refreshSchumann, 5 * 60 * 1000);
+
+async function loadTomes(){
+  const tomes = await listMinorTomes(UID).catch(() => []);
+  $("tcount").textContent = `(${tomes.length})`;
+  const active = tomes.filter(t => t.status === "active");
+  $("s-tome").innerHTML = active.length
+    ? active.map(t => `<option value="${t.sealId}">${esc(t.label)} · ${t.sealId.slice(0,12)}…</option>`).join("")
+    : `<option value="">— no active minor tomes —</option>`;
+  $("tome-list").innerHTML = tomes.length ? tomes.map(t => `
+    <div class="tome">
+      <div class="top"><span class="nm">${esc(t.label)}</span><span class="badge ${t.status}">${t.status}</span></div>
+      <div class="vec">⬡ ${t.sealVector} · ${t.sealId.slice(0,16)}…</div>
+      <div class="meta">${esc((t.params&&t.params.lattice)||"E8")} · ${esc((t.params&&t.params.manifold)||"clifford")} · coh ${(t.params&&t.params.coherency)??"–"} · tor ${(t.params&&t.params.torsion)??"–"} · tick ${esc(t.tickToken||"")}</div>
+      <div style="margin-top:.45rem;display:flex;gap:.4rem">
+        <button class="btn sm" data-recall="${t.sealId}" ${t.status!=="active"?"disabled":""}>Recall</button>
+        <button class="btn sm" data-archive="${t.sealId}" ${t.status!=="active"?"disabled":""}>Archive</button>
+      </div>
+    </div>`).join("") : `<div class="hint">No minor tomes yet — forge one to start sealing.</div>`;
+  $("tome-list").querySelectorAll("[data-recall]").forEach(b => b.onclick = async () => { b.disabled = true; await recallMinorTome(UID, b.dataset.recall); loadTomes(); });
+  $("tome-list").querySelectorAll("[data-archive]").forEach(b => b.onclick = async () => { b.disabled = true; await archiveMinorTome(UID, b.dataset.archive); loadTomes(); });
+}
+
+$("mint").onclick = async () => {
+  $("mint").disabled = true; $("mint-msg").className = "msg"; $("mint-msg").textContent = "Sampling Schumann tick & folding lattice…";
+  try {
+    const params = { lattice: $("m-lattice").value, hilbertDim: +$("m-dim").value, manifold: $("m-manifold").value, coherency: +$("m-coh").value, torsion: +$("m-tor").value };
+    const t = await mintMinorTome(UID, params, $("m-label").value.trim());
+    $("mint-msg").className = "msg ok"; $("mint-msg").textContent = `Forged ⬡ ${t.sealVector} (${t.sealId.slice(0,16)}…) at tick ${t.tick.token}.`;
+    $("m-label").value = ""; loadTomes();
+  } catch (e) { $("mint-msg").className = "msg bad"; $("mint-msg").textContent = e.message; }
+  $("mint").disabled = false;
+};
+
+$("sign").onclick = async () => {
+  const sid = $("s-tome").value; if (!sid) { return; }
+  $("sign").disabled = true;
+  try {
+    lastBlock = await signWithMinorTome(UID, sid, $("s-content").value);
+    $("s-out").style.display = "block"; $("s-out").textContent = JSON.stringify(lastBlock, null, 2);
+    $("dl").disabled = false; $("cp").disabled = false;
+  } catch (e) { $("s-out").style.display = "block"; $("s-out").textContent = "Error: " + e.message; }
+  $("sign").disabled = false;
+};
+$("dl").onclick = () => {
+  if (!lastBlock) return;
+  const blob = new Blob([JSON.stringify(lastBlock, null, 2)], { type: "application/json" });
+  const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = `${lastBlock.sealId}.seal.json`; a.click(); URL.revokeObjectURL(a.href);
+};
+$("cp").onclick = () => { if (lastBlock) navigator.clipboard.writeText(JSON.stringify(lastBlock)); };
+
+$("verify").onclick = async () => {
+  $("v-out").innerHTML = `<div class="hint">Checking registry & signature…</div>`;
+  let block; try { block = JSON.parse($("v-block").value); } catch { $("v-out").innerHTML = `<div class="verdict bad">✗ Not valid JSON.</div>`; return; }
+  const content = $("v-content").value;
+  const r = content.trim() ? await verifySealAgainstContent(block, content) : await verifySealBlock(block);
+  if (r.valid) {
+    $("v-out").innerHTML = `<div class="verdict ok">✓ Seal valid — ${esc(r.reason)}</div>
+      <div class="hint mono">traces to Genesis ${esc(r.genesisId||"?")} · ${esc(r.tier||"?")} · owner ${esc((r.ownerUid||"").slice(0,12))}… · ⬡ ${esc(r.sealVector||"")}${r.contentMatch===false?" · ⚠ content mismatch":""}</div>`;
+  } else {
+    $("v-out").innerHTML = `<div class="verdict bad">✗ ${esc(r.reason||"invalid")}</div>` +
+      (r.genesisId ? `<div class="hint mono">claimed Genesis ${esc(r.genesisId)} · status ${esc(r.status||"?")}</div>` : "");
+  }
+};
+</script>
+</body>
+</html>

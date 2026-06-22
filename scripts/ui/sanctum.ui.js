@@ -34,6 +34,9 @@ const ACADEMY_TOOLS = [
   { id: "constellation", title: "Constellation Map", desc: "Live 3D map of all Genesis seeds on the SPIRE manifold", path: "mage_tower/Constellation_Map.html", color: "#8A2BE2" },
   { id: "familiars",    title: "Familiar Selection", desc: "Bind your genesis seed to a familiar archetype and generate your User Sigil", path: "mage_tower/Familiars.html", color: "#b026ff" },
   { id: "store",        title: "Mage Tower Store",   desc: "Exchange Vis tokens for familiars, cosmetics, and academy privileges",       path: "mage_tower/Store.html",    color: "#D4AF37" },
+  { id: "seal-forge",   title: "Seal Forge",          desc: "Mint minor tomes (Hilbert · manifold · Schumann) and sign anything with a recallable seal", path: "mage_tower/Seal_Forge.html", color: "#8b5cf6" },
+  { id: "major-tome",   title: "Major Tome Library",  desc: "Request unlock of the immutable Owl Academy canon",                          path: "mage_tower/Major_Tome.html", color: "#D4AF37" },
+  { id: "unlock-console", title: "Unlock Console",    desc: "Instructors & Archons combine seals to unlock and sign off Major Tomes",     path: "mage_tower/Unlock_Console.html", color: "#22d3ee" },
 ];
 
 const TIER_PATHS = [
