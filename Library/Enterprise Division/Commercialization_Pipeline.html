@@ -1,0 +1,575 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Enterprise AI | Architecture Translation Map</title>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --gold:    #D4AF37;
+            --cyan:    #00d4ff;
+            --fuchsia: #e81cff;
+            --emerald: #00e5a0;
+            --bg:      #030508;
+        }
+        body {
+            background-color: var(--bg); color: #e2e8f0;
+            font-family: 'Inter', sans-serif; margin: 0;
+            min-height: 100vh;
+        }
+        #network-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            pointer-events: none;
+        }
+        h1,h2,h3,.mystical { font-family: 'Cinzel', serif; }
+        .mono { font-family: 'JetBrains Mono', monospace; }
+        
+        .gold-gradient {
+            background: linear-gradient(to right, var(--gold), #FFF8DC, var(--gold));
+            -webkit-background-clip: text; background-clip: text; color: transparent;
+        }
+        .cyan-gradient {
+            background: linear-gradient(to right, var(--cyan), #E0FFFF, var(--cyan));
+            -webkit-background-clip: text; background-clip: text; color: transparent;
+        }
+
+        /* Glassmorphism Containers */
+        .glass {
+            background: rgba(10,6,22,0.82); backdrop-filter: blur(16px);
+            border: 1px solid rgba(212,175,55,0.28);
+            box-shadow: 0 8px 32px -4px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.04);
+            border-radius: 12px;
+        }
+        .glass-cyan {
+            background: rgba(8,12,22,0.82); backdrop-filter: blur(16px);
+            border: 1px solid rgba(0,212,255,0.32);
+            box-shadow: 0 8px 32px -4px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.04);
+            border-radius: 12px;
+        }
+        .glass-fuchsia {
+            background: rgba(10,4,22,0.82); backdrop-filter: blur(16px);
+            border: 1px solid rgba(232,28,255,0.32);
+            box-shadow: 0 8px 32px -4px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.04);
+            border-radius: 12px;
+        }
+        .glass-emerald {
+            background: rgba(4,16,14,0.82); backdrop-filter: blur(16px);
+            border: 1px solid rgba(0,229,160,0.28);
+            box-shadow: 0 8px 32px -4px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.04);
+            border-radius: 12px;
+        }
+
+        /* Top Navigation */
+        .top-nav {
+            position: sticky; top: 0; z-index: 100;
+            background: rgba(10,6,22,0.95); backdrop-filter: blur(20px);
+            border-bottom: 1px solid rgba(0,212,255,0.15);
+            padding: 10px 24px;
+            display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+            justify-content: center;
+        }
+        .top-nav a {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 10px; letter-spacing: 0.15em; text-transform: uppercase;
+            color: rgba(0,212,255,0.55); text-decoration: none;
+            padding: 4px 10px; border-radius: 4px;
+            border: 1px solid rgba(0,212,255,0.15);
+            transition: all 0.2s;
+        }
+        .top-nav a:hover, .top-nav a.active { 
+            color: var(--cyan); border-color: rgba(0,212,255,0.4); background: rgba(0,212,255,0.05); 
+        }
+
+        /* Translation Table */
+        .trace-table { width: 100%; border-collapse: collapse; }
+        .trace-table th {
+            font-family: 'Cinzel', serif; font-size: 0.8rem;
+            letter-spacing: 0.1em; text-transform: uppercase;
+            color: var(--cyan); padding: 12px 16px;
+            border-bottom: 1px solid rgba(0,212,255,0.25);
+            text-align: left;
+        }
+        .trace-table td {
+            padding: 14px 16px; font-size: 0.85rem; line-height: 1.5;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+            vertical-align: middle;
+        }
+        .trace-table tr:last-child td { border-bottom: none; }
+        .trace-table tr:hover td { background: rgba(0,212,255,0.03); }
+        .trace-table .owl-term { font-family: 'Cinzel', serif; color: var(--gold); font-weight: 600; font-size: 0.9rem;}
+        .trace-table .ent-term { font-family: 'JetBrains Mono', monospace; color: var(--cyan); font-weight: 700; font-size: 0.8rem; }
+        .trace-table .val-term { color: #e2e8f0; }
+
+        /* Trust Chain Map */
+        .trust-chain {
+            display: flex; flex-direction: column; align-items: flex-start;
+            gap: 0; position: relative;
+        }
+        .trust-node {
+            display: flex; align-items: center; gap: 16px;
+            padding: 14px 24px; border-radius: 8px;
+            background: rgba(10,6,22,0.8);
+            border: 1px solid rgba(212,175,55,0.15);
+            min-width: 400px; position: relative;
+            transition: transform 0.2s;
+        }
+        .trust-node:hover { transform: translateX(5px); }
+        .trust-node .trust-icon { font-size: 1.4rem; width: 30px; text-align: center; }
+        .trust-node .trust-label {
+            font-family: 'JetBrains Mono', monospace; font-size: 0.85rem; font-weight: 700;
+            letter-spacing: 0.05em; margin-bottom: 2px;
+        }
+        .trust-node .trust-detail {
+            font-family: 'Inter', sans-serif;
+            font-size: 0.75rem; color: rgba(255,255,255,0.6);
+        }
+        .trust-connector-line {
+            width: 2px; height: 32px;
+            background: linear-gradient(to bottom, rgba(0,212,255,0.4), rgba(0,212,255,0.1));
+            margin-left: 28px;
+        }
+
+        /* Walkthrough Steps */
+        .step-item {
+            display: flex; gap: 16px; align-items: flex-start;
+            padding: 16px 24px; border-radius: 8px;
+            background: rgba(10,6,22,0.6);
+            border: 1px solid rgba(0,212,255,0.12);
+            transition: border-color 0.2s, background 0.2s;
+        }
+        .step-item:hover { border-color: rgba(0,212,255,0.3); background: rgba(10,6,22,0.8); }
+        .step-num {
+            font-family: 'JetBrains Mono', monospace; font-size: 0.8rem;
+            color: rgba(0,212,255,0.6); width: 28px; flex-shrink: 0;
+            padding-top: 2px; font-weight: bold;
+        }
+        .step-content { flex: 1; }
+        .step-title {
+            font-family: 'Inter', sans-serif; font-size: 0.9rem; font-weight: 600;
+            color: #E0FFFF; margin-bottom: 6px; letter-spacing: 0.02em;
+        }
+        .step-detail {
+            font-size: 0.8rem; color: rgba(200,210,220,0.8); line-height: 1.6;
+        }
+
+        /* Section Headers */
+        .section-header {
+            display: flex; align-items: center; gap: 12px;
+            margin-bottom: 24px; border-bottom: 1px solid rgba(0,212,255,0.1);
+            padding-bottom: 12px;
+        }
+        .section-num {
+            font-family: 'JetBrains Mono', monospace; font-size: 0.7rem;
+            color: rgba(0,212,255,0.5); letter-spacing: 0.2em;
+            border: 1px solid rgba(0,212,255,0.2); border-radius: 4px;
+            padding: 3px 8px; font-weight: bold;
+        }
+        .section-title {
+            font-family: 'Cinzel', serif; font-size: 1.25rem; font-weight: 600;
+            color: #E0FFFF; letter-spacing: 0.1em;
+        }
+    </style>
+</head>
+<body class="antialiased">
+
+<canvas id="network-canvas"></canvas>
+
+<nav class="top-nav">
+    <a href="#" class="active">Executive Translation</a>
+    <a href="#">Traceability Map</a>
+    <a href="#">Architecture Specs</a>
+    <a href="#">Hyperbolic Vector DB</a>
+    <a href="#">Deployment Guide</a>
+</nav>
+
+<main class="max-w-6xl mx-auto px-4 md:px-8 py-16">
+
+    <header class="text-center mb-16">
+        <div class="inline-block px-4 py-1.5 mono text-[11px] font-bold tracking-[0.3em] uppercase text-cyan-400/80 border border-cyan-500/30 rounded-full mb-6 bg-cyan-900/20">
+            Internal Memo • Engineering to Leadership
+        </div>
+        <h1 class="text-3xl md:text-5xl font-bold tracking-[0.1em] mystical mb-4">
+            COMMERCIALIZING THE <span class="cyan-gradient">TRACEABLE AI PIPELINE</span>
+        </h1>
+        <p class="text-base text-gray-300 max-w-3xl mx-auto leading-relaxed">
+            The underlying architecture developed under the "Owl Academy" codename is a highly advanced <strong>Zero-Trust, Cryptographically Traceable AI Pipeline</strong>. 
+            This document translates our internal R&D mechanics into commercial, enterprise-grade AI product features ready for highly regulated markets.
+        </p>
+    </header>
+
+    <section class="mb-20">
+        <div class="section-header">
+            <span class="section-num">01</span>
+            <h2 class="section-title">The Rosetta Stone: Architecture Translation</h2>
+        </div>
+
+        <div class="glass overflow-x-auto shadow-2xl shadow-cyan-900/20">
+            <table class="trace-table">
+                <thead>
+                    <tr>
+                        <th style="width: 25%;">Internal R&D Term<br><span class="text-xs text-gold/50">(Owl Academy)</span></th>
+                        <th style="width: 30%;">Commercial AI Product Term<br><span class="text-xs text-cyan/50">(Go-to-Market)</span></th>
+                        <th style="width: 45%;">Business Value / Enterprise Definition</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td class="owl-term">Cosmological ID</td>
+                        <td class="ent-term">Cryptographic Universal Identity (CUI)</td>
+                        <td class="val-term">A unique, hashed identifier ensuring every user/agent has an immutable digital fingerprint. Essential for strict compliance and IP tracking.</td>
+                    </tr>
+                    <tr>
+                        <td class="owl-term">Registrar / Codex</td>
+                        <td class="ent-term">Identity & Provenance Ledger</td>
+                        <td class="val-term">The centralized, immutable dashboard where user roles, system access, and data creation history are permanently logged.</td>
+                    </tr>
+                    <tr>
+                        <td class="owl-term">Genesis Forge / Archons</td>
+                        <td class="ent-term">Root CA & Zero-Trust RBAC</td>
+                        <td class="val-term">A highly secure Role-Based Access Control system. System Admins (Archons) issue cryptographically signed certificates to domain experts.</td>
+                    </tr>
+                    <tr>
+                        <td class="owl-term">Instructor Certificate</td>
+                        <td class="ent-term">Verified Expert Credential</td>
+                        <td class="val-term">A cryptographic proof that a user is an authorized Subject Matter Expert (SME). Guarantees only expert data enters the AI pipeline.</td>
+                    </tr>
+                    <tr>
+                        <td class="owl-term">Tomes & Artifacts</td>
+                        <td class="ent-term">Verifiable Knowledge Assets (VKA)</td>
+                        <td class="val-term">Curated, signed training data and RAG documents. <em>This guarantees the AI only learns from trusted, verified sources.</em></td>
+                    </tr>
+                    <tr>
+                        <td class="owl-term">Familiars</td>
+                        <td class="ent-term">Hyperbolic AI Agents</td>
+                        <td class="val-term">Personalized, task-specific AI co-pilots assigned to specific users or enterprise departments.</td>
+                    </tr>
+                    <tr>
+                        <td class="owl-term">Familiar Manifold (N,K,T)</td>
+                        <td class="ent-term">Hyperbolic Vector Embeddings</td>
+                        <td class="val-term">Mathematical parameters defining the AI's compute space. Hyperbolic geometry allows the AI to process complex, multi-layered corporate hierarchies exponentially better than standard flat databases.</td>
+                    </tr>
+                    <tr>
+                        <td class="owl-term">Engram Mind Eye</td>
+                        <td class="ent-term">Continuous Context Engine</td>
+                        <td class="val-term">System that crystallizes human-AI interactions into structured data, ensuring the AI maintains deterministic memory across sessions.</td>
+                    </tr>
+                    <tr>
+                        <td class="owl-term">Packet Chain Export</td>
+                        <td class="ent-term">Auditable AI Interaction Log</td>
+                        <td class="val-term">A portable, verifiable chain of all prompts and responses. Fully compliant and ready to be processed by heavy-compute enterprise models.</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <section class="mb-20">
+        <div class="section-header">
+            <span class="section-num">02</span>
+            <h2 class="section-title">Core Enterprise Use Cases</h2>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <!-- Use Case 1 -->
+            <div class="glass-cyan p-8 flex flex-col">
+                <div class="text-cyan-400 mb-4">
+                    <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
+                </div>
+                <h3 class="font-bold text-lg mb-2 text-white font-['Inter']">Fully Traceable Enterprise RAG</h3>
+                <p class="text-sm text-gray-400 mb-4 flex-grow">Standard AI chatbots cannot prove <em>why</em> they know something. We solve this by cryptographically signing RAG documents with a Verified Expert's ID. When the AI answers, it cites the exact signature.</p>
+                <div class="mt-auto p-3 bg-cyan-900/20 border border-cyan-500/20 rounded text-xs font-mono text-cyan-300">
+                    Pitch: "100% Hallucination-Free Auditable AI."
+                </div>
+            </div>
+
+            <!-- Use Case 2 -->
+            <div class="glass-emerald p-8 flex flex-col">
+                <div class="text-emerald-400 mb-4">
+                    <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M14 10l-2 1m0 0l-2-1m2 1v2.5M20 7l-2 1m2-1l-2-1m2 1v2.5M14 4l-2-1-2 1M4 7l2-1M4 7l2 1M4 7v2.5M12 21l-2-1m2 1l2-1m-2 1v-2.5M6 18l-2-1v-2.5M18 18l2-1v-2.5"></path></svg>
+                </div>
+                <h3 class="font-bold text-lg mb-2 text-white font-['Inter']">Hyperbolic AI Agents</h3>
+                <p class="text-sm text-gray-400 mb-4 flex-grow">Traditional Euclidean databases struggle with complex corporate hierarchies. Our local agents map to multi-dimensional manifolds, allowing them to naturally process expanding, tree-like data structures.</p>
+                <div class="mt-auto p-3 bg-emerald-900/20 border border-emerald-500/20 rounded text-xs font-mono text-emerald-300">
+                    Pitch: "Process interconnected datasets with a fraction of the compute."
+                </div>
+            </div>
+
+            <!-- Use Case 3 -->
+            <div class="glass-fuchsia p-8 flex flex-col">
+                <div class="text-fuchsia-400 mb-4">
+                    <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"></path></svg>
+                </div>
+                <h3 class="font-bold text-lg mb-2 text-white font-['Inter']">Secure AI Data Supply Chain</h3>
+                <p class="text-sm text-gray-400 mb-4 flex-grow">Companies fear AI due to IP leaks and data poisoning. Our Trust Chain ensures strict lineage. If an anomaly occurs, the company traces the custody back to the exact human origin in seconds.</p>
+                <div class="mt-auto p-3 bg-fuchsia-900/20 border border-fuchsia-500/20 rounded text-xs font-mono text-fuchsia-300">
+                    Pitch: "Unbreakable lineage from Human Expert to AI Output."
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="mb-20">
+        <div class="section-header">
+            <span class="section-num">03</span>
+            <h2 class="section-title">The Commercial Trust Chain</h2>
+        </div>
+
+        <div class="glass p-10 flex flex-col md:flex-row items-start md:items-stretch justify-between relative overflow-hidden">
+            <!-- Background Decoration -->
+            <div class="absolute top-0 right-0 w-64 h-64 bg-cyan-500/5 rounded-full blur-3xl -mr-20 -mt-20 pointer-events-none"></div>
+            
+            <div class="trust-chain w-full max-w-2xl relative z-10">
+                
+                <!-- Step 1: Root System -->
+                <div class="trust-node" style="border-color:rgba(0,212,255,0.6);">
+                    <span class="trust-icon" style="color:var(--cyan);">01</span>
+                    <div class="flex-grow">
+                        <div class="trust-label" style="color:var(--cyan);">Root Certificate Authority (CA)</div>
+                        <div class="trust-detail">Genesis System initializes the enterprise environment.</div>
+                    </div>
+                </div>
+
+                <div class="trust-connector-line"></div>
+                <div class="pl-10 pb-2 text-[10px] font-mono text-cyan-500/60 uppercase tracking-widest">Delegates authority to</div>
+
+                <!-- Step 2: System Admin -->
+                <div class="trust-node" style="border-color:rgba(232,28,255,0.5);">
+                    <span class="trust-icon" style="color:var(--fuchsia);">02</span>
+                    <div class="flex-grow">
+                        <div class="trust-label" style="color:var(--fuchsia);">System Admin (Archon)</div>
+                        <div class="trust-detail">IT Governance granted power to provision user access.</div>
+                    </div>
+                </div>
+
+                <div class="trust-connector-line" style="background: linear-gradient(to bottom, rgba(232,28,255,0.4), rgba(232,28,255,0.1));"></div>
+                <div class="pl-10 pb-2 text-[10px] font-mono text-fuchsia-500/60 uppercase tracking-widest">Issues cryptographically signed cert to</div>
+
+                <!-- Step 3: Verified Expert -->
+                <div class="trust-node" style="border-color:rgba(0,229,160,0.5);">
+                    <span class="trust-icon" style="color:var(--emerald);">03</span>
+                    <div class="flex-grow">
+                        <div class="trust-label" style="color:var(--emerald);">Verified SME (Instructor)</div>
+                        <div class="trust-detail">Domain Expert authenticated to produce training data.</div>
+                    </div>
+                </div>
+
+                <div class="trust-connector-line" style="background: linear-gradient(to bottom, rgba(0,229,160,0.4), rgba(0,229,160,0.1));"></div>
+                <div class="pl-10 pb-2 text-[10px] font-mono text-emerald-500/60 uppercase tracking-widest">Authors and signs</div>
+
+                <!-- Step 4: Signed Document -->
+                <div class="trust-node" style="border-color:rgba(212,175,55,0.6);">
+                    <span class="trust-icon" style="color:var(--gold);">04</span>
+                    <div class="flex-grow">
+                        <div class="trust-label" style="color:var(--gold);">Verifiable Knowledge Asset (Tome)</div>
+                        <div class="trust-detail">Company document permanently bound to the SME's cryptographic ID.</div>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Side Info Panel -->
+            <div class="mt-10 md:mt-0 md:ml-10 w-full md:w-1/3 flex flex-col justify-center">
+                <div class="bg-gray-900/50 border border-gray-700 p-6 rounded-lg backdrop-blur-sm">
+                    <h4 class="font-bold text-white mb-3 font-['Cinzel'] tracking-wider">The Audit Trail</h4>
+                    <p class="text-sm text-gray-400 leading-relaxed mb-4">
+                        If an AI generates an anomalous response, compliance teams can trace the exact vector embedding back to the <strong>Verifiable Knowledge Asset</strong>, verifying the specific <strong>SME</strong> who authored it and the <strong>System Admin</strong> who authorized them.
+                    </p>
+                    <code class="block bg-black/50 p-3 rounded text-xs text-green-400 font-mono break-words">
+                        Audit.Trace(Output_Hash) <br>
+                        → VKA_ID: 9X4...<br>
+                        → SME_ID: A7B...<br>
+                        → STATUS: Verified
+                    </code>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="mb-16">
+        <div class="section-header">
+            <span class="section-num">04</span>
+            <h2 class="section-title">Commercial Onboarding & Data Flow</h2>
+        </div>
+
+        <div class="space-y-4">
+            
+            <div class="step-item">
+                <div class="step-num">01</div>
+                <div class="step-content">
+                    <div class="step-title">Secure Employee Onboarding (Registrar)</div>
+                    <div class="step-detail">An employee authenticates via enterprise SSO. The system generates a Cryptographic Universal Identity (CUI), establishing their immutable digital footprint on the network.</div>
+                </div>
+            </div>
+
+            <div class="step-item">
+                <div class="step-num">02</div>
+                <div class="step-content">
+                    <div class="step-title">Access Provisioning (Genesis Forge)</div>
+                    <div class="step-detail">An IT Administrator utilizes Zero-Trust RBAC to grant the employee "Domain Expert" status, issuing a cryptographic certificate tying their CUI to specific departmental permissions.</div>
+                </div>
+            </div>
+
+            <div class="step-item">
+                <div class="step-num">03</div>
+                <div class="step-content">
+                    <div class="step-title">Verified Data Ingestion (Instructor Console)</div>
+                    <div class="step-detail">The Domain Expert uploads a technical manual or operating procedure. The system automatically signs this document with the expert's CUI, permanently stamping it as "High-Trust Training Data."</div>
+                </div>
+            </div>
+
+            <div class="step-item">
+                <div class="step-num">04</div>
+                <div class="step-content">
+                    <div class="step-title">Hyperbolic Agent Initialization (Familiars/Manifolds)</div>
+                    <div class="step-detail">The user or department initializes an AI Agent. The agent's vector space is configured using Hyperbolic geometry parameters to perfectly map the department's specific hierarchical data structures.</div>
+                </div>
+            </div>
+
+            <div class="step-item">
+                <div class="step-num">05</div>
+                <div class="step-content">
+                    <div class="step-title">Continuous Context Engine (Engram)</div>
+                    <div class="step-detail">The user interacts with the AI. Every interaction, prompt, and output is crystallized into a structured, verifiable interaction "block" to build continuous, deterministic agent memory.</div>
+                </div>
+            </div>
+
+            <div class="step-item">
+                <div class="step-num">06</div>
+                <div class="step-content">
+                    <div class="step-title">Enterprise Compute Scaling (Packet Chain Export)</div>
+                    <div class="step-detail">These secure, localized, and verifiable interaction chains are seamlessly exported and fed into massive enterprise-grade LLMs (like Nvidia Blackwell clusters) for heavy analytical lifting, while retaining 100% data provenance.</div>
+                </div>
+            </div>
+
+        </div>
+    </section>
+
+    <footer class="text-center pt-10 pb-6 border-t border-cyan-500/20 mt-16">
+        <p class="text-sm text-gray-500 max-w-2xl mx-auto mb-6">
+            By removing the internal R&D naming conventions, what remains is an incredibly robust, zero-trust cryptographic pipeline for managing AI data provenance. Designed for Finance, Healthcare, Defense, and Legal sectors.
+        </p>
+        <div class="flex flex-wrap justify-center gap-6">
+            <a href="#" class="text-[10px] font-bold mono text-cyan-600 hover:text-cyan-400 uppercase tracking-[0.2em] transition-colors">Return to Dashboard</a>
+            <span class="text-gray-700">|</span>
+            <span class="text-[10px] font-bold mono text-gray-600 uppercase tracking-[0.2em]">Confidential - Internal Use Only</span>
+        </div>
+    </footer>
+
+</main>
+
+<script>
+    const canvas = document.getElementById('network-canvas');
+    const ctx = canvas.getContext('2d');
+    let width, height;
+
+    function resize() {
+        width = canvas.width = window.innerWidth;
+        height = canvas.height = window.innerHeight;
+    }
+    window.addEventListener('resize', resize);
+    resize();
+
+    const particles = [];
+    // Adjust density based on screen size
+    const particleCount = Math.floor((window.innerWidth * window.innerHeight) / 12000); 
+
+    class Particle {
+        constructor() {
+            this.x = Math.random() * width;
+            this.y = Math.random() * height;
+            // Slow, drifting movement
+            this.vx = (Math.random() - 0.5) * 0.4;
+            this.vy = (Math.random() - 0.5) * 0.4;
+            this.radius = Math.random() * 1.5 + 0.5;
+            this.flash = 0;
+        }
+        update() {
+            this.x += this.vx;
+            this.y += this.vy;
+            
+            // Bounce off edges
+            if (this.x < 0 || this.x > width) this.vx *= -1;
+            if (this.y < 0 || this.y > height) this.vy *= -1;
+            
+            // Random green flash trigger (simulating data burst in Hilbert space)
+            if (Math.random() < 0.0015) this.flash = 1.0;
+            
+            // Decay flash
+            if (this.flash > 0) this.flash -= 0.015;
+            if (this.flash < 0) this.flash = 0;
+        }
+        draw() {
+            ctx.beginPath();
+            ctx.arc(this.x, this.y, this.radius + (this.flash * 1.5), 0, Math.PI * 2);
+            
+            if (this.flash > 0) {
+                // Intense emerald green for flashes
+                ctx.fillStyle = `rgba(0, 229, 160, ${0.4 + this.flash * 0.6})`;
+                ctx.shadowBlur = 15 * this.flash;
+                ctx.shadowColor = '#00e5a0';
+            } else {
+                // Faint cyan for dormant nodes
+                ctx.fillStyle = 'rgba(0, 212, 255, 0.25)';
+                ctx.shadowBlur = 0;
+            }
+            ctx.fill();
+        }
+    }
+
+    for (let i = 0; i < particleCount; i++) {
+        particles.push(new Particle());
+    }
+
+    function animate() {
+        // High contrast dark background with slight trailing effect
+        ctx.fillStyle = 'rgba(3, 5, 8, 1)'; 
+        ctx.fillRect(0, 0, width, height);
+
+        for (let i = 0; i < particles.length; i++) {
+            particles[i].update();
+            particles[i].draw();
+
+            // Connect nodes
+            for (let j = i + 1; j < particles.length; j++) {
+                const dx = particles[i].x - particles[j].x;
+                const dy = particles[i].y - particles[j].y;
+                const distSq = dx * dx + dy * dy;
+
+                if (distSq < 18000) {
+                    const opacity = 1 - (distSq / 18000);
+                    ctx.beginPath();
+                    ctx.moveTo(particles[i].x, particles[i].y);
+                    ctx.lineTo(particles[j].x, particles[j].y);
+                    
+                    // If either connected node is flashing, the line flashes green
+                    const maxFlash = Math.max(particles[i].flash, particles[j].flash);
+                    
+                    if (maxFlash > 0.1) {
+                        ctx.strokeStyle = `rgba(0, 229, 160, ${opacity * maxFlash})`;
+                        ctx.lineWidth = 1 + maxFlash;
+                    } else {
+                        ctx.strokeStyle = `rgba(0, 212, 255, ${opacity * 0.15})`;
+                        ctx.lineWidth = 0.5;
+                    }
+                    ctx.stroke();
+                }
+            }
+        }
+        requestAnimationFrame(animate);
+    }
+    
+    // Start animation loop
+    animate();
+</script>
+
+</body>
+</html>
