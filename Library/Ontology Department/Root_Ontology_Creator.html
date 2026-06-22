@@ -115,11 +115,17 @@
             width: 1.5rem; height: 1.5rem; border-radius: 50%;
             background: var(--holo-purple); color: white;
             font-family: 'Space Mono', monospace; font-size: 0.7rem; font-weight: bold;
-            margin-right: 0.5rem; shadow: 0 0 10px var(--holo-purple);
+            margin-right: 0.5rem; box-shadow: 0 0 10px var(--holo-purple);
         }
 
         mjx-container[display="true"] { margin: 0 !important; padding: 0 !important; }
         .smooth-collapse { transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
+        
+        /* Ontology Table Styling */
+        .ontology-table th {
+            position: sticky; top: 0; background: rgba(13, 17, 28, 0.95);
+            backdrop-filter: blur(5px); z-index: 10;
+        }
     </style>
 </head>
 <body class="flex flex-col">
@@ -140,7 +146,7 @@
                 [ 1. ENGRAM CREATOR ]
             </button>
             <button onclick="setView('ontology')" id="btn-nav-ontology" class="mono-font text-[10px] sm:text-xs px-3 py-1.5 sm:px-4 sm:py-2 border border-cyan-500/30 rounded bg-black/50 text-cyan-400 hover:bg-cyan-900/30 transition-colors shadow-[0_0_10px_rgba(0,240,255,0.1)]">
-                [ 2. REGISTRY ]
+                [ 2. ADMIN REGISTRY ]
             </button>
             <button onclick="setView('lexicon')" id="btn-nav-lexicon" class="mono-font text-[10px] sm:text-xs px-3 py-1.5 sm:px-4 sm:py-2 border border-cyan-500/30 rounded bg-black/50 text-cyan-400 hover:bg-cyan-900/30 transition-colors shadow-[0_0_10px_rgba(0,240,255,0.1)]">
                 [ 3. PROJECTOR ]
@@ -169,7 +175,7 @@
                     </div>
                 </div>
                 
-                <div class="flex-1 p-6 flex flex-col items-center justify-center relative z-10">
+                <div class="flex-1 p-6 flex flex-col items-center justify-center relative z-10 overflow-y-auto">
                     <!-- SVG Nested Pyramid -->
                     <svg viewBox="0 0 100 100" class="w-full max-w-[350px] drop-shadow-[0_0_20px_rgba(157,0,255,0.3)] mb-6">
                         <!-- Tier 1: Root Domain -->
@@ -190,7 +196,7 @@
                         <text id="svg-text-4-name" x="50" y="88" font-family="Space Mono, monospace" font-size="3" fill="#00f0ff" text-anchor="middle" class="pointer-events-none uppercase">ENGRAM OPERATOR</text>
                     </svg>
 
-                    <div class="text-center px-8 text-gray-400 font-mono text-[10px] leading-relaxed">
+                    <div class="text-center px-8 text-gray-400 font-mono text-[10px] leading-relaxed mt-auto pt-4">
                         <span class="text-purple-400">ONTOLOGICAL DESCENT:</span> The Semiotic Blueprint enforces hierarchical rigor. You must map the universal concept (Tier 1) down to a specific, executable mathematical operator (Tier 4).
                     </div>
                 </div>
@@ -199,12 +205,14 @@
             </div>
 
             <!-- Right Side: Creation Form (The Tutorial) -->
-            <div class="flex-1 flex flex-col bg-black/20 relative">
+            <div class="flex-1 flex flex-col bg-black/20 relative min-h-0 overflow-hidden">
                 <div class="flex-1 overflow-y-auto p-6 lg:p-8 space-y-8">
                     
-                    <div class="bg-purple-900/20 border-l-2 border-purple-500 p-4 text-xs text-purple-200 leading-relaxed rounded-r shadow-inner">
-                       <strong class="text-purple-400 text-sm font-arcane tracking-widest block mb-1">Ontology Creation Tutorial Initiated</strong> 
-                       To construct a valid SHD-CCP Ontology, you must descend from a universal pillar down to a specific mathematical geometric operator. Follow the numbered steps below to encode a new Engram into the Root Registry.
+                    <div class="bg-purple-900/20 border-l-2 border-purple-500 p-4 text-xs text-purple-200 leading-relaxed rounded-r shadow-inner flex justify-between items-center">
+                       <div>
+                           <strong class="text-purple-400 text-sm font-arcane tracking-widest block mb-1" id="creator-header-title">Ontology Creation Tutorial Initiated</strong> 
+                           <span id="creator-header-desc">To construct a valid SHD-CCP Ontology, descend from a universal pillar down to a specific mathematical geometric operator.</span>
+                       </div>
                     </div>
 
                     <!-- STEP 1 & 2 -->
@@ -318,13 +326,16 @@
                         </div>
                     </div>
 
-                    <div class="pt-6 pb-8">
-                        <button onclick="encodeEngram()" class="w-full mono-font text-sm px-4 py-4 border border-purple-500 rounded bg-purple-900/60 text-white hover:bg-purple-600/80 transition-all shadow-[0_0_20px_rgba(157,0,255,0.6)] uppercase font-bold tracking-[0.2em] hover:scale-[1.01] active:scale-[0.99]">
+                    <div class="pt-6 pb-8 flex gap-4">
+                        <button id="btn-cancel-edit" onclick="cancelEdit()" class="hidden w-1/3 mono-font text-sm px-4 py-4 border border-red-500 rounded bg-red-900/40 text-white hover:bg-red-600/50 transition-all uppercase tracking-widest">
+                            Cancel
+                        </button>
+                        <button id="btn-encode" onclick="encodeEngram()" class="w-full mono-font text-sm px-4 py-4 border border-purple-500 rounded bg-purple-900/60 text-white hover:bg-purple-600/80 transition-all shadow-[0_0_20px_rgba(157,0,255,0.6)] uppercase font-bold tracking-[0.2em] hover:scale-[1.01] active:scale-[0.99]">
                             Encode Engram to Registry
                         </button>
-                        <div id="encode-success" class="text-center mono-font text-xs text-green-400 mt-3 opacity-0 transition-opacity tracking-widest bg-green-900/20 py-2 rounded border border-green-500/30">
-                            Engram Successfully Encoded. Ontology Substrate Rebuilt.
-                        </div>
+                    </div>
+                    <div id="encode-success" class="text-center mono-font text-xs text-green-400 mt-3 opacity-0 transition-opacity tracking-widest bg-green-900/20 py-2 rounded border border-green-500/30">
+                        Engram Successfully Encoded. Ontology Substrate Rebuilt.
                     </div>
 
                 </div>
@@ -368,11 +379,12 @@
 
             <!-- Bottom: Codex Definition -->
             <div id="codex-wrapper" class="flex-1 min-h-[200px] glass-panel rounded-lg flex flex-col smooth-collapse relative">
-                <div class="p-3 border-b border-cyan-500/20 bg-black/40 flex justify-between items-center shrink-0">
+                <div class="p-3 border-b border-cyan-500/20 bg-black/40 flex justify-between items-center shrink-0 cursor-pointer" onclick="toggleCodex()">
                     <div class="flex items-center gap-2">
                         <span class="w-2 h-2 rounded-full bg-cyan-500 shadow-[0_0_8px_#00f0ff]"></span>
                         <span class="mono-font text-xs text-gray-400 uppercase tracking-widest">Codex Entry & Classical Domains</span>
                     </div>
+                    <button id="codex-icon" class="text-cyan-400 hover:text-cyan-300 w-6 h-6 flex items-center justify-center rounded bg-black/50 border border-cyan-500/30">&darr;</button>
                 </div>
                 <div class="flex-1 p-4 sm:p-6 overflow-y-auto smooth-collapse" id="codex-container">
                     <div class="flex h-full items-center justify-center text-gray-500 mono-font text-sm">
@@ -383,11 +395,11 @@
             
         </div>
 
-        <!-- Right Content Area 3: Ontology Registry -->
+        <!-- Right Content Area 3: Ontology Registry (Admin Panel) -->
         <div id="ontology-view" class="flex-1 glass-panel rounded-lg flex flex-col overflow-hidden transition-opacity duration-300 hidden opacity-0">
             <div class="p-4 border-b border-cyan-500/20 bg-black/40 flex items-center gap-3 shrink-0">
                 <span class="w-3 h-3 rounded-full bg-yellow-500 shadow-[0_0_10px_#D4AF37]"></span>
-                <h2 class="arcane-font text-xl text-yellow-500 tracking-widest">Cross-Field Ontology Registry: Definitions</h2>
+                <h2 class="arcane-font text-xl text-yellow-500 tracking-widest">Cross-Field Ontology Registry: Admin Panel</h2>
                 <div class="ml-auto mono-font text-xs text-gray-500 uppercase hidden sm:block">System Log & Versioning Active</div>
             </div>
             
@@ -399,6 +411,8 @@
                             <th class="p-3 font-medium text-center">Sym</th>
                             <th class="p-3 font-medium">Operator Name</th>
                             <th class="p-3 font-medium border-l border-gray-800 text-center">Primary Equation</th>
+                            <th class="p-3 font-medium border-l border-gray-800">Origin</th>
+                            <th class="p-3 font-medium border-l border-gray-800 text-center">Admin</th>
                             <th class="p-3 font-medium border-l border-gray-800">Euclidean Geometry</th>
                             <th class="p-3 font-medium border-l border-gray-800">Linear Algebra</th>
                             <th class="p-3 font-medium border-l border-gray-800">Hyperbolic Geometry</th>
@@ -473,6 +487,27 @@
             }
         }
 
+        let codexOpen = true;
+        function toggleCodex() {
+            codexOpen = !codexOpen;
+            const wrapper = document.getElementById('codex-wrapper');
+            const container = document.getElementById('codex-container');
+            const icon = document.getElementById('codex-icon');
+            
+            if(codexOpen) {
+                wrapper.classList.remove('h-12', 'min-h-[48px]', 'shrink');
+                wrapper.classList.add('flex-1', 'min-h-[200px]');
+                container.classList.remove('hidden');
+                icon.innerHTML = '&darr;';
+            } else {
+                wrapper.classList.remove('flex-1', 'min-h-[200px]');
+                wrapper.classList.add('h-12', 'min-h-[48px]', 'shrink');
+                container.classList.add('hidden');
+                icon.innerHTML = '&uarr;';
+            }
+            setTimeout(resizeCanvas, 400);
+        }
+
         function setView(viewName) {
             const lexView = document.getElementById('lexicon-view');
             const ontView = document.getElementById('ontology-view');
@@ -524,7 +559,10 @@
             }
         }
 
-        // --- ONTOLOGY DATABASE (Empty by default for the Creator Tutorial) ---
+        // --- ONTOLOGY DATABASE ---
+        let editingId = null;
+        let vCounter = 1;
+
         let ontologyDatabase = {
             'alpha_tutorial': {
                 id: 'alpha_tutorial', category: 'Philosophy', field: 'Ontological Genesis', symbol: 'α', name: 'Alpha', subtitle: 'The Primary Initializer',
@@ -533,12 +571,12 @@
                 visMode: 'RIPPLES',
                 euclidean: 'The starting angle or origin point.',
                 linear: 'The initial state vector.',
-                hyperbolic: 'The origin of the Poincare disk.'
+                hyperbolic: 'The origin of the Poincare disk.',
+                origin: 'root'
             }
         };
 
         let currentSymbol = null;
-        let vCounter = 1;
 
         // --- DOM ELEMENTS ---
         const symbolListEl = document.getElementById('symbol-list');
@@ -581,10 +619,15 @@
                     const btn = document.createElement('button');
                     btn.className = 'symbol-btn group';
                     btn.id = `btn-${item.id}`;
+                    
+                    const badgeStr = item.origin === 'root' 
+                        ? `<span class="text-purple-400 font-bold" title="Root Codex">[R]</span>` 
+                        : `<span class="text-blue-400 font-bold" title="Personal Codex">[P]</span>`;
+
                     btn.innerHTML = `
                         <div class="flex flex-col items-start sidebar-content overflow-hidden">
                             <span class="text-xs font-semibold text-gray-200 group-hover:text-white transition-colors text-left whitespace-nowrap overflow-hidden text-ellipsis w-[180px]">${item.name}</span>
-                            <span class="text-[9px] text-gray-500 mono-font uppercase text-left">${item.field || item.id}</span>
+                            <span class="text-[9px] text-gray-500 mono-font uppercase text-left">${item.field || item.id} ${badgeStr}</span>
                         </div>
                         <div class="symbol-mark text-cyan-500 group-hover:text-cyan-300 transition-colors mx-auto shrink-0">${item.symbol}</div>
                     `;
@@ -606,22 +649,34 @@
             }
         }
 
-        // --- ONTOLOGY SYSTEM / DEFINITIONS LOG ---
+        // --- ADMIN REGISTRY / DEFINITIONS LOG ---
         function buildOntologyLog() {
             const tbody = document.getElementById('ontology-tbody');
-            const sysLog = document.getElementById('system-log');
             let tableHtml = '';
             
             for(const item of Object.values(ontologyDatabase)) {
                 let vStr = `v1.0.${vCounter}`;
                 let catField = `${item.category || ''} : ${item.field || ''}`;
                 
+                let originBadge = item.origin === 'root' 
+                    ? '<span class="px-2 py-0.5 bg-purple-900/50 text-purple-300 border border-purple-500/30 rounded inline-block text-[9px] font-bold">ROOT</span>' 
+                    : '<span class="px-2 py-0.5 bg-blue-900/50 text-blue-300 border border-blue-500/30 rounded inline-block text-[9px] font-bold">PERSONAL</span>';
+                
+                let actionBtns = `
+                    <div class="flex gap-2 justify-center">
+                        <button onclick="editEngram('${item.id}')" class="text-yellow-500 hover:text-yellow-300 bg-black/50 border border-yellow-500/30 rounded px-1.5 py-0.5 transition-colors font-bold">[EDIT]</button>
+                        <button onclick="deleteEngram('${item.id}')" class="text-red-500 hover:text-red-300 bg-black/50 border border-red-500/30 rounded px-1.5 py-0.5 transition-colors font-bold">[DEL]</button>
+                    </div>
+                `;
+
                 tableHtml += `
                     <tr class="border-b border-gray-800 hover:bg-white/5 transition-colors">
                         <td class="p-3 text-xs text-gray-500 mono-font">${catField}<br><span class="text-[9px] text-purple-400">[${vStr}]</span></td>
                         <td class="p-3 text-xl text-yellow-500 arcane-font text-center">${item.symbol}</td>
                         <td class="p-3 text-sm text-cyan-400 font-bold whitespace-nowrap">${item.name}</td>
                         <td class="p-3 text-[13px] text-cyan-300 border-l border-gray-800 text-center whitespace-nowrap bg-black/40">$ ${item.primary_equation} $</td>
+                        <td class="p-3 border-l border-gray-800 text-center align-middle">${originBadge}</td>
+                        <td class="p-3 border-l border-gray-800 align-middle">${actionBtns}</td>
                         <td class="p-3 text-xs text-gray-300 border-l border-gray-800 min-w-[150px]">${item.euclidean}</td>
                         <td class="p-3 text-xs text-gray-300 border-l border-gray-800 min-w-[150px]">${item.linear}</td>
                         <td class="p-3 text-xs text-gray-300 border-l border-gray-800 min-w-[150px]">${item.hyperbolic}</td>
@@ -631,13 +686,12 @@
             }
             
             tbody.innerHTML = tableHtml;
-            // Update MathJax if the view is visible
             if(!document.getElementById('ontology-view').classList.contains('hidden')) {
                 updateMathJax(tbody);
             }
         }
 
-        // --- ENGRAM CREATOR I/O LOGIC ---
+        // --- ENGRAM CREATOR I/O & ADMIN LOGIC ---
         function updateSvgText() {
             document.getElementById('svg-text-1').textContent = document.getElementById('c-domain').value || 'ROOT DOMAIN';
             document.getElementById('svg-text-2').textContent = document.getElementById('c-field').value || 'DISCIPLINE';
@@ -646,11 +700,72 @@
             document.getElementById('svg-text-4-name').textContent = document.getElementById('c-name').value || 'ENGRAM OPERATOR';
         }
 
+        function editEngram(id) {
+            const data = ontologyDatabase[id];
+            if(!data) return;
+            
+            editingId = id;
+            document.getElementById('c-domain').value = data.category;
+            document.getElementById('c-field').value = data.field;
+            document.getElementById('c-subtitle').value = data.subtitle;
+            document.getElementById('c-symbol').value = data.symbol;
+            document.getElementById('c-name').value = data.name;
+            document.getElementById('c-equation').value = data.primary_equation;
+            document.getElementById('c-vis').value = data.visMode;
+            document.getElementById('c-holo').value = data.holographic.replace(/<\/?strong>/g, '');
+            document.getElementById('c-euc').value = data.euclidean;
+            document.getElementById('c-lin').value = data.linear;
+            document.getElementById('c-hyp').value = data.hyperbolic;
+
+            document.getElementById('btn-encode').innerText = 'Update Engram in Registry';
+            document.getElementById('btn-cancel-edit').classList.remove('hidden');
+            
+            document.getElementById('creator-header-title').innerText = `Editing Engram: ${data.name} (${data.symbol})`;
+            document.getElementById('creator-header-desc').innerText = `You are actively modifying an existing definition in the registry.`;
+            
+            updateSvgText();
+            setView('creator');
+        }
+
+        function cancelEdit() {
+            editingId = null;
+            document.querySelectorAll('.creator-input').forEach(el => {
+                if(el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') el.value = '';
+            });
+            document.getElementById('c-domain').selectedIndex = 0;
+            document.getElementById('c-vis').selectedIndex = 0;
+            
+            document.getElementById('btn-encode').innerText = 'Encode Engram to Registry';
+            document.getElementById('btn-cancel-edit').classList.add('hidden');
+            
+            document.getElementById('creator-header-title').innerText = `Ontology Creation Tutorial Initiated`;
+            document.getElementById('creator-header-desc').innerText = `To construct a valid SHD-CCP Ontology, descend from a universal pillar down to a specific mathematical geometric operator.`;
+            
+            updateSvgText();
+            setView('ontology');
+        }
+
+        function deleteEngram(id) {
+            if(confirm(`Are you sure you want to purge Engram [${id}] from the Ontology Registry?`)) {
+                delete ontologyDatabase[id];
+                if(currentSymbol === id) currentSymbol = null;
+                
+                rebuildSidebar();
+                buildOntologyLog();
+                
+                const sysLog = document.getElementById('system-log');
+                sysLog.innerHTML += `<div><span class="text-red-400">[DELETE]</span> Engram <span class="text-white">${id}</span> completely purged from registry.</div>`;
+                sysLog.scrollTop = sysLog.scrollHeight;
+            }
+        }
+
         function encodeEngram() {
-            const id = 'engram_' + Math.random().toString(36).substr(2, 9);
+            const id = editingId || ('engram_' + Math.random().toString(36).substr(2, 9));
+            const originVal = editingId ? ontologyDatabase[editingId].origin : 'personal'; // preserve origin
             
             const newEngram = {
                 id: id,
+                origin: originVal,
                 category: document.getElementById('c-domain').value || 'Uncategorized',
                 field: document.getElementById('c-field').value || 'General',
                 symbol: document.getElementById('c-symbol').value || '?',
@@ -664,32 +779,26 @@
                 hyperbolic: document.getElementById('c-hyp').value || 'N/A'
             };
 
-            // Add to database
+            // Add or Update in database
             ontologyDatabase[id] = newEngram;
             
-            // Re-initialize to rebuild sidebar and table
             rebuildSidebar();
             buildOntologyLog();
 
-            // Success Msg & System Log Update
+            // Success Msg & System Log
+            const actionText = editingId ? 'UPDATED' : 'ENCODED';
             const msg = document.getElementById('encode-success');
+            msg.innerText = `Engram Successfully ${actionText}. Ontology Substrate Rebuilt.`;
             msg.style.opacity = '1';
             setTimeout(() => { msg.style.opacity = '0'; }, 3000);
             
             const sysLog = document.getElementById('system-log');
-            sysLog.innerHTML += `<div><span class="text-gray-500">[SYSTEM]</span> ENGRAM ENCODED: <span class="text-cyan-400">${newEngram.name} (${newEngram.symbol})</span> to <span class="text-yellow-500">${newEngram.category}</span>... <span class="text-white bg-green-900/50 px-1">[v1.0.${vCounter}]</span></div>`;
+            sysLog.innerHTML += `<div><span class="text-gray-500">[SYSTEM]</span> ENGRAM ${actionText}: <span class="text-cyan-400">${newEngram.name} (${newEngram.symbol})</span> in <span class="text-yellow-500">${newEngram.category}</span>... <span class="text-white bg-green-900/50 px-1">[v1.0.${vCounter}]</span></div>`;
             sysLog.scrollTop = sysLog.scrollHeight;
             vCounter++;
 
-            // Clear inputs
-            document.querySelectorAll('.creator-input').forEach(el => {
-                if(el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') el.value = '';
-            });
-            // Reset dropdowns to default
-            document.getElementById('c-domain').selectedIndex = 0;
-            document.getElementById('c-vis').selectedIndex = 0;
-            
-            updateSvgText();
+            // Reset Editor
+            cancelEdit(); // Clears inputs and resets state
         }
 
         function exportOntology() {
