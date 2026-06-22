@@ -170,8 +170,8 @@
         ::-webkit-scrollbar-thumb { background: rgba(176, 38, 255, 0.3); border-radius: 10px; }
         ::-webkit-scrollbar-thumb:hover { background: rgba(176, 38, 255, 0.6); }
 
-        /* Draggable Window */
-        .draggable-window {
+        /* Reference Window */
+        .reference-window {
             position: absolute;
             top: 80px;
             right: 40px;
@@ -179,17 +179,20 @@
             min-width: 300px;
             min-height: 250px;
             height: 500px;
-            resize: both;
-            overflow: auto;
             z-index: 100;
             display: none;
             flex-direction: column;
         }
-        .draggable-window.visible {
+        .reference-window.visible {
             display: flex;
         }
-        .drag-header {
-            cursor: move;
+        .reference-window.minimized {
+            height: auto;
+            min-height: 0;
+        }
+        .reference-window.minimized #ref-tabs,
+        .reference-window.minimized #ref-content {
+            display: none !important;
         }
     </style>
 </head>
@@ -219,8 +222,8 @@
                 </div>
 
                 <!-- Action Buttons -->
-                <button onclick="toggleReferenceWindow()" class="hidden sm:flex items-center text-xs bg-academy-cyan/10 hover:bg-academy-cyan/20 px-3 py-1 rounded border border-academy-cyan/50 text-academy-cyan shadow-active-cyan transition-colors font-bold tracking-wider">
-                    <i data-lucide="monitor-play" class="w-4 h-4 mr-2"></i> Ref Matrix
+                <button type="button" onclick="toggleReferenceWindow(event)" class="hidden sm:flex items-center text-xs bg-academy-cyan/10 hover:bg-academy-cyan/20 px-3 py-1 rounded border border-academy-cyan/50 text-academy-cyan shadow-active-cyan transition-colors font-bold tracking-wider relative z-50">
+                    <i data-lucide="monitor-play" class="w-4 h-4 mr-2 pointer-events-none"></i> Ref Matrix
                 </button>
                 <div class="hidden sm:flex items-center text-xs bg-academy-amethyst/10 px-3 py-1 rounded border border-academy-amethyst/30 text-academy-amethyst shadow-[0_0_10px_rgba(176,38,255,0.2)]">
                     <i data-lucide="cpu" class="w-4 h-4 mr-2"></i> Zeta Resonance
@@ -229,36 +232,42 @@
         </div>
     </header>
 
-    <!-- Draggable Reference Matrix Window -->
-    <div id="reference-window" class="draggable-window bg-academy-panel border border-academy-cyan/50 rounded-xl shadow-active-cyan flex flex-col">
-        <div id="drag-handle" class="drag-header bg-slate-900 border-b border-academy-cyan/30 p-2 flex justify-between items-center rounded-t-xl shrink-0">
-            <div class="flex items-center space-x-2 px-2">
+    <!-- Fixed/Locked Reference Matrix Window -->
+    <div id="reference-window" class="reference-window bg-academy-panel border border-academy-cyan/50 rounded-xl shadow-active-cyan flex flex-col">
+        <div id="ref-handle" class="bg-slate-900 border-b border-academy-cyan/30 p-2 flex justify-between items-center rounded-t-xl shrink-0">
+            <div class="flex items-center space-x-2 px-2 pointer-events-none">
                 <div class="w-2 h-2 rounded-full bg-academy-cyan animate-pulse"></div>
                 <span class="text-[10px] font-mono font-bold text-academy-cyan tracking-widest uppercase">Reference Matrix</span>
             </div>
-            <button onclick="toggleReferenceWindow()" class="text-gray-400 hover:text-white transition-colors px-2">
-                <i data-lucide="x" class="w-4 h-4"></i>
-            </button>
+            <!-- Window Controls -->
+            <div class="flex items-center">
+                <button type="button" id="minimize-ref-btn" class="text-gray-400 hover:text-white transition-colors px-2 py-1 cursor-pointer z-50 relative" title="Minimize">
+                    <i data-lucide="minus" class="w-4 h-4 pointer-events-none"></i>
+                </button>
+                <button type="button" id="close-ref-btn" class="text-gray-400 hover:text-white transition-colors px-2 py-1 cursor-pointer z-50 relative" title="Close">
+                    <i data-lucide="x" class="w-4 h-4 pointer-events-none"></i>
+                </button>
+            </div>
         </div>
         
         <!-- Tabs -->
-        <div class="flex border-b border-slate-700 bg-black/40 shrink-0">
+        <div id="ref-tabs" class="flex border-b border-slate-700 bg-black/40 shrink-0">
             <button id="tab-video" onclick="switchRefTab('video')" class="flex-1 py-2 text-[10px] font-mono tracking-widest uppercase border-b-2 border-academy-cyan text-academy-cyan transition-all">Video Brief</button>
             <button id="tab-pdf" onclick="switchRefTab('pdf')" class="flex-1 py-2 text-[10px] font-mono tracking-widest uppercase border-b-2 border-transparent text-gray-500 hover:text-gray-300 transition-all">Research Paper</button>
         </div>
 
         <!-- Content Area -->
-        <div class="p-3 flex-grow flex flex-col overflow-hidden relative bg-black/20">
+        <div id="ref-content" class="p-3 flex-grow flex flex-col overflow-hidden relative bg-black/20">
             <!-- Video Explainer Embed -->
             <div id="ref-video-content" class="w-full h-full flex flex-col">
                 <div class="w-full h-full rounded border border-slate-700 bg-black overflow-hidden relative">
-                    <iframe class="absolute inset-0 w-full h-full" src="https://www.youtube.com/embed/RBeNYadOiDk" title="Explanation Video" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+                    <iframe id="iframe-video" class="absolute inset-0 w-full h-full" src="https://www.youtube.com/embed/RBeNYadOiDk" title="Explanation Video" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
                 </div>
             </div>
             <!-- PDF Viewer Embed -->
             <div id="ref-pdf-content" class="w-full h-full flex flex-col hidden">
                 <div class="w-full h-full rounded border border-slate-700 bg-white overflow-hidden relative">
-                    <iframe class="absolute inset-0 w-full h-full" src="https://biochainai.github.io/Owl-Academy/Library/Community%20&%20Research/Independent_Learning/Zeta_Resonance/Owl%20Academy%20Tutorial_%20Zeta%20Resonance.pdf" title="PDF Paper"></iframe>
+                    <iframe id="iframe-pdf" class="absolute inset-0 w-full h-full" src="https://biochainai.github.io/Owl-Academy/Library/Community%20&%20Research/Independent_Learning/Zeta_Resonance/Owl%20Academy%20Tutorial_%20Zeta%20Resonance.pdf" title="PDF Paper"></iframe>
                 </div>
             </div>
         </div>
@@ -878,47 +887,16 @@
             });
         }
 
-        // Draggable Reference Window Logic
-        const dragItem = document.getElementById("reference-window");
-        const dragHeader = document.getElementById("drag-handle");
-        let isDragging = false;
-        let startX, startY, initialX, initialY;
-
-        dragHeader.addEventListener("mousedown", dragStart);
-
-        function dragStart(e) {
-            // Only allow dragging from header
-            if (e.target.closest('button')) return; 
-            isDragging = true;
-            startX = e.clientX;
-            startY = e.clientY;
-            initialX = dragItem.offsetLeft;
-            initialY = dragItem.offsetTop;
-            document.addEventListener("mousemove", drag);
-            document.addEventListener("mouseup", dragEnd);
-        }
-
-        function drag(e) {
-            if (isDragging) {
-                e.preventDefault();
-                const currentX = e.clientX - startX;
-                const currentY = e.clientY - startY;
-                dragItem.style.left = (initialX + currentX) + "px";
-                dragItem.style.top = (initialY + currentY) + "px";
-                // Reset right/bottom overrides so dragging left/top works
-                dragItem.style.right = "auto";
-                dragItem.style.bottom = "auto";
+        function toggleReferenceWindow(e) {
+            if (e) e.stopPropagation();
+            const win = document.getElementById("reference-window");
+            
+            if (win.classList.contains("visible")) {
+                win.classList.remove("visible");
+                win.classList.remove("minimized");
+            } else {
+                win.classList.add("visible");
             }
-        }
-
-        function dragEnd(e) {
-            isDragging = false;
-            document.removeEventListener("mousemove", drag);
-            document.removeEventListener("mouseup", dragEnd);
-        }
-        
-        function toggleReferenceWindow() {
-            dragItem.classList.toggle("visible");
         }
 
         function switchRefTab(tab) {
@@ -939,6 +917,26 @@
                 videoContent.classList.add('hidden');
             }
         }
+
+        // Attach event listeners for window controls
+        document.getElementById("minimize-ref-btn").addEventListener("click", function(e) {
+            e.stopPropagation();
+            const win = document.getElementById("reference-window");
+            win.classList.toggle("minimized");
+            lucide.createIcons();
+        });
+
+        document.getElementById("close-ref-btn").addEventListener("click", function(e) {
+            e.stopPropagation();
+            const win = document.getElementById("reference-window");
+            win.classList.remove("visible");
+            win.classList.remove("minimized");
+        });
+
+        // Prevent header clicks from propagating if user accidentally clicks between buttons
+        document.getElementById("ref-handle").addEventListener("click", function(e) {
+            e.stopPropagation();
+        });
 
         // Initialize on load
         document.addEventListener("DOMContentLoaded", function() {
