@@ -175,7 +175,7 @@
             position: absolute;
             top: 80px;
             right: 40px;
-            width: 400px;
+            width: 440px;
             min-width: 300px;
             min-height: 250px;
             height: 500px;
@@ -205,7 +205,20 @@
                     <p class="text-xs text-academy-amethyst/70 tracking-wider">Protocol // SHD-CCP_TUTORIAL_ZETA</p>
                 </div>
             </div>
-            <div class="flex space-x-4">
+            
+            <div class="flex space-x-3 items-center">
+                <!-- Prerequisites Links -->
+                <div class="hidden lg:flex items-center space-x-2 mr-2">
+                    <span class="text-[9px] font-mono text-gray-500 tracking-widest uppercase">Prereqs:</span>
+                    <a href="https://biochainai.github.io/Owl-Academy/Library/Experimental_Systems/Hyperbolic_Softmax/index.html" target="_blank" class="text-[10px] font-mono text-gray-400 hover:text-academy-amethyst transition-colors border border-gray-800 hover:border-academy-amethyst/50 px-2 py-1 rounded bg-black/30 flex items-center">
+                        <i data-lucide="external-link" class="w-3 h-3 mr-1"></i> Sparsemax
+                    </a>
+                    <a href="https://biochainai.github.io/Owl-Academy/Library/Community%20&%20Research/Independent_Learning/Torsional_Markov_Pump/Intro_Tutorial.html" target="_blank" class="text-[10px] font-mono text-gray-400 hover:text-academy-amethyst transition-colors border border-gray-800 hover:border-academy-amethyst/50 px-2 py-1 rounded bg-black/30 flex items-center">
+                        <i data-lucide="external-link" class="w-3 h-3 mr-1"></i> TTMPT
+                    </a>
+                </div>
+
+                <!-- Action Buttons -->
                 <button onclick="toggleReferenceWindow()" class="hidden sm:flex items-center text-xs bg-academy-cyan/10 hover:bg-academy-cyan/20 px-3 py-1 rounded border border-academy-cyan/50 text-academy-cyan shadow-active-cyan transition-colors font-bold tracking-wider">
                     <i data-lucide="monitor-play" class="w-4 h-4 mr-2"></i> Ref Matrix
                 </button>
@@ -239,8 +252,7 @@
             <!-- Video Explainer Embed -->
             <div id="ref-video-content" class="w-full h-full flex flex-col">
                 <div class="w-full h-full rounded border border-slate-700 bg-black overflow-hidden relative">
-                    <!-- Fallback/Placeholder for Youtube (use actual embed link in prod) -->
-                    <iframe class="absolute inset-0 w-full h-full" srch="https://www.youtube.com/embed/RBeNYadOiDk" title="Explanation Video" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+                    <iframe class="absolute inset-0 w-full h-full" src="https://www.youtube.com/embed/RBeNYadOiDk" title="Explanation Video" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
                 </div>
             </div>
             <!-- PDF Viewer Embed -->
