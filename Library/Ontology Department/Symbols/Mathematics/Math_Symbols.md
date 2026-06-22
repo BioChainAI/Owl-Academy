@@ -166,8 +166,8 @@ A categorized reference of mathematical symbols, their LaTeX codes, and practica
 
 | Symbol | LaTeX Code | Example |
 |--------|-----------|---------|
-| $\operatorname{dom} f$ — Domain | `\operatorname{dom} f` | $\operatorname{dom}(\ln x) = \mathbb{R}_{+}$ |
-| $\operatorname{ran} f$ — Range | `\operatorname{ran} f` | $\operatorname{ran}(\sin y) = [-1,1]$ |
+| $\mathrm{dom}\, f$ — Domain | `\mathrm{dom}\, f` | $\mathrm{dom}(\ln x) = \mathbb{R}_{+}$ |
+| $\mathrm{ran}\, f$ — Range | `\mathrm{ran}\, f` | $\mathrm{ran}(\sin y) = [-1,1]$ |
 | $f(x)$ — Image of an element | `f(x)` | $g(5) = g(4)+3$ |
 | $f(X)$ — Image of a set | `f(X)` | $f(A \cap B) \subseteq f(A) \cap f(B)$ |
 | $f \circ g$ — Composite function | `f \circ g` | $(f \circ g)(3) = 8$ |
@@ -242,8 +242,8 @@ A categorized reference of mathematical symbols, their LaTeX codes, and practica
 | $\|\mathbf{v}\|$ — Norm of vector | `|\mathbf{v}|` | $\|(3,4)\| = 5$ |
 | $\mathbf{u} \cdot \mathbf{v}$ — Dot product | `\mathbf{u} \cdot \mathbf{v}` | $\mathbf{u} \cdot \mathbf{u} = \|\mathbf{u}\|^2$ |
 | $\mathbf{u} \times \mathbf{v}$ — Cross product | `\mathbf{u} \times \mathbf{v}` | $\mathbf{u} \times \mathbf{u} = \mathbf{0}$ |
-| $\operatorname{proj}_{\mathbf{v}} \mathbf{u}$ — Projection vector | `\operatorname{proj}_{\mathbf{v}} \mathbf{u}` | $\operatorname{proj}_{(0,1)} (5,4) = (0,4)$ |
-| $\operatorname{span}(S)$ — Span of vectors | `\operatorname{span}(S)` | $\operatorname{span}(\{\mathbf{i}, \mathbf{j}\}) = \mathbb{R}^2$ |
+| $\mathrm{proj}_{\mathbf{v}} \mathbf{u}$ — Projection vector | `\mathrm{proj}_{\mathbf{v}} \mathbf{u}` | $\mathrm{proj}_{(0,1)} (5,4) = (0,4)$ |
+| $\mathrm{span}(S)$ — Span of vectors | `\mathrm{span}(S)` | $\mathrm{span}(\{\mathbf{i}, \mathbf{j}\}) = \mathbb{R}^2$ |
 | $\dim(V)$ — Dimension of vector space | `\dim(V)` | $\dim(\mathbb{R}^3) = 3$ |
 
 ### 4.9 Matrix-related Operators
@@ -257,7 +257,7 @@ A categorized reference of mathematical symbols, their LaTeX codes, and practica
 | $AB$ — Matrix product | `AB` | $AI=IA=A$ |
 | $A^T$ — Matrix transpose | `A^T` | $I^T=I$ |
 | $A^{-1}$ — Matrix inverse | `A^{-1}` | $(AB)^{-1} = B^{-1}A^{-1}$ |
-| $\operatorname{tr}(A)$ — Trace | `\operatorname{tr}(A)` | $\operatorname{tr}(A^T) = \operatorname{tr}(A)$ |
+| $\mathrm{tr}(A)$ — Trace | `\mathrm{tr}(A)` | $\mathrm{tr}(A^T) = \mathrm{tr}(A)$ |
 | $\det(A)$, $\|A\|$ — Determinant | `\det(A)` | $\det(AB) = \det(A)\det(B)$ |
 
 ### 4.10 Probability & Statistics Operators
@@ -279,8 +279,8 @@ A categorized reference of mathematical symbols, their LaTeX codes, and practica
 
 | Symbol | LaTeX Code | Example |
 |--------|-----------|---------|
-| $\operatorname{Bin}(n, p)$ — Binomial | `\operatorname{Bin}(n, p)` | $X \sim \operatorname{Bin}(10, 0.5)$ |
-| $\operatorname{Geo}(p)$ — Geometric | `\operatorname{Geo}(p)` | $Y \sim \operatorname{Geo}(1/5) \implies E(Y)=5$ |
+| $\text{Bin}(n, p)$ — Binomial | `\text{Bin}(n, p)` | $X \sim \text{Bin}(10, 0.5)$ |
+| $\text{Geo}(p)$ — Geometric | `\text{Geo}(p)` | $Y \sim \text{Geo}(1/5) \implies E(Y)=5$ |
 | $U(a,b)$ — Continuous uniform | `U(a,b)` | $X \sim U(3,7)$ |
 | $N(\mu, \sigma^2)$ — Normal | `N(\mu, \sigma^2)` | $X \sim N(3, 5^2) \implies \frac{X-3}{5} \sim Z$ |
 | $z_\alpha$ — Critical z-score | `z_\alpha` | $z_{0.05} \approx 1.645$ |
@@ -365,7 +365,7 @@ A categorized reference of mathematical symbols, their LaTeX codes, and practica
 | Symbol | LaTeX Code | Example |
 |--------|-----------|---------|
 | $\perp$ — Independent events | `\perp` | $A \perp B \implies P(A \cap B) = P(A)P(B)$ |
-| $\sim$ — Follows distribution | `\sim` | $Y \sim \operatorname{Bin}(30, 0.4)$ |
+| $\sim$ — Follows distribution | `\sim` | $Y \sim \text{Bin}(30, 0.4)$ |
 | $\sim$ — Asymptotically equal | `\sim` | $\pi(x) \sim \frac{x}{\ln x}$ |
 | $\in O(\dots)$ — Big-O notation | `\in O(...)` | $2x^2+3x+3 \in O(x^2)$ |
 
