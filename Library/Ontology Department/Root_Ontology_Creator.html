@@ -1,0 +1,1304 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Owl Academy | Root Ontology Creator</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Space+Mono:wght@400;700&family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+    
+    <!-- MathJax for rendering LaTeX formulas -->
+    <script>
+        window.MathJax = { 
+            tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']] },
+            svg: { fontCache: 'global' },
+            startup: { typeset: false } 
+        };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+    <style>
+        :root {
+            --bg-void: #03050a;
+            --academy-gold: #D4AF37;
+            --holo-cyan: #00f0ff;
+            --holo-purple: #9d00ff;
+            --panel-bg: rgba(13, 17, 28, 0.85);
+        }
+
+        body {
+            background-color: var(--bg-void);
+            color: #e2e8f0;
+            font-family: 'Inter', sans-serif;
+            margin: 0;
+            height: 100vh;
+            overflow: hidden;
+            background-image: 
+                radial-gradient(circle at 50% 0%, rgba(157, 0, 255, 0.2) 0%, transparent 60%),
+                linear-gradient(rgba(157, 0, 255, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(157, 0, 255, 0.03) 1px, transparent 1px);
+            background-size: 100% 100%, 40px 40px, 40px 40px;
+        }
+
+        h1, h2, h3, .arcane-font { font-family: 'Cinzel', serif; }
+        .mono-font { font-family: 'Space Mono', monospace; }
+
+        .glass-panel {
+            background: var(--panel-bg);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(157, 0, 255, 0.2);
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.5), inset 0 0 20px rgba(157, 0, 255, 0.05);
+        }
+
+        /* Projector Stage Styling */
+        .projector-container {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            border-radius: 0.5rem;
+            overflow: hidden;
+            background: radial-gradient(circle at center, rgba(0, 240, 255, 0.1) 0%, #000 70%);
+            border: 1px solid rgba(0, 240, 255, 0.3);
+            box-shadow: inset 0 0 50px rgba(0,0,0,1);
+            cursor: grab;
+        }
+        .projector-container:active { cursor: grabbing; }
+
+        #holo-canvas { display: block; width: 100%; height: 100%; }
+
+        .scanlines {
+            position: absolute; inset: 0;
+            background: linear-gradient(to bottom, transparent 50%, rgba(0,0,0,0.4) 51%);
+            background-size: 100% 4px; pointer-events: none; z-index: 10;
+        }
+
+        /* Sidebar Nav Styling */
+        .symbol-btn {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 0.5rem 0.75rem; margin-bottom: 0.25rem;
+            border-radius: 0.25rem; border: 1px solid rgba(255,255,255,0.05);
+            background: rgba(0,0,0,0.3); cursor: pointer; transition: all 0.3s ease;
+        }
+        .symbol-btn:hover { border-color: var(--holo-cyan); background: rgba(0, 240, 255, 0.1); }
+        .symbol-btn.active {
+            border-color: var(--holo-purple); background: rgba(157, 0, 255, 0.15);
+            box-shadow: 0 0 15px rgba(157, 0, 255, 0.3); color: #fff;
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: rgba(0,0,0,0.3); border-radius: 10px; }
+        ::-webkit-scrollbar-thumb { background: rgba(157, 0, 255, 0.3); border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(157, 0, 255, 0.6); }
+
+        .glow-text { text-shadow: 0 0 10px currentColor; }
+        
+        /* Creator Styles */
+        .creator-input {
+            background: rgba(0,0,0,0.6);
+            border: 1px solid rgba(157, 0, 255, 0.3);
+            color: #fff; padding: 0.6rem; border-radius: 4px; width: 100%;
+            font-family: 'Space Mono', monospace; font-size: 0.85rem;
+            outline: none; transition: all 0.2s;
+        }
+        .creator-input:focus {
+            border-color: var(--holo-cyan); box-shadow: 0 0 10px rgba(0, 240, 255, 0.2);
+        }
+        .creator-input::placeholder { color: rgba(255,255,255,0.2); }
+        
+        .semiotic-tier { transition: all 0.3s; cursor: pointer; }
+        .semiotic-tier:hover { fill: rgba(157, 0, 255, 0.3); stroke: var(--holo-cyan); }
+
+        .step-badge {
+            display: inline-flex; align-items: center; justify-content: center;
+            width: 1.5rem; height: 1.5rem; border-radius: 50%;
+            background: var(--holo-purple); color: white;
+            font-family: 'Space Mono', monospace; font-size: 0.7rem; font-weight: bold;
+            margin-right: 0.5rem; shadow: 0 0 10px var(--holo-purple);
+        }
+
+        mjx-container[display="true"] { margin: 0 !important; padding: 0 !important; }
+        .smooth-collapse { transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
+    </style>
+</head>
+<body class="flex flex-col">
+
+    <!-- Header -->
+    <header class="h-16 shrink-0 glass-panel border-b-0 border-t-0 border-l-0 border-r-0 border-b border-purple-500/30 flex items-center justify-between px-6 z-20">
+        <div class="flex items-center gap-4">
+            <svg width="24" height="24" viewBox="0 0 100 100" fill="none" stroke="#9d00ff" stroke-width="4" class="drop-shadow-[0_0_5px_rgba(157,0,255,0.8)]">
+                <polygon points="50,10 90,90 10,90"/>
+                <polygon points="50,35 75,80 25,80"/>
+                <polygon points="50,60 60,75 40,75"/>
+            </svg>
+            <h1 class="arcane-font text-xl tracking-widest text-purple-400 hidden lg:block">OWL ACADEMY <span class="text-gray-500 mx-2">//</span> <span class="text-white">ROOT ONTOLOGY CREATOR</span></h1>
+            <h1 class="arcane-font text-xl tracking-widest text-purple-400 lg:hidden">ONTOLOGY CREATOR</h1>
+        </div>
+        <div class="flex items-center gap-4">
+            <button onclick="setView('creator')" id="btn-nav-creator" class="mono-font text-[10px] sm:text-xs px-3 py-1.5 sm:px-4 sm:py-2 border rounded transition-colors shadow-[0_0_15px_rgba(157,0,255,0.4)] text-purple-300 border-purple-400 bg-purple-900/40">
+                [ 1. ENGRAM CREATOR ]
+            </button>
+            <button onclick="setView('ontology')" id="btn-nav-ontology" class="mono-font text-[10px] sm:text-xs px-3 py-1.5 sm:px-4 sm:py-2 border border-cyan-500/30 rounded bg-black/50 text-cyan-400 hover:bg-cyan-900/30 transition-colors shadow-[0_0_10px_rgba(0,240,255,0.1)]">
+                [ 2. REGISTRY ]
+            </button>
+            <button onclick="setView('lexicon')" id="btn-nav-lexicon" class="mono-font text-[10px] sm:text-xs px-3 py-1.5 sm:px-4 sm:py-2 border border-cyan-500/30 rounded bg-black/50 text-cyan-400 hover:bg-cyan-900/30 transition-colors shadow-[0_0_10px_rgba(0,240,255,0.1)]">
+                [ 3. PROJECTOR ]
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Layout -->
+    <main class="flex-1 flex overflow-hidden p-4 gap-4 z-10 relative">
+
+        <!-- Right Content Area 1: Engram Creator (Active by Default) -->
+        <div id="creator-view" class="flex-1 glass-panel rounded-lg flex flex-col xl:flex-row overflow-hidden transition-opacity duration-300">
+            
+            <!-- Left Side: Nested Triangles of Semiotics -->
+            <div class="w-full xl:w-5/12 border-b xl:border-b-0 xl:border-r border-purple-500/30 bg-black/40 flex flex-col relative overflow-hidden shrink-0">
+                <div class="p-4 border-b border-purple-500/20 flex items-center justify-between z-10 shrink-0 bg-black/60">
+                    <h2 class="arcane-font text-lg text-purple-400 tracking-widest">Semiotics Blueprint</h2>
+                    <div class="flex gap-2">
+                        <button onclick="exportOntology()" class="mono-font text-[10px] px-3 py-1.5 border border-green-500/50 rounded text-green-400 hover:bg-green-900/30 transition-colors uppercase shadow-[0_0_8px_rgba(34,197,94,0.2)]">
+                            Export .JSON
+                        </button>
+                        <label class="mono-font text-[10px] px-3 py-1.5 border border-blue-500/50 rounded text-blue-400 hover:bg-blue-900/30 transition-colors uppercase text-center cursor-pointer shadow-[0_0_8px_rgba(59,130,246,0.2)]">
+                            Import .JSON
+                            <input type="file" id="import-upload" accept=".json" class="hidden">
+                        </label>
+                    </div>
+                </div>
+                
+                <div class="flex-1 p-6 flex flex-col items-center justify-center relative z-10">
+                    <!-- SVG Nested Pyramid -->
+                    <svg viewBox="0 0 100 100" class="w-full max-w-[350px] drop-shadow-[0_0_20px_rgba(157,0,255,0.3)] mb-6">
+                        <!-- Tier 1: Root Domain -->
+                        <polygon id="svg-tier-1" points="50,5 65,30 35,30" class="semiotic-tier fill-purple-900/30 stroke-purple-400 stroke-[0.5]" />
+                        <text id="svg-text-1" x="50" y="22" font-family="Space Mono, monospace" font-size="4" fill="#e2e8f0" text-anchor="middle" class="pointer-events-none uppercase drop-shadow-md">ROOT DOMAIN</text>
+                        
+                        <!-- Tier 2: Field/Discipline -->
+                        <polygon id="svg-tier-2" points="35,30 65,30 75,50 25,50" class="semiotic-tier fill-purple-900/20 stroke-purple-500 stroke-[0.5]" />
+                        <text id="svg-text-2" x="50" y="42" font-family="Space Mono, monospace" font-size="4" fill="#a5b4fc" text-anchor="middle" class="pointer-events-none uppercase">DISCIPLINE</text>
+
+                        <!-- Tier 3: Concept/Mechanism -->
+                        <polygon id="svg-tier-3" points="25,50 75,50 85,70 15,70" class="semiotic-tier fill-purple-900/10 stroke-purple-600 stroke-[0.5]" />
+                        <text id="svg-text-3" x="50" y="62" font-family="Space Mono, monospace" font-size="4" fill="#818cf8" text-anchor="middle" class="pointer-events-none uppercase">CONCEPTUAL MECHANISM</text>
+
+                        <!-- Tier 4: Operator/Engram -->
+                        <polygon id="svg-tier-4" points="15,70 85,70 95,95 5,95" class="semiotic-tier fill-black/60 stroke-cyan-500 stroke-[0.5]" />
+                        <text id="svg-text-4-sym" x="50" y="82" font-family="Cinzel, serif" font-size="8" font-weight="bold" fill="#00f0ff" text-anchor="middle" class="pointer-events-none drop-shadow-[0_0_5px_rgba(0,240,255,0.8)]">SYM</text>
+                        <text id="svg-text-4-name" x="50" y="88" font-family="Space Mono, monospace" font-size="3" fill="#00f0ff" text-anchor="middle" class="pointer-events-none uppercase">ENGRAM OPERATOR</text>
+                    </svg>
+
+                    <div class="text-center px-8 text-gray-400 font-mono text-[10px] leading-relaxed">
+                        <span class="text-purple-400">ONTOLOGICAL DESCENT:</span> The Semiotic Blueprint enforces hierarchical rigor. You must map the universal concept (Tier 1) down to a specific, executable mathematical operator (Tier 4).
+                    </div>
+                </div>
+                
+                <div class="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_rgba(157,0,255,0.05)_0%,_transparent_70%)] pointer-events-none"></div>
+            </div>
+
+            <!-- Right Side: Creation Form (The Tutorial) -->
+            <div class="flex-1 flex flex-col bg-black/20 relative">
+                <div class="flex-1 overflow-y-auto p-6 lg:p-8 space-y-8">
+                    
+                    <div class="bg-purple-900/20 border-l-2 border-purple-500 p-4 text-xs text-purple-200 leading-relaxed rounded-r shadow-inner">
+                       <strong class="text-purple-400 text-sm font-arcane tracking-widest block mb-1">Ontology Creation Tutorial Initiated</strong> 
+                       To construct a valid SHD-CCP Ontology, you must descend from a universal pillar down to a specific mathematical geometric operator. Follow the numbered steps below to encode a new Engram into the Root Registry.
+                    </div>
+
+                    <!-- STEP 1 & 2 -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 bg-white/5 p-5 rounded border border-white/10 relative">
+                        <div class="absolute -top-3 left-4 bg-black px-2 text-[10px] font-mono text-gray-400">MACRO CLASSIFICATION</div>
+                        <div>
+                            <label class="flex items-center mono-font text-[11px] text-purple-300 mb-2">
+                                <span class="step-badge">1</span> Tier 1: Root Domain (The 12 Pillars)
+                            </label>
+                            <select id="c-domain" class="creator-input" onchange="updateSvgText()">
+                                <option value="Mathematics">Mathematics</option>
+                                <option value="Geometry">Geometry</option>
+                                <option value="Physics">Physics</option>
+                                <option value="Computer Science">Computer Science</option>
+                                <option value="Biology">Biology</option>
+                                <option value="Chemistry">Chemistry</option>
+                                <option value="Art">Art</option>
+                                <option value="Philosophy">Philosophy</option>
+                                <option value="Theology">Theology</option>
+                                <option value="Linguistics">Linguistics</option>
+                                <option value="Sociology">Sociology</option>
+                                <option value="Economics">Economics</option>
+                            </select>
+                            <p class="text-[9px] text-gray-500 mt-1 font-mono">Select the broadest universal category.</p>
+                        </div>
+                        <div>
+                            <label class="flex items-center mono-font text-[11px] text-purple-300 mb-2">
+                                <span class="step-badge">2</span> Tier 2: Field / Discipline
+                            </label>
+                            <input type="text" id="c-field" class="creator-input" placeholder="e.g. Topology, Semantics, Fluid Dynamics" onkeyup="updateSvgText()">
+                            <p class="text-[9px] text-gray-500 mt-1 font-mono">The specific sub-field of study.</p>
+                        </div>
+                    </div>
+
+                    <!-- STEP 3 & 4 -->
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 bg-white/5 p-5 rounded border border-white/10 relative">
+                        <div class="absolute -top-3 left-4 bg-black px-2 text-[10px] font-mono text-gray-400">MICRO DEFINITION</div>
+                        <div class="md:col-span-2">
+                            <label class="flex items-center mono-font text-[11px] text-purple-300 mb-2">
+                                <span class="step-badge">3</span> Tier 3: Conceptual Mechanism
+                            </label>
+                            <input type="text" id="c-subtitle" class="creator-input" placeholder="e.g. Torsional Phase Spin, Geometric Compression" onkeyup="updateSvgText()">
+                            <p class="text-[9px] text-gray-500 mt-1 font-mono">What does this operator actually *do* structurally?</p>
+                        </div>
+                        <div>
+                            <label class="flex items-center mono-font text-[11px] text-cyan-400 mb-2">
+                                <span class="step-badge bg-cyan-600">4</span> Tier 4: Symbol
+                            </label>
+                            <input type="text" id="c-symbol" class="creator-input border-cyan-500/50 text-cyan-400 text-center text-lg font-arcane" placeholder="Θ, ∫, Ω" onkeyup="updateSvgText()">
+                        </div>
+                    </div>
+
+                    <!-- STEP 5 -->
+                    <div class="bg-cyan-900/10 p-5 rounded border border-cyan-500/20 relative">
+                        <div class="absolute -top-3 left-4 bg-black px-2 text-[10px] font-mono text-cyan-500">MATHEMATICAL EXECUTION</div>
+                        <div class="mb-4">
+                            <label class="flex items-center mono-font text-[11px] text-cyan-400 mb-2">
+                                <span class="step-badge bg-cyan-600">5</span> Engram Name & Primary Equation (LaTeX)
+                            </label>
+                            <div class="flex gap-4">
+                                <input type="text" id="c-name" class="creator-input w-1/3" placeholder="Name (e.g. Theta)" onkeyup="updateSvgText()">
+                                <input type="text" id="c-equation" class="creator-input w-2/3 font-mono text-yellow-300" placeholder="e.g. \\Theta_{10} \\equiv \\Theta_0 \\pmod{2\\pi} (Use \\\\ for macros)">
+                            </div>
+                            <p class="text-[9px] text-gray-500 mt-1 font-mono">Provide the formal equation. Double-escape backslashes (e.g. \\pi instead of \pi).</p>
+                        </div>
+
+                        <div>
+                            <label class="flex items-center mono-font text-[11px] text-cyan-400 mb-2">
+                                <span class="step-badge bg-cyan-600">6</span> 3D Holographic Projection Mode
+                            </label>
+                            <select id="c-vis" class="creator-input border-cyan-500/50 text-cyan-300">
+                                <option value="FUNNEL">FUNNEL (Singularity/Gradient/Resistance)</option>
+                                <option value="TREFOIL_SPIN">TREFOIL_SPIN (Torsion/Knot/Spin)</option>
+                                <option value="RIPPLES">RIPPLES (Waves/Interference/Superposition)</option>
+                                <option value="TETRAHEDRON">TETRAHEDRON (Compression/Expansion)</option>
+                                <option value="HEX_CIRCLE">HEX_CIRCLE (Packing/Limits/Boundaries)</option>
+                                <option value="BRAID">BRAID (Entanglement/Entropy/Summation)</option>
+                                <option value="EVENT_HORIZON">EVENT_HORIZON (Absolute Bounds/Black Holes)</option>
+                                <option value="GOLDEN_SPIRAL">GOLDEN_SPIRAL (Recursive Scaling/Growth)</option>
+                                <option value="LATTICE_WEB">LATTICE_WEB (Scaffolding/Graphs/Products)</option>
+                                <option value="MOBIUS">MOBIUS (Infinity/Looping)</option>
+                                <option value="WORMHOLE">WORMHOLE (Countable Infinity/Bridges)</option>
+                                <option value="VOID_RING">VOID_RING (Vacuum/Empty Sets)</option>
+                                <option value="SLICE_PLANE">SLICE_PLANE (Dimensional Slicing/Derivatives)</option>
+                                <option value="ORTHOGONAL_PHASE">ORTHOGONAL_PHASE (Imaginary/Orthogonal)</option>
+                                <option value="VECTOR_FIELD">VECTOR_FIELD (Flow/Integrals)</option>
+                            </select>
+                            <p class="text-[9px] text-gray-500 mt-1 font-mono">Select the geometric topology that best visually represents this mechanism.</p>
+                        </div>
+                    </div>
+
+                    <!-- STEP 7 & 8 -->
+                    <div class="space-y-4">
+                        <div>
+                            <label class="flex items-center mono-font text-[11px] text-yellow-500 mb-2">
+                                <span class="step-badge bg-yellow-600 text-black">7</span> SHD-CCP Holographic Interpretation
+                            </label>
+                            <textarea id="c-holo" class="creator-input h-24 border-yellow-500/30 focus:border-yellow-500" placeholder="Describe how this engram operates within the 72-Node Genesis Chain. How does it physically move or govern data?"></textarea>
+                        </div>
+
+                        <div>
+                            <label class="flex items-center mono-font text-[11px] text-gray-300 mb-2">
+                                <span class="step-badge bg-gray-600">8</span> Classical Domain Translations
+                            </label>
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <textarea id="c-euc" class="creator-input h-20 text-[10px]" placeholder="Euclidean Geometry meaning..."></textarea>
+                                <textarea id="c-lin" class="creator-input h-20 text-[10px]" placeholder="Linear Algebra meaning..."></textarea>
+                                <textarea id="c-hyp" class="creator-input h-20 text-[10px]" placeholder="Hyperbolic Geometry meaning..."></textarea>
+                            </div>
+                            <p class="text-[9px] text-gray-500 mt-1 font-mono">Translate the concept back to standard mathematics for cross-field compatibility.</p>
+                        </div>
+                    </div>
+
+                    <div class="pt-6 pb-8">
+                        <button onclick="encodeEngram()" class="w-full mono-font text-sm px-4 py-4 border border-purple-500 rounded bg-purple-900/60 text-white hover:bg-purple-600/80 transition-all shadow-[0_0_20px_rgba(157,0,255,0.6)] uppercase font-bold tracking-[0.2em] hover:scale-[1.01] active:scale-[0.99]">
+                            Encode Engram to Registry
+                        </button>
+                        <div id="encode-success" class="text-center mono-font text-xs text-green-400 mt-3 opacity-0 transition-opacity tracking-widest bg-green-900/20 py-2 rounded border border-green-500/30">
+                            Engram Successfully Encoded. Ontology Substrate Rebuilt.
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+
+        <!-- Left Sidebar: Symbol Selection (Appears in Lexicon/Registry views) -->
+        <aside id="sidebar" class="w-72 glass-panel rounded-lg flex flex-col overflow-hidden smooth-collapse shrink-0 relative hidden opacity-0">
+            <div class="p-4 border-b border-cyan-500/20 bg-black/40 flex justify-between items-center shrink-0">
+                <h2 class="mono-font text-xs text-gray-400 uppercase tracking-widest sidebar-content whitespace-nowrap overflow-hidden">Encoded Engrams</h2>
+                <button onclick="toggleSidebar()" id="sidebar-icon" class="text-cyan-400 hover:text-cyan-300 w-6 h-6 flex items-center justify-center rounded bg-black/50 border border-cyan-500/30 font-bold ml-auto">&larr;</button>
+            </div>
+            <div class="flex-1 overflow-y-auto p-2 flex flex-col" id="symbol-list">
+                <!-- Buttons injected via JS -->
+            </div>
+        </aside>
+
+        <!-- Right Content Area 2: Lexicon Projector & Codex -->
+        <div id="lexicon-view" class="flex-1 flex flex-col gap-4 overflow-hidden min-w-0 transition-opacity duration-300 hidden opacity-0">
+            
+            <!-- Top: Holographic Projector (Locked Size) -->
+            <div class="h-[45vh] min-h-[250px] max-h-[450px] shrink-0 glass-panel rounded-lg p-2 relative flex flex-col">
+                <div class="absolute top-4 left-4 z-20 pointer-events-none">
+                    <h2 class="arcane-font text-2xl text-cyan-400 glow-text" id="holo-title">Symbol Projection</h2>
+                    <p class="mono-font text-xs text-gray-400" id="holo-subtitle">Awaiting input...</p>
+                </div>
+                
+                <div class="absolute top-4 right-4 z-20 flex flex-col items-end">
+                    <button onclick="toggleAutoRotate()" id="btn-rotate" class="mono-font text-xs px-3 py-1 border border-cyan-500/50 rounded bg-black/50 text-cyan-400 hover:bg-cyan-900/30 transition-colors">
+                        [ Auto-Rotate: OFF ]
+                    </button>
+                    <span class="mono-font text-[10px] text-gray-500 mt-1 mr-1 pointer-events-none" id="drag-hint">(Drag to rotate)</span>
+                </div>
+                
+                <div class="projector-container flex-1" id="canvas-container">
+                    <canvas id="holo-canvas"></canvas>
+                    <div class="scanlines"></div>
+                    <div class="projector-flare"></div>
+                </div>
+            </div>
+
+            <!-- Bottom: Codex Definition -->
+            <div id="codex-wrapper" class="flex-1 min-h-[200px] glass-panel rounded-lg flex flex-col smooth-collapse relative">
+                <div class="p-3 border-b border-cyan-500/20 bg-black/40 flex justify-between items-center shrink-0">
+                    <div class="flex items-center gap-2">
+                        <span class="w-2 h-2 rounded-full bg-cyan-500 shadow-[0_0_8px_#00f0ff]"></span>
+                        <span class="mono-font text-xs text-gray-400 uppercase tracking-widest">Codex Entry & Classical Domains</span>
+                    </div>
+                </div>
+                <div class="flex-1 p-4 sm:p-6 overflow-y-auto smooth-collapse" id="codex-container">
+                    <div class="flex h-full items-center justify-center text-gray-500 mono-font text-sm">
+                        Select an encoded engram from the sidebar to project its data...
+                    </div>
+                </div>
+            </div>
+            
+        </div>
+
+        <!-- Right Content Area 3: Ontology Registry -->
+        <div id="ontology-view" class="flex-1 glass-panel rounded-lg flex flex-col overflow-hidden transition-opacity duration-300 hidden opacity-0">
+            <div class="p-4 border-b border-cyan-500/20 bg-black/40 flex items-center gap-3 shrink-0">
+                <span class="w-3 h-3 rounded-full bg-yellow-500 shadow-[0_0_10px_#D4AF37]"></span>
+                <h2 class="arcane-font text-xl text-yellow-500 tracking-widest">Cross-Field Ontology Registry: Definitions</h2>
+                <div class="ml-auto mono-font text-xs text-gray-500 uppercase hidden sm:block">System Log & Versioning Active</div>
+            </div>
+            
+            <div class="flex-1 overflow-auto bg-black/20 p-2">
+                <table class="w-full text-left border-collapse ontology-table">
+                    <thead>
+                        <tr class="mono-font text-[10px] uppercase text-cyan-500/80 tracking-widest border-b-2 border-cyan-500/20">
+                            <th class="p-3 font-medium">Domain / Version</th>
+                            <th class="p-3 font-medium text-center">Sym</th>
+                            <th class="p-3 font-medium">Operator Name</th>
+                            <th class="p-3 font-medium border-l border-gray-800 text-center">Primary Equation</th>
+                            <th class="p-3 font-medium border-l border-gray-800">Euclidean Geometry</th>
+                            <th class="p-3 font-medium border-l border-gray-800">Linear Algebra</th>
+                            <th class="p-3 font-medium border-l border-gray-800">Hyperbolic Geometry</th>
+                            <th class="p-3 font-medium border-l border-yellow-900/50 text-yellow-500/80">SHD-CCP Holographic Definition</th>
+                        </tr>
+                    </thead>
+                    <tbody id="ontology-tbody" class="text-gray-300">
+                        <!-- Ontology Table Injected via JS -->
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="h-32 shrink-0 border-t border-cyan-500/20 bg-black/60 p-3 font-mono text-[10px] text-green-400 overflow-y-auto shadow-inner" id="system-log">
+                <div class="text-gray-500 mb-1">// ONTOLOGY DEFINITION DEPLOYMENT LOG</div>
+                <!-- Log injected via JS -->
+            </div>
+        </div>
+
+    </main>
+
+    <script>
+        // --- SAFE MATHJAX RENDERER ---
+        function updateMathJax(element) {
+            if (!element || !window.MathJax) return;
+            if (typeof MathJax.typesetPromise === 'function') {
+                if (typeof MathJax.typesetClear === 'function') MathJax.typesetClear([element]);
+                MathJax.typesetPromise([element]).catch(err => console.warn('MathJax Rendering Error:', err));
+            } else if (MathJax.startup && MathJax.startup.promise) {
+                MathJax.startup.promise = MathJax.startup.promise.then(() => {
+                    if (typeof MathJax.typesetClear === 'function') MathJax.typesetClear([element]);
+                    if (typeof MathJax.typesetPromise === 'function') {
+                        return MathJax.typesetPromise([element]);
+                    }
+                }).catch(err => console.warn('MathJax Startup Rendering Error:', err));
+            }
+        }
+
+        // --- UI VIEW TOGGLE LOGIC ---
+        let sidebarOpen = true;
+        function toggleSidebar() {
+            sidebarOpen = !sidebarOpen;
+            const sidebar = document.getElementById('sidebar');
+            const icon = document.getElementById('sidebar-icon');
+            const contents = document.querySelectorAll('.sidebar-content');
+            if(sidebarOpen) {
+                sidebar.classList.replace('w-16', 'w-72');
+                contents.forEach(el => el.classList.remove('hidden'));
+                icon.innerHTML = '&larr;';
+            } else {
+                sidebar.classList.replace('w-72', 'w-16');
+                contents.forEach(el => el.classList.add('hidden'));
+                icon.innerHTML = '&rarr;';
+            }
+            setTimeout(resizeCanvas, 400); 
+        }
+
+        let autoRotate = false;
+        function toggleAutoRotate() {
+            autoRotate = !autoRotate;
+            const btn = document.getElementById('btn-rotate');
+            const hint = document.getElementById('drag-hint');
+            if(autoRotate) {
+                btn.innerText = '[ Auto-Rotate: ON ]';
+                btn.classList.add('text-yellow-400', 'border-yellow-500/50');
+                btn.classList.remove('text-cyan-400', 'border-cyan-500/50');
+                hint.style.opacity = '0';
+            } else {
+                btn.innerText = '[ Auto-Rotate: OFF ]';
+                btn.classList.add('text-cyan-400', 'border-cyan-500/50');
+                btn.classList.remove('text-yellow-400', 'border-yellow-500/50');
+                hint.style.opacity = '1';
+            }
+        }
+
+        function setView(viewName) {
+            const lexView = document.getElementById('lexicon-view');
+            const ontView = document.getElementById('ontology-view');
+            const crView = document.getElementById('creator-view');
+            const sidebar = document.getElementById('sidebar');
+            
+            const btnLex = document.getElementById('btn-nav-lexicon');
+            const btnOnt = document.getElementById('btn-nav-ontology');
+            const btnCr = document.getElementById('btn-nav-creator');
+
+            // Hide all
+            lexView.classList.add('hidden', 'opacity-0');
+            ontView.classList.add('hidden', 'opacity-0');
+            crView.classList.add('hidden', 'opacity-0');
+            sidebar.classList.add('hidden', 'opacity-0');
+            
+            // Reset button styles
+            btnLex.className = "mono-font text-[10px] sm:text-xs px-3 py-1.5 sm:px-4 sm:py-2 border border-cyan-500/30 rounded bg-black/50 text-cyan-400 hover:bg-cyan-900/30 transition-colors shadow-[0_0_10px_rgba(0,240,255,0.1)]";
+            btnOnt.className = btnLex.className;
+            btnCr.className = "mono-font text-[10px] sm:text-xs px-3 py-1.5 sm:px-4 sm:py-2 border border-purple-500/30 rounded bg-black/50 text-purple-400 hover:bg-purple-900/30 transition-colors shadow-[0_0_10px_rgba(157,0,255,0.1)]";
+
+            if(viewName === 'creator') {
+                crView.classList.remove('hidden');
+                setTimeout(() => crView.classList.remove('opacity-0'), 50);
+                btnCr.className = "mono-font text-[10px] sm:text-xs px-3 py-1.5 sm:px-4 sm:py-2 border rounded transition-colors shadow-[0_0_15px_rgba(157,0,255,0.4)] text-purple-300 border-purple-400 bg-purple-900/40";
+                updateSvgText(); 
+            } 
+            else {
+                // Show sidebar for Lexicon and Registry
+                sidebar.classList.remove('hidden');
+                setTimeout(() => sidebar.classList.remove('opacity-0'), 50);
+
+                if(viewName === 'lexicon') {
+                    lexView.classList.remove('hidden');
+                    setTimeout(() => lexView.classList.remove('opacity-0'), 50);
+                    btnLex.className = "mono-font text-[10px] sm:text-xs px-3 py-1.5 sm:px-4 sm:py-2 border rounded transition-colors shadow-[0_0_10px_rgba(212,175,55,0.2)] text-academy-gold border-academy-gold bg-academy-gold/10";
+                    setTimeout(resizeCanvas, 100);
+                    // Load first symbol if none selected
+                    if(!currentSymbol && Object.keys(ontologyDatabase).length > 0) {
+                        loadSymbol(Object.keys(ontologyDatabase)[0]);
+                    }
+                } 
+                else if(viewName === 'ontology') {
+                    ontView.classList.remove('hidden');
+                    setTimeout(() => ontView.classList.remove('opacity-0'), 50);
+                    btnOnt.className = "mono-font text-[10px] sm:text-xs px-3 py-1.5 sm:px-4 sm:py-2 border rounded transition-colors shadow-[0_0_10px_rgba(212,175,55,0.2)] text-academy-gold border-academy-gold bg-academy-gold/10";
+                    updateMathJax(document.getElementById('ontology-tbody'));
+                }
+            }
+        }
+
+        // --- ONTOLOGY DATABASE (Empty by default for the Creator Tutorial) ---
+        let ontologyDatabase = {
+            'alpha_tutorial': {
+                id: 'alpha_tutorial', category: 'Philosophy', field: 'Ontological Genesis', symbol: 'α', name: 'Alpha', subtitle: 'The Primary Initializer',
+                primary_equation: '\\alpha_0 = \\lim_{t \\to 0} \\mathcal{M}(t)',
+                holographic: 'The Alpha engram represents the absolute beginning of the topological sequence. It is the initial spark that ignites the Markov Pump, transforming static space into a breathing manifold.',
+                visMode: 'RIPPLES',
+                euclidean: 'The starting angle or origin point.',
+                linear: 'The initial state vector.',
+                hyperbolic: 'The origin of the Poincare disk.'
+            }
+        };
+
+        let currentSymbol = null;
+        let vCounter = 1;
+
+        // --- DOM ELEMENTS ---
+        const symbolListEl = document.getElementById('symbol-list');
+        const codexContainer = document.getElementById('codex-container');
+        const holoTitle = document.getElementById('holo-title');
+        const holoSubtitle = document.getElementById('holo-subtitle');
+        const canvas = document.getElementById('holo-canvas');
+        const ctx = canvas.getContext('2d', { alpha: false });
+        const canvasContainer = document.getElementById('canvas-container');
+
+        // --- INITIALIZE UI ---
+        function init() {
+            rebuildSidebar();
+            buildOntologyLog();
+            
+            window.addEventListener('resize', resizeCanvas);
+            resizeCanvas();
+            setupInteraction();
+            requestAnimationFrame(renderLoop);
+            updateSvgText();
+        }
+
+        function rebuildSidebar() {
+            symbolListEl.innerHTML = ''; 
+            
+            const grouped = {};
+            Object.values(ontologyDatabase).forEach(item => {
+                let cat = item.category || 'Uncategorized';
+                if(!grouped[cat]) grouped[cat] = [];
+                grouped[cat].push(item);
+            });
+
+            for (const [category, items] of Object.entries(grouped)) {
+                const catHeader = document.createElement('div');
+                catHeader.className = 'mt-4 mb-2 px-2 text-[10px] font-mono text-cyan-500 uppercase tracking-widest border-b border-cyan-500/30 sidebar-content';
+                catHeader.innerText = category;
+                symbolListEl.appendChild(catHeader);
+
+                items.forEach(item => {
+                    const btn = document.createElement('button');
+                    btn.className = 'symbol-btn group';
+                    btn.id = `btn-${item.id}`;
+                    btn.innerHTML = `
+                        <div class="flex flex-col items-start sidebar-content overflow-hidden">
+                            <span class="text-xs font-semibold text-gray-200 group-hover:text-white transition-colors text-left whitespace-nowrap overflow-hidden text-ellipsis w-[180px]">${item.name}</span>
+                            <span class="text-[9px] text-gray-500 mono-font uppercase text-left">${item.field || item.id}</span>
+                        </div>
+                        <div class="symbol-mark text-cyan-500 group-hover:text-cyan-300 transition-colors mx-auto shrink-0">${item.symbol}</div>
+                    `;
+                    btn.onclick = () => {
+                        setView('lexicon');
+                        loadSymbol(item.id);
+                    };
+                    symbolListEl.appendChild(btn);
+                });
+            }
+        }
+
+        function resizeCanvas() {
+            if(!canvasContainer) return;
+            const rect = canvasContainer.getBoundingClientRect();
+            if(rect.width > 0 && rect.height > 0) {
+                canvas.width = rect.width;
+                canvas.height = rect.height;
+            }
+        }
+
+        // --- ONTOLOGY SYSTEM / DEFINITIONS LOG ---
+        function buildOntologyLog() {
+            const tbody = document.getElementById('ontology-tbody');
+            const sysLog = document.getElementById('system-log');
+            let tableHtml = '';
+            
+            for(const item of Object.values(ontologyDatabase)) {
+                let vStr = `v1.0.${vCounter}`;
+                let catField = `${item.category || ''} : ${item.field || ''}`;
+                
+                tableHtml += `
+                    <tr class="border-b border-gray-800 hover:bg-white/5 transition-colors">
+                        <td class="p-3 text-xs text-gray-500 mono-font">${catField}<br><span class="text-[9px] text-purple-400">[${vStr}]</span></td>
+                        <td class="p-3 text-xl text-yellow-500 arcane-font text-center">${item.symbol}</td>
+                        <td class="p-3 text-sm text-cyan-400 font-bold whitespace-nowrap">${item.name}</td>
+                        <td class="p-3 text-[13px] text-cyan-300 border-l border-gray-800 text-center whitespace-nowrap bg-black/40">$ ${item.primary_equation} $</td>
+                        <td class="p-3 text-xs text-gray-300 border-l border-gray-800 min-w-[150px]">${item.euclidean}</td>
+                        <td class="p-3 text-xs text-gray-300 border-l border-gray-800 min-w-[150px]">${item.linear}</td>
+                        <td class="p-3 text-xs text-gray-300 border-l border-gray-800 min-w-[150px]">${item.hyperbolic}</td>
+                        <td class="p-3 text-xs text-yellow-200/80 border-l border-yellow-900/50 bg-yellow-900/10 min-w-[250px]">${item.holographic.replace(/<\/?strong>/g, '')}</td>
+                    </tr>
+                `;
+            }
+            
+            tbody.innerHTML = tableHtml;
+            // Update MathJax if the view is visible
+            if(!document.getElementById('ontology-view').classList.contains('hidden')) {
+                updateMathJax(tbody);
+            }
+        }
+
+        // --- ENGRAM CREATOR I/O LOGIC ---
+        function updateSvgText() {
+            document.getElementById('svg-text-1').textContent = document.getElementById('c-domain').value || 'ROOT DOMAIN';
+            document.getElementById('svg-text-2').textContent = document.getElementById('c-field').value || 'DISCIPLINE';
+            document.getElementById('svg-text-3').textContent = document.getElementById('c-subtitle').value || 'CONCEPTUAL MECHANISM';
+            document.getElementById('svg-text-4-sym').textContent = document.getElementById('c-symbol').value || 'SYM';
+            document.getElementById('svg-text-4-name').textContent = document.getElementById('c-name').value || 'ENGRAM OPERATOR';
+        }
+
+        function encodeEngram() {
+            const id = 'engram_' + Math.random().toString(36).substr(2, 9);
+            
+            const newEngram = {
+                id: id,
+                category: document.getElementById('c-domain').value || 'Uncategorized',
+                field: document.getElementById('c-field').value || 'General',
+                symbol: document.getElementById('c-symbol').value || '?',
+                name: document.getElementById('c-name').value || 'Unknown',
+                subtitle: document.getElementById('c-subtitle').value || 'Undefined Mechanism',
+                primary_equation: document.getElementById('c-equation').value || 'E = mc^2',
+                holographic: document.getElementById('c-holo').value || 'Custom encoded engram entering the Genesis Chain.',
+                visMode: document.getElementById('c-vis').value || 'FUNNEL',
+                euclidean: document.getElementById('c-euc').value || 'N/A',
+                linear: document.getElementById('c-lin').value || 'N/A',
+                hyperbolic: document.getElementById('c-hyp').value || 'N/A'
+            };
+
+            // Add to database
+            ontologyDatabase[id] = newEngram;
+            
+            // Re-initialize to rebuild sidebar and table
+            rebuildSidebar();
+            buildOntologyLog();
+
+            // Success Msg & System Log Update
+            const msg = document.getElementById('encode-success');
+            msg.style.opacity = '1';
+            setTimeout(() => { msg.style.opacity = '0'; }, 3000);
+            
+            const sysLog = document.getElementById('system-log');
+            sysLog.innerHTML += `<div><span class="text-gray-500">[SYSTEM]</span> ENGRAM ENCODED: <span class="text-cyan-400">${newEngram.name} (${newEngram.symbol})</span> to <span class="text-yellow-500">${newEngram.category}</span>... <span class="text-white bg-green-900/50 px-1">[v1.0.${vCounter}]</span></div>`;
+            sysLog.scrollTop = sysLog.scrollHeight;
+            vCounter++;
+
+            // Clear inputs
+            document.querySelectorAll('.creator-input').forEach(el => {
+                if(el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') el.value = '';
+            });
+            // Reset dropdowns to default
+            document.getElementById('c-domain').selectedIndex = 0;
+            document.getElementById('c-vis').selectedIndex = 0;
+            
+            updateSvgText();
+        }
+
+        function exportOntology() {
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(ontologyDatabase, null, 4));
+            const dlAnchorElem = document.createElement('a');
+            dlAnchorElem.setAttribute("href", dataStr);
+            dlAnchorElem.setAttribute("download", "owl_custom_ontology.json");
+            dlAnchorElem.click();
+        }
+
+        document.getElementById('import-upload').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const importedData = JSON.parse(e.target.result);
+                    ontologyDatabase = importedData;
+                    
+                    const sysLog = document.getElementById('system-log');
+                    sysLog.innerHTML += `<div><span class="text-purple-400">[IMPORT]</span> MASS ONTOLOGY OVERWRITE SUCCESSFUL. REBUILDING SUBSTRATE.</div>`;
+                    
+                    rebuildSidebar();
+                    buildOntologyLog();
+                    alert("Ontology successfully imported and rebuilt.");
+                } catch(err) {
+                    alert("Error parsing Ontology JSON file.");
+                }
+            };
+            reader.readAsText(file);
+            this.value = ''; 
+        });
+
+
+        // --- MOUSE INTERACTION (MANUAL ROTATION) ---
+        let rotX = 0.2;
+        let rotY = 0.5;
+        let isDragging = false;
+        let lastMouseX = 0;
+        let lastMouseY = 0;
+
+        function setupInteraction() {
+            canvasContainer.addEventListener('mousedown', (e) => {
+                isDragging = true;
+                lastMouseX = e.clientX;
+                lastMouseY = e.clientY;
+            });
+            window.addEventListener('mouseup', () => { isDragging = false; });
+            window.addEventListener('mousemove', (e) => {
+                if (isDragging) {
+                    let dx = e.clientX - lastMouseX;
+                    let dy = e.clientY - lastMouseY;
+                    rotY += dx * 0.01;
+                    rotX += dy * 0.01;
+                    lastMouseX = e.clientX;
+                    lastMouseY = e.clientY;
+                }
+            });
+        }
+
+        // --- LOAD SYMBOL DATA (INTO PROJECTOR) ---
+        function loadSymbol(id) {
+            const data = ontologyDatabase[id];
+            if(!data) return;
+
+            if(currentSymbol) {
+                const oldBtn = document.getElementById(`btn-${currentSymbol}`);
+                if(oldBtn) oldBtn.classList.remove('active');
+            }
+            const newBtn = document.getElementById(`btn-${id}`);
+            if(newBtn) newBtn.classList.add('active');
+            currentSymbol = id;
+
+            holoTitle.innerHTML = `${data.symbol} &nbsp; ${data.name.toUpperCase()}`;
+            holoSubtitle.innerText = data.subtitle;
+
+            // Update Codex Layout
+            codexContainer.innerHTML = `
+                <div class="codex-entry flex flex-col h-full">
+                    <div class="flex items-center gap-4 mb-4 border-b border-gray-700 pb-4 shrink-0">
+                        <div class="w-12 h-12 rounded bg-black border border-yellow-600/30 flex items-center justify-center text-3xl arcane-font text-yellow-500 shadow-[0_0_10px_rgba(212,175,55,0.2)] shrink-0">
+                            ${data.symbol}
+                        </div>
+                        <div>
+                            <h2 class="arcane-font text-2xl text-white m-0 p-0 border-none">${data.name}</h2>
+                            <span class="mono-font text-xs text-cyan-400 uppercase tracking-widest">${data.field ? data.field + ' // ' : ''}${data.subtitle}</span>
+                        </div>
+                    </div>
+
+                    <div class="w-full bg-black/40 border border-cyan-500/20 rounded-lg p-6 mb-6 flex flex-col items-center justify-center shadow-[inset_0_0_20px_rgba(0,240,255,0.05)] relative overflow-hidden shrink-0">
+                        <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-cyan-500/50 to-transparent"></div>
+                        <span class="mono-font text-[10px] text-cyan-500/50 uppercase tracking-widest absolute top-2 left-3">Primary Equation</span>
+                        <div class="text-2xl text-cyan-400 mt-2 filter drop-shadow-[0_0_8px_rgba(0,240,255,0.8)]">$$ ${data.primary_equation} $$</div>
+                    </div>
+                    
+                    <div class="flex flex-col lg:flex-row gap-6">
+                        <div class="flex-1">
+                            <h3 class="mono-font text-sm text-yellow-500 uppercase tracking-widest mb-2 flex items-center gap-2">
+                                <span class="w-1 h-1 bg-yellow-500 rounded-full shadow-[0_0_5px_#D4AF37]"></span> SHD-CCP Holographic Interpretation
+                            </h3>
+                            <p class="text-gray-200 font-light text-sm leading-relaxed bg-cyan-900/10 p-4 rounded border border-cyan-800/50 mb-4">
+                                ${data.holographic}
+                            </p>
+                        </div>
+                        <div class="flex-1 flex flex-col gap-4">
+                            <h3 class="mono-font text-sm text-gray-400 uppercase tracking-widest flex items-center gap-2">
+                                <span class="w-1 h-1 bg-gray-500 rounded-full"></span> Classical Domains
+                            </h3>
+                            <div class="classic-domain-box">
+                                <div class="text-[11px] text-cyan-400 font-bold uppercase mb-1">Euclidean Geometry</div>
+                                <div class="text-gray-300 font-light text-[11px]">${data.euclidean}</div>
+                            </div>
+                            <div class="classic-domain-box">
+                                <div class="text-[11px] text-cyan-400 font-bold uppercase mb-1">Linear Algebra</div>
+                                <div class="text-gray-300 font-light text-[11px]">${data.linear}</div>
+                            </div>
+                            <div class="classic-domain-box">
+                                <div class="text-[11px] text-cyan-400 font-bold uppercase mb-1">Hyperbolic Geometry</div>
+                                <div class="text-gray-300 font-light text-[11px]">${data.hyperbolic}</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            updateMathJax(codexContainer);
+        }
+
+        // --- 3D / HOLOGRAPHIC RENDER ENGINE ---
+        let time = 0;
+
+        function applyCamera(x, y, z) {
+            let r1 = { y: y * Math.cos(rotX) - z * Math.sin(rotX), z: y * Math.sin(rotX) + z * Math.cos(rotX) };
+            let r2 = { x: x * Math.cos(rotY) - r1.z * Math.sin(rotY), z: x * Math.sin(rotY) + r1.z * Math.cos(rotY) };
+            return { x: r2.x, y: r1.y, z: r2.z };
+        }
+
+        function project3D(x, y, z, cx, cy) {
+            const fov = 300;
+            const camZ = 5;
+            if (z + camZ < 0.1) return null; 
+            const scale = fov / (z + camZ);
+            return { x: cx + x * scale, y: cy + y * scale, scale: scale };
+        }
+
+        function rotateX(y, z, angle) { return { y: y * Math.cos(angle) - z * Math.sin(angle), z: y * Math.sin(angle) + z * Math.cos(angle) }; }
+        function rotateY(x, z, angle) { return { x: x * Math.cos(angle) - z * Math.sin(angle), z: x * Math.sin(angle) + z * Math.cos(angle) }; }
+        function rotateZ(x, y, angle) { return { x: x * Math.cos(angle) - y * Math.sin(angle), y: x * Math.sin(angle) + y * Math.cos(angle) }; }
+
+        function drawPoint(ctx, p, color, size=2) {
+            if(!p) return;
+            ctx.fillStyle = color;
+            ctx.beginPath(); ctx.arc(p.x, p.y, size * (p.scale/50), 0, Math.PI*2); ctx.fill();
+        }
+
+        function drawLine(ctx, p1, p2, color, width=1) {
+            if(!p1 || !p2) return;
+            ctx.strokeStyle = color;
+            ctx.lineWidth = width * ((p1.scale + p2.scale)/100);
+            ctx.beginPath(); ctx.moveTo(p1.x, p1.y); ctx.lineTo(p2.x, p2.y); ctx.stroke();
+        }
+
+        // --- RENDER MODES ---
+        function renderFunnel(cx, cy, t) {
+            ctx.shadowBlur = 15; ctx.shadowColor = 'rgba(0, 240, 255, 0.8)';
+            let prevPoint = null;
+            for(let i=0; i<200; i++) {
+                let norm = i/200;
+                let radius = 2.5 * Math.exp(-norm * 4);
+                let localAngle = norm * Math.PI * 10 - t * 2;
+                let x = Math.cos(localAngle) * radius;
+                let z = Math.sin(localAngle) * radius;
+                let y = (norm * 4) - 1.5;
+                let rx = rotateX(y, z, 0.4); 
+                let cam = applyCamera(x, rx.y, rx.z);
+                let p = project3D(cam.x, cam.y, cam.z, cx, cy);
+                if (p) {
+                    let color = `rgba(${Math.floor(norm*157)}, ${Math.floor((1-norm)*240)}, 255, ${1 - norm*0.8})`;
+                    drawPoint(ctx, p, color, 1.5);
+                    if(prevPoint) drawLine(ctx, prevPoint, p, color, 0.5);
+                }
+                prevPoint = p;
+            }
+            ctx.shadowBlur = 30; ctx.shadowColor = '#fff';
+            let cCam = applyCamera(0, 2.5, 0);
+            drawPoint(ctx, project3D(cCam.x, cCam.y, cCam.z, cx, cy), '#fff', 5);
+        }
+
+        function renderTrefoilSpin(cx, cy, t) {
+            ctx.shadowBlur = 10; ctx.shadowColor = 'rgba(212, 175, 55, 0.6)';
+            let pts = [];
+            for(let i=0; i<=100; i++) {
+                let theta = (i/100) * Math.PI * 2;
+                let x = (Math.sin(theta) + 2 * Math.sin(2 * theta)) * 0.6;
+                let y = (Math.cos(theta) - 2 * Math.cos(2 * theta)) * 0.6;
+                let z = (-Math.sin(3 * theta)) * 0.6;
+                let cam = applyCamera(x, y, z);
+                pts.push(project3D(cam.x, cam.y, cam.z, cx, cy));
+            }
+            for(let i=0; i<pts.length-1; i++) drawLine(ctx, pts[i], pts[i+1], 'rgba(212, 175, 55, 0.3)', 1);
+            drawLine(ctx, pts[pts.length-1], pts[0], 'rgba(212, 175, 55, 0.3)', 1);
+
+            let pA = (t) % (Math.PI * 2);
+            let tx = (Math.sin(pA) + 2 * Math.sin(2 * pA)) * 0.6;
+            let ty = (Math.cos(pA) - 2 * Math.cos(2 * pA)) * 0.6;
+            let tz = (-Math.sin(3 * pA)) * 0.6;
+            let tCam = applyCamera(tx, ty, tz);
+            let tProj = project3D(tCam.x, tCam.y, tCam.z, cx, cy);
+
+            ctx.shadowBlur = 20; ctx.shadowColor = '#fff';
+            drawPoint(ctx, tProj, '#fff', 6);
+        }
+
+        function renderRipples(cx, cy, t) {
+            ctx.shadowBlur = 15; ctx.shadowColor = 'rgba(157, 0, 255, 0.8)';
+            for(let shell=1; shell<=4; shell++) {
+                let radius = (shell * 0.5) + Math.sin(t*2 + shell) * 0.1;
+                let color = `rgba(157, 0, 255, ${0.1 + (0.4/shell)})`;
+                if(shell === 4) color = `rgba(0, 240, 255, 0.3)`; 
+
+                for(let i=0; i<40; i++) {
+                    let lat = Math.acos(2 * (i/40) - 1);
+                    for(let j=0; j<20; j++) {
+                        let lon = j * (Math.PI*2/20) + (t * (shell%2===0?1:-1)); 
+                        let x = radius * Math.sin(lat) * Math.cos(lon);
+                        let z = radius * Math.sin(lat) * Math.sin(lon);
+                        let y = radius * Math.cos(lat);
+                        let cam = applyCamera(x, y, z);
+                        let p = project3D(cam.x, cam.y, cam.z, cx, cy);
+                        if(p && i%3===0 && j%3===0) drawPoint(ctx, p, color, 1);
+                    }
+                }
+            }
+        }
+
+        function renderTetrahedron(cx, cy, t) {
+            ctx.shadowBlur = 20; ctx.shadowColor = 'rgba(0, 240, 255, 0.8)';
+            let breath = 0.85 + Math.sin(t * 1.5) * 0.65; 
+            const verts = [ {x: 0, y: -1, z: 0}, {x: -0.866, y: 0.5, z: 0.5}, {x: 0.866, y: 0.5, z: 0.5}, {x: 0, y: 0.5, z: -1} ];
+            let pV = [];
+            verts.forEach(v => {
+                let sx = v.x * breath; let sy = v.y * breath; let sz = v.z * breath;
+                let cam = applyCamera(sx, sy, sz);
+                pV.push(project3D(cam.x, cam.y, cam.z, cx, cy));
+            });
+            let cInt = Math.max(0, 1 - breath); 
+            let color = `rgb(${Math.floor(255*cInt)}, ${Math.floor(240-200*cInt)}, 255)`;
+            ctx.shadowColor = color;
+            const edges = [ [0,1], [0,2], [0,3], [1,2], [2,3], [3,1] ];
+            edges.forEach(e => drawLine(ctx, pV[e[0]], pV[e[1]], color, 2));
+            pV.forEach(p => drawPoint(ctx, p, '#fff', 3));
+            if(breath < 0.4) { 
+                ctx.shadowBlur = 50; 
+                let cCam = applyCamera(0,0,0);
+                drawPoint(ctx, project3D(cCam.x, cCam.y, cCam.z, cx, cy), '#fff', 10); 
+            }
+        }
+
+        function renderHexCircle(cx, cy, t) {
+            ctx.shadowBlur = 10;
+            ctx.shadowColor = 'rgba(0, 240, 255, 0.8)';
+            let prevC = null; let radC = 1.5;
+            for(let i=0; i<=40; i++) {
+                let ang = i * (Math.PI*2/40);
+                let x = Math.cos(ang) * radC; let y = Math.sin(ang) * radC; let z = 0;
+                let cam = applyCamera(x, y, z);
+                let p = project3D(cam.x, cam.y, cam.z, cx, cy);
+                if(prevC && p) drawLine(ctx, prevC, p, 'rgba(0, 240, 255, 0.6)', 2);
+                prevC = p;
+            }
+            ctx.shadowColor = 'rgba(212, 175, 55, 0.8)';
+            let hexR = radC / Math.cos(Math.PI/6); 
+            let hexV = [];
+            for(let i=0; i<6; i++) {
+                let ang = i * (Math.PI*2/6);
+                let x = Math.cos(ang) * hexR; let y = Math.sin(ang) * hexR; let z = 0;
+                let cam = applyCamera(x, y, z);
+                hexV.push(project3D(cam.x, cam.y, cam.z, cx, cy));
+            }
+            let centerCam = applyCamera(0,0,0);
+            let centerP = project3D(centerCam.x, centerCam.y, centerCam.z, cx, cy);
+            for(let i=0; i<6; i++) {
+                let next = (i+1)%6;
+                drawLine(ctx, hexV[i], hexV[next], 'rgba(212, 175, 55, 0.8)', 2);
+                drawPoint(ctx, hexV[i], '#fff', 3);
+                drawLine(ctx, centerP, hexV[i], 'rgba(212, 175, 55, 0.2)', 1);
+            }
+        }
+
+        function renderBraid(cx, cy, t) {
+            ctx.shadowBlur = 10; ctx.shadowColor = 'rgba(255, 0, 255, 0.8)';
+            for(let strand=0; strand<3; strand++) {
+                let offset = (strand/3) * Math.PI * 2;
+                let prevP = null;
+                for(let i=-25; i<=25; i++) {
+                    let norm = i/25; 
+                    let y = norm * 3;
+                    let angle = norm * Math.PI * 4 + t * 2 + offset;
+                    let radius = 1.2 - Math.abs(norm)*0.5; 
+                    let x = Math.cos(angle) * radius;
+                    let z = Math.sin(angle) * radius;
+                    let cam = applyCamera(x, y, z);
+                    let p = project3D(cam.x, cam.y, cam.z, cx, cy);
+                    let color = `rgba(${100+strand*50}, 200, 255, 0.8)`;
+                    if(strand===1) color = `rgba(255, 100, 255, 0.8)`;
+                    if(strand===2) color = `rgba(212, 175, 55, 0.8)`;
+                    if(p && prevP) drawLine(ctx, prevP, p, color, 2);
+                    if(p && i%2===0) drawPoint(ctx, p, '#fff', 1.5);
+                    prevP = p;
+                }
+            }
+        }
+
+        function renderEventHorizon(cx, cy, t) {
+            let cCam = applyCamera(0,0,0);
+            let center = project3D(cCam.x, cCam.y, cCam.z, cx, cy);
+            if(center) {
+                ctx.shadowColor = '#000'; ctx.shadowBlur = 0;
+                drawPoint(ctx, center, '#05030a', 25); 
+                ctx.shadowColor = '#9d00ff'; ctx.shadowBlur = 30;
+                ctx.strokeStyle = 'rgba(157, 0, 255, 0.8)'; ctx.lineWidth=3;
+                ctx.beginPath(); ctx.arc(center.x, center.y, center.scale*0.6, 0, Math.PI*2); ctx.stroke();
+            }
+            let prevP = null;
+            for(let ring=1; ring<=6; ring++) {
+                let rad = 0.8 + ring*0.4;
+                for(let i=0; i<=50; i++) {
+                    let ang = (i/50)*Math.PI*2 - t*(1.5 - ring*0.1);
+                    let x = Math.cos(ang)*rad;
+                    let z = Math.sin(ang)*rad;
+                    let y = Math.sin(ang*3 + t*2)*0.1; 
+                    let cam = applyCamera(x, y, z);
+                    let p = project3D(cam.x, cam.y, cam.z, cx, cy);
+                    let color = `rgba(255, ${150+ring*15}, 0, ${1 - ring/7})`;
+                    if(ring%2===0) color = `rgba(0, 240, 255, ${1 - ring/7})`;
+                    if(p) drawPoint(ctx, p, color, 1.5);
+                    if(p && prevP && i>0 && i<50) drawLine(ctx, prevP, p, color, 0.5);
+                    prevP = p;
+                }
+            }
+        }
+
+        function renderGoldenSpiral(cx, cy, t) {
+            ctx.shadowBlur = 12; ctx.shadowColor = 'rgba(212, 175, 55, 0.8)';
+            let prevP = null;
+            let branches = 2;
+            for(let b=0; b<branches; b++) {
+                prevP = null;
+                let bOffset = (b/branches) * Math.PI*2;
+                for(let i=0; i<150; i++) {
+                    let theta = i * 0.15;
+                    let r = 0.1 * Math.exp(0.12 * theta); 
+                    if (r > 3) break;
+                    let x = r * Math.cos(theta - t*1.5 + bOffset);
+                    let y = r * Math.sin(theta - t*1.5 + bOffset);
+                    let z = (i/150)*4 - 2; 
+                    let cam = applyCamera(x, y, z);
+                    let p = project3D(cam.x, cam.y, cam.z, cx, cy);
+                    if(p) {
+                        drawPoint(ctx, p, `rgba(255, ${230 - i}, 55, 0.9)`, 1.5);
+                        if(prevP) drawLine(ctx, prevP, p, 'rgba(212,175,55,0.4)', 1.5);
+                    }
+                    prevP = p;
+                }
+            }
+        }
+
+        function renderLatticeWeb(cx, cy, t) {
+            ctx.shadowBlur = 10; ctx.shadowColor = 'rgba(0, 240, 255, 0.5)';
+            let nodes = [];
+            let size = 1.5;
+            for(let x=-1; x<=1; x++) {
+                for(let y=-1; y<=1; y++) {
+                    for(let z=-1; z<=1; z++) {
+                        let nx = x * size; let ny = y * size; let nz = z * size;
+                        let d = Math.sqrt(nx*nx + ny*ny + nz*nz);
+                        let stretch = 1 + Math.sin(t*2 + d)*0.2;
+                        nx*=stretch; ny*=stretch; nz*=stretch;
+                        let cam = applyCamera(nx, ny, nz);
+                        let p = project3D(cam.x, cam.y, cam.z, cx, cy);
+                        if(p) { nodes.push({p: p, grid: [x,y,z]}); drawPoint(ctx, p, '#00f0ff', 2); }
+                    }
+                }
+            }
+            ctx.lineWidth = 1;
+            for(let i=0; i<nodes.length; i++) {
+                for(let j=i+1; j<nodes.length; j++) {
+                    let dx = Math.abs(nodes[i].grid[0] - nodes[j].grid[0]);
+                    let dy = Math.abs(nodes[i].grid[1] - nodes[j].grid[1]);
+                    let dz = Math.abs(nodes[i].grid[2] - nodes[j].grid[2]);
+                    if((dx+dy+dz) === 1) { drawLine(ctx, nodes[i].p, nodes[j].p, 'rgba(0, 240, 255, 0.4)', 1); }
+                }
+            }
+        }
+
+        function renderMobius(cx, cy, t) {
+            ctx.shadowBlur = 15; ctx.shadowColor = 'rgba(0, 240, 255, 0.8)';
+            let prevP = null;
+            for(let i=0; i<=100; i++) {
+                let u = (i/100) * Math.PI * 2;
+                let v = Math.sin(t*3)*0.5;
+                let x = Math.cos(u) * (1.5 + (v/2) * Math.cos(u/2));
+                let y = Math.sin(u) * (1.5 + (v/2) * Math.cos(u/2));
+                let z = (v/2) * Math.sin(u/2);
+                let cam = applyCamera(x, y, z);
+                let p = project3D(cam.x, cam.y, cam.z, cx, cy);
+                if(p) {
+                    drawPoint(ctx, p, '#fff', 1.5);
+                    if(prevP) drawLine(ctx, prevP, p, 'rgba(0,240,255,0.6)', 1.5);
+                }
+                prevP = p;
+            }
+        }
+
+        function renderWormhole(cx, cy, t) {
+            ctx.shadowBlur = 20; ctx.shadowColor = 'rgba(212, 175, 55, 0.6)';
+            for(let ring=-10; ring<=10; ring++) {
+                let y = ring * 0.25;
+                let rad = 0.5 + (y*y); 
+                let prevP = null;
+                for(let i=0; i<=30; i++) {
+                    let ang = (i/30) * Math.PI*2 + (t*0.5 * (y>0?1:-1)); 
+                    let x = Math.cos(ang) * rad;
+                    let z = Math.sin(ang) * rad;
+                    let cam = applyCamera(x, y, z);
+                    let p = project3D(cam.x, cam.y, cam.z, cx, cy);
+                    let alpha = 1 - (Math.abs(y)/3);
+                    if(p && alpha > 0) {
+                        if(prevP) drawLine(ctx, prevP, p, `rgba(212, 175, 55, ${alpha})`, 1);
+                        if(i%2===0) drawPoint(ctx, p, '#fff', 1);
+                    }
+                    prevP = p;
+                }
+            }
+        }
+
+        function renderVoidRing(cx, cy, t) {
+            let cCam = applyCamera(0,0,0);
+            let center = project3D(cCam.x, cCam.y, cCam.z, cx, cy);
+            if(center) {
+                ctx.shadowColor = '#000'; ctx.shadowBlur = 0;
+                drawPoint(ctx, center, '#05030a', 30); 
+                ctx.shadowColor = 'rgba(0, 240, 255, 0.8)'; ctx.shadowBlur = 20;
+                ctx.strokeStyle = 'rgba(0, 240, 255, 0.5)'; ctx.lineWidth=2;
+                ctx.beginPath(); ctx.arc(center.x, center.y, center.scale*0.8 + Math.sin(t*4)*5, 0, Math.PI*2); ctx.stroke();
+            }
+            for(let i=0; i<40; i++) {
+                let ang = i * 0.5 + t;
+                let rad = 1.5 + (i * 0.1) + (t*2 % 2); 
+                let x = Math.cos(ang) * rad;
+                let z = Math.sin(ang) * rad;
+                let y = Math.sin(ang*2 + t)*0.2;
+                let cam = applyCamera(x, y, z);
+                let p = project3D(cam.x, cam.y, cam.z, cx, cy);
+                if(p) drawPoint(ctx, p, `rgba(255,255,255,${1 - (rad-1.5)/2})`, 1.5);
+            }
+        }
+
+        function renderSlicePlane(cx, cy, t) {
+            ctx.shadowBlur = 10;
+            ctx.shadowColor = 'rgba(157, 0, 255, 0.5)';
+            for(let lat=-Math.PI/2; lat<=Math.PI/2; lat+=Math.PI/6) {
+                let prevP = null;
+                for(let lon=0; lon<=Math.PI*2; lon+=0.2) {
+                    let x = Math.cos(lat)*Math.cos(lon)*2;
+                    let z = Math.cos(lat)*Math.sin(lon)*2;
+                    let y = Math.sin(lat)*2;
+                    let cam = applyCamera(x,y,z);
+                    let p = project3D(cam.x, cam.y, cam.z, cx, cy);
+                    if(p && prevP) drawLine(ctx, prevP, p, 'rgba(157,0,255,0.2)', 0.5);
+                    prevP = p;
+                }
+            }
+            ctx.shadowColor = 'rgba(0, 240, 255, 0.8)';
+            let planeZ = Math.sin(t)*1.5; 
+            let p1 = project3D(applyCamera(-2.5, -2.5, planeZ).x, applyCamera(-2.5, -2.5, planeZ).y, applyCamera(-2.5, -2.5, planeZ).z, cx, cy);
+            let p2 = project3D(applyCamera(2.5, -2.5, planeZ).x, applyCamera(2.5, -2.5, planeZ).y, applyCamera(2.5, -2.5, planeZ).z, cx, cy);
+            let p3 = project3D(applyCamera(2.5, 2.5, planeZ).x, applyCamera(2.5, 2.5, planeZ).y, applyCamera(2.5, 2.5, planeZ).z, cx, cy);
+            let p4 = project3D(applyCamera(-2.5, 2.5, planeZ).x, applyCamera(-2.5, 2.5, planeZ).y, applyCamera(-2.5, 2.5, planeZ).z, cx, cy);
+            if(p1&&p2&&p3&&p4) {
+                ctx.fillStyle = 'rgba(0, 240, 255, 0.1)';
+                ctx.beginPath(); ctx.moveTo(p1.x, p1.y); ctx.lineTo(p2.x, p2.y); ctx.lineTo(p3.x, p3.y); ctx.lineTo(p4.x, p4.y); ctx.fill();
+                drawLine(ctx, p1, p2, '#00f0ff', 2); drawLine(ctx, p2, p3, '#00f0ff', 2); 
+                drawLine(ctx, p3, p4, '#00f0ff', 2); drawLine(ctx, p4, p1, '#00f0ff', 2);
+            }
+            let ringRad = Math.sqrt(Math.max(0, 4 - planeZ*planeZ));
+            let prevR = null;
+            for(let i=0; i<=40; i++) {
+                let ang = i * Math.PI*2/40;
+                let x = Math.cos(ang) * ringRad;
+                let y = Math.sin(ang) * ringRad;
+                let cam = applyCamera(x, y, planeZ);
+                let p = project3D(cam.x, cam.y, cam.z, cx, cy);
+                if(p && prevR) drawLine(ctx, prevR, p, '#fff', 2.5);
+                prevR = p;
+            }
+        }
+
+        function renderOrthogonalPhase(cx, cy, t) {
+            ctx.shadowBlur = 15;
+            ctx.shadowColor = 'rgba(255, 0, 0, 0.8)';
+            for(let i=0; i<40; i++) {
+                let a = i*Math.PI*2/40;
+                let cam = applyCamera(Math.cos(a)*1.5, Math.sin(a)*1.5, 0);
+                drawPoint(ctx, project3D(cam.x, cam.y, cam.z, cx, cy), '#ff0000', 1.5);
+            }
+            ctx.shadowColor = 'rgba(0, 255, 0, 0.8)';
+            for(let i=0; i<40; i++) {
+                let a = i*Math.PI*2/40;
+                let cam = applyCamera(0, Math.cos(a)*1.5, Math.sin(a)*1.5);
+                drawPoint(ctx, project3D(cam.x, cam.y, cam.z, cx, cy), '#00ff00', 1.5);
+            }
+            ctx.shadowColor = 'rgba(0, 240, 255, 0.8)';
+            for(let i=0; i<40; i++) {
+                let a = i*Math.PI*2/40;
+                let rad = 1.5 + Math.sin(t*3)*0.2; 
+                let cam = applyCamera(Math.cos(a)*rad, 0, Math.sin(a)*rad);
+                let p = project3D(cam.x, cam.y, cam.z, cx, cy);
+                drawPoint(ctx, p, '#00f0ff', 2);
+                if(i%4===0 && p) {
+                    let cCam = applyCamera(0,0,0);
+                    drawLine(ctx, project3D(cCam.x, cCam.y, cCam.z, cx, cy), p, 'rgba(0,240,255,0.3)', 0.5);
+                }
+            }
+        }
+
+        function renderVectorField(cx, cy, t) {
+            ctx.shadowBlur = 5; ctx.shadowColor = 'rgba(0, 240, 255, 0.8)';
+            let spacing = 1.2;
+            for(let x=-1.5; x<=1.5; x+=spacing) {
+                for(let y=-1.5; y<=1.5; y+=spacing) {
+                    for(let z=-1.5; z<=1.5; z+=spacing) {
+                        let vx = -x + Math.sin(t+y)*0.5;
+                        let vy = -y + Math.cos(t+z)*0.5;
+                        let vz = -z + Math.sin(t+x)*0.5;
+                        let len = Math.sqrt(vx*vx + vy*vy + vz*vz) || 1;
+                        vx = (vx/len)*0.4; vy = (vy/len)*0.4; vz = (vz/len)*0.4;
+
+                        let camStart = applyCamera(x, y, z);
+                        let camEnd = applyCamera(x+vx, y+vy, z+vz);
+                        let p1 = project3D(camStart.x, camStart.y, camStart.z, cx, cy);
+                        let p2 = project3D(camEnd.x, camEnd.y, camEnd.z, cx, cy);
+
+                        if(p1 && p2) {
+                            drawLine(ctx, p1, p2, 'rgba(0, 240, 255, 0.6)', 1.5);
+                            drawPoint(ctx, p2, '#fff', 1.5);
+                        }
+                    }
+                }
+            }
+        }
+
+        // --- RENDER LOOP ---
+        function renderLoop() {
+            if(document.getElementById('lexicon-view').classList.contains('hidden')) {
+                return requestAnimationFrame(renderLoop);
+            }
+
+            ctx.fillStyle = '#000000';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            ctx.strokeStyle = 'rgba(255,255,255,0.05)';
+            ctx.lineWidth = 1;
+            const cx = canvas.width / 2;
+            const cy = canvas.height / 2;
+            
+            for(let i=-5; i<=5; i++) {
+                let c1 = applyCamera(i*0.5, 2, -2.5); let p1 = project3D(c1.x, c1.y, c1.z, cx, cy);
+                let c2 = applyCamera(i*0.5, 2, 2.5);  let p2 = project3D(c2.x, c2.y, c2.z, cx, cy);
+                let c3 = applyCamera(-2.5, 2, i*0.5); let p3 = project3D(c3.x, c3.y, c3.z, cx, cy);
+                let c4 = applyCamera(2.5, 2, i*0.5);  let p4 = project3D(c4.x, c4.y, c4.z, cx, cy);
+                if(p1 && p2) { ctx.beginPath(); ctx.moveTo(p1.x, p1.y); ctx.lineTo(p2.x, p2.y); ctx.stroke(); }
+                if(p3 && p4) { ctx.beginPath(); ctx.moveTo(p3.x, p3.y); ctx.lineTo(p4.x, p4.y); ctx.stroke(); }
+            }
+
+            if(!currentSymbol) return requestAnimationFrame(renderLoop);
+            
+            const mode = ontologyDatabase[currentSymbol].visMode;
+            ctx.globalCompositeOperation = 'screen';
+            
+            if(mode === 'FUNNEL') renderFunnel(cx, cy - 30, time);
+            else if(mode === 'TREFOIL_SPIN') renderTrefoilSpin(cx, cy, time);
+            else if(mode === 'RIPPLES') renderRipples(cx, cy, time);
+            else if(mode === 'TETRAHEDRON') renderTetrahedron(cx, cy, time);
+            else if(mode === 'HEX_CIRCLE') renderHexCircle(cx, cy, time);
+            else if(mode === 'BRAID') renderBraid(cx, cy, time);
+            else if(mode === 'EVENT_HORIZON') renderEventHorizon(cx, cy, time);
+            else if(mode === 'GOLDEN_SPIRAL') renderGoldenSpiral(cx, cy, time);
+            else if(mode === 'LATTICE_WEB') renderLatticeWeb(cx, cy, time);
+            else if(mode === 'MOBIUS') renderMobius(cx, cy, time);
+            else if(mode === 'WORMHOLE') renderWormhole(cx, cy, time);
+            else if(mode === 'VOID_RING') renderVoidRing(cx, cy, time);
+            else if(mode === 'SLICE_PLANE') renderSlicePlane(cx, cy, time);
+            else if(mode === 'ORTHOGONAL_PHASE') renderOrthogonalPhase(cx, cy, time);
+            else if(mode === 'VECTOR_FIELD') renderVectorField(cx, cy, time);
+
+            ctx.globalCompositeOperation = 'source-over';
+            
+            if(autoRotate) {
+                rotY += 0.005;
+                rotX += 0.002;
+            }
+            time += 0.02; 
+            
+            requestAnimationFrame(renderLoop);
+        }
+
+        init();
+
+    </script>
+</body>
+</html>
