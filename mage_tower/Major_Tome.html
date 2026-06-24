@@ -69,6 +69,7 @@ import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.15.0/f
 import { resolveTier } from "../scripts/genesis-registrar.js";
 import { listMinorTomes } from "../scripts/minor-tome.js";
 import { listMajorTomes, requestUnlock, listMyRequests, listGrantsForStudent, verifyUnlockGrant } from "../scripts/major-tome.js";
+import { renderTomeSVG } from "../scripts/tome-procgen.js";
 
 const $ = (id) => document.getElementById(id);
 const esc = (s) => String(s).replace(/[&<>]/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;" }[c]));
@@ -111,9 +112,15 @@ async function load(){
       stateHtml = `<span class="state locked">Locked</span>`;
       actHtml = `<button class="btn" data-req="${t.id}">Request unlock</button>`;
     }
-    return `<div class="tome"><div class="top"><h3>${esc(t.title)}</h3>${stateHtml}</div>
+    let sigil = "";
+    try { if (t.canonId && t.dept) sigil = renderTomeSVG(t, 60); } catch {}
+    return `<div class="tome"><div class="top">
+        <div style="display:flex;gap:.8rem;align-items:center;min-width:0">
+          ${sigil ? `<div style="flex-shrink:0;width:60px;height:60px;line-height:0">${sigil}</div>` : ""}
+          <h3 style="overflow:hidden;text-overflow:ellipsis">${esc(t.title)}</h3>
+        </div>${stateHtml}</div>
       ${t.summary?`<div class="sum">${esc(t.summary)}</div>`:""}
-      <div class="meta mono">${esc(t.plane||"")} · requires ${esc(t.requiredTier||"ACOLYTE")} · immutable canon</div>
+      <div class="meta mono">${esc(t.plane||"")} · requires ${esc(t.requiredTier||"ACOLYTE")}${t.globalIndex?` · seat ${t.globalIndex}/145`:""} · immutable canon</div>
       <div class="row-act">${actHtml}</div></div>`;
   }));
   $("list").innerHTML = rows.join("");

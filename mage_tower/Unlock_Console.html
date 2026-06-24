@@ -73,7 +73,12 @@
   </div>
 
   <div class="panel" id="archon-panel" style="display:none">
-    <div class="label">Inscribe a Major Tome (Archon · immutable)</div>
+    <div class="label">Canon (Archon · immutable)</div>
+    <div style="display:flex;gap:.6rem;align-items:center;flex-wrap:wrap;margin-bottom:.7rem;padding-bottom:.8rem;border-bottom:1px solid rgba(34,211,238,.12)">
+      <button class="btn gold" id="inscribe-manifest">Inscribe canon manifest (≤145)</button>
+      <span class="hint" id="manifest-msg">Batch-inscribes <span class="mono">canon/canon.manifest.json</span> — idempotent (skips canonIds already present).</span>
+    </div>
+    <div class="label" style="margin-top:.2rem">Or inscribe one manually</div>
     <label class="f">Title</label><input id="mt-title" placeholder="e.g. The Gravitoelectromagnetic Canon" />
     <label class="f">Summary</label><input id="mt-sum" placeholder="One-line description" />
     <div class="grid2">
@@ -96,7 +101,7 @@ import { auth } from "../scripts/firebase/config.js";
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-auth.js";
 import { resolveTier } from "../scripts/genesis-registrar.js";
 import { listMinorTomes } from "../scripts/minor-tome.js";
-import { listPendingRequests, grantUnlock, listMajorTomes, createMajorTome, listGrantsByIssuer, verifyUnlockGrant } from "../scripts/major-tome.js";
+import { listPendingRequests, grantUnlock, listMajorTomes, createMajorTome, listGrantsByIssuer, verifyUnlockGrant, inscribeCanon, loadCanonManifest } from "../scripts/major-tome.js";
 
 const $ = (id) => document.getElementById(id);
 const esc = (s) => String(s).replace(/[&<>]/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;" }[c]));
@@ -156,6 +161,18 @@ $("inscribe").onclick = async () => {
     $("mt-title").value = ""; $("mt-sum").value = ""; load();
   } catch (e) { $("imsg").className = "msg bad"; $("imsg").textContent = e.message; }
   $("inscribe").disabled = false;
+};
+
+$("inscribe-manifest").onclick = async () => {
+  const btn = $("inscribe-manifest"), msg = $("manifest-msg");
+  btn.disabled = true; msg.textContent = "Loading & validating manifest…";
+  try {
+    const manifest = await loadCanonManifest();
+    const res = await inscribeCanon(UID, manifest, (p) => { msg.textContent = `Inscribing ${p.made + p.skipped}/${p.total} · +${p.made} new · ${p.skipped} skipped`; });
+    msg.innerHTML = `<span class="vok">Canon inscribed ✓ ${res.made} new, ${res.skipped} already present (${res.total} total).</span>`;
+    load();
+  } catch (e) { msg.innerHTML = `<span class="vbad">${esc(e.message)}</span>`; }
+  btn.disabled = false;
 };
 </script>
 </body>

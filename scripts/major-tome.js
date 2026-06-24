@@ -13,6 +13,7 @@ import { readRegistrar } from "./spire-registrar.js";
 import { resolveTier } from "./genesis-registrar.js";
 import { getTick } from "./schumann-oracle.js";
 import * as SC from "./seal-crypto.js";
+import { validateManifest } from "./tome-procgen.js";
 
 // ─── Canon (Archon-only, immutable) ────────────────────────────────────────
 export async function createMajorTome(uid, data = {}) {
@@ -21,18 +22,59 @@ export async function createMajorTome(uid, data = {}) {
   if (!data.title) throw new Error("A Major Tome needs a title.");
   const reg = await readRegistrar(uid);
   const payload = {
-    title: data.title, summary: data.summary || "", plane: data.plane || "custom",
-    dept: data.dept || null, requiredTier: data.requiredTier || "ACOLYTE",
-    lockSpec: data.lockSpec || { kind: "instructor-grant" },
+    // canon record (procgen seed data — visuals derived, never stored)
+    canonId: data.canonId || null,
+    globalIndex: data.globalIndex ?? null,
+    title: data.title,
+    summary: data.summary || "",
+    dept: data.dept || null,
+    plane: data.plane || (data.dept ? `dept-${data.dept}` : "custom"),
+    artifact: data.artifact || null,
+    clusterIndex: data.clusterIndex ?? null,
+    requiredTier: data.requiredTier || "ACOLYTE",
+    tomeStatus: data.status || "active",          // lesson status (active/manuscript/…)
+    lattice: data.lattice || "E8",
+    manifold: data.manifold || "clifford",
+    seedOverride: data.seedOverride || null,
+    prereqs: data.prereqs || [],
+    contentPath: data.contentPath || null,
+    lockSpec: data.lockSpec || { kind: "instructor-grant", prereqs: data.prereqs || [] },
+    // canon lifecycle
     creatorUid: uid, creatorGenesisId: reg ? reg.cosmologicalId : null,
     immutable: true, status: "canon",
   };
   const ref = await addToCollection("majorTomes", payload);
-  await addToCollection("chronicles", { kind: "major-tome.inscribe", uid, majorTomeId: ref.id, title: data.title });
+  await addToCollection("chronicles", { kind: "major-tome.inscribe", uid, majorTomeId: ref.id, canonId: payload.canonId, title: data.title });
   return { id: ref.id, ...payload };
 }
 
 export const listMajorTomes = () => queryCollection("majorTomes", []);
+
+/** Load the canon manifest (defaults to canon/canon.manifest.json next to /scripts). */
+export async function loadCanonManifest(url) {
+  const u = url || new URL("../canon/canon.manifest.json", import.meta.url);
+  const res = await fetch(u);
+  if (!res.ok) throw new Error(`Could not load canon manifest (${res.status}).`);
+  return res.json();
+}
+
+/** Archon batch-inscribe the canon. Idempotent: skips any canonId already present. */
+export async function inscribeCanon(uid, manifest, onProgress) {
+  const tier = await resolveTier(uid);
+  if (tier !== "ARCHON") throw new Error("Only Archons may inscribe the canon.");
+  const v = validateManifest(manifest);
+  if (!v.ok) throw new Error("Manifest invalid: " + v.errors.slice(0, 3).join("; ") + (v.errors.length > 3 ? ` (+${v.errors.length - 3} more)` : ""));
+  const existing = await listMajorTomes();
+  const have = new Set(existing.map((m) => m.canonId).filter(Boolean));
+  const total = manifest.tomes.length;
+  let made = 0, skipped = 0;
+  for (const rec of manifest.tomes) {
+    if (have.has(rec.canonId)) { skipped++; onProgress && onProgress({ total, made, skipped, canonId: rec.canonId, status: "skip" }); continue; }
+    await createMajorTome(uid, rec);
+    made++; onProgress && onProgress({ total, made, skipped, canonId: rec.canonId, status: "inscribed" });
+  }
+  return { total, made, skipped, warnings: v.warnings };
+}
 
 // ─── Request → Combine → Unlock ─────────────────────────────────────────────
 export async function requestUnlock(uid, majorTomeId, studentSealId) {

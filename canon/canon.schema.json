@@ -1,0 +1,45 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://biochainai.github.io/Owl-Academy/canon/canon.schema.json",
+  "title": "Owl Academy Tome Canon Manifest",
+  "description": "Authored seed data for the 145 immutable Major Tomes. Visuals are derived (never stored) by scripts/tome-procgen.js. Validate this in CI before Firebase ingestion.",
+  "type": "object",
+  "required": ["format", "genVersion", "tomes"],
+  "additionalProperties": false,
+  "properties": {
+    "format":     { "const": "owl-canon/1" },
+    "genVersion": { "type": "string", "description": "Render-engine version; bump only to intentionally re-skin all visuals.", "examples": ["owl-procgen/2"] },
+    "defaults":   { "type": "object", "additionalProperties": true },
+    "deptPalette":{ "type": "object", "additionalProperties": { "type": "string", "pattern": "^#[0-9a-fA-F]{6}$" } },
+    "tomes": {
+      "type": "array",
+      "minItems": 0,
+      "maxItems": 145,
+      "items": { "$ref": "#/$defs/tome" }
+    }
+  },
+  "$defs": {
+    "dept": { "enum": ["I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X"] },
+    "tome": {
+      "type": "object",
+      "required": ["canonId", "globalIndex", "title", "dept", "artifact", "clusterIndex", "requiredTier", "status", "lattice", "manifold"],
+      "additionalProperties": false,
+      "properties": {
+        "canonId":      { "type": "string", "pattern": "^dept-(I|II|III|IV|V|VI|VII|VIII|IX|X)/[a-z0-9][a-z0-9-]*$", "description": "Immutable anchor; the seed and every visual/grant key off this." },
+        "globalIndex":  { "type": "integer", "minimum": 1, "maximum": 145, "description": "Center→rim seat (Dept I innermost, Dept X outer rim)." },
+        "title":        { "type": "string", "minLength": 1 },
+        "dept":         { "$ref": "#/$defs/dept" },
+        "artifact":     { "type": "string", "pattern": "^artifact-(I|II|III|IV|V|VI|VII|VIII|IX|X)-[0-9]+$" },
+        "clusterIndex": { "type": "integer", "minimum": 0, "maximum": 15, "description": "Position within the artifact cluster (0..8 for I–IX, 0..15 for X)." },
+        "requiredTier": { "enum": ["ACOLYTE", "INSTRUCTOR", "ARCHON"] },
+        "status":       { "enum": ["active", "manuscript", "reference", "sealed"] },
+        "prereqs":      { "type": "array", "items": { "type": "string" }, "default": [] },
+        "contentPath":  { "type": ["string", "null"], "default": null },
+        "summary":      { "type": "string", "default": "" },
+        "lattice":      { "enum": ["E8", "R8", "R24"] },
+        "manifold":     { "enum": ["clifford", "s3", "trefoil"] },
+        "seedOverride": { "type": ["string", "null"], "default": null, "description": "Leave null to derive the seed from the canon coordinates (recommended)." }
+      }
+    }
+  }
+}
