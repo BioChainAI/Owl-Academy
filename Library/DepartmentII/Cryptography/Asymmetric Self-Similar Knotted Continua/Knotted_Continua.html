@@ -1,0 +1,1025 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Owl Academy | Crypto-Topography: Knotted Continua</title>
+    
+    <!-- External Libraries -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Inter:wght@300;400;500;600&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+    
+    <!-- MathJax Configuration for Equations -->
+    <script>
+        window.MathJax = { 
+            tex: { 
+                inlineMath: [['$', '$'], ['\\(', '\\)']], 
+                displayMath: [['$$', '$$'], ['\\[', '\\]']] 
+            },
+            startup: {
+                pageReady: () => {
+                    return MathJax.startup.defaultPageReady().then(() => {
+                        // Re-calculate heights for open accordions after MathJax renders
+                        document.querySelectorAll('.collapsible-section.is-open .collapsible-content').forEach(content => {
+                            content.style.maxHeight = content.scrollHeight + 100 + "px";
+                        });
+                    });
+                }
+            }
+        };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+    <!-- Three.js for 3D Interactive Module -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+
+    <style>
+        :root {
+            --color-void: #05030a;
+            --color-primary: #D4AF37;
+            --color-primary-light: #FFF8DC;
+            --color-primary-dark: #aa771c;
+            --color-secondary: #8e9eab;
+            --color-holo1: #00d4ff;
+            --color-holo2: #8A2BE2;
+            --color-state1: #00d4ff; /* S1 - Cyan */
+            --color-state2: #8A2BE2; /* S2 - Purple */
+            --color-state3: #D4AF37; /* S3 - Gold */
+        }
+
+        body {
+            background-color: var(--color-void);
+            color: #e2e8f0;
+            font-family: 'Inter', sans-serif;
+            background: radial-gradient(circle at 50% 0%, color-mix(in srgb, var(--color-holo2) 8%, var(--color-void)), var(--color-void) 60%);
+            min-height: 100vh;
+            margin: 0;
+            overflow-x: hidden;
+            line-height: 1.7;
+            scroll-behavior: smooth;
+        }
+
+        /* Subtle pulse for the Voxel Sigil */
+        .voxel-pulse {
+            animation: pulse-glow 3s infinite alternate;
+        }
+        @keyframes pulse-glow {
+            0% { filter: drop-shadow(0 0 4px rgba(0, 212, 255, 0.4)); }
+            100% { filter: drop-shadow(0 0 12px rgba(0, 212, 255, 0.8)); }
+        }
+
+        .starfield {
+            position: fixed; inset: 0;
+            background-image:
+                radial-gradient(2px 2px at 20px 30px, var(--color-primary), rgba(0,0,0,0)),
+                radial-gradient(2px 2px at 40px 70px, #fff, rgba(0,0,0,0)),
+                radial-gradient(2px 2px at 50px 160px, rgba(255,255,255,0.8), rgba(0,0,0,0)),
+                radial-gradient(2px 2px at 90px 40px, #fff, rgba(0,0,0,0)),
+                radial-gradient(2px 2px at 130px 80px, var(--color-primary), rgba(0,0,0,0));
+            background-repeat: repeat; background-size: 250px 250px;
+            animation: twinkle 8s infinite alternate;
+            opacity: 0.15; z-index: -2; pointer-events: none;
+        }
+        
+        .nebula-glow {
+            position: fixed; top: 0; left: 50%; transform: translateX(-50%);
+            width: 100vw; height: 50vh;
+            background: radial-gradient(ellipse at top center, color-mix(in srgb, var(--color-state2) 12%, transparent) 0%, transparent 70%);
+            z-index: -1; pointer-events: none;
+        }
+
+        @keyframes twinkle { 0% { opacity: 0.05; } 100% { opacity: 0.2; } }
+
+        h1, h2, h3, h4, h5, .mystical-font { font-family: 'Cinzel', serif; }
+
+        .gold-gradient {
+            background: linear-gradient(to right, var(--color-primary), var(--color-primary-light), var(--color-primary));
+            -webkit-background-clip: text; background-clip: text;
+            color: transparent; text-shadow: 0 0 15px color-mix(in srgb, var(--color-primary) 30%, transparent);
+        }
+
+        .glass-panel {
+            background: rgba(10, 8, 20, 0.4);
+            backdrop-filter: blur(12px);
+            border: 1px solid color-mix(in srgb, var(--color-primary) 15%, transparent);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5);
+        }
+
+        .tutorial-content p { margin-bottom: 1.25rem; color: #cbd5e1; font-weight: 300; }
+        .tutorial-content strong { color: #f8fafc; font-weight: 600; }
+        .tutorial-content a { color: var(--color-holo1); text-decoration: none; transition: color 0.2s; }
+        .tutorial-content a:hover { color: #fff; text-shadow: 0 0 8px var(--color-holo1); }
+
+        .tutorial-content ul { list-style: none; padding-left: 1rem; margin-bottom: 1.5rem; }
+        .tutorial-content li { position: relative; padding-left: 1.5rem; margin-bottom: 0.5rem; color: #cbd5e1; font-weight: 300; }
+        .tutorial-content li::before {
+            content: '⬡'; position: absolute; left: 0; top: 0.1rem;
+            color: var(--color-primary); font-size: 0.7rem;
+        }
+
+        .math-block { overflow-x: auto; padding: 1rem 0; margin: 1rem 0; }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: rgba(0,0,0,0.3); }
+        ::-webkit-scrollbar-thumb { background: color-mix(in srgb, var(--color-primary) 40%, transparent); border-radius: 10px; }
+
+        /* Collapsible Sections */
+        .collapsible-section {
+            background: rgba(5, 3, 10, 0.5);
+            border: 1px solid color-mix(in srgb, var(--color-primary) 20%, transparent);
+            border-radius: 12px;
+            margin-bottom: 1.5rem;
+            overflow: hidden;
+            transition: border-color 0.3s;
+        }
+        .collapsible-section:hover {
+            border-color: color-mix(in srgb, var(--color-primary) 40%, transparent);
+        }
+        .collapsible-trigger {
+            width: 100%; padding: 1.25rem 1.5rem;
+            display: flex; justify-content: space-between; align-items: center;
+            background: rgba(255, 255, 255, 0.02); cursor: pointer;
+            border: none; outline: none; transition: background 0.3s;
+        }
+        .collapsible-trigger:hover { background: rgba(255, 255, 255, 0.05); }
+        .collapsible-title {
+            color: var(--color-primary); font-size: 1.25rem; margin: 0;
+            letter-spacing: 0.05em; text-align: left;
+        }
+        .collapsible-icon {
+            color: var(--color-primary); font-size: 0.9rem;
+            transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .collapsible-content {
+            max-height: 0; opacity: 0; overflow: hidden;
+            transition: max-height 0.6s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.5s ease;
+        }
+        .collapsible-section.is-open .collapsible-icon { transform: rotate(180deg); }
+        .collapsible-section.is-open .collapsible-content { opacity: 1; }
+        .collapsible-inner { padding: 0 1.5rem 1.5rem 1.5rem; border-top: 1px solid rgba(255,255,255,0.05); margin-top: 0.5rem; padding-top: 1.5rem; }
+
+        /* Explainer Animation Styles */
+        .explainer-box {
+            background: rgba(0, 0, 0, 0.5);
+            border: 1px solid color-mix(in srgb, var(--color-state2) 30%, transparent);
+            border-radius: 8px; padding: 1.5rem; margin: 2rem 0;
+            display: flex; flex-direction: column; align-items: center;
+            box-shadow: inset 0 0 20px rgba(0,0,0,0.8);
+        }
+        .explainer-caption {
+            font-size: 0.85rem; color: var(--color-secondary); margin-top: 1rem;
+            text-align: center; font-family: 'Fira Code', monospace;
+            border-top: 1px dashed color-mix(in srgb, var(--color-secondary) 30%, transparent);
+            padding-top: 0.75rem; width: 100%;
+        }
+
+        /* SVG Graph & Knot Specifics */
+        .node-s1 { fill: var(--color-state1); filter: drop-shadow(0 0 6px var(--color-state1)); }
+        .node-s2 { fill: var(--color-state2); filter: drop-shadow(0 0 6px var(--color-state2)); }
+        .node-s3 { fill: var(--color-state3); filter: drop-shadow(0 0 6px var(--color-state3)); }
+        
+        .edge-path { fill: none; stroke: rgba(255,255,255,0.3); stroke-width: 2; }
+        .edge-flow { fill: none; stroke: #fff; stroke-width: 2; stroke-dasharray: 6 6; animation: flowForward 1s linear infinite; }
+        
+        @keyframes flowForward { to { stroke-dashoffset: -12; } }
+
+        .knot-path {
+            fill: none;
+            stroke-width: 3;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }
+        .knot-s1 { stroke: var(--color-state1); filter: drop-shadow(0 0 4px var(--color-state1)); }
+        .knot-s2 { stroke: var(--color-state2); filter: drop-shadow(0 0 4px var(--color-state2)); }
+        .knot-s3 { stroke: var(--color-state3); filter: drop-shadow(0 0 4px var(--color-state3)); }
+
+        .draw-knot {
+            stroke-dasharray: 1000;
+            stroke-dashoffset: 1000;
+            animation: drawKnot 4s ease-in-out forwards infinite alternate;
+        }
+        @keyframes drawKnot {
+            0% { stroke-dashoffset: 1000; }
+            100% { stroke-dashoffset: 0; }
+        }
+
+        /* Explainer Animation Transitions */
+        .attractor-circle {
+            transition: all 0.5s ease-in-out;
+            transform-origin: center;
+        }
+
+    </style>
+</head>
+<body class="antialiased">
+
+    <!-- Atmospheric Background -->
+    <div class="starfield"></div>
+    <div class="nebula-glow"></div>
+
+    <!-- Header containing Voxel Owl, Title, and Logout -->
+    <header class="w-full pt-6 pb-6 px-6 md:px-10 flex flex-col md:flex-row justify-between items-start md:items-center border-b border-purple-900/50 bg-[#05030a]/80 backdrop-blur-md shadow-2xl z-40 sticky top-0 gap-6">
+        
+        <!-- Left Side: Voxel Owl Sigil + Title -->
+        <div class="flex items-center gap-5">
+            <!-- Voxel Owl Sigil -->
+            <div class="w-12 h-12 flex-shrink-0 voxel-pulse block hover:scale-105 transition-transform cursor-pointer">
+                <svg viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg" class="w-full h-full">
+                    <rect x="10" y="10" width="10" height="10" fill="var(--color-state2)"/>
+                    <rect x="60" y="10" width="10" height="10" fill="var(--color-state2)"/>
+                    <rect x="20" y="20" width="40" height="10" fill="var(--color-state2)"/>
+                    <rect x="10" y="20" width="10" height="10" fill="var(--color-state2)"/>
+                    <rect x="60" y="20" width="10" height="10" fill="var(--color-state2)"/>
+                    <rect x="10" y="30" width="20" height="10" fill="var(--color-state2)"/>
+                    <rect x="30" y="30" width="20" height="10" fill="#D4AF37"/> 
+                    <rect x="50" y="30" width="20" height="10" fill="var(--color-state2)"/>
+                    <rect x="10" y="40" width="20" height="10" fill="var(--color-state2)"/>
+                    <rect x="30" y="40" width="20" height="10" fill="#D4AF37"/> 
+                    <rect x="50" y="40" width="20" height="10" fill="var(--color-state2)"/>
+                    <rect x="10" y="50" width="20" height="10" fill="var(--color-state2)"/>
+                    <rect x="30" y="50" width="20" height="10" fill="#D4AF37"/> 
+                    <rect x="50" y="50" width="20" height="10" fill="var(--color-state2)"/>
+                    <rect x="20" y="60" width="40" height="10" fill="var(--color-state2)"/>
+                    <rect x="30" y="70" width="20" height="10" fill="var(--color-state2)"/>
+                </svg>
+            </div>
+
+            <div>
+                <div class="text-[10px] text-purple-400 tracking-[0.2em] uppercase mb-1 font-mono">Department II • Crypto-Topography</div>
+                <h1 class="text-purple-300 text-xl md:text-2xl tracking-widest uppercase font-bold drop-shadow-[0_0_8px_rgba(138,43,226,0.4)] mystical-font">Knotted Continua</h1>
+            </div>
+        </div>
+        
+        <!-- Right Side: Action Buttons -->
+        <div class="flex items-center gap-3 md:gap-4 z-50">
+            <!-- Sever Connection -->
+            <button onclick="console.log('Sever Connection Initiated')" class="group flex items-center gap-2 text-red-500 hover:text-red-400 hover:bg-red-950/30 transition-all uppercase tracking-widest text-xs font-bold border border-red-900 px-4 py-2 rounded shadow-[0_0_10px_rgba(239,68,68,0.1)] hover:shadow-[0_0_15px_rgba(239,68,68,0.2)] font-mono cursor-pointer">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="group-hover:-translate-x-1 transition-transform"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+                <span class="hidden md:inline">Sever Connection</span>
+                <span class="inline md:hidden">Sever</span>
+            </button>
+        </div>
+    </header>
+
+    <div class="max-w-7xl mx-auto px-4 md:px-8 py-12 flex flex-col lg:flex-row gap-10 relative z-10">
+        
+        <!-- Left Sidebar Navigation -->
+        <aside class="w-full lg:w-64 flex-shrink-0">
+            <nav class="glass-panel rounded-xl p-6 sticky top-8">
+                <h3 class="text-xs text-yellow-500 tracking-[0.2em] font-bold uppercase mb-6 border-b border-yellow-600/20 pb-2 mystical-font">
+                    Research Archive
+                </h3>
+                
+                <ul class="space-y-4 text-sm font-light text-slate-300">
+                    <li>
+                        <a href="#abstract" class="block hover:text-yellow-400 transition-colors">
+                            Abstract
+                        </a>
+                    </li>
+                    <li>
+                        <a href="#" onclick="openSection(0); return false;" class="block hover:text-yellow-400 transition-colors">
+                            I. Symbolic Dynamics
+                        </a>
+                    </li>
+                    <li>
+                        <a href="#" onclick="openSection(1); return false;" class="block hover:text-yellow-400 transition-colors">
+                            II. The Trefoil Seed
+                        </a>
+                    </li>
+                    <li>
+                        <a href="#" onclick="openSection(2); return false;" class="block hover:text-yellow-400 transition-colors">
+                            III. Graph-Directed Attractor
+                        </a>
+                    </li>
+                    <li>
+                        <a href="#" onclick="openSection(3); return false;" class="block hover:text-yellow-400 transition-colors">
+                            IV. Metric Dimension
+                        </a>
+                    </li>
+                    <li>
+                        <a href="#" onclick="openSection(4); return false;" class="block hover:text-yellow-400 transition-colors">
+                            V. Interactive 3D Manifold
+                        </a>
+                    </li>
+                    <li>
+                        <a href="#" onclick="openSection(5); return false;" class="block text-purple-400 hover:text-purple-300 transition-colors font-semibold">
+                            VI. Archival Video Reference
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+        </aside>
+
+        <!-- Main Content Area -->
+        <main class="flex-1 glass-panel rounded-xl p-8 md:p-12">
+            
+            <!-- Access Granted Banner -->
+            <div class="flex items-start gap-4 mb-8 p-4 bg-purple-950/20 border border-purple-900/50 rounded-md">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#a855f7" stroke-width="2" class="mt-1 flex-shrink-0"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+                <div>
+                    <h2 class="text-purple-400 font-bold text-sm tracking-wider uppercase mb-1 font-mono">Topological Clearance Validated</h2>
+                    <p class="text-gray-400 text-xs leading-relaxed font-mono">
+                        The underlying geometry matches Department II prerequisites. You are authorized to review the non-reversible Markov generation of embedded chiral continua.
+                    </p>
+                </div>
+            </div>
+            
+            <article class="tutorial-content">
+                <header class="mb-10 text-center lg:text-left" id="abstract">
+                    <div class="inline-block px-3 py-1 border border-purple-500/30 rounded-full bg-purple-900/20 text-purple-300 text-[10px] tracking-widest uppercase mb-4 font-mono">
+                        Published Research Paper
+                    </div>
+                    <h1 class="text-3xl md:text-4xl font-bold tracking-[0.1em] text-white mystical-font mb-4 leading-tight">
+                        Asymmetric Self-Similar Knotted Continua
+                    </h1>
+                    <p class="text-gray-400 font-light text-lg mb-6">
+                        Generation of infinite multiscale chiral structures via a three-state graph-directed system.
+                    </p>
+                </header>
+
+                <div class="bg-white/5 p-6 rounded-lg border-l-4 border-yellow-500 mb-10">
+                    <h3 class="text-yellow-500 font-bold uppercase tracking-widest text-sm mt-0 mb-3 mystical-font">Abstract</h3>
+                    <p class="text-sm m-0 text-slate-300">
+                        We describe a formal framework for constructing asymmetric self-similar continua in $\mathbb{R}^3$ using trefoil knots as local geometric units. The construction is governed by an asymmetric directed Markov transition graph and tiered contraction ratios, producing an embedded object modeled as the attractor of a graph-directed iterated function system.
+                    </p>
+                </div>
+
+                <!-- Collapsible Sections Container -->
+                <div id="accordion-container">
+                    
+                    <!-- Section I -->
+                    <div class="collapsible-section is-open">
+                        <button class="collapsible-trigger">
+                            <h2 class="collapsible-title">I. Symbolic Dynamics & The Transition Rule</h2>
+                            <span class="collapsible-icon">▼</span>
+                        </button>
+                        <div class="collapsible-content">
+                            <div class="collapsible-inner">
+                                <p>We establish a finite set of states $\mathcal{S}=\{S_1,S_2,S_3\}$. Admissible recursive transitions are strictly dictated by the directed adjacency matrix $M$:</p>
+                                <div class="math-block">
+                                    $$ M= \begin{pmatrix} 0 & 1 & 1 \\ 0 & 0 & 1 \\ 1 & 0 & 0 \end{pmatrix} $$
+                                </div>
+                                <p>
+                                    Because $M \ne M^T$, the transition structure is decidedly non-reversible. This creates a recursive flow where State 1 branches into States 2 and 3, State 2 flows only into State 3, and State 3 loops back exclusively to State 1.
+                                </p>
+
+                                <!-- Exhibit I -->
+                                <div class="explainer-box">
+                                    <svg viewBox="0 0 300 250" width="100%" height="250" xmlns="http://www.w3.org/2000/svg">
+                                        <defs>
+                                            <marker id="arrowS1" markerWidth="10" markerHeight="7" refX="25" refY="3.5" orient="auto">
+                                              <polygon points="0 0, 10 3.5, 0 7" fill="var(--color-state1)" />
+                                            </marker>
+                                            <marker id="arrowS2" markerWidth="10" markerHeight="7" refX="25" refY="3.5" orient="auto">
+                                              <polygon points="0 0, 10 3.5, 0 7" fill="var(--color-state2)" />
+                                            </marker>
+                                            <marker id="arrowS3" markerWidth="10" markerHeight="7" refX="25" refY="3.5" orient="auto">
+                                              <polygon points="0 0, 10 3.5, 0 7" fill="var(--color-state3)" />
+                                            </marker>
+                                        </defs>
+                                        <g transform="translate(150, 130)">
+                                            <!-- Edges -->
+                                            <!-- S1 to S2 -->
+                                            <path d="M 0,-70 Q 70,-70 70,30" class="edge-path" stroke="var(--color-state1)" marker-end="url(#arrowS2)"/>
+                                            <path d="M 0,-70 Q 70,-70 70,30" class="edge-flow" stroke="var(--color-state1)"/>
+                                            <!-- S1 to S3 -->
+                                            <path d="M 0,-70 Q -70,-70 -70,30" class="edge-path" stroke="var(--color-state1)" marker-end="url(#arrowS3)"/>
+                                            <path d="M 0,-70 Q -70,-70 -70,30" class="edge-flow" stroke="var(--color-state1)"/>
+                                            <!-- S2 to S3 -->
+                                            <path d="M 70,30 Q 0,80 -70,30" class="edge-path" stroke="var(--color-state2)" marker-end="url(#arrowS3)"/>
+                                            <path d="M 70,30 Q 0,80 -70,30" class="edge-flow" stroke="var(--color-state2)"/>
+                                            <!-- S3 to S1 -->
+                                            <path d="M -70,30 L -15,-40" class="edge-path" stroke="var(--color-state3)" marker-end="url(#arrowS1)"/>
+                                            <path d="M -70,30 L -15,-40" class="edge-flow" stroke="var(--color-state3)"/>
+
+                                            <!-- Nodes -->
+                                            <circle cx="0" cy="-70" r="15" class="node-s1"/>
+                                            <text x="0" y="-65" fill="#000" font-family="Fira Code" font-size="14" font-weight="bold" text-anchor="middle">S1</text>
+                                            
+                                            <circle cx="70" cy="30" r="15" class="node-s2"/>
+                                            <text x="70" y="35" fill="#fff" font-family="Fira Code" font-size="14" font-weight="bold" text-anchor="middle">S2</text>
+                                            
+                                            <circle cx="-70" cy="30" r="15" class="node-s3"/>
+                                            <text x="-70" y="35" fill="#000" font-family="Fira Code" font-size="14" font-weight="bold" text-anchor="middle">S3</text>
+                                        </g>
+                                    </svg>
+                                    <div class="explainer-caption">
+                                        Exhibit A: Directed Asymmetric Markov Graph. S1 commands dual forward flow, establishing primary hierarchy, while the S3->S1 return loop forces infinite recursive knotting.
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Section II -->
+                    <div class="collapsible-section">
+                        <button class="collapsible-trigger">
+                            <h2 class="collapsible-title">II. The Trefoil Knot as the Topological Seed</h2>
+                            <span class="collapsible-icon">▼</span>
+                        </button>
+                        <div class="collapsible-content">
+                            <div class="collapsible-inner">
+                                <p>Instead of scaling flat lines or spheres, our primitive seed $K_0 \subset \mathbb{R}^3$ is the standard $(2,3)$-torus knot. It is mathematically described by the parametric equations:</p>
+                                <div class="math-block">
+                                    $$
+                                    \begin{aligned}
+                                    x(t)&=(2+\cos 3t)\cos 2t \\
+                                    y(t)&=(2+\cos 3t)\sin 2t \\
+                                    z(t)&=\sin 3t
+                                    \end{aligned}
+                                    $$
+                                </div>
+                                <p>
+                                    This introduces fundamental <strong>chirality</strong> at the lowest level of the manifold. Its mirror image cannot be isotopically aligned with itself without entering a 4th dimension.
+                                </p>
+
+                                <!-- Exhibit II -->
+                                <div class="explainer-box">
+                                    <svg viewBox="0 0 300 300" width="100%" height="250" xmlns="http://www.w3.org/2000/svg">
+                                        <g transform="translate(150, 150) scale(40)">
+                                            <!-- SVG Approximation of a 2D Trefoil Projection -->
+                                            <path class="knot-path knot-s2 draw-knot" 
+                                                  vector-effect="non-scaling-stroke"
+                                                  d="M 0,-2 
+                                                     C 2,-2 3,0 1.5,1.5
+                                                     C 0,3 -2.5,0.5 -1,-1
+                                                     C 0.5,-2.5 3,-0.5 1,1.5
+                                                     C -1,3.5 -3,1.5 -1.5,0
+                                                     C 0,-1.5 2,0.5 0,2
+                                                     C -2,3.5 -1.5,0 0,-2" />
+                                        </g>
+                                    </svg>
+                                    <div class="explainer-caption">
+                                        Exhibit B: The $(2,3)$-Torus Seed. A continuous line crossing itself 3 times, possessing an inherent handedness that breaks spatial symmetry.
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Section III -->
+                    <div class="collapsible-section">
+                        <button class="collapsible-trigger">
+                            <h2 class="collapsible-title">III. Graph-Directed Attractor & IFS</h2>
+                            <span class="collapsible-icon">▼</span>
+                        </button>
+                        <div class="collapsible-content">
+                            <div class="collapsible-inner">
+                                <p>
+                                    In classical Iterated Function Systems (IFS) like the Sierpinski Triangle, a single shape is composed of smaller copies of itself ($X = \cup T_i(X)$). The <strong>Graph-Directed Attractor</strong> shatters this singular self-similarity.
+                                </p>
+                                <p>
+                                    Instead, we have a family of distinct topological spaces ($X_1, X_2, X_3$). Their internal compositions are dictated strictly by the transitions mapped in the matrix $M$. 
+                                </p>
+                                
+                                <div class="lore-callout">
+                                    <p class="m-0 italic text-yellow-100/80">
+                                        "$X_1$ does not contain smaller copies of $X_1$; rather, it acts as a boundary containing the geometry of $X_2$ and $X_3$. The recursion only loops back to itself indirectly through the deep-layer transition of $S_3 \to S_1$. This generates an asymmetric, multi-tiered fractal where each layer inherits properties from a different parent state."
+                                    </p>
+                                </div>
+
+                                <p>
+                                    The entire recursive object is defined simultaneously via the Hutchinson operator for the three topological states:
+                                </p>
+                                <div class="math-block">
+                                    $$ X_i=K_0^{(i)}\cup \bigcup_{\{j:M_{ij}=1\}} T_{ij}(X_j), \qquad i=1,2,3. $$
+                                </div>
+                                <p>
+                                    Applying the specific $M$ matrix, the mutually dependent recursion unfolds as:
+                                </p>
+                                <div class="math-block">
+                                    $$
+                                    \begin{aligned}
+                                    X_1 &= K_0^{(1)}\cup T_{12}(X_2)\cup T_{13}(X_3) \\
+                                    X_2 &= K_0^{(2)}\cup T_{23}(X_3) \\
+                                    X_3 &= K_0^{(3)}\cup T_{31}(X_1)
+                                    \end{aligned}
+                                    $$
+                                </div>
+
+                                <!-- Exhibit III -->
+                                <div class="explainer-box">
+                                    <svg viewBox="0 0 400 150" width="100%" height="150" xmlns="http://www.w3.org/2000/svg">
+                                        <!-- Visualizing the equation hierarchy -->
+                                        <g transform="translate(50, 40)" font-family="Fira Code" font-size="12" fill="#fff">
+                                            
+                                            <!-- X1 Logic -->
+                                            <text x="0" y="0" fill="var(--color-state1)">X_1</text>
+                                            <text x="25" y="0">=</text>
+                                            <rect x="40" y="-12" width="15" height="15" fill="none" stroke="var(--color-state1)" stroke-width="2"/>
+                                            <text x="65" y="0">∪</text>
+                                            <rect x="85" y="-8" width="10" height="10" fill="none" stroke="var(--color-state2)" stroke-width="2"/>
+                                            <text x="105" y="0">∪</text>
+                                            <rect x="125" y="-8" width="10" height="10" fill="none" stroke="var(--color-state3)" stroke-width="2"/>
+
+                                            <!-- X2 Logic -->
+                                            <text x="0" y="35" fill="var(--color-state2)">X_2</text>
+                                            <text x="25" y="35">=</text>
+                                            <rect x="40" y="23" width="15" height="15" fill="none" stroke="var(--color-state2)" stroke-width="2"/>
+                                            <text x="65" y="35">∪</text>
+                                            <rect x="85" y="27" width="10" height="10" fill="none" stroke="var(--color-state3)" stroke-width="2"/>
+
+                                            <!-- X3 Logic -->
+                                            <text x="0" y="70" fill="var(--color-state3)">X_3</text>
+                                            <text x="25" y="70">=</text>
+                                            <rect x="40" y="58" width="15" height="15" fill="none" stroke="var(--color-state3)" stroke-width="2"/>
+                                            <text x="65" y="70">∪</text>
+                                            <!-- Shrinks and loops back to 1 -->
+                                            <rect x="85" y="62" width="10" height="10" fill="none" stroke="var(--color-state1)" stroke-width="2"/>
+
+                                        </g>
+                                    </svg>
+                                    <div class="explainer-caption">
+                                        Exhibit C: The Geometric Contraction logic. The large seed object embeds smaller scaled instances of its allowed child states, generating infinite interior depth.
+                                    </div>
+                                </div>
+
+                                <!-- NEW INTERACTIVE EXPLAINER -->
+                                <div class="mt-8 border border-purple-900/40 rounded-lg p-6 bg-black/40">
+                                    <h4 class="text-purple-300 font-mono text-sm uppercase tracking-widest mb-4 border-b border-purple-900/50 pb-2">Exhibit D: Interactive Attractor Convergence</h4>
+                                    <p class="text-xs text-gray-400 mb-4 font-mono leading-relaxed">
+                                        Interact with the spatial bounding regions. As depth increases, observe how the spaces ($X_1, X_2, X_3$) nest into each other according to the matrix $M$. No space scales itself directly.
+                                    </p>
+                                    
+                                    <div class="flex justify-center gap-2 mb-4">
+                                        <button id="btn-attr-0" onclick="drawAttractor(0)" class="px-3 py-1 text-xs font-mono uppercase rounded transition-colors bg-purple-600 text-white">Base Spaces</button>
+                                        <button id="btn-attr-1" onclick="drawAttractor(1)" class="px-3 py-1 text-xs font-mono uppercase rounded transition-colors text-purple-400 border border-purple-800 hover:bg-purple-900/30">Depth 1</button>
+                                        <button id="btn-attr-2" onclick="drawAttractor(2)" class="px-3 py-1 text-xs font-mono uppercase rounded transition-colors text-purple-400 border border-purple-800 hover:bg-purple-900/30">Depth 2</button>
+                                        <button id="btn-attr-3" onclick="drawAttractor(3)" class="px-3 py-1 text-xs font-mono uppercase rounded transition-colors text-purple-400 border border-purple-800 hover:bg-purple-900/30">Depth 3</button>
+                                    </div>
+
+                                    <div class="w-full h-[300px] flex justify-center items-center overflow-hidden bg-[#020106] rounded-md shadow-inner border border-purple-900/30">
+                                        <svg id="gd-ifs-svg" viewBox="0 0 600 300" class="w-full h-full"></svg>
+                                    </div>
+                                </div>
+
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Section IV -->
+                    <div class="collapsible-section">
+                        <button class="collapsible-trigger">
+                            <h2 class="collapsible-title">IV. Metric Dimension & The Plastic Constant</h2>
+                            <span class="collapsible-icon">▼</span>
+                        </button>
+                        <div class="collapsible-content">
+                            <div class="collapsible-inner">
+                                <p>
+                                    Assuming equal contraction ratios $c$ across all transitions, the weighted adjacency matrix is $A(s) = c^s M$. The Hausdorff dimension $d$ is determined by finding where the spectral radius equals $1$:
+                                </p>
+                                <div class="math-block">
+                                    $$ \rho(A(d)) = 1 \implies c^d \rho(M) = 1 \implies d = \frac{\log \rho(M)}{-\log c} $$
+                                </div>
+                                <p>
+                                    The characteristic polynomial of $M$ is $\lambda^3 - \lambda - 1$. Its dominant real root is the <strong>Plastic Constant</strong>:
+                                </p>
+                                <div class="math-block">
+                                    $$ \rho(M) \approx 1.324717957 $$
+                                </div>
+                                <p>
+                                    Unlike symmetric IFS fractals modeled by the Golden Ratio, the asymmetric topology here is governed strictly by the Plastic Constant, generating a unique space-filling geometry.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Section V (Interactive 3D Module) -->
+                    <div class="collapsible-section">
+                        <button class="collapsible-trigger">
+                            <h2 class="collapsible-title text-purple-400">V. Interactive 3D Manifold</h2>
+                            <span class="collapsible-icon text-purple-400">▼</span>
+                        </button>
+                        <div class="collapsible-content">
+                            <div class="collapsible-inner">
+                                <p class="text-sm font-light text-gray-300 mb-4">
+                                    Engage the interactive simulation below to observe the graph-directed recursive construction of the knotted continuum. We visualize the seed trefoil ($S_1$) and iterate through the contracting similitudes ($T_{ij}$). <strong>Use your mouse to rotate, zoom, and pan the continuum.</strong>
+                                </p>
+                                
+                                <div id="three-container" class="relative w-full h-[500px] rounded-lg border border-purple-900/50 overflow-hidden bg-[#020106] shadow-[0_0_20px_rgba(138,43,226,0.15)] cursor-move">
+                                    <!-- UI overlay -->
+                                    <div class="absolute top-4 left-4 z-10 bg-black/80 p-5 border border-purple-900/50 rounded-lg backdrop-blur-md max-w-[300px]">
+                                        <div class="text-[10px] text-purple-400 font-mono tracking-widest mb-1 uppercase">Recursive Depth <span id="sim-phase-num">0</span> / 3</div>
+                                        <h4 id="step-title" class="text-white font-mono text-sm font-bold mb-2">The Base State ($X_1$)</h4>
+                                        <p id="step-desc" class="text-gray-400 text-xs font-mono leading-relaxed h-16">
+                                            The singular $K_0^{(1)}$ macroscopic trefoil seed resides at the origin. No recursion has occurred yet.
+                                        </p>
+                                        <div class="flex gap-3 mt-2">
+                                            <button onclick="changeSimStep(-1)" class="flex-1 py-1.5 border border-purple-900/50 text-purple-400 text-[10px] font-mono rounded hover:bg-purple-900/30 transition-colors uppercase">&lt; Collapse</button>
+                                            <button onclick="changeSimStep(1)" class="flex-1 py-1.5 bg-purple-950/80 border border-purple-500/50 text-purple-300 text-[10px] font-mono font-bold rounded hover:bg-purple-800 transition-colors uppercase shadow-[0_0_10px_rgba(138,43,226,0.2)]">Iterate &gt;</button>
+                                        </div>
+                                    </div>
+                                    <div class="absolute bottom-4 right-4 z-10 text-[10px] font-mono text-purple-600/50 pointer-events-none">
+                                        [DRAG TO ROTATE] [SCROLL TO ZOOM]
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Section VI (YouTube Video Dropdown) -->
+                    <div class="collapsible-section">
+                        <button class="collapsible-trigger">
+                            <h2 class="collapsible-title text-purple-400">VI. Archival Video Reference</h2>
+                            <span class="collapsible-icon text-purple-400">▼</span>
+                        </button>
+                        <div class="collapsible-content">
+                            <div class="collapsible-inner">
+                                <p class="text-sm font-light text-gray-300 mb-4">
+                                    Review the visual presentation of the continuum folding and dimensional properties associated with the topological seed.
+                                </p>
+                                <div class="w-full aspect-video rounded-lg border border-purple-900/50 overflow-hidden shadow-[0_0_20px_rgba(138,43,226,0.15)] bg-[#020106]">
+                                    <iframe width="100%" height="100%" src="https://www.youtube.com/embed/inraDuMV-jk" title="Archival Reference" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div> <!-- End Accordion -->
+
+                <div class="mt-16 pt-8 border-t border-white/10 flex justify-between items-center">
+                    <span class="text-sm text-gray-500">End of Published Document</span>
+                    <a href="#" class="inline-flex items-center px-6 py-2 border border-purple-600/40 rounded text-purple-400 hover:bg-purple-600/10 transition text-sm mystical-font tracking-widest">
+                        Return to Archives ➔
+                    </a>
+                </div>
+
+            </article>
+        </main>
+    </div>
+
+    <footer class="w-full border-t border-purple-600/20 bg-black/60 backdrop-blur-md mt-12 py-8 text-center relative z-20">
+        <div class="flex justify-center mb-4">
+            <svg width="24" height="24" viewBox="0 0 100 100" fill="none" stroke="var(--color-state2)" stroke-width="3">
+                <circle cx="50" cy="50" r="45"/>
+                <polygon points="50,15 80,80 20,80"/>
+            </svg>
+        </div>
+        <p class="text-xs text-purple-600/60 uppercase tracking-[0.3em] font-light">
+            © 2026 Owl Academy Archives. All rights reserved.
+        </p>
+    </footer>
+
+    <!-- Scripts -->
+    <script>
+        // Accordion UI Logic
+        document.addEventListener('DOMContentLoaded', () => {
+            const sections = document.querySelectorAll('.collapsible-section');
+            
+            sections.forEach(section => {
+                const trigger = section.querySelector('.collapsible-trigger');
+                const content = section.querySelector('.collapsible-content');
+                
+                if (section.classList.contains('is-open')) {
+                    content.style.maxHeight = content.scrollHeight + 50 + "px";
+                }
+
+                trigger.addEventListener('click', () => {
+                    const isOpen = section.classList.contains('is-open');
+                    
+                    if (isOpen) {
+                        content.style.maxHeight = "0px";
+                        section.classList.remove('is-open');
+                    } else {
+                        section.classList.add('is-open');
+                        content.style.maxHeight = content.scrollHeight + 50 + "px";
+                        
+                        if (window.MathJax && MathJax.typesetPromise) {
+                            MathJax.typesetPromise([content]).then(() => {
+                                content.style.maxHeight = content.scrollHeight + 50 + "px";
+                            });
+                        }
+
+                        // Init 3D if opening section V
+                        if (section.querySelector('h2').innerText.includes('V.')) {
+                            if (typeof initThreeJS === 'function') {
+                                setTimeout(initThreeJS, 300);
+                            }
+                        }
+                    }
+                });
+            });
+            
+            window.openSection = function(index) {
+                if (sections[index]) {
+                    const section = sections[index];
+                    const content = section.querySelector('.collapsible-content');
+                    if (!section.classList.contains('is-open')) {
+                        section.classList.add('is-open');
+                        content.style.maxHeight = content.scrollHeight + 50 + "px";
+                        
+                        if (index === 4 && typeof initThreeJS === 'function') {
+                            setTimeout(initThreeJS, 300);
+                        }
+                    }
+                    section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+            };
+            
+            // Initialize 2D SVG Attractor visualization
+            drawAttractor(0);
+        });
+
+        // --- 2D Interactive Attractor Convergence Visualizer ---
+        function drawAttractor(maxDepth) {
+            const svg = document.getElementById('gd-ifs-svg');
+            if(!svg) return;
+            svg.innerHTML = ''; // clear
+
+            // Base positions for X1, X2, X3 to show distinct topologies
+            const bases = [
+                { state: 1, x: 100, y: 150, label: "X₁" },
+                { state: 2, x: 300, y: 150, label: "X₂" },
+                { state: 3, x: 500, y: 150, label: "X₃" }
+            ];
+
+            bases.forEach(base => {
+                // Add labels under
+                const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                text.setAttribute('x', base.x);
+                text.setAttribute('y', 270);
+                text.setAttribute('fill', 'rgba(255,255,255,0.4)');
+                text.setAttribute('font-family', 'Fira Code');
+                text.setAttribute('font-size', '16');
+                text.setAttribute('text-anchor', 'middle');
+                text.textContent = base.label;
+                svg.appendChild(text);
+
+                // Start recursion
+                recurseAttractor(svg, base.state, 0, maxDepth, base.x, base.y, 80);
+            });
+
+            // Update button styles visually
+            for(let i=0; i<=3; i++) {
+                const btn = document.getElementById('btn-attr-' + i);
+                if(btn) {
+                    if(i === maxDepth) {
+                        btn.classList.add('bg-purple-600', 'text-white');
+                        btn.classList.remove('text-purple-400', 'border', 'border-purple-800', 'hover:bg-purple-900/30');
+                    } else {
+                        btn.classList.remove('bg-purple-600', 'text-white');
+                        btn.classList.add('text-purple-400', 'border', 'border-purple-800', 'hover:bg-purple-900/30');
+                    }
+                }
+            }
+        }
+
+        // Shared Matrix M logic for the 2D visualizer
+        const M_Logic = [
+            [], // padding
+            [0, 0, 1, 1], // S1 -> S2, S3
+            [0, 0, 0, 1], // S2 -> S3
+            [0, 1, 0, 0]  // S3 -> S1
+        ];
+
+        function recurseAttractor(svg, state, currentDepth, maxDepth, x, y, radius) {
+            // Draw the current boundary node
+            const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+            circle.setAttribute('cx', x);
+            circle.setAttribute('cy', y);
+            circle.setAttribute('r', radius);
+            circle.setAttribute('fill', 'none');
+            circle.classList.add('attractor-circle'); // animation class
+            
+            let color = '';
+            if(state===1) color = 'var(--color-state1)';
+            if(state===2) color = 'var(--color-state2)';
+            if(state===3) color = 'var(--color-state3)';
+            
+            circle.setAttribute('stroke', color);
+            circle.setAttribute('stroke-width', currentDepth === 0 ? 3 : 1.5);
+            circle.style.opacity = 1 - (currentDepth * 0.2); // Fade deeper recursions slightly
+            
+            svg.appendChild(circle);
+
+            if (currentDepth < maxDepth) {
+                const nextStates = [];
+                for(let j=1; j<=3; j++) {
+                    if(M_Logic[state][j] === 1) nextStates.push(j);
+                }
+                
+                const childRadius = radius * 0.42; 
+                
+                // Positioning logic for children bounding boxes inside the parent box
+                if (nextStates.length === 1) {
+                    // Center it if there's only 1 child
+                    recurseAttractor(svg, nextStates[0], currentDepth + 1, maxDepth, x, y, childRadius);
+                } else if (nextStates.length === 2) {
+                    // Split left and right if 2 children
+                    recurseAttractor(svg, nextStates[0], currentDepth + 1, maxDepth, x - childRadius*1.1, y, childRadius);
+                    recurseAttractor(svg, nextStates[1], currentDepth + 1, maxDepth, x + childRadius*1.1, y, childRadius);
+                }
+            }
+        }
+
+        // --- 3D Interactive Module Logic (Recursive IFS) ---
+        let threeInitialized = false;
+        let simStep = 0; // 0, 1, 2, 3 representing depth
+        
+        let scene, camera, renderer, controls;
+        let fractalGroup; // Holds all generated meshes
+
+        // Colors mapping to states
+        const Colors = {
+            1: 0x00d4ff, // S1 Cyan
+            2: 0x8A2BE2, // S2 Purple
+            3: 0xD4AF37  // S3 Gold
+        };
+
+        const M = [
+            [], // padding for 1-based index
+            [0, 0, 1, 1], // S1 -> S2, S3
+            [0, 0, 0, 1], // S2 -> S3
+            [0, 1, 0, 0]  // S3 -> S1
+        ];
+
+        const ContractionRatio = 0.45;
+        const RadiusBase = 3;
+
+        const phaseContent = [
+            {
+                title: "The Base State ($X_1$)",
+                desc: "The singular $K_0^{(1)}$ macroscopic trefoil seed resides at the origin. No recursion has occurred yet."
+            },
+            {
+                title: "First Iteration ($n=1$)",
+                desc: "$X_1$ branches. According to the Markov matrix $M$, $S_1$ creates scaled, translated instances of $S_2$ and $S_3$ within its orbital boundary."
+            },
+            {
+                title: "Second Iteration ($n=2$)",
+                desc: "$S_2$ maps strictly to $S_3$. Simultaneously, the early $S_3$ instances begin looping their flow mathematically backward to create tiny $S_1$ seeds."
+            },
+            {
+                title: "Third Iteration ($n=3$)",
+                desc: "The fractal embedding intensifies. Infinite regression begins to form an asymmetric connected topological continuum driven by the matrix."
+            }
+        ];
+
+        function changeSimStep(dir) {
+            simStep += dir;
+            if (simStep < 0) simStep = 0;
+            if (simStep > 3) simStep = 3;
+            
+            document.getElementById('sim-phase-num').innerText = simStep;
+            
+            const titleEl = document.getElementById('step-title');
+            const descEl  = document.getElementById('step-desc');
+            
+            titleEl.innerHTML = phaseContent[simStep].title;
+            descEl.innerHTML = phaseContent[simStep].desc;
+            
+            // Instruct MathJax to rescan and render the newly injected math elements
+            if (window.MathJax && MathJax.typesetPromise) {
+                MathJax.typesetClear([titleEl, descEl]);
+                MathJax.typesetPromise([titleEl, descEl]).then(() => {
+                    console.log('UI MathJax rendering complete.');
+                });
+            }
+            
+            // Rebuild the Fractal
+            buildFractal(simStep);
+            
+            // Sync 2D visualizer if visible
+            if (document.getElementById('gd-ifs-svg')) {
+                drawAttractor(simStep);
+            }
+        }
+
+        function createTrefoilMesh(state, radius) {
+            const geometry = new THREE.TorusKnotGeometry(radius, radius*0.3, 100, 16, 2, 3);
+            const color = Colors[state];
+            
+            const material = new THREE.MeshPhysicalMaterial({ 
+                color: color, 
+                metalness: 0.5, 
+                roughness: 0.2, 
+                transmission: 0.3, 
+                transparent: true, 
+                opacity: 0.85,
+                emissive: color, 
+                emissiveIntensity: 0.4
+            });
+
+            const mesh = new THREE.Mesh(geometry, material);
+            const edgesGeo = new THREE.EdgesGeometry(geometry, 20);
+            const edgeMat = new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.15 });
+            const edges = new THREE.LineSegments(edgesGeo, edgeMat);
+            
+            mesh.add(edges);
+            return mesh;
+        }
+
+        function generateIFS(parentNode, currentState, currentDepth, maxDepth, radius, offsetVec) {
+            const mesh = createTrefoilMesh(currentState, radius);
+            mesh.position.copy(offsetVec);
+            parentNode.add(mesh);
+
+            if (currentDepth < maxDepth) {
+                const nextStates = [];
+                for(let j=1; j<=3; j++) {
+                    if(M[currentState][j] === 1) nextStates.push(j);
+                }
+
+                const childRadius = radius * ContractionRatio;
+                const dist = radius * 1.5; 
+                const angleStep = (Math.PI * 2) / nextStates.length;
+                
+                nextStates.forEach((nextState, index) => {
+                    const angle = index * angleStep + (currentDepth * Math.PI/4); 
+                    
+                    const childOffset = new THREE.Vector3(
+                        Math.cos(angle) * dist,
+                        (Math.random() - 0.5) * dist, 
+                        Math.sin(angle) * dist
+                    );
+
+                    generateIFS(mesh, nextState, currentDepth + 1, maxDepth, childRadius, childOffset);
+                });
+            }
+        }
+
+        function buildFractal(maxDepth) {
+            if(!scene || !fractalGroup) return;
+            
+            scene.remove(fractalGroup);
+            fractalGroup = new THREE.Group();
+            
+            generateIFS(fractalGroup, 1, 0, maxDepth, RadiusBase, new THREE.Vector3(0,0,0));
+            
+            scene.add(fractalGroup);
+        }
+
+        function initThreeJS() {
+            if (threeInitialized) return;
+            const container = document.getElementById('three-container');
+            if (!container) return;
+
+            scene = new THREE.Scene();
+            scene.fog = new THREE.FogExp2(0x020106, 0.015);
+
+            camera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1, 1000);
+            camera.position.set(0, 5, 25);
+
+            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+            renderer.setSize(container.clientWidth, container.clientHeight);
+            renderer.setPixelRatio(window.devicePixelRatio);
+            container.appendChild(renderer.domElement);
+
+            if(typeof THREE.OrbitControls !== 'undefined') {
+                controls = new THREE.OrbitControls(camera, renderer.domElement);
+                controls.enableDamping = true;
+                controls.dampingFactor = 0.05;
+                // Auto-rotate disabled per request - user has manual control
+                controls.autoRotate = false; 
+            }
+
+            scene.add(new THREE.AmbientLight(0xffffff, 0.3));
+
+            const pointLight1 = new THREE.PointLight(0x00d4ff, 1.5, 100);
+            pointLight1.position.set(10, 20, 10);
+            scene.add(pointLight1);
+            
+            const pointLight2 = new THREE.PointLight(0x8A2BE2, 1.5, 100);
+            pointLight2.position.set(-10, -20, -10);
+            scene.add(pointLight2);
+
+            fractalGroup = new THREE.Group();
+            scene.add(fractalGroup);
+
+            buildFractal(simStep);
+
+            // Initial math render sweep for hardcoded visual elements
+            if (window.MathJax && MathJax.typesetPromise) {
+                MathJax.typesetPromise([document.getElementById('step-title'), document.getElementById('step-desc')]);
+            }
+
+            threeInitialized = true;
+            animateThreeJS();
+        }
+
+        function animateThreeJS() {
+            requestAnimationFrame(animateThreeJS);
+            
+            // Forced rotation removed so the manifold stays completely stable 
+            // and solely respects OrbitControls input.
+
+            if(controls) controls.update();
+            renderer.render(scene, camera);
+        }
+
+        window.addEventListener('resize', () => {
+            if (!threeInitialized) return;
+            const container = document.getElementById('three-container');
+            if (container && camera && renderer) {
+                camera.aspect = container.clientWidth / container.clientHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(container.clientWidth, container.clientHeight);
+            }
+        });
+    </script>
+</body>
+</html>
