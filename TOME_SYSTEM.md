@@ -6,6 +6,8 @@ The Tome System is the core progression mechanic of Owl Academy. Knowledge is me
 
 The full path comprises **145 Tomes** across ten departments, producing **11 Artifacts** and unlocking the **Consciousness Triad** (Departments VII, VIII, IX).
 
+> **See also:** the [Tome Seal & Canon System](./TOME_SEAL_SYSTEM.md) — the immutable Major‑Tome canon of these 145, seal‑signed completion claims, and instructor / Archon sign‑off.
+
 ---
 
 ## Tome Status Definitions
