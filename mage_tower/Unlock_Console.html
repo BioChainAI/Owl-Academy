@@ -129,12 +129,15 @@ async function load(){
     ? active.map(t => `<option value="${t.sealId}">${esc(t.label)} · ${t.sealId.slice(0,12)}…</option>`).join("")
     : `<option value="">— no active minor tomes (forge one in Seal Forge) —</option>`;
 
-  $("reqs").innerHTML = reqs.length ? reqs.map(r => `
+  $("reqs").innerHTML = reqs.length ? reqs.map(r => {
+    const isComp = (r.kind || "access") === "completion";
+    const chip = `<span style="font-size:.52rem;letter-spacing:.06em;border:1px solid;border-radius:999px;padding:.1em .55em;${isComp?'color:#fbbf24;border-color:#fbbf24':'color:#22d3ee;border-color:#22d3ee'}">${isComp?'completion claim':'access request'}</span>`;
+    return `
     <div class="req">
-      <div class="t">${esc(tomeTitles[r.majorTomeId] || r.majorTomeId)}</div>
+      <div class="t">${esc(tomeTitles[r.majorTomeId] || r.majorTomeId)} ${chip}</div>
       <div class="meta mono">student ${esc((r.studentGenesisId||r.studentUid||"").slice(0,18))}… · seal ${esc((r.studentSealId||"").slice(0,14))}… · tick ${esc(r.tickToken||"")}</div>
-      <div class="act"><button class="btn" data-grant="${r.id}">Combine &amp; sign off</button><span class="hint" id="rmsg-${r.id}"></span></div>
-    </div>`).join("") : `<div class="empty">No pending requests.</div>`;
+      <div class="act"><button class="btn" data-grant="${r.id}">${isComp?'Validate completion':'Combine &amp; grant access'}</button><span class="hint" id="rmsg-${r.id}"></span></div>
+    </div>`; }).join("") : `<div class="empty">No pending requests.</div>`;
   $("reqs").querySelectorAll("[data-grant]").forEach(b => b.onclick = () => doGrant(b.dataset.grant, b));
 
   $("mine").innerHTML = grants.length ? grants.map(g => `

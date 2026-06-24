@@ -76,18 +76,24 @@ export async function inscribeCanon(uid, manifest, onProgress) {
   return { total, made, skipped, warnings: v.warnings };
 }
 
-// ─── Request → Combine → Unlock ─────────────────────────────────────────────
-export async function requestUnlock(uid, majorTomeId, studentSealId) {
+// ─── Request → Combine → Unlock (kind: "access" | "completion") ──────────────
+// "access"     → a student asks to OPEN a locked Major Tome.
+// "completion" → a student CLAIMS they finished the course; an Instructor/Archon
+//                validates it. Same 2-of-2 machinery, different intent.
+export async function requestUnlock(uid, majorTomeId, studentSealId, kind = "access") {
   const m = await getDocument(`users/${uid}/minorTomes/${studentSealId}`);
   if (!m || m.status !== "active") throw new Error("Select one of your active minor tomes to sign the request.");
   const studentSig = await SC.signPayload(m.privateJwk, SC.unlockRequestPayload({ majorTomeId, studentSealId, tickToken: m.tickToken }));
   const ref = await addToCollection("unlockRequests", {
     majorTomeId, studentUid: uid, studentSealId, studentGenesisId: m.genesisId,
-    studentSig, tickToken: m.tickToken, status: "pending",
+    studentSig, tickToken: m.tickToken, status: "pending", kind,
   });
-  await addToCollection("chronicles", { kind: "unlock.request", uid, majorTomeId, requestId: ref.id });
-  return { id: ref.id, majorTomeId, status: "pending" };
+  await addToCollection("chronicles", { kind: "unlock.request", reqKind: kind, uid, majorTomeId, requestId: ref.id });
+  return { id: ref.id, majorTomeId, status: "pending", kind };
 }
+
+/** Acolyte claims completion of a course (Major Tome); an Instructor/Archon validates it. */
+export const claimCompletion = (uid, majorTomeId, studentSealId) => requestUnlock(uid, majorTomeId, studentSealId, "completion");
 
 export const listPendingRequests = () => queryCollection("unlockRequests", [where("status", "==", "pending")]);
 export const listMyRequests = (uid) => queryCollection("unlockRequests", [where("studentUid", "==", uid)]);
@@ -123,7 +129,7 @@ export async function grantUnlock(uid, requestId, instructorSealId) {
   const ref = await addToCollection("tomeUnlocks", {
     majorTomeId: req.majorTomeId, studentUid: req.studentUid, studentSealId: req.studentSealId, studentSig: req.studentSig,
     issuerUid: uid, issuerSealId: instructorSealId, issuerGenesisId: instr.genesisId, issuerTier: tier,
-    grantSig, tickToken: req.tickToken, grantTick: tick.token, status: "granted",
+    grantSig, tickToken: req.tickToken, grantTick: tick.token, status: "granted", kind: req.kind || "access",
   });
   await updateDocument(`unlockRequests/${requestId}`, { status: "granted", resolvedBy: uid, resolvedAt: new Date().toISOString(), grantId: ref.id });
   await addToCollection("chronicles", { kind: "unlock.grant", uid, majorTomeId: req.majorTomeId, studentUid: req.studentUid, grantId: ref.id });
@@ -143,13 +149,22 @@ export async function verifyUnlockGrant(grant) {
   return { ...v, issuerGenesisId: i.genesisId, issuerTier: grant.issuerTier, studentGenesisId: s.genesisId, sealStatus: { student: s.status, issuer: i.status } };
 }
 
-/** Is `majorTomeId` unlocked for `studentUid`? (single-field query → no composite index) */
+/** Is `majorTomeId` access-unlocked for `studentUid`? (single-field query → no composite index) */
 export async function isUnlockedFor(majorTomeId, studentUid) {
   const grants = await queryCollection("tomeUnlocks", [where("studentUid", "==", studentUid)]);
-  const g = grants.find((x) => x.majorTomeId === majorTomeId && x.status === "granted");
+  const g = grants.find((x) => x.majorTomeId === majorTomeId && x.status === "granted" && (x.kind || "access") === "access");
   if (!g) return { unlocked: false };
   const verification = await verifyUnlockGrant(g);
   return { unlocked: verification.valid, grant: g, verification };
+}
+
+/** Has `studentUid`'s completion of `majorTomeId` been validated by an Instructor/Archon? */
+export async function isCompletedBy(majorTomeId, studentUid) {
+  const grants = await queryCollection("tomeUnlocks", [where("studentUid", "==", studentUid)]);
+  const g = grants.find((x) => x.majorTomeId === majorTomeId && x.status === "granted" && x.kind === "completion");
+  if (!g) return { completed: false };
+  const verification = await verifyUnlockGrant(g);
+  return { completed: verification.valid, grant: g, verification };
 }
 
 export const listGrantsByIssuer = (uid) => queryCollection("tomeUnlocks", [where("issuerUid", "==", uid)]);
