@@ -16,12 +16,16 @@ const GENESIS_TIER_META = {
 
 // ── Configuration: easy to extend with new departments/tools ──────────────────
 const LIBRARY_DEPARTMENTS = [
-  { id: "dept-1", title: "Department I",   subtitle: "Foundations",      icon: "✦", path: "https://biochainai.github.io/Owl-Academy/Library/DepartmentI/Sacred_Geometry/SG_Main.html", color: "#D4AF37" },
-  { id: "dept-2", title: "Department II",  subtitle: "Geometric Theory", icon: "✧", path: "Library/DepartmentII/",       color: "#00d4ff" },
-  { id: "dept-3", title: "Department III", subtitle: "Topology",         icon: "❖", path: "Library/Department III/",     color: "#8A2BE2" },
-  { id: "dept-4", title: "Department IV",  subtitle: "Analysis",         icon: "✺", path: "Library/Department IV/",      color: "#00ff88" },
-  { id: "dept-5", title: "Department V",   subtitle: "Computation",      icon: "❉", path: "Library/Department V/",       color: "#ff6b35" },
-  { id: "dept-6", title: "Department VI",  subtitle: "Sacred Sciences",  icon: "❋", path: "Library/Department VI/",      color: "#FFF8DC" },
+  { id: "dept-1",  title: "Department I",    subtitle: "Foundations",         icon: "✦", path: "Library/DepartmentI/DeptI_Hall.html",      color: "#D4AF37" },
+  { id: "dept-2",  title: "Department II",   subtitle: "Geometric Theory",    icon: "✧", path: "Library/DepartmentII/DeptII_Hall.html",    color: "#a855f7" },
+  { id: "dept-3",  title: "Department III",  subtitle: "Topology",            icon: "❖", path: "Library/Department III/DeptIII_Hall.html", color: "#3b82f6" },
+  { id: "dept-4",  title: "Department IV",   subtitle: "Analysis",            icon: "✺", path: "Library/Department IV/DeptIV_Hall.html",   color: "#f43f5e" },
+  { id: "dept-5",  title: "Department V",    subtitle: "Computation",         icon: "❉", path: "Library/Department V/DeptV_Hall.html",     color: "#10b981" },
+  { id: "dept-6",  title: "Department VI",   subtitle: "Sacred Sciences",     icon: "❋", path: "Library/Department VI/DeptVI_Hall.html",   color: "#f59e0b" },
+  { id: "dept-7",  title: "Department VII",  subtitle: "Human Consciousness", icon: "✷", path: "Library/Department VII/DeptVII_Hall.html",   color: "#a855f7" },
+  { id: "dept-8",  title: "Department VIII", subtitle: "Soul-Mind Projection",icon: "✸", path: "Library/Department VIII/DeptVIII_Hall.html", color: "#14b8a6" },
+  { id: "dept-9",  title: "Department IX",   subtitle: "AI-Human Integration",icon: "✹", path: "Library/Department IX/DeptIX_Hall.html",     color: "#3b82f6" },
+  { id: "dept-10", title: "Department X",    subtitle: "BioChain Substrate",  icon: "⬢", path: "Library/Department X/DeptX_Hall.html",       color: "#00ff88" },
 ];
 
 const ACADEMY_TOOLS = [
