@@ -1,0 +1,25 @@
+name: Validate Canon Manifest
+
+on:
+  push:
+    paths:
+      - "canon/**"
+      - "tools/validate-canon.mjs"
+      - ".github/workflows/validate-canon.yml"
+  pull_request:
+    paths:
+      - "canon/**"
+      - "tools/validate-canon.mjs"
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Install validator deps
+        run: npm install --no-save ajv ajv-formats
+      - name: Validate canon.manifest.json against canon.schema.json
+        run: node tools/validate-canon.mjs

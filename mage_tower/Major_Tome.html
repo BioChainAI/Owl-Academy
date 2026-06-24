@@ -68,7 +68,8 @@ import { auth } from "../scripts/firebase/config.js";
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-auth.js";
 import { resolveTier } from "../scripts/genesis-registrar.js";
 import { listMinorTomes } from "../scripts/minor-tome.js";
-import { listMajorTomes, requestUnlock, listMyRequests, listGrantsForStudent, verifyUnlockGrant } from "../scripts/major-tome.js";
+import { listMajorTomes, requestUnlock, claimCompletion, listMyRequests, listGrantsForStudent, verifyUnlockGrant } from "../scripts/major-tome.js";
+import { renderTomeSVG } from "../scripts/tome-procgen.js";
 
 const $ = (id) => document.getElementById(id);
 const esc = (s) => String(s).replace(/[&<>]/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;" }[c]));
@@ -92,32 +93,48 @@ async function load(){
     ? active.map(t => `<option value="${t.sealId}">${esc(t.label)} · ${t.sealId.slice(0,12)}…</option>`).join("")
     : `<option value="">— no active minor tomes (forge one) —</option>`;
 
-  const reqByTome = {}; reqs.forEach(r => { reqByTome[r.majorTomeId] = r.status; });
-  const grantByTome = {}; grants.forEach(g => { if (g.status === "granted") grantByTome[g.majorTomeId] = g; });
+  const accessReq = {}, compReq = {};
+  reqs.forEach(r => { if ((r.kind || "access") === "completion") compReq[r.majorTomeId] = r.status; else accessReq[r.majorTomeId] = r.status; });
+  const accessGrant = {}, compGrant = {};
+  grants.forEach(g => { if (g.status === "granted") (g.kind === "completion" ? compGrant : accessGrant)[g.majorTomeId] = g; });
 
   if (!tomes.length) { $("list").innerHTML = `<div class="empty">The canon is empty. An Archon inscribes Major Tomes from the Unlock Console.</div>`; return; }
 
   const rows = await Promise.all(tomes.map(async (t) => {
-    const grant = grantByTome[t.id];
+    const aGrant = accessGrant[t.id], cGrant = compGrant[t.id];
     let stateHtml, actHtml = "";
-    if (grant) {
-      let verified = false; try { verified = (await verifyUnlockGrant(grant)).valid; } catch {}
-      stateHtml = `<span class="state unlocked">Unlocked${verified?" ✓":""}</span>`;
-      actHtml = `<span class="hint mono">signed off by ${esc(grant.issuerGenesisId||"?")} · ${esc(grant.issuerTier||"")}</span>`;
-    } else if (reqByTome[t.id] === "pending") {
+    if (aGrant) {
+      let verified = false; try { verified = (await verifyUnlockGrant(aGrant)).valid; } catch {}
+      stateHtml = `<span class="state unlocked">Unlocked${verified ? " ✓" : ""}</span>`;
+      if (cGrant) {
+        actHtml = `<span class="hint mono">✓ completed — validated by ${esc(cGrant.issuerGenesisId || "?")} · ${esc(cGrant.issuerTier || "")}</span>`;
+      } else if (compReq[t.id] === "pending") {
+        actHtml = `<span class="hint">Completion claimed — awaiting Instructor / Archon validation.</span>`;
+      } else {
+        actHtml = `<button class="btn" data-claim="${t.id}">Claim completion</button>`
+          + `<span class="hint mono" style="margin-left:.5rem">unlocked by ${esc(aGrant.issuerGenesisId || "?")}</span>`;
+      }
+    } else if (accessReq[t.id] === "pending") {
       stateHtml = `<span class="state pending">Requested · pending</span>`;
       actHtml = `<span class="hint">Awaiting an Instructor to combine seals.</span>`;
     } else {
       stateHtml = `<span class="state locked">Locked</span>`;
       actHtml = `<button class="btn" data-req="${t.id}">Request unlock</button>`;
     }
-    return `<div class="tome"><div class="top"><h3>${esc(t.title)}</h3>${stateHtml}</div>
+    let sigil = "";
+    try { if (t.canonId && t.dept) sigil = renderTomeSVG(t, 60); } catch {}
+    return `<div class="tome"><div class="top">
+        <div style="display:flex;gap:.8rem;align-items:center;min-width:0">
+          ${sigil ? `<div style="flex-shrink:0;width:60px;height:60px;line-height:0">${sigil}</div>` : ""}
+          <h3 style="overflow:hidden;text-overflow:ellipsis">${esc(t.title)}${cGrant ? ` <span class="state unlocked" style="font-size:.5rem">completed</span>` : ""}</h3>
+        </div>${stateHtml}</div>
       ${t.summary?`<div class="sum">${esc(t.summary)}</div>`:""}
-      <div class="meta mono">${esc(t.plane||"")} · requires ${esc(t.requiredTier||"ACOLYTE")} · immutable canon</div>
+      <div class="meta mono">${esc(t.plane||"")} · requires ${esc(t.requiredTier||"ACOLYTE")}${t.globalIndex?` · seat ${t.globalIndex}/145`:""} · immutable canon</div>
       <div class="row-act">${actHtml}</div></div>`;
   }));
   $("list").innerHTML = rows.join("");
   $("list").querySelectorAll("[data-req]").forEach(b => b.onclick = () => doRequest(b.dataset.req, b));
+  $("list").querySelectorAll("[data-claim]").forEach(b => b.onclick = () => doClaim(b.dataset.claim, b));
 }
 
 async function doRequest(majorTomeId, btn){
@@ -125,6 +142,14 @@ async function doRequest(majorTomeId, btn){
   if (!sid) { $("msg").className = "msg bad"; $("msg").textContent = "Forge an active minor tome first (Seal Forge)."; return; }
   btn.disabled = true; $("msg").className = "msg"; $("msg").textContent = "Signing request with your minor tome…";
   try { await requestUnlock(UID, majorTomeId, sid); $("msg").className = "msg ok"; $("msg").textContent = "Request sent — an Instructor will combine seals to unlock."; load(); }
+  catch (e) { $("msg").className = "msg bad"; $("msg").textContent = e.message; btn.disabled = false; }
+}
+
+async function doClaim(majorTomeId, btn){
+  const sid = $("signtome").value;
+  if (!sid) { $("msg").className = "msg bad"; $("msg").textContent = "Forge an active minor tome first (Seal Forge)."; return; }
+  btn.disabled = true; $("msg").className = "msg"; $("msg").textContent = "Sealing your completion claim…";
+  try { await claimCompletion(UID, majorTomeId, sid); $("msg").className = "msg ok"; $("msg").textContent = "Completion claimed — an Instructor or Archon will validate it from the Unlock Console."; load(); }
   catch (e) { $("msg").className = "msg bad"; $("msg").textContent = e.message; btn.disabled = false; }
 }
 </script>
