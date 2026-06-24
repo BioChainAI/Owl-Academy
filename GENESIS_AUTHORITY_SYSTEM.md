@@ -7,6 +7,8 @@ The Genesis Authority System is a three-tier hierarchical extension of the
 and artifacts**, and how the resulting content is **validated and prioritized**
 when displayed to readers.
 
+> **See also:** the [Tome Seal & Canon System](./TOME_SEAL_SYSTEM.md) — minor‑tome seals, the immutable 145‑tome canon, and the 2‑of‑2 unlock / completion sign‑off built on these tiers.
+
 It builds on the S.P.I.R.E. Engine's tri-layer model:
 
 - **S.P.I.R.E. (Consensus)** → Canonical content from Archons
