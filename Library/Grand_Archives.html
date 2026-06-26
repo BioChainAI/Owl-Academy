@@ -138,6 +138,9 @@
         .pulse-glow { animation: pulseGlow 4s ease-in-out infinite alternate; }
         @keyframes pulseGlow { 0% { filter: drop-shadow(0 0 5px rgba(212, 175, 55, 0.3)); } 100% { filter: drop-shadow(0 0 15px rgba(212, 175, 55, 0.8)); } }
 
+        .spin-slow-reverse { animation: spinReverse 40s linear infinite; transform-origin: center; }
+        @keyframes spinReverse { 100% { transform: rotate(-360deg); } }
+
         /* Custom Scrollbar */
         ::-webkit-scrollbar { width: 6px; }
         ::-webkit-scrollbar-track { background: rgba(0,0,0,0.3); }
@@ -153,7 +156,61 @@
     <div class="nebula-glow"></div>
 
     <header class="w-full pt-16 pb-12 px-6 flex flex-col items-center justify-center relative border-b border-yellow-600/20 bg-[#05030a]/60 backdrop-blur-md shadow-2xl z-20 overflow-hidden">
-        
+
+        <!-- Top Left Sigil (Mathematical Manifold — copied from the Learning Hub) -->
+        <div class="absolute top-4 left-4 md:top-6 md:left-8 w-20 h-20 md:w-28 md:h-28 z-30 pointer-events-none">
+            <svg viewBox="0 0 200 200" class="w-full h-full pulse-glow" xmlns="http://www.w3.org/2000/svg">
+                <defs>
+                    <linearGradient id="goldGradLeft" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" stop-color="#C59B3F" />
+                        <stop offset="50%" stop-color="#FFF2C8" />
+                        <stop offset="100%" stop-color="#996515" />
+                    </linearGradient>
+                </defs>
+
+                <!-- Outer Boundary Circles -->
+                <circle cx="100" cy="100" r="95" fill="none" stroke="url(#goldGradLeft)" stroke-width="1" opacity="0.6"/>
+                <circle cx="100" cy="100" r="85" fill="none" stroke="url(#goldGradLeft)" stroke-width="0.5" opacity="0.4"/>
+
+                <!-- Rotating Manifold Base -->
+                <g class="spin-slow" style="transform-origin: 100px 100px;">
+                    <!-- 24 Nested Streams (12 Gold Solid, 12 Silver Dashed) -->
+                    <g stroke="url(#goldGradLeft)" stroke-width="1" fill="none" opacity="0.6">
+                        <polygon points="100,15 173.6,142.5 26.4,142.5" />
+                        <polygon points="100,15 173.6,142.5 26.4,142.5" transform="rotate(30 100 100)" />
+                        <polygon points="100,15 173.6,142.5 26.4,142.5" transform="rotate(60 100 100)" />
+                        <polygon points="100,15 173.6,142.5 26.4,142.5" transform="rotate(90 100 100)" />
+                    </g>
+                    <g stroke="#ffffff" stroke-width="0.75" fill="none" opacity="0.4" stroke-dasharray="2 4">
+                        <polygon points="100,15 173.6,142.5 26.4,142.5" transform="rotate(15 100 100)" />
+                        <polygon points="100,15 173.6,142.5 26.4,142.5" transform="rotate(45 100 100)" />
+                        <polygon points="100,15 173.6,142.5 26.4,142.5" transform="rotate(75 100 100)" />
+                        <polygon points="100,15 173.6,142.5 26.4,142.5" transform="rotate(105 100 100)" />
+                    </g>
+
+                    <!-- 2nd Tier: Three-Point Triangle and its Inverse (Hexagram) -->
+                    <g stroke="url(#goldGradLeft)" stroke-width="1.5" fill="none" opacity="0.9">
+                        <polygon points="100,45 147.6,127.5 52.4,127.5" />
+                        <polygon points="100,155 147.6,72.5 52.4,72.5" />
+                    </g>
+
+                    <!-- Circle with a 7-point star -->
+                    <circle cx="100" cy="100" r="35" stroke="url(#goldGradLeft)" stroke-width="1" fill="none" opacity="0.6"/>
+                    <polygon points="100,65 134.1,107.8 84.8,131.5 72.6,78.2 127.4,78.2 115.2,131.5 65.9,107.8" stroke="url(#goldGradLeft)" stroke-width="1.2" fill="none" opacity="0.8" />
+                </g>
+
+                <!-- Counter-Rotating Chi-Rho in the center -->
+                <g class="spin-slow-reverse" style="transform-origin: 100px 100px;" filter="drop-shadow(0 0 4px rgba(212,175,55,0.8))">
+                    <line x1="100" y1="80" x2="100" y2="120" stroke="url(#goldGradLeft)" stroke-width="2" stroke-linecap="round"/>
+                    <path d="M 100,80 C 112,80 112,95 100,95" fill="none" stroke="url(#goldGradLeft)" stroke-width="2" stroke-linecap="round"/>
+                    <line x1="88" y1="95" x2="112" y2="112" stroke="url(#goldGradLeft)" stroke-width="2" stroke-linecap="round"/>
+                    <line x1="112" y1="95" x2="88" y2="112" stroke="url(#goldGradLeft)" stroke-width="2" stroke-linecap="round"/>
+                    <text x="82" y="108" fill="#FFF8DC" font-family="Cinzel, serif" font-size="8" text-anchor="middle">A</text>
+                    <text x="118" y="108" fill="#FFF8DC" font-family="Cinzel, serif" font-size="8" text-anchor="middle">Ω</text>
+                </g>
+            </svg>
+        </div>
+
         <!-- Top Right Sigil Link -->
         <a href="https://biochainai.github.io/Owl-Academy/Learning-Hub.html" class="absolute top-4 right-4 md:top-6 md:right-8 w-20 h-20 md:w-28 md:h-28 hover:scale-105 hover:drop-shadow-[0_0_15px_rgba(212,175,55,0.4)] transition-all duration-300 z-30" title="Return to Learning Hub">
             <svg viewBox="0 0 200 200" class="w-full h-full pulse-glow" xmlns="http://www.w3.org/2000/svg">
