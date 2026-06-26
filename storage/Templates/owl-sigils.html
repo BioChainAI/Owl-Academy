@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Owl Academy · Aesthetic Templates · Header Sigils</title>
+
+    <!-- The academy's pages all use Tailwind (play CDN) + Cinzel/Inter. Mirrored here
+         so this template renders exactly as it does in production. -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Inter:wght@300;400;500;600&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+
+    <!-- ════════════════════════════════════════════════════════════════════
+         COPY ▸ SIGIL ANIMATIONS  (required by both sigils below)
+         Paste this style block — or merge these rules into your page's CSS.
+         ════════════════════════════════════════════════════════════════════ -->
+    <style>
+        .spin-slow         { animation: spin 40s linear infinite; transform-origin: center; }
+        @keyframes spin    { 100% { transform: rotate(360deg); } }
+        .spin-slow-reverse { animation: spinReverse 40s linear infinite; transform-origin: center; }
+        @keyframes spinReverse { 100% { transform: rotate(-360deg); } }
+        .pulse-glow        { animation: pulseGlow 4s ease-in-out infinite alternate; }
+        @keyframes pulseGlow {
+            0%   { filter: drop-shadow(0 0 5px  rgba(212,175,55,0.3)); }
+            100% { filter: drop-shadow(0 0 15px rgba(212,175,55,0.8)); }
+        }
+    </style>
+    <!-- ════════════════════════════════════════════════════════════════════
+         END COPY ▸ SIGIL ANIMATIONS
+         ════════════════════════════════════════════════════════════════════ -->
+
+    <style>
+        :root { --color-void: #05030a; --color-primary: #D4AF37; }
+        body { background-color: var(--color-void); color: #e2e8f0; font-family: 'Inter', sans-serif; min-height: 100vh; margin: 0;
+               background: radial-gradient(ellipse at top center, color-mix(in srgb, var(--color-primary) 8%, transparent) 0%, transparent 70%), var(--color-void); }
+        h1, h2, h3, .mystical-font { font-family: 'Cinzel', serif; }
+        .gold-gradient { background: linear-gradient(to right, var(--color-primary), #FFF8DC, var(--color-primary)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+        .mono { font-family: 'Fira Code', ui-monospace, monospace; }
+        .card { border: 1px solid color-mix(in srgb, var(--color-primary) 20%, transparent); border-radius: 16px; background: rgba(10,8,20,.5); backdrop-filter: blur(12px); }
+        .stage { background: radial-gradient(circle at center, rgba(15,10,25,.5), rgba(0,0,0,.5)); border-radius: 12px; }
+        code, pre { font-family: 'Fira Code', monospace; }
+        pre { background: rgba(0,0,0,.5); border: 1px solid rgba(255,255,255,.08); border-radius: 10px; padding: 1rem; overflow-x: auto; font-size: .72rem; color: #cbd5e1; }
+    </style>
+</head>
+<body class="antialiased">
+    <main class="max-w-5xl mx-auto px-5 md:px-8 py-12">
+
+        <header class="text-center mb-12">
+            <p class="text-[11px] tracking-[0.35em] uppercase mb-3" style="color:var(--color-primary)">Owl Academy · Aesthetic Templates</p>
+            <h1 class="text-3xl md:text-4xl font-bold gold-gradient tracking-[0.1em] mb-3">Header Sigils</h1>
+            <p class="text-gray-400 font-light max-w-2xl mx-auto text-sm">
+                The academy's signature header pair. The <strong class="text-white">Left Sigil</strong> (Mathematical Manifold)
+                and the <strong class="text-white">Right Sigil</strong> (Archive Cipher) are reusable, dependency-free SVG +
+                CSS snippets — the same markup that lives in the Learning Hub, the Home page, and the Grand Archives.
+            </p>
+        </header>
+
+        <!-- ─── Live previews ─── -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-12">
+
+            <!-- LEFT SIGIL CARD -->
+            <div class="card p-6 flex flex-col items-center">
+                <div class="stage w-44 h-44 flex items-center justify-center mb-5">
+                    <!-- ════════════════════════════════════════════════════════
+                         COPY ▸ LEFT SIGIL — "Mathematical Manifold"
+                         A rotating 24-stream manifold + hexagram + 7-point star,
+                         with a counter-rotating Chi-Rho (Α/Ω) core.
+                         The gradient id `goldGradLeft` MUST be unique on the page.
+                         ════════════════════════════════════════════════════════ -->
+                    <div class="w-36 h-36">
+                        <svg viewBox="0 0 200 200" class="w-full h-full pulse-glow" xmlns="http://www.w3.org/2000/svg">
+                            <defs>
+                                <linearGradient id="goldGradLeft" x1="0%" y1="0%" x2="100%" y2="100%">
+                                    <stop offset="0%" stop-color="#C59B3F" />
+                                    <stop offset="50%" stop-color="#FFF2C8" />
+                                    <stop offset="100%" stop-color="#996515" />
+                                </linearGradient>
+                            </defs>
+
+                            <!-- Outer Boundary Circles -->
+                            <circle cx="100" cy="100" r="95" fill="none" stroke="url(#goldGradLeft)" stroke-width="1" opacity="0.6"/>
+                            <circle cx="100" cy="100" r="85" fill="none" stroke="url(#goldGradLeft)" stroke-width="0.5" opacity="0.4"/>
+
+                            <!-- Rotating Manifold Base -->
+                            <g class="spin-slow" style="transform-origin: 100px 100px;">
+                                <!-- 24 Nested Streams (12 Gold Solid, 12 Silver Dashed) -->
+                                <g stroke="url(#goldGradLeft)" stroke-width="1" fill="none" opacity="0.6">
+                                    <polygon points="100,15 173.6,142.5 26.4,142.5" />
+                                    <polygon points="100,15 173.6,142.5 26.4,142.5" transform="rotate(30 100 100)" />
+                                    <polygon points="100,15 173.6,142.5 26.4,142.5" transform="rotate(60 100 100)" />
+                                    <polygon points="100,15 173.6,142.5 26.4,142.5" transform="rotate(90 100 100)" />
+                                </g>
+                                <g stroke="#ffffff" stroke-width="0.75" fill="none" opacity="0.4" stroke-dasharray="2 4">
+                                    <polygon points="100,15 173.6,142.5 26.4,142.5" transform="rotate(15 100 100)" />
+                                    <polygon points="100,15 173.6,142.5 26.4,142.5" transform="rotate(45 100 100)" />
+                                    <polygon points="100,15 173.6,142.5 26.4,142.5" transform="rotate(75 100 100)" />
+                                    <polygon points="100,15 173.6,142.5 26.4,142.5" transform="rotate(105 100 100)" />
+                                </g>
+
+                                <!-- 2nd Tier: Three-Point Triangle and its Inverse (Hexagram) -->
+                                <g stroke="url(#goldGradLeft)" stroke-width="1.5" fill="none" opacity="0.9">
+                                    <polygon points="100,45 147.6,127.5 52.4,127.5" />
+                                    <polygon points="100,155 147.6,72.5 52.4,72.5" />
+                                </g>
+
+                                <!-- Circle with a 7-point star -->
+                                <circle cx="100" cy="100" r="35" stroke="url(#goldGradLeft)" stroke-width="1" fill="none" opacity="0.6"/>
+                                <polygon points="100,65 134.1,107.8 84.8,131.5 72.6,78.2 127.4,78.2 115.2,131.5 65.9,107.8" stroke="url(#goldGradLeft)" stroke-width="1.2" fill="none" opacity="0.8" />
+                            </g>
+
+                            <!-- Counter-Rotating Chi-Rho in the center -->
+                            <g class="spin-slow-reverse" style="transform-origin: 100px 100px;" filter="drop-shadow(0 0 4px rgba(212,175,55,0.8))">
+                                <line x1="100" y1="80" x2="100" y2="120" stroke="url(#goldGradLeft)" stroke-width="2" stroke-linecap="round"/>
+                                <path d="M 100,80 C 112,80 112,95 100,95" fill="none" stroke="url(#goldGradLeft)" stroke-width="2" stroke-linecap="round"/>
+                                <line x1="88" y1="95" x2="112" y2="112" stroke="url(#goldGradLeft)" stroke-width="2" stroke-linecap="round"/>
+                                <line x1="112" y1="95" x2="88" y2="112" stroke="url(#goldGradLeft)" stroke-width="2" stroke-linecap="round"/>
+                                <text x="82" y="108" fill="#FFF8DC" font-family="Cinzel, serif" font-size="8" text-anchor="middle">A</text>
+                                <text x="118" y="108" fill="#FFF8DC" font-family="Cinzel, serif" font-size="8" text-anchor="middle">Ω</text>
+                            </g>
+                        </svg>
+                    </div>
+                    <!-- ════════════════════════════════════════════════════════
+                         END COPY ▸ LEFT SIGIL
+                         ════════════════════════════════════════════════════════ -->
+                </div>
+                <h2 class="text-lg text-white tracking-[0.1em] mb-1">Left Sigil</h2>
+                <p class="text-[11px] tracking-[0.25em] uppercase mb-3" style="color:var(--color-primary)">Mathematical Manifold</p>
+                <p class="text-xs text-gray-400 text-center font-light">Rotating 24-stream manifold, hexagram, and 7-point star around a counter-rotating Chi-Rho. Used at the top-left of the Home, Learning Hub, and Grand Archives headers.</p>
+            </div>
+
+            <!-- RIGHT SIGIL CARD -->
+            <div class="card p-6 flex flex-col items-center">
+                <div class="stage w-44 h-44 flex items-center justify-center mb-5">
+                    <!-- ════════════════════════════════════════════════════════
+                         COPY ▸ RIGHT SIGIL — "Archive Cipher"
+                         A spinning twin-triangle frame around a static Chi-Rho (Α/Ω).
+                         Typically wrapped in an <a> link. Gradient id `goldGradRight`
+                         MUST be unique on the page.
+                         ════════════════════════════════════════════════════════ -->
+                    <div class="w-36 h-36">
+                        <svg viewBox="0 0 200 200" class="w-full h-full spin-slow pulse-glow" xmlns="http://www.w3.org/2000/svg">
+                            <defs>
+                                <linearGradient id="goldGradRight" x1="0%" y1="0%" x2="100%" y2="100%">
+                                    <stop offset="0%" stop-color="#C59B3F" />
+                                    <stop offset="50%" stop-color="#FFF2C8" />
+                                    <stop offset="100%" stop-color="#996515" />
+                                </linearGradient>
+                            </defs>
+                            <!-- Outer Star Geometry -->
+                            <circle cx="100" cy="100" r="95" fill="none" stroke="url(#goldGradRight)" stroke-width="1" opacity="0.6"/>
+                            <circle cx="100" cy="100" r="85" fill="none" stroke="url(#goldGradRight)" stroke-width="0.5" opacity="0.4"/>
+                            <polygon points="100,15 173.6,142.5 26.4,142.5" fill="none" stroke="url(#goldGradRight)" stroke-width="1" opacity="0.5"/>
+                            <polygon points="100,185 26.4,57.5 173.6,57.5" fill="none" stroke="url(#goldGradRight)" stroke-width="1" opacity="0.5"/>
+                            <!-- Core Chi-Rho Cipher (static, with Α / Ω) -->
+                            <g filter="drop-shadow(0 0 4px rgba(212,175,55,0.8))">
+                                <line x1="100" y1="60" x2="100.01" y2="140" stroke="url(#goldGradRight)" stroke-width="2.5" stroke-linecap="round"/>
+                                <path d="M 100,60 C 120,60 120,90 100,90" fill="none" stroke="url(#goldGradRight)" stroke-width="2.5" stroke-linecap="round"/>
+                                <line x1="80" y1="85" x2="120" y2="125" stroke="url(#goldGradRight)" stroke-width="2.5" stroke-linecap="round"/>
+                                <line x1="120" y1="85" x2="80" y2="125" stroke="url(#goldGradRight)" stroke-width="2.5" stroke-linecap="round"/>
+                                <text x="75" y="115" fill="#FFF8DC" font-family="Cinzel, serif" font-size="10" text-anchor="middle">A</text>
+                                <text x="125" y="115" fill="#FFF8DC" font-family="Cinzel, serif" font-size="10" text-anchor="middle">Ω</text>
+                            </g>
+                            <circle cx="100" cy="100" r="45" fill="none" stroke="url(#goldGradRight)" stroke-width="0.5" stroke-dasharray="2 2" opacity="0.6"/>
+                        </svg>
+                    </div>
+                    <!-- ════════════════════════════════════════════════════════
+                         END COPY ▸ RIGHT SIGIL
+                         ════════════════════════════════════════════════════════ -->
+                </div>
+                <h2 class="text-lg text-white tracking-[0.1em] mb-1">Right Sigil</h2>
+                <p class="text-[11px] tracking-[0.25em] uppercase mb-3" style="color:var(--color-primary)">Archive Cipher</p>
+                <p class="text-xs text-gray-400 text-center font-light">A spinning twin-triangle frame around a static Chi-Rho. Used at the top-right as a "return" link (wrap it in an <code class="mono text-[10px]">&lt;a&gt;</code>).</p>
+            </div>
+        </div>
+
+        <!-- ─── Usage ─── -->
+        <div class="card p-6 md:p-8">
+            <h2 class="text-sm tracking-[0.2em] uppercase mb-4" style="color:var(--color-primary)">How to use</h2>
+            <ol class="list-decimal list-inside text-sm text-gray-300 font-light space-y-2 mb-6">
+                <li>Copy the <strong class="text-white">SIGIL ANIMATIONS</strong> <code class="mono text-xs">&lt;style&gt;</code> block (top of this file) into your page once.</li>
+                <li>Copy the <strong class="text-white">LEFT</strong> and/or <strong class="text-white">RIGHT</strong> sigil <code class="mono text-xs">&lt;svg&gt;</code> into your header.</li>
+                <li>Keep every gradient <code class="mono text-xs">id</code> unique per page (e.g. <code class="mono text-xs">goldGradLeft</code>, <code class="mono text-xs">goldGradRight</code>) — duplicate ids make the browser apply only the first gradient.</li>
+                <li>Tailwind is optional. Only the three CSS classes (<code class="mono text-xs">spin-slow</code>, <code class="mono text-xs">spin-slow-reverse</code>, <code class="mono text-xs">pulse-glow</code>) are required; sizing is whatever wrapper you give the SVG.</li>
+            </ol>
+            <p class="text-xs text-gray-500 mb-2">Typical header placement (absolute corners over a centered title):</p>
+            <pre>&lt;header class="relative ..."&gt;
+  &lt;div class="absolute top-4 left-4 w-20 h-20 md:w-28 md:h-28 pointer-events-none"&gt;
+    &lt;!-- LEFT SIGIL svg --&gt;
+  &lt;/div&gt;
+  &lt;a href="..." class="absolute top-4 right-4 w-20 h-20 md:w-28 md:h-28"&gt;
+    &lt;!-- RIGHT SIGIL svg --&gt;
+  &lt;/a&gt;
+  &lt;h1&gt;OWL ACADEMY&lt;/h1&gt;
+&lt;/header&gt;</pre>
+        </div>
+
+        <footer class="text-center mt-10 text-[10px] text-gray-600 mystical-font tracking-[0.3em] uppercase">
+            Owl Academy · storage/Templates · small aesthetics, one source of truth
+        </footer>
+    </main>
+</body>
+</html>
