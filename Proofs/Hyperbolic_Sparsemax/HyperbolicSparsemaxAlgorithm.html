@@ -1,0 +1,759 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TTMPT - Full Proof of Hyperbolic Sparsemax</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <script>
+    MathJax = {
+        tex: {
+            inlineMath: [['$', '$'], ['\\(', '\\)']],
+            displayMath: [['$$', '$$'], ['\\[', '\\]']],
+            tags: 'ams'
+        },
+        svg: {
+            fontCache: 'global'
+        }
+    };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@300;400;500;700&display=swap');
+
+        body {
+            background-color: #050505;
+            color: #d1d5db; /* text-gray-300 */
+            font-family: 'Inter', sans-serif;
+            margin: 0;
+            padding: 0;
+            overflow-x: hidden;
+            line-height: 1.7;
+        }
+
+        h1, h2, h3, h4, .mono {
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .math-block {
+            background: #0a0a0a;
+            border: 1px solid #222;
+            border-radius: 8px;
+            padding: 1.5rem;
+            overflow-x: auto;
+            margin: 1.5rem auto;
+            max-width: 100%;
+            text-align: center;
+        }
+
+        .theorem-box {
+            background: rgba(0, 255, 255, 0.03);
+            border: 1px solid rgba(0, 255, 255, 0.2);
+            border-top: 4px solid #00ffff;
+            border-bottom: 4px solid #00ffff;
+            border-radius: 4px;
+            padding: 2rem;
+            margin: 2.5rem auto;
+            width: 100%;
+            max-width: 48rem;
+            text-align: center;
+        }
+
+        .proof-block {
+            border-top: 1px solid #333;
+            border-bottom: 1px solid #333;
+            padding: 2rem 0;
+            margin: 2rem auto 3.5rem auto;
+            color: #9ca3af; /* text-gray-400 */
+            width: 100%;
+            max-width: 48rem;
+            text-align: center;
+        }
+
+        .proof-header {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.875rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: #6b7280; /* text-gray-500 */
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .proof-header::before, .proof-header::after {
+            content: '';
+            display: inline-block;
+            width: 24px;
+            height: 1px;
+            background-color: #4b5563;
+            margin: 0 12px;
+        }
+
+        .qed {
+            text-align: center;
+            font-family: 'JetBrains Mono', monospace;
+            font-weight: bold;
+            color: #00ffff;
+            margin-top: 1.5rem;
+            letter-spacing: 0.1em;
+        }
+
+        .highlight-cyan { color: #00ffff; }
+        .highlight-yellow { color: #eab308; }
+        
+        mjx-container[jax="CHTML"][display="true"] {
+            margin: 1.5em 0 !important;
+            display: flex !important;
+            justify-content: center !important;
+        }
+        
+        /* Centering utility overrides for specific components */
+        ul.list-disc, ol.list-decimal {
+            display: inline-block;
+            text-align: left;
+            margin-left: auto;
+            margin-right: auto;
+        }
+    </style>
+</head>
+<body class="antialiased selection:bg-white selection:text-black pb-20">
+
+    <main class="max-w-4xl mx-auto px-4 md:px-6 pt-16 flex flex-col items-center text-center">
+        
+        <header class="relative mb-16 border-b border-gray-800 pb-12 w-full flex flex-col items-center pt-28 md:pt-0">
+            
+            <!-- Top Left: Digital Owl Node -->
+            <div class="absolute top-0 left-0 flex flex-col items-center">
+                <svg viewBox="0 0 100 100" class="w-16 h-16 md:w-20 md:h-20 text-cyan-400 drop-shadow-[0_0_12px_rgba(34,211,238,0.7)]">
+                    <!-- Outer diamond/shield bounds -->
+                    <polygon points="50,5 90,30 90,70 50,95 10,70 10,30" fill="none" stroke="currentColor" stroke-width="2"/>
+                    <!-- Cybernetic Owl Ears -->
+                    <polyline points="10,30 30,20 50,35 70,20 90,30" fill="none" stroke="currentColor" stroke-width="2"/>
+                    <!-- Angular Face/Cheeks -->
+                    <polyline points="10,30 30,50 50,40 70,50 90,30" fill="none" stroke="currentColor" stroke-width="2"/>
+                    <!-- Glowing Eyes -->
+                    <polygon points="25,45 35,40 45,45 35,50" fill="currentColor" class="animate-[pulse_2s_ease-in-out_infinite]"/>
+                    <polygon points="55,45 65,40 75,45 65,50" fill="currentColor" class="animate-[pulse_2s_ease-in-out_infinite]"/>
+                    <!-- Beak -->
+                    <polygon points="45,55 55,55 50,70" fill="none" stroke="currentColor" stroke-width="2"/>
+                    <!-- Lower circuit lines/feathers -->
+                    <polyline points="30,50 30,75 50,95 70,75 70,50" fill="none" stroke="currentColor" stroke-width="2"/>
+                    <line x1="50" y1="70" x2="50" y2="95" stroke="currentColor" stroke-width="2"/>
+                    <!-- Central Node point -->
+                    <circle cx="50" cy="35" r="2.5" fill="currentColor"/>
+                </svg>
+                <div class="mt-3 text-[9px] md:text-[10px] tracking-[0.2em] text-cyan-400 font-mono font-bold uppercase">System_Active</div>
+            </div>
+
+            <!-- Top Right: Owl Academy Logo -->
+            <div class="absolute top-0 right-0 flex flex-col items-center">
+                <svg viewBox="0 0 100 100" class="w-20 h-20 md:w-24 md:h-24 text-yellow-500 drop-shadow-[0_0_15px_rgba(234,179,8,0.7)]">
+                    <!-- Rotating Background: Ring and Hexagram Star -->
+                    <g class="origin-center animate-[spin_30s_linear_infinite]">
+                        <!-- Outer Boundary -->
+                        <circle cx="50" cy="50" r="48" fill="none" stroke="currentColor" stroke-width="1.5"/>
+                        <!-- Inner Dotted Alignment Ring -->
+                        <circle cx="50" cy="50" r="38" fill="none" stroke="currentColor" stroke-width="1" stroke-dasharray="3 3"/>
+                        <!-- Upward Triangle -->
+                        <polygon points="50,12 82.9,69 17.1,69" fill="none" stroke="currentColor" stroke-width="1.5"/>
+                        <!-- Downward Triangle -->
+                        <polygon points="50,88 82.9,31 17.1,31" fill="none" stroke="currentColor" stroke-width="1.5"/>
+                    </g>
+                    
+                    <!-- Static Foreground: Chi Rho, Alpha & Omega -->
+                    <g>
+                        <!-- Rho (P) stalk and loop -->
+                        <path d="M 50 22 L 50 78 M 50 22 C 67 22, 67 44, 50 44" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
+                        <!-- Chi (X) diagonals -->
+                        <path d="M 33 37 L 67 67 M 67 37 L 33 67" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
+                        <!-- Alpha -->
+                        <text x="23" y="54" font-family="serif" font-size="14" fill="currentColor" text-anchor="middle">A</text>
+                        <!-- Omega -->
+                        <text x="77" y="54" font-family="serif" font-size="14" fill="currentColor" text-anchor="middle">Ω</text>
+                    </g>
+                </svg>
+                <div class="mt-2 text-[10px] md:text-[11px] tracking-[0.25em] text-yellow-500 font-serif uppercase">Owl Academy</div>
+            </div>
+
+            <div class="inline-block border border-cyan-900 bg-cyan-900/20 text-cyan-400 px-3 py-1 text-xs mono uppercase tracking-widest mb-6">Algorithm Documentation</div>
+            <h1 class="text-4xl md:text-5xl font-bold mb-6 tracking-tight text-white">Full Proof of Hyperbolic Sparsemax</h1>
+            <p class="text-gray-400 text-lg font-light leading-relaxed max-w-2xl">
+                A formal mathematical proof defining the rational, row-stochastic, sparse transition operator built from Lorentzian hyperbolic quadrance and sparsemax projection.
+            </p>
+        </header>
+
+        <section class="mb-16 w-full flex flex-col items-center">
+            <h2 class="text-2xl font-bold mono mb-6 text-white border-b border-gray-800 pb-2 inline-block">1. Setup</h2>
+            <p>Let the executable lattice be the toroidal $64$-voxel space</p>
+            $$V=(\mathbb Z/4\mathbb Z)^3.$$
+            <p>Each voxel $i\in V$ carries a rational spinor</p>
+            $$q_i=(w_i,\mathbf m_i)\in S^3\cap\mathbb Q^4,$$
+            <p>where</p>
+            $$\mathbf m_i=(x_i,y_i,z_i),$$
+            <p>and</p>
+            $$w_i^2+\lVert \mathbf m_i\rVert^2=1.$$
+            <p>Assume the scalar part lies in a rational annulus:</p>
+            $$0 < w_{\min}\le w_i\le w_{\max}<1.$$
+            <p>Thus $w_i$ is never $0$ and never reaches the flat limit $1$.</p>
+            <p class="mt-4">The goal is to define a transition row $S_{i\cdot}$ over a finite candidate neighborhood $\mathcal N_i$, using only rational operations, such that:</p>
+            <ul class="list-disc pl-8 mt-4 space-y-2 text-left inline-block">
+                <li>$S_{ij}\in\mathbb Q$ for every $j\in\mathcal N_i$.</li>
+                <li>$S_{ij}\ge0$.</li>
+                <li>$\sum_{j\in\mathcal N_i}S_{ij}=1$.</li>
+                <li>Most $S_{ij}$ are exactly $0$, so the row is sparse.</li>
+                <li>No exponential, square root, trigonometric, or floating-point operation is needed.</li>
+            </ul>
+        </section>
+
+        <section class="mb-16 w-full flex flex-col items-center">
+            <h2 class="text-2xl font-bold mono mb-6 text-white border-b border-gray-800 pb-2 inline-block">2. Rational Lorentz Lift</h2>
+            
+            <h3 class="text-lg font-bold mono mt-6 mb-2 text-gray-300">Definition</h3>
+            <p>Define the Lorentz lift</p>
+            $$\Phi(q_i)=\tilde q_i = \frac{1}{w_i}(1,\mathbf m_i).$$
+            <p>Equivalently,</p>
+            $$\tilde q_i = \left( \frac{1}{w_i}, \frac{x_i}{w_i}, \frac{y_i}{w_i}, \frac{z_i}{w_i} \right).$$
+            <p>Use the Minkowski bilinear form</p>
+            $$\langle a,b\rangle_{\mathbb L} = a_0b_0-\mathbf a\cdot\mathbf b.$$
+
+            <div class="theorem-box">
+                <h4 class="font-bold mono text-cyan-400 mb-4 uppercase tracking-widest text-sm">Theorem 1: The Lorentz Lift Lands on $\mathbb H^3$</h4>
+                <p>For every rational spinor $q_i=(w_i,\mathbf m_i)\in S^3\cap\mathbb Q^4$ with $w_i>0$, the lift</p>
+                $$\tilde q_i=\frac{1}{w_i}(1,\mathbf m_i)$$
+                <p>lies on the positive sheet of the hyperboloid</p>
+                $$\mathbb H^3 = \{\tilde q:\langle \tilde q,\tilde q\rangle_{\mathbb L}=1,\ \tilde q_0>0\}.$$
+            </div>
+
+            <div class="proof-block">
+                <div class="proof-header">Proof</div>
+                <p>Compute:</p>
+                $$\langle \tilde q_i,\tilde q_i\rangle_{\mathbb L} = \left(\frac{1}{w_i}\right)^2 - \left\lVert \frac{\mathbf m_i}{w_i}\right\rVert^2.$$
+                <p>So</p>
+                $$\langle \tilde q_i,\tilde q_i\rangle_{\mathbb L} = \frac{1-\lVert\mathbf m_i\rVert^2}{w_i^2}.$$
+                <p>Since $q_i\in S^3$,</p>
+                $$w_i^2+\lVert\mathbf m_i\rVert^2=1.$$
+                <p>Therefore,</p>
+                $$1-\lVert\mathbf m_i\rVert^2=w_i^2.$$
+                <p>Hence,</p>
+                $$\langle \tilde q_i,\tilde q_i\rangle_{\mathbb L} = \frac{w_i^2}{w_i^2} = 1.$$
+                <p>Also,</p>
+                $$\tilde q_{i,0}=\frac{1}{w_i}>0.$$
+                <p>So $\tilde q_i\in\mathbb H^3$. Because $q_i$ and $w_i$ are rational, all coordinates of $\tilde q_i$ are rational.</p>
+                <p>Thus the lift is closed in $\mathbb Q$ and lands on $\mathbb H^3$.</p>
+                <div class="qed">■ PROVED</div>
+            </div>
+        </section>
+
+        <section class="mb-16 w-full flex flex-col items-center">
+            <h2 class="text-2xl font-bold mono mb-6 text-white border-b border-gray-800 pb-2 inline-block">3. Hyperbolic Quadrance</h2>
+            
+            <h3 class="text-lg font-bold mono mt-6 mb-2 text-gray-300">Definition</h3>
+            <p>Define the hyperbolic quadrance between two lifted points by</p>
+            $$Q_h(i,j) = \langle \tilde q_i,\tilde q_j\rangle_{\mathbb L}^2-1.$$
+            <p>This avoids the actual hyperbolic distance</p>
+            $$d_{\mathbb H}(i,j)=\operatorname{arcosh}\langle \tilde q_i,\tilde q_j\rangle_{\mathbb L},$$
+            <p>which would introduce transcendental functions. Instead, $Q_h$ is a rational polynomial-fraction expression.</p>
+
+            <div class="theorem-box">
+                <h4 class="font-bold mono text-cyan-400 mb-4 uppercase tracking-widest text-sm">Theorem 2: $Q_h$ Is Rational, Symmetric, Nonnegative, and Point-Separating</h4>
+                <p>For all $i,j$,</p>
+                $$Q_h(i,j)\in\mathbb Q_{\ge0}.$$
+                <p>Moreover,</p>
+                $$Q_h(i,j)=Q_h(j,i),$$
+                <p>and</p>
+                $$Q_h(i,j)=0 \iff q_i=q_j.$$
+            </div>
+
+            <div class="proof-block">
+                <div class="proof-header">Proof</div>
+                <p>First compute the Lorentz inner product:</p>
+                $$\langle \tilde q_i,\tilde q_j\rangle_{\mathbb L} = \frac{1}{w_iw_j} - \frac{\mathbf m_i\cdot\mathbf m_j}{w_iw_j}.$$
+                <p>Thus</p>
+                $$\langle \tilde q_i,\tilde q_j\rangle_{\mathbb L} = \frac{1-\mathbf m_i\cdot\mathbf m_j}{w_iw_j}.$$
+                <p>Since all coordinates are rational, this is rational. Therefore,</p>
+                $$Q_h(i,j) = \left( \frac{1-\mathbf m_i\cdot\mathbf m_j}{w_iw_j} \right)^2 -1$$
+                <p>is rational.</p>
+                <p>Symmetry follows because the dot product is symmetric:</p>
+                $$\mathbf m_i\cdot\mathbf m_j=\mathbf m_j\cdot\mathbf m_i.$$
+                <p>So</p>
+                $$Q_h(i,j)=Q_h(j,i).$$
+                <p>Now prove nonnegativity. Since $q_i,q_j\in S^3$, their Euclidean dot product satisfies</p>
+                $$q_i\cdot q_j\le1.$$
+                <p>But</p>
+                $$q_i\cdot q_j = w_iw_j+\mathbf m_i\cdot\mathbf m_j.$$
+                <p>Therefore,</p>
+                $$w_iw_j+\mathbf m_i\cdot\mathbf m_j\le1.$$
+                <p>Rearranging,</p>
+                $$1-\mathbf m_i\cdot\mathbf m_j\ge w_iw_j.$$
+                <p>Since $w_i,w_j>0$,</p>
+                $$\frac{1-\mathbf m_i\cdot\mathbf m_j}{w_iw_j}\ge1.$$
+                <p>Thus</p>
+                $$\langle \tilde q_i,\tilde q_j\rangle_{\mathbb L}\ge1.$$
+                <p>Hence,</p>
+                $$Q_h(i,j) = \langle \tilde q_i,\tilde q_j\rangle_{\mathbb L}^2-1 \ge0.$$
+                <p>Finally, $Q_h(i,j)=0$ iff</p>
+                $$\langle \tilde q_i,\tilde q_j\rangle_{\mathbb L}=1.$$
+                <p>On the positive hyperboloid $\mathbb H^3$, this occurs iff</p>
+                $$\tilde q_i=\tilde q_j.$$
+                <p>The lift is injective because</p>
+                $$\tilde q_i=\left(\frac{1}{w_i},\frac{\mathbf m_i}{w_i}\right)$$
+                <p>recovers</p>
+                $$w_i=\frac{1}{\tilde q_{i,0}}$$
+                <p>and then</p>
+                $$\mathbf m_i=w_i\tilde{\mathbf q}_i.$$
+                <p>Therefore,</p>
+                $$\tilde q_i=\tilde q_j \iff q_i=q_j.$$
+                <p>So</p>
+                $$Q_h(i,j)=0 \iff q_i=q_j.$$
+                <p>Therefore $Q_h$ is rational, symmetric, nonnegative, and point-separating.</p>
+                <div class="qed">■ PROVED</div>
+            </div>
+        </section>
+
+        <section class="mb-16 w-full flex flex-col items-center">
+            <h2 class="text-2xl font-bold mono mb-6 text-white border-b border-gray-800 pb-2 inline-block">4. Rational Hyperbolic Logits</h2>
+            <p>Let $\mathcal N_i$ be the finite candidate neighborhood for source voxel $i$. For each candidate transition $i\to j$, define:</p>
+            <ul class="list-disc pl-8 mt-4 space-y-2 text-left inline-block">
+                <li>inverse temperature: $$\beta_i=\frac{1-w_i}{w_i}\in\mathbb Q,$$</li>
+                <li>torsional resistance: $$A_{ij}=A_0s_{ij}\chi_{ij},$$</li>
+            </ul>
+            <p class="mt-4">where</p>
+            $$A_0,s_{ij},\chi_{ij}\in\mathbb Q,$$
+            <p>and usually</p>
+            $$\chi_{ij}\in\{0,1\}.$$
+            <p>Define the executable logit</p>
+            <div class="math-block w-full">
+                $$z_{i\to j} = -\beta_iQ_h(i,j)-\lambda A_{ij},$$
+            </div>
+            <p>where</p>
+            $$\lambda\in\mathbb Q_{>0}.$$
+
+            <div class="theorem-box">
+                <h4 class="font-bold mono text-cyan-400 mb-4 uppercase tracking-widest text-sm">Theorem 3: The Logits Are Rational</h4>
+                <p>For every $j\in\mathcal N_i$,</p>
+                $$z_{i\to j}\in\mathbb Q.$$
+            </div>
+
+            <div class="proof-block">
+                <div class="proof-header">Proof</div>
+                <p>From Theorem 2,</p>
+                $$Q_h(i,j)\in\mathbb Q.$$
+                <p>By assumption,</p>
+                $$\beta_i,\lambda,A_{ij}\in\mathbb Q.$$
+                <p>Since $\mathbb Q$ is closed under addition and multiplication,</p>
+                $$-\beta_iQ_h(i,j)-\lambda A_{ij}\in\mathbb Q.$$
+                <p>Therefore,</p>
+                $$z_{i\to j}\in\mathbb Q.$$
+                <div class="qed">■ PROVED</div>
+            </div>
+        </section>
+
+        <section class="mb-16 w-full flex flex-col items-center">
+            <h2 class="text-2xl font-bold mono mb-6 text-white border-b border-gray-800 pb-2 inline-block">5. Sparsemax Projection</h2>
+            <p>The sparsemax row is defined as the Euclidean projection of the logit vector $z_{i\cdot}$ onto the probability simplex.</p>
+            <p>Define the simplex</p>
+            $$\Delta_i = \left\{ p\in\mathbb R^{|\mathcal N_i|}: p_j\ge0,\ \sum_{j\in\mathcal N_i}p_j=1 \right\}.$$
+            <p>Then define</p>
+            $$S_{i\cdot} = \operatorname{sparsemax}(z_{i\cdot}) = \arg\min_{p\in\Delta_i} \lVert p-z_{i\cdot}\rVert_2^2.$$
+
+            <div class="theorem-box">
+                <h4 class="font-bold mono text-cyan-400 mb-4 uppercase tracking-widest text-sm">Theorem 4: Sparsemax Has Closed Form</h4>
+                <p>The unique minimizer is</p>
+                $$S_{ij} = [z_{i\to j}-\tau_i]_+,$$
+                <p>where</p>
+                $$[x]_+=\max(x,0),$$
+                <p>and $\tau_i$ is chosen so that</p>
+                $$\sum_{j\in\mathcal N_i}[z_{i\to j}-\tau_i]_+=1.$$
+                <p>If</p>
+                $$A_i=\{j:z_{i\to j}>\tau_i\}$$
+                <p>is the active set, then</p>
+                $$\tau_i = \frac{\sum_{j\in A_i}z_{i\to j}-1}{|A_i|}.$$
+            </div>
+
+            <div class="proof-block">
+                <div class="proof-header">Proof</div>
+                <p>We solve the constrained optimization problem:</p>
+                $$\min_{p\in\Delta_i} \frac12\lVert p-z_{i\cdot}\rVert_2^2.$$
+                <p>The constraints are:</p>
+                $$p_j\ge0 \quad \text{and} \quad \sum_jp_j=1.$$
+                <p>Form the Lagrangian</p>
+                $$\mathcal L(p,\tau,\mu) = \frac12\sum_j(p_j-z_j)^2 + \tau\left(\sum_jp_j-1\right) - \sum_j\mu_jp_j,$$
+                <p>where $\mu_j\ge0$ are the multipliers for $p_j\ge0$.</p>
+                <p>Stationarity gives:</p>
+                $$\frac{\partial\mathcal L}{\partial p_j} = p_j-z_j+\tau-\mu_j = 0.$$
+                <p>So</p>
+                $$p_j=z_j-\tau+\mu_j.$$
+                <p>Complementary slackness gives:</p>
+                $$\mu_jp_j=0.$$
+                <p>If $p_j>0$, then $\mu_j=0$, so</p>
+                $$p_j=z_j-\tau.$$
+                <p>If $p_j=0$, then feasibility requires</p>
+                $$z_j-\tau\le0.$$
+                <p>Therefore,</p>
+                $$p_j=[z_j-\tau]_+.$$
+                <p>Finally, $\tau$ is chosen to enforce the simplex condition:</p>
+                $$\sum_jp_j=1.$$
+                <p>Thus,</p>
+                $$\sum_j[z_j-\tau]_+=1.$$
+                <p>On the active set $A_i=\{j:z_j>\tau\}$, we have</p>
+                $$\sum_{j\in A_i}(z_j-\tau)=1.$$
+                <p>Therefore,</p>
+                $$\sum_{j\in A_i}z_j-|A_i|\tau=1.$$
+                <p>Solving for $\tau$ gives</p>
+                $$\tau = \frac{\sum_{j\in A_i}z_j-1}{|A_i|}.$$
+                <p>Thus the sparsemax solution is $S_{ij}=[z_{i\to j}-\tau_i]_+$.</p>
+                <div class="qed">■ PROVED</div>
+            </div>
+        </section>
+
+        <section class="mb-16 w-full flex flex-col items-center">
+            <h2 class="text-2xl font-bold mono mb-6 text-white border-b border-gray-800 pb-2 inline-block">6. Rationality of Sparsemax</h2>
+            
+            <div class="theorem-box">
+                <h4 class="font-bold mono text-cyan-400 mb-4 uppercase tracking-widest text-sm">Theorem 5: Sparsemax Preserves Rationality</h4>
+                <p>If all logits $z_{i\to j}$ are rational, then all sparsemax probabilities $S_{ij}$ are rational.</p>
+            </div>
+
+            <div class="proof-block">
+                <div class="proof-header">Proof</div>
+                <p>By Theorem 3,</p>
+                $$z_{i\to j}\in\mathbb Q.$$
+                <p>The active set $A_i$ is determined by sorting and comparing rational numbers. Comparisons of rational numbers are exact.</p>
+                <p>Once $A_i$ is known,</p>
+                $$\tau_i = \frac{\sum_{j\in A_i}z_{i\to j}-1}{|A_i|}.$$
+                <p>The numerator is rational, and $|A_i|$ is a positive integer. Therefore,</p>
+                $$\tau_i\in\mathbb Q.$$
+                <p>For every $j$,</p>
+                $$S_{ij} = [z_{i\to j}-\tau_i]_+.$$
+                <p>Since both $z_{i\to j}$ and $\tau_i$ are rational,</p>
+                $$z_{i\to j}-\tau_i\in\mathbb Q.$$
+                <p>Taking the positive part either returns that rational value or $0$, so</p>
+                $$S_{ij}\in\mathbb Q.$$
+                <p>Therefore sparsemax preserves rationality.</p>
+                <div class="qed">■ PROVED</div>
+            </div>
+        </section>
+
+        <section class="mb-16 w-full flex flex-col items-center">
+            <h2 class="text-2xl font-bold mono mb-6 text-white border-b border-gray-800 pb-2 inline-block">7. Row-Stochasticity and Sparsity</h2>
+            
+            <div class="theorem-box">
+                <h4 class="font-bold mono text-cyan-400 mb-4 uppercase tracking-widest text-sm">Theorem 6: Sparsemax Rows Are Probability Rows</h4>
+                <p>For every source voxel $i$,</p>
+                $$S_{ij}\ge0$$
+                <p>and</p>
+                $$\sum_{j\in\mathcal N_i}S_{ij}=1.$$
+            </div>
+
+            <div class="proof-block">
+                <div class="proof-header">Proof</div>
+                <p>By definition,</p>
+                $$S_{ij}=[z_{i\to j}-\tau_i]_+.$$
+                <p>Therefore,</p>
+                $$S_{ij}\ge0.$$
+                <p>The threshold $\tau_i$ is chosen precisely to satisfy</p>
+                $$\sum_{j\in\mathcal N_i}[z_{i\to j}-\tau_i]_+=1.$$
+                <p>Thus,</p>
+                $$\sum_{j\in\mathcal N_i}S_{ij}=1.$$
+                <p>So $S_{i\cdot}$ is a probability row.</p>
+                <div class="qed">■ PROVED</div>
+            </div>
+
+            <div class="theorem-box">
+                <h4 class="font-bold mono text-cyan-400 mb-4 uppercase tracking-widest text-sm">Theorem 7: Sparsemax Produces Exact Sparsity</h4>
+                <p>If</p>
+                $$z_{i\to j}\le\tau_i,$$
+                <p>then</p>
+                $$S_{ij}=0.$$
+                <p>Therefore sparsemax yields finite exact support.</p>
+            </div>
+
+            <div class="proof-block">
+                <div class="proof-header">Proof</div>
+                <p>If</p>
+                $$z_{i\to j}\le\tau_i,$$
+                <p>then</p>
+                $$z_{i\to j}-\tau_i\le0.$$
+                <p>Hence,</p>
+                $$S_{ij}=[z_{i\to j}-\tau_i]_+=0.$$
+                <p>Thus every inactive candidate receives exactly zero probability, not merely a small value.</p>
+                <div class="qed">■ PROVED</div>
+            </div>
+        </section>
+
+        <section class="mb-16 w-full flex flex-col items-center">
+            <h2 class="text-2xl font-bold mono mb-6 text-white border-b border-gray-800 pb-2 inline-block">8. Nonempty Support</h2>
+            
+            <div class="theorem-box">
+                <h4 class="font-bold mono text-cyan-400 mb-4 uppercase tracking-widest text-sm">Theorem 8: The Sparsemax Active Set Is Nonempty</h4>
+                <p>The active set</p>
+                $$A_i=\{j:S_{ij}>0\}$$
+                <p>is nonempty.</p>
+            </div>
+
+            <div class="proof-block">
+                <div class="proof-header">Proof</div>
+                <p>Since $S_{i\cdot}\in\Delta_i$,</p>
+                $$\sum_{j\in\mathcal N_i}S_{ij}=1.$$
+                <p>If every $S_{ij}=0$, then the sum would be $0$, contradicting the simplex constraint.</p>
+                <p>Therefore at least one $S_{ij}$ is positive, so $A_i$ is nonempty.</p>
+                <div class="qed">■ PROVED</div>
+            </div>
+
+            <p>In this specific SHD-CCP construction, the self-loop is naturally included. Since</p>
+            $$Q_h(i,i)=0$$
+            <p>and usually</p>
+            $$A_{ii}=0,$$
+            <p>we have</p>
+            $$z_{i\to i}=0.$$
+            <p>For other candidates,</p>
+            $$Q_h(i,j)\ge0, \qquad A_{ij}\ge0,$$
+            <p>so</p>
+            $$z_{i\to j}\le0.$$
+            <p>Thus the self-logit is maximal:</p>
+            $$z_{i\to i}\ge z_{i\to j}.$$
+            <p>Therefore the self-loop is always among the maximizers and prevents support collapse.</p>
+        </section>
+
+        <section class="mb-16 w-full flex flex-col items-center">
+            <h2 class="text-2xl font-bold mono mb-6 text-white border-b border-gray-800 pb-2 inline-block">9. Hyperbolic Sparsemax Kernel</h2>
+            <p>We now combine the previous pieces.</p>
+            
+            <h3 class="text-lg font-bold mono mt-6 mb-2 text-gray-300">Definition</h3>
+            <p>The <strong>Hyperbolic Sparsemax Kernel</strong> is the row operator</p>
+            $$S_{ij} = \operatorname{sparsemax}_j \left( -\beta_iQ_h(i,j)-\lambda A_{ij} \right).$$
+            <p>Equivalently,</p>
+            $$S_{ij} = [z_{i\to j}-\tau_i]_+,$$
+            <p>where</p>
+            $$z_{i\to j} = -\beta_iQ_h(i,j)-\lambda A_{ij},$$
+            <p>and $\tau_i$ is chosen so that</p>
+            $$\sum_{j\in\mathcal N_i}S_{ij}=1.$$
+
+            <div class="theorem-box">
+                <h4 class="font-bold mono text-cyan-400 mb-4 uppercase tracking-widest text-sm">Main Theorem: Hyperbolic Sparsemax Is Rational, Sparse, and Row-Stochastic</h4>
+                <p>Under the assumptions:</p>
+                $$q_i\in S^3\cap\mathbb Q^4,$$
+                $$w_i\in[w_{\min},w_{\max}]\subset(0,1),$$
+                $$A_0,s_{ij},\lambda\in\mathbb Q,$$
+                <p>and</p>
+                $$A_{ij}=A_0s_{ij}\chi_{ij},$$
+                <p>the Hyperbolic Sparsemax Kernel satisfies:</p>
+                <ul class="list-decimal pl-8 mt-4 space-y-2 text-white text-left inline-block">
+                    <li><strong>Rationality:</strong> $S_{ij}\in\mathbb Q$.</li>
+                    <li><strong>Nonnegativity:</strong> $S_{ij}\ge0$.</li>
+                    <li><strong>Row-stochasticity:</strong> $\sum_{j\in\mathcal N_i}S_{ij}=1$.</li>
+                    <li><strong>Exact sparsity:</strong> $S_{ij}=0 \quad \text{whenever} \quad z_{i\to j}\le\tau_i$.</li>
+                    <li><strong>Hyperbolic consistency:</strong> The score uses the Lorentz hyperboloid through $Q_h(i,j) = \langle\tilde q_i,\tilde q_j\rangle_{\mathbb L}^2-1$.</li>
+                    <li><strong>No transcendental computation:</strong> The construction uses only rational arithmetic, comparisons, and positive-part thresholding.</li>
+                </ul>
+            </div>
+
+            <div class="proof-block">
+                <div class="proof-header">Proof</div>
+                <p>By Theorem 1, the Lorentz lift is rational and lies on $\mathbb H^3$.</p>
+                <p>By Theorem 2, $Q_h(i,j)$ is rational, symmetric, nonnegative, and point-separating.</p>
+                <p>By Theorem 3, the logits $z_{i\to j} = -\beta_iQ_h(i,j)-\lambda A_{ij}$ are rational.</p>
+                <p>By Theorem 4, sparsemax has the closed form $S_{ij}=[z_{i\to j}-\tau_i]_+$.</p>
+                <p>By Theorem 5, since the logits are rational, the threshold $\tau_i$ and all entries $S_{ij}$ are rational.</p>
+                <p>By Theorem 6, $S_{ij}\ge0$ and $\sum_jS_{ij}=1$.</p>
+                <p>By Theorem 7, all candidates below threshold are assigned exactly zero mass.</p>
+                <p>No part of the construction uses $e^x,\ \log x,\ \sqrt{x},\ \sin x,\ \cos x,\ \operatorname{arcosh}x$.</p>
+                <p>Therefore the kernel is rational, sparse, row-stochastic, hyperbolically scored, and executable without transcendental operations.</p>
+                <div class="qed">■ PROVED</div>
+            </div>
+        </section>
+
+        <section class="mb-16 w-full flex flex-col items-center">
+            <h2 class="text-2xl font-bold mono mb-6 text-white border-b border-gray-800 pb-2 inline-block">10. Rational Reverse-Valve Extension</h2>
+            <p>To create a pump, we add a rational asymmetry layer.</p>
+            <p>Define the rational reverse-valve</p>
+            $$\rho_{ij} = \frac{1}{1+\lambda A_{ij}},$$
+            <p>where $A_{ij}\ge0$.</p>
+            <p>Then $0<\rho_{ij}\le1$. If $A_{ij}>0$, then $\rho_{ij}<1$.</p>
+
+            <h3 class="text-lg font-bold mono mt-6 mb-2 text-gray-300">Symmetric Base Walk</h3>
+            <p>Let the sparsemax support determine the admissible undirected edges. On that support choose symmetric rational weights</p>
+            $$W_{ij}=W_{ji}\in\mathbb Q_{\ge0}.$$
+            <p>Define</p>
+            $$d_i=\sum_jW_{ij}, \qquad D=\sum_id_i,$$
+            $$\pi_i^0=\frac{d_i}{D}, \qquad P_{ij}^0=\frac{W_{ij}}{d_i}.$$
+            <p>Then $P^0$ is reversible with respect to $\pi^0$.</p>
+
+            <div class="proof-block">
+                <div class="proof-header">Proof of Reversibility</div>
+                <p>Compute:</p>
+                $$\pi_i^0P_{ij}^0 = \frac{d_i}{D}\frac{W_{ij}}{d_i} = \frac{W_{ij}}{D}.$$
+                <p>Similarly,</p>
+                $$\pi_j^0P_{ji}^0 = \frac{d_j}{D}\frac{W_{ji}}{d_j} = \frac{W_{ji}}{D}.$$
+                <p>Since $W_{ij}=W_{ji}$, we get</p>
+                $$\pi_i^0P_{ij}^0 = \pi_j^0P_{ji}^0.$$
+                <p>Thus $P^0$ satisfies detailed balance.</p>
+                <div class="qed">■ PROVED</div>
+            </div>
+        </section>
+
+        <section class="mb-16 w-full flex flex-col items-center">
+            <h2 class="text-2xl font-bold mono mb-6 text-white border-b border-gray-800 pb-2 inline-block">11. Valve-Modified Pump Kernel</h2>
+            <p>Partition supported oriented edges into forward and reverse sets:</p>
+            <div class="math-block w-full">
+                $$E^+ = \{(i,j): W_{ij}>0 \text{ and } i\to j \text{ follows forward chirality}\},$$
+                $$E^-=\{(j,i):(i,j)\in E^+\}.$$
+            </div>
+            <p>Define the executable pump kernel $\widehat K$ by</p>
+            <div class="math-block w-full">
+                $$
+                \widehat K_{ij}
+                =
+                \begin{cases}
+                P_{ij}^0, & (i,j)\in E^+,\\
+                P_{ij}^0\rho_{ij}, & (i,j)\in E^-,\\
+                P_{ii}^0+\sum_{k:(i,k)\in E^-}P_{ik}^0(1-\rho_{ik}), & j=i.
+                \end{cases}
+                $$
+            </div>
+            <p>That is: reverse mass is attenuated, and rejected mass is returned to the diagonal.</p>
+
+            <div class="theorem-box">
+                <h4 class="font-bold mono text-cyan-400 mb-4 uppercase tracking-widest text-sm">Theorem 9: $\widehat K$ Is Rational and Row-Stochastic</h4>
+                <p>For every $i,j$,</p>
+                $$\widehat K_{ij}\in\mathbb Q,$$
+                <p>and for every $i$,</p>
+                $$\sum_j\widehat K_{ij}=1.$$
+            </div>
+
+            <div class="proof-block">
+                <div class="proof-header">Proof</div>
+                <p>All quantities $W_{ij},d_i,D,P_{ij}^0,\rho_{ij}$ are rational, so every entry of $\widehat K$ is rational.</p>
+                <p>Now fix row $i$. Start from the base row:</p>
+                $$\sum_jP_{ij}^0=1.$$
+                <p>For each reverse edge $(i,k)\in E^-$, the off-diagonal mass changes from $P_{ik}^0$ to $P_{ik}^0\rho_{ik}$.</p>
+                <p>The removed amount is</p>
+                $$P_{ik}^0(1-\rho_{ik}).$$
+                <p>This removed amount is added to the diagonal. Therefore no mass is lost.</p>
+                <p>Hence,</p>
+                $$\sum_j\widehat K_{ij}=1.$$
+                <p>So $\widehat K$ is rational and row-stochastic.</p>
+                <div class="qed">■ PROVED</div>
+            </div>
+        </section>
+
+        <section class="mb-16 w-full flex flex-col items-center">
+            <h2 class="text-2xl font-bold mono mb-6 text-white border-b border-gray-800 pb-2 inline-block">12. Broken Detailed Balance and Forward Current</h2>
+            <p>Define the base-referenced current on a forward edge $(i,j)\in E^+$ by</p>
+            $$J_{ij}^0 = \pi_i^0\widehat K_{ij} - \pi_j^0\widehat K_{ji}.$$
+            <p>For $(i,j)\in E^+$, $\widehat K_{ij}=P_{ij}^0$, while the reverse transition satisfies $\widehat K_{ji}=P_{ji}^0\rho_{ji}$.</p>
+            <p>Therefore,</p>
+            $$J_{ij}^0 = \pi_i^0P_{ij}^0 - \pi_j^0P_{ji}^0\rho_{ji}.$$
+            <p>Using reversibility of $P^0$,</p>
+            $$\pi_i^0P_{ij}^0 = \pi_j^0P_{ji}^0 = \frac{W_{ij}}{D}.$$
+            <p>Thus</p>
+            $$J_{ij}^0 = \frac{W_{ij}}{D} - \frac{W_{ij}}{D}\rho_{ji}.$$
+            <p>So</p>
+            $$J_{ij}^0 = \frac{W_{ij}}{D}(1-\rho_{ji}).$$
+            <p>Since $W_{ij}\ge0$ and $0<\rho_{ji}\le1$, we get</p>
+            $$J_{ij}^0\ge0.$$
+            <p>Moreover, if $W_{ij}>0$ and $\rho_{ji}<1$, then</p>
+            <p class="text-yellow-500 font-bold text-center my-4">$$J_{ij}^0>0.$$</p>
+            <p>Summing over all forward edges,</p>
+            $$J_0 = \sum_{(i,j)\in E^+}J_{ij}^0 = \sum_{(i,j)\in E^+} \frac{W_{ij}}{D}(1-\rho_{ji}) \ge0.$$
+            <p>And if at least one forward-supported edge satisfies $W_{ij}>0$ and $\rho_{ji}<1$, then</p>
+            $$J_0>0.$$
+            <p>Thus the rational valve breaks detailed balance and produces nonnegative, conditionally strictly positive forward current. <strong>Proved.</strong></p>
+        </section>
+
+        <section class="mb-16 w-full flex flex-col items-center">
+            <h2 class="text-2xl font-bold mono mb-6 text-white border-b border-gray-800 pb-2 inline-block">13. Determinism and Parity Safety</h2>
+            
+            <div class="theorem-box">
+                <h4 class="font-bold mono text-cyan-400 mb-4 uppercase tracking-widest text-sm">Theorem 10: The Executable Pipeline Is Closed in $\mathbb Q$</h4>
+                <p>Every executable quantity in the Hyperbolic Sparsemax Pump lies in $\mathbb Q$.</p>
+            </div>
+
+            <div class="proof-block">
+                <div class="proof-header">Proof</div>
+                <p>The pipeline consists of:</p>
+                <ol class="list-decimal pl-8 space-y-2 mt-4 text-left inline-block">
+                    <li>rational spinors: $q_i\in\mathbb Q^4$</li>
+                    <li>rational Lorentz lifts: $\tilde q_i=\frac{1}{w_i}(1,\mathbf m_i)\in\mathbb Q^4$</li>
+                    <li>rational quadrance: $Q_h(i,j)\in\mathbb Q$</li>
+                    <li>rational logits: $z_{i\to j}\in\mathbb Q$</li>
+                    <li>rational sparsemax thresholds: $\tau_i\in\mathbb Q$</li>
+                    <li>rational sparsemax entries: $S_{ij}\in\mathbb Q$</li>
+                    <li>rational base weights: $W_{ij}\in\mathbb Q$</li>
+                    <li>rational valve factors: $\rho_{ij}\in\mathbb Q$</li>
+                    <li>rational pump entries: $\widehat K_{ij}\in\mathbb Q$</li>
+                </ol>
+                <p class="mt-6">Every step uses only rational field operations, comparisons, and max with $0$. Therefore the entire executable pipeline remains in $\mathbb Q$.</p>
+                <div class="qed">■ PROVED</div>
+            </div>
+
+            <div class="theorem-box mt-8">
+                <h4 class="font-bold mono text-cyan-400 mb-4 uppercase tracking-widest text-sm">Corollary: Parity Safety</h4>
+                <p>If all rational numbers are represented canonically, then two nodes with the same seed compute identical rows $S_{i\cdot}$ and identical pump rows $\widehat K_{i\cdot}$.</p>
+                <p class="mt-4">Therefore no floating-point drift can alter the discrete parity invariant, such as</p>
+                $$\operatorname{torusWinding}(\text{mantle})\bmod 7=\text{core}.$$
+            </div>
+        </section>
+
+        <section class="mb-16 w-full flex flex-col items-center">
+            <h2 class="text-2xl font-bold mono mb-6 text-white border-b border-gray-800 pb-2 inline-block">14. Derrick-Stable Annulus</h2>
+            <p>The scalar $w_i$ controls the inverse temperature</p>
+            $$\beta_i=\frac{1-w_i}{w_i}.$$
+            <p>Since $w_i\in[w_{\min},w_{\max}]\subset(0,1)$, we get finite bounds:</p>
+            $$\frac{1-w_{\max}}{w_{\max}} \le \beta_i \le \frac{1-w_{\min}}{w_{\min}}.$$
+            <p>Therefore,</p>
+            $$0<\beta_{\min}\le\beta_i\le\beta_{\max}<\infty.$$
+            <p>So the system avoids both limits:</p>
+            <ul class="list-disc pl-8 mt-4 space-y-2 text-left inline-block">
+                <li>$w_i\to0^+$ gives $\beta_i\to\infty$, causing hard collapse.</li>
+                <li>$w_i\to1^-$ gives $\beta_i\to0$, causing uniform diffusion.</li>
+            </ul>
+            <p class="mt-4">The annulus prevents both. Ties are resolved either by bounded rational perturbation of $\beta_i$ or by deterministic canonical ordering, such as lexicographic voxel-channel order.</p>
+            <p>Thus the executable kernel remains stable and deterministic.</p>
+        </section>
+
+        <section class="mb-20 w-full flex flex-col items-center">
+            <h2 class="text-2xl font-bold mono mb-6 text-white border-b border-gray-800 pb-2 inline-block">15. Final Hyperbolic Sparsemax Pump Theorem</h2>
+            
+            <div class="theorem-box border-yellow-900 bg-[#0a0a0a]">
+                <h4 class="font-bold mono text-yellow-500 mb-6 text-xl uppercase tracking-widest">Theorem</h4>
+                <p>Under the assumptions:</p>
+                $$V=(\mathbb Z/4\mathbb Z)^3,$$
+                $$q_i=(w_i,\mathbf m_i)\in S^3\cap\mathbb Q^4,$$
+                $$w_i\in[w_{\min},w_{\max}]\subset(0,1),$$
+                $$A_{ij}=A_0s_{ij}\chi_{ij}\in\mathbb Q_{\ge0},$$
+                <p>and</p>
+                $$\lambda\in\mathbb Q_{>0},$$
+                <p>the Hyperbolic Sparsemax construction</p>
+                $$\tilde q_i=\frac{1}{w_i}(1,\mathbf m_i),$$
+                $$Q_h(i,j)=\langle\tilde q_i,\tilde q_j\rangle_{\mathbb L}^2-1,$$
+                $$z_{i\to j}=-\beta_iQ_h(i,j)-\lambda A_{ij},$$
+                $$S_{ij}=[z_{i\to j}-\tau_i]_+$$
+                <p>defines a rational, sparse, row-stochastic executable kernel.</p>
+
+                <p class="mt-8 border-t border-gray-800 pt-8">When equipped with a symmetric rational base walk $P^0$ and rational reverse-valve</p>
+                $$\rho_{ij}=\frac{1}{1+\lambda A_{ij}},$$
+                <p>the valve-modified kernel $\widehat K$ remains rational and row-stochastic and satisfies</p>
+                $$J_0 = \sum_{(i,j)\in E^+} (\pi_i^0\widehat K_{ij}-\pi_j^0\widehat K_{ji}) \ge0.$$
+                <p>Moreover,</p>
+                $$J_0>0$$
+                <p>whenever at least one supported forward edge has nonzero affinity and nontrivial reverse attenuation.</p>
+
+                <div class="bg-black border border-yellow-900/50 p-6 rounded-lg mt-8">
+                    <p class="text-yellow-400 font-bold leading-relaxed">
+                        Therefore the Hyperbolic Sparsemax Pump is a deterministic, rational, parity-safe executable counterpart to the analytic hyperbolic softmax pump, with sparse geometric collapse, broken detailed balance, and bounded annular stability.
+                    </p>
+                    <div class="qed">■ PROVED</div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+</body>
+</html>
