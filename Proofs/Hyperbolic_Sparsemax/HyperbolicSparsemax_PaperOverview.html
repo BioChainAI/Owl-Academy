@@ -1,0 +1,629 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Owl Academy: Research Overview - Dual-Pump Dynamics</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Google Fonts for Academic Aesthetics -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&family=Merriweather:ital,wght@0,300;0,700;1,300&family=Fira+Code&display=swap" rel="stylesheet">
+    
+    <!-- MathJax for rendering LaTeX -->
+    <script>
+        MathJax = {
+            tex: {
+                inlineMath: [['$', '$'], ['\\(', '\\)']],
+                displayMath: [['$$', '$$'], ['\\[', '\\]']]
+            }
+        };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+
+    <!-- Prism.js for Syntax Highlighting -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" rel="stylesheet" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-python.min.js"></script>
+
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; }
+        h1, h2, h3, h4, .serif-text { font-family: 'Merriweather', serif; }
+        code, pre { font-family: 'Fira Code', monospace; }
+        .math-block { overflow-x: auto; padding: 1.25rem 0; }
+        
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(226, 232, 240, 0.8);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+        }
+
+        /* --- Tab System Styles --- */
+        .tab-btn.active {
+            border-bottom: 2px solid #6366f1; /* Indigo 500 */
+            color: #4f46e5; /* Indigo 600 */
+            font-weight: 600;
+        }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; animation: fadeIn 0.4s ease-in-out; }
+        
+        /* --- Custom Animations --- */
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes float-up {
+            0% { transform: translateY(0) scale(1); opacity: 0; }
+            20% { opacity: 1; }
+            80% { opacity: 1; }
+            100% { transform: translateY(-60px) scale(1.2); opacity: 0; }
+        }
+        @keyframes rotate-cw { 100% { transform: rotate(360deg); } }
+        @keyframes rotate-ccw { 100% { transform: rotate(-360deg); } }
+        @keyframes flow-inward {
+            0% { transform: scale(1.5); opacity: 0; }
+            50% { opacity: 0.5; }
+            100% { transform: scale(0.5); opacity: 0; }
+        }
+        @keyframes data-pipeline {
+            0% { transform: translateX(0); fill: #c084fc; }
+            30% { transform: translateX(120px); fill: #ef4444; }
+            60% { transform: translateX(240px); fill: #f59e0b; }
+            90%, 100% { transform: translateX(360px); fill: #10b981; }
+        }
+        @keyframes bar-pulse-soft { 0%, 100% { height: 8%; opacity: 0.7;} 50% { height: 14%; opacity: 1;} }
+
+        /* Utility classes for animation */
+        .anim-float { animation: float-up 3s ease-in-out infinite; }
+        .anim-spin-slow { transform-origin: center; animation: rotate-cw 12s linear infinite; }
+        .anim-spin-slow-reverse { transform-origin: center; animation: rotate-ccw 10s linear infinite; }
+        .anim-spin-fast { transform-origin: center; animation: rotate-cw 8s linear infinite; }
+        .anim-flow { animation: flow-inward 2s ease-in infinite; transform-origin: center; }
+        .anim-packet { animation: data-pipeline 4s ease-in-out infinite; }
+    </style>
+</head>
+<body class="text-slate-800 antialiased selection:bg-indigo-200 selection:text-indigo-900">
+
+    <!-- Navbar -->
+    <nav class="bg-[#0f172a] text-slate-200 shadow-lg sticky top-0 z-50 border-b border-indigo-900/50">
+        <div class="max-w-6xl mx-auto px-6 py-4 flex flex-col sm:flex-row items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-indigo-400">
+                    <path d="M21 13v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-7"/><path d="m16 5-4-4-4 4"/><path d="M12 1v16"/>
+                </svg>
+                <span class="text-lg font-bold tracking-widest uppercase">Owl Academy <span class="text-indigo-500 font-light mx-2">|</span> <span class="text-slate-400 font-normal normal-case tracking-normal">Experimental Systems</span></span>
+            </div>
+            <div class="text-xs font-mono text-indigo-300 bg-indigo-900/40 px-3 py-1 rounded-full mt-3 sm:mt-0 border border-indigo-800">
+                Folder: /Library/Experimental_Systems/
+            </div>
+        </div>
+    </nav>
+
+    <!-- Header Section -->
+    <header class="bg-gradient-to-br from-indigo-950 via-[#1e1b4b] to-slate-900 text-white py-20 px-6 relative overflow-hidden">
+        <div class="absolute top-0 right-0 w-96 h-96 bg-indigo-600 rounded-full mix-blend-multiply filter blur-3xl opacity-20 -translate-y-1/2 translate-x-1/3"></div>
+        <div class="absolute bottom-0 left-0 w-72 h-72 bg-blue-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 translate-y-1/3 -translate-x-1/4"></div>
+        
+        <div class="max-w-4xl mx-auto relative z-10">
+            <div class="inline-flex items-center space-x-2 text-indigo-300 text-sm font-semibold tracking-wider uppercase mb-6">
+                <span class="w-8 h-[1px] bg-indigo-400"></span>
+                <span>Research Paper Overview</span>
+            </div>
+            <h1 class="text-4xl md:text-5xl lg:text-6xl font-bold mb-6 leading-tight tracking-tight">
+                Dual-Pump Lattice Dynamics
+            </h1>
+            <p class="text-xl md:text-2xl text-indigo-100/90 font-light leading-relaxed mb-8 serif-text italic">
+                Integrating the Executable Sparsemax Kernel & Multi-Resolution Memory-Offload
+            </p>
+            <div class="flex items-center space-x-4">
+                <div class="h-12 w-12 rounded-full bg-indigo-800 border-2 border-indigo-400 flex items-center justify-center font-bold text-lg shadow-inner">GH</div>
+                <div>
+                    <p class="font-medium text-white tracking-wide">Garrett Hoard</p>
+                    <p class="text-sm text-indigo-300 font-mono">June 21, 2026 &middot; BioChain AI</p>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-4xl mx-auto px-6 py-12">
+
+        <!-- Executive Summary (Always Visible) -->
+        <section class="glass-panel p-8 md:p-10 rounded-2xl relative border-l-4 border-l-indigo-500 mb-10">
+            <div class="absolute -top-4 left-8 bg-indigo-600 text-white text-xs font-bold uppercase tracking-widest py-1 px-3 rounded shadow">Executive Summary</div>
+            <p class="text-lg leading-relaxed text-slate-700 mt-2">
+                This overview synthesizes the findings of two companion papers detailing the topological dynamics of the <strong>64-voxel Symbolic High-Dimensional Context Compression Protocol (SHD-CCP)</strong>. The core engineering challenge addressed is bridging the continuous, analytic physics of the <em>Torsional Trefoil Markov Pump</em> with discrete, parity-safe hardware execution.
+            </p>
+            <p class="text-lg leading-relaxed text-slate-700 mt-4">
+                The solution is a <strong>Dual-Pump Architecture</strong>: A strictly rational, transcendental-free <em>Hyperbolic Sparsemax Pump</em> that safely executes lattice transitions on-chain, paired with an offline <em>Torsional Markov Memory-Offload Pump</em> that processes the resulting rotational memory via a 3-scale quaternionic gear system.
+            </p>
+        </section>
+
+        <!-- Tab Navigation -->
+        <div class="border-b border-slate-200 flex space-x-6 overflow-x-auto mb-10 relative z-10">
+            <button class="tab-btn active pb-3 text-slate-500 hover:text-indigo-600 transition-colors whitespace-nowrap font-serif text-lg tracking-wide" onclick="switchTab('tab-sparsemax', this)">
+                I. Executable Forward Path
+            </button>
+            <button class="tab-btn pb-3 text-slate-500 hover:text-indigo-600 transition-colors whitespace-nowrap font-serif text-lg tracking-wide" onclick="switchTab('tab-memory', this)">
+                II. Memory-Offload Pump
+            </button>
+            <button class="tab-btn pb-3 text-slate-500 hover:text-indigo-600 transition-colors whitespace-nowrap font-serif text-lg tracking-wide" onclick="switchTab('tab-synthesis', this)">
+                III. Synthesis & Interoperability
+            </button>
+        </div>
+
+        <!-- ============================================== -->
+        <!-- TAB 1: HYPERBOLIC SPARSEMAX PUMP -->
+        <!-- ============================================== -->
+        <div id="tab-sparsemax" class="tab-content active space-y-12">
+            
+            <section>
+                <div class="pl-0 md:pl-4 space-y-6">
+                    <p class="leading-relaxed text-slate-700 text-lg">
+                        The <strong>Hyperbolic Sparsemax Pump</strong> establishes a deterministic transition kernel on the 64-voxel toroidal lattice $V=(\mathbb{Z}/4\mathbb{Z})^{3}$. To prevent hardware gridlock caused by floating-point drift, this kernel is exactly sparse, parity-safe, and free of transcendental operations.
+                    </p>
+                    
+                    <div class="grid md:grid-cols-2 gap-6 mt-8">
+                        <!-- Lorentz Lift Graph -->
+                        <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm flex flex-col">
+                            <h4 class="font-bold text-slate-900 mb-2 text-lg">Rational Lorentz Lift</h4>
+                            <p class="text-sm text-slate-600 mb-4 flex-1">Projecting voxel spinor $q_i \in S^3 \cap \mathbb{Q}^4$ to the positive sheet of the hyperboloid $\mathbb{H}^3$.</p>
+                            
+                            <!-- SVG Animation: Lorentz Lift -->
+                            <div class="h-40 w-full bg-slate-900 rounded-lg relative overflow-hidden flex items-center justify-center mb-4">
+                                <svg viewBox="0 0 200 150" class="w-full h-full">
+                                    <ellipse cx="100" cy="120" rx="40" ry="15" fill="none" stroke="#4f46e5" stroke-width="2" stroke-dasharray="4 2"/>
+                                    <text x="145" y="125" fill="#818cf8" font-size="10" font-family="monospace">S³ (w_i, m_i)</text>
+                                    
+                                    <path d="M 40 40 Q 100 80 160 40" fill="none" stroke="#10b981" stroke-width="2"/>
+                                    <path d="M 40 20 Q 100 60 160 20" fill="none" stroke="#34d399" stroke-width="1" stroke-dasharray="2 2"/>
+                                    <text x="165" y="35" fill="#34d399" font-size="10" font-family="monospace">H³ (q̃_i)</text>
+                                    
+                                    <line x1="100" y1="120" x2="100" y2="60" stroke="#cbd5e1" stroke-width="1" stroke-dasharray="3 3" />
+                                    <circle cx="100" cy="120" r="4" fill="#6366f1" class="anim-float"/>
+                                </svg>
+                            </div>
+                            
+                            <div class="bg-slate-50 p-3 rounded border border-slate-100 text-center font-serif text-sm">
+                                $$\tilde{q}_i = \frac{1}{w_i}(1, m_i)$$
+                                $$Q_h(i, j) = \langle\tilde{q}_i, \tilde{q}_j\rangle_{\mathbb{L}}^2 - 1$$
+                            </div>
+                        </div>
+                        
+                        <!-- Sparsemax vs Softmax Graph -->
+                        <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm flex flex-col">
+                            <h4 class="font-bold text-slate-900 mb-2 text-lg">Sparsemax Rectification</h4>
+                            <p class="text-sm text-slate-600 mb-4 flex-1">Unlike <code>softmax</code>, <code>sparsemax</code> guarantees exact zero-mass for inactive candidates, maintaining field $\mathbb{Q}$.</p>
+                            
+                            <!-- Animated Bar Chart -->
+                            <div class="h-40 w-full bg-slate-50 rounded-lg border border-slate-200 pt-8 pb-2 px-2 flex justify-around items-end mb-4 relative overflow-hidden">
+                                <div class="absolute top-2 left-3 text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center space-x-3">
+                                    <span>Mass Distribution</span>
+                                    <div class="flex items-center space-x-1"><div class="w-2 h-2 bg-indigo-300 rounded-sm"></div><span class="text-indigo-400">Softmax</span></div>
+                                    <div class="flex items-center space-x-1"><div class="w-2 h-2 bg-emerald-500 rounded-sm"></div><span class="text-emerald-500">Sparsemax</span></div>
+                                </div>
+                                
+                                <!-- Group 1 -->
+                                <div class="flex items-end space-x-1 h-full w-[15%] justify-center relative z-10">
+                                    <div class="w-1/2 bg-indigo-300 h-[65%] rounded-t transition-all hover:opacity-80"></div>
+                                    <div class="w-1/2 bg-emerald-500 h-[80%] rounded-t shadow-[0_0_10px_rgba(16,185,129,0.3)]"></div>
+                                </div>
+                                <!-- Group 2 -->
+                                <div class="flex items-end space-x-1 h-full w-[15%] justify-center relative z-10">
+                                    <div class="w-1/2 bg-indigo-300 h-[45%] rounded-t transition-all hover:opacity-80"></div>
+                                    <div class="w-1/2 bg-emerald-500 h-[55%] rounded-t shadow-[0_0_10px_rgba(16,185,129,0.3)]"></div>
+                                </div>
+                                <!-- Group 3 -->
+                                <div class="flex items-end space-x-1 h-full w-[15%] justify-center relative z-10">
+                                    <div class="w-1/2 bg-indigo-300 h-[25%] rounded-t transition-all hover:opacity-80"></div>
+                                    <div class="w-1/2 bg-emerald-500 h-[10%] rounded-t shadow-[0_0_10px_rgba(16,185,129,0.3)]"></div>
+                                </div>
+                                <!-- Group 4 (Cutoff Tail) -->
+                                <div class="flex items-end space-x-1 h-full w-[15%] justify-center relative z-10">
+                                    <div class="w-1/2 bg-indigo-300 rounded-t" style="animation: bar-pulse-soft 2.5s infinite ease-in-out;"></div>
+                                    <!-- Exact Zero Mass Marker -->
+                                    <div class="w-1/2 bg-emerald-500 h-[2px] rounded shadow-[0_0_5px_rgba(16,185,129,0.8)]"></div>
+                                </div>
+                                <!-- Group 5 (Cutoff Tail) -->
+                                <div class="flex items-end space-x-1 h-full w-[15%] justify-center relative z-10">
+                                    <div class="w-1/2 bg-indigo-300 rounded-t" style="animation: bar-pulse-soft 2.5s infinite ease-in-out 0.8s;"></div>
+                                    <!-- Exact Zero Mass Marker -->
+                                    <div class="w-1/2 bg-emerald-500 h-[2px] rounded shadow-[0_0_5px_rgba(16,185,129,0.8)]"></div>
+                                </div>
+                                
+                                <!-- Cutoff line -->
+                                <div class="absolute left-0 right-0 bottom-[10%] border-t-2 border-dashed border-rose-400/50 z-0"></div>
+                                <div class="absolute right-2 bottom-[11%] text-[10px] text-rose-500 font-serif font-bold">Exact Zero Cutoff</div>
+                            </div>
+
+                            <div class="bg-slate-50 p-3 rounded border border-slate-100 text-center font-serif text-sm">
+                                $$S_{ij} = [z_{i \to j} - \tau_i]_+$$
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Missing Data Re-inserted: Broken Detailed Balance -->
+                    <div class="mt-8 border-l-4 border-indigo-500 pl-6">
+                        <h3 class="text-2xl font-bold mb-3 text-slate-900">Broken Detailed Balance</h3>
+                        <p class="leading-relaxed mb-4 text-slate-700">
+                            Equipping the sparsemax support with a symmetric rational base walk $W_{ij}$ and applying a rational reverse-valve $\rho_{ji}$ yields a kernel $\hat{K}$ that breaks detailed balance, establishing a base-referenced forward current $J_{ij}^0$.
+                        </p>
+                        <div class="bg-indigo-50 p-6 rounded-xl border border-indigo-100">
+                            <div class="math-block text-center text-sm md:text-base">
+                                $$ \rho_{ij} = \frac{1}{1 + \lambda A_{ij}} $$
+                                $$ J_{ij}^0 = \pi_i^0 \hat{K}_{ij} - \pi_j^0 \hat{K}_{ji} = \frac{W_{ij}}{D}(1 - \rho_{ji}) \ge 0 $$
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Comprehensive MVI Code Block -->
+                    <div class="bg-[#1d1f21] rounded-xl overflow-hidden shadow-lg mt-8 border border-slate-800">
+                        <div class="bg-[#2d2f31] px-4 py-3 text-xs font-mono text-gray-400 border-b border-gray-700 flex justify-between items-center">
+                            <div class="flex items-center space-x-2">
+                                <svg class="w-4 h-4 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"></path></svg>
+                                <span>hyperbolic_pump_mvi.py</span>
+                            </div>
+                            <span class="text-emerald-400 bg-emerald-900/30 px-2 py-0.5 rounded">Strictly Rational (Field: $\mathbb{Q}$)</span>
+                        </div>
+                        <div class="max-h-96 overflow-y-auto">
+<pre><code class="language-python">from fractions import Fraction
+
+class RationalSpinor:
+    """Represents a discrete state on the lattice (A1). Must be a rational unit quaternion."""
+    def __init__(self, w: Fraction, x: Fraction, y: Fraction, z: Fraction):
+        self.w, self.x, self.y, self.z = w, x, y, z
+        assert w**2 + x**2 + y**2 + z**2 == 1, "Spinor is not a unit quaternion!"
+        assert w > 0, "Spinor w-component must be strictly positive."
+
+class HyperbolicPumpKernel:
+    def __init__(self, beta: Fraction, eta: Fraction):
+        self.beta = beta  # Inverse Temperature
+        self.eta = eta    # Torsional Resistance multiplier
+
+    def lorentz_lift(self, q: RationalSpinor) -> tuple[Fraction, Fraction, Fraction, Fraction]:
+        """Theorem T1: Closed Rational Lift. Exact stereographic projection to H^3."""
+        v_x, v_y, v_z = q.x / (Fraction(1) + q.w), q.y / (Fraction(1) + q.w), q.z / (Fraction(1) + q.w)
+        v_sq = v_x**2 + v_y**2 + v_z**2
+        
+        denom = Fraction(1) - v_sq # denom > 0 guaranteed because w > 0
+        return (
+            (Fraction(1) + v_sq) / denom,
+            (Fraction(2) * v_x) / denom,
+            (Fraction(2) * v_y) / denom,
+            (Fraction(2) * v_z) / denom
+        )
+
+    def hyperbolic_quadrance(self, p: tuple, q: tuple) -> Fraction:
+        """Theorem T2: Quadrance is a Rational Metric Kernel (Minkowski inner product)."""
+        B_pq = (p*q) - (p*q) - (p*q) - (p*q)
+        return Fraction(2) * self.beta * (B_pq - Fraction(1))
+
+    def compute_logit(self, Q: Fraction, chirality: Fraction) -> Fraction:
+        """Computes Executable Logit. chirality: 0 (forward), 1 (reverse)."""
+        return Q / (Fraction(1) + self.eta * chirality)
+
+    def sparsemax(self, logits: list[Fraction]) -> list[Fraction]:
+        """Theorem T3: Rational Row-Stochastic Sparsity. Euclidean projection to simplex."""
+        z_sorted = sorted(logits, reverse=True)
+        k_val = 0
+        sum_z = Fraction(0)
+        
+        for k in range(1, len(z_sorted) + 1):
+            sum_z_temp = sum_z + z_sorted[k-1]
+            if Fraction(1) + Fraction(k) * z_sorted[k-1] > sum_z_temp:
+                k_val = k
+                sum_z = sum_z_temp
+            else: break
+                
+        tau = (sum_z - Fraction(1)) / Fraction(k_val)
+        return [max(Fraction(0), z - tau) for z in logits]
+
+    def apply_rational_valve(self, sparse_probs: list[Fraction], chiralities: list[Fraction]) -> list[Fraction]:
+        """Theorem T5b: Executable Broken Balance. Routes rejected reverse mass to self-loop."""
+        modified_probs = [Fraction(0)] * len(sparse_probs)
+        rejected_mass = Fraction(0)
+        
+        for i in range(1, len(sparse_probs)):
+            p, chi = sparse_probs[i], chiralities[i]
+            sigma = max(Fraction(0), Fraction(1) - (self.eta * chi))
+            
+            forwarded_mass = p * sigma
+            modified_probs[i] = forwarded_mass
+            rejected_mass += (p - forwarded_mass)
+            
+        modified_probs = sparse_probs + rejected_mass # Index 0 is self-loop
+        return modified_probs</code></pre>
+                        </div>
+                    </div>
+
+                    <!-- Terminal Output Data -->
+                    <div class="bg-gray-900 rounded-xl overflow-hidden shadow-lg mt-6 border border-slate-800">
+                        <div class="bg-gray-800 px-4 py-2 flex items-center gap-2 border-b border-gray-700">
+                            <div class="flex space-x-1.5">
+                                <div class="w-3 h-3 rounded-full bg-red-500"></div>
+                                <div class="w-3 h-3 rounded-full bg-yellow-500"></div>
+                                <div class="w-3 h-3 rounded-full bg-green-500"></div>
+                            </div>
+                            <span class="ml-2 text-xs font-mono text-gray-400">Terminal: Verification Run Data</span>
+                        </div>
+                        <div class="p-5 text-sm font-mono text-emerald-400 overflow-x-auto whitespace-pre leading-relaxed">=== Owl Academy: Hyperbolic Sparsemax Pump MVI ===
+[Init] Spinor P: (2/3, 1/3, 2/3, 0) | Spinor Q: (1/2, 1/2, 1/2, 1/2)
+
+<span class="text-blue-300">T1. Lorentz Lift (p):</span> ('13/5', '12/5', '0', '0')
+<span class="text-blue-300">T1. Lorentz Lift (q):</span> ('3/2', '1', '1', '1')
+
+<span class="text-purple-300">T2. Hyperbolic Quadrance Q(p,q):</span> 1
+<span class="text-slate-300">Raw Logits (Self, Forward, Reverse):</span> ['0', '1', '2/3']
+
+<span class="text-yellow-300">T3. Sparsemax Base Probabilities:</span> ['0', '7/12', '5/12']
+<span class="text-rose-300">T5. Valve-Modified Probabilities:</span> ['5/24', '7/12', '5/24']
+
+<span class="text-white">Observation:</span> Mass rejected by the reverse edge (5/12 -> 5/24) has been 
+perfectly reassigned to the diagonal self-loop (0 -> 5/24). 
+Detailed balance is broken while preserving strict rationality (Σ = 1).</div>
+                    </div>
+                    
+                </div>
+            </section>
+        </div>
+
+        <!-- ============================================== -->
+        <!-- TAB 2: MEMORY OFFLOAD PUMP -->
+        <!-- ============================================== -->
+        <div id="tab-memory" class="tab-content space-y-12">
+            
+            <section>
+                <div class="pl-0 md:pl-4 space-y-6">
+                    <p class="leading-relaxed text-slate-700 text-lg">
+                        The <strong>Torsional Markov Memory-Offload Pump</strong> acts as the historical hierarchy. Memory is distributed across three coupled cyclic gears to compress history (down-sampling) and stabilize torsional drift. Information flows downward into coarse updates and upward via fractional interpolation.
+                    </p>
+
+                    <!-- Interactive Gear Diagram & The 3 Layers -->
+                    <div class="bg-[#0f172a] rounded-2xl p-8 shadow-inner overflow-hidden relative flex flex-col md:flex-row items-center gap-8 mt-8">
+                        <!-- SVG Gear Animation -->
+                        <div class="w-64 h-64 relative flex-shrink-0">
+                            <svg viewBox="0 0 200 200" class="w-full h-full drop-shadow-lg">
+                                <defs>
+                                    <radialGradient id="glow" cx="50%" cy="50%" r="50%">
+                                        <stop offset="0%" stop-color="#818cf8" stop-opacity="0.5" />
+                                        <stop offset="100%" stop-color="#312e81" stop-opacity="0" />
+                                    </radialGradient>
+                                </defs>
+                                <circle cx="100" cy="100" r="100" fill="url(#glow)"/>
+                                
+                                <circle cx="100" cy="100" r="80" fill="none" stroke="#cbd5e1" stroke-width="1" stroke-dasharray="2 6" class="anim-flow"/>
+                                <circle cx="100" cy="100" r="60" fill="none" stroke="#cbd5e1" stroke-width="1" stroke-dasharray="2 6" class="anim-flow" style="animation-delay: 0.5s"/>
+                                
+                                <g class="anim-spin-slow">
+                                    <circle cx="100" cy="100" r="80" fill="none" stroke="#60a5fa" stroke-width="4" stroke-dasharray="10 31.8"/>
+                                    <text x="100" y="15" fill="#93c5fd" font-size="10" font-family="monospace" text-anchor="middle" transform="rotate(0, 100, 100)">12-pt / 720f</text>
+                                </g>
+                                
+                                <g class="anim-spin-slow-reverse">
+                                    <circle cx="100" cy="100" r="60" fill="none" stroke="#c084fc" stroke-width="4" stroke-dasharray="10 27.7"/>
+                                    <text x="100" y="35" fill="#d8b4fe" font-size="10" font-family="monospace" text-anchor="middle" transform="rotate(180, 100, 100)">10-pt Inverse</text>
+                                </g>
+                                
+                                <g class="anim-spin-fast">
+                                    <circle cx="100" cy="100" r="40" fill="none" stroke="#34d399" stroke-width="4" stroke-dasharray="10 21.4"/>
+                                    <text x="100" y="55" fill="#6ee7b7" font-size="10" font-family="monospace" text-anchor="middle">8-pt Anchor</text>
+                                </g>
+
+                                <circle cx="100" cy="100" r="10" fill="#f8fafc"/>
+                            </svg>
+                        </div>
+
+                        <div class="space-y-4 text-slate-200 flex-1">
+                            <h3 class="text-xl font-bold text-white font-serif mb-4">The 3-Scale Delta-Chain</h3>
+                            <div class="border-l-2 border-blue-400 pl-4">
+                                <h4 class="font-bold text-blue-300">1. Outer Layer (12-Point, 720 Frames)</h4>
+                                <p class="text-xs text-slate-400 mt-1">Stores fine history: $\Delta q_n^{(12)} = q_n^{(12)}(q_{n-1}^{(12)})^{-1}$</p>
+                            </div>
+                            <div class="border-l-2 border-purple-400 pl-4">
+                                <h4 class="font-bold text-purple-300">2. Middle Layer (10-Point Inverse)</h4>
+                                <p class="text-xs text-slate-400 mt-1">Compensates torsional drift via block telescoping:<br> $\Delta q_m^{(10)} = (\Delta Q_m^{(12 \to 10)})^{-1}$</p>
+                            </div>
+                            <div class="border-l-2 border-emerald-400 pl-4">
+                                <h4 class="font-bold text-emerald-300">3. Inner Layer (8-Point Anchor)</h4>
+                                <p class="text-xs text-slate-400 mt-1">Variable block size $A_l$ compresses data into coarse equilibrium:<br> $\Delta q_l^{(8)} = \text{Normalize}\left( \prod_{m \in A_l}^{\leftarrow} \Delta q_m^{(10)} \right)$</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Missing Data Re-inserted: Circulation & SLERP -->
+                    <div class="grid md:grid-cols-2 gap-6 mt-8">
+                        <div class="bg-indigo-50 p-6 rounded-xl border border-indigo-100">
+                            <h4 class="font-bold text-indigo-900 mb-3 text-lg">Non-Equilibrium Circulation</h4>
+                            <p class="text-sm text-indigo-800 mb-4">
+                                Treating the three layers as states of a Markov chain $\{12, 10, 8\}$, the torsional pump condition requires directed circulation.
+                            </p>
+                            <div class="math-block text-center text-sm bg-white rounded shadow-sm py-2">
+                                $$ J_{ij} = \pi_i K_{ij} - \pi_j K_{ji} $$
+                                $$ J_{12,10} + J_{10,8} + J_{8,12} > 0 $$
+                            </div>
+                            <p class="text-xs text-indigo-700 mt-2 text-center">At stationarity, all three currents coincide.</p>
+                        </div>
+
+                        <div class="bg-indigo-50 p-6 rounded-xl border border-indigo-100">
+                            <h4 class="font-bold text-indigo-900 mb-3 text-lg">Upward Reconstruction (SLERP)</h4>
+                            <p class="text-sm text-indigo-800 mb-4">
+                                To reconstruct fine detail from the coarse stores, information flows upwards ($10 \to 72 \to 720$) using fractional quaternionic powers.
+                            </p>
+                            <div class="math-block text-center text-sm bg-white rounded shadow-sm py-2">
+                                $$ q^w = \exp(w \log q) $$
+                                $$ \Delta_c q_n^{(12)} = (\Delta q_{\lfloor n/10 \rfloor}^{(10)})^{1/10} $$
+                            </div>
+                            <p class="text-xs text-indigo-700 mt-2 text-center">This natively utilizes Spherical Linear Interpolation.</p>
+                        </div>
+                    </div>
+
+                    <!-- Geometric Equilibrium -->
+                    <div class="bg-slate-50 p-6 rounded-xl border border-slate-200 shadow-inner mt-6">
+                        <h4 class="font-bold text-slate-900 mb-2">Geometric Equilibrium & Holonomy</h4>
+                        <p class="text-sm text-slate-600 mb-4">To ensure spatial coherence across the delta-chain, the cycle product closes to the identity up to a measured holonomy $\epsilon$, which is then redistributed across the gears.</p>
+                        <div class="math-block text-center bg-white border border-slate-200 rounded-lg py-3">
+                            $$H = Q^{(8)} Q^{(10)} Q^{(12)} \approx 1 \quad \implies \quad \epsilon = \log H$$
+                            $$\Delta q_k^{(j)} \gets \exp(-\lambda_j \epsilon)\Delta q_k^{(j)}$$
+                        </div>
+                    </div>
+
+                </div>
+            </section>
+        </div>
+
+        <!-- ============================================== -->
+        <!-- TAB 3: SYNTHESIS & INTEROPERABILITY -->
+        <!-- ============================================== -->
+        <div id="tab-synthesis" class="tab-content space-y-12">
+            
+            <section class="pl-0 md:pl-4 space-y-8">
+                <div>
+                    <h2 class="text-3xl font-bold text-slate-900 mb-4">Interoperability & Synthesis</h2>
+                    <p class="leading-relaxed text-slate-700 text-lg">
+                        The two pumps are not redundant; rather, they form the complete context-compression loop for the SHD-CCP lattice. The <strong>Hyperbolic Sparsemax Pump</strong> operates at the leaf scale as an engine, while the <strong>Memory-Offload Pump</strong> acts as the historical hierarchy.
+                    </p>
+                </div>
+
+                <!-- Missing Data Re-inserted: Shared Spaces -->
+                <div class="grid md:grid-cols-2 gap-6">
+                    <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+                        <h3 class="text-xl font-bold text-indigo-900 mb-3">A Shared State Space</h3>
+                        <p class="text-sm leading-relaxed text-slate-700">
+                            Both architectures rely on unit quaternions. The sparsemax voxel spinors $q_i \in S^3 \cap \mathbb{Q}^4$ are exactly the states aggregated into the outer memory chain's $q_n^{(12)}$. Every lattice transition step generated by the executable kernel yields a delta that feeds directly into the top of the offload pump.
+                        </p>
+                    </div>
+
+                    <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+                        <h3 class="text-xl font-bold text-indigo-900 mb-3">A Common Non-Equilibrium Primitive</h3>
+                        <p class="text-sm leading-relaxed text-slate-700 mb-2">
+                            A single design quantity—the broken-detailed-balance cycle affinity—drives both models:
+                        </p>
+                        <ul class="list-disc list-inside text-sm text-slate-700 space-y-1">
+                            <li><strong>Fine Scale:</strong> $J_{ij}^0 = \pi_i^0 \hat{K}_{ij} - \pi_j^0 \hat{K}_{ji}$ (Sparsemax)</li>
+                            <li><strong>Coarse Scale:</strong> $J_{ij} = \pi_i K_{ij} - \pi_j K_{ji}$ (Delta-Chain)</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- CRITICAL SECTION: The Split -->
+                <div class="bg-gradient-to-br from-indigo-900 to-slate-900 p-1 rounded-3xl shadow-xl mt-12">
+                    <div class="bg-white rounded-[1.4rem] p-8 md:p-12 relative overflow-hidden">
+                        
+                        <div class="absolute top-0 right-0 w-64 h-64 bg-indigo-50 rounded-bl-[100%] -z-0"></div>
+                        
+                        <h2 class="text-3xl font-bold text-indigo-950 mb-6 relative z-10 border-b border-indigo-100 pb-4">
+                            The Rational / Transcendental Split
+                        </h2>
+                        
+                        <p class="text-lg leading-relaxed text-slate-700 mb-8 relative z-10">
+                            This division of labour solves a fundamental hardware problem: <strong>floating-point drift destroys distributed consensus</strong>. To maintain bit-reproducibility across the lattice without sacrificing smooth rotational memory, the system enforces a strict boundary.
+                        </p>
+
+                        <!-- Axiom 4 Block with Animated Pipeline -->
+                        <div class="bg-[#0f172a] text-slate-200 p-8 rounded-2xl shadow-inner relative z-10 mb-8">
+                            <div class="flex items-center space-x-3 mb-6 border-b border-slate-700 pb-4">
+                                <svg class="w-8 h-8 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
+                                <h4 class="text-xl font-bold text-white font-serif tracking-wide">Axiom 4: The Octet Parity Buffer Quarantine</h4>
+                            </div>
+                            
+                            <!-- Animated SVG Pipeline Flowchart -->
+                            <div class="w-full h-32 bg-slate-900 rounded-xl mb-6 relative overflow-hidden border border-slate-700 p-4">
+                                <svg viewBox="0 0 400 100" class="w-full h-full" preserveAspectRatio="xMidYMid meet">
+                                    <!-- Track -->
+                                    <line x1="20" y1="50" x2="380" y2="50" stroke="#334155" stroke-width="4" stroke-linecap="round" />
+                                    
+                                    <!-- Nodes -->
+                                    <g transform="translate(40, 50)">
+                                        <circle cx="0" cy="0" r="14" fill="#1e293b" stroke="#8b5cf6" stroke-width="2"/>
+                                        <text x="0" y="-22" fill="#a78bfa" font-size="10" font-family="sans-serif" text-anchor="middle">SLERP (R)</text>
+                                        <text x="0" y="4" fill="#a78bfa" font-size="12" font-family="monospace" text-anchor="middle">exp/log</text>
+                                    </g>
+                                    
+                                    <g transform="translate(160, 50)">
+                                        <rect x="-14" y="-14" width="28" height="28" rx="4" fill="#1e293b" stroke="#ef4444" stroke-width="2"/>
+                                        <text x="0" y="-22" fill="#f87171" font-size="10" font-family="sans-serif" text-anchor="middle">Quarantine</text>
+                                        <text x="0" y="4" fill="#f87171" font-size="12" font-family="monospace" text-anchor="middle">Buffer</text>
+                                    </g>
+
+                                    <g transform="translate(280, 50)">
+                                        <polygon points="0,-16 14,0 0,16 -14,0" fill="#1e293b" stroke="#f59e0b" stroke-width="2"/>
+                                        <text x="0" y="-22" fill="#fbbf24" font-size="10" font-family="sans-serif" text-anchor="middle">Rationalizer</text>
+                                    </g>
+
+                                    <g transform="translate(380, 50)">
+                                        <circle cx="0" cy="0" r="14" fill="#1e293b" stroke="#10b981" stroke-width="2"/>
+                                        <text x="-10" y="-22" fill="#34d399" font-size="10" font-family="sans-serif" text-anchor="end">Sparsemax (Q)</text>
+                                        <text x="-10" y="4" fill="#34d399" font-size="12" font-family="monospace" text-anchor="end">Kernel</text>
+                                    </g>
+
+                                    <!-- Animated Packet moving along the track -->
+                                    <circle cx="20" cy="50" r="6" class="anim-packet"/>
+                                </svg>
+                            </div>
+
+                            <ol class="space-y-3 text-sm text-slate-300">
+                                <li><strong class="text-purple-400">1. Extraction:</strong> Coarse memory is reconstructed using continuous SLERP ($\exp$ / $\log$).</li>
+                                <li><strong class="text-red-400">2. Quarantine:</strong> Resulting irrational floating-point residuals are held strictly offline in the Parity Buffer.</li>
+                                <li><strong class="text-yellow-400">3. Rationalization:</strong> Before re-entering the lattice, the state is projected back to an exact canonical fraction.</li>
+                                <li><strong class="text-emerald-400">4. Re-injection:</strong> Only exact-rational states enter the live Sparsemax Kernel.</li>
+                            </ol>
+                        </div>
+
+                        <div class="grid md:grid-cols-2 gap-8 relative z-10">
+                            <div class="bg-emerald-50/80 p-6 rounded-2xl border border-emerald-200 shadow-sm">
+                                <h4 class="text-lg font-bold text-emerald-900 mb-1">Executable Forward Path</h4>
+                                <p class="text-xs font-mono text-emerald-700 mb-3">Domain: Strict Rationals ($\mathbb{Q}$)</p>
+                                <p class="text-sm text-emerald-800 leading-relaxed">
+                                    Uses <em>no</em> transcendental functions. Relies solely on fractional arithmetic and positive-part thresholding. Guaranteed to maintain exact parity invariant: <code class="bg-emerald-200/50 px-1 rounded text-emerald-900">mantle % 7 == core</code>.
+                                </p>
+                            </div>
+                            <div class="bg-purple-50/80 p-6 rounded-2xl border border-purple-200 shadow-sm">
+                                <h4 class="text-lg font-bold text-purple-900 mb-1">Offline Reconstruction</h4>
+                                <p class="text-xs font-mono text-purple-700 mb-3">Domain: Reals ($\mathbb{R}$)</p>
+                                <p class="text-sm text-purple-800 leading-relaxed">
+                                    Smooth quaternion interpolation necessitates transcendental functions ($q^w = \exp(w \log q)$). The Quarantine Buffer ensures resulting drift never touches live hardware.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </section>
+        </div>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-[#0f172a] text-slate-400 py-10 text-center text-sm border-t border-slate-800 mt-12">
+        <div class="max-w-4xl mx-auto px-6">
+            <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="mx-auto mb-4 text-indigo-600 opacity-50">
+                <path d="M21 13v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-7"/><path d="m16 5-4-4-4 4"/><path d="M12 1v16"/>
+            </svg>
+            <p>&copy; 2026 BioChain AI &middot; Owl Academy</p>
+            <p class="mt-2 text-slate-500">Document Generated for Experimental Systems Analysis.</p>
+        </div>
+    </footer>
+
+    <!-- Tab Switching Logic -->
+    <script>
+        function switchTab(tabId, element) {
+            // Hide all tab content
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            // Remove active class from all buttons
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            
+            // Show selected tab content
+            document.getElementById(tabId).classList.add('active');
+            // Add active class to clicked button
+            element.classList.add('active');
+
+            // Tell MathJax to re-render to catch equations hidden in inactive tabs initially
+            if (typeof MathJax !== 'undefined') {
+                MathJax.typesetPromise();
+            }
+        }
+    </script>
+</body>
+</html>
