@@ -102,6 +102,35 @@
         .col-list a { display: block; color: #cbd5e1; text-decoration: none; font-size: .82rem; padding: .25rem 0; transition: color .15s; }
         .col-list a:hover { color: var(--color-primary); }
         .col-list .lbl { font-size: .6rem; letter-spacing: .2em; text-transform: uppercase; color: var(--color-primary); margin-bottom: .5rem; }
+
+        /* ── Interactive explorers: The Sigil + The Hilbert Generator ── */
+        .sigil-stage { position: relative; width: 100%; height: min(78vw, 500px); }
+        .sig-view { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; transition: opacity .6s ease, transform .6s ease; }
+        .sig-view.dim { opacity: 0; pointer-events: none; transform: scale(.96); }
+        #svg-root { width: 100%; max-width: 440px; aspect-ratio: 1 / 1; }
+        #svg-root svg { transition: all .6s cubic-bezier(.4,0,.2,1); }
+        .sigil-layer { transition: opacity .5s ease, filter .5s ease, transform .5s ease; transform-origin: center; }
+        .layer-dimmed { opacity: .08; filter: grayscale(100%) blur(1px); }
+        .layer-active { opacity: 1; filter: drop-shadow(0 0 12px color-mix(in srgb, var(--color-primary) 60%, transparent)); transform: scale(1.02); }
+        #webgl-container { width: 100%; height: 100%; }
+        .layer-btn { background: rgba(15,10,25,.5); border: 1px solid color-mix(in srgb, var(--color-primary) 20%, transparent); border-radius: .6rem; padding: .8rem .95rem; cursor: pointer; transition: all .3s cubic-bezier(.4,0,.2,1); }
+        .layer-btn:hover { background: rgba(30,20,45,.7); border-color: color-mix(in srgb, var(--color-primary) 50%, transparent); }
+        .layer-btn.active { background: rgba(40,30,20,.8); border-color: var(--color-primary); box-shadow: 0 0 25px color-mix(in srgb, var(--color-primary) 15%, transparent); }
+        .layer-btn.active h4 { color: var(--color-primary); }
+        .layer-btn.btn-4d { border-color: color-mix(in srgb, var(--color-holo2) 30%, transparent); }
+        .layer-btn.btn-4d.active { border-color: var(--color-holo2); box-shadow: 0 0 30px color-mix(in srgb, var(--color-holo2) 20%, transparent); }
+        .layer-btn.btn-4d.active h4 { color: #d8b4fe; }
+        .tool-toggle { border: 1px solid color-mix(in srgb, var(--color-holo2) 50%, transparent); color: #d8b4fe; background: rgba(0,0,0,.4);
+                       padding: .5rem 1.05rem; border-radius: 8px; font-family: 'Cinzel', serif; letter-spacing: .1em; text-transform: uppercase; font-size: .66rem; cursor: pointer; transition: all .2s; }
+        .tool-toggle:hover { background: color-mix(in srgb, var(--color-holo2) 18%, transparent); }
+        #hilbertCanvas { border-radius: 50%; background: radial-gradient(circle at center, rgba(15,10,25,.4) 0%, rgba(0,0,0,.8) 100%);
+                         box-shadow: 0 0 50px rgba(0,0,0,.5), inset 0 0 30px color-mix(in srgb, var(--color-primary) 20%, transparent);
+                         border: 1px solid color-mix(in srgb, var(--color-primary) 30%, transparent); display: block; margin: 0 auto; }
+        input[type="range"] { -webkit-appearance: none; appearance: none; background: rgba(255,255,255,.1); border-radius: 8px; height: 6px; }
+        input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 16px; height: 16px; border-radius: 50%; background: var(--color-primary); cursor: pointer; box-shadow: 0 0 10px var(--color-primary); }
+        input[type="range"].intensity-slider::-webkit-slider-thumb { background: var(--color-holo1); box-shadow: 0 0 10px var(--color-holo1); }
+        input[type="color"] { -webkit-appearance: none; appearance: none; border: none; width: 24px; height: 24px; border-radius: 4px; cursor: pointer; background: transparent; }
+        input[type="color"]::-webkit-color-swatch { border: 1px solid rgba(255,255,255,.3); border-radius: 4px; }
     </style>
 </head>
 <body class="antialiased">
@@ -174,7 +203,7 @@
             <div class="cta-row">
                 <a class="cta cta-gold" href="Learning-Hub.html">⌘ Enter the Control Panel</a>
                 <a class="cta" href="#departments">Explore Departments</a>
-                <a class="cta" href="mage_tower/Major_Tome.html">Major Tome Library</a>
+                <a class="cta" href="#sigil">✦ Interactive Explorers</a>
             </div>
         </section>
 
@@ -217,10 +246,12 @@
                     <a href="mage_tower/Unlock_Console.html">Unlock Console (Instructor)</a>
                 </div>
                 <div class="col-list">
-                    <div class="lbl">Archives</div>
+                    <div class="lbl">Archives &amp; Explorers</div>
                     <a href="Library/Grand_Archives.html">Grand Archives</a>
                     <a href="Proofs/index.html">Proofs Workshop</a>
                     <a href="#departments">Department Halls</a>
+                    <a href="#sigil">✦ The Living Sigil</a>
+                    <a href="#hilbert">✦ Hilbert Generator</a>
                 </div>
             </div>
         </section>
@@ -259,6 +290,89 @@
             </ol>
         </section>
 
+        <!-- ── THE LIVING SIGIL ── -->
+        <section id="sigil" class="py-10">
+            <h3 class="section-title">The Living Sigil</h3>
+            <p class="section-sub">The academy's seal, layer by layer. Isolate any stratum of its sacred geometry — then project the whole into a 4D golden Clifford toroid.</p>
+            <div class="glass-panel rounded-xl p-5 md:p-8">
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 items-stretch">
+                    <!-- Visualization -->
+                    <div class="flex flex-col items-center justify-center">
+                        <div class="sigil-stage">
+                            <div id="sigil-2d-container" class="sig-view"><div id="svg-root" class="drop-shadow-2xl"></div></div>
+                            <div id="sigil-3d-container" class="sig-view dim"><div id="webgl-container"></div></div>
+                        </div>
+                        <div class="flex items-center gap-3 mt-5 flex-wrap justify-center">
+                            <button onclick="sigilRestore()" class="btn-ghost">Restore full matrix</button>
+                            <button id="sigil-3d-toggle" onclick="sigilToggle3D()" class="tool-toggle"><span id="sigil-3d-icon">⬡</span> <span id="sigil-3d-label">Enter 3D</span></button>
+                        </div>
+                        <div id="sigil-3d-note" class="text-[11px] text-gray-500 mono mt-2 text-center" style="display:none">r₁ / r₂ = φ (1.6180339…) · Golden Clifford Toroid</div>
+                    </div>
+                    <!-- Layer selector -->
+                    <div>
+                        <h4 class="text-sm tracking-[0.2em] uppercase mb-1" style="color:var(--color-primary)">Sigil Architecture</h4>
+                        <p class="text-xs text-gray-500 mb-4">Select a foundational layer to isolate its sacred geometry.</p>
+                        <div id="layers-panel" class="space-y-3" style="max-height:min(78vw,500px);overflow-y:auto;padding-right:.4rem"></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ── THE HILBERT GENERATOR ── -->
+        <section id="hilbert" class="py-10">
+            <h3 class="section-title">The Hilbert Generator</h3>
+            <p class="section-sub">A D₁₂-symmetry string-art engine: route nodes by i → (i × K) mod N across Fibonacci-nested streams. The same "store the seed, not the asset" idea behind every tome sigil.</p>
+            <div class="glass-panel rounded-xl p-5 md:p-8">
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+                    <!-- Canvas -->
+                    <div class="flex items-center justify-center">
+                        <div style="width:100%;height:min(78vw,440px);display:flex;align-items:center;justify-content:center">
+                            <canvas id="hilbertCanvas" style="height:100%;max-width:100%;aspect-ratio:1/1"></canvas>
+                        </div>
+                    </div>
+                    <!-- Controls -->
+                    <div class="space-y-4">
+                        <div class="space-y-3 bg-black/40 p-4 rounded-xl border border-white/5">
+                            <h5 class="text-[10px] uppercase tracking-widest text-gray-500 border-b border-white/5 pb-2">Core Parameters</h5>
+                            <div>
+                                <label class="flex justify-between text-[11px] font-semibold text-gray-300 mb-1.5">Main Layer Points (N) <span id="hilbert-n-val" class="text-yellow-500 mono">12</span></label>
+                                <input type="range" id="hilbert-n" min="3" max="120" value="12" class="w-full">
+                            </div>
+                            <div>
+                                <label class="flex justify-between text-[11px] font-semibold text-gray-300 mb-1.5">String Multiplier (K) <span id="hilbert-k-val" class="text-yellow-500 mono">5</span></label>
+                                <input type="range" id="hilbert-k" min="1" max="60" value="5" class="w-full">
+                                <p class="text-[9px] text-gray-500 mt-1 italic">Routing rule: i → (i × K) mod N</p>
+                            </div>
+                            <div>
+                                <label class="flex justify-between text-[11px] font-semibold text-gray-300 mb-1.5">Nested Streams (Tiers) <span id="hilbert-t-val" class="text-yellow-500 mono">4</span></label>
+                                <input type="range" id="hilbert-t" min="1" max="8" value="4" class="w-full">
+                            </div>
+                            <div class="pt-1 flex flex-col gap-2">
+                                <label class="flex items-center gap-3 cursor-pointer group">
+                                    <input type="checkbox" id="drawRadial" checked class="h-3.5 w-3.5 rounded bg-gray-800 border-gray-600 text-yellow-500">
+                                    <span class="text-xs text-gray-300 group-hover:text-white transition">Draw radial spokes &amp; axes</span>
+                                </label>
+                                <label class="flex items-center gap-3 cursor-pointer group">
+                                    <input type="checkbox" id="drawPerimeter" checked class="h-3.5 w-3.5 rounded bg-gray-800 border-gray-600 text-yellow-500">
+                                    <span class="text-xs text-gray-300 group-hover:text-white transition">Draw geometric boundary</span>
+                                </label>
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div class="bg-black/40 p-4 rounded-xl border border-white/5 flex flex-col">
+                                <h5 class="text-[10px] uppercase tracking-widest text-gray-500 mb-3 border-b border-white/5 pb-2">Stream Matrix</h5>
+                                <div id="colorControlsContainer" class="space-y-2 overflow-y-auto pr-1" style="max-height:200px"></div>
+                            </div>
+                            <div class="bg-black/40 p-4 rounded-xl border border-white/5 flex flex-col">
+                                <h5 class="text-[10px] uppercase tracking-widest text-gray-500 mb-3 border-b border-white/5 pb-2">Fibonacci Legend</h5>
+                                <ul id="legendContainer" class="text-xs space-y-2 overflow-y-auto pr-1" style="max-height:200px"></ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
         <!-- ── FOOTER ── -->
         <footer class="border-t border-yellow-600/15 mt-10 py-8 text-center">
             <div class="flex flex-wrap justify-center gap-x-5 gap-y-2 text-xs text-gray-500 mb-4">
@@ -273,6 +387,336 @@
             <p class="text-[10px] text-gray-600 mystical-font tracking-[0.3em] uppercase">Owl Academy · The one-stop shop for geometric emergence · Free for all</p>
         </footer>
     </main>
+
+    <!-- ════════════════════════════════════════════════════════════════
+         INTERACTIVE EXPLORERS  (ported from the Foundation Hub)
+         1) The Living Sigil — layered 2D SVG + lazy-loaded 4D Clifford toroid
+         2) The Hilbert Generator — D12 string-art with Fibonacci streams
+         Three.js is fetched on demand (only when a visitor enters 3D), so
+         the home page stays light. Math labels use plain Unicode (no MathJax).
+         ════════════════════════════════════════════════════════════════ -->
+    <script>
+    (function () {
+        "use strict";
+
+        // ───────────────────────── Module 1: The Sigil ─────────────────────────
+        const SVGCenter = 300, SVGSize = 600, svgNS = "http://www.w3.org/2000/svg";
+        const R_OuterRing = 265, R_Dodecagram = 215, R_Trinity = 155, R_Plenum = R_Trinity / 1.8, R_Heptagram = 75;
+        const phiBase = (1 + Math.sqrt(5)) / 2;
+        const r2_base = 1 / Math.sqrt(phiBase + 2), r1_base = phiBase / Math.sqrt(phiBase + 2);
+        let last2DLayer = null;
+        let sigilScene, sigilCamera, sigilRenderer, sigilComposer, sigilTorusGroup, sigilControls;
+        let is3DInitialized = false, sigil3DActive = false, threeReady = false, threeLoading = false;
+
+        function polarToCartesian(cx, cy, r, deg) { const rad = (deg - 90) * Math.PI / 180; return { x: cx + r * Math.cos(rad), y: cy + r * Math.sin(rad) }; }
+        function continuousStarPath(pts, step, r) { let path = ""; for (let i = 0; i <= pts; i++) { const c = polarToCartesian(SVGCenter, SVGCenter, r, (i * step * (360 / pts)) % 360); path += (i === 0 ? `M ${c.x} ${c.y} ` : `L ${c.x} ${c.y} `); } return path; }
+
+        function drawOuterRing(svg) {
+            const g = document.createElementNS(svgNS, "g"); g.setAttribute("id", "layer-1a"); g.classList.add("sigil-layer");
+            const c = document.createElementNS(svgNS, "circle");
+            c.setAttribute("cx", SVGCenter); c.setAttribute("cy", SVGCenter); c.setAttribute("r", R_OuterRing + 25);
+            c.style.fill = "none"; c.style.stroke = "var(--color-primary)"; c.style.strokeWidth = "2"; c.style.opacity = ".6";
+            const defs = document.createElementNS(svgNS, "defs");
+            const top = document.createElementNS(svgNS, "path");
+            top.setAttribute("id", "sigilTopPath"); top.setAttribute("d", `M ${SVGCenter - R_OuterRing},${SVGCenter} A ${R_OuterRing},${R_OuterRing} 0 0,1 ${SVGCenter + R_OuterRing},${SVGCenter}`);
+            defs.appendChild(top); g.appendChild(defs);
+            const t = document.createElementNS(svgNS, "text");
+            t.style.fill = "var(--color-primary)"; t.style.fontFamily = "Cinzel, serif"; t.style.fontSize = "30px"; t.style.letterSpacing = "6px";
+            t.innerHTML = `<textPath href="#sigilTopPath" startOffset="50%" text-anchor="middle" dominant-baseline="middle">• SIGILLVM ACADEMIAE VLULAE •</textPath>`;
+            g.appendChild(c); g.appendChild(t); svg.appendChild(g);
+        }
+        function draw24Points(svg) {
+            const g = document.createElementNS(svgNS, "g"); g.setAttribute("id", "layer-1b"); g.classList.add("sigil-layer");
+            const s = document.createElementNS(svgNS, "path"); s.setAttribute("d", continuousStarPath(12, 5, R_Dodecagram));
+            s.style.fill = "none"; s.style.stroke = "var(--color-primary)"; s.style.strokeWidth = "1.5";
+            const d = document.createElementNS(svgNS, "path"); d.setAttribute("d", continuousStarPath(12, 5, R_Dodecagram));
+            d.style.fill = "none"; d.style.stroke = "var(--color-secondary)"; d.style.strokeWidth = "1"; d.style.strokeDasharray = "6 4";
+            d.setAttribute("transform", `rotate(15 ${SVGCenter} ${SVGCenter})`);
+            g.appendChild(s); g.appendChild(d); svg.appendChild(g);
+        }
+        function drawMiddleGeometry(svg) {
+            const g = document.createElementNS(svgNS, "g"); g.setAttribute("id", "layer-2"); g.classList.add("sigil-layer");
+            const tri = document.createElementNS(svgNS, "polygon");
+            const p1 = polarToCartesian(SVGCenter, SVGCenter, R_Trinity, 0), p2 = polarToCartesian(SVGCenter, SVGCenter, R_Trinity, 120), p3 = polarToCartesian(SVGCenter, SVGCenter, R_Trinity, 240);
+            tri.setAttribute("points", `${p1.x},${p1.y} ${p2.x},${p2.y} ${p3.x},${p3.y}`);
+            tri.style.fill = "rgba(212,175,55,.05)"; tri.style.stroke = "var(--color-primary)"; tri.style.strokeWidth = "2";
+            g.appendChild(tri); svg.appendChild(g);
+        }
+        function drawMotherPlenum(svg) {
+            const g = document.createElementNS(svgNS, "g"); g.setAttribute("id", "layer-3a"); g.classList.add("sigil-layer");
+            const c = document.createElementNS(svgNS, "circle");
+            c.setAttribute("cx", SVGCenter); c.setAttribute("cy", SVGCenter); c.setAttribute("r", R_Plenum);
+            c.style.fill = "rgba(0,0,0,.4)"; c.style.stroke = "var(--color-primary)"; c.style.strokeWidth = "1"; c.style.strokeDasharray = "4 4";
+            g.appendChild(c); svg.appendChild(g);
+        }
+        function draw7Star(svg) {
+            const g = document.createElementNS(svgNS, "g"); g.setAttribute("id", "layer-3b"); g.classList.add("sigil-layer");
+            const h = document.createElementNS(svgNS, "path"); h.setAttribute("d", continuousStarPath(7, 3, R_Heptagram));
+            h.style.fill = "none"; h.style.stroke = "var(--color-primary)"; h.style.strokeWidth = "1.5";
+            g.appendChild(h); svg.appendChild(g);
+        }
+        function drawCoreCipher(svg) {
+            const g = document.createElementNS(svgNS, "g"); g.setAttribute("id", "layer-4"); g.classList.add("sigil-layer");
+            const stem = document.createElementNS(svgNS, "line");
+            stem.setAttribute("x1", SVGCenter); stem.setAttribute("y1", SVGCenter - 45); stem.setAttribute("x2", SVGCenter + 0.01); stem.setAttribute("y2", SVGCenter + 45);
+            stem.style.stroke = "var(--color-primary)"; stem.style.strokeWidth = "2.5"; stem.style.strokeLinecap = "round";
+            const head = document.createElementNS(svgNS, "path");
+            head.setAttribute("d", `M ${SVGCenter},${SVGCenter - 45} C ${SVGCenter + 24},${SVGCenter - 45} ${SVGCenter + 24},${SVGCenter - 15} ${SVGCenter},${SVGCenter - 15}`);
+            head.style.fill = "none"; head.style.stroke = "var(--color-primary)"; head.style.strokeWidth = "2.5"; head.style.strokeLinecap = "round";
+            const x1 = document.createElementNS(svgNS, "line"); x1.setAttribute("x1", SVGCenter - 22); x1.setAttribute("y1", SVGCenter - 18); x1.setAttribute("x2", SVGCenter + 22); x1.setAttribute("y2", SVGCenter + 22);
+            const x2 = document.createElementNS(svgNS, "line"); x2.setAttribute("x1", SVGCenter + 22); x2.setAttribute("y1", SVGCenter - 18); x2.setAttribute("x2", SVGCenter - 22); x2.setAttribute("y2", SVGCenter + 22);
+            [x1, x2].forEach((l) => { l.style.stroke = "var(--color-primary)"; l.style.strokeWidth = "2.5"; l.style.strokeLinecap = "round"; });
+            ["Α", "Ω"].forEach((ch, i) => { const t = document.createElementNS(svgNS, "text"); t.setAttribute("x", SVGCenter + (i ? 40 : -40)); t.setAttribute("y", SVGCenter + 40); t.style.fill = "var(--color-primary)"; t.style.fontFamily = "Cinzel, serif"; t.style.fontSize = "22px"; t.setAttribute("text-anchor", "middle"); t.textContent = ch; g.appendChild(t); });
+            g.appendChild(stem); g.appendChild(head); g.appendChild(x1); g.appendChild(x2); svg.appendChild(g);
+        }
+        function drawCryptography(svg) {
+            const g = document.createElementNS(svgNS, "g"); g.setAttribute("id", "layer-5"); g.classList.add("sigil-layer");
+            ["8", "8", "8", "12", "12", "3", "7"].forEach((num, i) => {
+                const c = polarToCartesian(SVGCenter, SVGCenter, R_Heptagram - 16, i * (360 / 7));
+                const t = document.createElementNS(svgNS, "text");
+                t.setAttribute("x", c.x); t.setAttribute("y", c.y + 4);
+                t.style.fill = "var(--color-primary)"; t.style.fontFamily = "Cinzel, serif"; t.style.fontSize = "12px"; t.setAttribute("text-anchor", "middle");
+                t.textContent = num; g.appendChild(t);
+            });
+            svg.appendChild(g);
+        }
+
+        const sigilLayers = [
+            { id: "layer-1a", title: "Layer 1 · The Outer Ring", subtitle: "The Earthly Boundary", type: "2d", description: `<strong>The Border Text:</strong> the ring carries <em>SIGILLVM ACADEMIAE VLULAE</em> — the Seal of the Owl Academy.`, renderFn: drawOuterRing },
+            { id: "layer-1b", title: "Layer 1b · The 24 Points", subtitle: "Male & Female Syzygies", type: "2d", description: `<strong>The 24 Points:</strong> interlocking 12-pointed stars — active (Solar) and receptive (Lunar) disciples.`, renderFn: draw24Points },
+            { id: "layer-2", title: "Layer 2 · Middle Geometry", subtitle: "The Trinity & Reflection", type: "2d", description: `<strong>The Trinity:</strong> an upward triangle reflecting downward — “As Above, So Below.”`, renderFn: drawMiddleGeometry },
+            { id: "layer-3a", title: "Layer 3a · Inner Sanctum", subtitle: "The Mother Plenum", type: "2d", description: `<strong>The Plenum Void:</strong> the inscribed circle — the womb of creation, the Zero Point.`, renderFn: drawMotherPlenum },
+            { id: "layer-3b", title: "Layer 3b · The 7-Star", subtitle: "The Spiritual Goal", type: "2d", description: `<strong>The 7-Star:</strong> a continuous heptagram marking the ultimate spiritual aim.`, renderFn: draw7Star },
+            { id: "layer-4", title: "Layer 4 · The Core Cipher", subtitle: "The Chi-Rho", type: "2d", description: `<strong>Chi-Rho (☧):</strong> the core monogram, flanked by Alpha and Omega.`, renderFn: drawCoreCipher },
+            { id: "layer-5", title: "Cryptographic Matrix", subtitle: "The 888 & 24 Constant", type: "2d", description: `Maps the integers <strong>8 · 8 · 8 · 12 · 12 · 3 · 7</strong> to gematria and geometric structure.`, renderFn: drawCryptography },
+            { id: "layer-6", title: "4D Strassen Projection", subtitle: "Golden Clifford Toroid", type: "3d", className: "btn-4d", description: `<strong>The Nested Toroid:</strong> the entire 2D sigil projected into 4D Euclidean space (ℝ⁴) — press <em>Enter 3D</em>.` },
+        ];
+
+        function initSigilSVG() {
+            const container = document.getElementById("svg-root"); if (!container) return;
+            const svg = document.createElementNS(svgNS, "svg");
+            svg.setAttribute("viewBox", `0 0 ${SVGSize} ${SVGSize}`);
+            svg.setAttribute("width", "100%"); svg.setAttribute("height", "100%"); svg.setAttribute("class", "mx-auto");
+            sigilLayers.forEach((l) => { if (l.type === "2d") l.renderFn(svg); });
+            container.appendChild(svg);
+        }
+
+        function selectLayer(selectedId, type) {
+            if (type === "2d") {
+                last2DLayer = selectedId;
+                document.querySelectorAll(".sigil-layer").forEach((layer) => {
+                    if (selectedId === null) { layer.classList.remove("layer-dimmed", "layer-active"); }
+                    else if (layer.id === selectedId) { layer.classList.remove("layer-dimmed"); layer.classList.add("layer-active"); layer.parentNode.appendChild(layer); }
+                    else { layer.classList.remove("layer-active"); layer.classList.add("layer-dimmed"); }
+                });
+            }
+            document.querySelectorAll(".layer-btn").forEach((btn) => {
+                const desc = btn.querySelector(".description-content");
+                if (selectedId && btn.dataset.layerId === selectedId) { btn.classList.add("active"); if (desc) desc.classList.remove("hidden"); }
+                else { btn.classList.remove("active"); if (desc) desc.classList.add("hidden"); }
+            });
+        }
+        window.sigilRestore = function () { selectLayer(null, "2d"); };
+
+        // ── 3D toroid (lazy) ──
+        const THREE_SCRIPTS = [
+            "https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js",
+            "https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js",
+            "https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/EffectComposer.js",
+            "https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/RenderPass.js",
+            "https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/ShaderPass.js",
+            "https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/shaders/CopyShader.js",
+            "https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/shaders/LuminosityHighPassShader.js",
+            "https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/UnrealBloomPass.js",
+        ];
+        function loadScript(src) { return new Promise((res, rej) => { const s = document.createElement("script"); s.src = src; s.onload = res; s.onerror = () => rej(new Error("load failed: " + src)); document.head.appendChild(s); }); }
+        async function ensureThree() {
+            if (threeReady) return true;
+            while (threeLoading) { await new Promise((r) => setTimeout(r, 80)); }
+            if (threeReady) return true;
+            threeLoading = true;
+            try { for (const s of THREE_SCRIPTS) await loadScript(s); threeReady = true; }
+            catch (e) { threeReady = false; }
+            finally { threeLoading = false; }
+            return threeReady;
+        }
+        function project4Dto3D(theta, gamma) {
+            const d = 1.2 - (r2_base * Math.sin(gamma));
+            return new THREE.Vector3(((r1_base * Math.cos(theta)) / d) * 11, ((r1_base * Math.sin(theta)) / d) * 11, ((r2_base * Math.cos(gamma)) / d) * 11);
+        }
+        function sigilSize() { const c = document.getElementById("webgl-container"); const w = (c && c.clientWidth) || 400, h = (c && c.clientHeight) || 400; return { w, h }; }
+        function initSigil3D() {
+            if (is3DInitialized) return;
+            const container = document.getElementById("webgl-container"); if (!container) return;
+            const { w, h } = sigilSize();
+            sigilScene = new THREE.Scene();
+            sigilCamera = new THREE.PerspectiveCamera(60, w / h, 0.1, 100); sigilCamera.position.set(0, 5, 22);
+            sigilRenderer = new THREE.WebGLRenderer({ alpha: true, antialias: true, powerPreference: "high-performance" });
+            sigilRenderer.setSize(w, h); sigilRenderer.setPixelRatio(window.devicePixelRatio);
+            container.appendChild(sigilRenderer.domElement);
+            sigilControls = new THREE.OrbitControls(sigilCamera, sigilRenderer.domElement);
+            sigilControls.enableDamping = true; sigilControls.dampingFactor = 0.05; sigilControls.autoRotate = true; sigilControls.autoRotateSpeed = 0.5;
+            const renderScene = new THREE.RenderPass(sigilScene, sigilCamera);
+            const bloomPass = new THREE.UnrealBloomPass(new THREE.Vector2(w, h), 1.5, 0.4, 0.1);
+            sigilComposer = new THREE.EffectComposer(sigilRenderer);
+            sigilComposer.addPass(renderScene); sigilComposer.addPass(bloomPass);
+            sigilTorusGroup = new THREE.Group(); sigilTorusGroup.rotation.x = 0.5; sigilScene.add(sigilTorusGroup);
+            const matPri = new THREE.MeshBasicMaterial({ color: 0xD4AF37, transparent: true, opacity: 0.7 });
+            for (let i = 0; i < 12; i++) {
+                const off = (i / 12) * Math.PI * 2, pts = [];
+                for (let j = 0; j <= 400; j++) { const t = (j / 400) * Math.PI * 2 * 13; pts.push(project4Dto3D(phiBase * t + off, t)); }
+                sigilTorusGroup.add(new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), 200, 0.04, 4, false), matPri));
+            }
+            is3DInitialized = true;
+        }
+        function onSigilResize() {
+            if (!is3DInitialized) return;
+            const { w, h } = sigilSize();
+            sigilCamera.aspect = w / h; sigilCamera.updateProjectionMatrix();
+            sigilRenderer.setSize(w, h); sigilComposer.setSize(w, h);
+        }
+        function animateSigil3D() { if (!sigil3DActive) return; requestAnimationFrame(animateSigil3D); if (sigilControls) sigilControls.update(); if (sigilComposer) sigilComposer.render(); }
+        window.sigilToggle3D = async function () {
+            const c2 = document.getElementById("sigil-2d-container"), c3 = document.getElementById("sigil-3d-container");
+            const label = document.getElementById("sigil-3d-label"), icon = document.getElementById("sigil-3d-icon"), note = document.getElementById("sigil-3d-note");
+            if (!sigil3DActive) {
+                if (label) label.textContent = "Loading…";
+                const ok = await ensureThree();
+                if (!ok) { if (label) label.textContent = "3D unavailable"; return; }
+                initSigil3D();
+                c2.classList.add("dim"); c3.classList.remove("dim");
+                sigil3DActive = true; if (label) label.textContent = "Return to 2D"; if (icon) icon.textContent = "◬"; if (note) note.style.display = "block";
+                requestAnimationFrame(() => { onSigilResize(); animateSigil3D(); });
+            } else {
+                c3.classList.add("dim"); c2.classList.remove("dim");
+                sigil3DActive = false; if (label) label.textContent = "Enter 3D"; if (icon) icon.textContent = "⬡"; if (note) note.style.display = "none";
+                selectLayer(last2DLayer, "2d");
+            }
+        };
+        window.addEventListener("resize", () => { if (sigil3DActive) onSigilResize(); });
+
+        // ───────────────────────── Module 2: The Hilbert Generator ─────────────────────────
+        const fib = [1, 2, 3, 5, 8, 13, 21, 34, 55, 89, 144];
+        const SUB = ["₀", "₁", "₂", "₃", "₄", "₅", "₆", "₇", "₈", "₉"];
+        const fLabel = (t) => (t === 0 ? "Fₙ" : "Fₙ₋" + SUB[t]);
+        let HN = 12, HK = 5, HTiers = 4;
+        const tierSettings = [
+            { label: "Manifold Core", color: "#ffffff", intensity: 1.0, vec: "" },
+            { label: "Teal Vector", color: "#00d4ff", intensity: 0.85, vec: "γ" },
+            { label: "Gold Vector", color: "#D4AF37", intensity: 0.85, vec: "β" },
+            { label: "Purple Vector", color: "#8A2BE2", intensity: 0.85, vec: "α" },
+            { label: "Crimson Vector", color: "#ff2a5f", intensity: 0.7, vec: "δ" },
+            { label: "Silver Vector", color: "#8e9eab", intensity: 0.7, vec: "ε" },
+            { label: "Lime Vector", color: "#84cc16", intensity: 0.6, vec: "ζ" },
+            { label: "Cyan Vector", color: "#22d3ee", intensity: 0.6, vec: "η" },
+        ];
+        const hilCanvas = document.getElementById("hilbertCanvas");
+        const hCtx = hilCanvas ? hilCanvas.getContext("2d") : null;
+        const hPoints = document.getElementById("hilbert-n"), hMulti = document.getElementById("hilbert-k"), hTiersEl = document.getElementById("hilbert-t");
+
+        function hexToRgba(hex, a) { const r = parseInt(hex.slice(1, 3), 16), g = parseInt(hex.slice(3, 5), 16), b = parseInt(hex.slice(5, 7), 16); return `rgba(${r}, ${g}, ${b}, ${a})`; }
+
+        function renderHilbertControls() {
+            const container = document.getElementById("colorControlsContainer"); if (!container) return;
+            container.innerHTML = "";
+            for (let t = 0; t < HTiers; t++) {
+                const set = tierSettings[t % tierSettings.length];
+                container.insertAdjacentHTML("beforeend", `
+                    <div class="flex items-center justify-between gap-2 p-2 bg-white/5 border border-white/10 rounded">
+                        <span class="text-[10px] font-bold text-gray-200 truncate flex-1 min-w-0">${set.label} ${set.vec} <span class="font-normal text-gray-500 ml-1">(${fLabel(t)})</span></span>
+                        <div class="flex items-center gap-3 flex-shrink-0">
+                            <input type="color" data-tier="${t}" value="${set.color}" class="tier-color-input">
+                            <input type="range" data-tier="${t}" min="0.1" max="1" step="0.05" value="${set.intensity}" class="intensity-slider tier-intensity-input" style="width:64px">
+                        </div>
+                    </div>`);
+            }
+            container.querySelectorAll(".tier-color-input").forEach((input) => input.addEventListener("input", (e) => { tierSettings[parseInt(e.target.dataset.tier)].color = e.target.value; renderHilbertLegend(); drawHilbert(); }));
+            container.querySelectorAll(".tier-intensity-input").forEach((input) => input.addEventListener("input", (e) => { tierSettings[parseInt(e.target.dataset.tier)].intensity = parseFloat(e.target.value); renderHilbertLegend(); drawHilbert(); }));
+        }
+        function renderHilbertLegend() {
+            const container = document.getElementById("legendContainer"); if (!container) return;
+            container.innerHTML = "";
+            for (let t = 0; t < HTiers; t++) {
+                const set = tierSettings[t % tierSettings.length], main = t === 0, rgba = hexToRgba(set.color, set.intensity);
+                const style = main ? `background-color:${rgba};box-shadow:0 0 8px ${set.color};` : `border-top:2px dashed ${rgba};`;
+                container.insertAdjacentHTML("beforeend", `
+                    <li class="flex items-center gap-3">
+                        <span class="w-6 h-0.5 block" style="${style}"></span>
+                        <span class="font-medium" style="color:${set.color};opacity:${Math.max(set.intensity, 0.6)}">${set.label} ${set.vec}</span>
+                        <span class="text-gray-500 text-[10px] ml-auto">(${fLabel(t)})</span>
+                    </li>`);
+            }
+        }
+        function drawAxesAndSpokes(center, radius) {
+            hCtx.strokeStyle = "rgba(255,255,255,0.05)"; hCtx.lineWidth = 1; hCtx.setLineDash([]);
+            for (let i = 0; i < HN; i++) { const a = (i / HN) * 2 * Math.PI - Math.PI / 2; hCtx.beginPath(); hCtx.moveTo(center.x, center.y); hCtx.lineTo(center.x + radius * Math.cos(a), center.y + radius * Math.sin(a)); hCtx.stroke(); }
+            hCtx.strokeStyle = "rgba(212,175,55,0.3)"; hCtx.lineWidth = 1.5;
+            hCtx.beginPath(); hCtx.moveTo(center.x, center.y + radius * 1.05); hCtx.lineTo(center.x, center.y - radius * 1.05); hCtx.stroke();
+            hCtx.beginPath(); hCtx.moveTo(center.x - radius * 1.05, center.y); hCtx.lineTo(center.x + radius * 1.05, center.y); hCtx.stroke();
+            hCtx.font = "italic 14px Cinzel"; hCtx.fillStyle = "#D4AF37";
+            hCtx.fillText("Y", center.x - 15, center.y - radius * 1.05 + 5); hCtx.fillText("X", center.x + radius * 1.05 + 5, center.y - 5);
+        }
+        function drawHilbert() {
+            if (!hilCanvas || !hCtx) return;
+            const rect = hilCanvas.getBoundingClientRect();
+            hilCanvas.width = (rect.width * window.devicePixelRatio) || 800;
+            hilCanvas.height = (rect.height * window.devicePixelRatio) || 800;
+            hCtx.clearRect(0, 0, hilCanvas.width, hilCanvas.height);
+            const center = { x: hilCanvas.width / 2, y: hilCanvas.height / 2 }, maxRadius = Math.min(center.x, center.y) * 0.85;
+            const radial = document.getElementById("drawRadial"), perim = document.getElementById("drawPerimeter");
+            if (radial && radial.checked) drawAxesAndSpokes(center, maxRadius);
+            const baseFibIndex = HTiers + 3;
+            for (let t = 0; t < HTiers; t++) {
+                const scale = fib[baseFibIndex - t] / fib[baseFibIndex], tierRadius = maxRadius * scale, coords = [];
+                for (let i = 0; i < HN; i++) { const a = (i / HN) * 2 * Math.PI - Math.PI / 2; coords.push({ x: center.x + tierRadius * Math.cos(a), y: center.y + tierRadius * Math.sin(a) }); }
+                const main = t === 0, set = tierSettings[t % tierSettings.length];
+                hCtx.strokeStyle = hexToRgba(set.color, set.intensity);
+                if (main) { hCtx.setLineDash([]); hCtx.lineWidth = 1.5; } else { hCtx.setLineDash([8, 6]); hCtx.lineWidth = 2; }
+                if (main && perim && perim.checked) { hCtx.beginPath(); hCtx.moveTo(coords[0].x, coords[0].y); for (let i = 1; i <= HN; i++) hCtx.lineTo(coords[i % HN].x, coords[i % HN].y); hCtx.stroke(); }
+                hCtx.beginPath();
+                for (let i = 0; i < HN; i++) { hCtx.moveTo(coords[i].x, coords[i].y); hCtx.lineTo(coords[(i * HK) % HN].x, coords[(i * HK) % HN].y); }
+                hCtx.stroke(); hCtx.setLineDash([]);
+                for (let i = 0; i < HN; i++) { hCtx.fillStyle = main ? "#ffffff" : set.color; hCtx.shadowBlur = main ? 10 : 5; hCtx.shadowColor = hCtx.fillStyle; hCtx.beginPath(); hCtx.arc(coords[i].x, coords[i].y, main ? 4 : 2.5, 0, 2 * Math.PI); hCtx.fill(); hCtx.shadowBlur = 0; }
+            }
+        }
+        if (hPoints) {
+            hPoints.addEventListener("input", () => { HN = parseInt(hPoints.value); document.getElementById("hilbert-n-val").textContent = HN; hMulti.max = HN; if (HK > HN) { HK = HN; hMulti.value = HN; document.getElementById("hilbert-k-val").textContent = HN; } drawHilbert(); });
+            hMulti.addEventListener("input", () => { HK = parseInt(hMulti.value); document.getElementById("hilbert-k-val").textContent = HK; drawHilbert(); });
+            hTiersEl.addEventListener("input", () => { HTiers = parseInt(hTiersEl.value); document.getElementById("hilbert-t-val").textContent = HTiers; renderHilbertControls(); renderHilbertLegend(); drawHilbert(); });
+            const r = document.getElementById("drawRadial"), p = document.getElementById("drawPerimeter");
+            if (r) r.addEventListener("change", drawHilbert); if (p) p.addEventListener("change", drawHilbert);
+            window.addEventListener("resize", drawHilbert);
+            window.addEventListener("load", drawHilbert); // redraw once Tailwind CDN + fonts settle
+        }
+
+        // ───────────────────────── Initialization ─────────────────────────
+        function buildLayerButtons() {
+            const panel = document.getElementById("layers-panel"); if (!panel) return;
+            sigilLayers.forEach((l) => {
+                const btn = document.createElement("div");
+                btn.className = `layer-btn ${l.className || ""}`; btn.dataset.layerId = l.id; btn.dataset.type = l.type;
+                btn.innerHTML = `
+                    <div class="flex items-center justify-between gap-2">
+                        <h4 class="text-[0.9rem] font-bold text-slate-200 uppercase tracking-[0.08em]">${l.title}</h4>
+                        <span class="text-[0.62rem] mystical-font ${l.type === "3d" ? "text-purple-400/80" : "text-yellow-600/80"}">${l.subtitle}</span>
+                    </div>
+                    <div class="description-content text-sm text-slate-300 hidden mt-3 leading-relaxed border-t border-yellow-600/20 pt-3 font-light">${l.description}</div>`;
+                btn.addEventListener("click", () => { if (l.type === "3d") { if (!sigil3DActive) window.sigilToggle3D(); } selectLayer(l.id, l.type); });
+                panel.appendChild(btn);
+            });
+        }
+        function initExplorers() {
+            initSigilSVG();
+            buildLayerButtons();
+            if (hPoints) {
+                renderHilbertControls(); renderHilbertLegend();
+                if (document.fonts && document.fonts.ready) document.fonts.ready.then(drawHilbert); else drawHilbert();
+                drawHilbert();
+            }
+        }
+        if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", initExplorers); else initExplorers();
+    })();
+    </script>
 
     <!-- ── Welcome-back identity (best-effort; auth-guard already gates the page) ── -->
     <script type="module">
