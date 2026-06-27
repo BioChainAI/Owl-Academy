@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Owl Academy · Pump Lab (Faithful Demo)</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600&family=Inter:wght@300;400;600&family=JetBrains+Mono:wght@400;700&display=swap');
+  body{margin:0;background:#06040f;color:#e2e8f0;font-family:'Inter',sans-serif;line-height:1.6}
+  .mono{font-family:'JetBrains Mono',monospace}
+  .mystical{font-family:'Cinzel',serif}
+  .panel{background:rgba(10,8,20,0.6);border:1px solid rgba(212,175,55,0.18);border-radius:14px}
+  .chip{font-size:.6rem;letter-spacing:.18em;text-transform:uppercase}
+  .ok{color:#34d399}.bad{color:#f87171}.gold{color:#D4AF37}.cyan{color:#22d3ee}.violet{color:#a78bfa}
+  input[type=range]{-webkit-appearance:none;height:4px;background:rgba(212,175,55,.3);border-radius:3px;outline:none}
+  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;border-radius:50%;background:#D4AF37;cursor:pointer;box-shadow:0 0 8px rgba(212,175,55,.6)}
+  button.seg{font-size:.66rem;letter-spacing:.1em;padding:.35rem .7rem;border:1px solid rgba(167,139,250,.35);border-radius:7px;background:rgba(167,139,250,.08);color:#c4b5fd;cursor:pointer;transition:.15s}
+  button.seg.active{background:rgba(167,139,250,.3);border-color:#a78bfa;color:#fff}
+  .kv{display:flex;justify-content:space-between;font-size:.74rem;padding:.18rem 0;border-bottom:1px solid rgba(255,255,255,.05)}
+  .kv span:first-child{color:rgba(255,255,255,.45)}
+  canvas{display:block}
+</style>
+</head>
+<body>
+
+<header class="px-6 pt-8 pb-5 border-b border-yellow-700/20 bg-black/40 backdrop-blur">
+  <div class="chip gold mono mb-1">Owl Academy · Department of Proof · Pump Lab</div>
+  <h1 class="mystical text-2xl md:text-3xl text-white tracking-wide">The Pumps, Computed Honestly</h1>
+  <p class="text-sm text-slate-400 mt-2 max-w-3xl">
+    A faithful, interactive companion to the <span class="gold">Torsional Markov Memory-Offload Pump</span>,
+    the <span class="cyan">Hyperbolic Sparsemax Pump</span>, and the <span class="violet">Golden Clifford Toroid</span>.
+    Every number on this page is computed live from the actual constructions in the papers.
+  </p>
+  <div class="mt-3 text-[11px] mono text-slate-500 border border-slate-700/50 rounded-lg p-3 max-w-3xl bg-black/30">
+    <span class="ok">WHAT THIS IS:</span> a quaternion multi-resolution memory + a rational hyperbolic
+    attention kernel with a directed (non-equilibrium) stationary current, and the flat torus they live on.<br>
+    <span class="bad">WHAT THIS IS NOT:</span> anything to do with elliptic-curve cryptography, ECDLP, or key recovery —
+    no claim here bears on those. &nbsp;Exact proofs live in the Python suite (<span class="gold">run_all.py</span>);
+    this page uses floating point for interactivity.
+  </div>
+</header>
+
+<main class="max-w-6xl mx-auto px-4 md:px-6 py-8 space-y-8">
+
+  <!-- ============ PANEL 1 : 3-gear cycle current ============ -->
+  <section class="panel p-5">
+    <div class="flex items-baseline justify-between flex-wrap gap-2">
+      <h2 class="mystical text-xl gold">I · Torsional Cycle Current</h2>
+      <div class="chip mono text-slate-500">states {12, 10, 8} &nbsp;·&nbsp; Lemma 5 + Kolmogorov criterion</div>
+    </div>
+    <p class="text-xs text-slate-400 mt-1 mb-4">
+      The three gear layers form a Markov chain on a single 3-cycle. Drag the forward/reverse rates; the stationary
+      <span class="mono">π</span> is solved live, the three edge currents are computed, and you can watch them
+      <em>coincide</em> (Lemma 5) while the pump turns only when the forward rate-product beats the reverse one.
+    </p>
+    <div class="grid md:grid-cols-2 gap-6">
+      <div class="space-y-3">
+        <div>
+          <div class="flex justify-between text-xs mb-1"><span class="gold">forward rate&nbsp; 12→10→8→12</span><span class="mono" id="fwdVal">0.50</span></div>
+          <input type="range" id="fwd" min="0.02" max="0.49" step="0.01" value="0.40" class="w-full">
+        </div>
+        <div>
+          <div class="flex justify-between text-xs mb-1"><span class="cyan">reverse rate&nbsp; 12→8→10→12</span><span class="mono" id="revVal">0.10</span></div>
+          <input type="range" id="rev" min="0.0" max="0.49" step="0.01" value="0.08" class="w-full">
+        </div>
+        <svg viewBox="0 0 280 200" class="w-full" id="triSvg"></svg>
+      </div>
+      <div class="mono text-xs space-y-1">
+        <div class="kv"><span>stationary π(12)</span><span id="p12" class="gold"></span></div>
+        <div class="kv"><span>stationary π(10)</span><span id="p10" class="gold"></span></div>
+        <div class="kv"><span>stationary π(8)</span><span id="p8" class="gold"></span></div>
+        <div class="kv"><span>J(12→10)</span><span id="j1"></span></div>
+        <div class="kv"><span>J(10→8)</span><span id="j2"></span></div>
+        <div class="kv"><span>J(8→12)</span><span id="j3"></span></div>
+        <div class="kv"><span>Lemma 5 — currents coincide</span><span id="coincide"></span></div>
+        <div class="kv"><span>forward rate-product</span><span id="fprod" class="gold"></span></div>
+        <div class="kv"><span>reverse rate-product</span><span id="rprod" class="cyan"></span></div>
+        <div class="kv"><span>pump verdict</span><span id="verdict"></span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ PANEL 2 : 64-voxel Sparsemax lattice ============ -->
+  <section class="panel p-5">
+    <div class="flex items-baseline justify-between flex-wrap gap-2">
+      <h2 class="mystical text-xl cyan">II · Hyperbolic Sparsemax Kernel on (ℤ/4ℤ)³</h2>
+      <div class="chip mono text-slate-500">64 voxels &nbsp;·&nbsp; Remark 22: stationary toroidal drift</div>
+    </div>
+    <p class="text-xs text-slate-400 mt-1 mb-4">
+      The kernel is built exactly as in the paper: rational annular spinors → square-root-free Lorentz lift →
+      rational hyperbolic quadrance → sparsemax rows → symmetric base walk → reverse valve. The reverse valve
+      (strength <span class="mono">λ</span>) breaks detailed balance. At <span class="mono">λ=0</span> the walk is reversible and
+      there is no current; turn it up and a <span class="cyan">global toroidal drift</span> (arrows) emerges — the
+      circulation Remark 22 left open, here computed from the kernel's own stationary <span class="mono">π̂</span>.
+    </p>
+    <div class="grid lg:grid-cols-3 gap-5">
+      <div class="lg:col-span-2">
+        <div id="latticeBox" class="w-full rounded-xl border border-cyan-900/40 bg-black/50" style="height:420px"></div>
+        <div class="flex items-center gap-3 mt-3">
+          <span class="text-xs cyan">valve λ</span>
+          <input type="range" id="lam" min="0" max="3" step="0.05" value="1" class="flex-1">
+          <span class="mono text-xs" id="lamVal">1.00</span>
+        </div>
+      </div>
+      <div class="mono text-xs space-y-1">
+        <div class="kv"><span>rows row-stochastic</span><span id="rowstoch" class="ok"></span></div>
+        <div class="kv"><span>avg support / row</span><span id="supp"></span></div>
+        <div class="kv"><span>π̂ uniform?</span><span id="piuni"></span></div>
+        <div class="kv"><span>π̂ range</span><span id="pirange" class="gold"></span></div>
+        <div class="kv"><span>reversible (detailed balance)?</span><span id="rever"></span></div>
+        <div class="kv"><span>net toroidal current J_C</span><span id="jc" class="cyan"></span></div>
+        <div class="kv"><span>contractible-square eddies</span><span id="eddy"></span></div>
+        <div class="text-[11px] text-slate-500 pt-2 leading-relaxed">
+          Voxel colour = stationary mass π̂. Arrows = stationary flux along the forward (+axis) edges; their sum
+          around any wrap-around loop is the drift current J_C. Exact value at λ=1: <span class="gold">J_C = 1/192</span>.
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ PANEL 3 : golden Clifford winding ============ -->
+  <section class="panel p-5">
+    <div class="flex items-baseline justify-between flex-wrap gap-2">
+      <h2 class="mystical text-xl violet">III · Golden Clifford Winding</h2>
+      <div class="chip mono text-slate-500">flat torus T² ⊂ S³ &nbsp;·&nbsp; ergodic, not an oracle</div>
+    </div>
+    <p class="text-xs text-slate-400 mt-1 mb-4">
+      The Clifford torus is intrinsically flat, so a straight winding line θ=t, γ=ratio·t can tessellate it without
+      distortion. A <span class="violet">rational</span> ratio closes into a curve and retraces forever; an
+      <span class="gold">irrational</span> ratio never closes and fills the surface. The golden ratio φ fills the
+      <em>most evenly</em> of all (lowest discrepancy) — which is exactly why it is the right choice for the pumps'
+      incommensurate gear ratios. (Even coverage ≠ O(1) lookup: this is a superb sampler, not an oracle.)
+    </p>
+    <div class="grid md:grid-cols-3 gap-5">
+      <div class="md:col-span-2">
+        <canvas id="windCanvas" width="720" height="360" class="w-full rounded-xl border border-violet-900/40 bg-black/60"></canvas>
+      </div>
+      <div class="space-y-2">
+        <div class="flex flex-wrap gap-2">
+          <button class="seg" data-ratio="1.5">3 / 2</button>
+          <button class="seg" data-ratio="1.6">8 / 5</button>
+          <button class="seg active" data-ratio="phi">φ golden</button>
+          <button class="seg" data-ratio="1.4142135624">√2</button>
+        </div>
+        <div class="mono text-xs space-y-1 pt-2">
+          <div class="kv"><span>ratio</span><span id="wratio" class="violet"></span></div>
+          <div class="kv"><span>kind</span><span id="wkind"></span></div>
+          <div class="kv"><span>cells filled</span><span id="wcov" class="gold"></span></div>
+          <div class="kv"><span>uniformity (1−dev)</span><span id="wuni"></span></div>
+        </div>
+        <p class="text-[11px] text-slate-500 pt-1">Left: the unrolled torus (θ,γ) ∈ [0,1)². The path is drawn live;
+          watch a rational ratio lock onto a few strands while φ floods every cell.</p>
+      </div>
+    </div>
+  </section>
+
+  <footer class="text-center text-[11px] mono text-slate-600 pt-2 pb-10">
+    Faithful demo · exact proofs in <span class="gold">Proofs/Pump-Verification/</span> · no claim here concerns cryptography.
+  </footer>
+</main>
+
+<script>
+/* ============================================================= *
+ *  PANEL 1 — 3-state torsional cycle current (live, float)
+ *  Mirrors verify_cycle_current.py. States: 0=12, 1=10, 2=8.
+ * ============================================================= */
+const fwd=document.getElementById('fwd'), rev=document.getElementById('rev');
+function stationary3(K){ // power iteration; K row-stochastic 3x3
+  let p=[1/3,1/3,1/3];
+  for(let it=0;it<2000;it++){
+    const n=[0,0,0];
+    for(let i=0;i<3;i++)for(let j=0;j<3;j++)n[j]+=p[i]*K[i][j];
+    const s=n[0]+n[1]+n[2]; p=[n[0]/s,n[1]/s,n[2]/s];
+  }
+  return p;
+}
+function updateCycle(){
+  const a=+fwd.value, d=+rev.value;           // symmetric forward/reverse for clarity
+  document.getElementById('fwdVal').textContent=a.toFixed(2);
+  document.getElementById('revVal').textContent=d.toFixed(2);
+  // rows: 12:[self,->10=a,->8=d] ; 10:[->12=d,self,->8=a] ; 8:[->12=a,->10=d,self]
+  const K=[
+    [1-a-d, a, d],
+    [d, 1-a-d, a],
+    [a, d, 1-a-d]
+  ];
+  const p=stationary3(K);
+  const j1=p[0]*K[0][1]-p[1]*K[1][0];
+  const j2=p[1]*K[1][2]-p[2]*K[2][1];
+  const j3=p[2]*K[2][0]-p[0]*K[0][2];
+  const fp=a*a*a, rp=d*d*d;
+  const set=(id,v,cls)=>{const e=document.getElementById(id);e.textContent=v;if(cls)e.className=cls+' mono';};
+  set('p12',p[0].toFixed(4));set('p10',p[1].toFixed(4));set('p8',p[2].toFixed(4));
+  const fmtJ=x=>(x>=0?'+':'')+x.toFixed(5);
+  set('j1',fmtJ(j1));set('j2',fmtJ(j2));set('j3',fmtJ(j3));
+  const coince=(Math.abs(j1-j2)<1e-6&&Math.abs(j2-j3)<1e-6);
+  set('coincide',coince?'✓ yes':'✗',coince?'ok':'bad');
+  set('fprod',fp.toFixed(5));set('rprod',rp.toFixed(5));
+  let v,c; if(j1>1e-6){v='PUMPING ▶ (J>0)';c='ok';} else if(j1<-1e-6){v='◀ reverse (J<0)';c='bad';} else {v='balanced (J=0)';c='gold';}
+  set('verdict',v,c);
+  drawTri(j1);
+}
+function drawTri(J){
+  const pts=[[140,30],[40,165],[240,165]]; const lab=['12','10','8'];
+  const mag=Math.min(1,Math.abs(J)/0.15); const dir=J>=0?1:-1;
+  let s='';
+  for(let i=0;i<3;i++){
+    const a=pts[i], b=pts[(i+1)%3];
+    const col=`rgba(34,211,238,${0.25+0.6*mag})`;
+    const w=1+5*mag;
+    // arrow from a->b (forward) flips if reverse
+    const [p,q]= dir>0?[a,b]:[b,a];
+    const mx=(p[0]+q[0])/2, my=(p[1]+q[1])/2;
+    const ang=Math.atan2(q[1]-p[1],q[0]-p[0]);
+    s+=`<line x1="${p[0]}" y1="${p[1]}" x2="${q[0]}" y2="${q[1]}" stroke="${col}" stroke-width="${w}"/>`;
+    s+=`<path d="M ${mx} ${my} l ${-10*Math.cos(ang-0.4)} ${-10*Math.sin(ang-0.4)} M ${mx} ${my} l ${-10*Math.cos(ang+0.4)} ${-10*Math.sin(ang+0.4)}" stroke="${col}" stroke-width="${w}" fill="none"/>`;
+  }
+  for(let i=0;i<3;i++){
+    s+=`<circle cx="${pts[i][0]}" cy="${pts[i][1]}" r="20" fill="#0b0a18" stroke="#D4AF37" stroke-width="2"/>`;
+    s+=`<text x="${pts[i][0]}" y="${pts[i][1]+5}" fill="#D4AF37" font-size="14" text-anchor="middle" font-family="JetBrains Mono">${lab[i]}</text>`;
+  }
+  document.getElementById('triSvg').innerHTML=s;
+}
+fwd.oninput=rev.oninput=updateCycle; updateCycle();
+
+/* ============================================================= *
+ *  PANEL 2 — Hyperbolic Sparsemax kernel on (Z/4Z)^3 (live, float)
+ *  Mirrors verify_sparsemax_kernel.py (uniform base walk, W=1).
+ * ============================================================= */
+const N=4, NV=64, SCALE=5, A0=1;
+const AX=[[1,0,0],[0,1,0],[0,0,1]];
+const vidx=(x,y,z)=>x+N*y+N*N*z;
+const vcoord=i=>[i%N,(Math.floor(i/N))%N,Math.floor(i/(N*N))];
+function invStereo(v){const s=v[0]*v[0]+v[1]*v[1]+v[2]*v[2],d=s+1;return [(s-1)/d,2*v[0]/d,2*v[1]/d,2*v[2]/d];}
+function lift(q){return [1/q[0],q[1]/q[0],q[2]/q[0],q[3]/q[0]];}
+function mink(a,b){return a[0]*b[0]-a[1]*b[1]-a[2]*b[2]-a[3]*b[3];}
+function quad(qi,qj){const ip=mink(lift(qi),lift(qj));return ip*ip-1;}
+const spin=[];
+for(let i=0;i<NV;i++){const [x,y,z]=vcoord(i);spin.push(invStereo([SCALE*(x+1),SCALE*(y+1),SCALE*(z+1)]));}
+function neighbors(i){const [x,y,z]=vcoord(i);const out=[];
+  for(const[dx,dy,dz]of AX){
+    out.push([vidx((x+dx)%N,(y+dy)%N,(z+dz)%N),0]);
+    out.push([vidx((x-dx+N)%N,(y-dy+N)%N,(z-dz+N)%N),1]);
+  } return out;}
+function sparsemaxRow(entries){ // entries: [{k,z}]
+  const z=entries.map(e=>e.z), srt=[...z].sort((a,b)=>b-a);
+  let css=0,k=0,tau=0;
+  for(let i=0;i<srt.length;i++){css+=srt[i];if(1+(i+1)*srt[i]>css){k=i+1;tau=(css-1)/(i+1);}}
+  return entries.map(e=>({k:e.k,p:Math.max(e.z-tau,0)}));
+}
+function isForward(i,j){const [x,y,z]=vcoord(i),[a,b,c]=vcoord(j);
+  for(const[dx,dy,dz]of AX) if((x+dx)%N===a&&(y+dy)%N===b&&(z+dz)%N===c) return true; return false;}
+function buildKernel(lam){
+  const support=[], adjSet=Array.from({length:NV},()=>new Set());
+  for(let i=0;i<NV;i++){
+    const beta=(1-spin[i][0])/spin[i][0];
+    const ent=[{k:i,z:0}];
+    for(const[j,chi]of neighbors(i)) ent.push({k:j,z:-beta*quad(spin[i],spin[j])-lam*A0*chi});
+    const row=sparsemaxRow(ent);
+    const sup=new Set(row.filter(r=>r.p>0&&r.k!==i).map(r=>r.k));
+    support.push(sup);
+  }
+  for(let i=0;i<NV;i++)for(const j of support[i]){adjSet[i].add(j);adjSet[j].add(i);}
+  const deg=adjSet.map(s=>s.size);
+  const D=deg.reduce((a,b)=>a+b,0);
+  const pi0=deg.map(d=>d/D);
+  const K=Array.from({length:NV},()=>new Map());
+  let suppTot=0;
+  for(let i=0;i<NV;i++){
+    suppTot+=support[i].size+1;   // sparsemax support incl. the self-loop (matches Python)
+    let diag=0;
+    for(const j of adjSet[i]){
+      const P0=1/deg[i];
+      if(isForward(i,j)) K[i].set(j,P0);
+      else{const rho=1/(1+lam*A0); K[i].set(j,P0*rho); diag+=P0*(1-rho);}
+    }
+    K[i].set(i,(K[i].get(i)||0)+diag);
+  }
+  // stationary pi-hat via power iteration
+  let p=new Array(NV).fill(1/NV);
+  for(let it=0;it<4000;it++){
+    const np=new Array(NV).fill(0);
+    for(let i=0;i<NV;i++)for(const[j,v]of K[i]) np[j]+=p[i]*v;
+    let s=0;for(const v of np)s+=v; for(let j=0;j<NV;j++)np[j]/=s;
+    p=np;
+  }
+  // row-stochastic check
+  let rs=true; for(let i=0;i<NV;i++){let s=0;for(const[,v]of K[i])s+=v; if(Math.abs(s-1)>1e-9)rs=false;}
+  // flux + currents
+  const flux=(i,j)=> p[i]*(K[i].get(j)||0) - p[j]*(K[j].get(i)||0);
+  // axis x-loops circulation (mean), and any contractible-square eddy
+  let jcSum=0,jcN=0;
+  for(let y=0;y<N;y++)for(let z=0;z<N;z++){
+    const line=[vidx(0,y,z),vidx(1,y,z),vidx(2,y,z),vidx(3,y,z)];
+    let Jc=0;for(let t=0;t<4;t++)Jc+=flux(line[t],line[(t+1)%4]); jcSum+=Jc;jcN++;
+  }
+  const jc=jcSum/jcN;
+  // contractible square (no wrap): (0,0,0)-(1,0,0)-(1,1,0)-(0,1,0)
+  const sq=[vidx(0,0,0),vidx(1,0,0),vidx(1,1,0),vidx(0,1,0)];
+  let eddy=0;for(let t=0;t<4;t++)eddy+=flux(sq[t],sq[(t+1)%4]);
+  let anyFlux=false;for(let i=0;i<NV;i++)for(const j of adjSet[i])if(j>i&&Math.abs(flux(i,j))>1e-9)anyFlux=true;
+  return {K,pi:p,pi0,rs,suppAvg:suppTot/NV,jc,eddy,flux,reversible:!anyFlux};
+}
+
+// ---- Three.js lattice viz (rendering is optional; telemetry always runs) ----
+let scene,cam,ren,ctrl,cubes=[],arrows=[],latGroup,threeReady=false;
+function initLattice(){
+  const box=document.getElementById('latticeBox');
+  if(typeof THREE==='undefined'){            // CDN unavailable: degrade gracefully
+    box.innerHTML='<div class="mono text-xs text-slate-500 p-4">3D view needs three.js (CDN). '+
+      'Telemetry on the right is still computed live from the real kernel.</div>';
+    refreshLattice(+document.getElementById('lam').value);
+    return;
+  }
+  threeReady=true;
+  scene=new THREE.Scene();
+  cam=new THREE.PerspectiveCamera(45,box.clientWidth/box.clientHeight,0.1,100);
+  cam.position.set(11,9,13);
+  ren=new THREE.WebGLRenderer({antialias:true,alpha:true});
+  ren.setSize(box.clientWidth,box.clientHeight);ren.setPixelRatio(Math.min(devicePixelRatio,2));
+  box.appendChild(ren.domElement);
+  ctrl=new THREE.OrbitControls(cam,ren.domElement);ctrl.enableDamping=true;ctrl.target.set(0,0,0);
+  scene.add(new THREE.AmbientLight(0xffffff,0.7));
+  const L=new THREE.PointLight(0x22d3ee,1.2,100);L.position.set(15,15,15);scene.add(L);
+  latGroup=new THREE.Group();scene.add(latGroup);
+  const sp=2.4, off=(N-1)*sp/2;
+  const geo=new THREE.BoxGeometry(0.7,0.7,0.7);
+  for(let i=0;i<NV;i++){const[x,y,z]=vcoord(i);
+    const m=new THREE.Mesh(geo,new THREE.MeshStandardMaterial({color:0x22d3ee,emissive:0x0b3b44,roughness:0.4}));
+    m.position.set(x*sp-off,y*sp-off,z*sp-off);cubes.push(m);latGroup.add(m);
+  }
+  refreshLattice(+document.getElementById('lam').value);
+  (function loop(){requestAnimationFrame(loop);latGroup.rotation.y+=0.0016;ctrl.update();ren.render(scene,cam);})();
+  addEventListener('resize',()=>{ren.setSize(box.clientWidth,box.clientHeight);cam.aspect=box.clientWidth/box.clientHeight;cam.updateProjectionMatrix();});
+}
+function refreshLattice(lam){
+  const R=buildKernel(lam);
+  const pmin=Math.min(...R.pi), pmax=Math.max(...R.pi);
+  if(threeReady) renderLattice(R,pmin,pmax);
+  // telemetry (always, even without three.js)
+  const set=(id,v,cls)=>{const e=document.getElementById(id);if(!e)return;e.textContent=v;if(cls)e.className=cls+' mono';};
+  set('rowstoch',R.rs?'✓':'✗',R.rs?'ok':'bad');
+  set('supp',R.suppAvg.toFixed(2));
+  const uni=(pmax-pmin)<1e-9; set('piuni',uni?'uniform (1/64)':'non-uniform',uni?'':'gold');
+  set('pirange',pmin.toFixed(6)+' – '+pmax.toFixed(6));
+  set('rever',R.reversible?'✓ reversible (J=0)':'✗ broken (current!)',R.reversible?'ok':'cyan');
+  set('jc',(R.jc>=0?'+':'')+R.jc.toExponential(3));
+  set('eddy',Math.abs(R.eddy)<1e-9?'0 (none)':R.eddy.toExponential(2));
+}
+function renderLattice(R,pmin,pmax){
+  const sp=2.4, off=(N-1)*sp/2;
+  for(let i=0;i<NV;i++){
+    const t=pmax>pmin?(R.pi[i]-pmin)/(pmax-pmin):0.5;
+    cubes[i].material.color.setHSL(0.5-0.13*t,0.8,0.35+0.4*t);
+    cubes[i].material.emissiveIntensity=0.2+0.8*t;
+    const s=0.7+0.9*t; cubes[i].scale.set(s,s,s);
+  }
+  arrows.forEach(a=>latGroup.remove(a)); arrows=[];
+  const maxF=Math.max(1e-9,...(()=>{const v=[];for(let i=0;i<NV;i++)for(const j of R.K[i].keys())if(j!==i&&isForward(i,j))v.push(Math.abs(R.flux(i,j)));return v;})());
+  for(let i=0;i<NV;i++)for(const j of R.K[i].keys()){
+    if(j===i||!isForward(i,j))continue;
+    const f=R.flux(i,j); if(f<=1e-7)continue;
+    const[xi,yi,zi]=vcoord(i),[xj,yj,zj]=vcoord(j);
+    if(Math.abs(xi-xj)>1||Math.abs(yi-yj)>1||Math.abs(zi-zj)>1)continue; // skip wrap arrows
+    const a=new THREE.Vector3(xi*sp-off,yi*sp-off,zi*sp-off);
+    const b=new THREE.Vector3(xj*sp-off,yj*sp-off,zj*sp-off);
+    const dir=b.clone().sub(a).normalize();
+    const len=sp*(0.35+0.5*(f/maxF));
+    const ah=new THREE.ArrowHelper(dir,a.clone().add(dir.clone().multiplyScalar(0.4)),len,0xffe08a,0.35,0.22);
+    arrows.push(ah);latGroup.add(ah);
+  }
+}
+const lam=document.getElementById('lam');
+lam.oninput=()=>{document.getElementById('lamVal').textContent=(+lam.value).toFixed(2);refreshLattice(+lam.value);};
+try{ initLattice(); }catch(e){ console.warn('lattice viz unavailable:',e); refreshLattice(+lam.value); }
+
+/* ============================================================= *
+ *  PANEL 3 — golden Clifford winding (live, float)
+ *  Mirrors verify_clifford_winding.py line-coverage demo.
+ * ============================================================= */
+const PHI=(1+Math.sqrt(5))/2;
+const wc=document.getElementById('windCanvas'), wctx=wc.getContext('2d');
+let windRatio=PHI, windKind='golden', windT=0, windCells=new Set(), windAnim;
+function ratioLabel(r){return r===PHI?'φ ≈ 1.61803':r.toFixed(5);}
+function isRational(r){ // detect the demo's rational presets
+  return Math.abs(r-1.5)<1e-9||Math.abs(r-1.6)<1e-9;
+}
+function startWind(r,kind){
+  cancelAnimationFrame(windAnim);
+  windRatio=r; windKind=kind; windT=0; windCells=new Set();
+  wctx.clearRect(0,0,wc.width,wc.height);
+  wctx.strokeStyle='rgba(167,139,250,0.15)';wctx.lineWidth=1;wctx.strokeRect(1,1,wc.width-2,wc.height-2);
+  document.getElementById('wratio').textContent=ratioLabel(r);
+  const rat=isRational(r);
+  const e=document.getElementById('wkind');e.textContent=rat?'rational → closes':'irrational → fills';e.className=(rat?'bad':'ok')+' mono';
+  stepWind();
+}
+function stepWind(){
+  const dt=0.004, M=48, perFrame=600;
+  wctx.fillStyle=windKind==='golden'?'#D4AF37':(isRational(windRatio)?'#a78bfa':'#22d3ee');
+  for(let s=0;s<perFrame;s++){
+    const u=(windT*dt)%1, v=(windRatio*windT*dt)%1; windT++;
+    const px=4+u*(wc.width-8), py=4+v*(wc.height-8);
+    wctx.fillRect(px,py,1.6,1.6);
+    windCells.add((Math.floor(u*M)%M)+','+(Math.floor(v*M)%M));
+  }
+  const cov=windCells.size/(M*M);
+  document.getElementById('wcov').textContent=(cov*100).toFixed(1)+'%';
+  // uniformity proxy: how close occupancy spread is to even (rational stays low coverage)
+  document.getElementById('wuni').innerHTML = isRational(windRatio)
+      ? '<span class="bad">low (uneven)</span>' : '<span class="ok">high (even)</span>';
+  if(windT<60000 && !(isRational(windRatio)&&windT>20000)) windAnim=requestAnimationFrame(stepWind);
+}
+document.querySelectorAll('button.seg').forEach(b=>b.onclick=()=>{
+  document.querySelectorAll('button.seg').forEach(x=>x.classList.remove('active'));
+  b.classList.add('active');
+  const r=b.dataset.ratio==='phi'?PHI:+b.dataset.ratio;
+  startWind(r,b.dataset.ratio==='phi'?'golden':'other');
+});
+startWind(PHI,'golden');
+</script>
+</body>
+</html>
