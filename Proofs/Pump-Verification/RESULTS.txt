@@ -1,0 +1,177 @@
+
+##############################################################################
+# Lemma 1 — explicit (K, pi) with cycle current J > 0
+##############################################################################
+Torsional cycle current  —  exact construction of (K, pi) with J > 0
+======================================================================
+
+=== Forward-biased pump (expect J > 0) ===
+  K (exact rows):
+    from 12: 12->   9/20  10->    1/2  8->   1/20
+    from 10: 12->   1/20  10->   9/20  8->    1/2
+    from  8: 12->    1/2  10->   1/20  8->   9/20
+  stationary pi:        12=1/3 (~0.3333), 10=1/3 (~0.3333), 8=1/3 (~0.3333)
+  edge currents:        J(12->10)=3/20  J(10->8)=3/20  J(8->12)=3/20
+  Lemma 5 (coincide):   True   common J = 3/20  (~+0.150000)
+  Kolmogorov products:  forward=1/8 (0.12500)  reverse=1/8000 (0.00013)
+  sign law holds:       sign(J) matches sign(fwd-rev) = True
+
+=== Kolmogorov-balanced (expect J = 0) ===
+  K (exact rows):
+    from 12: 12->    1/6  10->    1/2  8->    1/3
+    from 10: 12->    1/2  10->   3/10  8->    1/5
+    from  8: 12->    1/3  10->    1/5  8->   7/15
+  stationary pi:        12=1/3 (~0.3333), 10=1/3 (~0.3333), 8=1/3 (~0.3333)
+  edge currents:        J(12->10)=0  J(10->8)=0  J(8->12)=0
+  Lemma 5 (coincide):   True   common J = 0  (~+0.000000)
+  Kolmogorov products:  forward=1/30 (0.03333)  reverse=1/30 (0.03333)
+  sign law holds:       sign(J) matches sign(fwd-rev) = True
+
+=== Reverse-biased pump (expect J < 0) ===
+  K (exact rows):
+    from 12: 12->   9/20  10->   1/20  8->    1/2
+    from 10: 12->    1/2  10->   9/20  8->   1/20
+    from  8: 12->   1/20  10->    1/2  8->   9/20
+  stationary pi:        12=1/3 (~0.3333), 10=1/3 (~0.3333), 8=1/3 (~0.3333)
+  edge currents:        J(12->10)=-3/20  J(10->8)=-3/20  J(8->12)=-3/20
+  Lemma 5 (coincide):   True   common J = -3/20  (~-0.150000)
+  Kolmogorov products:  forward=1/8000 (0.00013)  reverse=1/8 (0.12500)
+  sign law holds:       sign(J) matches sign(fwd-rev) = True
+
+=== Asymmetric forward pump (non-uniform pi, expect J > 0) ===
+  K (exact rows):
+    from 12: 12->   3/10  10->    3/5  8->   1/10
+    from 10: 12->   1/20  10->  11/20  8->    2/5
+    from  8: 12->   7/10  10->    1/8  8->   7/40
+  stationary pi:        12=257/891 (~0.2884), 10=406/891 (~0.4557), 8=76/297 (~0.2559)
+  edge currents:        J(12->10)=1339/8910  J(10->8)=1339/8910  J(8->12)=1339/8910
+  Lemma 5 (coincide):   True   common J = 1339/8910  (~+0.150281)
+  Kolmogorov products:  forward=21/125 (0.16800)  reverse=1/1600 (0.00063)
+  sign law holds:       sign(J) matches sign(fwd-rev) = True
+
+======================================================================
+RESULT: Lemma 5 verified exactly in every case (J12,10 = J10,8 = J8,12).
+        Pump condition J > 0 holds for the forward-biased witness.
+        Sign of J is governed exactly by the Kolmogorov cycle criterion:
+            J > 0  <=>  K[12->10]K[10->8]K[8->12] > K[12->8]K[8->10]K[10->12].
+All assertions passed.
+[verify_cycle_current] OK in 0.0s
+
+##############################################################################
+# Lemma 2 — Sparsemax kernel; Remark 22 stationary circulation
+##############################################################################
+Hyperbolic Sparsemax Pump kernel on (Z/4Z)^3  —  exact construction
+========================================================================
+  lattice voxels: 64    spinor SCALE=5  lambda=1  A0=1
+
+--- base-walk mode: chirality-only base walk  (W_ij = 1) ---
+  [Thm 2,5,11,16] executable-validity: VERIFIED exactly (support/row min=4 max=4)
+  [Thm 17] base current J0 >= 0 on all 192 forward edges (192 strictly > 0);  min J0 = 1/768 (~0.001302)
+  [Cor 19] exact parity invariant (mod 7) = 2
+  [Remark 22] pi-hat: uniform (1/64) in [0.015625, 0.015625]
+             not reversible w.r.t pi-hat: True;  contractible squares circulating: 0 (max |J|=0 (~0))
+             toroidal loops circulating: 48/48;  witness (0, 0, 0)->(1, 0, 0)->(2, 0, 0)->(3, 0, 0)->(0, 0, 0)
+             net stationary circulation J_C = 1/192 (~0.005208)  > 0
+
+--- base-walk mode: quadrance-weighted base walk  (W_ij = S_ij + S_ji) ---
+  [Thm 2,5,11,16] executable-validity: VERIFIED exactly (support/row min=4 max=4)
+  [Thm 17] base current J0 >= 0 on all 192 forward edges (192 strictly > 0);  min J0 = ~0.00130163  [exact rational, 136-digit / 139-digit]
+  [Cor 19] exact parity invariant (mod 7) = 2
+  [Remark 22] pi-hat: NON-uniform, 20 distinct values in [0.015620, 0.015626]
+             not reversible w.r.t pi-hat: True;  contractible squares circulating: 144 (max |J|=~8.58907e-07  [exact rational, 847-digit / 853-digit])
+             toroidal loops circulating: 48/48;  witness (0, 0, 3)->(1, 0, 3)->(2, 0, 3)->(3, 0, 3)->(0, 0, 3)
+             net stationary circulation J_C = ~0.0052087  [exact rational, 851-digit / 853-digit]  > 0
+
+========================================================================
+RESULT: every executable-validity claim (Thm 2,5,11,16,17; Cor 19) re-verified
+        exactly over Q. Remark 22 is CLOSED in both base-walk modes: K-hat
+        sustains strictly positive stationary circulation around an explicit
+        toroidal loop. With uniform weights the current is a pure global drift
+        (J_C = 1/192, no local eddies); the hyperbolic-quadrance weighting
+        modulates pi-hat into a non-uniform measure and adds local circulation.
+All assertions passed.
+[verify_sparsemax_kernel] OK in 32.2s
+
+##############################################################################
+# Lemma 3 — SLERP offload: exactness + drift bound
+##############################################################################
+SLERP offload reconstruction  —  exactness, a provable drift bound, accumulation
+================================================================================
+
+(E) Endpoint exactness (Prop 4), worst over 2000 random blocks (B=10), chordal metric:
+      max chordal( delta^B , DeltaQ )           = 7.76e-15  (≈ 0, machine precision)
+      max chordal( recon endpoint , true )      = 7.76e-15  (≈ 0)
+
+(B) Intra-block drift bound  D_k <= sum_{n<=k} d(Dq_n, delta), 5000 blocks (B=12):
+      bound violations                          = 0  (must be 0)
+      worst slack (bound - drift)               = +0.000e+00  (>= 0 to acos noise)
+      max observed drift / max bound            = 2.9277 rad / 9.7098 rad
+
+(C) The two sources of intra-block drift (B=16):
+      uniform increments, in-branch -> drift    = 5.64e-13  (≈ 0: exact interior reconstruction)
+      uniform increments, wrapped   -> drift    = 3.1416 rad  (> 0: principal-branch aliasing)
+      non-uniform, in-branch        -> drift    = 0.6107 rad  (> 0: increment unevenness)
+
+(Accum) 720-frame chain, 72 blocks of 10, offload+reconstruct:
+      worst block-boundary mismatch             = 4.45e-15  (≈ 0: coarse endpoints telescope)
+      worst intra-block drift (bounded, resets) = 1.8313 rad
+      worst unit-norm drift (renormalized)      = 7.77e-16
+
+================================================================================
+RESULT: endpoint reconstruction is exact (Prop 4) and does NOT accumulate across
+        blocks (boundaries telescope to ~1e-15). Intra-block drift is bounded by
+        sum d(Dq_n, delta) -- zero violations over 5000 blocks -- and vanishes iff
+        increments are uniform AND the block stays in the principal branch.
+        The two drift sources (increment unevenness; principal-branch aliasing)
+        are exhibited separately. The bound is the quantitative reconstruction
+        error estimate the paper listed as a next step.
+All assertions passed.
+[verify_slerp_drift] OK in 0.4s
+
+##############################################################################
+# Lemma 4 — golden Clifford torus + ergodic winding
+##############################################################################
+Golden Strassen Clifford Toroid  —  verifying the geometry that is real
+==========================================================================
+
+(1) Golden radii, EXACT in Q[phi]:
+      r1^2 = (2/5 + 1/5·phi) = (phi+2)/5 ≈ 0.723607
+      r2^2 = (3/5 + -1/5·phi) = (3-phi)/5 ≈ 0.276393
+      r1^2 + r2^2 = 1            : VERIFIED exactly
+      (r1/r2)^2 = phi^2 = phi+1  : VERIFIED exactly
+
+(2) On the unit 3-sphere, and (3) intrinsically flat:
+      max |x1^2+y1^2+x2^2+y2^2 - 1|   = 2.22e-16   (lies on S^3)
+      first fundamental form: E spread=2.22e-16, G spread=1.11e-16, max|F|=0.00e+00
+      -> E=r1^2, G=r2^2 constant, F=0  ->  Gaussian curvature K = 0 (flat)
+
+(4) Winding line: rational ratio closes (uneven, saturates) vs irrational fills
+    (uniform). Coverage at 5k vs 20k samples shows saturation; 24x24 grid:
+      ratio 3/2  (rational)  coverage 5k->20k =  16.7% ->  16.7%   density dev=1.23e-02
+      ratio 8/5  (rational)  coverage 5k->20k =  50.0% ->  50.0%   density dev=3.86e-03
+      ratio phi  (golden)    coverage 5k->20k = 100.0% -> 100.0%   density dev=4.14e-04
+      ratio sqrt(2)          coverage 5k->20k = 100.0% -> 100.0%   density dev=3.14e-04
+
+(5) Why golden is special — 1D star-discrepancy of {k·alpha}, n=4181 (Fibonacci #):
+      golden 1/phi   three-gap ratio= 1.618   star-discrepancy=2.392e-04
+      sqrt(2)-1      three-gap ratio= 2.414   star-discrepancy=5.306e-04
+      e-2            three-gap ratio= 6.523   star-discrepancy=8.152e-04
+      pi-3           three-gap ratio=257.635   star-discrepancy=7.525e-03
+      rational 3/5   three-gap ratio= 1.000   star-discrepancy=2.002e-01
+      -> golden's three-gap ratio is exactly phi (1.6180), the
+         optimum among irrationals; and it attains the lowest star-discrepancy.
+
+  HONEST LIMIT: equidistribution gives uniform COVERAGE, not O(1) LOOKUP.
+  Finding the time t landing near a target is inhomogeneous Diophantine
+  approximation -- a sampler, not an oracle. The note's closing 'O(1) lookup
+  manifold' is the one unsupported line; everything above it is correct.
+
+==========================================================================
+RESULT: golden flat-torus radii verified exactly in Q[phi]; embedding lies on
+        S^3 and is intrinsically flat; golden winding equidistributes with the
+        lowest discrepancy. The geometry is sound; only the O(1) claim is not.
+All assertions passed.
+[verify_clifford_winding] OK in 0.0s
+
+==============================================================================
+ALL MODULES PASSED
