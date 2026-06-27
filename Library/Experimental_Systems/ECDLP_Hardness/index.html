@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>ECDLP Hardness — Owl Academy</title>
+<style>
+  :root{--void:#06040f;--purple:#8b5cf6;--cyan:#22d3ee;--gold:#D4AF37;--ok:#34d399;--bad:#f87171;}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--void);color:#e2e8f0;font-family:system-ui,sans-serif;min-height:100vh;line-height:1.6;
+       background:radial-gradient(ellipse at top,rgba(139,92,246,0.08) 0%,var(--void) 60%)}
+  .mono{font-family:ui-monospace,"JetBrains Mono",monospace}
+  header{padding:2.6rem 1.5rem 1.6rem;text-align:center;border-bottom:1px solid rgba(139,92,246,0.15)}
+  .crumb{font-size:.62rem;letter-spacing:.25em;text-transform:uppercase;color:rgba(139,92,246,0.5);margin-bottom:.7rem}
+  .crumb a{color:rgba(139,92,246,0.6);text-decoration:none}.crumb a:hover{color:var(--purple)}
+  h1{font-size:1.7rem;font-weight:300;letter-spacing:.22em;text-transform:uppercase;color:var(--purple);text-shadow:0 0 20px rgba(139,92,246,0.4)}
+  .sub{margin-top:.5rem;font-size:.72rem;letter-spacing:.22em;text-transform:uppercase;color:rgba(139,92,246,0.5)}
+  main{max-width:980px;margin:2rem auto;padding:0 1.25rem}
+  .banner{border:1px solid rgba(52,211,153,.25);background:rgba(52,211,153,.05);border-radius:10px;padding:1rem 1.2rem;font-size:.82rem;color:#cbd5e1;margin-bottom:2rem}
+  .banner b{color:var(--ok)}
+  .panel{background:rgba(10,8,20,0.6);border:1px solid rgba(139,92,246,0.18);border-radius:14px;padding:1.4rem 1.5rem;margin-bottom:1.6rem}
+  .lab{font-size:.62rem;letter-spacing:.28em;text-transform:uppercase;color:rgba(139,92,246,0.6);margin-bottom:.5rem}
+  h2{font-size:1.2rem;font-weight:400;letter-spacing:.05em;color:#fff;margin-bottom:.2rem}
+  .desc{font-size:.82rem;color:rgba(255,255,255,.55);margin-bottom:1rem}
+  button.act{background:rgba(139,92,246,.16);color:#c4b5fd;border:1px solid rgba(139,92,246,.45);border-radius:8px;
+       padding:.5rem 1rem;font-size:.74rem;letter-spacing:.08em;cursor:pointer;transition:.15s;font-family:inherit}
+  button.act:hover{background:rgba(139,92,246,.3);color:#fff}
+  button.act:disabled{opacity:.4;cursor:default}
+  button.pp{font-size:.7rem;padding:.3rem .7rem;border-radius:7px;border:1px solid rgba(34,211,238,.3);background:rgba(34,211,238,.07);color:#67e8f9;cursor:pointer;font-family:inherit}
+  button.pp.active{background:rgba(34,211,238,.25);border-color:var(--cyan);color:#fff}
+  .kv{display:flex;justify-content:space-between;font-size:.78rem;padding:.18rem 0;border-bottom:1px solid rgba(255,255,255,.05)}
+  .kv span:first-child{color:rgba(255,255,255,.45)}
+  .gold{color:var(--gold)}.cyan{color:var(--cyan)}.ok{color:var(--ok)}.bad{color:var(--bad)}.violet{color:#a78bfa}
+  .bar{height:14px;background:rgba(255,255,255,.05);border-radius:7px;overflow:hidden;margin-top:.3rem}
+  .bar>div{height:100%;width:0;background:linear-gradient(90deg,#8b5cf6,#22d3ee);transition:width .05s linear}
+  canvas{display:block;width:100%;border-radius:10px;border:1px solid rgba(139,92,246,.25);background:#04030a}
+  input[type=range]{-webkit-appearance:none;height:5px;background:rgba(139,92,246,.3);border-radius:3px;outline:none;width:100%}
+  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;border-radius:50%;background:var(--purple);cursor:pointer;box-shadow:0 0 8px rgba(139,92,246,.7)}
+  select{background:#0b0a18;color:#cbd5e1;border:1px solid rgba(139,92,246,.35);border-radius:6px;padding:.3rem .5rem;font-family:inherit;font-size:.76rem}
+  .wall{font-size:.78rem}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:1.2rem}
+  @media(max-width:720px){.grid2{grid-template-columns:1fr}}
+  .note{font-size:.72rem;color:rgba(255,255,255,.4);margin-top:.6rem;line-height:1.5}
+  code{font-family:ui-monospace,monospace;color:var(--cyan);font-size:.78rem}
+</style>
+</head>
+<body>
+<header>
+  <div class="crumb"><a href="../../Grand_Archives.html">Grand Archives</a> · <a href="../index.html">Experimental Systems</a> · ECDLP Hardness</div>
+  <h1>The Discrete-Log Wall</h1>
+  <div class="sub">Real ECDLP recovery · baby-step/giant-step · Pollard's rho · the √n law</div>
+</header>
+
+<main>
+  <div class="banner">
+    <b>This is the real thing, working.</b> A genuine elliptic curve over a prime field, a genuine secret scalar
+    <code>k</code> with <code>Q = kG</code>, recovered live by the actual best-known generic algorithms. They succeed —
+    and the work they need grows like <code>√n</code> in the group order <code>n</code>. Drag the field size and watch
+    that square-root law turn a toy into a wall. <b>No "oracle" collapses this</b>; the wall <em>is</em> the √n law.
+    Exact reference: <code>ecdlp_reference.py</code> in this folder.
+  </div>
+
+  <!-- ===== A. THE CURVE ===== -->
+  <section class="panel">
+    <div class="lab">Step 1 · the playing field</div>
+    <h2>A genuine curve over F<sub>p</sub></h2>
+    <div class="desc">Pick a field size. We generate a real curve <code>y² = x³ + ax + b (mod p)</code> whose group order
+      <code>n</code> is prime (so every point generates the group), choose a generator <code>G</code>, pick a secret
+      <code>k</code>, and publish only <code>Q = kG</code> — exactly the data an attacker sees.</div>
+    <div style="display:flex;gap:.5rem;flex-wrap:wrap;margin-bottom:1rem">
+      <span class="mono" style="font-size:.72rem;color:rgba(255,255,255,.4);align-self:center">p ≈</span>
+      <button class="pp" data-p="1009">10³</button>
+      <button class="pp active" data-p="10007">10⁴</button>
+      <button class="pp" data-p="100003">10⁵</button>
+      <button class="pp" data-p="1000003">10⁶</button>
+      <button class="act" id="reroll" style="margin-left:auto">↻ new secret k</button>
+    </div>
+    <div class="mono">
+      <div class="kv"><span>curve</span><span id="cEq" class="violet"></span></div>
+      <div class="kv"><span>field prime p</span><span id="cP" class="cyan"></span></div>
+      <div class="kv"><span>group order n (prime)</span><span id="cN" class="cyan"></span></div>
+      <div class="kv"><span>generator G</span><span id="cG"></span></div>
+      <div class="kv"><span>public point Q = kG</span><span id="cQ" class="gold"></span></div>
+      <div class="kv"><span>secret k</span><span id="cK" class="bad">hidden — recover it below</span></div>
+    </div>
+  </section>
+
+  <div class="grid2">
+    <!-- ===== B. BSGS ===== -->
+    <section class="panel">
+      <div class="lab">Step 2 · solver A</div>
+      <h2>Baby-Step / Giant-Step</h2>
+      <div class="desc">Build a table of <code>jG</code> for <code>j&lt;√n</code> (baby steps), then leap by <code>√n·G</code>
+        (giant steps) until <code>Q</code> lands in the table. Deterministic, <code>O(√n)</code> time <em>and</em> memory.</div>
+      <button class="act" id="runBsgs">▶ recover k</button>
+      <div class="bar"><div id="bsgsBar"></div></div>
+      <div class="mono" style="margin-top:.7rem">
+        <div class="kv"><span>baby table size m=⌈√n⌉</span><span id="bM"></span></div>
+        <div class="kv"><span>steps taken</span><span id="bSteps" class="cyan"></span></div>
+        <div class="kv"><span>steps / √n</span><span id="bRatio"></span></div>
+        <div class="kv"><span>recovered k</span><span id="bK" class="ok"></span></div>
+        <div class="kv"><span>verify kG = Q</span><span id="bVer"></span></div>
+      </div>
+    </section>
+
+    <!-- ===== C. RHO ===== -->
+    <section class="panel">
+      <div class="lab">Step 2 · solver B</div>
+      <h2>Pollard's rho</h2>
+      <div class="desc">A pseudo-random walk that mixes <code>+G</code>, <code>+Q</code>, doubling. It must eventually
+        revisit a point — the path makes a <strong>ρ</strong> shape — and the collision solves for <code>k</code>.
+        <code>O(√n)</code> time, <code>O(1)</code> memory.</div>
+      <canvas id="rhoCanvas" height="190"></canvas>
+      <button class="act" id="runRho" style="margin-top:.7rem">▶ recover k</button>
+      <div class="mono" style="margin-top:.7rem">
+        <div class="kv"><span>tail + cycle length</span><span id="rTC" class="cyan"></span></div>
+        <div class="kv"><span>steps to collision</span><span id="rSteps" class="cyan"></span></div>
+        <div class="kv"><span>recovered k</span><span id="rK" class="ok"></span></div>
+        <div class="kv"><span>verify kG = Q</span><span id="rVer"></span></div>
+      </div>
+    </section>
+  </div>
+
+  <!-- ===== D. THE WALL ===== -->
+  <section class="panel">
+    <div class="lab">Step 3 · scale it up</div>
+    <h2>Why 256 bits is a wall</h2>
+    <div class="desc">Both solvers cost about <code>√n</code> operations. Slide the key size and watch that number — and the
+      time to run it — explode. The curves you just cracked sit at the far left; Bitcoin's secp256k1 sits at 256.</div>
+    <div style="display:flex;gap:1.5rem;flex-wrap:wrap;align-items:center;margin-bottom:.6rem">
+      <div style="flex:1;min-width:240px">
+        <div style="display:flex;justify-content:space-between;font-size:.74rem"><span>key size</span><span class="mono gold" id="bitsVal">48 bits</span></div>
+        <input type="range" id="bits" min="8" max="256" step="1" value="48">
+      </div>
+      <label style="font-size:.74rem">attacker speed
+        <select id="rate">
+          <option value="1e6">10⁶ ops/s (laptop)</option>
+          <option value="1e9" selected>10⁹ ops/s (server)</option>
+          <option value="1e12">10¹² ops/s (GPU farm)</option>
+          <option value="1e18">10¹⁸ ops/s (exascale)</option>
+        </select>
+      </label>
+    </div>
+    <div class="bar" style="height:18px"><div id="wallBar"></div></div>
+    <div class="mono wall" style="margin-top:.8rem">
+      <div class="kv"><span>group order n</span><span id="wN" class="cyan"></span></div>
+      <div class="kv"><span>operations ≈ √n</span><span id="wOps" class="gold"></span></div>
+      <div class="kv"><span>time to recover one key</span><span id="wTime" class="violet"></span></div>
+      <div class="kv"><span>vs age of the universe</span><span id="wUni"></span></div>
+      <div class="kv"><span>status</span><span id="wStatus"></span></div>
+    </div>
+    <div class="note">Reference points: <span class="cyan mono">2¹³–2²⁰</span> = the curves cracked above (milliseconds).
+      <span class="mono">2⁸⁰</span> ≈ the largest ECDLP ever solved publicly (years of a global effort).
+      <span class="gold mono">2²⁵⁶</span> = secp256k1 → ~<span class="mono">2¹²⁸</span> operations. There is no known generic shortcut
+      under the √n law — which is the whole reason the curve was chosen.</div>
+  </section>
+
+  <footer class="note" style="text-align:center;padding:1rem 0 2.5rem">
+    Honest companion to the “Hyperbolic Oracle” simulator. The algorithms here actually run; the wall is real.
+  </footer>
+</main>
+
+<script>
+/* =================== Real EC arithmetic over F_p (BigInt) =================== */
+const ZERO=0n, ONE=1n;
+function mod(x,p){x%=p;return x<0n?x+p:x;}
+function modpow(b,e,p){b=mod(b,p);let r=1n;while(e>0n){if(e&1n)r=r*b%p;b=b*b%p;e>>=1n;}return r;}
+function modinv(a,p){return modpow(mod(a,p),p-2n,p);}              // p prime
+function legendre(n,p){n=mod(n,p);if(n===0n)return 0;return modpow(n,(p-1n)/2n,p)===1n?1:-1;}
+function sqrtmod(n,p){const r=modpow(mod(n,p),(p+1n)/4n,p);return (r*r%p===mod(n,p))?r:null;} // p≡3 mod4
+
+function ptAdd(C,P,Q){               // points: null (∞) or [x,y] BigInt
+  if(!P)return Q; if(!Q)return P;
+  const p=C.p;const[x1,y1]=P,[x2,y2]=Q;
+  if(x1===x2 && mod(y1+y2,p)===0n)return null;
+  let m;
+  if(x1===x2&&y1===y2) m=mod((3n*x1*x1+C.a)*modinv(2n*y1,p),p);
+  else m=mod((y2-y1)*modinv(mod(x2-x1,p),p),p);
+  const x3=mod(m*m-x1-x2,p), y3=mod(m*(x1-x3)-y1,p);
+  return [x3,y3];
+}
+function ptMul(C,k,P){let R=null,Q=P;k=BigInt(k);while(k>0n){if(k&1n)R=ptAdd(C,R,Q);Q=ptAdd(C,Q,Q);k>>=1n;}return R;}
+function onCurve(C,P){if(!P)return true;const[x,y]=P;return mod(y*y-(x*x*x+C.a*x+C.b),C.p)===0n;}
+
+function countPoints(C){             // O(p): #E = p+1+Σ legendre(f(x))
+  const p=Number(C.p);let s=0;
+  for(let x=0;x<p;x++){const xb=BigInt(x);s+=legendre(xb*xb*xb+C.a*xb+C.b,C.p);}
+  return C.p+1n+BigInt(s);
+}
+function isPrime(n){
+  if(n<2n)return false;
+  for(const q of [2n,3n,5n,7n,11n,13n,17n,19n,23n,29n,31n,37n]){if(n%q===0n)return n===q;}
+  let d=n-1n,r=0n;while(d%2n===0n){d/=2n;r++;}
+  for(const a of [2n,3n,5n,7n,11n,13n,17n,19n,23n,29n,31n,37n]){
+    let x=modpow(a,d,n);if(x===1n||x===n-1n)continue;let ok=false;
+    for(let i=0n;i<r-1n;i++){x=x*x%n;if(x===n-1n){ok=true;break;}}
+    if(!ok)return false;
+  }
+  return true;
+}
+function randBig(maxExclusive){return BigInt(Math.floor(Math.random()*Number(maxExclusive)));}
+function genCurve(pNum){             // prime-order curve near p, with generator
+  const p=BigInt(pNum);
+  for(let tries=0;tries<6000;tries++){
+    const a=randBig(p),b=randBig(p);
+    if(mod(4n*a*a*a+27n*b*b,p)===0n)continue;
+    const C={a,b,p};const n=countPoints(C);
+    if(!isPrime(n))continue;
+    for(let x=0;x<pNum;x++){const xb=BigInt(x);const rhs=mod(xb*xb*xb+a*xb+b,p);
+      if(legendre(rhs,p)>=0){const y=sqrtmod(rhs,p);if(y!==null&&!(xb===0n&&y===0n))return{C,n,G:[xb,y]};}}
+  }
+  throw new Error("no prime-order curve found");
+}
+
+/* =================== Solvers (real) =================== */
+function isqrt(n){let x=BigInt(Math.floor(Math.sqrt(Number(n))));while(x*x>n)x--;while((x+1n)*(x+1n)<=n)x++;return x;}
+function keyStr(P){return P?P[0]+","+P[1]:"INF";}
+
+function bsgs(C,G,Q,n){
+  const m=isqrt(n)+1n;const M=Number(m);
+  const table=new Map();let P=null;             // 0*G
+  for(let j=0;j<M;j++){if(!table.has(keyStr(P)))table.set(keyStr(P),j);P=ptAdd(C,P,G);}
+  const negMG=ptMul(C,n-1n,ptMul(C,m,G));        // = -mG
+  let gamma=Q;
+  for(let i=0;i<M;i++){
+    const hit=table.get(keyStr(gamma));
+    if(hit!==undefined)return{k:mod(BigInt(i)*m+BigInt(hit),n),steps:i+M,m:M};
+    gamma=ptAdd(C,gamma,negMG);
+  }
+  return{k:null,steps:M+M,m:M};
+}
+
+function rhoWalk(C,G,Q,n){
+  // single walk retained ONLY to draw the rho; the algorithm itself needs O(1) memory.
+  for(let retry=0;retry<25;retry++){
+    const seen=new Map();const path=[];
+    let X=G,a=1n,b=0n;
+    for(let t=0;t<400000;t++){
+      const key=keyStr(X);
+      if(seen.has(key)){
+        const prev=seen.get(key);const db=mod(prev.b-b,n);
+        if(db===0n)break;                          // degenerate, retry
+        const k=mod((a-prev.a)*modinv(db,n),n);
+        return{k,steps:t,path,tail:prev.t,cycle:t-prev.t};
+      }
+      seen.set(key,{a,b,t});path.push(X);
+      const part = X?Number(mod(X[0],3n)):0;
+      if(part===0){X=ptAdd(C,X,Q);b=mod(b+1n,n);}
+      else if(part===1){X=ptAdd(C,X,X);a=mod(a*2n,n);b=mod(b*2n,n);}
+      else{X=ptAdd(C,X,G);a=mod(a+1n,n);}
+    }
+  }
+  return{k:null,steps:0,path:[],tail:0,cycle:0};
+}
+
+/* =================== State + UI =================== */
+let CUR=null;   // {C,n,G,Q,k}
+const $=id=>document.getElementById(id);
+function setActiveP(pv){document.querySelectorAll('.pp').forEach(b=>b.classList.toggle('active',+b.dataset.p===pv));}
+
+function newCurve(pNum){
+  const {C,n,G}=genCurve(pNum);
+  reroll(C,n,G);
+}
+function reroll(C,n,G){
+  C=C||CUR.C;n=n||CUR.n;G=G||CUR.G;
+  const k=2n+randBig(n-3n);
+  const Q=ptMul(C,k,G);
+  CUR={C,n,G,Q,k};
+  $('cEq').textContent=`y² = x³ + ${C.a}x + ${C.b}  (mod p)`;
+  $('cP').textContent=C.p.toString();
+  $('cN').textContent=`${n}  (~2^${Math.log2(Number(n)).toFixed(1)})`;
+  $('cG').textContent=`(${G[0]}, ${G[1]})`;
+  $('cQ').textContent=`(${Q[0]}, ${Q[1]})`;
+  $('cK').textContent='hidden — recover it below';$('cK').className='bad';
+  // reset solver panels
+  ['bSteps','bRatio','bK','bVer','rTC','rSteps','rK','rVer','bM'].forEach(i=>$(i).textContent='');
+  $('bsgsBar').style.width='0';
+  const cv=$('rhoCanvas');cv.getContext('2d').clearRect(0,0,cv.width,cv.height);
+}
+
+document.querySelectorAll('.pp').forEach(btn=>btn.onclick=()=>{
+  setActiveP(+btn.dataset.p);
+  $('cEq').textContent='generating…';
+  setTimeout(()=>newCurve(+btn.dataset.p),20);
+});
+$('reroll').onclick=()=>reroll();
+
+/* ---- BSGS run + bar animation ---- */
+$('runBsgs').onclick=()=>{
+  const {C,n,G,Q,k}=CUR;const r=bsgs(C,G,Q,n);
+  $('bM').textContent=r.m;
+  const rt=Math.sqrt(Number(n));
+  const ok=r.k!==null && keyStr(ptMul(C,r.k,G))===keyStr(Q);
+  // animate bar over the work done
+  let prog=0;const tot=r.steps;const bar=$('bsgsBar');
+  const iv=setInterval(()=>{prog+=Math.max(1,Math.floor(tot/40));if(prog>=tot){prog=tot;clearInterval(iv);
+      $('bSteps').textContent=r.steps;$('bRatio').textContent=(r.steps/rt).toFixed(2)+' · √n';
+      $('bK').textContent=r.k.toString();$('cK').textContent=k.toString();$('cK').className='gold';
+      $('bVer').innerHTML=ok?'<span class="ok">✓ matches</span>':'<span class="bad">✗</span>';}
+    bar.style.width=(100*prog/tot)+'%';},20);
+};
+
+/* ---- rho run + canvas animation ---- */
+function hashUnit(x){const v=Number(mod(x,1000000007n));const h=(v*2654435761)%4294967296;return h/4294967296;}
+$('runRho').onclick=()=>{
+  const {C,n,G,Q,k}=CUR;const r=rhoWalk(C,G,Q,n);
+  const cv=$('rhoCanvas'),ctx=cv.getContext('2d');
+  cv.width=cv.clientWidth*devicePixelRatio;cv.height=190*devicePixelRatio;ctx.scale(devicePixelRatio,devicePixelRatio);
+  const W=cv.clientWidth,H=190;
+  ctx.clearRect(0,0,W,H);
+  // canonical rho layout from the REAL measured tail/cycle: a tail feeding a loop.
+  const total=r.path.length, tail=r.tail, cyc=Math.max(1,r.cycle);
+  const cx=W*0.66, cy=H/2, R=Math.min(H,W*0.5)*0.34;
+  const cycleStart=[cx+R, cy];           // angle 0 on the loop = where the tail enters
+  const tailSpace=Math.min((cx-R-18)/Math.max(1,tail), R*0.5);
+  const pts=r.path.map((P,idx)=>{
+    if(idx>=tail){const ang=2*Math.PI*(idx-tail)/cyc;return [cx+R*Math.cos(ang), cy+R*Math.sin(ang)];}
+    return [cycleStart[0]-(tail-idx)*tailSpace, cy + (hashUnit(P?P[0]:1n)-0.5)*8];  // slight jitter
+  });
+  let i=0;
+  const ok=r.k!==null && keyStr(ptMul(C,r.k,G))===keyStr(Q);
+  function frame(){
+    const chunk=Math.max(1,Math.floor(total/120));
+    for(let c=0;c<chunk&&i<total-1;c++,i++){
+      ctx.strokeStyle=i<r.tail?'rgba(34,211,238,0.55)':'rgba(139,92,246,0.8)';
+      ctx.lineWidth=1.2;ctx.beginPath();ctx.moveTo(pts[i][0],pts[i][1]);ctx.lineTo(pts[i+1][0],pts[i+1][1]);ctx.stroke();
+    }
+    if(i<total-1)requestAnimationFrame(frame);
+    else{
+      // mark collision point
+      const cp=pts[total-1];ctx.fillStyle='#f87171';ctx.beginPath();ctx.arc(cp[0],cp[1],4,0,7);ctx.fill();
+      $('rTC').textContent=`tail ${r.tail} + cycle ${r.cycle}`;
+      $('rSteps').textContent=r.steps+'  (~'+(r.steps/Math.sqrt(Number(n))).toFixed(2)+'·√n)';
+      $('rK').textContent=r.k.toString();$('cK').textContent=k.toString();$('cK').className='gold';
+      $('rVer').innerHTML=ok?'<span class="ok">✓ matches</span>':'<span class="bad">✗</span>';
+    }
+  }
+  frame();
+};
+
+/* ---- The wall ---- */
+const AGE_UNIVERSE_YR=1.38e10;
+function fmtBig(log10){ // pretty 10^x or 2^x style for huge numbers
+  if(log10<6)return Math.round(10**log10).toLocaleString();
+  return '10^'+log10.toFixed(1);
+}
+function fmtTime(sec){
+  if(sec<1e-3)return (sec*1e6).toFixed(1)+' µs';
+  if(sec<1)return (sec*1e3).toFixed(1)+' ms';
+  if(sec<60)return sec.toFixed(1)+' s';
+  if(sec<86400)return (sec/3600).toFixed(1)+' h';
+  const yr=sec/3.15e7;
+  if(yr<1000)return yr.toFixed(1)+' yr';
+  return '10^'+Math.log10(yr).toFixed(1)+' yr';
+}
+function updateWall(){
+  const bits=+$('bits').value, rate=+$('rate').value;
+  $('bitsVal').textContent=bits+' bits';
+  const opsLog2=bits/2;                         // √n = 2^(bits/2)
+  const opsLog10=opsLog2*Math.log10(2);
+  const secLog10=opsLog10-Math.log10(rate);
+  const sec=Math.pow(10,secLog10);
+  $('wN').textContent=`2^${bits}`;
+  $('wOps').textContent=`2^${opsLog2.toFixed(0)}  ≈ ${fmtBig(opsLog10)}`;
+  $('wTime').textContent=fmtTime(sec);
+  const yr=sec/3.15e7, ratio=yr/AGE_UNIVERSE_YR;
+  $('wUni').innerHTML = ratio<1e-6 ? '<span class="ok">trivial</span>'
+      : ratio<1 ? (ratio).toExponential(1)+' × (a fraction)'
+      : '<span class="bad">'+ratio.toExponential(1)+' ×</span>';
+  // status
+  let s;
+  if(opsLog2<=22) s='<span class="ok">crackable in your browser</span>';
+  else if(opsLog2<=50) s='<span class="gold">feasible with real compute</span>';
+  else if(opsLog2<=85) s='<span class="violet">edge of what humanity has ever solved</span>';
+  else s='<span class="bad">infeasible — this is the wall</span>';
+  $('wStatus').innerHTML=s;
+  // log-scale bar: map ops 2^4..2^128 -> 0..100%
+  const frac=Math.max(0,Math.min(1,(opsLog2-2)/(128-2)));
+  $('wallBar').style.width=(frac*100)+'%';
+  $('wallBar').style.background = opsLog2>85 ? 'linear-gradient(90deg,#f87171,#fbbf24)' : 'linear-gradient(90deg,#8b5cf6,#22d3ee)';
+}
+$('bits').oninput=updateWall;$('rate').onchange=updateWall;
+
+/* ---- boot ---- */
+updateWall();
+$('cEq').textContent='generating…';
+setTimeout(()=>newCurve(10007),30);
+</script>
+</body>
+</html>

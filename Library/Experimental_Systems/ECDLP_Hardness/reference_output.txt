@@ -1,0 +1,55 @@
+Real ECDLP recovery on genuine prime-order curves over F_p
+==========================================================================
+
+[1] Recover k two ways on a curve with p ≈ 10^4 (the requested size):
+       p~1e4: p=10007    curve y^2=x^3+3932x+8037  n=10099  (~2^13.3)
+             planted k=6238
+             BSGS  -> k=6238  ✓   steps=162     (1.61·√n)
+             rho   -> k=6238  ✓   steps=40      (0.40·√n)
+
+[2] The O(√n) law — recover k on a family of growing curves:
+       p~211: p=211      curve y^2=x^3+0x+138  n=241  (~2^7.9)
+             planted k=23
+             BSGS  -> k=23  ✓   steps=17      (1.10·√n)
+             rho   -> k=23  ✓   steps=10      (0.64·√n)
+      p~1019: p=1019     curve y^2=x^3+652x+31  n=1013  (~2^10.0)
+             planted k=288
+             BSGS  -> k=288  ✓   steps=41      (1.29·√n)
+             rho   -> k=288  ✓   steps=56      (1.76·√n)
+     p~10007: p=10007    curve y^2=x^3+2250x+6332  n=9871  (~2^13.3)
+             planted k=7781
+             BSGS  -> k=7781  ✓   steps=177     (1.78·√n)
+             rho   -> k=7781  ✓   steps=291     (2.93·√n)
+    p~100003: p=100003   curve y^2=x^3+20022x+62418  n=99623  (~2^16.6)
+             planted k=42017
+             BSGS  -> k=42017  ✓   steps=448     (1.42·√n)
+             rho   -> k=42017  ✓   steps=496     (1.57·√n)
+   p~1000003: p=1000003  curve y^2=x^3+513666x+122084  n=1000231  (~2^19.9)
+             planted k=324355
+             BSGS  -> k=324355  ✓   steps=1325    (1.32·√n)
+             rho   -> k=324355  ✓   steps=1821    (1.82·√n)
+
+[3] Scaling check: BSGS steps ≈ √n, rho steps = O(√n) (constant × √n):
+                 n          √n    BSGS/√n    rho/√n
+               241        15.5       1.10      0.64
+              1013        31.8       1.29      1.76
+              9871        99.4       1.78      2.93
+             99623       315.6       1.42      1.57
+           1000231      1000.1       1.32      1.82
+
+[4] Extrapolating the SAME √n law to real key sizes — the wall:
+       bits     group order n        ops ≈ √n      time @10^9 ops/s
+         32             ~2^32           ~2^16               0.07 ms
+         64             ~2^64           ~2^32                4.29 s
+        128            ~2^128           ~2^64           5.86e+02 yr
+        160            ~2^160           ~2^80  3.84e+07 yr  (2.8e-03× age of universe)
+        224            ~2^224          ~2^112  1.65e+17 yr  (1.2e+07× age of universe)
+        256            ~2^256          ~2^128  1.08e+22 yr  (7.8e+11× age of universe)  <- secp256k1 / Bitcoin
+
+==========================================================================
+CONCLUSION: the discrete log is recoverable in O(√n) — and we did recover it.
+The work grows as √n with NO sub-exponential shortcut on a generic curve.
+At 256 bits, √n ≈ 2^128 ≈ 3.4e38 operations: even at 10^9 ops/s that is
+~10^22 years, ~10^12 × the age of the universe. That gap is the wall —
+not a missing trick, but the square-root law itself, extrapolated honestly.
+All recoveries verified (recovered k satisfies kG = Q and equals the planted k).
