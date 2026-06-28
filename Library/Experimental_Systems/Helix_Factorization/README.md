@@ -118,6 +118,19 @@ This is the honest negative result *for this embedding* — and the conceded, we
 form of the project. The bench (Python and the interactive `harmonic c-warped` selector)
 will report a **positive** ε the instant an embedding with real signal is supplied.
 
+### Can we push to 144 / 256 / 288 bits?
+
+Two different limits. *Building* a window of states is trivial at any size (a 256-bit
+window builds in <1 ms). But the ε-experiment is only **defined** while the window
+reaches the birthday horizon √p — useful collisions (`x_i ≡ x_j mod p`) only appear
+after ~√p steps. Measured: a 2000-window holds ~7,848 useful pairs at 16-bit primes,
+but **0 at 24-bit and above**. So beyond ~22-bit primes ε is `0/0` (undefined), not
+small. The interactive page reflects this: the live selector runs to 28-bit (where it
+prints "undefined — too few collisions"), and a **collision-horizon panel** reports the
+wall for 144/256/288-bit N (e.g. 256-bit → √p ≈ 2⁶⁴, baseline rho ≈ 585 yr; ε
+unmeasurable). Crucially the negative ε result is **size-independent**: the CRT argument
+holds for every N, so the small-size measurement already settles 256-bit too.
+
 ## Files
 
 | file | role |

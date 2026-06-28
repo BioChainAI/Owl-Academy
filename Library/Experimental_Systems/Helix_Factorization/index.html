@@ -70,6 +70,8 @@
       <button class="pp" data-b="12">12-bit</button>
       <button class="pp active" data-b="16">16-bit</button>
       <button class="pp" data-b="20">20-bit</button>
+      <button class="pp" data-b="24">24-bit</button>
+      <button class="pp" data-b="28">28-bit</button>
       <button class="act" id="gen" style="margin-left:auto">↻ new N</button>
     </div>
     <div class="mono">
@@ -199,6 +201,34 @@ return x;</textarea>
     <div id="jRows" class="mono" style="font-size:.72rem;color:rgba(255,255,255,.5);margin-top:.4rem"></div>
   </section>
 
+  <!-- G. scaling to crypto sizes: the collision horizon -->
+  <section class="panel">
+    <div class="lab">Step 7 · scaling to crypto sizes</div>
+    <h2>What happens at 144, 256, 288 bits?</h2>
+    <div class="desc">The live bench above tops out around 28-bit primes — not from slowness, but because the
+      ε-experiment is only <em>defined</em> while the window reaches the birthday horizon <code>√p</code>. Pick a
+      modulus size: this computes where <code>√p</code> lands and whether either the baseline factoring or the
+      ε-measurement can run at all.</div>
+    <div style="display:flex;gap:.5rem;flex-wrap:wrap;margin-bottom:.9rem">
+      <span class="mono" style="font-size:.7rem;color:rgba(255,255,255,.4);align-self:center">modulus N</span>
+      <button class="pp" data-n="64">64-bit</button>
+      <button class="pp" data-n="128">128-bit</button>
+      <button class="pp active" data-n="144">144-bit</button>
+      <button class="pp" data-n="256">256-bit</button>
+      <button class="pp" data-n="288">288-bit</button>
+    </div>
+    <div class="mono" style="font-size:.76rem">
+      <div class="kv"><span>prime size p,q ≈ N/2</span><span id="hPrime" class="cyan"></span></div>
+      <div class="kv"><span>collision horizon √p</span><span id="hHor" class="gold"></span></div>
+      <div class="kv"><span>baseline rho work ≈ √p ops</span><span id="hOps"></span></div>
+      <div class="kv"><span>time @ 10⁹ ops/s</span><span id="hTime" class="violet"></span></div>
+      <div class="kv"><span>ε-experiment window needed</span><span id="hWin"></span></div>
+      <div class="kv"><span>can baseline rho factor it?</span><span id="hRho"></span></div>
+      <div class="kv"><span>is the Oracle-Bias ε measurable?</span><span id="hEps"></span></div>
+    </div>
+    <div class="note" id="hNote"></div>
+  </section>
+
   <footer class="note" style="text-align:center;padding:.5rem 0 2.5rem">
     Negative results are results. The bench is pluggable — bring an oracle with measured ε &gt; 0, or a true
     random-access reconstruction of xᵢ, and this same harness will measure it honestly. Nothing here can ever
@@ -298,6 +328,20 @@ $('runBias').onclick=()=>{const{N,p,c}=ST;const L=1500,K=150,WINDOWS=30;
     let co;try{co=oracle(w,N,K,cc);}catch(e){$('bias_eps').innerHTML='<span class="bad">oracle error: '+e.message+'</span>';return;}
     orHit+=co.filter(pr=>pr&&pr.length===2&&isUseful(w,p,N,pr)).length/Math.max(1,co.length);}
   baseD/=WINDOWS;uniHit/=WINDOWS;orHit/=WINDOWS;const eps=orHit-uniHit;
+  // Guard: if the window doesn't reach the birthday horizon √p, it holds (almost) no
+  // useful collisions, so there's nothing to rank and ε is undefined, not "small".
+  const usefulPerWindow = baseD * (L*(L-1)/2);
+  if(usefulPerWindow < 8){
+    const rt=Math.sqrt(Number(ST.p));
+    $('bias_base').textContent=baseD.toExponential(2)+`  (~${usefulPerWindow.toFixed(2)} pairs/window)`;
+    $('bias_uni').textContent='—';$('bias_or').textContent='—';
+    $('bias_eps').innerHTML='<span class="gold">undefined — too few collisions to measure</span>';
+    $('biasFill').style.width='0';
+    const b=$('biasBadge');b.style.display='inline-block';
+    b.textContent=`√p≈2^${Math.round(Math.log2(rt))} ≳ window (L=${L}) — raise window or lower bits to measure`;
+    b.style.color='#fbbf24';b.style.borderColor='#fbbf24';
+    return;
+  }
   // 2σ noise band on ε (difference of two binomial-mean hit-rates over K·WINDOWS samples each)
   const nS=K*WINDOWS;
   const band=2*Math.sqrt(orHit*(1-orHit)/nS + uniHit*(1-uniHit)/nS);
@@ -374,9 +418,38 @@ $('runJump').onclick=()=>{const{N,c}=ST;let fn;
   else $('jVerd').innerHTML='<span class="bad">not exact — cannot certify factors from it</span>';
 };
 
-/* boot */
-document.querySelectorAll('.pp').forEach(b=>b.onclick=()=>{document.querySelectorAll('.pp').forEach(x=>x.classList.remove('active'));b.classList.add('active');genN(+b.dataset.b);});
-genN(16);
+/* collision-horizon calculator (Step 7) — pure arithmetic on the bit size */
+const AGE_UNIV_YR=1.38e10;
+function fmtTimeS(s){
+  if(s<1)return (s*1e3).toFixed(1)+' ms';
+  if(s<60)return s.toFixed(1)+' s';
+  if(s<3600)return (s/60).toFixed(1)+' min';
+  if(s<86400)return (s/3600).toFixed(1)+' h';
+  const yr=s/3.15e7; if(yr<1e3)return yr.toFixed(1)+' yr';
+  return '10^'+Math.log10(yr).toFixed(1)+' yr';
+}
+function horizon(Nbits){
+  const pb=Nbits/2, hlog2=Nbits/4, opsLog10=hlog2*Math.log10(2);
+  const sec=Math.pow(10,opsLog10-9), yr=sec/3.15e7, ratio=yr/AGE_UNIV_YR;
+  $('hPrime').textContent=`${pb}-bit  (p ≈ 2^${pb})`;
+  $('hHor').textContent=`2^${hlog2}  ≈ 10^${opsLog10.toFixed(1)}`;
+  $('hOps').textContent=`2^${hlog2} ≈ ${opsLog10<6?Math.round(Math.pow(10,opsLog10)).toLocaleString():'10^'+opsLog10.toFixed(1)}`;
+  $('hTime').textContent=fmtTimeS(sec)+(ratio>1?`  (${ratio.toExponential(1)}× age of universe)`:'');
+  $('hWin').textContent=`≈ 2^${hlog2} states`;
+  const rhoOk=hlog2<=46, epsOk=hlog2<=23;
+  $('hRho').innerHTML=rhoOk?'<span class="gold">feasible on real hardware (not in this browser)</span>':'<span class="bad">no — infeasible (this is the wall)</span>';
+  $('hEps').innerHTML=epsOk?'<span class="ok">yes — a large window can reach √p</span>':'<span class="bad">no — window can’t reach √p; ε is 0/0, undefined</span>';
+  $('hNote').innerHTML=epsOk
+    ? 'At this size a sufficiently large window still contains useful collisions, so ε is measurable in principle (though baseline rho already finds the factor).'
+    : `√p ≈ 2^${hlog2} exceeds any storable window, so a window holds <b>zero</b> useful collisions — the oracle has nothing to rank and ε is undefined. The measured ε ≤ 0 at small sizes, plus the size-independent CRT argument, already settle the question here: a feature built from <code>x mod N</code> cannot isolate the mod-p structure at <em>any</em> size.`;
+}
+
+/* boot — scope handlers by group so the two button rows don't collide */
+document.querySelectorAll('.pp[data-b]').forEach(b=>b.onclick=()=>{
+  document.querySelectorAll('.pp[data-b]').forEach(x=>x.classList.remove('active'));b.classList.add('active');genN(+b.dataset.b);});
+document.querySelectorAll('.pp[data-n]').forEach(b=>b.onclick=()=>{
+  document.querySelectorAll('.pp[data-n]').forEach(x=>x.classList.remove('active'));b.classList.add('active');horizon(+b.dataset.n);});
+genN(16); horizon(144);
 </script>
 </body>
 </html>
