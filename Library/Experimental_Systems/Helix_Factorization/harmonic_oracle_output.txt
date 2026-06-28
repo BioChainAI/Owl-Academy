@@ -1,0 +1,32 @@
+Harmonic c-warped Oracle — running the papers' validation protocol
+==========================================================================
+  semiprimes p,q ~ 16-bit; window L=2000; top-K=160; 40 trials
+
+(1) Path-Length Linearity (Heuristic Assumption 4.1):
+      mean R² of L(i) ≈ a·i + b  = 0.9999
+      → L(i) is essentially linear in i. The path-length feature is therefore
+        ≈ the index itself; it carries almost no orbit-specific information.
+
+(2) Collision Prediction — Oracle Bias ε  (baseline density 1.273e-02):
+      oracle                               hit-rate        ε vs uniform (±2σ)
+      uniform (baseline)                  1.219e-02                         —
+      harmonic c-warped (proximity)       4.375e-03   -7.812e-03 ± 3.2e-03  significant
+      harmonic c-warped (radial)          1.312e-02   +9.375e-04 ± 4.0e-03  ≈ 0 (within noise)
+
+(3) Conditional acceleration (Pseudogroup Thm 5.1): even if ε>0, a net win needs
+    ε·(useful pairs) to beat the O(√L) reconstruction + window overhead — see
+    helix_reference.py work-accounting (currently ~100× against Helix).
+
+==========================================================================
+FINDINGS (measured):
+ • Path-length linearizes (R²≈1.000) — so the geometric feature ≈ the index, and
+   c only enters as a global constant warp (same for every pair). A global warp
+   cannot align the embedding with the mod-p congruence structure of the orbit.
+ • Measured Oracle Bias ε is within noise of 0 (no acceleration).
+   CRT view of WHY: x_i mod N ↔ (x_i mod p, x_i mod q). A useful collision needs
+   x_i ≡ x_j mod p; such pairs differ by a multiple of p and are spread across
+   [0,N) — NOT close in any value/harmonic metric. The embedding sees x_i mod N,
+   which mixes both CRT parts, so proximity can't isolate the mod-p part.
+ • The framework is sound and safe regardless: certification keeps every reported
+   factor exact. This is the honest negative result for THIS embedding — and the
+   bench will flip to POSITIVE the instant an embedding with real ε>0 is supplied.

@@ -89,12 +89,43 @@ the **reconstruction-oracle panel** (in `index.html`) will test any such `g` you
 correctness against the true iterate, and speed against the cost of actually walking.
 Exact + sub-linear = the wall is broken. Bring the procedure; the harness will tell the truth.
 
+## Update — the refined heuristic framework (Harmonic c-warped oracle)
+
+A later revision conceded the exact-O(1) jump-ahead entirely and pivoted to a properly
+falsifiable claim: a `cos(2πc/N)`-warped harmonic embedding on a flat torus, used purely
+to *rank* candidate pairs, with exactness owned by GCD certification (papers: *Harmonic
+Feature Embedding*, *Pseudogroup Law of Quadrance Dynamics*, *Golden Strassen-Clifford
+Geodesic*). `harmonic_oracle.py` implements that oracle faithfully and runs the papers'
+own validation protocol. Measured (40 trials, 16-bit primes, window 2000):
+
+- **Path-Length Linearity (Heuristic Assumption 4.1): R² ≈ 0.9999.** The embedded
+  arc-length `L(i)` is essentially linear in `i` — which *confirms* their assumption but
+  reveals the catch: the feature is ≈ the index, carrying almost no orbit-specific
+  information, and `c` enters only as a global constant metric warp (identical for every
+  pair).
+- **Oracle Bias ε:** the proximity variant measures `ε ≈ −7.8×10⁻³` (significantly
+  *worse* than uniform); the radial variant `ε ≈ +9×10⁻⁴` (within noise of 0). **No
+  positive bias.**
+
+**Why (CRT view).** `x_i mod N ↔ (x_i mod p, x_i mod q)`. A useful collision needs
+`x_i ≡ x_j (mod p)`; such pairs differ by a multiple of `p` and are spread across `[0,N)`
+— *not* close in any value/harmonic metric. The embedding only sees `x_i mod N`, which
+mixes both CRT components, so geometric proximity cannot isolate the mod-`p` part. A
+global `c`-warp can't fix this, because it deforms the whole torus identically and the
+mod-`p` structure isn't aligned with any fixed direction in the mod-`N` embedding.
+
+This is the honest negative result *for this embedding* — and the conceded, well-posed
+form of the project. The bench (Python and the interactive `harmonic c-warped` selector)
+will report a **positive** ε the instant an embedding with real signal is supplied.
+
 ## Files
 
 | file | role |
 |------|------|
 | `helix_reference.py` | exact bench: baseline rho, exact certification (Thm 5.1), checkpoint reconstruction, pluggable oracles, Oracle-Bias measurement, work accounting. Pure stdlib. |
 | `jump_ahead.py` | the reconstruction crux: jump-ahead works for affine maps (O(log i), exact), the quadratic composition is degree 2ⁱ, the Chebyshev near-miss stays Θ(i); plus `certify_reconstructor()` to test any candidate. |
+| `harmonic_oracle.py` | the refined heuristic oracle (cos(2πc/N)-warped harmonic embedding + radial variant) with the papers' validation protocol: path-length R², Oracle Bias ε with a 2σ band. |
+| `shd_ccp_residue.py`, `test_shd_ccp_residue.py` | an earlier submitted O(1) reconstruction, tested verbatim (O(1) ✓, exact ✗ — diagnosed). |
 | `index.html` | interactive bench: factor a semiprime, flood the certifier to see it never lies, **measure ε live** (2σ band), **plug in your own oracle**, watch the reconstruction-cost wall, and **test a reconstruction oracle** for exactness + sub-linearity. |
 | `reference_output.txt`, `jump_ahead_output.txt` | captured runs. |
 
