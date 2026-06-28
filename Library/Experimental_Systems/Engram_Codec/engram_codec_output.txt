@@ -1,0 +1,32 @@
+Engram Codec — Markov-pump memory offload as a data codec
+==========================================================================
+
+[Section boundaries are recreated EXACTLY (telescoping), B=60:]
+      smooth (structured)              worst block-boundary angle error = 1.78e-15
+      random walk (mild structure)     worst block-boundary angle error = 8.88e-16
+      uniform random (high entropy)    worst block-boundary angle error = 4.44e-16
+
+[Intra-section fidelity vs compression — RMSE / (stream's own std), so 0≈perfect,
+ 1≈signal destroyed:]
+      stream                              B=6 (6×)   B=20 (20×)   B=60 (60×)
+      smooth (structured)                   0.0571       0.0554       0.1579
+      random walk (mild structure)          0.1429       0.1978       0.3368
+      uniform random (high entropy)         0.9248       0.9869       0.9947
+
+[Smallest-Three quantization stability — round-trip error on random unit quats:]
+      worst component error over 20000 quats = 0.0102  (bounded, FP8-limited)
+
+==========================================================================
+FINDINGS (measured):
+ • SECTIONS recreate EXACTLY. Block-boundary cumulative state telescopes to ~1e-15,
+   independent of the data — so 'reliably recreate sections' is literally true at the
+   section (block) level, for ANY stream. That is the real, usable guarantee.
+ • INTRA-section detail is LOSSY and data-dependent. Smooth/structured streams
+   reconstruct with tiny RMSE even at 60× compression; a random-walk degrades
+   gracefully; high-entropy data is essentially destroyed (RMSE ≈ its own spread).
+   This is information theory, not a flaw: you cannot losslessly compress randomness,
+   and equal-share SLERP keeps only each block's net rotation.
+ • Smallest-Three quantization is stable (bounded round-trip error), as proved.
+
+USE IT FOR: smooth embeddings, sensor/trajectory streams, slowly-varying context —
+where it is a genuine multi-resolution memory. NOT a general lossless store.
