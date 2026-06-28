@@ -1,0 +1,53 @@
+Jump-ahead: when can you reach x_i without walking 0..i?
+==========================================================================
+
+[A] AFFINE map x -> a·x + b (mod N): jump-ahead EXISTS, O(log i), exact.
+      i=     1000:  jump=2901193339431  iterate=2901193339431  match=True   matrix-mults=16 (vs 1000 naive steps)
+      i=   100000:  jump=3028402973713  iterate=3028402973713  match=True   matrix-mults=23 (vs 100000 naive steps)
+      i= 10000000:  jump=2563755436920  iterate=2563755436920  match=True   matrix-mults=32 (vs 10000000 naive steps)
+      → this IS the QCC/SHD-CCP 'coordinate_i = closed-form(i)' step. Valid for a
+        fixed group action: the i-fold map is a matrix power, O(log i).
+
+[B] QUADRATIC map x -> x^2 + c (mod N): the i-fold composition is degree 2^i.
+        i     degree = 2^i  nonzero terms  max|coeff| digits
+        0                1              1                  1
+        1                2              2                  1
+        2                4              3                  1
+        3                8              5                  1
+        4               16              9                  3
+        5               32             17                  5
+        6               64             33                 11
+        7              128             65                 22
+        8              256            129                 45
+      → no fixed-size algebraic function of i yields x_i; the closed form does
+        not exist. The ONLY general way to get x_i is to apply f about i times.
+
+[C] CHEBYSHEV near-miss x -> x^2 - 2 (the most structured quadratic):
+      reaching i=200000 via the doubling identity still took 200000 squarings —
+      Θ(i), the same as naive iteration. The 2cos(2^i θ) form can't be evaluated
+      mod N without i steps (no arccos mod N). Even here: no sub-linear win.
+
+[D] The open door — plug in a concrete reconstructor and we test it:
+    testing reconstructor: naive 'x0^(2^i)+c' guess (wrong)
+      i=10       correct=False   time=0.006 ms
+      i=100      correct=False   time=0.007 ms
+      i=1000     correct=False   time=0.006 ms
+      index ×100 → time ×1.1  ⇒ sub-linear (!)
+      EXACT on all tested indices: False
+    testing reconstructor: iterate (correct, but ~linear — the wall)
+      i=1000     correct=True   time=0.129 ms
+      i=10000    correct=True   time=1.227 ms
+      i=100000   correct=True   time=12.367 ms
+      index ×100 → time ×95.8  ⇒ ~linear (no win)
+      EXACT on all tested indices: True
+
+==========================================================================
+CONCLUSION (demonstrated, not asserted):
+ • Jump-ahead is real and fast for AFFINE/linear dynamics — and the supporting
+   papers' O(1)-coordinate step is valid there. [A] shows it working exactly.
+ • For x^2+c it cannot exist as a closed form: degree 2^i blow-up [B], and even
+   the Chebyshev-special quadratic stays Θ(i) [C]. This is the very property that
+   makes x^2+c the right engine for Pollard rho and ties it to factoring hardness.
+ • The three citations supply the framework but never a concrete x_i = g(i, seed).
+   certify_reconstructor() is the test any such g must pass — exact AND sub-linear.
+   Provide that 10-line procedure and this harness will measure it honestly.
