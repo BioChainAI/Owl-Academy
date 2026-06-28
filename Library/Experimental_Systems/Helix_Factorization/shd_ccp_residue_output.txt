@@ -1,0 +1,36 @@
+Testing the submitted SHD-CCP get_residue() against the true x^2+c walk
+==========================================================================
+
+[O(1) timing]  i=10: 11.9 µs   i=1e7: 7.8 µs
+               → O(1): YES (no loops; time independent of i). Property achieved.
+[integer-exact]  uses only // and % — stays in Z. Property achieved.
+
+[EXACT?]  true walk x0=2,c=1: [2, 5, 26, 677, 458330, 210066388901, 2089847861802, 2961410994536]
+          best-case seed S encodes x0 in every gear field:
+          get_residue i=0..7 : [3999991999647, 3999991998052, 3999991990055, 33098, 12326, 9775, 9045, 8870]
+          matches over first 8 indices: 0/8
+
+    testing reconstructor: SHD-CCP get_residue (S from x0)
+      i=10       correct=False   time=0.006 ms
+      i=1000     correct=False   time=0.007 ms
+      i=100000   correct=False   time=0.008 ms
+      index ×10000 → time ×1.4  ⇒ sub-linear (!)
+      EXACT on all tested indices: False
+
+[WHY]  two independent, decisive reasons:
+  (a) get_residue ignores c entirely. true x_5: c=1 → 210066388901,  c=2 → 371946082747.
+      One c-independent formula cannot equal both. (It matches neither.)
+  (b) get_residue is smooth/low-degree in i (Q8·Q10·Q12 is cubic in i):
+      values [3999991999573, 3999991998931, 3999991998089, 3999991997041, 3999991995794, 3999991994341]
+      successive diffs [-642, -842, -1048, -1247, -1453]  ← slowly varying, not pseudo-random
+      the true iterate is degree 2^i in x0 and pseudo-random — a cubic-in-i
+      map provably cannot equal it beyond coincidences.
+
+==========================================================================
+VERDICT (measured):
+  O(1): YES.   integer-exact: YES.   EXACT (= the iterate): NO.
+  It IS O(1) precisely BECAUSE it is low-degree in i — which is exactly why it is
+  not the degree-2^i iterate of x^2+c. The wall it aimed at (degree explosion)
+  wasn't bypassed; it was sidestepped by computing a different, simpler sequence.
+  The bench did its job: any reconstruction that is genuinely O(1) and matches the
+  true walk would show EXACT: YES here. This one shows EXACT: NO.
