@@ -118,7 +118,8 @@
       <select id="oracleSel">
         <option value="uniform">uniform (baseline)</option>
         <option value="valuenear">value-near (small |xᵢ−xⱼ| mod N)</option>
-        <option value="tqf" selected>TQF quaternionic quadrance</option>
+        <option value="tqf">TQF quaternionic quadrance</option>
+        <option value="harmonic" selected>harmonic c-warped (cos 2πc/N)</option>
         <option value="custom">★ your own oracle ↓</option>
       </select>
       <button class="act" id="runBias">▶ measure ε (20 windows)</button>
@@ -265,8 +266,23 @@ function quad(a,b){const ip=a[0]*b[0]-a[1]*b[1]-a[2]*b[2]-a[3]*b[3];return ip*ip
 function oracleTQF(w,N,K){const f=geomFeatures(w,N);const idx=[...Array(w.length).keys()];idx.sort((a,b)=>f[a][0]-f[b][0]);
   const cand=[];for(let t=0;t<idx.length-1;t++)for(let d=1;d<=4&&t+d<idx.length;d++){const i=idx[t],j=idx[t+d];cand.push([quad(f[i],f[j]),[Math.min(i,j),Math.max(i,j)]]);}
   cand.sort((a,b)=>a[0]-b[0]);const seen=new Set(),out=[];for(const[,pr]of cand){const k=pr[0]+'_'+pr[1];if(!seen.has(k)){seen.add(k);out.push(pr);}if(out.length>=K)break;}return out;}
+// harmonic c-warped embedding (the new framework): Ψ(x)=(cos2πx/N,sin2πx/N),
+// metric g_c=[[1,kc],[kc,1]], kc=κ·cos(2πc/N); rank pairs by smallest warped quadrance.
+function oracleHarmonic(w,N,K,c){
+  const cc = (c!==undefined)?c:ST.c; const nf=Number(N);
+  const kc = 0.5*Math.cos(2*Math.PI*(Number(cc%N)/nf));
+  const emb=w.map(x=>{const a=2*Math.PI*(Number(x)/nf);return [Math.cos(a),Math.sin(a)];});
+  const order=[...Array(w.length).keys()].sort((a,b)=>Math.atan2(emb[a][1],emb[a][0])-Math.atan2(emb[b][1],emb[b][0]));
+  const cand=[];
+  for(let t=0;t<order.length-1;t++)for(let d=1;d<=4&&t+d<order.length;d++){
+    const i=order[t],j=order[t+d];const dx=emb[i][0]-emb[j][0],dy=emb[i][1]-emb[j][1];
+    cand.push([dx*dx+dy*dy+2*kc*dx*dy,[Math.min(i,j),Math.max(i,j)]]);}
+  cand.sort((a,b)=>a[0]-b[0]);const seen=new Set(),out=[];
+  for(const[,pr]of cand){const k=pr[0]+'_'+pr[1];if(!seen.has(k)){seen.add(k);out.push(pr);}if(out.length>=K)break;}
+  return out;
+}
 let customFn=null;
-const ORACLES={uniform:oracleUniform,valuenear:oracleValueNear,tqf:oracleTQF};
+const ORACLES={uniform:oracleUniform,valuenear:oracleValueNear,tqf:oracleTQF,harmonic:oracleHarmonic};
 function getOracle(){const v=$('oracleSel').value;if(v==='custom')return customFn||oracleUniform;return ORACLES[v];}
 
 /* useful-pair ground truth (uses p only for scoring) */
@@ -279,7 +295,7 @@ $('runBias').onclick=()=>{const{N,p,c}=ST;const L=1500,K=150,WINDOWS=30;
   for(let wi=0;wi<WINDOWS;wi++){const cc=c+BigInt(wi);const{w}=buildWindow(N,cc,2n+BigInt(wi),L);
     baseD+=usefulDensity(w,p,N);
     const cu=oracleUniform(w,N,K);uniHit+=cu.filter(pr=>isUseful(w,p,N,pr)).length/cu.length;
-    let co;try{co=oracle(w,N,K);}catch(e){$('bias_eps').innerHTML='<span class="bad">oracle error: '+e.message+'</span>';return;}
+    let co;try{co=oracle(w,N,K,cc);}catch(e){$('bias_eps').innerHTML='<span class="bad">oracle error: '+e.message+'</span>';return;}
     orHit+=co.filter(pr=>pr&&pr.length===2&&isUseful(w,p,N,pr)).length/Math.max(1,co.length);}
   baseD/=WINDOWS;uniHit/=WINDOWS;orHit/=WINDOWS;const eps=orHit-uniHit;
   // 2σ noise band on ε (difference of two binomial-mean hit-rates over K·WINDOWS samples each)
