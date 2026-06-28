@@ -48,13 +48,55 @@ This is a **negative result for these oracles — not a proof of impossibility.*
    memory for the walk but does not remove it. The bench's work accounting makes this
    wall explicit: with the current oracle Helix costs ~100× baseline.
 
+## On the three supporting mechanisms (the reconstruction gap)
+
+The supporting papers all aim at gap #2 — random access to `xᵢ`. Examined closely, each
+proves a valid theorem about a *fixed group action / linear dynamics*, and that theorem
+does not transfer to the nonlinear map `x→x²+c`. The single thing they all need is a
+**jump-ahead**: compute `xᵢ` in `o(i)` time. `jump_ahead.py` demonstrates the dichotomy
+runnably.
+
+- **Telescoping quaternion chains** (*Torsional Markov Memory-Offload Pump*). The
+  telescoping identity is real — I verified it exactly in `Proofs/Pump-Verification`. But
+  it is an *identity that takes the sequence as input*: to form the deltas `Δqₙ` you must
+  already know the states `qₙ, qₙ₋₁`. Aggregating `i` history-dependent rotations still
+  costs `O(i)` unless they share closed-form structure (they don't, for `x²+c`). The pump
+  paper itself only claims endpoint-exact reconstruction and explicitly disclaims
+  sublinear *accumulated* reconstruction.
+- **Prime-Triplet Indexing** (*The Hyperbolic Oracle*). Mapping an index `i` to a
+  coordinate `(p, p+2, p+6)` is a *relabeling*; it does not compute the *value* `xᵢ`. The
+  step "`coordinateᵢ = closed-form(i)` in O(1)" (SHD-CCP Thm 3, step 2) is valid only when
+  the dynamics are a fixed group action with closed-form `i`-dependence — true for
+  rotations / lattice translations / linear recurrences, **false** for `x²+c`.
+- **Halo/Ghost regions** (*SHD-CCP Hyperbolic Lookup Protocol*). Ghost cells (a real HPC
+  idea) let you do a *local update given already-known neighbor values*, and validate
+  coherence by bitwise AND/XOR. They verify a single transition in O(1); they do not
+  conjure states you haven't computed. This is exactly checkpoint + one step — O(stride),
+  which the bench already does — not O(1) random access.
+
+The unifying fact (`jump_ahead.py`): jump-ahead **exists and is fast** for `x→ax+b`
+(the i-fold map is a 2×2 matrix power, O(log i) — shown reaching i=10⁷ in 32 mults,
+exact). For `x→x²+c` the i-fold composition has **degree 2ⁱ** with exploding
+coefficients — no closed form — and even the Chebyshev-special `x²−2` stays Θ(i). That
+absence of jump-ahead is *why* `x²+c` is the engine of Pollard rho and is tied to the
+hardness of factoring. So a sublinear reconstruction can't be cited as a lemma — it would
+itself be the whole result.
+
+**This is not a proof of impossibility, and it is not a refusal.** It is a precise
+statement of what a working reconstruction must be: a concrete procedure
+`xᵢ = g(i, seed)` that is *exact* and *sub-linear*. `certify_reconstructor()` (Python) and
+the **reconstruction-oracle panel** (in `index.html`) will test any such `g` you supply —
+correctness against the true iterate, and speed against the cost of actually walking.
+Exact + sub-linear = the wall is broken. Bring the procedure; the harness will tell the truth.
+
 ## Files
 
 | file | role |
 |------|------|
 | `helix_reference.py` | exact bench: baseline rho, exact certification (Thm 5.1), checkpoint reconstruction, pluggable oracles, Oracle-Bias measurement, work accounting. Pure stdlib. |
-| `index.html` | interactive bench: factor a semiprime, flood the certifier to see it never lies, **measure ε live** with a 2σ significance band, **plug in your own oracle**, and watch the reconstruction-cost wall. |
-| `reference_output.txt` | captured run. |
+| `jump_ahead.py` | the reconstruction crux: jump-ahead works for affine maps (O(log i), exact), the quadratic composition is degree 2ⁱ, the Chebyshev near-miss stays Θ(i); plus `certify_reconstructor()` to test any candidate. |
+| `index.html` | interactive bench: factor a semiprime, flood the certifier to see it never lies, **measure ε live** (2σ band), **plug in your own oracle**, watch the reconstruction-cost wall, and **test a reconstruction oracle** for exactness + sub-linearity. |
+| `reference_output.txt`, `jump_ahead_output.txt` | captured runs. |
 
 ```bash
 python3 helix_reference.py

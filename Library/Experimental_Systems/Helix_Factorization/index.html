@@ -173,6 +173,31 @@ return out;</textarea>
     </div>
   </section>
 
+  <!-- F. the open door: reconstruction oracle -->
+  <section class="panel">
+    <div class="lab">Step 6 · the open door</div>
+    <h2>Reconstruction oracle — break the wall here, if it can be broken</h2>
+    <div class="desc">The whole acceleration reduces to one function: compute <code>xᵢ</code> without walking 0…i.
+      For a <em>linear</em> map (<code>x→ax+b</code>) this exists and is O(log i) — a matrix power. For
+      <code>x→x²+c</code> the i-fold composition has degree 2ⁱ, so no closed form is known (see
+      <code>jump_ahead.py</code>). If the Einstein-Tile / prime-triplet / telescoping construction yields a concrete
+      <code>jumpAhead(i, x0, c, N)</code>, paste it: we check it against the true <code>xᵢ</code> and chart its cost.
+      <b>Exact AND sub-linear = the wall is broken</b> (and you've done something far bigger than this page).</div>
+    <textarea id="jumpCode">// return x_i = i-th iterate of f(x)=x^2+c (mod N), WITHOUT looping i times.
+// you get BigInt i (as Number), x0, c, N (BigInt). Example below is the honest
+// linear-time walk (correct, but no win) — replace with your construction.
+let x = x0 % N;
+for (let t = 0; t < i; t++) x = (x*x + c) % N;
+return x;</textarea>
+    <button class="act" id="runJump" style="margin-top:.5rem">▶ test reconstruction</button>
+    <div class="mono" style="margin-top:.7rem;font-size:.74rem">
+      <div class="kv"><span>exact on all tested indices</span><span id="jExact"></span></div>
+      <div class="kv"><span>cost scaling (index ×100)</span><span id="jScale"></span></div>
+      <div class="kv"><span>verdict</span><span id="jVerd"></span></div>
+    </div>
+    <div id="jRows" class="mono" style="font-size:.72rem;color:rgba(255,255,255,.5);margin-top:.4rem"></div>
+  </section>
+
   <footer class="note" style="text-align:center;padding:.5rem 0 2.5rem">
     Negative results are results. The bench is pluggable — bring an oracle with measured ε &gt; 0, or a true
     random-access reconstruction of xᵢ, and this same harness will measure it honestly. Nothing here can ever
@@ -301,6 +326,36 @@ $('runCost').onclick=()=>{const{N,p,c}=ST;const r=rhoBaseline(N,c);
   const win=total<r.steps;
   $('kVerd').innerHTML=win?'<span class="ok">Helix wins (surprising — check oracle!)</span>'
       :`<span class="bad">baseline wins by ${(total/r.steps).toFixed(1)}×</span> — the window cost alone exceeds it`;
+};
+
+/* reconstruction oracle test (the open door) */
+function walkTo(i,c,N){let x=2n%N;for(let t=0;t<i;t++)x=(x*x+c)%N;return x;}
+$('runJump').onclick=()=>{const{N,c}=ST;let fn;
+  try{fn=new Function('i','x0','c','N',$('jumpCode').value);}catch(e){$('jVerd').innerHTML='<span class="bad">compile error: '+e.message+'</span>';return;}
+  const rows=[];let allOk=true;
+  // (1) correctness on indices where ground truth is computable by walking
+  for(const i of [1000,8000,40000]){
+    const truth=walkTo(i,c,N);let got;
+    try{got=((fn(i,2n,c,N)%N)+N)%N;}catch(e){rows.push(`i=${i}: ERROR ${e.message}`);allOk=false;continue;}
+    const ok=(got===truth);allOk=allOk&&ok;rows.push(`i=${i}: correct=${ok}`);
+  }
+  // (2) sub-linearity: compare candidate time against the MEASURED cost of walking to a
+  //     large index (separation must be large — immune to JIT/timing noise).
+  const BIG=1500000;
+  const w0=performance.now();const wtruth=walkTo(BIG,c,N);const walkMs=performance.now()-w0;
+  let fnMs=NaN,bigOk=false;
+  try{const f0=performance.now();const fv=((fn(BIG,2n,c,N)%N)+N)%N;fnMs=performance.now()-f0;bigOk=(fv===wtruth);}
+  catch(e){rows.push(`i=${BIG}: ERROR ${e.message}`);}
+  allOk=allOk&&bigOk;
+  rows.push(`i=${BIG}: correct=${bigOk}  walk=${walkMs.toFixed(0)}ms  candidate=${isNaN(fnMs)?'—':fnMs.toFixed(2)+'ms'}`);
+  $('jRows').innerHTML=rows.join('<br>');
+  $('jExact').innerHTML=allOk?'<span class="ok">✓ yes</span>':'<span class="bad">✗ no</span>';
+  const speedup = (!isNaN(fnMs)&&fnMs>0)?walkMs/fnMs:1;
+  const sub = allOk && speedup>5;   // ≥5× faster than the honest walk at i=1.5M
+  $('jScale').textContent = isNaN(fnMs)?'—':`candidate is ${speedup.toFixed(1)}× the walk's speed at i=${BIG}`;
+  if(sub)$('jVerd').innerHTML='<span class="ok">EXACT + SUB-LINEAR — the wall is broken. Publish this!</span>';
+  else if(allOk)$('jVerd').innerHTML='<span class="gold">correct but not faster than walking — no win (this is the wall)</span>';
+  else $('jVerd').innerHTML='<span class="bad">not exact — cannot certify factors from it</span>';
 };
 
 /* boot */
