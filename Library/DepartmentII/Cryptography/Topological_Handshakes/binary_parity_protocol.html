@@ -1,0 +1,756 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Owl Academy | Binary Microlensing Parity Protocol</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        darkbg: '#020108',
+                        owl: { gold: '#D4AF37', lightgold: '#FFF8DC', darkgold: '#aa771c' },
+                        holo: { cyan: '#00d4ff', purple: '#8A2BE2', fuchsia: '#d946ef', toxic: '#39ff14', ice: '#e0f2fe' }
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <!-- MathJax -->
+    <script>
+        window.MathJax = {
+            tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']] }
+        };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+    <!-- Three.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Inter:wght@300;400;600&family=JetBrains+Mono:wght@400;700&display=swap');
+        
+        body { margin: 0; font-family: 'Inter', sans-serif; background: #020108; color: #e2e8f0; min-height: 100vh; overflow-x: hidden; }
+        .font-mono { font-family: 'JetBrains Mono', monospace; }
+        .font-mystical { font-family: 'Cinzel', serif; }
+
+        .starfield {
+            position: fixed; inset: 0;
+            background-image:
+                radial-gradient(1px 1px at 20px 30px, #8A2BE2, rgba(0,0,0,0)),
+                radial-gradient(2px 2px at 40px 70px, #00d4ff, rgba(0,0,0,0)),
+                radial-gradient(1px 1px at 90px 40px, #fff, rgba(0,0,0,0)),
+                radial-gradient(2px 2px at 130px 80px, #D4AF37, rgba(0,0,0,0));
+            background-repeat: repeat; background-size: 250px 250px;
+            animation: twinkle 10s infinite alternate;
+            opacity: 0.25; z-index: -2; pointer-events: none;
+        }
+        @keyframes twinkle { 0% { opacity: 0.1; transform: scale(1); } 100% { opacity: 0.35; transform: scale(1.02); } }
+
+        .glass-panel {
+            background: rgba(5, 3, 12, 0.7);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(138, 43, 226, 0.2);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.8);
+            border-radius: 1rem;
+        }
+
+        .gold-gradient {
+            background: linear-gradient(to right, #D4AF37, #FFF8DC, #D4AF37);
+            -webkit-background-clip: text; background-clip: text;
+            color: transparent; text-shadow: 0 0 15px rgba(212, 175, 55, 0.4);
+        }
+
+        /* Timeline Styles */
+        .step-node { display: flex; align-items: flex-start; gap: 1rem; position: relative; opacity: 0.4; transition: all 0.4s; cursor: pointer; }
+        .step-node:hover { opacity: 0.8; }
+        .step-node.active { opacity: 1; }
+        .step-node:not(:last-child)::after {
+            content: ''; position: absolute; left: 15px; top: 32px; bottom: -24px;
+            width: 2px; background: rgba(138, 43, 226, 0.2);
+        }
+        .step-node.active:not(:last-child)::after { background: rgba(0, 212, 255, 0.6); }
+        
+        .step-indicator {
+            width: 32px; height: 32px; border-radius: 50%;
+            background: #020108; border: 2px solid rgba(138, 43, 226, 0.4);
+            display: flex; align-items: center; justify-content: center;
+            font-family: 'Cinzel', serif; font-size: 14px; color: #8A2BE2;
+            transition: all 0.3s ease; z-index: 5; flex-shrink: 0;
+        }
+        .step-node.active .step-indicator {
+            background: #00d4ff; color: #020108;
+            box-shadow: 0 0 15px #00d4ff; border-color: #e0f2fe;
+        }
+
+        .lore-callout {
+            margin: 1.5rem 0; padding: 1rem 1.5rem;
+            background: linear-gradient(90deg, rgba(138, 43, 226, 0.15), transparent);
+            border-left: 3px solid #8A2BE2;
+            position: relative; border-radius: 0 8px 8px 0;
+        }
+
+        #canvas-container {
+            width: 100%; height: 100%; min-height: 50vh;
+            border-radius: 1rem; overflow: hidden; position: relative;
+        }
+        #canvas-container canvas { position: absolute; top: 0; left: 0; width: 100% !important; height: 100% !important; outline: none; }
+
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: rgba(0,0,0,0.3); }
+        ::-webkit-scrollbar-thumb { background: rgba(138, 43, 226, 0.4); border-radius: 10px; }
+    </style>
+</head>
+<body class="antialiased flex flex-col h-screen overflow-hidden">
+
+    <div class="starfield"></div>
+
+    <header class="w-full pt-8 pb-4 px-6 flex flex-col items-center justify-center relative border-b border-holo-purple/30 bg-[#020108]/80 backdrop-blur-md shadow-[0_4px_30px_rgba(138,43,226,0.1)] z-20 flex-shrink-0">
+        <div class="text-[10px] text-holo-cyan/60 tracking-[0.25em] uppercase font-mono mb-2 text-center w-full">
+            Department 5: Cryptotopology <span class="mx-2 text-owl-gold/50">|</span> The Alexander Constraint
+        </div>
+        <h1 class="text-3xl md:text-4xl font-bold tracking-[0.2em] gold-gradient mb-1 text-center font-mystical">OWL ACADEMY</h1>
+        <div class="text-xs md:text-sm text-slate-300 tracking-[0.3em] uppercase font-mono text-center flex items-center justify-center">
+            <span class="w-8 h-[1px] bg-holo-purple/40 mr-4 hidden md:block"></span>
+            Binary Microlensing Parity Protocol
+            <span class="w-8 h-[1px] bg-holo-purple/40 ml-4 hidden md:block"></span>
+        </div>
+    </header>
+
+    <div class="w-full flex-grow flex flex-col-reverse lg:flex-row px-4 md:px-8 py-6 gap-6 relative z-10 overflow-y-auto lg:overflow-hidden">
+        
+        <!-- Left Sidebar: Timeline & Content -->
+        <aside class="w-full lg:w-[450px] xl:w-[500px] flex flex-col gap-6 flex-shrink-0 overflow-y-auto custom-scrollbar pb-6 pr-2">
+            
+            <!-- Navigation Timeline -->
+            <div class="glass-panel p-6 flex-shrink-0">
+                <h3 class="text-xs text-holo-cyan font-bold uppercase tracking-widest mb-5 font-mono border-b border-holo-cyan/20 pb-2">Protocol Execution</h3>
+                <div class="space-y-4">
+                    <div class="step-node active" data-step="1" onclick="goToStep(1)">
+                        <div class="step-indicator">I</div>
+                        <div>
+                            <h4 class="text-sm font-bold text-white font-mystical">Binary Gravity Lenses</h4>
+                            <p class="text-[11px] text-slate-400 mt-1">Establishing the orthogonal torsion generators.</p>
+                        </div>
+                    </div>
+                    <div class="step-node" data-step="2" onclick="goToStep(2)">
+                        <div class="step-indicator">II</div>
+                        <div>
+                            <h4 class="text-sm font-bold text-white font-mystical">Fox-Artin Chain Stitch</h4>
+                            <p class="text-[11px] text-slate-400 mt-1">Incoming data woven into non-abelian sequences.</p>
+                        </div>
+                    </div>
+                    <div class="step-node" data-step="3" onclick="goToStep(3)">
+                        <div class="step-indicator">III</div>
+                        <div>
+                            <h4 class="text-sm font-bold text-white font-mystical">The Alexander Horns</h4>
+                            <p class="text-[11px] text-slate-400 mt-1">Magnification caustics tearing into recursive wild spheres.</p>
+                        </div>
+                    </div>
+                    <div class="step-node" data-step="4" onclick="goToStep(4)">
+                        <div class="step-indicator">IV</div>
+                        <div>
+                            <h4 class="text-sm font-bold text-white font-mystical">Dimensional Lifting</h4>
+                            <p class="text-[11px] text-slate-400 mt-1">Resolving pressure via 3-point holographic compression.</p>
+                        </div>
+                    </div>
+                    <div class="step-node" data-step="5" onclick="goToStep(5)">
+                        <div class="step-indicator">V</div>
+                        <div>
+                            <h4 class="text-sm font-bold text-white font-mystical">Parity Verification</h4>
+                            <p class="text-[11px] text-slate-400 mt-1">Annihilating invalid data in the infinite fractal boundary.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Dynamic Content Panel -->
+            <div class="glass-panel p-6 flex-shrink-0 min-h-[300px]" id="content-panel">
+                <!-- Content injected via JS -->
+            </div>
+            
+            <!-- Controls -->
+            <div class="flex gap-4 flex-shrink-0">
+                <button id="btn-prev" onclick="prevStep()" class="flex-1 bg-black/50 hover:bg-black/80 border border-holo-cyan/30 text-holo-cyan text-xs font-bold py-3 rounded-lg transition-all uppercase tracking-widest disabled:opacity-30 disabled:cursor-not-allowed">
+                    ← Regress
+                </button>
+                <button id="btn-next" onclick="nextStep()" class="flex-1 bg-holo-purple/20 hover:bg-holo-purple/40 border border-holo-purple/50 text-white text-xs font-bold py-3 rounded-lg transition-all uppercase tracking-widest shadow-[0_0_15px_rgba(138,43,226,0.3)]">
+                    Execute →
+                </button>
+            </div>
+        </aside>
+
+        <!-- Right Main: 3D Visualization -->
+        <main class="flex-grow flex flex-col relative z-30 min-h-[50vh] lg:min-h-[400px]">
+            <div class="w-full h-full glass-panel border border-holo-purple/30 relative shadow-[0_0_40px_rgba(138,43,226,0.1)_inset]" id="canvas-container">
+                <div class="absolute top-4 left-4 z-20 font-mono text-[10px] bg-black/60 px-3 py-1.5 rounded border border-holo-purple/30 text-slate-300 backdrop-blur">
+                    <span class="text-holo-purple">Live Render:</span> Topological Geometry Engine
+                </div>
+                
+                <!-- Telemetry -->
+                <div class="absolute bottom-4 left-4 z-20 font-mono text-[10px] bg-black/80 px-4 py-3 rounded border border-holo-cyan/30 text-slate-300 w-64 shadow-[0_0_15px_rgba(0,212,255,0.1)] backdrop-blur">
+                    <div class="text-[11px] text-white border-b border-holo-cyan/40 pb-1 mb-2 tracking-widest">PROTOCOL TELEMETRY</div>
+                    <div class="flex justify-between mb-1"><span class="text-slate-500">Lens Topology:</span><span id="tel-lens" class="text-holo-cyan">Euclidean Base</span></div>
+                    <div class="flex justify-between mb-1"><span class="text-slate-500">Jacobian Det ($A$):</span><span id="tel-jac" class="text-holo-purple">Stable</span></div>
+                    <div class="flex justify-between"><span class="text-slate-500">Boundary:</span><span id="tel-bound" class="text-owl-gold">Tame Embedding</span></div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Lore Content Templates -->
+    <script>
+        const contentTemplates = {
+            1: `
+                <h2 class="text-xl font-bold text-holo-cyan mb-3 font-mystical">Binary Gravity Lenses</h2>
+                <p class="text-sm text-slate-300 font-light mb-3 leading-relaxed">
+                    The Parity Protocol initializes by establishing two compact masses in a binary orbit. 
+                </p>
+                <p class="text-sm text-slate-300 font-light mb-3 leading-relaxed">
+                    In standard gravitational microlensing, this binary system acts as a thin-lens map $\\beta(\\theta)$, bending background light into arcs. Here, we utilize the orthogonal torsion of this orbit as a cryptographic engine. The geometry that data travels through is twisted against itself.
+                </p>
+                <div class="lore-callout">
+                    <span class="text-sm text-slate-300 italic">"The black cores represent the anchors of our space. Any data (light) attempting to pass between them will be subjected to intense geometric shearing."</span>
+                </div>
+            `,
+            2: `
+                <h2 class="text-xl font-bold text-holo-purple mb-3 font-mystical">Fox-Artin Chain Stitch</h2>
+                <p class="text-sm text-slate-300 font-light mb-3 leading-relaxed">
+                    As incoming data streams pass through the binary field, they do not simply bend into a smooth Einstein Ring. 
+                </p>
+                <p class="text-sm text-slate-300 font-light mb-3 leading-relaxed">
+                    The fluctuating gravitational wells force the data into the <strong>Fox-Artin sequence</strong>—an infinitely interlocking chain stitch. The fundamental group of the complement becomes strictly non-abelian.
+                </p>
+                <div class="bg-black/40 p-3 rounded border border-holo-purple/20 font-mono text-xs text-center text-holo-purple mb-3 shadow-inner overflow-x-auto">
+                    $$G_m : \\quad a_{n+1} = c_{n+1}^{-1} c_n c_{n+1}$$
+                </div>
+                <p class="text-sm text-slate-300 font-light">
+                    The data is now trapped in a one-way topological valve. It can advance, but attempting to reverse the hash mathematically forces the space to knot against itself.
+                </p>
+            `,
+            3: `
+                <h2 class="text-xl font-bold text-holo-toxic mb-3 font-mystical">The Alexander Horns</h2>
+                <p class="text-sm text-slate-300 font-light mb-3 leading-relaxed">
+                    Where the Jacobian determinant $\\det A$ approaches zero, magnification spikes to infinity. In our protocol, these caustic ridges do not just glow; they physically tear the coordinate space.
+                </p>
+                <p class="text-sm text-slate-300 font-light mb-3 leading-relaxed">
+                    The binary lenses recursively branch into the <strong>Alexander Horned Sphere</strong>. Two arms reach out, almost touching, then each splits into two smaller arms, repeating infinitely. 
+                </p>
+                <div class="lore-callout" style="border-left-color: #39ff14; background: linear-gradient(90deg, rgba(57,255,20,0.1), transparent);">
+                    <span class="text-sm text-slate-300 italic">"A wild embedding. An infinite surface area enclosing a finite volume. The exterior of the horns is no longer simply connected—it is a labyrinth where malformed data is irrevocably lost."</span>
+                </div>
+            `,
+            4: `
+                <h2 class="text-xl font-bold text-holo-ice mb-3 font-mystical">Dimensional Lifting</h2>
+                <p class="text-sm text-slate-300 font-light mb-3 leading-relaxed">
+                    The infinite complexity of the Alexander Horns combined with the Fox-Artin sequence creates unsustainable topological pressure within 3D space.
+                </p>
+                <p class="text-sm text-slate-300 font-light mb-3 leading-relaxed">
+                    The manifold resolves this through <strong>Dimensional Lifting</strong>. The binary system fractures its perspective, triangulating the wildly knotted data across three external holographic anchors.
+                </p>
+                <div class="bg-black/40 p-3 rounded border border-holo-ice/20 font-mono text-[11px] text-center text-holo-ice mb-3 shadow-inner">
+                    $$\\Psi_{holo} = \\oint (P_1 \\wedge P_2 \\wedge P_3) \\, d\\tau$$
+                </div>
+                <p class="text-sm text-slate-300 font-light">
+                    The chaotic wild sphere is projected into a precise 5-Layer Kogame-Toda interference pattern, mapping infinity into a readable bounded volume.
+                </p>
+            `,
+            5: `
+                <h2 class="text-xl font-bold text-owl-gold mb-3 font-mystical">Parity Verification</h2>
+                <p class="text-sm text-slate-300 font-light mb-3 leading-relaxed">
+                    The protocol reaches the singularity. Data that lacks the correct parity is snagged on the infinite fractal branches of the Alexander Horns and annihilated.
+                </p>
+                <p class="text-sm text-slate-300 font-light mb-3 leading-relaxed">
+                    Valid data perfectly aligns with the Fox-Artin sequence. It slips through the interlocking horns without snagging, collapsing the triangulated hologram into a single, verified discrete seed.
+                </p>
+                <div class="lore-callout" style="border-left-color: #D4AF37; background: linear-gradient(90deg, rgba(212,175,55,0.15), transparent);">
+                    <span class="text-sm text-slate-300 italic">"The wild sphere symmetrically folds. The microlensing Parity Protocol is complete."</span>
+                </div>
+            `
+        };
+
+        // --- Core Engine Variables ---
+        let currentStep = 1;
+        const totalSteps = 5;
+        let animationTime = 0;
+        
+        let currentPhase = 1;
+        let targetPhase = 1;
+
+        // Three.js Globals
+        let scene, camera, renderer, controls;
+        
+        // Scene Groups
+        let groupBinary, groupStitch, groupHorns, groupLift, groupSingularity;
+        
+        // Animated objects
+        let binaryLens1, binaryLens2;
+        let stitchLines = [];
+        let hornMeshes = [];
+        let liftProjectors = [], liftBeams = [], liftCore;
+        let singularityMesh;
+
+        // Colors
+        const C_LENS = 0x111111;
+        const C_CYAN = 0x00d4ff;
+        const C_PURPLE = 0x8A2BE2;
+        const C_TOXIC = 0x39ff14;
+        const C_ICE = 0xe0f2fe;
+        const C_GOLD = 0xD4AF37;
+
+        // --- Initialization ---
+        function init() {
+            const container = document.getElementById('canvas-container');
+            scene = new THREE.Scene();
+            scene.fog = new THREE.FogExp2(0x020108, 0.015);
+
+            camera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1, 1000);
+            camera.position.set(0, 10, 25);
+
+            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+            renderer.setSize(container.clientWidth, container.clientHeight);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            container.appendChild(renderer.domElement);
+
+            controls = new THREE.OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true;
+            controls.dampingFactor = 0.05;
+            controls.autoRotate = true;
+            controls.autoRotateSpeed = 1.0;
+
+            // Lighting
+            scene.add(new THREE.AmbientLight(0xffffff, 0.1));
+            const dl = new THREE.DirectionalLight(0xffffff, 0.3);
+            dl.position.set(5, 10, 5);
+            scene.add(dl);
+            
+            const p1 = new THREE.PointLight(C_CYAN, 1.5, 50); p1.position.set(-10, 0, 0); scene.add(p1);
+            const p2 = new THREE.PointLight(C_PURPLE, 1.5, 50); p2.position.set(10, 0, 0); scene.add(p2);
+
+            // Build Modules
+            buildBinary();
+            buildStitch();
+            buildHorns();
+            buildLifting();
+            buildSingularity();
+
+            targetPhase = currentStep;
+            updateDOM();
+
+            // Resize
+            const resizeObserver = new ResizeObserver(entries => {
+                for (let entry of entries) {
+                    if (entry.contentRect.width > 0) {
+                        camera.aspect = entry.contentRect.width / entry.contentRect.height;
+                        camera.updateProjectionMatrix();
+                        renderer.setSize(entry.contentRect.width, entry.contentRect.height, false);
+                    }
+                }
+            });
+            resizeObserver.observe(container);
+
+            animate();
+        }
+
+        // --- Visibility Engine ---
+        function applyOpacity(obj, weight) {
+            if (!obj) return;
+            if (obj.material) {
+                let mats = Array.isArray(obj.material) ? obj.material : [obj.material];
+                mats.forEach(m => {
+                    if (m && m.userData && m.userData.baseOpacity !== undefined) {
+                        m.opacity = m.userData.baseOpacity * weight;
+                        m.transparent = true;
+                    }
+                });
+            }
+            if (obj.type === 'Group' || obj.type === 'Scene' || obj.type === 'LineSegments' || obj.type === 'Mesh') {
+                obj.visible = weight > 0.01;
+            }
+            if (obj.children) {
+                obj.children.forEach(c => applyOpacity(c, weight));
+            }
+        }
+        function getPhaseWeight(step) { return Math.max(0, 1.0 - Math.abs(currentPhase - step)); }
+
+        // --- Geometric Builders ---
+
+        // 1. Binary Gravitational Lenses
+        function buildBinary() {
+            groupBinary = new THREE.Group();
+            scene.add(groupBinary);
+
+            const geo = new THREE.SphereGeometry(1.5, 32, 32);
+            const mat = new THREE.MeshPhysicalMaterial({ color: C_LENS, roughness: 0.2, metalness: 0.8, clearcoat: 1.0 });
+            mat.userData = { baseOpacity: 1.0 }; // Keep solid
+
+            binaryLens1 = new THREE.Mesh(geo, mat);
+            binaryLens2 = new THREE.Mesh(geo, mat);
+
+            // Add Event Horizon Glow
+            const glowGeo = new THREE.SphereGeometry(1.8, 32, 32);
+            const glowMat1 = new THREE.MeshBasicMaterial({ color: C_CYAN, transparent: true, opacity: 0.3, blending: THREE.AdditiveBlending });
+            glowMat1.userData = { baseOpacity: 0.3 };
+            const glowMat2 = new THREE.MeshBasicMaterial({ color: C_PURPLE, transparent: true, opacity: 0.3, blending: THREE.AdditiveBlending });
+            glowMat2.userData = { baseOpacity: 0.3 };
+
+            binaryLens1.add(new THREE.Mesh(glowGeo, glowMat1));
+            binaryLens2.add(new THREE.Mesh(glowGeo, glowMat2));
+
+            groupBinary.add(binaryLens1);
+            groupBinary.add(binaryLens2);
+
+            // Spatial Grid
+            const grid = new THREE.GridHelper(30, 30, C_CYAN, 0x111111);
+            grid.material.transparent = true;
+            grid.material.userData = { baseOpacity: 0.15 };
+            grid.position.y = -3;
+            groupBinary.add(grid);
+        }
+
+        // 2. Fox-Artin Stitch (Data Weaving)
+        function buildStitch() {
+            groupStitch = new THREE.Group();
+            scene.add(groupStitch);
+
+            // Create sinusoidal splines threading between the binary positions
+            const numLines = 12;
+            const mat = new THREE.LineBasicMaterial({ color: C_CYAN, transparent: true, opacity: 0.6, blending: THREE.AdditiveBlending });
+            mat.userData = { baseOpacity: 0.6 };
+
+            for(let i=0; i<numLines; i++) {
+                const points = [];
+                for(let t=-10; t<=10; t+=0.2) {
+                    // Start with straight lines, animation will bend them
+                    points.push(new THREE.Vector3(t, 0, (i - numLines/2) * 0.5));
+                }
+                const geo = new THREE.BufferGeometry().setFromPoints(points);
+                const line = new THREE.Line(geo, mat);
+                
+                // Store base positions for dynamic twisting in animate()
+                line.userData = { 
+                    basePoints: points.map(p => p.clone()),
+                    phaseOffset: Math.random() * Math.PI * 2,
+                    amp: 1.0 + Math.random()
+                };
+                stitchLines.push(line);
+                groupStitch.add(line);
+            }
+        }
+
+        // 3. Alexander Horned Sphere (Recursive branching)
+        function buildHorns() {
+            groupHorns = new THREE.Group();
+            scene.add(groupHorns);
+
+            const mat = new THREE.MeshPhysicalMaterial({ 
+                color: C_TOXIC, emissive: C_TOXIC, emissiveIntensity: 0.4,
+                transparent: true, opacity: 0.8, roughness: 0.2, transmission: 0.5
+            });
+            mat.userData = { baseOpacity: 0.8 };
+
+            // Helper to build C-shaped curved tubes
+            function createHornSegment(radius, thickness) {
+                class HookCurve extends THREE.Curve {
+                    constructor(scale) { super(); this.scale = scale; }
+                    getPoint(t, optionalTarget = new THREE.Vector3()) {
+                        const angle = t * Math.PI; // Half circle
+                        return optionalTarget.set(Math.cos(angle)*this.scale, Math.sin(angle)*this.scale, 0);
+                    }
+                }
+                const path = new HookCurve(radius);
+                const geo = new THREE.TubeGeometry(path, 20, thickness, 8, false);
+                return new THREE.Mesh(geo, mat);
+            }
+
+            // Recursive construction
+            function buildBranch(parent, depth, maxDepth, radius, thickness, sign) {
+                if(depth > maxDepth) return;
+                
+                const segment = createHornSegment(radius, thickness);
+                
+                // Position relative to parent
+                if (depth === 0) {
+                    segment.position.set(sign * 4, 0, 0);
+                    segment.rotation.y = sign > 0 ? Math.PI : 0;
+                } else {
+                    // Attach to the end of the previous C-shape
+                    segment.position.set(-radius * 2, 0, 0); 
+                    segment.rotation.x = Math.PI / 2; // Twist 90 degrees
+                    segment.rotation.y = Math.PI / 4 * sign;
+                }
+
+                parent.add(segment);
+                hornMeshes.push(segment);
+
+                // Split into two smaller horns
+                const nextRadius = radius * 0.6;
+                const nextThickness = thickness * 0.6;
+                
+                // End points of the C-curve
+                const endNode1 = new THREE.Group();
+                endNode1.position.set(-radius, 0, 0); // End of the hook
+                segment.add(endNode1);
+
+                buildBranch(endNode1, depth + 1, maxDepth, nextRadius, nextThickness, 1);
+                buildBranch(endNode1, depth + 1, maxDepth, nextRadius, nextThickness, -1);
+            }
+
+            // Build from both sides
+            const root1 = new THREE.Group();
+            const root2 = new THREE.Group();
+            groupHorns.add(root1);
+            groupHorns.add(root2);
+
+            buildBranch(root1, 0, 3, 3, 0.4, 1);
+            buildBranch(root2, 0, 3, 3, 0.4, -1);
+        }
+
+        // 4. Dimensional Lifting (Triangulation Hologram)
+        function buildLifting() {
+            groupLift = new THREE.Group();
+            scene.add(groupLift);
+
+            const radius = 8;
+            for(let i=0; i<3; i++) {
+                const angle = (i / 3) * Math.PI * 2;
+                const pos = new THREE.Vector3(Math.cos(angle)*radius, 5, Math.sin(angle)*radius);
+
+                // Projectors
+                const pGeo = new THREE.OctahedronGeometry(1, 0);
+                const pMat = new THREE.MeshBasicMaterial({ color: C_ICE, wireframe: true, transparent: true, opacity: 0.8 });
+                pMat.userData = { baseOpacity: 0.8 };
+                const proj = new THREE.Mesh(pGeo, pMat);
+                proj.position.copy(pos);
+                liftProjectors.push(proj);
+                groupLift.add(proj);
+
+                // Beams
+                const bGeo = new THREE.BufferGeometry().setFromPoints([pos, new THREE.Vector3(0,0,0)]);
+                const bMat = new THREE.LineBasicMaterial({ color: C_ICE, transparent: true, opacity: 0.4, blending: THREE.AdditiveBlending });
+                bMat.userData = { baseOpacity: 0.4 };
+                const beam = new THREE.Line(bGeo, bMat);
+                liftBeams.push(beam);
+                groupLift.add(beam);
+            }
+
+            // Lift Core (5-Layer Interference)
+            liftCore = new THREE.Group();
+            const cGeo = new THREE.IcosahedronGeometry(2.5, 1);
+            const cMat = new THREE.MeshBasicMaterial({ color: C_PURPLE, wireframe: true, transparent: true, opacity: 0.5 });
+            cMat.userData = { baseOpacity: 0.5 };
+            
+            for(let i=0; i<5; i++) {
+                const layer = new THREE.Mesh(cGeo, cMat);
+                const scale = 1.0 - (i * 0.15);
+                layer.scale.set(scale, scale, scale);
+                layer.rotation.set(Math.random(), Math.random(), Math.random());
+                liftCore.add(layer);
+            }
+            groupLift.add(liftCore);
+        }
+
+        // 5. Parity Singularity
+        function buildSingularity() {
+            groupSingularity = new THREE.Group();
+            scene.add(groupSingularity);
+
+            const geo = new THREE.DodecahedronGeometry(2, 0);
+            const mat = new THREE.MeshPhysicalMaterial({
+                color: C_GOLD, emissive: C_GOLD, emissiveIntensity: 0.6,
+                transparent: true, opacity: 1.0, roughness: 0.1, metalness: 0.9, wireframe: false
+            });
+            mat.userData = { baseOpacity: 1.0 };
+            
+            singularityMesh = new THREE.Mesh(geo, mat);
+
+            // Halos
+            const hGeo = new THREE.TorusGeometry(3.5, 0.05, 16, 100);
+            const hMat = new THREE.MeshBasicMaterial({ color: C_GOLD, transparent: true, opacity: 0.5 });
+            hMat.userData = { baseOpacity: 0.5 };
+            
+            const halo1 = new THREE.Mesh(hGeo, hMat); halo1.rotation.x = Math.PI/2;
+            const halo2 = new THREE.Mesh(hGeo, hMat); halo2.rotation.y = Math.PI/2;
+            
+            singularityMesh.add(halo1);
+            singularityMesh.add(halo2);
+
+            groupSingularity.add(singularityMesh);
+        }
+
+
+        // --- UI & State Updates ---
+        function updateDOM() {
+            document.querySelectorAll('.step-node').forEach(node => {
+                parseInt(node.getAttribute('data-step')) === currentStep 
+                    ? node.classList.add('active') 
+                    : node.classList.remove('active');
+            });
+
+            const contentPanel = document.getElementById('content-panel');
+            contentPanel.innerHTML = contentTemplates[currentStep];
+            if (window.MathJax) MathJax.typesetPromise([contentPanel]).catch(console.error);
+
+            document.getElementById('btn-prev').disabled = currentStep === 1;
+            document.getElementById('btn-next').disabled = currentStep === totalSteps;
+
+            targetPhase = currentStep;
+            
+            // Dynamic Camera Adjustments
+            if (controls) {
+                if(currentStep === 1) { camera.position.set(0, 8, 20); controls.target.set(0,0,0); }
+                if(currentStep === 2) { camera.position.set(-8, 5, 15); controls.target.set(0,0,0); }
+                if(currentStep === 3) { camera.position.set(0, 0, 18); controls.target.set(0,0,0); }
+                if(currentStep === 4) { camera.position.set(12, 8, 12); controls.target.set(0,0,0); }
+                if(currentStep === 5) { camera.position.set(0, 5, 15); controls.target.set(0,0,0); }
+            }
+        }
+
+        function nextStep() { if (currentStep < totalSteps) { currentStep++; updateDOM(); } }
+        function prevStep() { if (currentStep > 1) { currentStep--; updateDOM(); } }
+        function goToStep(step) { currentStep = step; updateDOM(); }
+
+        // --- Main Animation Loop ---
+        function animate() {
+            requestAnimationFrame(animate);
+            animationTime += 0.015;
+            controls.update();
+
+            // Fluid Weight System
+            currentPhase += (targetPhase - currentPhase) * 0.1;
+            const w1 = getPhaseWeight(1);
+            const w2 = getPhaseWeight(2);
+            const w3 = getPhaseWeight(3);
+            const w4 = getPhaseWeight(4);
+            const w5 = getPhaseWeight(5);
+
+            // Phase 1 ensures Binary stays visible through Phase 3
+            const binaryWeight = Math.max(w1, w2, w3);
+            applyOpacity(groupBinary, binaryWeight);
+            applyOpacity(groupStitch, w2);
+            applyOpacity(groupHorns, w3);
+            applyOpacity(groupLift, w4);
+            applyOpacity(groupSingularity, w5);
+
+            // Telemetry Variables
+            let tLens = "Euclidean Base", tJac = "Stable", tBound = "Tame Embedding";
+
+            // --- Sub-Animations ---
+
+            // Step 1 & General: Binary Orbit
+            if (binaryWeight > 0.01 && groupBinary) {
+                const radius = 4.0 - (binaryWeight > w1 ? 1.5 : 0); // Contract orbit in later steps
+                const speed = animationTime * (1.0 + (binaryWeight > w1 ? 1.0 : 0));
+                binaryLens1.position.set(Math.cos(speed)*radius, 0, Math.sin(speed)*radius);
+                binaryLens2.position.set(Math.cos(speed+Math.PI)*radius, 0, Math.sin(speed+Math.PI)*radius);
+                
+                tLens = "Binary Orbital Torsion";
+                tJac = "Det A > 0";
+            }
+
+            // Step 2: Fox-Artin Stitching
+            if (w2 > 0.01 && groupStitch) {
+                const l1 = binaryLens1.position;
+                const l2 = binaryLens2.position;
+
+                stitchLines.forEach(line => {
+                    const posArray = line.geometry.attributes.position.array;
+                    const bases = line.userData.basePoints;
+                    
+                    for(let i=0; i<bases.length; i++) {
+                        let pt = bases[i].clone();
+                        // Deform towards the lenses (Gravitational pull)
+                        const d1 = pt.distanceTo(l1);
+                        const d2 = pt.distanceTo(l2);
+                        
+                        const pull1 = 5.0 / (d1 * d1 + 1.0);
+                        const pull2 = 5.0 / (d2 * d2 + 1.0);
+                        
+                        // Apply non-abelian twisting (knotting)
+                        const twist = Math.sin(pt.x * 1.5 - animationTime * 3 + line.userData.phaseOffset) * line.userData.amp;
+                        
+                        pt.addScaledVector(l1.clone().sub(pt).normalize(), pull1);
+                        pt.addScaledVector(l2.clone().sub(pt).normalize(), pull2);
+                        pt.y += twist * Math.min(pull1 + pull2, 2.0); // Only twist strongly near lenses
+                        
+                        posArray[i*3] = pt.x;
+                        posArray[i*3+1] = pt.y;
+                        posArray[i*3+2] = pt.z;
+                    }
+                    line.geometry.attributes.position.needsUpdate = true;
+                });
+                
+                tLens = "Non-Abelian Stitch";
+                tBound = "Topological Valve Active";
+            }
+
+            // Step 3: Alexander Horns
+            if (w3 > 0.01 && groupHorns) {
+                groupHorns.rotation.y = animationTime * 0.5;
+                
+                // Pulsate the toxic green branches
+                const pulse = (Math.sin(animationTime * 5) + 1) / 2;
+                hornMeshes.forEach(mesh => {
+                    if(mesh.material) {
+                        mesh.material.emissiveIntensity = 0.2 + pulse * 0.6;
+                    }
+                });
+
+                tLens = "Caustic Fracture";
+                tJac = "Det A → 0 (Infinite)";
+                tBound = "Alexander Horned Sphere";
+            }
+
+            // Step 4: Dimensional Lifting
+            if (w4 > 0.01 && groupLift) {
+                groupLift.rotation.y = -animationTime * 0.4;
+                
+                liftProjectors.forEach((p, i) => {
+                    p.position.y = 5 + Math.sin(animationTime * 3 + i) * 1.5;
+                });
+
+                liftCore.children.forEach((layer, i) => {
+                    layer.rotation.x += 0.02 * (i+1);
+                    layer.rotation.y -= 0.01 * (i+1);
+                });
+
+                tLens = "Holographic Triangulation";
+                tJac = "Compressing...";
+                tBound = "5-Layer Kogame-Toda";
+            }
+
+            // Step 5: Singularity Parity
+            if (w5 > 0.01 && groupSingularity) {
+                singularityMesh.rotation.x = animationTime;
+                singularityMesh.rotation.y = animationTime * 1.2;
+                
+                singularityMesh.children[0].rotation.x = -animationTime * 2;
+                singularityMesh.children[1].rotation.y = -animationTime * 2;
+
+                const scale = 1.0 + Math.sin(animationTime * 8) * 0.05;
+                singularityMesh.scale.setScalar(scale);
+
+                tLens = "Parity Resolved";
+                tJac = "Perfect Map";
+                tBound = "Deterministic Seed";
+            }
+
+            // Update Telemetry UI
+            document.getElementById('tel-lens').innerText = tLens;
+            document.getElementById('tel-jac').innerText = tJac;
+            document.getElementById('tel-bound').innerText = tBound;
+
+            renderer.render(scene, camera);
+        }
+
+        window.onload = init;
+    </script>
+</body>
+</html>
