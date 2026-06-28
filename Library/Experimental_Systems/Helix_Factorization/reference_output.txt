@@ -1,0 +1,43 @@
+Schism Dual-Helix factorization — correctness-guaranteed test bench
+==========================================================================
+[1] Baseline rho factors a real semiprime, and Helix-B certification is EXACT:
+      N = 384583130329 = 567673 × 677473
+      baseline Pollard-rho -> factor 677473 in 105 steps  (√p ≈ 753)
+      fed 2000 arbitrary candidates -> false factors: 0  (Thm 5.1: must be 0)
+                                       genuine factors certified: 139
+
+[2] Oracle Bias ε — does a geometric oracle enrich useful collisions?
+    semiprimes p,q ~ 16-bit; window L=2400; top-K=200 candidates; 60 trials.
+      baseline useful-pair density in a random window: 2.601e-02
+      oracle                             hit-rate    lift vs uniform
+      uniform (baseline)                2.658e-02                  —
+      value-near                        1.000e-02 -1.658e-02  (×0.4)
+      TQF quaternionic quadrance        1.900e-02 -7.583e-03  (×0.7)
+
+      Oracle Bias  ε(value-near) = -1.658e-02
+      Oracle Bias  ε(TQF)        = -7.583e-03
+
+[3] Cost structure (Thm 3.1): total Helix work vs baseline rho.
+      N=49027342769=(255653×191773)   √p≈505   baseline rho: factor 191773 in 153 steps
+      Helix window build cost = L = 3080 walk-steps (paid up front), checkpoint stride=55
+      oracle                          certs to factor   recon cost    TOTAL ops
+      uniform (baseline)                           27         1574         4654   (factor 255653)
+      value-near                                   96         4963         8043   (factor 255653)
+      TQF quaternionic quadrance                   19          587         3667   (factor 255653)
+      → baseline finds the factor in 153 steps; Helix pays ≥ L = 3080 just to
+        build the window before proposing. Beating baseline needs random-access to x_i
+        (true sublinear reconstruction) — the open structural question, not supplied here.
+
+==========================================================================
+FINDINGS (measured, not assumed):
+ • Certification is exact: 0 false factors over thousands of arbitrary candidates (Thm 5.1 ✓).
+ • Oracle Bias: NO positive bias. Both geometric scores land at or below uniform
+   (ε ≤ 0 — they slightly SUPPRESS useful collisions). The features depend on x_i mod N,
+   which carries no information about x_i mod p — the quantity a useful collision needs;
+   'close mod N' pairs differ by small amounts, almost never a multiple of p.
+ • Cost: building the length-L window already costs what baseline rho costs to find the
+   collision, so without TRUE random-access reconstruction the wrapper cannot win.
+
+This is a NEGATIVE result for the current oracle — not a proof of impossibility.
+The bench is pluggable: supply a candidate ranker with real ε>0, or a construction that
+reconstructs x_i without walking 0..i, and this same harness will measure it honestly.

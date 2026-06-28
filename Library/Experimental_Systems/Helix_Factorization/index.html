@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Helix Factorization — Owl Academy</title>
+<style>
+  :root{--void:#06040f;--purple:#8b5cf6;--cyan:#22d3ee;--gold:#D4AF37;--ok:#34d399;--bad:#f87171;}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--void);color:#e2e8f0;font-family:system-ui,sans-serif;min-height:100vh;line-height:1.6;
+       background:radial-gradient(ellipse at top,rgba(139,92,246,0.08) 0%,var(--void) 60%)}
+  .mono{font-family:ui-monospace,"JetBrains Mono",monospace}
+  header{padding:2.6rem 1.5rem 1.6rem;text-align:center;border-bottom:1px solid rgba(139,92,246,0.15)}
+  .crumb{font-size:.62rem;letter-spacing:.25em;text-transform:uppercase;color:rgba(139,92,246,0.5);margin-bottom:.7rem}
+  .crumb a{color:rgba(139,92,246,0.6);text-decoration:none}.crumb a:hover{color:var(--purple)}
+  h1{font-size:1.7rem;font-weight:300;letter-spacing:.2em;text-transform:uppercase;color:var(--purple);text-shadow:0 0 20px rgba(139,92,246,0.4)}
+  .sub{margin-top:.5rem;font-size:.72rem;letter-spacing:.2em;text-transform:uppercase;color:rgba(139,92,246,0.5)}
+  main{max-width:980px;margin:2rem auto;padding:0 1.25rem}
+  .banner{border:1px solid rgba(52,211,153,.25);background:rgba(52,211,153,.05);border-radius:10px;padding:1rem 1.2rem;font-size:.82rem;color:#cbd5e1;margin-bottom:1.6rem}
+  .banner b{color:var(--ok)}
+  .panel{background:rgba(10,8,20,0.6);border:1px solid rgba(139,92,246,0.18);border-radius:14px;padding:1.3rem 1.4rem;margin-bottom:1.4rem}
+  .lab{font-size:.6rem;letter-spacing:.28em;text-transform:uppercase;color:rgba(139,92,246,0.6);margin-bottom:.4rem}
+  h2{font-size:1.15rem;font-weight:400;letter-spacing:.04em;color:#fff;margin-bottom:.2rem}
+  .desc{font-size:.8rem;color:rgba(255,255,255,.55);margin-bottom:.9rem}
+  button.act{background:rgba(139,92,246,.16);color:#c4b5fd;border:1px solid rgba(139,92,246,.45);border-radius:8px;
+       padding:.45rem .9rem;font-size:.72rem;letter-spacing:.06em;cursor:pointer;transition:.15s;font-family:inherit}
+  button.act:hover{background:rgba(139,92,246,.3);color:#fff}
+  button.pp{font-size:.68rem;padding:.28rem .6rem;border-radius:7px;border:1px solid rgba(34,211,238,.3);background:rgba(34,211,238,.07);color:#67e8f9;cursor:pointer;font-family:inherit}
+  button.pp.active{background:rgba(34,211,238,.25);border-color:var(--cyan);color:#fff}
+  .kv{display:flex;justify-content:space-between;font-size:.78rem;padding:.16rem 0;border-bottom:1px solid rgba(255,255,255,.05)}
+  .kv span:first-child{color:rgba(255,255,255,.45)}
+  .gold{color:var(--gold)}.cyan{color:var(--cyan)}.ok{color:var(--ok)}.bad{color:var(--bad)}.violet{color:#a78bfa}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:1.2rem}
+  @media(max-width:760px){.grid2{grid-template-columns:1fr}}
+  .meter{height:20px;background:rgba(255,255,255,.05);border-radius:6px;position:relative;overflow:hidden;margin:.3rem 0}
+  .meter>div{height:100%;width:0;transition:width .3s}
+  .baseLine{position:absolute;top:0;bottom:0;width:2px;background:var(--gold);opacity:.8}
+  textarea{width:100%;background:#04030a;color:#9be7ff;border:1px solid rgba(34,211,238,.3);border-radius:8px;
+       font-family:ui-monospace,monospace;font-size:.72rem;padding:.7rem;min-height:120px;resize:vertical}
+  select{background:#0b0a18;color:#cbd5e1;border:1px solid rgba(139,92,246,.35);border-radius:6px;padding:.3rem .5rem;font-family:inherit;font-size:.76rem}
+  .note{font-size:.72rem;color:rgba(255,255,255,.4);margin-top:.6rem;line-height:1.5}
+  code{font-family:ui-monospace,monospace;color:var(--cyan);font-size:.78rem}
+  .pill{font-size:.6rem;letter-spacing:.12em;border-radius:999px;padding:.1em .6em;border:1px solid}
+</style>
+</head>
+<body>
+<header>
+  <div class="crumb"><a href="../../Grand_Archives.html">Grand Archives</a> · <a href="../index.html">Experimental Systems</a> · Helix Factorization</div>
+  <h1>The Dual-Helix Oracle Bench</h1>
+  <div class="sub">Pollard's rho · heuristic oracle + exact certification · measuring the Oracle Bias</div>
+</header>
+
+<main>
+  <div class="banner">
+    <b>An honest test bench, not a claim.</b> The Dual-Helix model wraps Pollard's rho with a heuristic
+    <em>oracle</em> (Helix A) that proposes candidate index pairs, and an exact GCD <em>certification</em> layer
+    (Helix B) that — provably — can <b>never report a false factor</b>, whatever the oracle does. Whether it
+    <em>accelerates</em> anything depends entirely on one measurable quantity: the <b>Oracle Bias ε</b>. This page
+    measures it live, and lets you <b>plug in your own oracle</b>. Exact reference: <code>helix_reference.py</code>.
+  </div>
+
+  <!-- A. target -->
+  <section class="panel">
+    <div class="lab">Step 1 · the target</div>
+    <h2>A semiprime N = p · q</h2>
+    <div class="desc">Self-generated small semiprime (a research bench — the algorithm never uses p or q; we only
+      reveal them to <em>score</em> the oracle). Pollard's rho finds a factor in ≈ √p steps.</div>
+    <div style="display:flex;gap:.5rem;flex-wrap:wrap;align-items:center;margin-bottom:.9rem">
+      <span class="mono" style="font-size:.7rem;color:rgba(255,255,255,.4)">prime size</span>
+      <button class="pp" data-b="12">12-bit</button>
+      <button class="pp active" data-b="16">16-bit</button>
+      <button class="pp" data-b="20">20-bit</button>
+      <button class="act" id="gen" style="margin-left:auto">↻ new N</button>
+    </div>
+    <div class="mono">
+      <div class="kv"><span>N</span><span id="tN" class="gold"></span></div>
+      <div class="kv"><span>p × q</span><span id="tPQ" class="violet"></span></div>
+      <div class="kv"><span>√p (baseline rho horizon)</span><span id="tRt" class="cyan"></span></div>
+    </div>
+  </section>
+
+  <div class="grid2">
+    <!-- B. baseline -->
+    <section class="panel">
+      <div class="lab">Step 2 · baseline</div>
+      <h2>Pollard's rho (the thing we'd beat)</h2>
+      <div class="desc">The exact recurrence <code>xₙ₊₁ = xₙ² + c (mod N)</code> with Floyd cycle detection.</div>
+      <button class="act" id="runBase">▶ factor it</button>
+      <div class="mono" style="margin-top:.7rem">
+        <div class="kv"><span>factor found</span><span id="bFac" class="ok"></span></div>
+        <div class="kv"><span>steps</span><span id="bSteps" class="cyan"></span></div>
+      </div>
+    </section>
+
+    <!-- C. exactness -->
+    <section class="panel">
+      <div class="lab">Step 3 · the guarantee</div>
+      <h2>Certification can't lie (Thm 5.1)</h2>
+      <div class="desc">Feed Helix B a flood of <em>arbitrary</em> candidate pairs. Every reported factor is exact;
+        false factors are impossible by construction.</div>
+      <button class="act" id="runCert">▶ certify 3000 arbitrary candidates</button>
+      <div class="mono" style="margin-top:.7rem">
+        <div class="kv"><span>false factors</span><span id="cFalse"></span></div>
+        <div class="kv"><span>genuine factors certified</span><span id="cTrue" class="ok"></span></div>
+      </div>
+    </section>
+  </div>
+
+  <!-- D. oracle bias -->
+  <section class="panel">
+    <div class="lab">Step 4 · the whole question</div>
+    <h2>Oracle Bias ε — does the oracle enrich useful collisions?</h2>
+    <div class="desc">A “useful” pair (i,j) has <code>xᵢ ≡ xⱼ (mod p)</code> (so the GCD reveals p). We build a window of
+      states, then measure how often each oracle's top-K candidates are useful, versus a uniform-random baseline.
+      <b>ε = hit-rate(oracle) − hit-rate(uniform)</b>. Positive ε is the only thing that could yield acceleration.</div>
+    <div style="display:flex;gap:.6rem;align-items:center;flex-wrap:wrap;margin-bottom:.6rem">
+      <span class="mono" style="font-size:.72rem">oracle</span>
+      <select id="oracleSel">
+        <option value="uniform">uniform (baseline)</option>
+        <option value="valuenear">value-near (small |xᵢ−xⱼ| mod N)</option>
+        <option value="tqf" selected>TQF quaternionic quadrance</option>
+        <option value="custom">★ your own oracle ↓</option>
+      </select>
+      <button class="act" id="runBias">▶ measure ε (20 windows)</button>
+      <span id="biasBadge" class="pill" style="display:none"></span>
+    </div>
+    <div class="mono" style="font-size:.74rem">
+      <div class="kv"><span>baseline useful-pair density</span><span id="bias_base" class="gold"></span></div>
+      <div class="kv"><span>uniform hit-rate</span><span id="bias_uni"></span></div>
+      <div class="kv"><span>selected oracle hit-rate</span><span id="bias_or" class="cyan"></span></div>
+      <div class="kv"><span>Oracle Bias ε</span><span id="bias_eps"></span></div>
+    </div>
+    <div class="meter" id="biasMeter"><div id="biasFill"></div><div class="baseLine" id="biasBase"></div></div>
+    <div class="note">Gold line = uniform baseline. Bar past it (green) = positive bias (would help); short of it (red)
+      = the oracle is <em>worse</em> than random. The reference run measures ε ≤ 0 for the geometric scores:
+      features built from <code>xᵢ mod N</code> carry no information about <code>xᵢ mod p</code>.</div>
+
+    <!-- custom oracle -->
+    <div id="customBox" style="margin-top:1rem;display:none">
+      <div class="lab">★ plug in your oracle (think hyperbolically)</div>
+      <div class="note" style="margin-top:0;margin-bottom:.4rem">Write the body of
+        <code>rankPairs(window, N, K)</code> → return an array of <code>[i,j]</code> index pairs (best first).
+        You get <code>window</code> (array of BigInt states) and <code>N</code> (BigInt). You do <b>not</b> get p — that's
+        the point. Whatever you return, certification stays exact; we just measure your ε.</div>
+      <textarea id="customCode">// example: rank by smallest residue gap in a folded/quaternionic feature.
+// (replace with your own geometric idea)
+const L = window.length, idx=[...Array(L).keys()];
+idx.sort((a,b)=> window[a] < window[b] ? -1 : 1);
+const out=[];
+for(let t=0;t<L-1 && out.length<K;t++) out.push([idx[t], idx[t+1]]);
+return out;</textarea>
+      <button class="act" id="useCustom" style="margin-top:.5rem">apply custom oracle</button>
+      <span id="customMsg" class="note"></span>
+    </div>
+  </section>
+
+  <!-- E. cost -->
+  <section class="panel">
+    <div class="lab">Step 5 · the cost wall</div>
+    <h2>Even with a perfect oracle: the reconstruction wall</h2>
+    <div class="desc">To certify candidate (i,j) you must produce the states <code>xᵢ, xⱼ</code>. Building a length-L window
+      already costs L walk-steps — about what baseline rho spends to find the collision outright. Beating it needs
+      <b>random access to xᵢ without walking 0…i</b> (true sublinear reconstruction); no such closed form is known
+      for iterating <code>x²+c</code> (and one would itself break factoring). Checkpointing trades memory for the walk
+      but doesn't remove it.</div>
+    <button class="act" id="runCost">▶ compare total work</button>
+    <div class="mono" style="margin-top:.7rem">
+      <div class="kv"><span>baseline rho — steps to factor</span><span id="kBase" class="ok"></span></div>
+      <div class="kv"><span>Helix — window build (L)</span><span id="kWin" class="cyan"></span></div>
+      <div class="kv"><span>Helix — reconstructions</span><span id="kRec" class="cyan"></span></div>
+      <div class="kv"><span>Helix — TOTAL ops</span><span id="kTot" class="bad"></span></div>
+      <div class="kv"><span>verdict</span><span id="kVerd"></span></div>
+    </div>
+  </section>
+
+  <footer class="note" style="text-align:center;padding:.5rem 0 2.5rem">
+    Negative results are results. The bench is pluggable — bring an oracle with measured ε &gt; 0, or a true
+    random-access reconstruction of xᵢ, and this same harness will measure it honestly. Nothing here can ever
+    output a false factor.
+  </footer>
+</main>
+
+<script>
+/* ============ exact BigInt arithmetic ============ */
+function gcdB(a,b){a=a<0n?-a:a;b=b<0n?-b:b;while(b){[a,b]=[b,a%b];}return a;}
+function modpow(b,e,m){b%=m;if(b<0n)b+=m;let r=1n;while(e>0n){if(e&1n)r=r*b%m;b=b*b%m;e>>=1n;}return r;}
+function isPrime(n){if(n<2n)return false;for(const q of[2n,3n,5n,7n,11n,13n,17n,19n,23n,29n,31n,37n]){if(n%q===0n)return n===q;}
+  let d=n-1n,r=0n;while(d%2n===0n){d/=2n;r++;}
+  for(const a of[2n,3n,5n,7n,11n,13n,17n,19n,23n,29n,31n,37n]){let x=modpow(a,d,n);if(x===1n||x===n-1n)continue;let ok=false;
+    for(let i=0n;i<r-1n;i++){x=x*x%n;if(x===n-1n){ok=true;break;}}if(!ok)return false;}return true;}
+function randPrime(bits){const lo=1n<<BigInt(bits-1),hi=1n<<BigInt(bits);
+  while(true){let c=lo+BigInt(Math.floor(Math.random()*Number(hi-lo)));c|=1n;if(isPrime(c))return c;}}
+function fstep(x,c,N){return (x*x+c)%N;}
+
+/* ============ state + generation ============ */
+let ST=null;  // {N,p,q,c}
+const $=id=>document.getElementById(id);
+function genN(bits){
+  let p=randPrime(bits),q=randPrime(bits);while(q===p)q=randPrime(bits);
+  const N=p*q,c=1n+BigInt(Math.floor(Math.random()*1000));
+  ST={N,p,q,c};
+  $('tN').textContent=N.toString();
+  $('tPQ').textContent=`${p} × ${q}`;
+  $('tRt').textContent='≈ '+(Math.round(Math.sqrt(Number(p)))).toString()+' steps';
+  ['bFac','bSteps','cFalse','cTrue','bias_base','bias_uni','bias_or','bias_eps','kBase','kWin','kRec','kTot','kVerd'].forEach(i=>$(i).textContent='');
+  $('biasFill').style.width='0';$('biasBadge').style.display='none';
+}
+
+/* ============ baseline rho ============ */
+function rhoBaseline(N,c){let x=2n,y=2n,steps=0;
+  while(steps<5000000){x=fstep(x,c,N);y=fstep(fstep(y,c,N),c,N);steps++;const g=gcdB(x-y,N);if(g!==1n)return{f:(g!==N?g:null),steps};}
+  return{f:null,steps};}
+$('runBase').onclick=()=>{const{N,c}=ST;const r=rhoBaseline(N,c);
+  $('bFac').textContent=r.f?r.f.toString():'(cycle without split — try new N)';
+  $('bSteps').textContent=r.steps;};
+
+/* ============ window + checkpointed certification ============ */
+function buildWindow(N,c,x0,L){const stride=Math.max(1,Math.floor(Math.sqrt(L)));const w=new Array(L);const ck={};
+  let x=x0%N;for(let i=0;i<L;i++){w[i]=x;if(i%stride===0)ck[i]=x;x=fstep(x,c,N);}return{w,ck,stride};}
+function reconstruct(N,c,ck,stride,i){const base=Math.floor(i/stride)*stride;let x=ck[base];for(let t=0;t<i-base;t++)x=fstep(x,c,N);return{x,cost:i-base};}
+function certify(N,c,ck,stride,i,j){const a=reconstruct(N,c,ck,stride,i),b=reconstruct(N,c,ck,stride,j);
+  const g=gcdB(a.x-b.x,N);return{f:(g>1n&&g<N)?g:null,cost:a.cost+b.cost};}
+
+$('runCert').onclick=()=>{const{N,c}=ST;const{w,ck,stride}=buildWindow(N,c,2n,4000);
+  let falseF=0,trueF=0;const L=w.length;
+  for(let t=0;t<3000;t++){const i=Math.floor(Math.random()*L),j=Math.floor(Math.random()*L);if(i===j)continue;
+    const r=certify(N,c,ck,stride,i,j);if(r.f){ (N%r.f===0n&&r.f>1n&&r.f<N)?trueF++:falseF++; }}
+  $('cFalse').innerHTML=`<span class="${falseF===0?'ok':'bad'}">${falseF}</span>  (impossible by construction)`;
+  $('cTrue').textContent=trueF;};
+
+/* ============ oracles (Helix A) ============ */
+function oracleUniform(w,N,K){const L=w.length,out=[];for(let t=0;t<K;t++){const i=Math.floor(Math.random()*L),j=Math.floor(Math.random()*L);if(i!==j)out.push([i,j]);}return out;}
+function oracleValueNear(w,N,K){const idx=[...Array(w.length).keys()];idx.sort((a,b)=>w[a]<w[b]?-1:1);const out=[];for(let t=0;t<idx.length-1&&out.length<K;t++)out.push([idx[t],idx[t+1]]);return out;}
+function qmul(a,b){return [a[0]*b[0]-a[1]*b[1]-a[2]*b[2]-a[3]*b[3],a[0]*b[1]+a[1]*b[0]+a[2]*b[3]-a[3]*b[2],
+  a[0]*b[2]-a[1]*b[3]+a[2]*b[0]+a[3]*b[1],a[0]*b[3]+a[1]*b[2]-a[2]*b[1]+a[3]*b[0]];}
+function geomFeatures(w,N){const ax=[[1,0,0],[0,1,0],[0,0,1]];let q=[1,0,0,0];const nf=Number(N);const f=[];
+  for(let i=0;i<w.length;i++){const th=Math.PI*(Number(w[i])/nf);const a=ax[i%3];const s=Math.sin(th);
+    q=qmul([Math.cos(th),s*a[0],s*a[1],s*a[2]],q);const ww=Math.abs(q[0])>1e-9?q[0]:1e-9;f.push([1/ww,q[1]/ww,q[2]/ww,q[3]/ww]);}return f;}
+function quad(a,b){const ip=a[0]*b[0]-a[1]*b[1]-a[2]*b[2]-a[3]*b[3];return ip*ip-1;}
+function oracleTQF(w,N,K){const f=geomFeatures(w,N);const idx=[...Array(w.length).keys()];idx.sort((a,b)=>f[a][0]-f[b][0]);
+  const cand=[];for(let t=0;t<idx.length-1;t++)for(let d=1;d<=4&&t+d<idx.length;d++){const i=idx[t],j=idx[t+d];cand.push([quad(f[i],f[j]),[Math.min(i,j),Math.max(i,j)]]);}
+  cand.sort((a,b)=>a[0]-b[0]);const seen=new Set(),out=[];for(const[,pr]of cand){const k=pr[0]+'_'+pr[1];if(!seen.has(k)){seen.add(k);out.push(pr);}if(out.length>=K)break;}return out;}
+let customFn=null;
+const ORACLES={uniform:oracleUniform,valuenear:oracleValueNear,tqf:oracleTQF};
+function getOracle(){const v=$('oracleSel').value;if(v==='custom')return customFn||oracleUniform;return ORACLES[v];}
+
+/* useful-pair ground truth (uses p only for scoring) */
+function usefulDensity(w,p,N){const buckets={};for(const x of w){const r=(x%p).toString();buckets[r]=(buckets[r]||0)+1;}
+  let u=0;for(const r in buckets){const m=buckets[r];u+=m*(m-1)/2;}return u/(w.length*(w.length-1)/2);}
+function isUseful(w,p,N,pr){const d=w[pr[0]]-w[pr[1]];return (d%p===0n)&&(d%N!==0n);}
+
+$('runBias').onclick=()=>{const{N,p,c}=ST;const L=1500,K=150,WINDOWS=30;
+  let baseD=0,uniHit=0,orHit=0;const oracle=getOracle();
+  for(let wi=0;wi<WINDOWS;wi++){const cc=c+BigInt(wi);const{w}=buildWindow(N,cc,2n+BigInt(wi),L);
+    baseD+=usefulDensity(w,p,N);
+    const cu=oracleUniform(w,N,K);uniHit+=cu.filter(pr=>isUseful(w,p,N,pr)).length/cu.length;
+    let co;try{co=oracle(w,N,K);}catch(e){$('bias_eps').innerHTML='<span class="bad">oracle error: '+e.message+'</span>';return;}
+    orHit+=co.filter(pr=>pr&&pr.length===2&&isUseful(w,p,N,pr)).length/Math.max(1,co.length);}
+  baseD/=WINDOWS;uniHit/=WINDOWS;orHit/=WINDOWS;const eps=orHit-uniHit;
+  // 2σ noise band on ε (difference of two binomial-mean hit-rates over K·WINDOWS samples each)
+  const nS=K*WINDOWS;
+  const band=2*Math.sqrt(orHit*(1-orHit)/nS + uniHit*(1-uniHit)/nS);
+  const significant = Math.abs(eps)>band;
+  $('bias_base').textContent=baseD.toExponential(3);
+  $('bias_uni').textContent=uniHit.toExponential(3);
+  $('bias_or').textContent=orHit.toExponential(3);
+  const epsCls = (significant && eps>0)?'ok':(significant&&eps<0)?'bad':'gold';
+  $('bias_eps').innerHTML=`<span class="${epsCls}">${eps>=0?'+':''}${eps.toExponential(3)}</span>`
+      +` <span style="color:rgba(255,255,255,.4)">± ${band.toExponential(2)} (2σ)</span>`;
+  const mx=Math.max(uniHit,orHit,baseD)*1.4||1;
+  $('biasBase').style.left=(100*uniHit/mx)+'%';
+  $('biasFill').style.width=(100*orHit/mx)+'%';
+  $('biasFill').style.background= (significant&&eps>0)?'linear-gradient(90deg,#34d399,#22d3ee)'
+      :(significant&&eps<0)?'linear-gradient(90deg,#f87171,#7f1d1d)':'linear-gradient(90deg,#8b5cf6,#fbbf24)';
+  const b=$('biasBadge');b.style.display='inline-block';
+  if(significant&&eps>0){b.textContent='significant positive bias — would help!';b.style.color='#34d399';b.style.borderColor='#34d399';}
+  else if(significant&&eps<0){b.textContent='significantly worse than random';b.style.color='#f87171';b.style.borderColor='#f87171';}
+  else{b.textContent='ε indistinguishable from 0 (within noise)';b.style.color='#fbbf24';b.style.borderColor='#fbbf24';}
+};
+
+/* custom oracle wiring */
+$('oracleSel').onchange=()=>{$('customBox').style.display=$('oracleSel').value==='custom'?'block':'none';};
+$('useCustom').onclick=()=>{try{
+    customFn=new Function('window','N','K',$('customCode').value);
+    // smoke test
+    const t=customFn([0n,1n,2n,3n,4n],15n,2);
+    if(!Array.isArray(t))throw new Error('must return an array of [i,j]');
+    $('customMsg').innerHTML='<span class="ok"> ✓ oracle compiled — hit “measure ε”</span>';
+  }catch(e){customFn=null;$('customMsg').innerHTML='<span class="bad"> ✗ '+e.message+'</span>';}};
+
+/* ============ cost comparison ============ */
+$('runCost').onclick=()=>{const{N,p,c}=ST;const r=rhoBaseline(N,c);
+  const L=6*Math.round(Math.sqrt(Number(p)))+50;const{w,ck,stride}=buildWindow(N,c,2n,L);
+  const oracle=getOracle();let cands;try{cands=oracle(w,N,L);}catch(e){cands=oracleUniform(w,N,L);}
+  let recon=0,found=null;for(const[i,j]of cands){const cert=certify(N,c,ck,stride,i,j);recon+=cert.cost;if(cert.f){found=cert.f;break;}}
+  const total=L+recon;
+  $('kBase').textContent=r.steps+(r.f?` → ${r.f}`:'');
+  $('kWin').textContent=L;
+  $('kRec').textContent=recon;
+  $('kTot').textContent=total;
+  const win=total<r.steps;
+  $('kVerd').innerHTML=win?'<span class="ok">Helix wins (surprising — check oracle!)</span>'
+      :`<span class="bad">baseline wins by ${(total/r.steps).toFixed(1)}×</span> — the window cost alone exceeds it`;
+};
+
+/* boot */
+document.querySelectorAll('.pp').forEach(b=>b.onclick=()=>{document.querySelectorAll('.pp').forEach(x=>x.classList.remove('active'));b.classList.add('active');genN(+b.dataset.b);});
+genN(16);
+</script>
+</body>
+</html>
