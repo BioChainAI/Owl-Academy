@@ -1,0 +1,52 @@
+Coherency Channel — benchmark-proofed adaptation of the 3-D coherency channel
+================================================================================
+
+[0] Exact facts (no floating point):
+    3-PSK = cube roots of unity, 1+ω+ω²=0 (ℚ[√3]) .... PASS
+    LUT bijection: 27 triplets ↔ 5-bit index ........ PASS
+
+[1] 3-PSK decode — symbol-error rate vs Es/N0 (measured vs theory):
+       Es/N0 (dB)   measured SEP    theory SEP    ratio
+                2       1.07e-01      1.23e-01     0.87
+                4       4.72e-02      5.22e-02     0.90
+                6       1.38e-02      1.45e-02     0.95
+                8       2.05e-03      2.10e-03     0.98
+    measured tracks the nearest-neighbour MPSK law .... PASS
+
+[2] Orthogonal FDM — max carrier crosstalk |⟨fₐ,f_b⟩|:
+      orthogonal spacing (1 bin)  : 2.070e-16   (PASS)
+      non-orthogonal (0.5 bin)    : 6.366e-01   (leakage, as expected)
+
+[3] Return-to-baseline — drift/diffusion stationary variance & settling:
+      drift=0.1, diff=0.01: σ²_meas=4.385e-05  σ²_theory=4.386e-05  (PASS);  5%-settling≈28 steps
+      drift=0.05, diff=0.02: σ²_meas=3.436e-04  σ²_theory=3.419e-04  (PASS);  5%-settling≈58 steps
+
+[4] Quaternion-delta fusion — 16-bit Δq codec on a smooth stream:
+      mean orientation error = 0.265°  (closed-loop, 16-bit Δq)
+      compression vs float32 quaternion = 8×  (PASS)
+
+[6] Contextual stream — RLE(states)+Δ(quat) vs raw per-frame:
+      end-to-end compression ratio = 7.7×  (PASS)
+
+[7] Attractor compression — per-step entropy of the state-space trajectory:
+      uniform random walk        : 4.755 bits/step (incompressible)
+      learned attractor (p=0.15) : 1.269 bits/step
+      learned attractor (p=0.02) : 0.219 bits/step
+      structure ⇒ compressibility ...................... PASS
+
+================================================================================
+FINDINGS (measured):
+ • 3-PSK is exactly the cube roots of unity (1+ω+ω²=0, the Trefoil_Streams
+   identity); its decode SEP tracks the nearest-neighbour MPSK law to within
+   ~15% (the union bound slightly overestimates, as expected, converging at SNR).
+ • Orthogonal FDM is exact at integer-bin spacing (crosstalk ~1e-16); half-bin
+   spacing leaks, quantifying why the spacing matters.
+ • Return-to-baseline is an AR(1)/OU process: measured stationary variance
+   matches σ²=noise_var/(1−(1−drift)²); settling time is log(tol)/log(1−drift).
+ • The fused packet (1+5+16 bits) packs orientation at ~8× vs float32 with a
+   sub-2° closed-loop error — the Engram_Codec quaternion offload, in a packet.
+ • RLE+delta on the contextual stream gives a large measured compression ratio;
+   a learned attractor cuts per-step entropy far below log2(27) — structure is
+   compressibility, the same lesson as the Polycentria router/oracle.
+ • Decoder = exact certifier (Helix B); FFT activity-flagging = heuristic oracle
+   (Helix A). The channel is a Polycentria cell over an RF carrier.
