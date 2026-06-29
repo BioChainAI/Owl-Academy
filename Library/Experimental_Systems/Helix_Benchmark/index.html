@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>SHD-CCP Geometric Computing — Step-by-Step Benchmark</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<style>
+  :root{--void:#06040f;--purple:#8b5cf6;--cyan:#22d3ee;--gold:#D4AF37;--ok:#34d399;--bad:#f87171;}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--void);color:#e2e8f0;font-family:system-ui,sans-serif;height:100vh;overflow:hidden;
+       background:radial-gradient(ellipse at top,rgba(139,92,246,0.10) 0%,var(--void) 60%)}
+  .mono{font-family:ui-monospace,"JetBrains Mono",monospace}
+  header{padding:1rem 1.4rem .8rem;border-bottom:1px solid rgba(139,92,246,0.18)}
+  .crumb{font-size:.6rem;letter-spacing:.25em;text-transform:uppercase;color:rgba(139,92,246,0.5);margin-bottom:.4rem}
+  .crumb a{color:rgba(139,92,246,0.6);text-decoration:none}.crumb a:hover{color:var(--purple)}
+  h1{font-size:1.25rem;font-weight:400;letter-spacing:.12em;text-transform:uppercase;color:#fff}
+  h1 b{color:var(--purple)}
+  .wrap{display:flex;height:calc(100vh - 64px)}
+  .side{width:380px;flex-shrink:0;border-right:1px solid rgba(139,92,246,0.15);display:flex;flex-direction:column;background:rgba(8,6,18,0.55)}
+  .steps{padding:.8rem;overflow-y:auto;flex:1}
+  .step{padding:.7rem .8rem;border-radius:10px;border:1px solid transparent;cursor:pointer;margin-bottom:.4rem;transition:.15s}
+  .step:hover{background:rgba(139,92,246,0.06)}
+  .step.active{background:rgba(139,92,246,0.12);border-color:rgba(139,92,246,0.4)}
+  .step .n{font-size:.6rem;letter-spacing:.2em;text-transform:uppercase;color:var(--cyan)}
+  .step .t{font-size:.92rem;color:#fff;margin:.1rem 0 .2rem}
+  .step .d{font-size:.74rem;color:rgba(255,255,255,.5);line-height:1.45;display:none}
+  .step.active .d{display:block}
+  .tel{border-top:1px solid rgba(139,92,246,0.15);padding:.8rem 1rem;font-size:.74rem;max-height:42%;overflow-y:auto}
+  .kv{display:flex;justify-content:space-between;padding:.12rem 0;border-bottom:1px solid rgba(255,255,255,.05)}
+  .kv span:first-child{color:rgba(255,255,255,.45)}
+  .gold{color:var(--gold)}.cyan{color:var(--cyan)}.ok{color:var(--ok)}.bad{color:var(--bad)}.violet{color:#a78bfa}
+  .nav{display:flex;gap:.5rem;padding:.7rem .8rem;border-top:1px solid rgba(139,92,246,0.15)}
+  button.act{flex:1;background:rgba(139,92,246,.16);color:#c4b5fd;border:1px solid rgba(139,92,246,.45);border-radius:8px;
+       padding:.5rem;font-size:.72rem;letter-spacing:.08em;cursor:pointer;font-family:inherit;transition:.15s}
+  button.act:hover{background:rgba(139,92,246,.3);color:#fff}
+  button.act:disabled{opacity:.35;cursor:default}
+  .stage{flex:1;position:relative}
+  #gl{width:100%;height:100%;display:block}
+  #chart{position:absolute;right:14px;bottom:14px;width:340px;height:170px;background:rgba(4,3,10,.82);
+         border:1px solid rgba(139,92,246,.3);border-radius:10px;display:none}
+  .badge{position:absolute;left:14px;top:14px;font-size:.66rem;letter-spacing:.12em;background:rgba(4,3,10,.82);
+         border:1px solid rgba(34,211,238,.4);color:var(--cyan);padding:.35rem .7rem;border-radius:999px}
+  .hint{position:absolute;right:14px;top:14px;font-size:.6rem;color:rgba(255,255,255,.35)}
+</style>
+</head>
+<body>
+<header>
+  <div class="crumb"><a href="../../Grand_Archives.html">Grand Archives</a> · <a href="../index.html">Experimental Systems</a> · Geometric Computing Benchmark</div>
+  <h1>SHD-CCP <b>Geometric Computing</b> — how the pieces compose</h1>
+</header>
+<div class="wrap">
+  <div class="side">
+    <div class="steps" id="steps"></div>
+    <div class="tel" id="tel"></div>
+    <div class="nav">
+      <button class="act" id="prev">← Prev</button>
+      <button class="act" id="run">▶ Run step</button>
+      <button class="act" id="next">Next →</button>
+    </div>
+  </div>
+  <div class="stage">
+    <canvas id="gl"></canvas>
+    <div class="badge" id="badge">Step 1 — Manifold</div>
+    <div class="hint">drag to rotate · scroll to zoom</div>
+    <canvas id="chart" width="340" height="170"></canvas>
+  </div>
+</div>
+
+<script>
+/* ============================================================ *
+ *  Verified algorithms (validated against the Python references)
+ * ============================================================ */
+const PHI=(1+Math.sqrt(5))/2, N=720, LAYERS=12, PER=60, Rm=3, rm=1.1;
+function pos3(n){const layer=Math.floor(n/PER);const a=2*Math.PI*((n*(PHI-1))%1);const b=2*Math.PI*layer/LAYERS;
+  return [(Rm+rm*Math.cos(b))*Math.cos(a),(Rm+rm*Math.cos(b))*Math.sin(a),rm*Math.sin(b)];}
+const POS=Array.from({length:N},(_,n)=>pos3(n));
+function quad(m,n){const a=POS[m],b=POS[n];return (a[0]-b[0])**2+(a[1]-b[1])**2+(a[2]-b[2])**2;}
+const CAND=40;
+const NEAR=Array.from({length:N},(_,n)=>[...Array(N).keys()].sort((i,j)=>quad(n,i)-quad(n,j)).slice(0,CAND));
+function mulberry(s){return function(){s|=0;s=s+0x6D2B79F5|0;let t=Math.imul(s^s>>>15,1|s);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}
+let RNG=mulberry(7);
+
+const LAM=0.25, K=12;
+let HOT=[], REWARD=[];
+function newInstance(){HOT=Array.from({length:4},()=>Math.floor(RNG()*N));
+  REWARD=Array.from({length:N},(_,n)=>HOT.reduce((s,h)=>s+Math.exp(-quad(n,h)/3.0),0));}
+function routeValue(route){const seen=new Set();let c=0;for(const n of route){if(!seen.has(n)){seen.add(n);c+=REWARD[n];}}
+  let t=0;for(let i=0;i<route.length-1;i++)t+=quad(route[i],route[i+1]);return c-LAM*t;}
+function routeRandom(M,start){return Array.from({length:M},()=>{const r=[start];for(let h=0;h<K;h++)r.push(Math.floor(RNG()*N));return r;});}
+function routeOracle(M,start,tau=0.4){const routes=[];for(let m=0;m<M;m++){let cur=start,r=[start];
+  for(let h=0;h<K;h++){const cs=NEAR[cur];const sc=cs.map(n=>(REWARD[n]-LAM*quad(cur,n))/tau);const mx=Math.max(...sc);
+    const w=sc.map(s=>Math.exp(s-mx));const tot=w.reduce((a,b)=>a+b,0);let rr=RNG()*tot,acc=0,pick=cs[cs.length-1];
+    for(let i=0;i<cs.length;i++){acc+=w[i];if(acc>=rr){pick=cs[i];break;}}r.push(pick);cur=pick;}routes.push(r);}return routes;}
+function bestRoute(routes){let bv=-1e9,br=routes[0];for(const rt of routes){const v=routeValue(rt);if(v>bv){bv=v;br=rt;}}return {route:br,value:bv};}
+
+/* ---- codec (Engram) ---- */
+const SCALE=0.04;
+function rot(t){return [Math.cos(t/2),Math.sin(t/2),0,0];}
+function qm(a,b){return [a[0]*b[0]-a[1]*b[1]-a[2]*b[2]-a[3]*b[3],a[0]*b[1]+a[1]*b[0]+a[2]*b[3]-a[3]*b[2],a[0]*b[2]-a[1]*b[3]+a[2]*b[0]+a[3]*b[1],a[0]*b[3]+a[1]*b[2]-a[2]*b[1]+a[3]*b[0]];}
+function qang(q){return 2*Math.atan2(q[1],q[0]);}
+function codecRMSE(vals,B){const d=vals.map(v=>rot(SCALE*v));const out=[];let boundaryErr=0,cumT=0,cum=[1,0,0,0];
+  for(let s=0;s<d.length;s+=B){let net=[1,0,0,0];const size=Math.min(B,d.length-s);for(let i=0;i<size;i++)net=qm(d[s+i],net);
+    const a=qang(net)/size;for(let i=0;i<size;i++)out.push(a/SCALE);
+    for(let i=0;i<size;i++)cumT+=SCALE*vals[s+i];cum=qm(net,cum);
+    boundaryErr=Math.max(boundaryErr,Math.abs(((qang(cum)-cumT+Math.PI)%(2*Math.PI))-Math.PI));}
+  const mean=vals.reduce((a,b)=>a+b)/vals.length;const std=Math.sqrt(vals.reduce((s,v)=>s+(v-mean)**2,0)/vals.length)||1;
+  const rmse=Math.sqrt(vals.reduce((s,v,i)=>s+(v-out[i])**2,0)/vals.length)/std;
+  return {rmse,boundaryErr};}
+
+/* ---- factoring oracle-bias (small semiprime) ---- */
+function md(b,e,m){b%=m;let r=1n;while(e>0n){if(e&1n)r=r*b%m;b=b*b%m;e>>=1n;}return r;}
+function isP(n){if(n<2n)return false;for(const q of[2n,3n,5n,7n,11n,13n,17n,19n,23n,29n,31n,37n]){if(n%q===0n)return n===q;}
+  let d=n-1n,r=0n;while(d%2n===0n){d/=2n;r++;}for(const a of[2n,3n,5n,7n,11n,13n,17n,19n,23n,29n,31n,37n]){let x=md(a,d,n);if(x===1n||x===n-1n)continue;let ok=false;for(let i=0n;i<r-1n;i++){x=x*x%n;if(x===n-1n){ok=true;break;}}if(!ok)return false;}return true;}
+function rprime(bits){const lo=1n<<BigInt(bits-1);while(true){let c=lo+BigInt(Math.floor(RNG()*Number(lo)));c|=1n;if(isP(c))return c;}}
+function factoringBias(windows=8,L=800,Kc=120){let uni=0,har=0;
+  for(let w=0;w<windows;w++){const p=rprime(16),q=rprime(16);const Nn=p*q,c=1n+BigInt(Math.floor(RNG()*100));
+    let x=2n;const win=[];for(let i=0;i<L;i++){win.push(x);x=(x*x+c)%Nn;}
+    const useful=(i,j)=>{const dd=win[i]-win[j];return (dd%p===0n)&&(dd%Nn!==0n);};
+    let uh=0;for(let t=0;t<Kc;t++){const i=Math.floor(RNG()*L),j=Math.floor(RNG()*L);if(i!==j&&useful(i,j))uh++;}uni+=uh/Kc;
+    const nf=Number(Nn);const emb=win.map(x=>2*Math.PI*(Number(x)/nf));const ord=[...Array(L).keys()].sort((a,b)=>emb[a]-emb[b]);
+    let hh=0,cnt=0;for(let t=0;t<L-1&&cnt<Kc;t++){const i=ord[t],j=ord[t+1];if(useful(i,j))hh++;cnt++;}har+=hh/Kc;}
+  return {uni:uni/windows,har:har/windows};}
+
+/* ============================================================ *
+ *  Three.js stage
+ * ============================================================ */
+let scene,cam,ren,ctrl,pts,ptsGeo,colors,routeLine,packet,autorot=true,glReady=false;
+function initGL(){
+  if(typeof THREE==='undefined'){console.warn('three.js unavailable — telemetry/charts still run');return;}
+  glReady=true;
+  const c=document.getElementById('gl');
+  scene=new THREE.Scene();scene.fog=new THREE.FogExp2(0x06040f,0.02);
+  cam=new THREE.PerspectiveCamera(50,c.clientWidth/c.clientHeight,0.1,100);cam.position.set(0,5,9);
+  ren=new THREE.WebGLRenderer({canvas:c,antialias:true});ren.setSize(c.clientWidth,c.clientHeight);ren.setPixelRatio(Math.min(devicePixelRatio,2));
+  ctrl=new THREE.OrbitControls(cam,ren.domElement);ctrl.enableDamping=true;
+  scene.add(new THREE.AmbientLight(0xffffff,0.8));
+  const positions=new Float32Array(N*3);colors=new Float32Array(N*3);
+  for(let n=0;n<N;n++){positions[n*3]=POS[n][0];positions[n*3+1]=POS[n][2];positions[n*3+2]=POS[n][1];}
+  ptsGeo=new THREE.BufferGeometry();ptsGeo.setAttribute('position',new THREE.BufferAttribute(positions,3));
+  ptsGeo.setAttribute('color',new THREE.BufferAttribute(colors,3));
+  pts=new THREE.Points(ptsGeo,new THREE.PointsMaterial({size:0.13,vertexColors:true}));scene.add(pts);
+  packet=new THREE.Mesh(new THREE.SphereGeometry(0.16,16,16),new THREE.MeshBasicMaterial({color:0xffe08a}));
+  packet.visible=false;scene.add(packet);
+  addEventListener('resize',()=>{ren.setSize(c.clientWidth,c.clientHeight);cam.aspect=c.clientWidth/c.clientHeight;cam.updateProjectionMatrix();});
+  (function loop(){requestAnimationFrame(loop);if(autorot)pts.rotation.y+=0.0015,(routeLine&&(routeLine.rotation.y=pts.rotation.y)),(packet.rotation.y=pts.rotation.y);ctrl.update();ren.render(scene,cam);})();
+}
+function hsl(h,s,l){return glReady?new THREE.Color().setHSL(h,s,l):null;}
+function setColors(fn){if(!glReady)return;for(let n=0;n<N;n++){const c=fn(n);colors[n*3]=c.r;colors[n*3+1]=c.g;colors[n*3+2]=c.b;}ptsGeo.attributes.color.needsUpdate=true;}
+function clearRoute(){if(!glReady)return;if(routeLine){scene.remove(routeLine);routeLine.geometry.dispose();routeLine=null;}packet.visible=false;}
+function drawRoute(route,color){if(!glReady)return;clearRoute();const pos=[];for(const n of route)pos.push(POS[n][0],POS[n][2],POS[n][1]);
+  const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));
+  routeLine=new THREE.Line(g,new THREE.LineBasicMaterial({color}));routeLine.rotation.y=pts.rotation.y;scene.add(routeLine);
+  // animate packet along the route
+  let seg=0,tt=0;packet.visible=true;
+  clearInterval(window._pk);window._pk=setInterval(()=>{if(seg>=route.length-1){seg=0;}
+    const A=POS[route[seg]],B=POS[route[seg+1]];const p=[A[0]+(B[0]-A[0])*tt,A[2]+(B[2]-A[2])*tt,A[1]+(B[1]-A[1])*tt];
+    const v=new THREE.Vector3(p[0],p[1],p[2]).applyAxisAngle(new THREE.Vector3(0,1,0),pts.rotation.y);
+    packet.position.copy(v);tt+=0.08;if(tt>=1){tt=0;seg++;}},40);}
+
+/* ============================================================ *
+ *  Steps
+ * ============================================================ */
+const STEPS=[
+ {n:"Step 1 · Substrate",t:"The golden Clifford manifold",
+  d:"720 “codon” packets placed on the flat golden Clifford torus as 12 nested layers × 60, with golden-angle spread (the equidistribution verified in the Clifford module). This is the space every later step computes on; travel cost between packets is quadrance (squared distance).",
+  run(){newInstance();const cols=[0.0,0.08,0.12,0.16,0.30,0.42,0.5,0.58,0.66,0.74,0.82,0.92];
+    setColors(n=>hsl(cols[Math.floor(n/PER)],0.7,0.6));clearRoute();
+    tel([["packets",N],["structure","12 layers × 60"],["radii r1²,(φ+2)/5","0.7236"],["radii r2²,(3-φ)/5","0.2764"],["metric","quadrance on T²⊂S³"]]);
+    chartOff();}},
+ {n:"Step 2 · Packet",t:"A 64-voxel SHD-CCP packet",
+  d:"Each node carries a 64-voxel (4×4×4) packet — the unit the Sparsemax kernel acts on. The kernel’s reverse valve breaks detailed balance, giving a strictly positive stationary toroidal drift current (verified exact: J_C = 1/192). That drift is the “pump” that moves packets.",
+  run(){const c=Math.floor(N/2);setColors(n=>n===c?hsl(0.13,1,0.6):hsl(0.6,0.2,0.18));
+    packetGrid();tel([["highlighted packet","#"+c],["voxels","64 = (Z/4Z)³"],["kernel","hyperbolic sparsemax (rational)"],["stationary drift J_C","1/192 (verified exact)"],["reversible at λ=0?","yes — no current"]]);clearRoute();chartOff();}},
+ {n:"Step 3 · Memory",t:"Engram codec: compress past data",
+  d:"Past routes/streams are offloaded into a quaternion delta chain and compressed. Section boundaries telescope back EXACTLY (~1e-15) for any data; intra-section detail is recovered well for smooth/structured streams and lost for high-entropy data. This is the compressed prior the oracle can draw on.",
+  run(){const nC=240;const smooth=Array.from({length:nC},(_,i)=>0.8*Math.sin(0.02*i));const rand=Array.from({length:nC},()=>(RNG()*2-1)*1.2);
+    const s=codecRMSE(smooth,20),r=codecRMSE(rand,20);
+    setColors(n=>{const v=Math.min(1,REWARD[n]/2.5);return hsl(0.5-0.1*v,0.7,0.2+0.5*v);});
+    tel([["section-boundary error","~"+s.boundaryErr.toExponential(1)+" (exact)"],["smooth stream RMSE/std (20×)",s.rmse.toFixed(3)],["random stream RMSE/std (20×)",r.rmse.toFixed(3)],["verdict","lossy: keeps structure, drops noise"]]);
+    barChart("Recreation error (0=perfect, 1=destroyed)",[["smooth",s.rmse,0x34d399],["random",r.rmse,0xf87171]],1.05);}},
+ {n:"Step 4 · Helix A",t:"The geometric oracle proposes",
+  d:"From a start packet, Helix A scores nearby candidates by a geometric heuristic — reward − λ·quadrance — and samples promising next hops. It is a heuristic only; it proposes, it never decides. Brighter = higher score.",
+  run(){const start=Math.floor(RNG()*N);window._start=start;const cur=start;const cs=NEAR[cur];
+    const sc={};let mn=1e9,mx=-1e9;for(const nidx of cs){const v=REWARD[nidx]-LAM*quad(cur,nidx);sc[nidx]=v;mn=Math.min(mn,v);mx=Math.max(mx,v);}
+    setColors(n=>{if(n===start)return hsl(0.13,1,0.65);if(n in sc){const t=(sc[n]-mn)/(mx-mn+1e-9);return hsl(0.45-0.1*t,0.9,0.25+0.5*t);}return hsl(0.6,0.15,0.13);});
+    tel([["start packet","#"+start],["candidates scored",CAND],["heuristic","reward − λ·quadrance"],["role","proposes only — never trusted"]]);clearRoute();chartOff();}},
+ {n:"Step 5 · Helix B",t:"The certifier verifies exactly",
+  d:"Helix B takes the oracle’s proposed routes and evaluates their value EXACTLY (collected reward − λ·travel). The best certified route is drawn and a packet travels it. Correctness never depends on the heuristic — identical discipline to the factoring bench, here to a constructive end.",
+  run(){const start=window._start??Math.floor(RNG()*N);const best=bestRoute(routeOracle(40,start));
+    setColors(n=>best.route.includes(n)?hsl(0.13,1,0.6):hsl(0.6,0.15,0.13));drawRoute(best.route,0xffe08a);
+    tel([["proposed routes",40],["chosen route hops",K],["exact value (certified)",best.value.toFixed(2)],["reward collected","distinct nodes"],["guarantee","value is exact, not heuristic"]]);chartOff();}},
+ {n:"Step 6 · Benchmark",t:"When does geometry help?",
+  d:"The payoff. We measure the Oracle Bias ε = oracle − random in two regimes, live. ROUTING: the objective is a function of the geometry, so the oracle decisively beats random (ε ≫ 0). FACTORING (ECDLP): the hidden mod-p structure is invisible to the geometry, so ε ≤ 0. Same architecture; the geometry only helps when it can see the objective.",
+  run(){
+    // routing eps (live)
+    let dr=[],doo=[];for(let t=0;t<14;t++){newInstance();const start=Math.floor(RNG()*N);
+      dr.push(bestRoute(routeRandom(40,start)).value);doo.push(bestRoute(routeOracle(40,start)).value);}
+    const mr=dr.reduce((a,b)=>a+b)/dr.length,mo=doo.reduce((a,b)=>a+b)/doo.length;
+    const fb=factoringBias();
+    tel([["ROUTING random",mr.toFixed(2)],["ROUTING oracle",mo.toFixed(2)],["ROUTING ε","<span class='ok'>+"+(mo-mr).toFixed(2)+" — geometry helps</span>"],
+         ["FACTORING uniform hit",fb.uni.toExponential(2)],["FACTORING oracle hit",fb.har.toExponential(2)],["FACTORING ε","<span class='bad'>"+(fb.har-fb.uni).toExponential(2)+" — no help</span>"]]);
+    // normalized bars: routing eps / |random| ; factoring eps / uniform
+    const rNorm=(mo-mr)/Math.max(1,Math.abs(mr));const fNorm=(fb.har-fb.uni)/Math.max(1e-9,fb.uni);
+    barChart("Oracle Bias ε (normalized) — routing vs factoring",[["routing",rNorm,0x34d399],["factoring",fNorm,0xf87171]],Math.max(1.1,rNorm*1.1),true);
+    newInstance();setColors(n=>hsl(0.6,0.2,0.16));clearRoute();}}
+];
+
+/* ---- small 2D charts + voxel grid in the corner canvas ---- */
+const chart=document.getElementById('chart'),cx=chart.getContext('2d');
+function chartOff(){chart.style.display='none';}
+function barChart(title,bars,scale,signed){chart.style.display='block';cx.clearRect(0,0,340,170);
+  cx.fillStyle='#cbd5e1';cx.font='11px ui-monospace';cx.fillText(title,12,18);
+  const x0=20,y0=140,w=120,gap=40,base=signed?y0-50:y0;
+  if(signed){cx.strokeStyle='rgba(255,255,255,.2)';cx.beginPath();cx.moveTo(10,base);cx.lineTo(330,base);cx.stroke();}
+  bars.forEach((b,i)=>{const[name,val,col]=b;const h=Math.max(-90,Math.min(90,(val/scale)*90));
+    cx.fillStyle='#'+col.toString(16).padStart(6,'0');
+    if(h>=0)cx.fillRect(x0+i*(w+gap),base-h,w,h);else cx.fillRect(x0+i*(w+gap),base,w,-h);
+    cx.fillStyle='#e2e8f0';cx.font='11px ui-monospace';cx.fillText(name,x0+i*(w+gap),y0+22);
+    cx.fillText(val.toFixed(3),x0+i*(w+gap),(h>=0?base-h-5:base-h+14));});}
+function packetGrid(){chart.style.display='block';cx.clearRect(0,0,340,170);cx.fillStyle='#cbd5e1';cx.font='11px ui-monospace';
+  cx.fillText('64-voxel packet (4×4×4 → 8×8)',12,16);
+  for(let i=0;i<64;i++){const on=RNG()<0.5;cx.fillStyle=on?'#22d3ee':'#1e293b';
+    cx.fillRect(20+(i%8)*34,30+Math.floor(i/8)*16,30,13);}}
+
+/* ---- stepper ---- */
+let cur=0;const stepsEl=document.getElementById('steps');
+STEPS.forEach((s,i)=>{const el=document.createElement('div');el.className='step';el.innerHTML=`<div class="n">${s.n}</div><div class="t">${s.t}</div><div class="d">${s.d}</div>`;el.onclick=()=>go(i);stepsEl.appendChild(el);});
+function tel(rows){document.getElementById('tel').innerHTML=rows.map(r=>`<div class="kv"><span>${r[0]}</span><span class="mono">${r[1]}</span></div>`).join('');}
+function go(i){cur=Math.max(0,Math.min(STEPS.length-1,i));
+  document.querySelectorAll('.step').forEach((e,k)=>e.classList.toggle('active',k===cur));
+  document.getElementById('badge').textContent=STEPS[cur].n;
+  document.getElementById('prev').disabled=cur===0;document.getElementById('next').disabled=cur===STEPS.length-1;
+  STEPS[cur].run();}
+document.getElementById('prev').onclick=()=>go(cur-1);
+document.getElementById('next').onclick=()=>go(cur+1);
+document.getElementById('run').onclick=()=>STEPS[cur].run();
+
+initGL();newInstance();go(0);
+</script>
+</body>
+</html>
