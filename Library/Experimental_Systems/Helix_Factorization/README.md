@@ -1,6 +1,7 @@
-# Helix Factorization — the Dual-Helix Oracle Bench
+# Helix Factorization — the Polycentria Dual-Helix Oracle Bench
 
-A correctness-guaranteed test bench for the **Schism Dual-Helix** model from
+A correctness-guaranteed test bench for the **Polycentria Dual-Helix** model (formerly
+"Schism Dual-Helix") from
 *"Topological Optimization of Pollard's Rho via Quaternionic Lattices and Soliton
 Collapse Manifolds."* It takes the paper's framing at face value and **measures** the
 one quantity the whole acceleration claim hinges on — rather than asserting or

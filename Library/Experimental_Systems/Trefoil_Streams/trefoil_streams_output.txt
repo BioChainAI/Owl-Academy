@@ -1,0 +1,57 @@
+Trefoil Streams — three (2,3) knots on a golden toroid, emergent 4th phase,
+                  governed by a Polycentria Dual-Helix
+==============================================================================
+  golden toroid: R=φ=1.618034, minorR=1.0  →  R²/minorR²=2.618034 = φ²
+  3 trefoil streams × 720 nodes; phase offsets = {0, 2π/3, 4π/3} (cube roots of unity)
+
+[0] Exact structural facts (ℚ[√d], no floating point):
+    (2,3) torus knot closes & is knotted .......... True
+    1 + ω + ω² = 0  (cube roots of unity) ......... True
+    R²/minorR² = (φ+2)/(3-φ) = φ²  (golden aspect)  True
+
+[A] Emergent 4th phase Ψ₄ = Σₖ(Sₖ + Sₖ⁻¹) at balanced equilibrium:
+    closed form   ρ = minorR·|Σ sₖ e^{iψₖ}|  = 4.003e-16
+    direct sample max‖Σ(displacement off core)‖ = 2.853e-15
+    → the emergent phase falls onto the torus core (the 'zero point'),
+      to machine precision, exactly as the cube-roots identity predicts.
+
+[B] Quadrance scaling drives the emergent phase (closed form vs sampled):
+    ρ is the magnitude of the order-1 DFT bin of the stream quadrance-roots.
+         imbalance δ on stream 0      ρ closed     ρ sampled    ρ/δ·minorR
+                            0.10      0.100000      0.100000      1.000000
+                            0.25      0.250000      0.250000      1.000000
+                            0.50      0.500000      0.500000      1.000000
+                            1.00      1.000000      1.000000      1.000000
+    ρ/δ = minorR exactly (a single-stream quadrance bump of δ gives ρ=minorR·δ):
+      the emergent phase is a linear, calibrated read-out of stream imbalance.
+
+[C] Emergent phase as a parity channel — does Z localize a corrupted stream?
+    single-stream faults localized by phase(Z): 3000/3000 = 100.0%
+    (ρ=‖Z‖ flags THAT a stream drifted; arg(Z) points at WHICH — exact, no training.)
+
+[D] Polycentria Dual-Helix governance: oracle proposes, certifier decides.
+    Objective: restore equilibrium (minimize exact ρ) on a drifted, noisily
+    observed 4-phase system, at equal exact-evaluation budget M.
+      method                              mean best ρ       Δ vs random (±2σ)
+      blind random                             0.1771                       —
+      geometric oracle (Helix A)               0.1376       -0.0395 (±0.0189)
+      Oracle Bias ε = (random − oracle) = +0.0395   significant: yes (many σ)
+
+[E] Helix B independence (the safety invariant):
+    chosen config certified by Helix B → ρ = 0.0805 (EXACT, oracle-independent)
+    the reported equilibrium is always the exact ρ of the chosen config; the
+    oracle's noise can only cost search efficiency, never corrupt the result.
+
+==============================================================================
+FINDINGS (measured):
+ • The emergent 4th phase Ψ₄ = Σₖ(Sₖ+Sₖ⁻¹) collapses EXACTLY onto the torus
+   core at balanced equilibrium — the cube-roots-of-unity identity 1+ω+ω²=0
+   zeroes its off-core displacement (verified exactly in ℚ[√3], ρ~1e-16).
+ • Quadrance scaling re-grows it linearly: ρ = minorR·|Σ sₖ e^{iψₖ}|, the
+   order-1 DFT bin of the stream quadrance-roots. ρ is a calibrated parity
+   read-out (ρ=minorR·δ for a δ bump), and arg(Z) localizes the offender.
+ • The Polycentria governance (Helix A proposes / Helix B certifies exactly)
+   restores equilibrium faster than blind search: Oracle Bias ε > 0, many σ —
+   the same win as the Router, because here too the objective IS the geometry.
+ • Helix B stays exact and oracle-independent — the trefoil carrier inherits
+   the repo's safety discipline unchanged.
