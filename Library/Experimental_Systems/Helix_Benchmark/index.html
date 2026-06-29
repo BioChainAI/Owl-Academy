@@ -50,7 +50,12 @@
   #cap{position:absolute;left:14px;bottom:14px;max-width:46%;font-size:.72rem;line-height:1.55;color:rgba(255,255,255,.7);
        background:rgba(4,3,10,.78);border:1px solid rgba(139,92,246,.28);border-radius:10px;padding:.6rem .8rem}
   #cap b{color:#fff}#cap .leg{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:.3rem;vertical-align:middle}
-  .hint{position:absolute;right:14px;top:14px;font-size:.6rem;color:rgba(255,255,255,.35)}
+  .hint{position:absolute;right:14px;top:42px;font-size:.6rem;color:rgba(255,255,255,.35)}
+  .rotbtn{position:absolute;right:14px;top:12px;font-size:.62rem;letter-spacing:.06em;background:rgba(4,3,10,.82);
+          border:1px solid rgba(139,92,246,.45);color:#c4b5fd;padding:.38rem .7rem;border-radius:999px;cursor:pointer;
+          font-family:inherit;transition:.15s}
+  .rotbtn:hover{background:rgba(139,92,246,.25);color:#fff}
+  .rotbtn.on{border-color:rgba(34,211,238,.6);color:var(--cyan)}
 </style>
 </head>
 <body>
@@ -72,6 +77,7 @@
     <canvas id="gl"></canvas>
     <div id="fallback">This step's 3-D view needs WebGL + the Three.js CDN.<br>The telemetry panel and charts on the left still compute every number in-page.</div>
     <div class="badge" id="badge">Step 1 — Manifold</div>
+    <button class="rotbtn" id="rotToggle" title="Toggle camera auto-rotation">⟲ Auto-rotate: Off</button>
     <div class="hint">drag to rotate · scroll to zoom</div>
     <div id="cap"></div>
     <canvas id="chart" width="340" height="170"></canvas>
@@ -154,7 +160,7 @@ function initGL(){
     scene=new THREE.Scene();scene.fog=new THREE.FogExp2(0x06040f,0.018);
     cam=new THREE.PerspectiveCamera(50,c.clientWidth/c.clientHeight,0.1,100);cam.position.set(0,6.2,9.5);
     ren=new THREE.WebGLRenderer({canvas:c,antialias:true});ren.setSize(c.clientWidth,c.clientHeight);ren.setPixelRatio(Math.min(devicePixelRatio,2));
-    ctrl=new THREE.OrbitControls(cam,ren.domElement);ctrl.enableDamping=true;ctrl.autoRotate=true;ctrl.autoRotateSpeed=0.55;
+    ctrl=new THREE.OrbitControls(cam,ren.domElement);ctrl.enableDamping=true;ctrl.autoRotate=false;ctrl.autoRotateSpeed=0.55;
     scene.add(new THREE.AmbientLight(0xffffff,0.85));
     world=new THREE.Group();scene.add(world);
 
@@ -334,7 +340,15 @@ document.getElementById('prev').onclick=()=>go(cur-1);
 document.getElementById('next').onclick=()=>go(cur+1);
 document.getElementById('run').onclick=()=>STEPS[cur].run();
 
-initGL();newInstance();go(0);
+initGL();
+
+/* ---- auto-rotate toggle (off by default; user can turn it on) ---- */
+(function(){const b=document.getElementById('rotToggle');
+  function sync(){const on=glReady&&ctrl&&ctrl.autoRotate;b.textContent='⟲ Auto-rotate: '+(on?'On':'Off');b.classList.toggle('on',!!on);}
+  if(!glReady){b.style.display='none';return;}
+  b.onclick=()=>{ctrl.autoRotate=!ctrl.autoRotate;sync();};sync();})();
+
+newInstance();go(0);
 </script>
 </body>
 </html>

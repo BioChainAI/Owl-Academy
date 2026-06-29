@@ -740,7 +740,14 @@
         const controls = new THREE.OrbitControls(camera, renderer.domElement);
         controls.enableDamping = true;
         controls.dampingFactor = 0.05;
-        controls.autoRotate = false;
+        controls.autoRotate = false;          // off by default; user can toggle on
+
+        // floating auto-rotate toggle (camera orbit)
+        (function(){const b=document.createElement('button');b.textContent='⟲ Auto-rotate: Off';
+          b.style.cssText='position:fixed;top:14px;right:14px;z-index:50;background:rgba(4,3,10,.82);border:1px solid rgba(45,212,191,.5);color:#5eead4;font:700 11px system-ui;letter-spacing:.06em;text-transform:uppercase;padding:.45rem .75rem;border-radius:999px;cursor:pointer';
+          b.onclick=()=>{controls.autoRotate=!controls.autoRotate;b.textContent='⟲ Auto-rotate: '+(controls.autoRotate?'On':'Off');
+            b.style.color=controls.autoRotate?'#fff':'#5eead4';b.style.borderColor=controls.autoRotate?'rgba(45,212,191,.9)':'rgba(45,212,191,.5)';};
+          document.body.appendChild(b);})();
 
         const cliffordGroup = new THREE.Group();
         scene.add(cliffordGroup);
