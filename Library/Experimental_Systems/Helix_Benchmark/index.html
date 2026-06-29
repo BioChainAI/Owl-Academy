@@ -18,30 +18,38 @@
   h1{font-size:1.25rem;font-weight:400;letter-spacing:.12em;text-transform:uppercase;color:#fff}
   h1 b{color:var(--purple)}
   .wrap{display:flex;height:calc(100vh - 64px)}
-  .side{width:380px;flex-shrink:0;border-right:1px solid rgba(139,92,246,0.15);display:flex;flex-direction:column;background:rgba(8,6,18,0.55)}
+  .side{width:392px;flex-shrink:0;border-right:1px solid rgba(139,92,246,0.15);display:flex;flex-direction:column;background:rgba(8,6,18,0.55)}
   .steps{padding:.8rem;overflow-y:auto;flex:1}
   .step{padding:.7rem .8rem;border-radius:10px;border:1px solid transparent;cursor:pointer;margin-bottom:.4rem;transition:.15s}
   .step:hover{background:rgba(139,92,246,0.06)}
   .step.active{background:rgba(139,92,246,0.12);border-color:rgba(139,92,246,0.4)}
   .step .n{font-size:.6rem;letter-spacing:.2em;text-transform:uppercase;color:var(--cyan)}
   .step .t{font-size:.92rem;color:#fff;margin:.1rem 0 .2rem}
-  .step .d{font-size:.74rem;color:rgba(255,255,255,.5);line-height:1.45;display:none}
+  .step .d{font-size:.74rem;color:rgba(255,255,255,.55);line-height:1.5;display:none}
   .step.active .d{display:block}
-  .tel{border-top:1px solid rgba(139,92,246,0.15);padding:.8rem 1rem;font-size:.74rem;max-height:42%;overflow-y:auto}
-  .kv{display:flex;justify-content:space-between;padding:.12rem 0;border-bottom:1px solid rgba(255,255,255,.05)}
+  .step .see{display:none;font-size:.7rem;color:var(--gold);margin-top:.4rem;line-height:1.45}
+  .step.active .see{display:block}
+  .tel{border-top:1px solid rgba(139,92,246,0.15);padding:.7rem 1rem;font-size:.74rem;max-height:38%;overflow-y:auto}
+  .kv{display:flex;justify-content:space-between;padding:.12rem 0;border-bottom:1px solid rgba(255,255,255,.05);gap:.6rem}
   .kv span:first-child{color:rgba(255,255,255,.45)}
+  .kv span:last-child{text-align:right}
   .gold{color:var(--gold)}.cyan{color:var(--cyan)}.ok{color:var(--ok)}.bad{color:var(--bad)}.violet{color:#a78bfa}
   .nav{display:flex;gap:.5rem;padding:.7rem .8rem;border-top:1px solid rgba(139,92,246,0.15)}
   button.act{flex:1;background:rgba(139,92,246,.16);color:#c4b5fd;border:1px solid rgba(139,92,246,.45);border-radius:8px;
        padding:.5rem;font-size:.72rem;letter-spacing:.08em;cursor:pointer;font-family:inherit;transition:.15s}
   button.act:hover{background:rgba(139,92,246,.3);color:#fff}
   button.act:disabled{opacity:.35;cursor:default}
-  .stage{flex:1;position:relative}
+  .stage{flex:1;position:relative;min-width:0}
   #gl{width:100%;height:100%;display:block}
-  #chart{position:absolute;right:14px;bottom:14px;width:340px;height:170px;background:rgba(4,3,10,.82);
+  #fallback{position:absolute;inset:0;display:none;align-items:center;justify-content:center;text-align:center;
+            color:rgba(255,255,255,.45);font-size:.85rem;padding:2rem;line-height:1.7}
+  #chart{position:absolute;right:14px;bottom:14px;width:340px;height:170px;background:rgba(4,3,10,.85);
          border:1px solid rgba(139,92,246,.3);border-radius:10px;display:none}
   .badge{position:absolute;left:14px;top:14px;font-size:.66rem;letter-spacing:.12em;background:rgba(4,3,10,.82);
          border:1px solid rgba(34,211,238,.4);color:var(--cyan);padding:.35rem .7rem;border-radius:999px}
+  #cap{position:absolute;left:14px;bottom:14px;max-width:46%;font-size:.72rem;line-height:1.55;color:rgba(255,255,255,.7);
+       background:rgba(4,3,10,.78);border:1px solid rgba(139,92,246,.28);border-radius:10px;padding:.6rem .8rem}
+  #cap b{color:#fff}#cap .leg{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:.3rem;vertical-align:middle}
   .hint{position:absolute;right:14px;top:14px;font-size:.6rem;color:rgba(255,255,255,.35)}
 </style>
 </head>
@@ -56,14 +64,16 @@
     <div class="tel" id="tel"></div>
     <div class="nav">
       <button class="act" id="prev">← Prev</button>
-      <button class="act" id="run">▶ Run step</button>
+      <button class="act" id="run">▶ Replay step</button>
       <button class="act" id="next">Next →</button>
     </div>
   </div>
   <div class="stage">
     <canvas id="gl"></canvas>
+    <div id="fallback">This step's 3-D view needs WebGL + the Three.js CDN.<br>The telemetry panel and charts on the left still compute every number in-page.</div>
     <div class="badge" id="badge">Step 1 — Manifold</div>
     <div class="hint">drag to rotate · scroll to zoom</div>
+    <div id="cap"></div>
     <canvas id="chart" width="340" height="170"></canvas>
   </div>
 </div>
@@ -95,7 +105,7 @@ function routeOracle(M,start,tau=0.4){const routes=[];for(let m=0;m<M;m++){let c
     for(let i=0;i<cs.length;i++){acc+=w[i];if(acc>=rr){pick=cs[i];break;}}r.push(pick);cur=pick;}routes.push(r);}return routes;}
 function bestRoute(routes){let bv=-1e9,br=routes[0];for(const rt of routes){const v=routeValue(rt);if(v>bv){bv=v;br=rt;}}return {route:br,value:bv};}
 
-/* ---- codec (Engram) ---- */
+/* ---- codec (Engram) — returns reconstruction so we can DRAW it ---- */
 const SCALE=0.04;
 function rot(t){return [Math.cos(t/2),Math.sin(t/2),0,0];}
 function qm(a,b){return [a[0]*b[0]-a[1]*b[1]-a[2]*b[2]-a[3]*b[3],a[0]*b[1]+a[1]*b[0]+a[2]*b[3]-a[3]*b[2],a[0]*b[2]-a[1]*b[3]+a[2]*b[0]+a[3]*b[1],a[0]*b[3]+a[1]*b[2]-a[2]*b[1]+a[3]*b[0]];}
@@ -107,7 +117,7 @@ function codecRMSE(vals,B){const d=vals.map(v=>rot(SCALE*v));const out=[];let bo
     boundaryErr=Math.max(boundaryErr,Math.abs(((qang(cum)-cumT+Math.PI)%(2*Math.PI))-Math.PI));}
   const mean=vals.reduce((a,b)=>a+b)/vals.length;const std=Math.sqrt(vals.reduce((s,v)=>s+(v-mean)**2,0)/vals.length)||1;
   const rmse=Math.sqrt(vals.reduce((s,v,i)=>s+(v-out[i])**2,0)/vals.length)/std;
-  return {rmse,boundaryErr};}
+  return {rmse,boundaryErr,out};}
 
 /* ---- factoring oracle-bias (small semiprime) ---- */
 function md(b,e,m){b%=m;let r=1n;while(e>0n){if(e&1n)r=r*b%m;b=b*b%m;e>>=1n;}return r;}
@@ -124,87 +134,171 @@ function factoringBias(windows=8,L=800,Kc=120){let uni=0,har=0;
   return {uni:uni/windows,har:har/windows};}
 
 /* ============================================================ *
- *  Three.js stage
+ *  Three.js stage — toroid + winding helix + packets + routes
  * ============================================================ */
-let scene,cam,ren,ctrl,pts,ptsGeo,colors,routeLine,packet,autorot=true,glReady=false;
+let scene,cam,ren,ctrl,world,pts,ptsGeo,colors,torusMesh,helixLine,dynGroup,packet,voxels,driftArrow,glReady=false;
+let HELIX=[];                          // golden winding polyline (render coords)
+let helixActive=false,helixCount=0;    // animated "forming" draw range
+let pathArr=null,pathSeg=0,pathT=0;    // packet travel along a polyline
+
+// node n -> render-space Vector3 (lay torus flat: render = (x, z_minor, y))
+function rv(n){return new THREE.Vector3(POS[n][0],POS[n][2],POS[n][1]);}
+// continuous winding point: major angle a, minor angle b
+function windPoint(a,b){const rr=Rm+rm*Math.cos(b);return new THREE.Vector3(rr*Math.cos(a),rm*Math.sin(b),rr*Math.sin(a));}
+
 function initGL(){
-  if(typeof THREE==='undefined'){console.warn('three.js unavailable — telemetry/charts still run');return;}
-  glReady=true;
-  const c=document.getElementById('gl');
-  scene=new THREE.Scene();scene.fog=new THREE.FogExp2(0x06040f,0.02);
-  cam=new THREE.PerspectiveCamera(50,c.clientWidth/c.clientHeight,0.1,100);cam.position.set(0,5,9);
-  ren=new THREE.WebGLRenderer({canvas:c,antialias:true});ren.setSize(c.clientWidth,c.clientHeight);ren.setPixelRatio(Math.min(devicePixelRatio,2));
-  ctrl=new THREE.OrbitControls(cam,ren.domElement);ctrl.enableDamping=true;
-  scene.add(new THREE.AmbientLight(0xffffff,0.8));
-  const positions=new Float32Array(N*3);colors=new Float32Array(N*3);
-  for(let n=0;n<N;n++){positions[n*3]=POS[n][0];positions[n*3+1]=POS[n][2];positions[n*3+2]=POS[n][1];}
-  ptsGeo=new THREE.BufferGeometry();ptsGeo.setAttribute('position',new THREE.BufferAttribute(positions,3));
-  ptsGeo.setAttribute('color',new THREE.BufferAttribute(colors,3));
-  pts=new THREE.Points(ptsGeo,new THREE.PointsMaterial({size:0.13,vertexColors:true}));scene.add(pts);
-  packet=new THREE.Mesh(new THREE.SphereGeometry(0.16,16,16),new THREE.MeshBasicMaterial({color:0xffe08a}));
-  packet.visible=false;scene.add(packet);
-  addEventListener('resize',()=>{ren.setSize(c.clientWidth,c.clientHeight);cam.aspect=c.clientWidth/c.clientHeight;cam.updateProjectionMatrix();});
-  (function loop(){requestAnimationFrame(loop);if(autorot)pts.rotation.y+=0.0015,(routeLine&&(routeLine.rotation.y=pts.rotation.y)),(packet.rotation.y=pts.rotation.y);ctrl.update();ren.render(scene,cam);})();
+  if(typeof THREE==='undefined'||!THREE.OrbitControls){document.getElementById('fallback').style.display='flex';return;}
+  try{
+    glReady=true;
+    const c=document.getElementById('gl');
+    scene=new THREE.Scene();scene.fog=new THREE.FogExp2(0x06040f,0.018);
+    cam=new THREE.PerspectiveCamera(50,c.clientWidth/c.clientHeight,0.1,100);cam.position.set(0,6.2,9.5);
+    ren=new THREE.WebGLRenderer({canvas:c,antialias:true});ren.setSize(c.clientWidth,c.clientHeight);ren.setPixelRatio(Math.min(devicePixelRatio,2));
+    ctrl=new THREE.OrbitControls(cam,ren.domElement);ctrl.enableDamping=true;ctrl.autoRotate=true;ctrl.autoRotateSpeed=0.55;
+    scene.add(new THREE.AmbientLight(0xffffff,0.85));
+    world=new THREE.Group();scene.add(world);
+
+    // the TOROID (faint wireframe so the surface reads clearly)
+    torusMesh=new THREE.Mesh(new THREE.TorusGeometry(Rm,rm,18,80),
+      new THREE.MeshBasicMaterial({color:0x8b5cf6,wireframe:true,transparent:true,opacity:0.12}));
+    torusMesh.rotation.x=Math.PI/2;world.add(torusMesh);
+
+    // 720 packet nodes
+    const positions=new Float32Array(N*3);colors=new Float32Array(N*3);
+    for(let n=0;n<N;n++){const v=rv(n);positions[n*3]=v.x;positions[n*3+1]=v.y;positions[n*3+2]=v.z;}
+    ptsGeo=new THREE.BufferGeometry();ptsGeo.setAttribute('position',new THREE.BufferAttribute(positions,3));
+    ptsGeo.setAttribute('color',new THREE.BufferAttribute(colors,3));
+    pts=new THREE.Points(ptsGeo,new THREE.PointsMaterial({size:0.13,vertexColors:true}));world.add(pts);
+
+    // the WINDING HELIX around the toroid (golden, low-discrepancy)
+    HELIX=[];const LOOPS=7,STEPS=1400;
+    for(let i=0;i<=STEPS;i++){const a=LOOPS*2*Math.PI*i/STEPS;HELIX.push(windPoint(a,PHI*a));}
+    const hg=new THREE.BufferGeometry().setFromPoints(HELIX);
+    helixLine=new THREE.Line(hg,new THREE.LineBasicMaterial({color:0xffe08a,transparent:true,opacity:0.9}));
+    helixLine.geometry.setDrawRange(0,0);world.add(helixLine);
+
+    // dynamic overlays (routes, candidate rays, codec curves)
+    dynGroup=new THREE.Group();world.add(dynGroup);
+
+    // a traveling packet + a 4x4x4 voxel cube + a drift arrow
+    packet=new THREE.Mesh(new THREE.SphereGeometry(0.17,18,18),new THREE.MeshBasicMaterial({color:0xffe08a}));
+    packet.visible=false;world.add(packet);
+    voxels=new THREE.Group();const bg=new THREE.BoxGeometry(0.08,0.08,0.08);
+    for(let i=0;i<64;i++){const m=new THREE.Mesh(bg,new THREE.MeshBasicMaterial({color:0x22d3ee,transparent:true,opacity:0.92}));
+      m.position.set(((i%4)-1.5)*0.11,((Math.floor(i/4)%4)-1.5)*0.11,(Math.floor(i/16)-1.5)*0.11);voxels.add(m);}
+    voxels.visible=false;world.add(voxels);
+    driftArrow=new THREE.ArrowHelper(new THREE.Vector3(1,0,0),new THREE.Vector3(),1,0xff7ad9,0.28,0.16);
+    driftArrow.visible=false;world.add(driftArrow);
+
+    addEventListener('resize',()=>{ren.setSize(c.clientWidth,c.clientHeight);cam.aspect=c.clientWidth/c.clientHeight;cam.updateProjectionMatrix();});
+    (function loop(){requestAnimationFrame(loop);
+      if(helixActive&&helixCount<HELIX.length){helixCount=Math.min(HELIX.length,helixCount+12);helixLine.geometry.setDrawRange(0,helixCount);}
+      if(pathArr&&pathArr.length>1){const A=pathArr[pathSeg],B=pathArr[(pathSeg+1)%pathArr.length];
+        packet.position.lerpVectors(A,B,pathT);pathT+=0.06;if(pathT>=1){pathT=0;pathSeg=(pathSeg+1)%(pathArr.length-1);}}
+      ctrl.update();ren.render(scene,cam);})();
+  }catch(e){glReady=false;document.getElementById('fallback').style.display='flex';}
 }
 function hsl(h,s,l){return glReady?new THREE.Color().setHSL(h,s,l):null;}
-function setColors(fn){if(!glReady)return;for(let n=0;n<N;n++){const c=fn(n);colors[n*3]=c.r;colors[n*3+1]=c.g;colors[n*3+2]=c.b;}ptsGeo.attributes.color.needsUpdate=true;}
-function clearRoute(){if(!glReady)return;if(routeLine){scene.remove(routeLine);routeLine.geometry.dispose();routeLine=null;}packet.visible=false;}
-function drawRoute(route,color){if(!glReady)return;clearRoute();const pos=[];for(const n of route)pos.push(POS[n][0],POS[n][2],POS[n][1]);
-  const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));
-  routeLine=new THREE.Line(g,new THREE.LineBasicMaterial({color}));routeLine.rotation.y=pts.rotation.y;scene.add(routeLine);
-  // animate packet along the route
-  let seg=0,tt=0;packet.visible=true;
-  clearInterval(window._pk);window._pk=setInterval(()=>{if(seg>=route.length-1){seg=0;}
-    const A=POS[route[seg]],B=POS[route[seg+1]];const p=[A[0]+(B[0]-A[0])*tt,A[2]+(B[2]-A[2])*tt,A[1]+(B[1]-A[1])*tt];
-    const v=new THREE.Vector3(p[0],p[1],p[2]).applyAxisAngle(new THREE.Vector3(0,1,0),pts.rotation.y);
-    packet.position.copy(v);tt+=0.08;if(tt>=1){tt=0;seg++;}},40);}
+function setColors(fn){if(!glReady)return;for(let n=0;n<N;n++){const c=fn(n);if(!c)continue;colors[n*3]=c.r;colors[n*3+1]=c.g;colors[n*3+2]=c.b;}ptsGeo.attributes.color.needsUpdate=true;}
+function clearDyn(){if(!glReady)return;while(dynGroup.children.length){const o=dynGroup.children.pop();o.geometry&&o.geometry.dispose();dynGroup.remove(o);}}
+function addLine(arr,color,opacity){if(!glReady)return null;const g=new THREE.BufferGeometry().setFromPoints(arr);
+  const l=new THREE.Line(g,new THREE.LineBasicMaterial({color,transparent:true,opacity:opacity==null?0.9:opacity}));dynGroup.add(l);return l;}
+function travel(routeOrPts){if(!glReady){return;}pathArr=routeOrPts.map(x=>typeof x==='number'?rv(x):x);pathSeg=0;pathT=0;packet.visible=true;}
+function noTravel(){if(!glReady)return;pathArr=null;packet.visible=false;}
+function showHelix(on){if(!glReady)return;helixActive=on;helixCount=on?0:HELIX.length;helixLine.geometry.setDrawRange(0,on?0:HELIX.length);helixLine.visible=true;}
+function hideHelix(){if(!glReady)return;helixLine.geometry.setDrawRange(0,0);helixActive=false;}
+function showVoxels(n){if(!glReady)return;voxels.position.copy(rv(n));voxels.visible=true;
+  voxels.children.forEach((m,i)=>{const on=((i*2654435761)>>>0)%5<2;m.material.color.setHex(on?0x22d3ee:0x223),m.material.opacity=on?0.95:0.18;});
+  // drift arrow = toroidal tangent at node (the J_C current direction)
+  const a=Math.atan2(POS[n][1],POS[n][0]);driftArrow.position.copy(rv(n));
+  driftArrow.setDirection(new THREE.Vector3(-Math.sin(a),0,Math.cos(a)));driftArrow.visible=true;}
+function hideExtras(){if(!glReady)return;voxels.visible=false;driftArrow.visible=false;}
 
 /* ============================================================ *
  *  Steps
  * ============================================================ */
+function cap(html){document.getElementById('cap').innerHTML=html;}
+const dot=(c)=>`<span class="leg" style="background:${c}"></span>`;
+
 const STEPS=[
- {n:"Step 1 · Substrate",t:"The golden Clifford manifold",
-  d:"720 “codon” packets placed on the flat golden Clifford torus as 12 nested layers × 60, with golden-angle spread (the equidistribution verified in the Clifford module). This is the space every later step computes on; travel cost between packets is quadrance (squared distance).",
+ {n:"Step 1 · Substrate",t:"A helix winding the golden toroid",
+  d:"720 “codon” packets sit on the flat golden Clifford torus as 12 nested layers × 60 (golden-angle spread — the equidistribution verified in the Clifford module). The gold curve is the golden winding: a helix that coils around the tube as it circles the major ring, never repeating — the low-discrepancy carrier that packets travel. Travel cost between packets is quadrance (squared distance).",
+  see:"You see: the toroid (faint wireframe), its 720 layer-colored packets, and a gold helix being drawn around the tube. The bright sphere is a packet riding the winding.",
   run(){newInstance();const cols=[0.0,0.08,0.12,0.16,0.30,0.42,0.5,0.58,0.66,0.74,0.82,0.92];
-    setColors(n=>hsl(cols[Math.floor(n/PER)],0.7,0.6));clearRoute();
-    tel([["packets",N],["structure","12 layers × 60"],["radii r1²,(φ+2)/5","0.7236"],["radii r2²,(3-φ)/5","0.2764"],["metric","quadrance on T²⊂S³"]]);
-    chartOff();}},
- {n:"Step 2 · Packet",t:"A 64-voxel SHD-CCP packet",
-  d:"Each node carries a 64-voxel (4×4×4) packet — the unit the Sparsemax kernel acts on. The kernel’s reverse valve breaks detailed balance, giving a strictly positive stationary toroidal drift current (verified exact: J_C = 1/192). That drift is the “pump” that moves packets.",
-  run(){const c=Math.floor(N/2);setColors(n=>n===c?hsl(0.13,1,0.6):hsl(0.6,0.2,0.18));
-    packetGrid();tel([["highlighted packet","#"+c],["voxels","64 = (Z/4Z)³"],["kernel","hyperbolic sparsemax (rational)"],["stationary drift J_C","1/192 (verified exact)"],["reversible at λ=0?","yes — no current"]]);clearRoute();chartOff();}},
- {n:"Step 3 · Memory",t:"Engram codec: compress past data",
-  d:"Past routes/streams are offloaded into a quaternion delta chain and compressed. Section boundaries telescope back EXACTLY (~1e-15) for any data; intra-section detail is recovered well for smooth/structured streams and lost for high-entropy data. This is the compressed prior the oracle can draw on.",
-  run(){const nC=240;const smooth=Array.from({length:nC},(_,i)=>0.8*Math.sin(0.02*i));const rand=Array.from({length:nC},()=>(RNG()*2-1)*1.2);
-    const s=codecRMSE(smooth,20),r=codecRMSE(rand,20);
-    setColors(n=>{const v=Math.min(1,REWARD[n]/2.5);return hsl(0.5-0.1*v,0.7,0.2+0.5*v);});
-    tel([["section-boundary error","~"+s.boundaryErr.toExponential(1)+" (exact)"],["smooth stream RMSE/std (20×)",s.rmse.toFixed(3)],["random stream RMSE/std (20×)",r.rmse.toFixed(3)],["verdict","lossy: keeps structure, drops noise"]]);
+    setColors(n=>hsl(cols[Math.floor(n/PER)],0.7,0.6));clearDyn();hideExtras();chartOff();
+    showHelix(true);travel(HELIX);
+    cap(`${dot('#8b5cf6')}<b>toroid</b> &nbsp; ${dot('#34d399')}<b>720 packets</b> (12 layers) &nbsp; ${dot('#ffe08a')}<b>golden winding helix</b> + a traveling packet`);
+    tel([["packets",N],["structure","12 layers × 60"],["winding","golden (φ) — low discrepancy"],["r1²=(φ+2)/5","0.7236"],["r2²=(3-φ)/5","0.2764"],["metric","quadrance on T²⊂S³"]]);}},
+
+ {n:"Step 2 · Packet",t:"A 64-voxel SHD-CCP packet + its drift",
+  d:"Each node carries a 64-voxel (4×4×4) packet — the unit the Sparsemax kernel acts on. The kernel’s reverse valve breaks detailed balance, giving a strictly positive stationary toroidal drift current (verified exact: J_C = 1/192). That drift — the pink arrow, tangent to the major ring — is the “pump” that moves packets along the winding.",
+  see:"You see: one packet exploded into its 4×4×4 voxel cube (cyan = active voxels), and the pink arrow showing the pump’s drift direction along the toroid.",
+  run(){const c=Math.floor(N/2);setColors(n=>n===c?hsl(0.13,1,0.62):hsl(0.6,0.18,0.16));
+    clearDyn();hideHelix();noTravel();showVoxels(c);packetGrid();
+    cap(`${dot('#22d3ee')}<b>64-voxel packet</b> (4×4×4 = (ℤ/4ℤ)³) &nbsp; ${dot('#ff7ad9')}<b>drift J_C = 1/192</b> (toroidal current)`);
+    tel([["highlighted packet","#"+c],["voxels","64 = (Z/4Z)³"],["kernel","hyperbolic sparsemax (rational)"],["stationary drift J_C","1/192 (verified exact)"],["reversible at λ=0?","yes — no current"]]);}},
+
+ {n:"Step 3 · Memory",t:"Engram codec: store & recreate a stream",
+  d:"A data stream (here, a smooth winding) is offloaded into a quaternion delta chain and compressed block-by-block. Section boundaries telescope back EXACTLY (~1e-15) for any data; the interior is recreated by SLERP — faithfully for smooth/structured streams, and dropped for high-entropy noise (chart). This is the compressed prior the oracle draws on.",
+  see:"You see: the ORIGINAL stream as a cyan winding and its quaternion-SLERP RECONSTRUCTION as a gold winding laid over it — they track closely, so structure is preserved. The chart shows recreation error for a smooth vs a random stream.",
+  run(){const nC=300,B=20,LO=3;
+    const smooth=Array.from({length:nC},(_,i)=>0.8*Math.sin(0.02*i));
+    const rand=Array.from({length:nC},()=>(RNG()*2-1)*1.2);
+    const s=codecRMSE(smooth,B),r=codecRMSE(rand,B);
+    // draw original vs reconstruction as windings (integrate the stream into the minor angle)
+    clearDyn();hideHelix();noTravel();hideExtras();setColors(n=>hsl(0.62,0.15,0.12));
+    if(glReady){let bo=0,br=0;const orig=[],rec=[];
+      for(let i=0;i<nC;i++){const a=LO*2*Math.PI*i/nC;bo+=SCALE*smooth[i];br+=SCALE*s.out[i];
+        orig.push(windPoint(a,2.2*bo+0.6));rec.push(windPoint(a,2.2*br+0.6));}
+      addLine(orig,0x22d3ee,0.95);addLine(rec,0xffe08a,0.95);}
+    cap(`${dot('#22d3ee')}<b>original stream</b> &nbsp; ${dot('#ffe08a')}<b>SLERP reconstruction</b> — overlapping ⇒ the codec keeps structure (boundaries exact)`);
+    tel([["stream length",nC+" → "+(nC/B)+" sections"],["section-boundary error","~"+s.boundaryErr.toExponential(1)+" (exact)"],["smooth RMSE/std",s.rmse.toFixed(3)],["random RMSE/std",r.rmse.toFixed(3)],["verdict","lossy: keeps structure, drops noise"]]);
     barChart("Recreation error (0=perfect, 1=destroyed)",[["smooth",s.rmse,0x34d399],["random",r.rmse,0xf87171]],1.05);}},
+
  {n:"Step 4 · Helix A",t:"The geometric oracle proposes",
-  d:"From a start packet, Helix A scores nearby candidates by a geometric heuristic — reward − λ·quadrance — and samples promising next hops. It is a heuristic only; it proposes, it never decides. Brighter = higher score.",
-  run(){const start=Math.floor(RNG()*N);window._start=start;const cur=start;const cs=NEAR[cur];
-    const sc={};let mn=1e9,mx=-1e9;for(const nidx of cs){const v=REWARD[nidx]-LAM*quad(cur,nidx);sc[nidx]=v;mn=Math.min(mn,v);mx=Math.max(mx,v);}
-    setColors(n=>{if(n===start)return hsl(0.13,1,0.65);if(n in sc){const t=(sc[n]-mn)/(mx-mn+1e-9);return hsl(0.45-0.1*t,0.9,0.25+0.5*t);}return hsl(0.6,0.15,0.13);});
-    tel([["start packet","#"+start],["candidates scored",CAND],["heuristic","reward − λ·quadrance"],["role","proposes only — never trusted"]]);clearRoute();chartOff();}},
+  d:"From a start packet, Helix A scores nearby candidates by a geometric heuristic — reward − λ·quadrance — and samples promising next hops. The rays fan out from the start to the candidates it considers; brighter = higher score. It is a heuristic only: it proposes, it never decides.",
+  see:"You see: the gold start packet and cyan→gold rays to the candidate packets it is scoring. No route is committed yet.",
+  run(){const start=Math.floor(RNG()*N);window._start=start;const cs=NEAR[start];
+    const sc={};let mn=1e9,mx=-1e9;for(const nidx of cs){const v=REWARD[nidx]-LAM*quad(start,nidx);sc[nidx]=v;mn=Math.min(mn,v);mx=Math.max(mx,v);}
+    setColors(n=>{if(n===start)return hsl(0.13,1,0.66);if(n in sc){const t=(sc[n]-mn)/(mx-mn+1e-9);return hsl(0.45-0.12*t,0.9,0.25+0.5*t);}return hsl(0.6,0.13,0.12);});
+    clearDyn();hideHelix();noTravel();hideExtras();chartOff();
+    if(glReady)for(const nidx of cs){const t=(sc[nidx]-mn)/(mx-mn+1e-9);addLine([rv(start),rv(nidx)],new THREE.Color().setHSL(0.45-0.12*t,0.9,0.4+0.3*t).getHex(),0.25+0.55*t);}
+    cap(`${dot('#ffe08a')}<b>start packet</b> &nbsp; rays → <b>${CAND} candidates</b> scored by reward − λ·quadrance (bright = better). Proposes only.`);
+    tel([["start packet","#"+start],["candidates scored",CAND],["heuristic","reward − λ·quadrance"],["role","proposes only — never trusted"]]);}},
+
  {n:"Step 5 · Helix B",t:"The certifier verifies exactly",
-  d:"Helix B takes the oracle’s proposed routes and evaluates their value EXACTLY (collected reward − λ·travel). The best certified route is drawn and a packet travels it. Correctness never depends on the heuristic — identical discipline to the factoring bench, here to a constructive end.",
-  run(){const start=window._start??Math.floor(RNG()*N);const best=bestRoute(routeOracle(40,start));
-    setColors(n=>best.route.includes(n)?hsl(0.13,1,0.6):hsl(0.6,0.15,0.13));drawRoute(best.route,0xffe08a);
-    tel([["proposed routes",40],["chosen route hops",K],["exact value (certified)",best.value.toFixed(2)],["reward collected","distinct nodes"],["guarantee","value is exact, not heuristic"]]);chartOff();}},
- {n:"Step 6 · Benchmark",t:"When does geometry help?",
-  d:"The payoff. We measure the Oracle Bias ε = oracle − random in two regimes, live. ROUTING: the objective is a function of the geometry, so the oracle decisively beats random (ε ≫ 0). FACTORING (ECDLP): the hidden mod-p structure is invisible to the geometry, so ε ≤ 0. Same architecture; the geometry only helps when it can see the objective.",
-  run(){
-    // routing eps (live)
-    let dr=[],doo=[];for(let t=0;t<14;t++){newInstance();const start=Math.floor(RNG()*N);
-      dr.push(bestRoute(routeRandom(40,start)).value);doo.push(bestRoute(routeOracle(40,start)).value);}
+  d:"Helix B takes the oracle’s proposed routes and evaluates each value EXACTLY (collected reward − λ·travel). The best certified route is drawn in gold and a packet travels it. Correctness never depends on the heuristic — the same discipline as the factoring bench, here to a constructive end.",
+  see:"You see: faint proposed routes, the chosen best route in bright gold, and a packet traveling it. The reported value is exact, not the oracle’s estimate.",
+  run(){const start=window._start??Math.floor(RNG()*N);const proposed=routeOracle(40,start);const best=bestRoute(proposed);
+    setColors(n=>best.route.includes(n)?hsl(0.13,1,0.62):hsl(0.6,0.13,0.12));
+    clearDyn();hideHelix();hideExtras();chartOff();
+    if(glReady){for(let i=0;i<8;i++)addLine(proposed[i].map(rv),0x6d5bd0,0.12);addLine(best.route.map(rv),0xffe08a,0.95);}
+    travel(best.route);
+    cap(`${dot('#6d5bd0')}<b>proposed routes</b> (faint) &nbsp; ${dot('#ffe08a')}<b>certified best route</b> + traveling packet · value is <b>exact</b>`);
+    tel([["proposed routes",40],["chosen route hops",K],["exact value (certified)",best.value.toFixed(2)],["guarantee","value is exact, not heuristic"]]);}},
+
+ {n:"Step 6 · Benchmark",t:"When does the geometry help?",
+  d:"The payoff. We race the oracle against random search in two regimes, live. ROUTING (drawn): the oracle route (green) is tight and high-value; a random route (red) wanders — the oracle decisively wins, ε ≫ 0, because the objective is a function of the geometry. FACTORING/ECDLP (chart): the hidden mod-p structure is invisible to the embedding, so ε ≈ 0 — no usable bias (the dedicated Helix Factorization bench measures ε ≤ 0 with a 2σ significance band). Same architecture; geometry helps only when it can see the objective.",
+  see:"You see: on the toroid, the GREEN oracle route vs the RED random route at equal budget — green collects the reward cluster efficiently, red sprawls. The chart shows the ε contrast: routing (helps) vs factoring (no help).",
+  run(){newInstance();
+    // a fresh instance; show oracle vs random route on the SAME instance
+    const start=Math.floor(RNG()*N);const oR=bestRoute(routeOracle(40,start));const rR=bestRoute(routeRandom(40,start));
+    // live eps over several instances
+    let dr=[],doo=[];for(let t=0;t<14;t++){newInstance();const s2=Math.floor(RNG()*N);
+      dr.push(bestRoute(routeRandom(40,s2)).value);doo.push(bestRoute(routeOracle(40,s2)).value);}
     const mr=dr.reduce((a,b)=>a+b)/dr.length,mo=doo.reduce((a,b)=>a+b)/doo.length;
     const fb=factoringBias();
+    // restore the display instance + reward coloring + the two routes
+    REWARD=Array.from({length:N},(_,n)=>HOT.reduce((s,h)=>s+Math.exp(-quad(n,h)/3.0),0)); // keep last HOT
+    setColors(n=>{const v=Math.min(1,REWARD[n]/2.5);return hsl(0.5-0.12*v,0.7,0.16+0.5*v);});
+    clearDyn();hideHelix();hideExtras();
+    if(glReady){addLine(rR.route.map(rv),0xf87171,0.85);addLine(oR.route.map(rv),0x34d399,0.95);}
+    travel(oR.route);
+    cap(`${dot('#34d399')}<b>oracle route</b> (tight, high value) &nbsp; vs &nbsp; ${dot('#f87171')}<b>random route</b> (wanders). Reward cluster = bright nodes.`);
     tel([["ROUTING random",mr.toFixed(2)],["ROUTING oracle",mo.toFixed(2)],["ROUTING ε","<span class='ok'>+"+(mo-mr).toFixed(2)+" — geometry helps</span>"],
-         ["FACTORING uniform hit",fb.uni.toExponential(2)],["FACTORING oracle hit",fb.har.toExponential(2)],["FACTORING ε","<span class='bad'>"+(fb.har-fb.uni).toExponential(2)+" — no help</span>"]]);
-    // normalized bars: routing eps / |random| ; factoring eps / uniform
+         ["FACTORING uniform hit",fb.uni.toExponential(2)],["FACTORING oracle hit",fb.har.toExponential(2)],["FACTORING ε","<span class='bad'>"+(fb.har-fb.uni).toExponential(2)+" — ≈0, no usable bias</span>"]]);
     const rNorm=(mo-mr)/Math.max(1,Math.abs(mr));const fNorm=(fb.har-fb.uni)/Math.max(1e-9,fb.uni);
-    barChart("Oracle Bias ε (normalized) — routing vs factoring",[["routing",rNorm,0x34d399],["factoring",fNorm,0xf87171]],Math.max(1.1,rNorm*1.1),true);
-    newInstance();setColors(n=>hsl(0.6,0.2,0.16));clearRoute();}}
+    barChart("Oracle Bias ε (normalized) — routing vs factoring",[["routing",rNorm,0x34d399],["factoring",fNorm,0xf87171]],Math.max(1.1,rNorm*1.1),true);}}
 ];
 
 /* ---- small 2D charts + voxel grid in the corner canvas ---- */
@@ -212,8 +306,9 @@ const chart=document.getElementById('chart'),cx=chart.getContext('2d');
 function chartOff(){chart.style.display='none';}
 function barChart(title,bars,scale,signed){chart.style.display='block';cx.clearRect(0,0,340,170);
   cx.fillStyle='#cbd5e1';cx.font='11px ui-monospace';cx.fillText(title,12,18);
-  const x0=20,y0=140,w=120,gap=40,base=signed?y0-50:y0;
-  if(signed){cx.strokeStyle='rgba(255,255,255,.2)';cx.beginPath();cx.moveTo(10,base);cx.lineTo(330,base);cx.stroke();}
+  const x0=24,y0=140,w=120,gap=44,base=signed?y0-50:y0;
+  if(signed){cx.strokeStyle='rgba(255,255,255,.2)';cx.beginPath();cx.moveTo(10,base);cx.lineTo(330,base);cx.stroke();
+    cx.fillStyle='rgba(255,255,255,.4)';cx.fillText('0',2,base+3);}
   bars.forEach((b,i)=>{const[name,val,col]=b;const h=Math.max(-90,Math.min(90,(val/scale)*90));
     cx.fillStyle='#'+col.toString(16).padStart(6,'0');
     if(h>=0)cx.fillRect(x0+i*(w+gap),base-h,w,h);else cx.fillRect(x0+i*(w+gap),base,w,-h);
@@ -221,12 +316,14 @@ function barChart(title,bars,scale,signed){chart.style.display='block';cx.clearR
     cx.fillText(val.toFixed(3),x0+i*(w+gap),(h>=0?base-h-5:base-h+14));});}
 function packetGrid(){chart.style.display='block';cx.clearRect(0,0,340,170);cx.fillStyle='#cbd5e1';cx.font='11px ui-monospace';
   cx.fillText('64-voxel packet (4×4×4 → 8×8)',12,16);
-  for(let i=0;i<64;i++){const on=RNG()<0.5;cx.fillStyle=on?'#22d3ee':'#1e293b';
+  for(let i=0;i<64;i++){const on=((i*2654435761)>>>0)%5<2;cx.fillStyle=on?'#22d3ee':'#1e293b';
     cx.fillRect(20+(i%8)*34,30+Math.floor(i/8)*16,30,13);}}
 
 /* ---- stepper ---- */
 let cur=0;const stepsEl=document.getElementById('steps');
-STEPS.forEach((s,i)=>{const el=document.createElement('div');el.className='step';el.innerHTML=`<div class="n">${s.n}</div><div class="t">${s.t}</div><div class="d">${s.d}</div>`;el.onclick=()=>go(i);stepsEl.appendChild(el);});
+STEPS.forEach((s,i)=>{const el=document.createElement('div');el.className='step';
+  el.innerHTML=`<div class="n">${s.n}</div><div class="t">${s.t}</div><div class="d">${s.d}</div><div class="see">▸ ${s.see}</div>`;
+  el.onclick=()=>go(i);stepsEl.appendChild(el);});
 function tel(rows){document.getElementById('tel').innerHTML=rows.map(r=>`<div class="kv"><span>${r[0]}</span><span class="mono">${r[1]}</span></div>`).join('');}
 function go(i){cur=Math.max(0,Math.min(STEPS.length-1,i));
   document.querySelectorAll('.step').forEach((e,k)=>e.classList.toggle('active',k===cur));
