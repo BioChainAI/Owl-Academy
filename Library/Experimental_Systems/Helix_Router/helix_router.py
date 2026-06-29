@@ -1,5 +1,5 @@
 """
-helix_router.py  —  the Dual-Helix architecture applied where it actually works.
+helix_router.py  —  the Polycentria Dual-Helix architecture applied where it works.
 
 Same pattern as the factorization bench (Helix A proposes candidates, Helix B certifies
 exactly), but the problem is now a ROUTING / sequence-optimization task over a structured
@@ -186,7 +186,7 @@ def learn_prior_from_history(rng, n_past=8, top_T=48):
 # Experiment
 # --------------------------------------------------------------------------- #
 def main():
-    print("Helix Router — Dual-Helix on the 720-node golden toroidal manifold")
+    print("Helix Router — Polycentria Dual-Helix on the 720-node golden toroidal manifold")
     print("=" * 74)
     print(f"  {N_NODES} packets = {LAYERS} nested layers × {PER_LAYER}; golden Clifford torus")
     print(f"  r1²=(φ+2)/5={R1*R1:.4f}, r2²=(3-φ)/5={R2*R2:.4f};  route = {K_HOPS} hops, λ={LAMBDA}")

@@ -1,4 +1,4 @@
-# Helix Router — the Dual-Helix architecture where it actually works
+# Helix Router — the Polycentria Dual-Helix architecture where it actually works
 
 The same oracle-proposes / certifier-verifies pattern as the factorization bench, but
 pointed at a problem the SHD-CCP geometry is genuinely *suited* to: **learned-heuristic

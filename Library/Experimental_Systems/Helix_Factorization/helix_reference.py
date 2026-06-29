@@ -1,5 +1,5 @@
 """
-helix_reference.py  —  a correctness-guaranteed test bench for the Schism
+helix_reference.py  —  a correctness-guaranteed test bench for the Polycentria
 Dual-Helix factorization model ("Topological Optimization of Pollard's Rho").
 
 The paper is careful and honest: it keeps the exact recurrence authoritative, proves
@@ -332,7 +332,7 @@ def work_accounting(bits=18, L=None, K=200):
 
 
 def main():
-    print("Schism Dual-Helix factorization — correctness-guaranteed test bench")
+    print("Polycentria Dual-Helix factorization — correctness-guaranteed test bench")
     print("=" * 74)
     demo_baseline_and_exactness()
     uni, results, bd = measure_oracle_bias()
