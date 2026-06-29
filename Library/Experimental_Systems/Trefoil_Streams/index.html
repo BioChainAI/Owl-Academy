@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Trefoil Streams — Polycentria-governed emergent equilibrium</title>
+<meta name="description" content="Three trefoil-knot data streams on a golden toroid, an emergent 4th phase from quadrance scaling, governed by a Polycentria Dual-Helix.">
+
+<!-- Three.js + OrbitControls (enhancement only; page is fully functional without them) -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+
+<style>
+  :root{
+    --void:#05030a; --panel:rgba(10,8,20,0.66);
+    --gold:#D4AF37; --cyan:#00ffff; --magenta:#ff0055; --purple:#8b5cf6;
+    --line:rgba(212,175,55,0.15); --txt:#e2e8f0; --dim:rgba(255,255,255,0.42);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{
+    background:var(--void); color:var(--txt);
+    font-family:system-ui,'Inter',sans-serif; height:100vh; overflow:hidden;
+    display:flex;
+  }
+  .mono{font-family:ui-monospace,'JetBrains Mono',monospace}
+  .serif{font-family:'Cinzel',Georgia,serif;letter-spacing:.02em}
+
+  /* canvas / left */
+  #stage{flex:1;position:relative;min-width:0;
+    background:radial-gradient(ellipse at center, rgba(139,92,246,0.08), var(--void) 70%);}
+  #gl{position:absolute;inset:0}
+  #glfallback{position:absolute;inset:0;display:none;align-items:center;justify-content:center;
+    text-align:center;padding:2rem;color:var(--dim);font-size:.85rem;line-height:1.7}
+  .nav{position:absolute;top:1.2rem;left:1.2rem;z-index:5}
+  .nav a{display:inline-block;background:rgba(0,0,0,.45);border:1px solid rgba(212,175,55,.3);
+    color:var(--gold);font-size:.62rem;letter-spacing:.2em;text-transform:uppercase;
+    padding:.55rem 1rem;border-radius:5px;text-decoration:none;font-weight:700;
+    box-shadow:0 0 14px rgba(212,175,55,.12)}
+  .nav a:hover{background:rgba(212,175,55,.16);color:#fff}
+
+  .legend{position:absolute;bottom:1.4rem;left:1.4rem;z-index:5;display:flex;flex-direction:column;gap:.4rem}
+  .lg{background:rgba(0,0,0,.6);backdrop-filter:blur(6px);padding:.45rem .9rem;border-radius:5px;
+    font-size:.68rem;border-left:3px solid #555;cursor:pointer;transition:.18s}
+  .lg:hover{background:rgba(255,255,255,.06);transform:translateX(3px)}
+  .lg b{color:#fff;font-weight:600}.lg span{color:var(--dim)}
+
+  /* sidebar */
+  #side{width:430px;max-width:46vw;height:100%;overflow-y:auto;
+    background:var(--panel);backdrop-filter:blur(16px);
+    border-left:1px solid var(--line);box-shadow:-10px 0 30px rgba(0,0,0,.8);
+    position:relative;z-index:6}
+  #side::-webkit-scrollbar{width:5px}
+  #side::-webkit-scrollbar-thumb{background:rgba(212,175,55,.4);border-radius:5px}
+
+  .head{padding:1.5rem 1.5rem 1.2rem;border-bottom:1px solid rgba(255,255,255,.05);background:rgba(0,0,0,.25)}
+  .dept{font-size:.6rem;color:var(--gold);letter-spacing:.25em;text-transform:uppercase;font-weight:700;margin-bottom:.35rem}
+  h1{font-size:1.5rem;line-height:1.15;font-weight:400;color:#fff}
+  h1 em{font-style:normal;color:var(--cyan)}
+  .blurb{font-size:.72rem;color:var(--dim);margin-top:.55rem;line-height:1.6}
+
+  .sec{padding:1.3rem 1.5rem;border-bottom:1px solid rgba(255,255,255,.05)}
+  .sec h2{font-size:.62rem;color:var(--gold);letter-spacing:.16em;text-transform:uppercase;font-weight:700;margin-bottom:.9rem}
+
+  .ctl{margin-bottom:.7rem}
+  .ctl label{display:flex;justify-content:space-between;font-size:.62rem;text-transform:uppercase;
+    letter-spacing:.06em;color:var(--dim);font-family:ui-monospace,monospace}
+  .ctl .v{font-weight:700}
+  .s0 .v{color:var(--magenta)} .s1 .v{color:var(--cyan)} .s2 .v{color:var(--gold)}
+  input[type=range]{-webkit-appearance:none;width:100%;height:2px;background:rgba(255,255,255,.12);
+    border-radius:2px;outline:none;margin:.45rem 0 .2rem}
+  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:12px;height:12px;border-radius:50%;
+    background:var(--cyan);cursor:pointer;box-shadow:0 0 10px rgba(0,255,255,.5)}
+  .s0 input[type=range]::-webkit-slider-thumb{background:var(--magenta);box-shadow:0 0 10px rgba(255,0,85,.5)}
+  .s2 input[type=range]::-webkit-slider-thumb{background:var(--gold);box-shadow:0 0 10px rgba(212,175,55,.5)}
+
+  /* equilibrium meter */
+  .rho-wrap{margin-top:.4rem}
+  .rho-top{display:flex;justify-content:space-between;align-items:baseline}
+  .rho-label{font-size:.62rem;text-transform:uppercase;letter-spacing:.1em;color:var(--dim)}
+  .rho-val{font-size:1.35rem;font-weight:700}
+  .bar{height:8px;background:rgba(255,255,255,.07);border-radius:4px;overflow:hidden;margin-top:.5rem}
+  .bar > i{display:block;height:100%;width:0%;border-radius:4px;transition:width .12s,background .12s}
+  .verdict{font-size:.68rem;margin-top:.55rem;font-weight:600}
+  .ok{color:#34d399}.bad{color:var(--magenta)}.warn{color:var(--gold)}
+
+  /* parity readout */
+  .parity{display:flex;align-items:center;gap:.8rem;margin-top:.3rem}
+  .dial{width:84px;height:84px;flex:none}
+  .ptxt{font-size:.7rem;line-height:1.55;color:var(--dim)}
+  .ptxt b{color:#fff}
+
+  table.cmp{width:100%;border-collapse:collapse;font-size:.7rem;margin-top:.3rem}
+  table.cmp td,table.cmp th{padding:.34rem .2rem;text-align:right;border-bottom:1px solid rgba(255,255,255,.06)}
+  table.cmp th{color:var(--dim);font-weight:600;text-transform:uppercase;font-size:.56rem;letter-spacing:.08em}
+  table.cmp td:first-child,table.cmp th:first-child{text-align:left}
+  .eps-big{font-size:1.05rem;font-weight:700}
+
+  button.act{width:100%;margin-top:.8rem;background:rgba(139,92,246,.12);
+    border:1px solid rgba(139,92,246,.4);color:#c4b5fd;font-size:.62rem;font-weight:700;
+    letter-spacing:.18em;text-transform:uppercase;padding:.7rem;border-radius:6px;cursor:pointer;
+    font-family:ui-monospace,monospace;transition:.18s}
+  button.act:hover{background:rgba(139,92,246,.22);color:#fff}
+  button.act.gold{background:rgba(212,175,55,.1);border-color:rgba(212,175,55,.4);color:var(--gold)}
+  button.act.gold:hover{background:rgba(212,175,55,.2);color:#fff}
+
+  .mathblock{background:rgba(0,0,0,.4);border:1px solid rgba(255,255,255,.06);border-radius:6px;
+    padding:.7rem .8rem;font-family:ui-monospace,monospace;font-size:.72rem;color:var(--gold);
+    text-align:center;margin:.6rem 0}
+  .note{font-size:.7rem;color:var(--dim);line-height:1.65}
+  .note code{color:var(--cyan);background:rgba(34,211,238,.07);padding:.05em .3em;border-radius:3px;font-size:.92em}
+  .tag{display:inline-block;font-size:.55rem;letter-spacing:.2em;text-transform:uppercase;
+    padding:.18em .6em;border-radius:999px;border:1px solid rgba(139,92,246,.35);
+    background:rgba(139,92,246,.1);color:#c4b5fd;margin-bottom:.6rem}
+  .dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:.4rem;vertical-align:middle}
+</style>
+</head>
+<body>
+
+<div id="stage">
+  <div class="nav"><a href="../index.html">← Experimental Systems</a></div>
+  <canvas id="gl"></canvas>
+  <div id="glfallback">
+    <div>3D view needs WebGL + the Three.js CDN.<br>
+    The governance bench on the right runs entirely without it — every number is computed in-page.</div>
+  </div>
+  <div class="legend" id="legend">
+    <div class="lg" style="border-color:#ff0055" data-k="0"><b>Stream α</b> <span>(trefoil + inverse · offset 0)</span></div>
+    <div class="lg" style="border-color:#00ffff" data-k="1"><b>Stream β</b> <span>(trefoil + inverse · 2π/3)</span></div>
+    <div class="lg" style="border-color:#D4AF37" data-k="2"><b>Stream γ</b> <span>(trefoil + inverse · 4π/3)</span></div>
+    <div class="lg" style="border-color:#ffffff" data-k="3"><b>Emergent Φ₄</b> <span>(quaternion centroid → core)</span></div>
+    <div class="lg" style="border-color:transparent;color:var(--dim)" data-k="-1">Reset focus</div>
+  </div>
+</div>
+
+<div id="side">
+  <div class="head">
+    <div class="dept">Experimental Systems · Building Block</div>
+    <h1 class="serif">Trefoil <em>Streams</em></h1>
+    <div class="blurb">Three (2,3) torus-knot data streams wound around one golden toroid at the
+      cube-root-of-unity offsets. Their quaternion centroid is an <b>emergent 4th phase</b> that
+      collapses to the torus core at equilibrium — and a <b>Polycentria Dual-Helix</b> governs it:
+      an oracle proposes, an exact certifier decides.</div>
+  </div>
+
+  <!-- live config -->
+  <div class="sec">
+    <h2>Stream quadrance scaling  sₖ</h2>
+    <div class="ctl s0"><label>Stream α  s₀ <span class="v" id="v-s0">1.00</span></label>
+      <input type="range" id="s0" min="0.2" max="1.8" step="0.01" value="1"></div>
+    <div class="ctl s1"><label>Stream β  s₁ <span class="v" id="v-s1">1.00</span></label>
+      <input type="range" id="s1" min="0.2" max="1.8" step="0.01" value="1"></div>
+    <div class="ctl s2"><label>Stream γ  s₂ <span class="v" id="v-s2">1.00</span></label>
+      <input type="range" id="s2" min="0.2" max="1.8" step="0.01" value="1"></div>
+    <div class="ctl"><label>Phase drift on β,γ  Δψ <span class="v" id="v-dpsi" style="color:#fff">0.00</span></label>
+      <input type="range" id="dpsi" min="-1" max="1" step="0.01" value="0"></div>
+    <button class="act gold" id="btn-balance">⟳ Snap to balanced equilibrium</button>
+  </div>
+
+  <!-- equilibrium meter -->
+  <div class="sec">
+    <h2>Emergent phase Φ₄ — equilibrium meter</h2>
+    <div class="rho-wrap">
+      <div class="rho-top">
+        <span class="rho-label">off-core residual&nbsp; ρ = minorR·|Σ sₖ e<sup>iψₖ</sup>|</span>
+        <span class="rho-val mono" id="rho-val">0.000</span>
+      </div>
+      <div class="bar"><i id="rho-bar"></i></div>
+      <div class="verdict" id="rho-verdict"></div>
+    </div>
+    <div class="mathblock">Ψ₄ = Σₖ₌₁³ (Sₖ + Sₖ⁻¹) &nbsp;→&nbsp; 1 + ω + ω² = 0</div>
+    <div class="note">At balanced scalings and cube-root offsets the three minor-radius phasors
+      cancel <b>exactly</b> — Φ₄ falls onto the torus core (the "zero point"). Imbalance re-grows ρ
+      linearly: a δ bump on one stream gives <code>ρ = minorR·δ</code>.</div>
+  </div>
+
+  <!-- parity channel -->
+  <div class="sec">
+    <h2>Topological parity channel</h2>
+    <div class="parity">
+      <svg class="dial" id="dial" viewBox="-50 -50 100 100"></svg>
+      <div class="ptxt" id="parity-txt"></div>
+    </div>
+    <div class="note" style="margin-top:.5rem">ρ = ‖Z‖ flags <b>that</b> a stream drifted; the
+      argument arg(Z) points at <b>which</b> — no training, exact. (Reference: 100% single-stream
+      localization over 3000 trials.)</div>
+  </div>
+
+  <!-- governance -->
+  <div class="sec">
+    <span class="tag">Polycentria Dual-Helix</span>
+    <h2>Governance — oracle proposes, certifier decides</h2>
+    <div class="note" style="margin-bottom:.6rem">Drift the streams off balance and observe them
+      through noise. <b>Helix A</b> (geometric oracle) and a <b>blind-random</b> baseline each spend
+      the same budget of <b>Helix B</b> exact-residual evaluations; we measure the
+      <b>Oracle Bias ε</b> = (random best ρ) − (oracle best ρ).</div>
+    <table class="cmp">
+      <tr><th>method</th><th>best ρ found</th></tr>
+      <tr><td><span class="dot" style="background:#777"></span>blind random</td><td class="mono" id="g-rand">—</td></tr>
+      <tr><td><span class="dot" style="background:var(--purple)"></span>geometric oracle</td><td class="mono" id="g-oracle">—</td></tr>
+    </table>
+    <div style="display:flex;justify-content:space-between;align-items:baseline;margin-top:.7rem">
+      <span class="rho-label">Oracle Bias ε (±2σ over trials)</span>
+      <span class="eps-big mono" id="g-eps">—</span>
+    </div>
+    <div class="verdict" id="g-verdict"></div>
+    <button class="act" id="btn-gov">▶ Run governance trials (oracle vs random)</button>
+    <div class="note" style="margin-top:.7rem">Like the Router, ε &gt; 0 because the objective <b>is</b>
+      the geometry. The certifier's ρ is exact and oracle-independent — the chosen equilibrium is
+      always correct, whatever the oracle proposed.</div>
+  </div>
+
+  <div class="sec" style="border-bottom:none">
+    <h2>Reference</h2>
+    <div class="note">All numbers above are computed in-page and match the Python reference
+      <code>trefoil_streams.py</code> (run it for the exact-arithmetic checks in ℚ[√3] and ℚ[√5],
+      the linearity table, and the governance ε with its 2σ band). The 3D view adapts the
+      <em>triple-trefoil equilibrium</em> algorithm: Frenet-frame quaternion rotation
+      <code>P' = q·P·q⁻¹</code>, three twistor pairs, and a centroid core.</div>
+  </div>
+</div>
+
+<script>
+"use strict";
+// ===================================================================== //
+//  GOVERNANCE MATH  — pure, DOM/Three-free, mirrors trefoil_streams.py   //
+// ===================================================================== //
+const TWO_PI = Math.PI * 2;
+const PHI = (1 + Math.sqrt(5)) / 2;
+const MINOR_R = 1.0, MAJOR_R = PHI;          // golden toroid: R²/minorR² = φ²
+const N_STREAMS = 3;
+const OFFSETS = [0, TWO_PI/3, 2*TWO_PI/3];   // cube-root-of-unity phase offsets
+
+// Helix B (certifier): exact emergent phasor Z = minorR·Σ sₖ e^{iψₖ}
+function emergentPhasor(scales, phases){
+  let re = 0, im = 0;
+  for (let k = 0; k < N_STREAMS; k++){
+    re += scales[k] * Math.cos(phases[k]);
+    im += scales[k] * Math.sin(phases[k]);
+  }
+  return {re: MINOR_R*re, im: MINOR_R*im};
+}
+function residual(scales, phases){
+  const z = emergentPhasor(scales, phases);
+  return Math.hypot(z.re, z.im);
+}
+
+// a small deterministic PRNG so trials are reproducible per click
+function mulberry32(seed){
+  return function(){
+    seed |= 0; seed = (seed + 0x6D2B79F5) | 0;
+    let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+function gauss(rnd){ // Box–Muller
+  let u = 0, v = 0;
+  while (u === 0) u = rnd();
+  while (v === 0) v = rnd();
+  return Math.sqrt(-2*Math.log(u)) * Math.cos(TWO_PI*v);
+}
+
+// Helix A (oracle): propose corrective configs from the noisy observation
+function proposeOracle(rnd, M, obsS, obsP, spread){
+  const meanS = (obsS[0]+obsS[1]+obsS[2])/3;
+  const out = [];
+  for (let m = 0; m < M; m++){
+    const s = [], p = [];
+    for (let k = 0; k < N_STREAMS; k++){
+      s.push(meanS + gauss(rnd)*spread);
+      p.push(0.5*obsP[k] + 0.5*OFFSETS[k] + gauss(rnd)*spread);
+    }
+    out.push([s, p]);
+  }
+  return out;
+}
+function proposeRandom(rnd, M){
+  const out = [];
+  for (let m = 0; m < M; m++){
+    const s = [], p = [];
+    for (let k = 0; k < N_STREAMS; k++){
+      s.push(0.4 + rnd()*1.2);
+      p.push(OFFSETS[k] + (rnd()*2-1)*0.8);
+    }
+    out.push([s, p]);
+  }
+  return out;
+}
+function bestResidual(cfgs){
+  let b = Infinity;
+  for (const [s,p] of cfgs){ const r = residual(s,p); if (r < b) b = r; }
+  return b;
+}
+
+// the full Part-D experiment, run in-page
+function runGovernance(seed){
+  const rnd = mulberry32(seed);
+  const TRIALS = 200, M = 24, NOISE = 0.30, DRIFT = 0.6;
+  const diffs = [];
+  let sumR = 0, sumO = 0;
+  for (let t = 0; t < TRIALS; t++){
+    const trueS = [], trueP = [];
+    for (let k = 0; k < N_STREAMS; k++){
+      trueS.push(1 + (rnd()*2-1)*DRIFT);
+      trueP.push(OFFSETS[k] + (rnd()*2-1)*DRIFT);
+    }
+    const obsS = trueS.map(s => s + gauss(rnd)*NOISE);
+    const obsP = trueP.map(p => p + gauss(rnd)*NOISE);
+    const rR = bestResidual(proposeRandom(rnd, M));
+    const rO = bestResidual(proposeOracle(rnd, M, obsS, obsP, 0.25));
+    sumR += rR; sumO += rO; diffs.push(rR - rO);
+  }
+  const mR = sumR/TRIALS, mO = sumO/TRIALS, eps = mR - mO;
+  const mean = diffs.reduce((a,b)=>a+b,0)/diffs.length;
+  const varr = diffs.reduce((a,b)=>a+(b-mean)*(b-mean),0)/diffs.length;
+  const band = 2*Math.sqrt(varr)/Math.sqrt(diffs.length);
+  return {mR, mO, eps, band};
+}
+
+// ===================================================================== //
+//  LIVE PANEL WIRING                                                     //
+// ===================================================================== //
+const state = { s:[1,1,1], dpsi:0, focus:-1 };
+function phases(){ return [OFFSETS[0], OFFSETS[1] + state.dpsi, OFFSETS[2] - state.dpsi]; }
+
+const $ = id => document.getElementById(id);
+function fmt(x,n){ return x.toFixed(n); }
+
+function updatePanel(){
+  const ps = phases();
+  const z = emergentPhasor(state.s, ps);
+  const rho = Math.hypot(z.re, z.im);
+
+  $('rho-val').textContent = fmt(rho, 4);
+  const pct = Math.min(100, rho/2.0*100);
+  const bar = $('rho-bar');
+  bar.style.width = pct + '%';
+  const v = $('rho-verdict');
+  if (rho < 1e-6){
+    bar.style.background = '#34d399';
+    v.className = 'verdict ok'; v.textContent = '● Equilibrium — Φ₄ sits on the torus core (zero point).';
+  } else if (rho < 0.25){
+    bar.style.background = 'var(--gold)';
+    v.className = 'verdict warn'; v.textContent = '● Near equilibrium — small off-core drift.';
+  } else {
+    bar.style.background = 'var(--magenta)';
+    v.className = 'verdict bad'; v.textContent = '● Out of balance — Φ₄ has bulged off the core.';
+  }
+
+  // parity dial: arg(Z) with the three cube-root directions
+  drawDial(z, rho);
+  const ptxt = $('parity-txt');
+  if (rho < 1e-6){
+    ptxt.innerHTML = '<b>No drift detected.</b><br>Z = 0, so the parity channel is silent.';
+  } else {
+    const ang = Math.atan2(z.im, z.re);
+    // nearest stream direction (allow anti-phase for a negative bump)
+    let best = 0, bestd = Infinity, anti = false;
+    for (let k = 0; k < N_STREAMS; k++){
+      const d0 = angDist(ang, OFFSETS[k]);
+      const d1 = angDist(ang, OFFSETS[k] + Math.PI);
+      if (d0 < bestd){ bestd = d0; best = k; anti = false; }
+      if (d1 < bestd){ bestd = d1; best = k; anti = true; }
+    }
+    const names = ['α','β','γ'];
+    ptxt.innerHTML = '<b>arg(Z)</b> points at stream <b style="color:#fff">'+names[best]+'</b>'
+      + (anti ? ' (under-weighted)' : ' (over-weighted)')
+      + '.<br>‖Z‖ = ' + fmt(rho,3) + ' — the exact imbalance.';
+  }
+  if (glReady) syncGL();
+}
+function angDist(a,b){ let d = Math.abs(((a-b)%TWO_PI + TWO_PI)%TWO_PI); return Math.min(d, TWO_PI-d); }
+
+function drawDial(z, rho){
+  const svg = $('dial');
+  const cols = ['#ff0055','#00ffff','#D4AF37'];
+  let s = '<circle cx="0" cy="0" r="42" fill="none" stroke="rgba(255,255,255,.12)" stroke-width="1"/>';
+  for (let k = 0; k < N_STREAMS; k++){
+    const x = 42*Math.cos(OFFSETS[k]), y = -42*Math.sin(OFFSETS[k]);
+    s += '<line x1="0" y1="0" x2="'+x.toFixed(1)+'" y2="'+y.toFixed(1)+'" stroke="'+cols[k]+'" stroke-width="1" opacity="0.35"/>';
+    s += '<circle cx="'+x.toFixed(1)+'" cy="'+y.toFixed(1)+'" r="3" fill="'+cols[k]+'"/>';
+  }
+  if (rho > 1e-6){
+    const mag = Math.min(42, rho/2.0*42 + 6);
+    const ang = Math.atan2(z.im, z.re);
+    const x = mag*Math.cos(ang), y = -mag*Math.sin(ang);
+    s += '<line x1="0" y1="0" x2="'+x.toFixed(1)+'" y2="'+y.toFixed(1)+'" stroke="#fff" stroke-width="2"/>';
+    s += '<circle cx="'+x.toFixed(1)+'" cy="'+y.toFixed(1)+'" r="3.5" fill="#fff"/>';
+  } else {
+    s += '<circle cx="0" cy="0" r="4" fill="#34d399"/>';
+  }
+  svg.innerHTML = s;
+}
+
+// sliders
+function bindSlider(id, key, idx){
+  $(id).addEventListener('input', e=>{
+    const val = parseFloat(e.target.value);
+    if (idx === undefined){ state[key] = val; $('v-dpsi').textContent = fmt(val,2); }
+    else { state.s[idx] = val; $('v-'+id).textContent = fmt(val,2); }
+    updatePanel();
+  });
+}
+bindSlider('s0','s',0); bindSlider('s1','s',1); bindSlider('s2','s',2);
+bindSlider('dpsi','dpsi');
+
+$('btn-balance').addEventListener('click', ()=>{
+  state.s = [1,1,1]; state.dpsi = 0;
+  ['s0','s1','s2'].forEach((id,i)=>{ $(id).value = 1; $('v-'+id).textContent = '1.00'; });
+  $('dpsi').value = 0; $('v-dpsi').textContent = '0.00';
+  updatePanel();
+});
+
+let govSeed = 7;
+$('btn-gov').addEventListener('click', ()=>{
+  const r = runGovernance(govSeed); govSeed += 101;  // fresh seed each run
+  $('g-rand').textContent = fmt(r.mR,4);
+  $('g-oracle').textContent = fmt(r.mO,4);
+  $('g-eps').textContent = (r.eps>=0?'+':'') + fmt(r.eps,4) + '  ±' + fmt(r.band,4);
+  const v = $('g-verdict');
+  if (r.eps > r.band){
+    v.className = 'verdict ok';
+    v.textContent = '● Significant (>2σ): the geometric oracle restores equilibrium faster than blind search.';
+  } else {
+    v.className = 'verdict warn';
+    v.textContent = '● Within noise this run — re-run to accumulate trials.';
+  }
+});
+
+// legend focus
+document.querySelectorAll('.lg').forEach(el=>{
+  el.addEventListener('click', ()=>{ state.focus = parseInt(el.dataset.k); if (glReady) applyFocus(); });
+});
+
+// ===================================================================== //
+//  3D VISUALIZATION (enhancement; guarded by glReady)                    //
+// ===================================================================== //
+let glReady = false, scene, camera, renderer, controls, pairs = [], core, latGroup;
+
+function getTrefoilPoint(t, scale, phaseOffset){
+  const tube = 3*t + phaseOffset, torus = 2*t;
+  const r = scale*6.0*Math.cos(tube);     // visual minor radius (scaled for the scene)
+  const z = scale*6.0*Math.sin(tube);
+  const R = 26.0;
+  return new THREE.Vector3((R+r)*Math.cos(torus), (R+r)*Math.sin(torus), z);
+}
+function frame(t, scale, off){
+  const e = 0.01;
+  const p0 = getTrefoilPoint(t, scale, off);
+  const p1 = getTrefoilPoint(t+e, scale, off);
+  const T = new THREE.Vector3().subVectors(p1,p0).normalize();
+  const p2 = getTrefoilPoint(t+2*e, scale, off);
+  const T2 = new THREE.Vector3().subVectors(p2,p1).normalize();
+  const N = new THREE.Vector3().subVectors(T2,T).normalize();
+  const B = new THREE.Vector3().crossVectors(T,N).normalize();
+  const m = new THREE.Matrix4().makeBasis(N.lengthSq()?N:new THREE.Vector3(1,0,0), B, T);
+  const q = new THREE.Quaternion().setFromRotationMatrix(m);
+  return {p:p0, q};
+}
+
+class Pair{
+  constructor(color, off){
+    this.color = color; this.off = off; this.count = 220;
+    this.A = this.mesh(color); this.B = this.mesh(color);
+    this.posA = []; this.posB = [];
+    scene.add(this.A); scene.add(this.B);
+  }
+  mesh(color){
+    const g = new THREE.BufferGeometry();
+    g.setAttribute('position', new THREE.BufferAttribute(new Float32Array(this.count*3),3));
+    return new THREE.Points(g, new THREE.PointsMaterial({color, size:1.1, transparent:true, opacity:.85}));
+  }
+  update(time, scale){
+    const a = this.A.geometry.attributes.position.array;
+    const b = this.B.geometry.attributes.position.array;
+    this.posA = []; this.posB = [];
+    for (let i=0;i<this.count;i++){
+      const t = ((i/this.count)*TWO_PI + time*0.2) % TWO_PI;
+      const f = frame(t, scale, this.off);
+      const buckle = 3.0, twist = t*2.5, sep = 0.4;
+      const vA = new THREE.Vector3(buckle,0,0).applyQuaternion(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0,0,1), twist+sep)).applyQuaternion(f.q);
+      const vB = new THREE.Vector3(buckle,0,0).applyQuaternion(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0,0,1), twist+Math.PI-sep)).applyQuaternion(f.q);
+      const fA = f.p.clone().add(vA), fB = f.p.clone().add(vB);
+      a[i*3]=fA.x;a[i*3+1]=fA.y;a[i*3+2]=fA.z;
+      b[i*3]=fB.x;b[i*3+1]=fB.y;b[i*3+2]=fB.z;
+      if (i%6===0){ this.posA.push(fA); this.posB.push(fB); }
+    }
+    this.A.geometry.attributes.position.needsUpdate = true;
+    this.B.geometry.attributes.position.needsUpdate = true;
+  }
+  setHi(active){ const o = active?0.9:0.08; this.A.material.opacity=o; this.B.material.opacity=o; }
+}
+class Core{
+  constructor(){
+    const n = 40; const g = new THREE.BufferGeometry();
+    g.setAttribute('position', new THREE.BufferAttribute(new Float32Array(n*3),3));
+    this.mesh = new THREE.Points(g, new THREE.PointsMaterial({color:0xffffff,size:2.6,transparent:true,opacity:.95,blending:THREE.AdditiveBlending}));
+    scene.add(this.mesh); this.n = n;
+  }
+  update(prs){
+    const a = this.mesh.geometry.attributes.position.array;
+    for (let i=0;i<this.n;i++){
+      let x=0,y=0,z=0,tot=0;
+      prs.forEach(p=>{ if(p.posA[i]){ x+=p.posA[i].x+p.posB[i].x; y+=p.posA[i].y+p.posB[i].y; z+=p.posA[i].z+p.posB[i].z; tot+=2; }});
+      if (tot){ a[i*3]=x/tot; a[i*3+1]=y/tot; a[i*3+2]=z/tot; }
+    }
+    this.mesh.geometry.attributes.position.needsUpdate = true;
+  }
+  setHi(active){ this.mesh.material.opacity = active?1:0.12; this.mesh.material.size = active?3.6:1.4; }
+}
+
+function applyFocus(){
+  const f = state.focus;
+  if (f === 3){ pairs.forEach(p=>p.setHi(false)); core.setHi(true); }
+  else { pairs.forEach((p,i)=> p.setHi(f===-1 || i===f)); core.setHi(f===-1); }
+}
+function syncGL(){ /* scalings read live in animate() */ }
+
+function initGL(){
+  try{
+    if (typeof THREE === 'undefined' || !THREE.OrbitControls) throw new Error('three/controls absent');
+    const canvas = $('gl');
+    renderer = new THREE.WebGLRenderer({canvas, antialias:true, alpha:true});
+    const stage = $('stage');
+    renderer.setSize(stage.clientWidth, stage.clientHeight);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio,2));
+    scene = new THREE.Scene();
+    scene.fog = new THREE.FogExp2(0x05030a, 0.006);
+    camera = new THREE.PerspectiveCamera(50, stage.clientWidth/stage.clientHeight, 0.1, 2000);
+    camera.position.set(0,0,118);
+    controls = new THREE.OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true; controls.dampingFactor = 0.05;
+    controls.autoRotate = true; controls.autoRotateSpeed = 0.5;
+    scene.add(new THREE.AmbientLight(0xffffff,0.5));
+    pairs = [ new Pair(0xff0055, OFFSETS[0]), new Pair(0x00ffff, OFFSETS[1]), new Pair(0xD4AF37, OFFSETS[2]) ];
+    core = new Core();
+    glReady = true;
+    window.addEventListener('resize', ()=>{
+      camera.aspect = stage.clientWidth/stage.clientHeight; camera.updateProjectionMatrix();
+      renderer.setSize(stage.clientWidth, stage.clientHeight);
+    });
+    let time = 0;
+    (function loop(){
+      requestAnimationFrame(loop);
+      time += 0.05;
+      const ps = phases();
+      pairs.forEach((p,i)=> p.update(time, state.s[i]));   // live quadrance scaling per stream
+      core.update(pairs);
+      controls.update();
+      renderer.render(scene, camera);
+    })();
+  }catch(e){
+    glReady = false;
+    $('gl').style.display = 'none';
+    $('glfallback').style.display = 'flex';
+  }
+}
+
+// boot
+initGL();
+updatePanel();
+</script>
+</body>
+</html>

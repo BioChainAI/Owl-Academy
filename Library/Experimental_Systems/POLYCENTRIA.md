@@ -50,6 +50,9 @@ the certifier strand keeps it safe to try anywhere.
 - `Helix_Router/` — a Polycentria cell over routing; oracle bias ε ≫ 0 (the architecture working).
 - `Engram_Codec/` — a memory strand a router-oracle can nest for compressed history.
 - `Helix_Benchmark/` — the composed pipeline, step by step, with the live ε contrast.
+- `Trefoil_Streams/` — a Polycentria cell over a new carrier: three trefoil-knot streams on
+  a golden toroid whose emergent 4th phase is an exact parity channel (zero at equilibrium by
+  1+ω+ω²=0); governance oracle bias ε ≈ +0.04 (geometry helps again).
 
 A concrete *nested* example (Router oracle nesting the codec memory as an inner cell, with
 the bias of the whole stack measured) is the natural next build.
