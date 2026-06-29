@@ -7,9 +7,9 @@
     <style>
         :root {
             --void: #06040f;
-            --purple: #8b5cf6;
-            --cyan: #22d3ee;
-            --gold: #D4AF37;
+            --purple: #8b5cf6;  --purple-rgb: 139,92,246;
+            --cyan:   #22d3ee;  --cyan-rgb:   34,211,238;
+            --gold:   #D4AF37;  --gold-rgb:   212,175,55;
         }
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body {
@@ -19,6 +19,7 @@
             min-height: 100vh;
             background: radial-gradient(ellipse at top, rgba(139,92,246,0.08) 0%, var(--void) 60%);
         }
+        a { color: inherit; }
         header {
             padding: 3rem 2rem 2rem;
             text-align: center;
@@ -32,154 +33,154 @@
             background: rgba(139,92,246,0.08);
         }
         h1 {
-            font-size: 1.8rem;
-            font-weight: 300;
-            letter-spacing: 0.3em;
-            text-transform: uppercase;
-            color: var(--purple);
-            text-shadow: 0 0 20px rgba(139,92,246,0.4);
+            font-size: 1.8rem; font-weight: 300;
+            letter-spacing: 0.3em; text-transform: uppercase;
+            color: var(--purple); text-shadow: 0 0 20px rgba(139,92,246,0.4);
         }
         .subtitle {
-            margin-top: 0.5rem;
-            font-size: 0.75rem;
-            letter-spacing: 0.25em;
-            text-transform: uppercase;
+            margin-top: 0.5rem; font-size: 0.75rem;
+            letter-spacing: 0.25em; text-transform: uppercase;
             color: rgba(139,92,246,0.5);
         }
         .back-link {
-            display: inline-block;
-            margin-top: 1.5rem;
-            font-size: 0.7rem;
-            letter-spacing: 0.2em;
-            text-transform: uppercase;
-            color: rgba(139,92,246,0.4);
-            text-decoration: none;
-            transition: color 0.2s;
+            display: inline-block; margin-top: 1.5rem;
+            font-size: 0.7rem; letter-spacing: 0.2em; text-transform: uppercase;
+            color: rgba(139,92,246,0.4); text-decoration: none; transition: color 0.2s;
         }
         .back-link:hover { color: var(--purple); }
 
-        main { max-width: 900px; margin: 3rem auto; padding: 0 2rem; }
+        main { max-width: 920px; margin: 2.5rem auto; padding: 0 2rem; }
 
-        .section-label {
-            font-size: 0.65rem;
-            letter-spacing: 0.3em;
-            text-transform: uppercase;
-            color: rgba(139,92,246,0.5);
-            margin-bottom: 1rem;
-        }
-
-        .featured-card {
-            display: block;
-            text-decoration: none;
-            background: rgba(139,92,246,0.07);
-            border: 1px solid rgba(139,92,246,0.3);
-            border-radius: 12px;
-            padding: 2rem;
+        /* ---- legend explaining the two geometries ---- */
+        .legend-box {
+            display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;
             margin-bottom: 3rem;
-            transition: all 0.25s;
-            position: relative;
-            overflow: hidden;
         }
-        .featured-card::before {
-            content: '';
-            position: absolute;
-            inset: 0;
-            background: radial-gradient(ellipse at top left, rgba(139,92,246,0.08), transparent 60%);
-            pointer-events: none;
+        @media (max-width: 680px) { .legend-box { grid-template-columns: 1fr; } }
+        .legend-cell {
+            border-radius: 10px; padding: 1.2rem 1.3rem; font-size: 0.8rem;
+            line-height: 1.65; color: rgba(255,255,255,0.55);
         }
-        .featured-card:hover {
-            border-color: rgba(139,92,246,0.55);
-            box-shadow: 0 0 40px rgba(139,92,246,0.12);
+        .legend-cell.flat { background: rgba(34,211,238,0.06); border: 1px solid rgba(34,211,238,0.25); }
+        .legend-cell.hyp  { background: rgba(212,175,55,0.06); border: 1px solid rgba(212,175,55,0.25); }
+        .legend-cell strong { color: #fff; }
+        .legend-cell em { color: rgba(255,255,255,0.8); font-style: normal; }
+
+        .chip {
+            display: inline-block; font-size: 0.6rem; font-weight: 600;
+            letter-spacing: 0.18em; text-transform: uppercase;
+            padding: 0.22em 0.7em; border-radius: 999px; margin-bottom: 0.6rem;
+        }
+        .chip.flat { background: rgba(34,211,238,0.12); border: 1px solid rgba(34,211,238,0.4); color: var(--cyan); }
+        .chip.hyp  { background: rgba(212,175,55,0.12); border: 1px solid rgba(212,175,55,0.4); color: var(--gold); }
+
+        /* ---- section headers ---- */
+        .section-label {
+            font-size: 0.65rem; letter-spacing: 0.3em; text-transform: uppercase;
+            color: rgba(139,92,246,0.55); margin: 0 0 0.4rem;
+        }
+        .section-label.flat { color: rgba(34,211,238,0.7); }
+        .section-label.hyp  { color: rgba(212,175,55,0.75); }
+        .section-sub {
+            font-size: 0.8rem; color: rgba(255,255,255,0.4);
+            line-height: 1.6; margin-bottom: 1.3rem; max-width: 680px;
+        }
+        .section-divider { height: 1px; background: rgba(139,92,246,0.12); margin: 3rem 0 2.2rem; }
+
+        /* ---- cards (container so crosslinks can be separate anchors) ---- */
+        .fcard {
+            --accent: var(--purple); --accent-rgb: var(--purple-rgb);
+            border: 1px solid rgba(var(--accent-rgb), 0.3);
+            background: rgba(var(--accent-rgb), 0.06);
+            border-radius: 12px; margin-bottom: 1.4rem; overflow: hidden;
+            position: relative; transition: all 0.22s;
+        }
+        .fcard.flat { --accent: var(--cyan); --accent-rgb: var(--cyan-rgb); }
+        .fcard.hyp  { --accent: var(--gold); --accent-rgb: var(--gold-rgb); }
+        .fcard:hover {
+            border-color: rgba(var(--accent-rgb), 0.55);
+            box-shadow: 0 0 34px rgba(var(--accent-rgb), 0.1);
             transform: translateY(-2px);
         }
-        .featured-title {
-            font-size: 1.4rem;
-            font-weight: 400;
-            letter-spacing: 0.1em;
-            color: #fff;
-            margin-bottom: 0.4rem;
+        .fcard-main { display: block; text-decoration: none; padding: 1.6rem 1.9rem 1.2rem; }
+        .fcard.start .fcard-main { padding: 2rem 1.9rem 1.4rem; }
+        .ftag {
+            display: inline-block; font-size: 0.6rem; letter-spacing: 0.25em;
+            text-transform: uppercase; padding: 0.2em 0.7em; border-radius: 999px;
+            background: rgba(var(--accent-rgb), 0.12); border: 1px solid rgba(var(--accent-rgb), 0.3);
+            color: var(--accent); margin-bottom: 0.9rem;
         }
-        .featured-tag {
-            display: inline-block;
-            font-size: 0.6rem;
-            letter-spacing: 0.25em;
-            text-transform: uppercase;
-            padding: 0.2em 0.7em;
-            border-radius: 999px;
-            background: rgba(139,92,246,0.12);
-            border: 1px solid rgba(139,92,246,0.3);
-            color: var(--purple);
-            margin-bottom: 1rem;
+        .ftitle {
+            font-size: 1.35rem; font-weight: 400; letter-spacing: 0.06em;
+            color: #fff; margin-bottom: 0.45rem;
         }
-        .featured-desc {
-            font-size: 0.9rem;
-            color: rgba(255,255,255,0.55);
-            line-height: 1.7;
-            max-width: 600px;
+        .fcard.start .ftitle { font-size: 1.55rem; }
+        .fdesc { font-size: 0.88rem; color: rgba(255,255,255,0.55); line-height: 1.7; max-width: 640px; }
+        .fdesc code {
+            font-family: ui-monospace, monospace; font-size: 0.82em;
+            color: var(--accent); background: rgba(var(--accent-rgb), 0.08);
+            padding: 0.05em 0.3em; border-radius: 3px;
         }
-        .featured-enter {
-            display: inline-block;
-            margin-top: 1.5rem;
-            font-size: 0.7rem;
-            letter-spacing: 0.25em;
-            text-transform: uppercase;
-            color: var(--purple);
+        .fdesc strong { color: rgba(var(--accent-rgb), 0.95); }
+        .fenter {
+            display: inline-block; margin-top: 1.3rem; font-size: 0.7rem;
+            letter-spacing: 0.25em; text-transform: uppercase; color: var(--accent);
         }
+        /* ---- crosslinks ---- */
+        .related {
+            display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem;
+            padding: 0.75rem 1.9rem 1.1rem;
+            border-top: 1px solid rgba(var(--accent-rgb), 0.14);
+        }
+        .related .rl {
+            font-size: 0.58rem; letter-spacing: 0.22em; text-transform: uppercase;
+            color: rgba(255,255,255,0.32); margin-right: 0.2rem;
+        }
+        .related a {
+            font-size: 0.7rem; text-decoration: none; color: var(--accent);
+            border: 1px solid rgba(var(--accent-rgb), 0.3);
+            padding: 0.22em 0.7em; border-radius: 999px; transition: all 0.15s;
+        }
+        .related a:hover { background: rgba(var(--accent-rgb), 0.14); color: #fff; }
 
+        /* ---- source grid ---- */
         .source-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-            gap: 1rem;
-            margin-bottom: 3rem;
+            display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 1rem; margin-bottom: 1.5rem;
         }
         .source-card {
-            display: block;
-            text-decoration: none;
-            background: rgba(10,8,20,0.6);
-            border: 1px solid rgba(139,92,246,0.14);
-            border-radius: 8px;
-            padding: 1.2rem;
-            transition: all 0.2s;
+            display: block; text-decoration: none;
+            background: rgba(10,8,20,0.6); border: 1px solid rgba(139,92,246,0.14);
+            border-radius: 8px; padding: 1.2rem; transition: all 0.2s;
         }
-        .source-card:hover {
-            border-color: rgba(139,92,246,0.35);
-            background: rgba(139,92,246,0.05);
-        }
-        .source-icon {
-            font-size: 1.2rem;
-            opacity: 0.5;
-            margin-bottom: 0.6rem;
-            color: var(--purple);
-        }
-        .source-name {
-            font-size: 0.85rem;
-            color: #e2e8f0;
-            margin-bottom: 0.25rem;
-        }
-        .source-desc {
-            font-size: 0.7rem;
-            color: rgba(255,255,255,0.35);
-            line-height: 1.5;
-        }
+        .source-card:hover { border-color: rgba(139,92,246,0.35); background: rgba(139,92,246,0.05); }
+        .source-icon { font-size: 1.2rem; opacity: 0.5; margin-bottom: 0.6rem; color: var(--purple); }
+        .source-name { font-size: 0.85rem; color: #e2e8f0; margin-bottom: 0.25rem; }
+        .source-desc { font-size: 0.7rem; color: rgba(255,255,255,0.35); line-height: 1.5; }
 
-        .protocol-box {
-            background: rgba(0,0,0,0.4);
-            border: 1px solid rgba(139,92,246,0.12);
-            border-radius: 8px;
-            padding: 1.5rem;
-            font-size: 0.78rem;
-            color: rgba(255,255,255,0.4);
-            line-height: 1.8;
+        /* ---- collapsible protocol notes ---- */
+        details.proto {
+            background: rgba(0,0,0,0.35); border: 1px solid rgba(139,92,246,0.12);
+            border-radius: 8px; margin-bottom: 1rem; overflow: hidden;
         }
-        .protocol-box strong { color: rgba(139,92,246,0.8); }
-        .protocol-box code {
-            font-family: ui-monospace, monospace;
-            font-size: 0.72rem;
-            color: var(--cyan);
-            background: rgba(34,211,238,0.06);
-            padding: 0.1em 0.35em;
-            border-radius: 3px;
+        details.proto summary {
+            cursor: pointer; padding: 1rem 1.4rem; font-size: 0.78rem;
+            letter-spacing: 0.12em; text-transform: uppercase; color: rgba(139,92,246,0.8);
+            list-style: none;
         }
+        details.proto summary::-webkit-details-marker { display: none; }
+        details.proto summary::before { content: '▸ '; color: rgba(139,92,246,0.5); }
+        details.proto[open] summary::before { content: '▾ '; }
+        .proto-body {
+            padding: 0 1.4rem 1.4rem; font-size: 0.78rem;
+            color: rgba(255,255,255,0.4); line-height: 1.8;
+        }
+        .proto-body strong { color: rgba(139,92,246,0.8); }
+        .proto-body code {
+            font-family: ui-monospace, monospace; font-size: 0.72rem; color: var(--cyan);
+            background: rgba(34,211,238,0.06); padding: 0.1em 0.35em; border-radius: 3px;
+        }
+        footer { text-align: center; padding: 2rem; font-size: 0.7rem; color: rgba(255,255,255,0.25); }
     </style>
 </head>
 <body>
@@ -191,131 +192,294 @@
             </svg>
         </div>
         <h1>Experimental Systems</h1>
-        <div class="subtitle">TTMPT · Engram Architecture · SHD-CCP Integration</div>
+        <div class="subtitle">Flat / Euclidean · Hyperbolic · Polycentria Dual-Helix</div>
         <a href="../Grand_Archives.html" class="back-link">← Grand Archives</a>
     </header>
 
     <main>
-        <div class="section-label">Geometric Computing · Start Here</div>
-
-        <a href="Helix_Benchmark/index.html" class="featured-card">
-            <div class="featured-tag">Benchmark · Step-by-Step</div>
-            <div class="featured-title">SHD-CCP Geometric Computing Benchmark</div>
-            <div class="featured-desc">
-                One interactive page that walks the whole architecture, end to end, running the
-                <strong style="color:#8b5cf6;">verified</strong> algorithms live: the golden 720-node Clifford-torus
-                manifold → the 64-voxel packet and its exact drift current (J=1/192) → the Engram memory codec
-                (sections recreated exactly, noise dropped) → the Polycentria Dual-Helix oracle that <em>proposes</em> and the
-                certifier that <em>verifies exactly</em> → and the payoff benchmark: the geometric Oracle Bias is
-                strongly positive for <strong>routing</strong> (ε≈+39, geometry helps) and ≤0 for
-                <strong>factoring/ECDLP</strong> (the hidden structure is invisible). Same machinery; it helps only
-                when the objective is geometric. Backed by the Python references in Helix_Router, Engram_Codec, and
-                Proofs/Pump-Verification.
+        <!-- ============ LEGEND: the organizing principle ============ -->
+        <div class="legend-box">
+            <div class="legend-cell flat">
+                <span class="chip flat">Flat / Euclidean · ε ≫ 0</span>
+                Zero-curvature carriers — the golden <em>Clifford torus</em> (provably flat), trefoil
+                knots in ℝ³, unit quaternions on S³, PSK/FDM signal space. Here the objective <strong>is</strong>
+                a function of the geometry, so the Polycentria oracle decisively beats random search.
             </div>
-            <div class="featured-enter">Open the Benchmark →</div>
-        </a>
-
-        <div class="section-label">Geometric Computing · Building Block</div>
-
-        <a href="Trefoil_Streams/index.html" class="featured-card">
-            <div class="featured-tag">Polycentria · Emergent Equilibrium</div>
-            <div class="featured-title">Trefoil Streams</div>
-            <div class="featured-desc">
-                Three <strong style="color:#8b5cf6;">(2,3) trefoil-knot data streams</strong> wound around one
-                golden toroid at the cube-root-of-unity offsets, each carrying a winding and its inverse. Their
-                quaternion centroid is an <strong>emergent 4th phase</strong> whose off-core displacement collapses to
-                a single number, <code>ρ = minorR·|Σ sₖ e^{iψₖ}|</code> — the order-1 DFT bin of the stream
-                quadrances. At balance it is <strong>exactly zero</strong> (the cube-roots identity 1+ω+ω²=0, verified
-                in ℚ[√3]); quadrance scaling re-grows it linearly, making it a topological <strong>parity
-                channel</strong> (100% single-stream localization). A <strong>Polycentria Dual-Helix</strong> governs
-                the four phases — oracle proposes, certifier decides exactly — with measured Oracle Bias ε ≈ +0.04
-                (geometry helps, as it did for the Router). Ships an exact Python reference
-                (<code>trefoil_streams.py</code>).
+            <div class="legend-cell hyp">
+                <span class="chip hyp">Hyperbolic · ε ≤ 0</span>
+                Negative-curvature carriers — the <em>Lorentz-hyperboloid</em> attention kernel and the
+                "hyperbolic oracle" aimed at factoring / ECDLP. The hidden mod-p structure is invisible to the
+                embedding, so the same machinery measures an <strong>honest negative</strong> — and meets the √n wall.
             </div>
-            <div class="featured-enter">Open the Bench →</div>
-        </a>
+        </div>
 
-        <a href="Coherency_Channel/index.html" class="featured-card">
-            <div class="featured-tag">Benchmark-Proofed · RF Carrier</div>
-            <div class="featured-title">Coherency Channel</div>
-            <div class="featured-desc">
-                A <strong style="color:#8b5cf6;">benchmark-proofed</strong> adaptation of the 3-D coherency channel:
-                3-PSK on the cube-root-of-unity phases (<code>1+ω+ω²=0</code>, the Trefoil identity), orthogonal FDM,
-                activity-driven frequency deviation with return-to-baseline, GPU FFT decode, quaternion-delta fusion +
-                bit-packing, and attractor compression of the state-space trajectory. Same seven systems as the
-                original design, but every claim is now <strong>measured against theory</strong> — a live scorecard
-                (all 9 PASS): decode SEP tracks the MPSK law, FDM crosstalk ~1e-16, return-to-baseline matches AR(1)
-                stationary variance, the 16-bit Δq packs orientation at 8× with 0.27° error, RLE+Δ gives 7.7×, and a
-                learned attractor cuts per-step entropy far below log₂27. Ships an exact Python reference
-                (<code>coherency_channel.py</code>).
+        <!-- ============ START HERE ============ -->
+        <div class="section-label">Start Here · The Benchmark Bridges Both</div>
+        <div class="section-sub">One page that runs the whole architecture live and shows the contrast directly:
+            strong positive Oracle Bias on the flat-geometry route, ≤0 on the hyperbolic-oracle factoring problem.
+            Same machinery — it helps only when the objective is geometric.</div>
+
+        <article class="fcard start">
+            <a href="Helix_Benchmark/index.html" class="fcard-main">
+                <span class="ftag">Benchmark · Step-by-Step</span>
+                <div class="ftitle">SHD-CCP Geometric Computing Benchmark</div>
+                <div class="fdesc">
+                    Walks the architecture end to end, running the <strong>verified</strong> algorithms live: the golden
+                    720-node Clifford-torus manifold → the 64-voxel packet and its exact drift current (J=1/192) → the
+                    Engram memory codec (sections recreated exactly) → the Polycentria Dual-Helix oracle that
+                    <em>proposes</em> and the certifier that <em>verifies exactly</em> → and the payoff: Oracle Bias
+                    <strong>ε≈+39 for routing</strong> (flat geometry helps) vs <strong>≤0 for factoring/ECDLP</strong>
+                    (hidden structure invisible). Backed by the Python references across this catalog.
+                </div>
+                <span class="fenter">Open the Benchmark →</span>
+            </a>
+            <div class="related">
+                <span class="rl">Composes</span>
+                <a href="Helix_Router/README.md">Helix Router</a>
+                <a href="Engram_Codec/README.md">Engram Codec</a>
+                <a href="Trefoil_Streams/index.html">Trefoil Streams</a>
+                <a href="Helix_Factorization/index.html">Helix Factorization</a>
             </div>
-            <div class="featured-enter">Open the Bench →</div>
-        </a>
+        </article>
 
-        <div class="section-label">Synthesized Experience</div>
+        <!-- ============ FLAT / EUCLIDEAN ============ -->
+        <div class="section-divider"></div>
+        <div class="section-label flat">Flat / Euclidean Geometry · where the geometry helps</div>
+        <div class="section-sub">Zero curvature. The Clifford torus is the canonical flat torus in S³ (verified in
+            <code style="color:var(--cyan)">Proofs/Pump-Verification</code>); knots live in ℝ³; rotations are unit
+            quaternions on S³. On these carriers the measured Oracle Bias is strongly positive.</div>
 
-        <a href="Engram_Mind_Eye.html" class="featured-card">
-            <div class="featured-tag">Synthesis · Primary Interface</div>
-            <div class="featured-title">Engram Mind Eye</div>
-            <div class="featured-desc">
-                A conversational interface where <strong style="color:#8b5cf6;">STRIX</strong> — an AI familiar woven from TTMPT engram memory — and a human
-                explore hyperbolic geometry together. Neither is teacher. Both are trying to figure out how the mind's eye works.
-                The system crystallizes language into 64-bit boolean tensors, tracks a 3-packet torsional context window (Alpha/Beta/Gamma),
-                and computes Hamming resonance against 15 pre-seeded geometric concepts to generate responses modulated by J torsion flow.
+        <article class="fcard flat">
+            <a href="Helix_Router/README.md" class="fcard-main">
+                <span class="ftag">Reference · The Architecture Working</span>
+                <div class="ftitle">Helix Router</div>
+                <div class="fdesc">
+                    Learned-heuristic routing over the 720-node golden Clifford-torus manifold (12 nested layers × 60).
+                    The objective <strong>is</strong> a function of the embedding's geometric features, so the geometric
+                    oracle decisively beats uniform-random route search at equal exact-evaluation budget: measured
+                    <strong>routing Oracle Bias ε ≈ +12.4</strong> (many σ). Helix B certifies every route value exactly.
+                    Python reference + README (interactive page is the Benchmark).
+                </div>
+                <span class="fenter">Open the Reference →</span>
+            </a>
+            <div class="related">
+                <span class="rl">Related</span>
+                <a href="Engram_Codec/README.md">Engram Codec</a>
+                <a href="Trefoil_Streams/index.html">Trefoil Streams</a>
+                <a href="Helix_Benchmark/index.html">Benchmark</a>
             </div>
-            <div class="featured-enter">Enter the Interface →</div>
-        </a>
+        </article>
 
-        <div class="section-label">Hyperbolic Geometry · Research</div>
-
-        <a href="Hyperbolic_Softmax/index.html" class="featured-card">
-            <div class="featured-tag">Research · Kernel Design + Formal Proof</div>
-            <div class="featured-title">Hyperbolic Softmax</div>
-            <div class="featured-desc">
-                A <strong style="color:#8b5cf6;">hyperbolic sparsemax</strong> transition kernel for the SHD-CCP 4×4×4
-                (64-voxel) packet, driving a torsional Markov pump with broken detailed balance. It scores in the Lorentz
-                hyperboloid via an exact rational lift, normalizes with α=2 entmax (sparsemax) so the kernel stays in ℚ
-                and survives the handshake parity, and quarantines irrational residuals in the Octet buffer. Ships a frozen
-                kernel spec, a full formal proof (T1–T7), and an exact-rational interactive demo reporting a strictly
-                positive forward current J₀.
+        <article class="fcard flat">
+            <a href="Trefoil_Streams/index.html" class="fcard-main">
+                <span class="ftag">Polycentria · Emergent Equilibrium</span>
+                <div class="ftitle">Trefoil Streams</div>
+                <div class="fdesc">
+                    Three <strong>(2,3) trefoil-knot data streams</strong> wound around one golden toroid at the
+                    cube-root-of-unity offsets. Their quaternion centroid is an <strong>emergent 4th phase</strong>
+                    whose off-core displacement is <code>ρ = minorR·|Σ sₖ e^{iψₖ}|</code> — the order-1 DFT bin of the
+                    stream quadrances. At balance it is exactly zero (<code>1+ω+ω²=0</code>, verified in ℚ[√3]),
+                    making it a topological <strong>parity channel</strong> (100% single-stream localization). A
+                    Polycentria Dual-Helix governs the four phases; measured Oracle Bias <strong>ε ≈ +0.04</strong>.
+                </div>
+                <span class="fenter">Open the Bench →</span>
+            </a>
+            <div class="related">
+                <span class="rl">Related</span>
+                <a href="Coherency_Channel/index.html">Coherency Channel</a>
+                <a href="Helix_Router/README.md">Helix Router</a>
+                <a href="Engram_Codec/README.md">Engram Codec</a>
             </div>
-            <div class="featured-enter">Open the Research →</div>
-        </a>
+        </article>
 
-        <div class="section-label">Cryptographic Reality · Reference</div>
-
-        <a href="ECDLP_Hardness/index.html" class="featured-card">
-            <div class="featured-tag">Reference · Real ECDLP Solver</div>
-            <div class="featured-title">The Discrete-Log Wall</div>
-            <div class="featured-desc">
-                The honest counterweight to any "O(1) oracle" framing. A <strong style="color:#8b5cf6;">genuine elliptic
-                curve</strong> over a prime field with a real secret <em>k</em> and public <em>Q = kG</em>, recovered live
-                by the actual best-known generic attacks — <strong>baby-step/giant-step</strong> and <strong>Pollard's
-                rho</strong> — both verified against the planted key. A field-size slider then scales the same
-                <em>√n</em> work law up to secp256k1, where it lands at ~2¹²⁸ operations and ~10²² years: the wall is the
-                square-root law itself, not a missing trick. Ships an exact, runnable Python reference
-                (<code>ecdlp_reference.py</code>) alongside the interactive page.
+        <article class="fcard flat">
+            <a href="Coherency_Channel/index.html" class="fcard-main">
+                <span class="ftag">Benchmark-Proofed · RF Carrier</span>
+                <div class="ftitle">Coherency Channel</div>
+                <div class="fdesc">
+                    A <strong>benchmark-proofed</strong> 3-D coherency channel: 3-PSK on the cube-root-of-unity phases
+                    (<code>1+ω+ω²=0</code>, the Trefoil identity), orthogonal FDM, return-to-baseline, quaternion-delta
+                    fusion + bit-packing, and attractor compression. Every claim is <strong>measured against theory</strong>
+                    on a live scorecard (all 9 PASS): SEP tracks the MPSK law, FDM crosstalk ~1e-16, return-to-baseline
+                    matches AR(1) variance, the 16-bit Δq packs orientation at 8× / 0.27° error, RLE+Δ gives 7.7×.
+                </div>
+                <span class="fenter">Open the Bench →</span>
+            </a>
+            <div class="related">
+                <span class="rl">Related</span>
+                <a href="Trefoil_Streams/index.html">Trefoil Streams</a>
+                <a href="Engram_Codec/README.md">Engram Codec</a>
+                <a href="Helix_Benchmark/index.html">Benchmark</a>
             </div>
-            <div class="featured-enter">Open the Demo →</div>
-        </a>
+        </article>
 
-        <a href="Helix_Factorization/index.html" class="featured-card">
-            <div class="featured-tag">Reference · Oracle Bench (Falsifiable)</div>
-            <div class="featured-title">Helix Factorization — the Oracle Bench</div>
-            <div class="featured-desc">
-                A correctness-guaranteed test bench for the <strong style="color:#8b5cf6;">Polycentria Dual-Helix</strong>
-                acceleration of Pollard's rho: a heuristic oracle proposes candidate collisions, an exact GCD layer
-                certifies them (and provably <strong>never reports a false factor</strong>). The whole acceleration
-                claim reduces to one measurable number — the <strong>Oracle Bias ε</strong> — so the bench
-                <em>measures</em> it live, with a 2σ significance band, and lets you <strong>plug in your own
-                oracle</strong>. Current geometric scores measure ε ≤ 0 (an honest negative result, not a proof of
-                impossibility); the harness also exposes the reconstruction-cost wall. Ships an exact Python
-                reference (<code>helix_reference.py</code>).
+        <article class="fcard flat">
+            <a href="Engram_Codec/README.md" class="fcard-main">
+                <span class="ftag">Reference · Quaternion Memory</span>
+                <div class="ftitle">Engram Codec</div>
+                <div class="fdesc">
+                    Quaternion-delta memory offload: a data stream is encoded as a chain of delta quaternions, block-
+                    telescoped + smallest-three quantized, then recreated by SLERP. <strong>Section boundaries are
+                    exact</strong> (~1e-15); smooth sections recreate at low RMSE while uncorrelated noise is dropped —
+                    a lossy "engram" recreation, not bit-exact. The memory strand a router-oracle nests for compressed
+                    history, and the packet field the Coherency Channel transmits. Python reference + README.
+                </div>
+                <span class="fenter">Open the Reference →</span>
+            </a>
+            <div class="related">
+                <span class="rl">Related</span>
+                <a href="Helix_Router/README.md">Helix Router</a>
+                <a href="Coherency_Channel/index.html">Coherency Channel</a>
+                <a href="../../Proofs/Pump-Verification/pump_lab.html">Pump-Verification (SLERP drift)</a>
             </div>
-            <div class="featured-enter">Open the Bench →</div>
-        </a>
+        </article>
 
-        <div class="section-label">Source Material</div>
+        <!-- ============ HYPERBOLIC ============ -->
+        <div class="section-divider"></div>
+        <div class="section-label hyp">Hyperbolic Geometry · the oracle and its wall</div>
+        <div class="section-sub">Negative curvature. The Lorentz-hyperboloid attention kernel, and the "hyperbolic
+            oracle" pointed at factoring / ECDLP. These are where the hyperbolic approach is tested honestly — and
+            where it meets its limits: ε ≤ 0, and the square-root wall.</div>
+
+        <article class="fcard hyp">
+            <a href="Hyperbolic_Softmax/index.html" class="fcard-main">
+                <span class="ftag">Research · Kernel Design + Formal Proof</span>
+                <div class="ftitle">Hyperbolic Softmax</div>
+                <div class="fdesc">
+                    A <strong>hyperbolic sparsemax</strong> transition kernel for the SHD-CCP 4×4×4 (64-voxel) packet,
+                    driving a torsional Markov pump with broken detailed balance. It scores in the <strong>Lorentz
+                    hyperboloid</strong> via an exact rational lift, normalizes with α=2 entmax so the kernel stays in ℚ
+                    and survives the handshake parity, and quarantines irrational residuals in the Octet buffer. Ships a
+                    frozen kernel spec, a full formal proof (T1–T7), and an exact-rational demo reporting a strictly
+                    positive forward current J₀.
+                </div>
+                <span class="fenter">Open the Research →</span>
+            </a>
+            <div class="related">
+                <span class="rl">Related</span>
+                <a href="../../Proofs/Pump-Verification/pump_lab.html">Pump-Verification (kernel proof)</a>
+                <a href="Helix_Factorization/index.html">Helix Factorization</a>
+                <a href="Helix_Benchmark/index.html">Benchmark</a>
+            </div>
+        </article>
+
+        <article class="fcard hyp">
+            <a href="Helix_Factorization/index.html" class="fcard-main">
+                <span class="ftag">Reference · Oracle Bench (Falsifiable)</span>
+                <div class="ftitle">Helix Factorization — the Oracle Bench</div>
+                <div class="fdesc">
+                    A correctness-guaranteed test bench for the <strong>Polycentria Dual-Helix</strong> acceleration of
+                    Pollard's rho: a heuristic oracle proposes candidate collisions, an exact GCD layer certifies them
+                    and provably <strong>never reports a false factor</strong>. The whole acceleration claim reduces to
+                    one measurable number — the <strong>Oracle Bias ε</strong> — so the bench measures it live with a 2σ
+                    band and lets you plug in your own oracle. Current geometric/hyperbolic scores measure
+                    <strong>ε ≤ 0</strong> (an honest negative, not a proof of impossibility).
+                </div>
+                <span class="fenter">Open the Bench →</span>
+            </a>
+            <div class="related">
+                <span class="rl">Related</span>
+                <a href="ECDLP_Hardness/index.html">The Discrete-Log Wall</a>
+                <a href="Hyperbolic_Softmax/index.html">Hyperbolic Softmax</a>
+                <a href="Helix_Benchmark/index.html">Benchmark</a>
+            </div>
+        </article>
+
+        <article class="fcard hyp">
+            <a href="ECDLP_Hardness/index.html" class="fcard-main">
+                <span class="ftag">Reference · Real ECDLP Solver</span>
+                <div class="ftitle">The Discrete-Log Wall</div>
+                <div class="fdesc">
+                    The honest counterweight to any "O(1) oracle" framing. A genuine <strong>elliptic curve</strong> over
+                    a prime field with a real secret <em>k</em> and public <em>Q = kG</em>, recovered live by the actual
+                    best-known generic attacks — <strong>baby-step/giant-step</strong> and <strong>Pollard's rho</strong>
+                    — both verified against the planted key. A field-size slider scales the same <em>√n</em> work law up
+                    to secp256k1: ~2¹²⁸ operations, ~10²² years. The wall is the square-root law itself, not a missing
+                    trick. Ships a runnable Python reference.
+                </div>
+                <span class="fenter">Open the Demo →</span>
+            </a>
+            <div class="related">
+                <span class="rl">Related</span>
+                <a href="Helix_Factorization/index.html">Helix Factorization</a>
+                <a href="Helix_Benchmark/index.html">Benchmark</a>
+            </div>
+        </article>
+
+        <!-- ============ SYNTHESIS & SUBSTRATE ============ -->
+        <div class="section-divider"></div>
+        <div class="section-label">Synthesis &amp; Substrate</div>
+        <div class="section-sub">The experiential and conceptual layer — where the geometry becomes an interface, and
+            the motivation for caring about both curvatures in the first place.</div>
+
+        <article class="fcard">
+            <a href="Engram_Mind_Eye.html" class="fcard-main">
+                <span class="ftag">Synthesis · Primary Interface</span>
+                <div class="ftitle">Engram Mind Eye</div>
+                <div class="fdesc">
+                    A conversational interface where <strong>STRIX</strong> — an AI familiar woven from TTMPT engram
+                    memory — and a human explore geometry together. The system crystallizes language into 64-bit boolean
+                    tensors, tracks a 3-packet torsional context window (Alpha/Beta/Gamma), and computes Hamming
+                    resonance against pre-seeded geometric concepts to generate responses modulated by J torsion flow.
+                </div>
+                <span class="fenter">Enter the Interface →</span>
+            </a>
+            <div class="related">
+                <span class="rl">Related</span>
+                <a href="Consciousness_Substrate/Consciousness_Substrate_Intro.html">Geometric Substrate</a>
+                <a href="TTMPT_O1_Compressor.html">TTMPT O1 Compressor</a>
+                <a href="TTMPT_Blackwell_Architect.html">Blackwell Architect</a>
+            </div>
+        </article>
+
+        <article class="fcard">
+            <a href="Consciousness_Substrate/Consciousness_Substrate_Intro.html" class="fcard-main">
+                <span class="ftag">Substrate · Conceptual Intro</span>
+                <div class="ftitle">The Geometric Substrate of Consciousness</div>
+                <div class="fdesc">
+                    The conceptual through-line: the limits of <em>Euclidean</em> models, zero-point compression and
+                    dimensional nesting, the 720:1 collapse ratio, and the <strong>hyperbolic architecture</strong> of
+                    narrative — the motivation for studying both flat and negatively-curved carriers across this catalog.
+                </div>
+                <span class="fenter">Read the Intro →</span>
+            </a>
+            <div class="related">
+                <span class="rl">Related</span>
+                <a href="Hyperbolic_Softmax/index.html">Hyperbolic Softmax</a>
+                <a href="Engram_Mind_Eye.html">Engram Mind Eye</a>
+            </div>
+        </article>
+
+        <!-- ============ FOUNDATIONS ============ -->
+        <div class="section-divider"></div>
+        <div class="section-label">Foundations · Verified Proofs</div>
+        <div class="section-sub">The math under both tracks lives in <code>Proofs/</code>. The pump lab verifies the
+            <em>flat</em> Clifford-torus golden winding <em>and</em> the <em>hyperbolic</em> sparsemax kernel in the same
+            place — exact rational arithmetic, no hand-waving.</div>
+
+        <article class="fcard">
+            <a href="../../Proofs/Pump-Verification/pump_lab.html" class="fcard-main">
+                <span class="ftag">Proof · Exact-Rational Pump Lab</span>
+                <div class="ftitle">Pump-Verification</div>
+                <div class="fdesc">
+                    The verified lemmas behind the torsional Markov pump: the 3-state cycle current (J&gt;0, exact π),
+                    the 64-voxel sparsemax kernel stationary current (J=1/192), the SLERP-offload drift bound
+                    (endpoints exact ~1e-15), and the golden Clifford-torus radii (exact in ℤ[φ], lowest star-discrepancy
+                    winding). Underpins both the flat and hyperbolic systems above.
+                </div>
+                <span class="fenter">Open the Pump Lab →</span>
+            </a>
+            <div class="related">
+                <span class="rl">Related</span>
+                <a href="Hyperbolic_Softmax/index.html">Hyperbolic Softmax</a>
+                <a href="Engram_Codec/README.md">Engram Codec</a>
+                <a href="POLYCENTRIA.md">Polycentria architecture note</a>
+            </div>
+        </article>
+
+        <!-- ============ SOURCE MATERIAL ============ -->
+        <div class="section-divider"></div>
+        <div class="section-label">Source Material · TTMPT</div>
 
         <div class="source-grid">
             <a href="TTMPT_Bulk_Trainer.html" class="source-card">
@@ -340,55 +504,48 @@
             </a>
         </div>
 
-        <div class="section-label">Protocol Notes</div>
+        <!-- ============ PROTOCOL NOTES (collapsible) ============ -->
+        <div class="section-divider"></div>
+        <div class="section-label">Reference · Protocol Notes</div>
 
-        <div class="protocol-box">
-            <strong>SHD-CCP Seed Schema</strong> — Each engram is seeded by a 64-bit integer packed from bit fields:
-            <code>ST/PA/CO/FR/SP/AM</code>. The Mulberry32 PRNG streams these into panmagic 8×8 boolean grids.<br><br>
+        <details class="proto">
+            <summary>SHD-CCP Seed Schema · Crystallization · Torsion Flow</summary>
+            <div class="proto-body">
+                <strong>SHD-CCP Seed Schema</strong> — Each engram is seeded by a 64-bit integer packed from bit fields:
+                <code>ST/PA/CO/FR/SP/AM</code>. The Mulberry32 PRNG streams these into panmagic 8×8 boolean grids.<br><br>
+                <strong>XOR Crystallization</strong> — Text is tokenized character-by-character; each character grid is XOR'd
+                into an accumulator, building a unique topological fingerprint ("knot") for any sequence.<br><br>
+                <strong>Chiral Key Format</strong> — <code>O1::rootChar::hexhash</code> where hexhash is the 8-byte
+                little-endian pack of the final 64-bit crystallized state.<br><br>
+                <strong>Torsion Flow J</strong> — Computed as <code>(upper_triangle_sum − lower_triangle_sum) / 32</code>
+                from the active Gamma packet grid. Positive J → exploratory; negative J → grounded; near-zero → balanced.<br><br>
+                <strong>3-Packet Window</strong> — Alpha (oldest), Beta (mid), Gamma (newest, active for resonance).
+                On each utterance: Alpha ← Beta ← Gamma ← new crystallized engram.
+            </div>
+        </details>
 
-            <strong>XOR Crystallization</strong> — Text is tokenized character-by-character; each character grid is XOR'd
-            into an accumulator, building a unique topological fingerprint ("knot") for any sequence.<br><br>
-
-            <strong>Chiral Key Format</strong> — <code>O1::rootChar::hexhash</code> where hexhash is the 8-byte
-            little-endian pack of the final 64-bit crystallized state.<br><br>
-
-            <strong>Torsion Flow J</strong> — Computed as <code>(upper_triangle_sum − lower_triangle_sum) / 32</code>
-            from the active Gamma packet grid. Positive J → exploratory tone; negative J → grounded tone; near-zero → balanced.<br><br>
-
-            <strong>3-Packet Window</strong> — Alpha (oldest context), Beta (mid), Gamma (newest, active for resonance).
-            On each utterance: Alpha ← Beta ← Gamma ← new crystallized engram.
-        </div>
-
-        <div class="section-label">The Crystallization Pipeline</div>
-
-        <div class="protocol-box">
-            The four systems form one logical chain. Language enters as text and leaves as a compressed
-            quaternion crystal — and the whole loop is anchored to your <strong>active familiar's manifold</strong>.<br><br>
-
-            <strong>1 · Engram Mind Eye</strong> — Bind to your familiar's manifold (N/K/T pulled from
-            <code>familiarManifolds[activeSlot]</code>). Converse with STRIX. Every token from both speakers is
-            logged as a 128-bit SHD-CCP packet (cyan = human, amethyst = STRIX) and accumulated into a master
-            <strong>Text Crystal</strong>.<br><br>
-
-            <strong>2 · Segmented Export</strong> — From the Packet Ledger, <code>EXPORT ⬡72</code> or
-            <code>EXPORT ⬡720</code> distributes the token chain across exactly 72 nodes (or 720 frames) and
-            XOR-crystallizes each section into its own <code>seed_state</code>. The file is self-describing:
-            <code>topology_constants.node_count</code> tells the downstream programs how many sections to read.<br><br>
-
-            <strong>3 · Blackwell Architect</strong> — Reads each node's <code>seed_state</code> (a real 64-bit
-            text crystal) and the <code>720 / 72</code> topology to generate the toroidal quaternion
-            <em>winding &amp; unwinding</em> pattern — language rendered as motion on the manifold.<br><br>
-
-            <strong>4 · O1 Compressor</strong> — Reads the same <code>node_count</code> chain and compresses the
-            full winding into a single <strong>crystallized engram</strong> — the conversation collapsed to one
-            quaternion signature.<br><br>
-
-            <strong>Shared schema</strong> — Every hop speaks the same JSON:
-            <code>system_header{ chiral_key, seed_state[64], topology_constants{ major_R, minor_R, total_frames, node_count } }</code>
-            plus a <code>quaternion_chain[]</code> of nodes (each with its own <code>seed_state</code> and
-            <code>chiral_key</code>). Engram packets travel with a <code>packet_meta</code> /
-            <code>source_mix</code> annotation so human-vs-STRIX provenance survives the full round trip.
-        </div>
+        <details class="proto">
+            <summary>The Crystallization Pipeline · Shared JSON Schema</summary>
+            <div class="proto-body">
+                The four TTMPT systems form one logical chain. Language enters as text and leaves as a compressed
+                quaternion crystal — anchored to your <strong>active familiar's manifold</strong>.<br><br>
+                <strong>1 · Engram Mind Eye</strong> — Bind to your familiar's manifold (N/K/T from
+                <code>familiarManifolds[activeSlot]</code>). Every token is logged as a 128-bit SHD-CCP packet and
+                accumulated into a master <strong>Text Crystal</strong>.<br><br>
+                <strong>2 · Segmented Export</strong> — <code>EXPORT ⬡72</code> / <code>EXPORT ⬡720</code> distributes the
+                token chain across 72 nodes (or 720 frames) and XOR-crystallizes each section into its own
+                <code>seed_state</code>; <code>topology_constants.node_count</code> tells downstream programs how many
+                sections to read.<br><br>
+                <strong>3 · Blackwell Architect</strong> — Reads each node's <code>seed_state</code> and the
+                <code>720 / 72</code> topology to generate the toroidal quaternion winding pattern.<br><br>
+                <strong>4 · O1 Compressor</strong> — Compresses the full winding into a single crystallized engram.<br><br>
+                <strong>Shared schema</strong> — Every hop speaks the same JSON:
+                <code>system_header{ chiral_key, seed_state[64], topology_constants{ major_R, minor_R, total_frames, node_count } }</code>
+                plus a <code>quaternion_chain[]</code>, with <code>packet_meta</code> / <code>source_mix</code> provenance.
+            </div>
+        </details>
     </main>
+
+    <footer>Owl Academy · Experimental Systems — organized by curvature, crosslinked by structure.</footer>
 </body>
 </html>
