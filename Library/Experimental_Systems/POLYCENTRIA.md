@@ -53,6 +53,10 @@ the certifier strand keeps it safe to try anywhere.
 - `Trefoil_Streams/` — a Polycentria cell over a new carrier: three trefoil-knot streams on
   a golden toroid whose emergent 4th phase is an exact parity channel (zero at equilibrium by
   1+ω+ω²=0); governance oracle bias ε ≈ +0.04 (geometry helps again).
+- `Coherency_Channel/` — a benchmark-proofed RF/semantic carrier: 3-PSK on the cube roots of
+  unity, orthogonal FDM, return-to-baseline (AR(1)), quaternion-Δ packing, attractor
+  compression — every subsystem measured against theory. Decoder = certifier (Helix B), FFT
+  activity-flag = oracle (Helix A).
 
 A concrete *nested* example (Router oracle nesting the codec memory as an inner cell, with
 the bias of the whole stack measured) is the natural next build.
