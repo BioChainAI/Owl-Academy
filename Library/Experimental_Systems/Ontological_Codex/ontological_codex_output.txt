@@ -1,0 +1,57 @@
+Ontological Codex — three-scale quaternionic delta-chain memory offload
+==============================================================================
+  gears: outer 720 (12) -> middle 72 (10, inverse) -> inner 10 (8)
+
+[Prop 3] 72->10 partition: block sizes [7, 8], total 72  (PASS)
+[Prop 4] (q^(1/10))^10 == q : reconstruction angle 0.00e+00 rad  (PASS)
+
+  Source comparison (telescoping exactness depends on rational vs float):
+      source       rational?   Prop2 telescope err  exact 0?
+      sparsemax         True              0.00e+00       YES
+      smooth           False              4.98e-30        no
+      random           False              5.71e-30        no
+    → the Sparsemax source is exact-rational, so the offload telescopes to
+      EXACTLY zero error (parity-safe); float sources telescope to machine
+      precision (~1e-30 on 10-delta blocks).
+
+  [sparsemax] rate–distortion dial (store one scale, SLERP-reconstruct the 720):
+      stored scale               bits  vs full  recon RMSE (rad)
+      outer 720 (exact)         46080     1.0x          3.68e-09
+      middle 72                  4608      10x             0.113
+      inner 10                    640      72x             1.377
+      centroid: mean=(-0.395,-0.531,-0.526,-0.534)
+      holonomy ‖H‖=3.151 rad  →  closes to 0.0e+00 after inner-anchor renorm
+
+  [smooth] rate–distortion dial (store one scale, SLERP-reconstruct the 720):
+      stored scale               bits  vs full  recon RMSE (rad)
+      outer 720 (exact)         46080     1.0x          0.00e+00
+      middle 72                  4608      10x             0.001
+      inner 10                    640      72x             1.887
+      centroid: mean=(0.994,-0.072,-0.054,-0.056)
+      holonomy ‖H‖=2.323 rad  →  closes to 0.0e+00 after inner-anchor renorm
+
+  [random] rate–distortion dial (store one scale, SLERP-reconstruct the 720):
+      stored scale               bits  vs full  recon RMSE (rad)
+      outer 720 (exact)         46080     1.0x          0.00e+00
+      middle 72                  4608      10x             0.441
+      inner 10                    640      72x             2.248
+      centroid: mean=(0.971,-0.090,-0.066,0.213)
+      holonomy ‖H‖=4.331 rad  →  closes to 0.0e+00 after inner-anchor renorm
+
+  [packet] 64-bit Einstein-tile core, sparsemax deltas:
+      E4M3 (FP8) round-trip max angle err  : 2.37°  (lossy)
+      exact-rational storage round-trip err : 0  (the deltas ARE rational ⇒ lossless,
+        parity-safe; FP8 is only for a fixed-width wire format if size is capped)
+
+==============================================================================
+FINDINGS (measured):
+ • The codex is the Memory-Offload Pump's three-gear chain made executable:
+   720→72→10, inverse middle gear, blocks of 7/8 (Prop 3), SLERP lift (Prop 4).
+ • Telescoping (Prop 2) is EXACT — and with the rational Sparsemax source it is
+   exactly zero error (parity-safe), the paper's rational/transcendental split.
+ • 'Compress to a centroid AND re-create the structure' is a rate–distortion DIAL:
+   store outer = lossless (telescoping); store middle/inner = compact but the
+   interior is SLERP-approximated (low RMSE for smooth/structured, high for noise).
+ • Dual-Helix governance: the mean centroid is the untrusted SUMMARY (Helix A);
+   the logged delta chain is the EXACT reconstruction (Helix B). No factoring
+   speedup is claimed (TQF jump-ahead / harmonic bias measured ≤0 elsewhere).

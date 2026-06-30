@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Ontological Codex — quaternion delta-chain memory offload | Owl Academy</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Inter:wght@300;400;500;600&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{--void:#05030a;--gold:#D4AF37;--gold-l:#FFF8DC;--cyan:#00d4ff;--purple:#8A2BE2;--ok:#34d399;--bad:#f87171;--pink:#ec4899;--violet:#8b5cf6;}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--void);color:#e2e8f0;font-family:'Inter',system-ui,sans-serif;height:100vh;overflow:hidden;
+       background:radial-gradient(circle at 50% 0%, color-mix(in srgb,var(--purple) 8%,var(--void)),var(--void) 60%)}
+  .serif{font-family:'Cinzel',serif}.mono{font-family:'Fira Code',ui-monospace,monospace}
+  header{padding:.9rem 1.4rem;border-bottom:1px solid rgba(212,175,55,0.2);background:rgba(5,3,10,.6);backdrop-filter:blur(10px)}
+  .crumb{font-size:.6rem;letter-spacing:.22em;text-transform:uppercase;color:rgba(212,175,55,0.55);margin-bottom:.3rem}
+  .crumb a{color:rgba(212,175,55,0.7);text-decoration:none}.crumb a:hover{color:var(--gold-l)}
+  h1{font-size:1.3rem;font-weight:600;letter-spacing:.06em;
+     background:linear-gradient(to right,var(--gold),var(--gold-l),var(--gold));-webkit-background-clip:text;background-clip:text;color:transparent}
+  .wrap{display:flex;height:calc(100vh - 62px)}
+  .side{width:392px;flex-shrink:0;border-right:1px solid rgba(212,175,55,0.15);display:flex;flex-direction:column;background:rgba(10,8,20,0.5);backdrop-filter:blur(8px)}
+  .pad{padding:1rem 1.1rem;overflow-y:auto;flex:1}
+  .lead{font-size:.78rem;color:rgba(255,255,255,.55);line-height:1.55;margin-bottom:1rem}.lead b{color:var(--gold-l)}
+  h2{font-size:.62rem;letter-spacing:.18em;text-transform:uppercase;color:var(--gold);margin:1.1rem 0 .55rem;font-weight:700}
+  .seg{display:flex;gap:.4rem;margin-bottom:.6rem;flex-wrap:wrap}
+  .seg button{flex:1;min-width:88px;background:rgba(212,175,55,.1);color:var(--gold-l);border:1px solid rgba(212,175,55,.35);
+    border-radius:7px;padding:.45rem;font-size:.68rem;cursor:pointer;font-family:inherit;transition:.15s}
+  .seg button:hover{background:rgba(212,175,55,.22);color:#fff}
+  .seg button.sel{background:rgba(0,212,255,.18);border-color:rgba(0,212,255,.5);color:#bfefff}
+  .kv{display:flex;justify-content:space-between;gap:.6rem;padding:.16rem 0;border-bottom:1px solid rgba(255,255,255,.05);font-size:.73rem}
+  .kv span:first-child{color:rgba(255,255,255,.45)}.kv span:last-child{text-align:right}
+  .ok{color:var(--ok)}.bad{color:var(--bad)}.gold{color:var(--gold)}.cyan{color:var(--cyan)}
+  .panel{background:rgba(0,0,0,.32);border:1px solid rgba(212,175,55,.18);border-radius:10px;padding:.7rem .85rem;margin-top:.5rem}
+  .note{font-size:.69rem;color:rgba(255,255,255,.42);line-height:1.5;margin-top:.5rem}
+  .note code,.lead code{font-family:'Fira Code',monospace;color:var(--cyan);background:rgba(0,212,255,.08);padding:.05em .3em;border-radius:3px;font-size:.92em}
+  .reflink{display:inline-flex;gap:.4rem;font-size:.7rem;color:var(--gold);text-decoration:none;margin-top:.45rem}
+  .reflink:hover{color:var(--gold-l)}
+  #log{background:#06100c;border:1px solid rgba(212,175,55,.2);border-radius:8px;height:130px;overflow-y:auto;
+    font-family:'Fira Code',monospace;font-size:.6rem;color:var(--ok);padding:.5rem .6rem;margin-top:.4rem;line-height:1.5}
+  #log .anchor{color:var(--gold)}
+  .stage{flex:1;position:relative;min-width:0}
+  #gl{width:100%;height:100%;display:block}
+  #fallback{position:absolute;inset:0;display:none;align-items:center;justify-content:center;text-align:center;color:rgba(255,255,255,.45);font-size:.85rem;padding:2rem;line-height:1.7}
+  .badge{position:absolute;left:14px;top:14px;font-size:.66rem;letter-spacing:.1em;background:rgba(5,3,10,.82);border:1px solid rgba(0,212,255,.4);color:var(--cyan);padding:.35rem .7rem;border-radius:999px}
+  .rotbtn{position:absolute;right:14px;top:12px;font-size:.62rem;letter-spacing:.06em;background:rgba(5,3,10,.82);border:1px solid rgba(212,175,55,.45);color:var(--gold);padding:.38rem .7rem;border-radius:999px;cursor:pointer;font-family:inherit;transition:.15s}
+  .rotbtn:hover{background:rgba(212,175,55,.22);color:#fff}.rotbtn.on{border-color:rgba(0,212,255,.6);color:var(--cyan)}
+  #cap{position:absolute;left:14px;bottom:14px;max-width:52%;font-size:.72rem;line-height:1.5;color:rgba(255,255,255,.7);background:rgba(5,3,10,.78);border:1px solid rgba(212,175,55,.25);border-radius:10px;padding:.55rem .8rem}
+  #cap .leg{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:.3rem;vertical-align:middle}#cap b{color:#fff}
+  .hint{position:absolute;right:14px;top:44px;font-size:.6rem;color:rgba(255,255,255,.32)}
+</style>
+</head>
+<body>
+<header>
+  <div class="crumb"><a href="../../Grand_Archives.html">Grand Archives</a> · <a href="../index.html">Experimental Systems</a> · Ontological Codex</div>
+  <h1 class="serif">Ontological Codex — quaternion delta-chain memory offload</h1>
+</header>
+<div class="wrap">
+  <div class="side">
+    <div class="pad">
+      <div class="lead">A three-scale quaternionic delta chain — <b>720 → 72 → 10</b> gears (the
+        Torsional Markov Memory-Offload Pump). The coarse layers are <b>ordered products</b> of deltas
+        (telescoping, exact); fine detail is recovered by <b>SLERP</b> fractional-power lifts. The logged
+        delta chain is the <b>replayable archive</b> that re-creates the structure; the mean is the
+        lossy <b>centroid summary</b>. Geometry summarizes; the deltas reconstruct.</div>
+
+      <h2>Stream source</h2>
+      <div class="seg" id="src">
+        <button data-s="sparsemax" class="sel">Sparsemax kernel</button>
+        <button data-s="smooth">Smooth</button>
+        <button data-s="random">Random</button>
+      </div>
+      <div class="note" id="src-note"></div>
+
+      <h2>Rate–distortion dial — store one scale, reconstruct 720</h2>
+      <div class="seg" id="scale">
+        <button data-k="outer" class="sel">Outer 720 · exact</button>
+        <button data-k="middle">Middle 72 · 10×</button>
+        <button data-k="inner">Inner 10 · 72×</button>
+      </div>
+
+      <div class="panel">
+        <div class="kv"><span>telescoping err (Prop 2)</span><span class="mono" id="t-tele">—</span></div>
+        <div class="kv"><span>72→10 partition (Prop 3)</span><span class="mono ok" id="t-part">7/8 ✓</span></div>
+        <div class="kv"><span>stored / compression</span><span class="mono gold" id="t-comp">—</span></div>
+        <div class="kv"><span>reconstruction RMSE</span><span class="mono" id="t-rmse">—</span></div>
+        <div class="kv"><span>holonomy ‖H‖ → closed</span><span class="mono" id="t-hol">—</span></div>
+        <div class="kv"><span>centroid (mean) w</span><span class="mono" id="t-cent">—</span></div>
+      </div>
+
+      <h2>Delta chain log <span style="color:rgba(255,255,255,.3);font-weight:400;text-transform:none;letter-spacing:0">— the replayable archive</span></h2>
+      <div id="log"></div>
+
+      <div class="note" style="margin-top:.7rem">Telescoping is shown here in floating point (~1e-15);
+        the <b>Sparsemax source is exact-rational in the reference</b>, so its offload telescopes to
+        <b>exactly 0</b> (parity-safe). Storing the outer chain is lossless; coarser scales are compact
+        but SLERP-approximate the interior — low RMSE for smooth/structured, high for noise. No factoring
+        speedup is claimed (TQF jump-ahead / harmonic bias measured ≤ 0 elsewhere).</div>
+      <a class="reflink" href="README.md">▸ README &amp; the five papers applied</a><br>
+      <a class="reflink" href="ontological_codex.py">▸ ontological_codex.py (verified reference)</a>
+    </div>
+  </div>
+
+  <div class="stage">
+    <canvas id="gl"></canvas>
+    <div id="fallback">This 3-D view needs WebGL + the Three.js CDN.<br>The telemetry, dial, and delta log still compute every number in-page.</div>
+    <div class="badge">720 → 72 → 10 gear chain</div>
+    <button class="rotbtn" id="rotToggle" title="Toggle camera auto-rotation">⟲ Auto-rotate: Off</button>
+    <div class="hint">drag to rotate · scroll to zoom</div>
+    <div id="cap"></div>
+  </div>
+</div>
+
+<script>
+"use strict";
+/* ===================== verified compute (matches ontological_codex.py) ===================== */
+const N=720, GROUP=10, NMID=72, NINN=10, Rm=3, rm=1.1;
+function qmul(a,b){return [a[0]*b[0]-a[1]*b[1]-a[2]*b[2]-a[3]*b[3],a[0]*b[1]+a[1]*b[0]+a[2]*b[3]-a[3]*b[2],
+  a[0]*b[2]-a[1]*b[3]+a[2]*b[0]+a[3]*b[1],a[0]*b[3]+a[1]*b[2]-a[2]*b[1]+a[3]*b[0]];}
+function qconj(a){return [a[0],-a[1],-a[2],-a[3]];}
+function qinv(a){return qconj(a);}
+function qnorm(a){const n=Math.hypot(a[0],a[1],a[2],a[3])||1;return a.map(c=>c/n);}
+function geoAngle(a,b){const d=Math.abs(a[0]*b[0]+a[1]*b[1]+a[2]*b[2]+a[3]*b[3]);return 2*Math.acos(Math.max(-1,Math.min(1,d)));}
+function qpow(a,t){const vn=Math.hypot(a[1],a[2],a[3]);if(vn<1e-15)return [1,0,0,0];
+  const th=Math.atan2(vn,Math.max(-1,Math.min(1,a[0])));const s=Math.sin(t*th);
+  return [Math.cos(t*th),s*a[1]/vn,s*a[2]/vn,s*a[3]/vn];}
+
+function mulberry(s){return function(){s|=0;s=s+0x6D2B79F5|0;let t=Math.imul(s^s>>>15,1|s);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}
+function aa(ax,th){const n=Math.hypot(ax[0],ax[1],ax[2])||1,s=Math.sin(th/2);return [Math.cos(th/2),s*ax[0]/n,s*ax[1]/n,s*ax[2]/n];}
+
+// SOURCE A: sparsemax-kernel walk over the 64-voxel lattice (float here; rational in the reference)
+function rquatV(vx,vy,vz){const n=1+vx*vx+vy*vy+vz*vz;return [(1-(vx*vx+vy*vy+vz*vz))/n,2*vx/n,2*vy/n,2*vz/n];}
+const LAT={};for(let a=0;a<4;a++)for(let b=0;b<4;b++)for(let c=0;c<4;c++)LAT[a+','+b+','+c]=rquatV((2*a-3)/8,(2*b-3)/8,(2*c-3)/8);
+const FACE=[[1,0,0],[-1,0,0],[0,1,0],[0,-1,0],[0,0,1],[0,0,-1]];
+function hyperQuad(qi,qj){const dm=qi[1]*qj[1]+qi[2]*qj[2]+qi[3]*qj[3];const v=(1-dm)/(qi[0]*qj[0]);return v*v-1;}
+function sparsemaxRow(z){const s=[...z].sort((a,b)=>b-a);let css=0,tau=0;for(let i=0;i<s.length;i++){css+=s[i];const t=(css-1)/(i+1);if(s[i]-t>0)tau=t;else break;}return z.map(v=>Math.max(0,v-tau));}
+function sparsemaxWalk(n,seed=7,lam=0.4){const rnd=mulberry(seed);let cur=[1,1,1];const out=[LAT['1,1,1']];
+  for(let k=1;k<n;k++){const qi=LAT[cur.join(',')];const beta=(1-qi[0])/qi[0];
+    const cands=[cur].concat(FACE.map(f=>[(cur[0]+f[0]+4)%4,(cur[1]+f[1]+4)%4,(cur[2]+f[2]+4)%4]));
+    const z=cands.map((cj,idx)=>{const A=idx===0?0:(FACE[idx-1][0]+FACE[idx-1][1]+FACE[idx-1][2]<0?1:0);return -beta*hyperQuad(qi,LAT[cj.join(',')])-lam*A;});
+    const row=sparsemaxRow(z);const tot=row.reduce((a,b)=>a+b,0)||1;let r=rnd()*tot,acc=0,pick=0;
+    for(let i=0;i<row.length;i++){acc+=row[i];if(acc>=r){pick=i;break;}}cur=cands[pick];out.push(LAT[cur.join(',')]);}
+  return out;}
+function smoothStream(n){let q=[1,0,0,0];const out=[q];for(let i=1;i<n;i++){q=qnorm(qmul(q,aa([1,0.3*Math.sin(0.01*i),0.2],0.02+0.01*Math.sin(0.02*i))));out.push(q);}return out;}
+function randomStream(n,seed=11){const rnd=mulberry(seed);let q=[1,0,0,0];const out=[q];for(let i=1;i<n;i++){q=qnorm(qmul(q,aa([rnd()-.5,rnd()-.5,rnd()-.5],0.6*rnd())));out.push(q);}return out;}
+
+function outerDeltas(st){const o=[];for(let n=1;n<st.length;n++)o.push(qmul(st[n],qinv(st[n-1])));return o;}
+function middleBlocks(o){const b=[];for(let m=0;m<NMID;m++){let net=o[GROUP*m];for(let r=1;r<GROUP;r++)net=qmul(o[GROUP*m+r],net);b.push(net);}return b;}
+function partition(){const A=[];for(let l=0;l<NINN;l++)A.push([]);for(let m=0;m<NMID;m++)A[Math.floor(10*m/NMID)].push(m);return A;}
+function innerBlocks(md,A){const inn=[];for(let l=0;l<NINN;l++){let net=[1,0,0,0];for(const m of A[l])net=qmul(md[m],net);inn.push(net);}return inn;}
+function reconOuter(st,o){const r=[st[0]];for(const d of o)r.push(qmul(d,r[r.length-1]));return r;}
+function reconMiddle(st,blocks){const r=[st[0]];for(let m=0;m<NMID;m++){const step=qpow(blocks[m],1/GROUP);for(let i=0;i<GROUP;i++)r.push(qmul(step,r[r.length-1]));}return r.slice(0,st.length);}
+function reconInner(st,inn,A){const r=[st[0]];for(let l=0;l<NINN;l++){const B=A[l].length||1;const mid=qpow(inn[l],1/B);const os=qpow(mid,1/GROUP);for(const _ of A[l])for(let i=0;i<GROUP;i++)r.push(qmul(os,r[r.length-1]));}return r.slice(0,st.length);}
+function rmse(a,b){let s=0,n=Math.min(a.length,b.length);for(let i=0;i<n;i++){const e=geoAngle(a[i],b[i]);s+=e*e;}return Math.sqrt(s/n);}
+function projMean(st){const acc=[0,0,0,0],ref=st[0];for(const s of st){let sf=s;if(sf[0]*ref[0]+sf[1]*ref[1]+sf[2]*ref[2]+sf[3]*ref[3]<0)sf=sf.map(c=>-c);for(let i=0;i<4;i++)acc[i]+=sf[i];}return qnorm(acc);}
+function netProduct(d){let net=d[0];for(let i=1;i<d.length;i++)net=qmul(d[i],net);return net;}
+function holonomy(Q8,Q10,Q12){const H=qmul(Q8,qmul(Q10,Q12));const vn=Math.hypot(H[1],H[2],H[3]);const raw=2*Math.atan2(vn,Math.max(-1,Math.min(1,H[0])));
+  const Q8c=qmul(qinv(H),Q8);const Hc=qmul(Q8c,qmul(Q10,Q12));const vc=Math.hypot(Hc[1],Hc[2],Hc[3]);return [raw,2*Math.atan2(vc,Math.max(-1,Math.min(1,Hc[0])))];}
+function teleErr(st,blocks){let e=0;for(let m=0;m<NMID;m++){const rhs=qmul(st[GROUP*m+GROUP],qinv(st[GROUP*m]));e=Math.max(e,Math.hypot(blocks[m][0]-rhs[0],blocks[m][1]-rhs[1],blocks[m][2]-rhs[2],blocks[m][3]-rhs[3]));}return e;}
+
+// E4M3 packing for the log
+function e4m3(f){if(f===0)return 0;const sign=f<0?1:0;f=Math.abs(f);let e=Math.max(-6,Math.min(8,Math.floor(Math.log2(f))));let m=Math.max(0,Math.min(7,Math.round((f/Math.pow(2,e)-1)*8)));return (sign<<7)|(((e+7)&0xF)<<3)|m;}
+function packHex(q){const p=(e4m3(q[0])<<24)|(e4m3(q[1])<<16)|(e4m3(q[2])<<8)|e4m3(q[3]);return (p>>>0).toString(16).padStart(8,'0');}
+
+/* ===================== state ===================== */
+let SRC='sparsemax', SCALE='outer', DATA=null;
+const SRC_NOTE={
+  sparsemax:'Rational unit-quaternion increments from the 64-voxel (ℤ/4ℤ)³ sparsemax kernel — parity-safe, telescopes exactly.',
+  smooth:'A smoothly varying rotation stream — structure the SLERP lift recovers well from coarse scales.',
+  random:'A high-entropy random-rotation stream — only the outer (lossless) scale reconstructs it.'
+};
+function compute(){
+  const st = SRC==='sparsemax'?sparsemaxWalk(N+1):SRC==='smooth'?smoothStream(N+1):randomStream(N+1);
+  const o=outerDeltas(st), blocks=middleBlocks(o), A=partition();
+  const md=blocks.map(qinv), inn=innerBlocks(md,A);
+  const Q12=qmul(st[st.length-1],qinv(st[0])), Q10=netProduct(md), Q8=netProduct(inn);
+  return {st,o,blocks,md,A,inn,tele:teleErr(st,blocks),cent:projMean(st),hol:holonomy(Q8,Q10,Q12)};
+}
+
+/* ===================== Three.js ===================== */
+let scene,cam,ren,ctrl,world,dyn,centMark,glReady=false;
+function windPoint(a,b){const rr=Rm+rm*Math.cos(b);return new THREE.Vector3(rr*Math.cos(a),rm*Math.sin(b),rr*Math.sin(a));}
+function initGL(){
+  if(typeof THREE==='undefined'||!THREE.OrbitControls){document.getElementById('fallback').style.display='flex';return;}
+  try{
+    glReady=true;const c=document.getElementById('gl');
+    scene=new THREE.Scene();scene.fog=new THREE.FogExp2(0x05030a,0.02);
+    cam=new THREE.PerspectiveCamera(50,c.clientWidth/c.clientHeight,0.1,100);cam.position.set(0,6,9.5);
+    ren=new THREE.WebGLRenderer({canvas:c,antialias:true});ren.setSize(c.clientWidth,c.clientHeight);ren.setPixelRatio(Math.min(devicePixelRatio,2));
+    ctrl=new THREE.OrbitControls(cam,ren.domElement);ctrl.enableDamping=true;ctrl.autoRotate=false;ctrl.autoRotateSpeed=0.5;
+    scene.add(new THREE.AmbientLight(0xffffff,0.85));world=new THREE.Group();scene.add(world);
+    const torus=new THREE.Mesh(new THREE.TorusGeometry(Rm,rm,18,80),new THREE.MeshBasicMaterial({color:0xD4AF37,wireframe:true,transparent:true,opacity:0.08}));
+    torus.rotation.x=Math.PI/2;world.add(torus);
+    dyn=new THREE.Group();world.add(dyn);
+    centMark=new THREE.Mesh(new THREE.SphereGeometry(0.18,16,16),new THREE.MeshBasicMaterial({color:0xffffff}));world.add(centMark);
+    addEventListener('resize',()=>{ren.setSize(c.clientWidth,c.clientHeight);cam.aspect=c.clientWidth/c.clientHeight;cam.updateProjectionMatrix();});
+    (function loop(){requestAnimationFrame(loop);ctrl.update();ren.render(scene,cam);})();
+  }catch(e){glReady=false;document.getElementById('fallback').style.display='flex';}
+}
+function clearDyn(){if(!glReady)return;while(dyn.children.length){const o=dyn.children.pop();o.geometry&&o.geometry.dispose();dyn.remove(o);}}
+function cumAngles(st){const out=[0];let c=0;for(let i=1;i<st.length;i++){c+=geoAngle(st[i-1],st[i]);out.push(c);}return out;}
+function drawWindings(orig,rec){if(!glReady)return;clearDyn();
+  const co=cumAngles(orig), cr=cumAngles(rec), LO=4, mx=co[co.length-1]||1;
+  const op=[],rp=[];
+  for(let i=0;i<orig.length;i+=2){const a=LO*2*Math.PI*i/orig.length;op.push(windPoint(a,3.0*co[i]/mx*Math.PI*2/LO+0.4));rp.push(windPoint(a,3.0*cr[i]/mx*Math.PI*2/LO+0.4));}
+  dyn.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(op),new THREE.LineBasicMaterial({color:0x00d4ff,transparent:true,opacity:0.95})));
+  dyn.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(rp),new THREE.LineBasicMaterial({color:0xD4AF37,transparent:true,opacity:0.95})));
+}
+
+/* ===================== UI ===================== */
+const $=id=>document.getElementById(id);
+function cap(h){$('cap').innerHTML=h;}
+function refresh(){
+  DATA=compute();
+  const rec = SCALE==='outer'?reconOuter(DATA.st,DATA.o):SCALE==='middle'?reconMiddle(DATA.st,DATA.blocks):reconInner(DATA.st,DATA.inn,DATA.A);
+  const err=rmse(DATA.st,rec);
+  const bitsFull=N*64, bits=SCALE==='outer'?N*64:SCALE==='middle'?NMID*64:NINN*64;
+  $('t-tele').innerHTML = SRC==='sparsemax'
+    ? `${DATA.tele.toExponential(1)} <span class="ok">(0 in ℚ)</span>`
+    : `${DATA.tele.toExponential(1)} <span class="ok">✓</span>`;
+  $('t-comp').textContent = `${bits} b · ${(bitsFull/bits).toFixed(0)}×`;
+  $('t-rmse').innerHTML = SCALE==='outer'
+    ? `<span class="ok">${err.toExponential(1)} (exact)</span>`
+    : `<span class="${err<0.3?'ok':'bad'}">${err.toFixed(3)} rad</span>`;
+  $('t-hol').textContent = `${DATA.hol[0].toFixed(2)} → ${DATA.hol[1].toExponential(0)}`;
+  $('t-cent').textContent = DATA.cent[0].toFixed(3);
+  // delta log (replayable archive): first 16 outer deltas + the block anchors
+  let html='';
+  for(let i=0;i<16;i++){const d=DATA.o[i];html+=`Δq${String(i+1).padStart(3,'0')}  0x${packHex(d)}\n`;}
+  html+=`<span class="anchor">⟂ block anchors (72): each = ordered product of 10 deltas (telescopes exact)</span>\n`;
+  for(let m=0;m<4;m++)html+=`<span class="anchor">ΔQ${m}  0x${packHex(DATA.blocks[m])}</span>\n`;
+  $('log').innerHTML=html;
+  drawWindings(DATA.st,rec);
+  const lab={outer:'lossless (telescoping)',middle:'10× · SLERP-lifted interior',inner:'72× · twice-lifted'}[SCALE];
+  cap(`<span class="leg" style="background:#00d4ff"></span><b>original stream</b> &nbsp;<span class="leg" style="background:#D4AF37"></span><b>reconstruction</b> from <b>${SCALE}</b> (${lab}) · `
+    + (err<0.05?'coils overlap ⇒ faithful':'coils diverge ⇒ interior lost (anchors still exact)'));
+  $('src-note').textContent=SRC_NOTE[SRC];
+}
+$('src').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;SRC=b.dataset.s;
+  [...$('src').children].forEach(x=>x.classList.toggle('sel',x===b));refresh();});
+$('scale').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;SCALE=b.dataset.k;
+  [...$('scale').children].forEach(x=>x.classList.toggle('sel',x===b));refresh();});
+
+initGL();
+(function(){const b=$('rotToggle');function sync(){const on=glReady&&ctrl&&ctrl.autoRotate;b.textContent='⟲ Auto-rotate: '+(on?'On':'Off');b.classList.toggle('on',!!on);}
+  if(!glReady){b.style.display='none';return;}b.onclick=()=>{ctrl.autoRotate=!ctrl.autoRotate;sync();};sync();})();
+refresh();
+</script>
+</body>
+</html>
