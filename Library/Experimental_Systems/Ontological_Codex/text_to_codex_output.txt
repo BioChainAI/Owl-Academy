@@ -1,0 +1,48 @@
+Text → SHD-CCP Quaternion Codex — low-dim data into quaternion chains
+==============================================================================
+  input: 380 chars; sample text (63 words)
+
+  ── source: ttmpt ──   tokens=63, vocab=41
+    TEXT recovery (keys → tokens) ....... EXACT ✓
+    packet parity-bit integrity ......... ok ✓
+    single-packet FP8 error ............. 4.53°  (lossy)
+    CHAIN Form 0-2 (lossy)  RMSE/finaldrift 0.335 / 0.525 rad  ← decays
+    CHAIN Form 3 (corrected) RMSE/drift ..  3.75e-09 / 0.00e+00 rad  ← lossless
+    codex dial: store outer(720-style)=9.6e-08 rad (exact) · store middle(10×)=2.162 rad
+    storage: keys 378 b + outer-geometry 3968 b  (raw text 3040 b → key stream alone is 8.0× SMALLER than raw text)
+    placement (node = i mod 72, toroid = i // 72): the→n0/t0, quaternion→n1/t0, codex→n2/t0, compresses→n3/t0, language→n4/t0, into→n5/t0 …
+
+  ── source: generic ──   tokens=63, vocab=41
+    TEXT recovery (keys → tokens) ....... EXACT ✓
+    packet parity-bit integrity ......... ok ✓
+    single-packet FP8 error ............. 4.83°  (lossy)
+    CHAIN Form 0-2 (lossy)  RMSE/finaldrift 0.291 / 0.460 rad  ← decays
+    CHAIN Form 3 (corrected) RMSE/drift ..  3.75e-09 / 0.00e+00 rad  ← lossless
+    codex dial: store outer(720-style)=7.2e-08 rad (exact) · store middle(10×)=2.069 rad
+    storage: keys 378 b + outer-geometry 3968 b  (raw text 3040 b → key stream alone is 8.0× SMALLER than raw text)
+    placement (node = i mod 72, toroid = i // 72): the→n0/t0, quaternion→n1/t0, codex→n2/t0, compresses→n3/t0, language→n4/t0, into→n5/t0 …
+
+  ── source: sparsemax ──   tokens=63, vocab=41
+    TEXT recovery (keys → tokens) ....... EXACT ✓
+    packet parity-bit integrity ......... ok ✓
+    single-packet FP8 error ............. 3.62°  (lossy)
+    CHAIN Form 0-2 (lossy)  RMSE/finaldrift 0.341 / 0.618 rad  ← decays
+    CHAIN Form 3 (corrected) RMSE/drift ..  6.50e-09 / 0.00e+00 rad  ← lossless
+    codex dial: store outer(720-style)=8.7e-08 rad (exact) · store middle(10×)=1.620 rad
+    storage: keys 378 b + outer-geometry 3968 b  (raw text 3040 b → key stream alone is 8.0× SMALLER than raw text)
+    placement (node = i mod 72, toroid = i // 72): the→n0/t0, quaternion→n1/t0, codex→n2/t0, compresses→n3/t0, language→n4/t0, into→n5/t0 …
+
+==============================================================================
+FINDINGS (measured):
+ • TWO channels, both recovered: TEXT is exact from the key stream (token ids),
+   independent of geometry precision; the geometric CHAIN is the quaternion deltas.
+ • The default lossy packet (Form 0-2) DECAYS over the chain (the diagram's warning,
+   measured: ~2-3° per packet compounding to radians of final drift). Form 3's
+   corrective offset reconstructs the chain LOSSLESSLY (RMSE ~1e-9).
+ • TTMPT crystallization gives hash-like (avalanche) token positions, so consecutive
+   deltas are high-entropy: the OUTER scale is lossless, but middle/inner SLERP
+   reconstruction is lossy — exactly as measured for the random source in the codex.
+   A locally-correlated embedding would compress the geometry better; the key stream
+   keeps the text exact regardless. (Honest: hashing does not create compressibility.)
+ • Each token packs into a 64-bit Einstein-tile packet (Form-ID master switch) and
+   places at node (i mod 72) on toroid (i // 72), feeding the Ontological Codex offload.
