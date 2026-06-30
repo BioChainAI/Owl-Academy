@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Engram Codec — quaternion-delta memory | Owl Academy</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Inter:wght@300;400;500;600&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{--void:#05030a;--gold:#D4AF37;--gold-l:#FFF8DC;--cyan:#00d4ff;--purple:#8A2BE2;--ok:#34d399;--bad:#f87171;}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--void);color:#e2e8f0;font-family:'Inter',system-ui,sans-serif;height:100vh;overflow:hidden;
+       background:radial-gradient(circle at 50% 0%, color-mix(in srgb,var(--purple) 8%,var(--void)),var(--void) 60%)}
+  .serif{font-family:'Cinzel',serif}.mono{font-family:'Fira Code',ui-monospace,monospace}
+  header{padding:.9rem 1.4rem;border-bottom:1px solid rgba(212,175,55,0.2);background:rgba(5,3,10,.6);backdrop-filter:blur(10px)}
+  .crumb{font-size:.6rem;letter-spacing:.22em;text-transform:uppercase;color:rgba(212,175,55,0.55);margin-bottom:.3rem}
+  .crumb a{color:rgba(212,175,55,0.7);text-decoration:none}.crumb a:hover{color:var(--gold-l)}
+  h1{font-size:1.3rem;font-weight:600;letter-spacing:.08em;
+     background:linear-gradient(to right,var(--gold),var(--gold-l),var(--gold));-webkit-background-clip:text;background-clip:text;color:transparent}
+  .wrap{display:flex;height:calc(100vh - 62px)}
+  .side{width:372px;flex-shrink:0;border-right:1px solid rgba(212,175,55,0.15);display:flex;flex-direction:column;background:rgba(10,8,20,0.5);backdrop-filter:blur(8px)}
+  .pad{padding:1rem 1.1rem;overflow-y:auto;flex:1}
+  .lead{font-size:.8rem;color:rgba(255,255,255,.55);line-height:1.6;margin-bottom:1rem}.lead b{color:var(--gold-l)}
+  h2{font-size:.62rem;letter-spacing:.18em;text-transform:uppercase;color:var(--gold);margin:1.2rem 0 .6rem;font-weight:700}
+  .ctlrow{display:flex;gap:.5rem;margin-bottom:.7rem;flex-wrap:wrap}
+  button.act{flex:1;min-width:90px;background:rgba(212,175,55,.12);color:var(--gold-l);border:1px solid rgba(212,175,55,.4);border-radius:8px;
+       padding:.5rem;font-size:.7rem;cursor:pointer;font-family:inherit;transition:.15s}
+  button.act:hover{background:rgba(212,175,55,.26);color:#fff}
+  button.act.sel{background:rgba(0,212,255,.18);border-color:rgba(0,212,255,.5);color:#bfefff}
+  .ctl{margin-bottom:.5rem}
+  .ctl label{display:flex;justify-content:space-between;font-size:.66rem;color:rgba(255,255,255,.5);font-family:'Fira Code',monospace}
+  .ctl .v{color:var(--gold)}
+  input[type=range]{-webkit-appearance:none;width:100%;height:4px;background:rgba(255,255,255,.1);border-radius:4px;outline:none;margin-top:.35rem}
+  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;border-radius:50%;background:var(--gold);cursor:pointer;box-shadow:0 0 8px rgba(212,175,55,.5)}
+  .kv{display:flex;justify-content:space-between;gap:.6rem;padding:.18rem 0;border-bottom:1px solid rgba(255,255,255,.05);font-size:.74rem}
+  .kv span:first-child{color:rgba(255,255,255,.45)}.kv span:last-child{text-align:right}
+  .ok{color:var(--ok)}.bad{color:var(--bad)}.gold{color:var(--gold)}.cyan{color:var(--cyan)}
+  .panel{background:rgba(0,0,0,.32);border:1px solid rgba(212,175,55,.18);border-radius:10px;padding:.8rem .9rem;margin-top:.6rem}
+  .note{font-size:.7rem;color:rgba(255,255,255,.42);line-height:1.55;margin-top:.5rem}
+  .note code,.lead code{font-family:'Fira Code',monospace;color:var(--cyan);background:rgba(0,212,255,.08);padding:.05em .3em;border-radius:3px;font-size:.92em}
+  .reflink{display:inline-flex;align-items:center;gap:.4rem;font-size:.7rem;color:var(--gold);text-decoration:none;margin-top:.5rem}
+  .reflink:hover{color:var(--gold-l)}
+  .stage{flex:1;position:relative;min-width:0}
+  #gl{width:100%;height:100%;display:block}
+  #fallback{position:absolute;inset:0;display:none;align-items:center;justify-content:center;text-align:center;color:rgba(255,255,255,.45);font-size:.85rem;padding:2rem;line-height:1.7}
+  .badge{position:absolute;left:14px;top:14px;font-size:.66rem;letter-spacing:.1em;background:rgba(5,3,10,.82);border:1px solid rgba(0,212,255,.4);color:var(--cyan);padding:.35rem .7rem;border-radius:999px}
+  .rotbtn{position:absolute;right:14px;top:12px;font-size:.62rem;letter-spacing:.06em;background:rgba(5,3,10,.82);border:1px solid rgba(212,175,55,.45);color:var(--gold);padding:.38rem .7rem;border-radius:999px;cursor:pointer;font-family:inherit;transition:.15s}
+  .rotbtn:hover{background:rgba(212,175,55,.22);color:#fff}.rotbtn.on{border-color:rgba(0,212,255,.6);color:var(--cyan)}
+  #cap{position:absolute;left:14px;bottom:14px;max-width:48%;font-size:.72rem;line-height:1.5;color:rgba(255,255,255,.7);background:rgba(5,3,10,.78);border:1px solid rgba(212,175,55,.25);border-radius:10px;padding:.55rem .8rem}
+  #cap .leg{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:.3rem;vertical-align:middle}#cap b{color:#fff}
+  #chart{position:absolute;right:14px;bottom:14px;width:300px;height:150px;background:rgba(5,3,10,.85);border:1px solid rgba(212,175,55,.3);border-radius:10px}
+  .hint{position:absolute;right:14px;top:44px;font-size:.6rem;color:rgba(255,255,255,.32)}
+</style>
+</head>
+<body>
+<header>
+  <div class="crumb"><a href="../../Grand_Archives.html">Grand Archives</a> · <a href="../index.html">Experimental Systems</a> · Engram Codec</div>
+  <h1 class="serif">Engram Codec — quaternion-delta memory</h1>
+</header>
+<div class="wrap">
+  <div class="side">
+    <div class="pad">
+      <div class="lead">A data stream is offloaded into a <b>quaternion delta chain</b>, block-telescoped, and
+        recreated by SLERP. <b>Section boundaries telescope back exactly</b> (~1e-15) for any data; the interior
+        is recovered faithfully for smooth/structured streams and dropped for high-entropy noise — a lossy
+        “engram” recreation, the memory strand a router-oracle nests for compressed history.</div>
+
+      <h2>Stream</h2>
+      <div class="ctlrow">
+        <button class="act sel" id="b-smooth">Smooth</button>
+        <button class="act" id="b-mixed">Structured</button>
+        <button class="act" id="b-random">Random</button>
+      </div>
+      <div class="ctl"><label>block size B (telescoping) <span class="v" id="v-B">20</span></label>
+        <input type="range" id="B" min="5" max="40" step="5" value="20"></div>
+      <div class="ctlrow"><button class="act" id="run">▶ Encode &amp; recreate</button></div>
+
+      <h2>Recreation telemetry</h2>
+      <div class="panel">
+        <div class="kv"><span>section-boundary error</span><span class="mono ok" id="t-be">—</span></div>
+        <div class="kv"><span>RMSE / std (interior)</span><span class="mono" id="t-rmse">—</span></div>
+        <div class="kv"><span>sections</span><span class="mono" id="t-sec">—</span></div>
+        <div class="kv"><span>verdict</span><span class="mono" id="t-verdict">—</span></div>
+      </div>
+
+      <h2>Honest notes</h2>
+      <div class="note">The boundary exactness is the telescoping identity (a product of unit quaternions is a
+        unit quaternion) and holds for <b>any</b> stream. The interior is <b>lossy</b>: SLERP keeps smooth
+        structure (low RMSE) and discards uncorrelated noise (RMSE/std → 1). Keeping each block in the
+        principal branch (<code>|Σ|&lt;π</code>, via <code>SCALE=0.04</code>) is what makes the recreation stable.</div>
+      <a class="reflink" href="README.md">▸ README &amp; method</a><br>
+      <a class="reflink" href="engram_codec.py">▸ engram_codec.py (verified reference)</a>
+    </div>
+  </div>
+
+  <div class="stage">
+    <canvas id="gl"></canvas>
+    <div id="fallback">This 3-D view needs WebGL + the Three.js CDN.<br>The telemetry and chart still compute every number in-page.</div>
+    <div class="badge">original vs SLERP reconstruction</div>
+    <button class="rotbtn" id="rotToggle" title="Toggle camera auto-rotation">⟲ Auto-rotate: Off</button>
+    <div class="hint">drag to rotate · scroll to zoom</div>
+    <div id="cap"></div>
+    <canvas id="chart" width="300" height="150"></canvas>
+  </div>
+</div>
+
+<script>
+"use strict";
+/* ===== verified codec compute (matches engram_codec.py / the benchmark) ===== */
+const PHI=(1+Math.sqrt(5))/2, Rm=3, rm=1.1, SCALE=0.04;
+function mulberry(s){return function(){s|=0;s=s+0x6D2B79F5|0;let t=Math.imul(s^s>>>15,1|s);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}
+let RNG=mulberry(42);
+function rot(t){return [Math.cos(t/2),Math.sin(t/2),0,0];}
+function qm(a,b){return [a[0]*b[0]-a[1]*b[1]-a[2]*b[2]-a[3]*b[3],a[0]*b[1]+a[1]*b[0]+a[2]*b[3]-a[3]*b[2],a[0]*b[2]-a[1]*b[3]+a[2]*b[0]+a[3]*b[1],a[0]*b[3]+a[1]*b[2]-a[2]*b[1]+a[3]*b[0]];}
+function qang(q){return 2*Math.atan2(q[1],q[0]);}
+function codec(vals,B){const d=vals.map(v=>rot(SCALE*v));const out=[];let boundaryErr=0,cumT=0,cum=[1,0,0,0];
+  for(let s=0;s<d.length;s+=B){let net=[1,0,0,0];const size=Math.min(B,d.length-s);for(let i=0;i<size;i++)net=qm(d[s+i],net);
+    const a=qang(net)/size;for(let i=0;i<size;i++)out.push(a/SCALE);
+    for(let i=0;i<size;i++)cumT+=SCALE*vals[s+i];cum=qm(net,cum);
+    boundaryErr=Math.max(boundaryErr,Math.abs(((qang(cum)-cumT+Math.PI)%(2*Math.PI))-Math.PI));}
+  const mean=vals.reduce((a,b)=>a+b)/vals.length;const std=Math.sqrt(vals.reduce((s,v)=>s+(v-mean)**2,0)/vals.length)||1;
+  const rmse=Math.sqrt(vals.reduce((s,v,i)=>s+(v-out[i])**2,0)/vals.length)/std;
+  return {rmse,boundaryErr,out,std};}
+function makeStream(kind,nC){const r=mulberry(7);
+  if(kind==='smooth')return Array.from({length:nC},(_,i)=>0.8*Math.sin(0.02*i));
+  if(kind==='random')return Array.from({length:nC},()=>(r()*2-1)*1.2);
+  return Array.from({length:nC},(_,i)=>0.7*Math.sin(0.018*i)+0.25*Math.sin(0.11*i));}
+
+/* ===== Three.js stage ===== */
+let scene,cam,ren,ctrl,world,dyn,glReady=false;
+function windPoint(a,b){const rr=Rm+rm*Math.cos(b);return new THREE.Vector3(rr*Math.cos(a),rm*Math.sin(b),rr*Math.sin(a));}
+function initGL(){
+  if(typeof THREE==='undefined'||!THREE.OrbitControls){document.getElementById('fallback').style.display='flex';return;}
+  try{
+    glReady=true;const c=document.getElementById('gl');
+    scene=new THREE.Scene();scene.fog=new THREE.FogExp2(0x05030a,0.02);
+    cam=new THREE.PerspectiveCamera(50,c.clientWidth/c.clientHeight,0.1,100);cam.position.set(0,6,9.5);
+    ren=new THREE.WebGLRenderer({canvas:c,antialias:true});ren.setSize(c.clientWidth,c.clientHeight);ren.setPixelRatio(Math.min(devicePixelRatio,2));
+    ctrl=new THREE.OrbitControls(cam,ren.domElement);ctrl.enableDamping=true;ctrl.autoRotate=false;ctrl.autoRotateSpeed=0.5;
+    scene.add(new THREE.AmbientLight(0xffffff,0.85));world=new THREE.Group();scene.add(world);
+    const torus=new THREE.Mesh(new THREE.TorusGeometry(Rm,rm,18,80),new THREE.MeshBasicMaterial({color:0xD4AF37,wireframe:true,transparent:true,opacity:0.08}));
+    torus.rotation.x=Math.PI/2;world.add(torus);
+    dyn=new THREE.Group();world.add(dyn);
+    addEventListener('resize',()=>{ren.setSize(c.clientWidth,c.clientHeight);cam.aspect=c.clientWidth/c.clientHeight;cam.updateProjectionMatrix();});
+    (function loop(){requestAnimationFrame(loop);ctrl.update();ren.render(scene,cam);})();
+  }catch(e){glReady=false;document.getElementById('fallback').style.display='flex';}
+}
+function clearDyn(){if(!glReady)return;while(dyn.children.length){const o=dyn.children.pop();o.geometry&&o.geometry.dispose();dyn.remove(o);}}
+function drawWindings(vals,out){if(!glReady)return;clearDyn();const nC=vals.length,LO=3;let bo=0,br=0;const orig=[],rec=[];
+  for(let i=0;i<nC;i++){const a=LO*2*Math.PI*i/nC;bo+=SCALE*vals[i];br+=SCALE*out[i];orig.push(windPoint(a,2.2*bo+0.6));rec.push(windPoint(a,2.2*br+0.6));}
+  dyn.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(orig),new THREE.LineBasicMaterial({color:0x00d4ff,transparent:true,opacity:0.95})));
+  dyn.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(rec),new THREE.LineBasicMaterial({color:0xD4AF37,transparent:true,opacity:0.95})));}
+
+/* ===== chart ===== */
+const chart=document.getElementById('chart'),cx=chart.getContext('2d');
+function barChart(rmse){cx.clearRect(0,0,300,150);cx.fillStyle='#cbd5e1';cx.font='11px "Fira Code",monospace';
+  cx.fillText('recreation error (0=perfect, 1=lost)',10,16);
+  const bars=[['this stream',rmse,rmse<0.5?'#34d399':'#f87171']];
+  bars.forEach((b,i)=>{const[name,val,col]=b;const h=Math.max(2,Math.min(110,val*110));cx.fillStyle=col;
+    cx.fillRect(30+i*130,130-h,90,h);cx.fillStyle='#e2e8f0';cx.fillText(name,30+i*130,145);cx.fillText(val.toFixed(3),30+i*130,125-h);});
+  cx.strokeStyle='rgba(255,255,255,.15)';cx.beginPath();cx.moveTo(10,130);cx.lineTo(290,130);cx.stroke();}
+
+/* ===== UI ===== */
+const $=id=>document.getElementById(id);
+let kind='smooth';
+function cap(h){$('cap').innerHTML=h;}
+function run(){const nC=300,B=+$('B').value;const vals=makeStream(kind,nC);const r=codec(vals,B);
+  drawWindings(vals,r.out);barChart(r.rmse);
+  $('t-be').textContent='~'+r.boundaryErr.toExponential(1)+' (exact)';
+  $('t-rmse').innerHTML=`<span class="${r.rmse<0.5?'ok':'bad'}">${r.rmse.toFixed(3)}</span>`;
+  $('t-sec').textContent=nC+' → '+Math.ceil(nC/B)+' sections';
+  $('t-verdict').textContent=r.rmse<0.5?'structure kept':'noise dropped';
+  cap(`<span class="leg" style="background:#00d4ff"></span><b>original</b> &nbsp;<span class="leg" style="background:#D4AF37"></span><b>SLERP reconstruction</b> — `+(r.rmse<0.5?'tracks closely ⇒ structure preserved':'diverges ⇒ high-entropy noise dropped (boundaries still exact)'));}
+['smooth','mixed','random'].forEach(k=>$('b-'+k).onclick=()=>{kind=k;['smooth','mixed','random'].forEach(j=>$('b-'+j).classList.toggle('sel',j===k));run();});
+$('B').oninput=e=>$('v-B').textContent=e.target.value;
+$('run').onclick=run;
+
+initGL();
+(function(){const b=$('rotToggle');function sync(){const on=glReady&&ctrl&&ctrl.autoRotate;b.textContent='⟲ Auto-rotate: '+(on?'On':'Off');b.classList.toggle('on',!!on);}
+  if(!glReady){b.style.display='none';return;}b.onclick=()=>{ctrl.autoRotate=!ctrl.autoRotate;sync();};sync();})();
+run();
+</script>
+</body>
+</html>

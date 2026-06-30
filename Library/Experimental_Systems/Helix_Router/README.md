@@ -37,5 +37,6 @@ observation (or stronger past↔present correlation) to contribute significantly
 python3 helix_router.py     # ~16 s; prints ε, the noise/observation sweep, captured in helix_router_output.txt
 ```
 
-Pure standard library. An interactive visualization of the manifold and the search is a
-natural follow-up (not yet built).
+Pure standard library. An interactive visualization of the manifold and the oracle-vs-random
+route race lives in `index.html` (open it in a browser): the golden torus, reward field, the
+green oracle route vs the red random route, and a live measured ε.

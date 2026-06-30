@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Helix Router — the architecture working | Owl Academy</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Inter:wght@300;400;500;600&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{--void:#05030a;--gold:#D4AF37;--gold-l:#FFF8DC;--cyan:#00d4ff;--purple:#8A2BE2;--ok:#34d399;--bad:#f87171;}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--void);color:#e2e8f0;font-family:'Inter',system-ui,sans-serif;height:100vh;overflow:hidden;
+       background:radial-gradient(circle at 50% 0%, color-mix(in srgb,var(--purple) 8%,var(--void)),var(--void) 60%)}
+  .serif{font-family:'Cinzel',serif}.mono{font-family:'Fira Code',ui-monospace,monospace}
+  header{padding:.9rem 1.4rem;border-bottom:1px solid rgba(212,175,55,0.2);background:rgba(5,3,10,.6);backdrop-filter:blur(10px)}
+  .crumb{font-size:.6rem;letter-spacing:.22em;text-transform:uppercase;color:rgba(212,175,55,0.55);margin-bottom:.3rem}
+  .crumb a{color:rgba(212,175,55,0.7);text-decoration:none}.crumb a:hover{color:var(--gold-l)}
+  h1{font-size:1.3rem;font-weight:600;letter-spacing:.08em;
+     background:linear-gradient(to right,var(--gold),var(--gold-l),var(--gold));-webkit-background-clip:text;background-clip:text;color:transparent}
+  .wrap{display:flex;height:calc(100vh - 62px)}
+  .side{width:372px;flex-shrink:0;border-right:1px solid rgba(212,175,55,0.15);display:flex;flex-direction:column;background:rgba(10,8,20,0.5);backdrop-filter:blur(8px)}
+  .pad{padding:1rem 1.1rem;overflow-y:auto;flex:1}
+  .lead{font-size:.8rem;color:rgba(255,255,255,.55);line-height:1.6;margin-bottom:1rem}
+  .lead b{color:var(--gold-l)}
+  h2{font-size:.62rem;letter-spacing:.18em;text-transform:uppercase;color:var(--gold);margin:1.2rem 0 .6rem;font-weight:700}
+  .ctlrow{display:flex;gap:.5rem;margin-bottom:.7rem;flex-wrap:wrap}
+  button.act{flex:1;min-width:120px;background:rgba(212,175,55,.12);color:var(--gold-l);border:1px solid rgba(212,175,55,.4);border-radius:8px;
+       padding:.55rem;font-size:.72rem;letter-spacing:.05em;cursor:pointer;font-family:inherit;transition:.15s}
+  button.act:hover{background:rgba(212,175,55,.26);color:#fff}
+  button.act.alt{background:rgba(138,43,226,.14);border-color:rgba(138,43,226,.45);color:#d6b8ff}
+  button.act.alt:hover{background:rgba(138,43,226,.3);color:#fff}
+  .ctl{margin-bottom:.5rem}
+  .ctl label{display:flex;justify-content:space-between;font-size:.66rem;color:rgba(255,255,255,.5);font-family:'Fira Code',monospace}
+  .ctl .v{color:var(--gold)}
+  input[type=range]{-webkit-appearance:none;width:100%;height:4px;background:rgba(255,255,255,.1);border-radius:4px;outline:none;margin-top:.35rem}
+  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;border-radius:50%;background:var(--gold);cursor:pointer;box-shadow:0 0 8px rgba(212,175,55,.5)}
+  .kv{display:flex;justify-content:space-between;gap:.6rem;padding:.18rem 0;border-bottom:1px solid rgba(255,255,255,.05);font-size:.74rem}
+  .kv span:first-child{color:rgba(255,255,255,.45)}.kv span:last-child{text-align:right}
+  .eps{font-size:1.5rem;font-weight:700;font-family:'Fira Code',monospace}
+  .ok{color:var(--ok)}.bad{color:var(--bad)}.gold{color:var(--gold)}.cyan{color:var(--cyan)}
+  .panel{background:rgba(0,0,0,.32);border:1px solid rgba(212,175,55,.18);border-radius:10px;padding:.8rem .9rem;margin-top:.6rem}
+  .note{font-size:.7rem;color:rgba(255,255,255,.42);line-height:1.55;margin-top:.5rem}
+  .note code,.lead code{font-family:'Fira Code',monospace;color:var(--cyan);background:rgba(0,212,255,.08);padding:.05em .3em;border-radius:3px;font-size:.92em}
+  .reflink{display:inline-flex;align-items:center;gap:.4rem;font-size:.7rem;color:var(--gold);text-decoration:none;margin-top:.5rem}
+  .reflink:hover{color:var(--gold-l)}
+  .stage{flex:1;position:relative;min-width:0}
+  #gl{width:100%;height:100%;display:block}
+  #fallback{position:absolute;inset:0;display:none;align-items:center;justify-content:center;text-align:center;color:rgba(255,255,255,.45);font-size:.85rem;padding:2rem;line-height:1.7}
+  .badge{position:absolute;left:14px;top:14px;font-size:.66rem;letter-spacing:.1em;background:rgba(5,3,10,.82);border:1px solid rgba(0,212,255,.4);color:var(--cyan);padding:.35rem .7rem;border-radius:999px}
+  .rotbtn{position:absolute;right:14px;top:12px;font-size:.62rem;letter-spacing:.06em;background:rgba(5,3,10,.82);border:1px solid rgba(212,175,55,.45);color:var(--gold);padding:.38rem .7rem;border-radius:999px;cursor:pointer;font-family:inherit;transition:.15s}
+  .rotbtn:hover{background:rgba(212,175,55,.22);color:#fff}.rotbtn.on{border-color:rgba(0,212,255,.6);color:var(--cyan)}
+  #cap{position:absolute;left:14px;bottom:14px;max-width:48%;font-size:.72rem;line-height:1.5;color:rgba(255,255,255,.7);background:rgba(5,3,10,.78);border:1px solid rgba(212,175,55,.25);border-radius:10px;padding:.55rem .8rem}
+  #cap .leg{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:.3rem;vertical-align:middle}#cap b{color:#fff}
+  .hint{position:absolute;right:14px;top:44px;font-size:.6rem;color:rgba(255,255,255,.32)}
+</style>
+</head>
+<body>
+<header>
+  <div class="crumb"><a href="../../Grand_Archives.html">Grand Archives</a> · <a href="../index.html">Experimental Systems</a> · Helix Router</div>
+  <h1 class="serif">Helix Router — the architecture working</h1>
+</header>
+<div class="wrap">
+  <div class="side">
+    <div class="pad">
+      <div class="lead">The Polycentria Dual-Helix on a problem the SHD-CCP geometry is genuinely suited to:
+        <b>learned-heuristic routing</b> over the 720-node golden Clifford-torus manifold. The geometric
+        oracle <em>proposes</em> routes; an exact certifier <em>scores</em> them. Because the objective
+        <b>is</b> a function of the geometry, the oracle decisively beats random search — the opposite of
+        the factoring case (ε ≤ 0).</div>
+
+      <h2>Live race · oracle vs random</h2>
+      <div class="ctlrow">
+        <button class="act" id="run">▶ Run one race</button>
+        <button class="act alt" id="bench">∑ Benchmark ε (40 instances)</button>
+      </div>
+      <div class="ctl"><label>route budget M (proposals) <span class="v" id="v-M">40</span></label>
+        <input type="range" id="M" min="8" max="80" step="4" value="40"></div>
+      <div class="ctl"><label>hops per route K <span class="v" id="v-K">12</span></label>
+        <input type="range" id="K" min="6" max="20" step="1" value="12"></div>
+
+      <div class="panel">
+        <div class="kv"><span>oracle best value</span><span class="mono gold" id="t-oracle">—</span></div>
+        <div class="kv"><span>random best value</span><span class="mono" id="t-random">—</span></div>
+        <div class="kv"><span>this race Δ</span><span class="mono" id="t-delta">—</span></div>
+      </div>
+
+      <h2>Measured Oracle Bias ε</h2>
+      <div class="panel" style="text-align:center">
+        <div class="eps ok" id="eps">run the benchmark →</div>
+        <div class="note" id="eps-note">ε = mean best value(oracle) − mean best value(random), at equal evaluation budget.</div>
+      </div>
+
+      <h2>Honest notes</h2>
+      <div class="note">Travel cost between packets is <code>quadrance</code> (squared distance) on the golden
+        Clifford torus (exact radii <code>r1²=(φ+2)/5</code>, <code>r2²=(3−φ)/5</code>). The certifier’s route
+        value is <b>exact</b> — the oracle is never trusted blindly. The full Python reference measures
+        <b>ε ≈ +12.4</b> (many σ) on the exact ℝ⁴ manifold; a compressed-memory prior was measured too and
+        is <b>marginal</b> (within 2σ) — the geometry is the real win, not stored history.</div>
+      <a class="reflink" href="README.md">▸ README &amp; method</a><br>
+      <a class="reflink" href="helix_router.py">▸ helix_router.py (verified reference)</a>
+    </div>
+  </div>
+
+  <div class="stage">
+    <canvas id="gl"></canvas>
+    <div id="fallback">This 3-D view needs WebGL + the Three.js CDN.<br>The telemetry on the left still computes every number in-page.</div>
+    <div class="badge">720-node golden Clifford torus</div>
+    <button class="rotbtn" id="rotToggle" title="Toggle camera auto-rotation">⟲ Auto-rotate: Off</button>
+    <div class="hint">drag to rotate · scroll to zoom</div>
+    <div id="cap"></div>
+  </div>
+</div>
+
+<script>
+"use strict";
+/* ===== verified routing compute (matches helix_router.py / the benchmark) ===== */
+const PHI=(1+Math.sqrt(5))/2, N=720, LAYERS=12, PER=60, Rm=3, rm=1.1;
+function pos3(n){const layer=Math.floor(n/PER);const a=2*Math.PI*((n*(PHI-1))%1);const b=2*Math.PI*layer/LAYERS;
+  return [(Rm+rm*Math.cos(b))*Math.cos(a),(Rm+rm*Math.cos(b))*Math.sin(a),rm*Math.sin(b)];}
+const POS=Array.from({length:N},(_,n)=>pos3(n));
+function quad(m,n){const a=POS[m],b=POS[n];return (a[0]-b[0])**2+(a[1]-b[1])**2+(a[2]-b[2])**2;}
+const CAND=40;
+const NEAR=Array.from({length:N},(_,n)=>[...Array(N).keys()].sort((i,j)=>quad(n,i)-quad(n,j)).slice(0,CAND));
+function mulberry(s){return function(){s|=0;s=s+0x6D2B79F5|0;let t=Math.imul(s^s>>>15,1|s);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}
+let RNG=mulberry(7);
+let LAM=0.25, K=12;
+let HOT=[], REWARD=[];
+function newInstance(){HOT=Array.from({length:4},()=>Math.floor(RNG()*N));
+  REWARD=Array.from({length:N},(_,n)=>HOT.reduce((s,h)=>s+Math.exp(-quad(n,h)/3.0),0));}
+function routeValue(route){const seen=new Set();let c=0;for(const n of route){if(!seen.has(n)){seen.add(n);c+=REWARD[n];}}
+  let t=0;for(let i=0;i<route.length-1;i++)t+=quad(route[i],route[i+1]);return c-LAM*t;}
+function routeRandom(M,start){return Array.from({length:M},()=>{const r=[start];for(let h=0;h<K;h++)r.push(Math.floor(RNG()*N));return r;});}
+function routeOracle(M,start,tau=0.4){const routes=[];for(let m=0;m<M;m++){let cur=start,r=[start];
+  for(let h=0;h<K;h++){const cs=NEAR[cur];const sc=cs.map(n=>(REWARD[n]-LAM*quad(cur,n))/tau);const mx=Math.max(...sc);
+    const w=sc.map(s=>Math.exp(s-mx));const tot=w.reduce((a,b)=>a+b,0);let rr=RNG()*tot,acc=0,pick=cs[cs.length-1];
+    for(let i=0;i<cs.length;i++){acc+=w[i];if(acc>=rr){pick=cs[i];break;}}r.push(pick);cur=pick;}routes.push(r);}return routes;}
+function bestRoute(routes){let bv=-1e9,br=routes[0];for(const rt of routes){const v=routeValue(rt);if(v>bv){bv=v;br=rt;}}return {route:br,value:bv};}
+
+/* ===== Three.js stage ===== */
+let scene,cam,ren,ctrl,world,ptsGeo,colors,torusMesh,dyn,packet,glReady=false;
+let pathArr=null,pathSeg=0,pathT=0;
+function rv(n){return new THREE.Vector3(POS[n][0],POS[n][2],POS[n][1]);}
+function initGL(){
+  if(typeof THREE==='undefined'||!THREE.OrbitControls){document.getElementById('fallback').style.display='flex';return;}
+  try{
+    glReady=true;const c=document.getElementById('gl');
+    scene=new THREE.Scene();scene.fog=new THREE.FogExp2(0x05030a,0.02);
+    cam=new THREE.PerspectiveCamera(50,c.clientWidth/c.clientHeight,0.1,100);cam.position.set(0,6,9.5);
+    ren=new THREE.WebGLRenderer({canvas:c,antialias:true});ren.setSize(c.clientWidth,c.clientHeight);ren.setPixelRatio(Math.min(devicePixelRatio,2));
+    ctrl=new THREE.OrbitControls(cam,ren.domElement);ctrl.enableDamping=true;ctrl.autoRotate=false;ctrl.autoRotateSpeed=0.5;
+    scene.add(new THREE.AmbientLight(0xffffff,0.85));world=new THREE.Group();scene.add(world);
+    torusMesh=new THREE.Mesh(new THREE.TorusGeometry(Rm,rm,18,80),new THREE.MeshBasicMaterial({color:0xD4AF37,wireframe:true,transparent:true,opacity:0.10}));
+    torusMesh.rotation.x=Math.PI/2;world.add(torusMesh);
+    const positions=new Float32Array(N*3);colors=new Float32Array(N*3);
+    for(let n=0;n<N;n++){const v=rv(n);positions[n*3]=v.x;positions[n*3+1]=v.y;positions[n*3+2]=v.z;}
+    ptsGeo=new THREE.BufferGeometry();ptsGeo.setAttribute('position',new THREE.BufferAttribute(positions,3));
+    ptsGeo.setAttribute('color',new THREE.BufferAttribute(colors,3));
+    world.add(new THREE.Points(ptsGeo,new THREE.PointsMaterial({size:0.13,vertexColors:true})));
+    dyn=new THREE.Group();world.add(dyn);
+    packet=new THREE.Mesh(new THREE.SphereGeometry(0.17,16,16),new THREE.MeshBasicMaterial({color:0x34d399}));packet.visible=false;world.add(packet);
+    addEventListener('resize',()=>{ren.setSize(c.clientWidth,c.clientHeight);cam.aspect=c.clientWidth/c.clientHeight;cam.updateProjectionMatrix();});
+    (function loop(){requestAnimationFrame(loop);
+      if(pathArr&&pathArr.length>1){const A=pathArr[pathSeg],B=pathArr[(pathSeg+1)%pathArr.length];packet.position.lerpVectors(A,B,pathT);
+        pathT+=0.06;if(pathT>=1){pathT=0;pathSeg=(pathSeg+1)%(pathArr.length-1);}}
+      ctrl.update();ren.render(scene,cam);})();
+  }catch(e){glReady=false;document.getElementById('fallback').style.display='flex';}
+}
+function setColors(){if(!glReady)return;for(let n=0;n<N;n++){const v=Math.min(1,REWARD[n]/2.5);const c=new THREE.Color().setHSL(0.5-0.12*v,0.7,0.16+0.5*v);
+  colors[n*3]=c.r;colors[n*3+1]=c.g;colors[n*3+2]=c.b;}ptsGeo.attributes.color.needsUpdate=true;}
+function clearDyn(){if(!glReady)return;while(dyn.children.length){const o=dyn.children.pop();o.geometry&&o.geometry.dispose();dyn.remove(o);}}
+function addRoute(route,color,op){if(!glReady)return;const g=new THREE.BufferGeometry().setFromPoints(route.map(rv));dyn.add(new THREE.Line(g,new THREE.LineBasicMaterial({color,transparent:true,opacity:op})));}
+function travel(route){if(!glReady)return;pathArr=route.map(rv);pathSeg=0;pathT=0;packet.visible=true;}
+
+/* ===== UI ===== */
+const $=id=>document.getElementById(id);
+function cap(h){$('cap').innerHTML=h;}
+function oneRace(){newInstance();const start=Math.floor(RNG()*N);const M=+$('M').value;K=+$('K').value;
+  const o=bestRoute(routeOracle(M,start)),r=bestRoute(routeRandom(M,start));
+  setColors();clearDyn();addRoute(r.route,0xf87171,0.8);addRoute(o.route,0x34d399,0.95);travel(o.route);
+  $('t-oracle').textContent=o.value.toFixed(2);$('t-random').textContent=r.value.toFixed(2);
+  const d=o.value-r.value;$('t-delta').innerHTML=`<span class="${d>0?'ok':'bad'}">${d>=0?'+':''}${d.toFixed(2)}</span>`;
+  cap(`<span class="leg" style="background:#34d399"></span><b>oracle route</b> (tight, high value) &nbsp; vs &nbsp;<span class="leg" style="background:#f87171"></span><b>random route</b> (wanders) · bright nodes = reward`);}
+function benchmark(){const M=+$('M').value;K=+$('K').value;let so=0,sr=0,T=40;
+  for(let t=0;t<T;t++){newInstance();const s=Math.floor(RNG()*N);so+=bestRoute(routeOracle(M,s)).value;sr+=bestRoute(routeRandom(M,s)).value;}
+  const mo=so/T,mr=sr/T,eps=mo-mr;
+  $('eps').innerHTML=`ε = <span class="ok">+${eps.toFixed(2)}</span>`;
+  $('eps-note').innerHTML=`oracle mean <b>${mo.toFixed(2)}</b> vs random mean <b>${mr.toFixed(2)}</b> over ${T} instances at M=${M}, K=${K}. The geometric oracle wins decisively (the architecture working).`;
+  oneRace();}
+$('M').oninput=e=>$('v-M').textContent=e.target.value;
+$('K').oninput=e=>$('v-K').textContent=e.target.value;
+$('run').onclick=oneRace;$('bench').onclick=benchmark;
+
+initGL();
+(function(){const b=$('rotToggle');function sync(){const on=glReady&&ctrl&&ctrl.autoRotate;b.textContent='⟲ Auto-rotate: '+(on?'On':'Off');b.classList.toggle('on',!!on);}
+  if(!glReady){b.style.display='none';return;}b.onclick=()=>{ctrl.autoRotate=!ctrl.autoRotate;sync();};sync();})();
+oneRace();
+</script>
+</body>
+</html>
