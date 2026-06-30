@@ -444,8 +444,8 @@
             </div>
         </details>
 
-        <button id="rotate-toggle-btn" class="w-full bg-slate-800 border border-slate-600 hover:border-teal-400 text-slate-300 text-[10px] font-bold py-2 rounded-lg transition-all uppercase tracking-widest">
-            Auto-Rotate Camera: ON
+        <button id="rotate-toggle-btn" class="w-full bg-slate-800 border border-slate-600 hover:border-teal-400 text-slate-500 text-[10px] font-bold py-2 rounded-lg transition-all uppercase tracking-widest">
+            Auto-Rotate Camera: OFF
         </button>
     </div>
 
@@ -820,7 +820,7 @@
         const controls = new THREE.OrbitControls(camera, renderer.domElement);
         controls.enableDamping = true;
         controls.dampingFactor = 0.05;
-        controls.autoRotate = true;
+        controls.autoRotate = false;
         controls.autoRotateSpeed = 0.6;
 
         scene.add(new THREE.AmbientLight(0xffffff, 0.4));

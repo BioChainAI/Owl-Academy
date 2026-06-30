@@ -37,6 +37,12 @@
     padding:.55rem 1rem;border-radius:5px;text-decoration:none;font-weight:700;
     box-shadow:0 0 14px rgba(212,175,55,.12)}
   .nav a:hover{background:rgba(212,175,55,.16);color:#fff}
+  .rotbtn{position:absolute;top:1.2rem;right:1.2rem;z-index:5;background:rgba(0,0,0,.45);
+    border:1px solid rgba(0,255,255,.3);color:var(--cyan);font-size:.62rem;letter-spacing:.12em;
+    text-transform:uppercase;padding:.55rem 1rem;border-radius:5px;font-weight:700;cursor:pointer;
+    font-family:inherit;transition:.15s}
+  .rotbtn:hover{background:rgba(0,255,255,.14);color:#fff}
+  .rotbtn.on{border-color:rgba(0,255,255,.7);background:rgba(0,255,255,.16);color:#fff}
 
   .legend{position:absolute;bottom:1.4rem;left:1.4rem;z-index:5;display:flex;flex-direction:column;gap:.4rem}
   .lg{background:rgba(0,0,0,.6);backdrop-filter:blur(6px);padding:.45rem .9rem;border-radius:5px;
@@ -118,6 +124,7 @@
 
 <div id="stage">
   <div class="nav"><a href="../index.html">← Experimental Systems</a></div>
+  <button class="rotbtn" id="rotToggle" title="Toggle camera auto-rotation">⟲ Auto-rotate: Off</button>
   <canvas id="gl"></canvas>
   <div id="glfallback">
     <div>3D view needs WebGL + the Three.js CDN.<br>
@@ -530,7 +537,7 @@ function initGL(){
     camera.position.set(0,0,118);
     controls = new THREE.OrbitControls(camera, renderer.domElement);
     controls.enableDamping = true; controls.dampingFactor = 0.05;
-    controls.autoRotate = true; controls.autoRotateSpeed = 0.5;
+    controls.autoRotate = false; controls.autoRotateSpeed = 0.5;
     scene.add(new THREE.AmbientLight(0xffffff,0.5));
     pairs = [ new Pair(0xff0055, OFFSETS[0]), new Pair(0x00ffff, OFFSETS[1]), new Pair(0xD4AF37, OFFSETS[2]) ];
     core = new Core();
@@ -559,6 +566,12 @@ function initGL(){
 // boot
 initGL();
 updatePanel();
+
+// auto-rotate toggle (off by default; user can turn it on)
+(function(){const b=document.getElementById('rotToggle');
+  function sync(){const on=glReady&&controls&&controls.autoRotate;b.textContent='⟲ Auto-rotate: '+(on?'On':'Off');b.classList.toggle('on',!!on);}
+  if(!glReady){b.style.display='none';return;}
+  b.addEventListener('click',()=>{controls.autoRotate=!controls.autoRotate;sync();});sync();})();
 </script>
 </body>
 </html>
