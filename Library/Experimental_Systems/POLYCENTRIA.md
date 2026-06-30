@@ -57,6 +57,10 @@ the certifier strand keeps it safe to try anywhere.
   unity, orthogonal FDM, return-to-baseline (AR(1)), quaternion-Δ packing, attractor
   compression — every subsystem measured against theory. Decoder = certifier (Helix B), FFT
   activity-flag = oracle (Helix A).
+- `Ontological_Codex/` — the three-scale quaternion delta-chain memory offload (720→72→10) from
+  the Torsional Markov Memory-Offload Pump, sourced by the Hyperbolic Sparsemax kernel. The mean
+  centroid is the untrusted summary (Helix A); the logged, exactly-telescoping delta chain is the
+  exact reconstruction (Helix B). Compression is a measured rate–distortion dial.
 
 A concrete *nested* example (Router oracle nesting the codec memory as an inner cell, with
 the bias of the whole stack measured) is the natural next build.
