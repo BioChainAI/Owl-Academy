@@ -92,8 +92,17 @@ keeps the text exact either way. The packet parity bit is checked on every decod
 ```bash
 python3 text_to_codex.py        # text→packets→codex; text-exact, lossy-vs-corrected, the dial
 ```
-Open `converter.html` for the live tool (paste text, pick the source, inspect each packet's 64 bits,
-watch the original / lossy / corrected windings, read the recovered text). Embedded JS validated in Node.
+Open `converter.html` for the live tool: paste text, pick the source, and the tokens render as
+**clickable node spheres on stacked toroids** (node `= i mod 72`, toroid `= i // 72`, colored by lossy
+reconstruction error). Click any node to inspect its 64-bit packet (bit-grid by field) and its lossy /
+corrected error; read the exact recovered text from the keys. Embedded JS validated in Node.
+
+**Packing panel (honest capacity, not the kissing number).** A `ρ` slider grows the node spheres and
+reports the real limit — **hexagonal surface packing**, `N ≈ 4π²Rr / (2√3 ρ²)` (density π/√12 ≈ 0.9069)
+— e.g. ~2,600 disks/toroid at ρ=0.12, so the 72 seats have ~36× headroom. This is the actual capacity
+constraint; the **3-D kissing number is 12** (spheres touching one central sphere) and is *not* the
+limit here. After 72 nodes the converter **stacks a new toroid** (10 toroids = 720 = the outer chain),
+which is the memory hierarchy itself, not a packing bound.
 
 ## Where this sits
 

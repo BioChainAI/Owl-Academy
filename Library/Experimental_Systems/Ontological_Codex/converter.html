@@ -96,15 +96,31 @@
       <h2>Recovered text (from keys — exact)</h2>
       <div class="recov" id="recov">—</div>
 
-      <h2>Packet inspector <span style="color:rgba(255,255,255,.3);font-weight:400;text-transform:none;letter-spacing:0">— token <span id="pk-i" class="gold">0</span></span></h2>
+      <h2>Node inspector <span style="color:rgba(255,255,255,.3);font-weight:400;text-transform:none;letter-spacing:0">— click a node in 3D · node <span id="pk-i" class="gold">0</span></span></h2>
       <input type="range" id="pk" min="0" max="0" value="0">
       <div class="kv"><span id="pk-tok" class="cyan">—</span><span class="mono" id="pk-hex">—</span></div>
+      <div class="kv"><span id="nd-info">click a node</span><span class="mono" id="nd-err">—</span></div>
       <div class="bits" id="bits"></div>
       <div class="legend">
         <span><i class="lg-scaler"></i>scaler</span><span><i class="lg-freq"></i>freq</span><span><i class="lg-spin"></i>spin</span>
         <span><i class="lg-form"></i>form</span><span><i class="lg-amp"></i>amp</span><span><i class="lg-par"></i>parity</span>
         <span><i class="lg-w"></i>W</span><span><i class="lg-x"></i>X</span><span><i class="lg-y"></i>Y</span><span><i class="lg-z"></i>Z</span>
       </div>
+
+      <h2>Packing capacity — spheres on the toroid</h2>
+      <label style="font-size:.66rem;color:rgba(255,255,255,.5);font-family:'Fira Code',monospace">node radius ρ <span id="rho-v" class="gold">0.12</span></label>
+      <input type="range" id="rho" min="0.03" max="0.5" step="0.01" value="0.12">
+      <div class="panel">
+        <div class="kv"><span>toroid R, r</span><span class="mono" id="pk-Rr">—</span></div>
+        <div class="kv"><span>surface area 4π²Rr</span><span class="mono" id="pk-area">—</span></div>
+        <div class="kv"><span>hex packing capacity</span><span class="mono gold" id="pk-cap">—</span></div>
+        <div class="kv"><span>our layout / headroom</span><span class="mono" id="pk-use">—</span></div>
+        <div class="kv"><span>3-D kissing number</span><span class="mono" style="color:rgba(255,255,255,.5)">12 — not the limit</span></div>
+      </div>
+      <div class="note">Seats-per-toroid (72) is a gear ratio; the real capacity limit is <b>hexagonal surface
+        packing</b> (density π/√12 ≈ 0.9069), <code>N ≈ 4π²Rr / (2√3 ρ²)</code> — <b>not</b> the 3-D kissing
+        number (12, which counts spheres touching one central sphere). Raise ρ to grow the node spheres toward
+        that limit.</div>
 
       <div class="note">Two channels, both recovered: <b>text</b> from the key stream (token ids — exact,
         independent of precision); the geometric <b>chain</b> from the quaternion deltas. The default
@@ -192,31 +208,63 @@ function convert(text,src){
           statesLossy:reconOuter(states,dl),statesCorr:reconOuter(states,dc)};
 }
 
-/* ===================== Three.js ===================== */
-let scene,cam,ren,ctrl,world,dyn,glReady=false;
-function windPoint(a,b){const rr=Rm+rm*Math.cos(b);return new THREE.Vector3(rr*Math.cos(a),rm*Math.sin(b),rr*Math.sin(a));}
+/* ===================== Three.js — stacked toroids + clickable nodes ===================== */
+let scene,cam,ren,ctrl,world,torusGroup,nodesMesh,chainLine,hi,ray,mouse,glReady=false;
+let CURK=0, CURRHO=0.12, selIdx=-1;
+const STACK=2.8, MINWIND=2;
+function nodePos(i,K){
+  const T=Math.max(1,Math.ceil(K/72)), t=Math.floor(i/72), n=i%72;
+  const a=2*Math.PI*n/72, b=2*Math.PI*MINWIND*n/72, rr=Rm+rm*Math.cos(b);
+  const y=(t-(T-1)/2)*STACK + rm*Math.sin(b);
+  return new THREE.Vector3(rr*Math.cos(a), y, rr*Math.sin(a));
+}
+function errColor(e){const t=Math.min(1,e/0.6);return new THREE.Color().setHSL(0.33*(1-t),0.85,0.55);}
 function initGL(){
   if(typeof THREE==='undefined'||!THREE.OrbitControls){document.getElementById('fallback').style.display='flex';return;}
   try{glReady=true;const c=document.getElementById('gl');
-    scene=new THREE.Scene();scene.fog=new THREE.FogExp2(0x05030a,0.02);
-    cam=new THREE.PerspectiveCamera(50,c.clientWidth/c.clientHeight,0.1,100);cam.position.set(0,6,9.5);
+    scene=new THREE.Scene();scene.fog=new THREE.FogExp2(0x05030a,0.010);
+    cam=new THREE.PerspectiveCamera(50,c.clientWidth/c.clientHeight,0.1,300);cam.position.set(0,2,11);
     ren=new THREE.WebGLRenderer({canvas:c,antialias:true});ren.setSize(c.clientWidth,c.clientHeight);ren.setPixelRatio(Math.min(devicePixelRatio,2));
     ctrl=new THREE.OrbitControls(cam,ren.domElement);ctrl.enableDamping=true;ctrl.autoRotate=false;ctrl.autoRotateSpeed=0.5;
-    scene.add(new THREE.AmbientLight(0xffffff,0.85));world=new THREE.Group();scene.add(world);
-    const torus=new THREE.Mesh(new THREE.TorusGeometry(Rm,rm,18,80),new THREE.MeshBasicMaterial({color:0xD4AF37,wireframe:true,transparent:true,opacity:0.08}));
-    torus.rotation.x=Math.PI/2;world.add(torus);dyn=new THREE.Group();world.add(dyn);
+    scene.add(new THREE.AmbientLight(0xffffff,0.9));world=new THREE.Group();scene.add(world);
+    torusGroup=new THREE.Group();world.add(torusGroup);
+    hi=new THREE.Mesh(new THREE.SphereGeometry(1,16,16),new THREE.MeshBasicMaterial({color:0xffffff,wireframe:true}));hi.visible=false;world.add(hi);
+    ray=new THREE.Raycaster();mouse=new THREE.Vector2();
+    c.addEventListener('click',onPick);
     addEventListener('resize',()=>{ren.setSize(c.clientWidth,c.clientHeight);cam.aspect=c.clientWidth/c.clientHeight;cam.updateProjectionMatrix();});
     (function loop(){requestAnimationFrame(loop);ctrl.update();ren.render(scene,cam);})();
   }catch(e){glReady=false;document.getElementById('fallback').style.display='flex';}
 }
-function clearDyn(){if(!glReady)return;while(dyn.children.length){const o=dyn.children.pop();o.geometry&&o.geometry.dispose();dyn.remove(o);}}
-function cum(st){const o=[0];let c=0;for(let i=1;i<st.length;i++){c+=geoAngle(st[i-1],st[i]);o.push(c);}return o;}
-function coil(st,mx){const LO=4,p=[];for(let i=0;i<st.length;i+=1){const a=LO*2*Math.PI*i/st.length;p.push(windPoint(a,3.0*cum(st)[i]/mx*Math.PI*2/LO+0.4));}return p;}
-function draw(){if(!glReady||!D)return;clearDyn();
-  const co=cum(D.states),mx=co[co.length-1]||1;
-  const add=(st,col,op)=>dyn.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(coil(st,mx)),new THREE.LineBasicMaterial({color:col,transparent:true,opacity:op})));
-  add(D.statesLossy,0xf87171,0.85); add(D.states,0x00d4ff,0.95); add(D.statesCorr,0xD4AF37,0.8);
+function buildScene(){
+  if(!glReady||!D)return;
+  const K=D.states.length; CURK=K; const T=Math.max(1,Math.ceil(K/72));
+  while(torusGroup.children.length){const o=torusGroup.children.pop();o.geometry.dispose();torusGroup.remove(o);}
+  for(let t=0;t<T;t++){const m=new THREE.Mesh(new THREE.TorusGeometry(Rm,rm,16,72),
+    new THREE.MeshBasicMaterial({color:0xD4AF37,wireframe:true,transparent:true,opacity:0.07}));
+    m.rotation.x=Math.PI/2; m.position.y=(t-(T-1)/2)*STACK; torusGroup.add(m);}
+  if(nodesMesh){nodesMesh.geometry.dispose();world.remove(nodesMesh);}
+  nodesMesh=new THREE.InstancedMesh(new THREE.SphereGeometry(1,12,12),new THREE.MeshBasicMaterial({}),K);
+  const dm=new THREE.Object3D();
+  for(let i=0;i<K;i++){const p=nodePos(i,K);dm.position.copy(p);dm.scale.setScalar(CURRHO);dm.updateMatrix();
+    nodesMesh.setMatrixAt(i,dm.matrix);
+    nodesMesh.setColorAt(i,errColor(geoAngle(D.states[i],D.statesLossy[i])));}
+  nodesMesh.instanceMatrix.needsUpdate=true; if(nodesMesh.instanceColor)nodesMesh.instanceColor.needsUpdate=true;
+  world.add(nodesMesh);
+  if(chainLine){chainLine.geometry.dispose();world.remove(chainLine);}
+  const pts=[];for(let i=0;i<K;i++)pts.push(nodePos(i,K));
+  chainLine=new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts),new THREE.LineBasicMaterial({color:0x00d4ff,transparent:true,opacity:0.3}));
+  world.add(chainLine);
+  cam.position.set(0,1.5,11+Math.max(0,T-1)*STACK*0.85); ctrl.target.set(0,0,0); ctrl.update();
+  if(selIdx>=0&&selIdx<K)highlight(selIdx); else hi.visible=false;
 }
+function setRho(rho){CURRHO=rho; if(!glReady||!nodesMesh)return; const dm=new THREE.Object3D();
+  for(let i=0;i<CURK;i++){const p=nodePos(i,CURK);dm.position.copy(p);dm.scale.setScalar(rho);dm.updateMatrix();nodesMesh.setMatrixAt(i,dm.matrix);}
+  nodesMesh.instanceMatrix.needsUpdate=true; if(selIdx>=0)highlight(selIdx);}
+function highlight(i){if(!glReady)return;hi.position.copy(nodePos(i,CURK));hi.scale.setScalar(CURRHO*1.7);hi.visible=true;}
+function onPick(ev){if(!glReady||!nodesMesh)return;const r=ren.domElement.getBoundingClientRect();
+  mouse.x=((ev.clientX-r.left)/r.width)*2-1;mouse.y=-((ev.clientY-r.top)/r.height)*2+1;
+  ray.setFromCamera(mouse,cam);const hits=ray.intersectObject(nodesMesh);
+  if(hits.length)selectNode(hits[0].instanceId);}
 
 /* ===================== UI ===================== */
 const $=id=>document.getElementById(id);
@@ -226,14 +274,30 @@ function fieldOf(bit){ // bit 63..0
   if(bit>=36)return 'lg-form'; if(bit>=33)return 'lg-amp'; if(bit===32)return 'lg-par';
   if(bit>=24)return 'lg-w'; if(bit>=16)return 'lg-x'; if(bit>=8)return 'lg-y'; return 'lg-z';
 }
-function showPacket(i){
-  if(!D||!D.packets.length)return;
-  i=Math.max(0,Math.min(D.packets.length-1,i));
-  const p=D.packets[i];$('pk-i').textContent=i;$('pk-tok').textContent='"'+D.toks[i+1]+'"  (Δ to node '+((i+1)%72)+')';
-  $('pk-hex').textContent='0x'+p.toString(16).padStart(16,'0');
-  let html='';for(let b=63;b>=0;b--){const on=(p>>BigInt(b))&1n;html+=`<div class="bit ${fieldOf(b)} ${on?'':'off'}"></div>`;}
-  $('bits').innerHTML=html;
+function computePacking(){
+  const rho=CURRHO, area=4*Math.PI*Math.PI*Rm*rm;
+  const cap=Math.floor(area/(2*Math.sqrt(3)*rho*rho));
+  $('pk-Rr').textContent=`R=${Rm.toFixed(2)}, r=${rm.toFixed(2)}`;
+  $('pk-area').textContent=area.toFixed(1);
+  $('pk-cap').textContent=`${cap.toLocaleString()} disks`;
+  $('pk-use').textContent=`72 seats · ${(cap/72).toFixed(0)}× headroom`;
 }
+function showNode(i){
+  if(!D||!D.states.length)return;
+  i=Math.max(0,Math.min(D.states.length-1,i)); selIdx=i;
+  const t=Math.floor(i/72), n=i%72, tok=D.toks[i];
+  const p = i>0 ? D.packets[i-1] : null;      // incoming Δ packet (from node i-1)
+  $('pk-i').textContent=i;
+  $('pk-tok').textContent='"'+tok+'"';
+  $('pk-hex').textContent = p!==null ? '0x'+p.toString(16).padStart(16,'0') : 'anchor (no Δ)';
+  let html='';for(let b=63;b>=0;b--){const on = p!==null ? ((p>>BigInt(b))&1n) : 0n; html+=`<div class="bit ${fieldOf(b)} ${on?'':'off'}"></div>`;}
+  $('bits').innerHTML=html;
+  $('nd-info').textContent=`node n${n} · toroid t${t}`;
+  const le=geoAngle(D.states[i],D.statesLossy[i]), ce=geoAngle(D.states[i],D.statesCorr[i]);
+  $('nd-err').innerHTML=`<span class="red">${(le*180/Math.PI).toFixed(2)}°</span> / <span class="ok">${(ce*180/Math.PI).toExponential(1)}°</span>`;
+  $('pk').value=i; highlight(i);
+}
+function selectNode(i){ showNode(i); }
 function refresh(){
   D=convert($('txt').value,SRC);
   const K=D.toks.length,V=Object.keys(D.vocab).length;
@@ -256,13 +320,15 @@ function refresh(){
   const keybits=K*Math.max(1,Math.ceil(Math.log2(Math.max(2,V)))),geo=D.deltas.length*64;
   $('t-store').textContent=`${keybits} + ${geo} b`;
   $('recov').textContent=D.keys.map(k=>D.inv[k]).join(' ');
-  $('pk').max=Math.max(0,D.packets.length-1);$('pk').value=0;showPacket(0);
-  draw();
-  cap(`<span class="leg" style="background:#00d4ff"></span><b>original</b> &nbsp;<span class="leg" style="background:#f87171"></span><b>Form 0-2 lossy</b> (decays) &nbsp;<span class="leg" style="background:#D4AF37"></span><b>Form 3 corrected</b> (lossless) · ${K} tokens → nodes (i mod 72)`);
+  $('pk').max=Math.max(0,D.states.length-1);
+  buildScene(); computePacking();
+  selectNode(Math.min(Math.max(0,selIdx),D.states.length-1));
+  cap(`<span class="leg" style="background:#34d399"></span>low err … <span class="leg" style="background:#f87171"></span>high — <b>${K} nodes</b> on ${Math.max(1,Math.ceil(K/72))} stacked toroid(s), colored by lossy reconstruction error. <b>Click a node</b> to inspect its packet.`);
 }
 $('src').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;SRC=b.dataset.s;[...$('src').children].forEach(x=>x.classList.toggle('sel',x===b));refresh();});
 $('run').onclick=refresh;
-$('pk').addEventListener('input',e=>showPacket(+e.target.value));
+$('pk').addEventListener('input',e=>selectNode(+e.target.value));
+$('rho').addEventListener('input',e=>{const v=parseFloat(e.target.value);$('rho-v').textContent=v.toFixed(2);setRho(v);computePacking();});
 
 initGL();
 (function(){const b=$('rotToggle');function sync(){const on=glReady&&ctrl&&ctrl.autoRotate;b.textContent='⟲ Auto-rotate: '+(on?'On':'Off');b.classList.toggle('on',!!on);}
