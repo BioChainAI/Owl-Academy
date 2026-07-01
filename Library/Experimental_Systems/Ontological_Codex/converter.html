@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Text → SHD-CCP Codex Converter | Owl Academy</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Inter:wght@300;400;500;600&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{--void:#05030a;--gold:#D4AF37;--gold-l:#FFF8DC;--cyan:#00d4ff;--purple:#8A2BE2;--ok:#34d399;--bad:#f87171;--red:#f87171;}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--void);color:#e2e8f0;font-family:'Inter',system-ui,sans-serif;height:100vh;overflow:hidden;
+       background:radial-gradient(circle at 50% 0%, color-mix(in srgb,var(--purple) 8%,var(--void)),var(--void) 60%)}
+  .serif{font-family:'Cinzel',serif}.mono{font-family:'Fira Code',ui-monospace,monospace}
+  header{padding:.9rem 1.4rem;border-bottom:1px solid rgba(212,175,55,0.2);background:rgba(5,3,10,.6);backdrop-filter:blur(10px)}
+  .crumb{font-size:.6rem;letter-spacing:.22em;text-transform:uppercase;color:rgba(212,175,55,0.55);margin-bottom:.3rem}
+  .crumb a{color:rgba(212,175,55,0.7);text-decoration:none}.crumb a:hover{color:var(--gold-l)}
+  h1{font-size:1.25rem;font-weight:600;letter-spacing:.05em;
+     background:linear-gradient(to right,var(--gold),var(--gold-l),var(--gold));-webkit-background-clip:text;background-clip:text;color:transparent}
+  .wrap{display:flex;height:calc(100vh - 62px)}
+  .side{width:420px;flex-shrink:0;border-right:1px solid rgba(212,175,55,0.15);display:flex;flex-direction:column;background:rgba(10,8,20,0.5);backdrop-filter:blur(8px)}
+  .pad{padding:.9rem 1.1rem;overflow-y:auto;flex:1}
+  textarea{width:100%;height:80px;background:#06100c;color:#cfe;border:1px solid rgba(212,175,55,.25);border-radius:8px;
+    padding:.5rem;font-family:'Fira Code',monospace;font-size:.72rem;resize:vertical;outline:none}
+  h2{font-size:.6rem;letter-spacing:.18em;text-transform:uppercase;color:var(--gold);margin:.9rem 0 .5rem;font-weight:700}
+  .seg{display:flex;gap:.4rem;margin-bottom:.5rem;flex-wrap:wrap}
+  .seg button{flex:1;min-width:80px;background:rgba(212,175,55,.1);color:var(--gold-l);border:1px solid rgba(212,175,55,.35);
+    border-radius:7px;padding:.42rem;font-size:.66rem;cursor:pointer;font-family:inherit;transition:.15s}
+  .seg button:hover{background:rgba(212,175,55,.22);color:#fff}
+  .seg button.sel{background:rgba(0,212,255,.18);border-color:rgba(0,212,255,.5);color:#bfefff}
+  button.go{width:100%;background:rgba(0,212,255,.16);color:#bfefff;border:1px solid rgba(0,212,255,.5);border-radius:8px;
+    padding:.55rem;font-size:.74rem;font-weight:600;letter-spacing:.05em;cursor:pointer;font-family:inherit;margin-top:.3rem}
+  button.go:hover{background:rgba(0,212,255,.3);color:#fff}
+  .kv{display:flex;justify-content:space-between;gap:.6rem;padding:.15rem 0;border-bottom:1px solid rgba(255,255,255,.05);font-size:.72rem}
+  .kv span:first-child{color:rgba(255,255,255,.45)}.kv span:last-child{text-align:right}
+  .ok{color:var(--ok)}.bad{color:var(--bad)}.gold{color:var(--gold)}.cyan{color:var(--cyan)}.red{color:var(--red)}
+  .panel{background:rgba(0,0,0,.32);border:1px solid rgba(212,175,55,.18);border-radius:10px;padding:.65rem .8rem;margin-top:.5rem}
+  .note{font-size:.68rem;color:rgba(255,255,255,.42);line-height:1.5;margin-top:.45rem}
+  .note code{font-family:'Fira Code',monospace;color:var(--cyan);background:rgba(0,212,255,.08);padding:.05em .3em;border-radius:3px}
+  .recov{font-family:'Fira Code',monospace;font-size:.66rem;color:#bfe;background:#06100c;border:1px solid rgba(52,211,153,.25);
+    border-radius:8px;padding:.5rem .6rem;margin-top:.4rem;max-height:70px;overflow-y:auto;line-height:1.5}
+  .reflink{display:inline-flex;gap:.4rem;font-size:.7rem;color:var(--gold);text-decoration:none;margin-top:.45rem}
+  .reflink:hover{color:var(--gold-l)}
+  /* packet inspector */
+  .bits{display:flex;flex-wrap:wrap;gap:1px;margin-top:.4rem}
+  .bit{width:11px;height:14px;border-radius:1px;font-size:0;}
+  .lg-scaler{background:#D4AF37}.lg-freq{background:#34d399}.lg-spin{background:#10b981}.lg-form{background:#a78bfa}
+  .lg-amp{background:#8b5cf6}.lg-par{background:#f87171}.lg-w{background:#60a5fa}.lg-x{background:#ec4899}.lg-y{background:#f59e0b}.lg-z{background:#34d399}
+  .bit.off{opacity:.22}
+  .legend{font-size:.56rem;color:rgba(255,255,255,.4);margin-top:.3rem;display:flex;flex-wrap:wrap;gap:.5rem}
+  .legend i{display:inline-block;width:8px;height:8px;border-radius:1px;margin-right:.2rem;vertical-align:middle}
+  input[type=range]{-webkit-appearance:none;width:100%;height:4px;background:rgba(255,255,255,.1);border-radius:4px;outline:none;margin:.4rem 0}
+  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:13px;height:13px;border-radius:50%;background:var(--gold);cursor:pointer}
+  .stage{flex:1;position:relative;min-width:0}
+  #gl{width:100%;height:100%;display:block}
+  #fallback{position:absolute;inset:0;display:none;align-items:center;justify-content:center;text-align:center;color:rgba(255,255,255,.45);font-size:.85rem;padding:2rem;line-height:1.7}
+  .badge{position:absolute;left:14px;top:14px;font-size:.66rem;letter-spacing:.1em;background:rgba(5,3,10,.82);border:1px solid rgba(0,212,255,.4);color:var(--cyan);padding:.35rem .7rem;border-radius:999px}
+  .rotbtn{position:absolute;right:14px;top:12px;font-size:.62rem;letter-spacing:.06em;background:rgba(5,3,10,.82);border:1px solid rgba(212,175,55,.45);color:var(--gold);padding:.38rem .7rem;border-radius:999px;cursor:pointer;font-family:inherit;transition:.15s}
+  .rotbtn:hover{background:rgba(212,175,55,.22);color:#fff}.rotbtn.on{border-color:rgba(0,212,255,.6);color:var(--cyan)}
+  #cap{position:absolute;left:14px;bottom:14px;max-width:54%;font-size:.72rem;line-height:1.5;color:rgba(255,255,255,.7);background:rgba(5,3,10,.78);border:1px solid rgba(212,175,55,.25);border-radius:10px;padding:.55rem .8rem}
+  #cap .leg{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:.3rem;vertical-align:middle}#cap b{color:#fff}
+  .hint{position:absolute;right:14px;top:44px;font-size:.6rem;color:rgba(255,255,255,.32)}
+</style>
+</head>
+<body>
+<header>
+  <div class="crumb"><a href="../../Grand_Archives.html">Grand Archives</a> · <a href="../index.html">Experimental Systems</a> · <a href="index.html">Ontological Codex</a> · Text Converter</div>
+  <h1 class="serif">Text → SHD-CCP Codex Converter</h1>
+</header>
+<div class="wrap">
+  <div class="side">
+    <div class="pad">
+      <h2>Input text</h2>
+      <textarea id="txt">the quaternion codex compresses language into a winding chain of rotations where every token becomes a node on a golden toroid and the deltas telescope so the structure can be re created and processed by other systems</textarea>
+
+      <h2>Token feature source</h2>
+      <div class="seg" id="src">
+        <button data-s="ttmpt" class="sel">TTMPT crystal</button>
+        <button data-s="generic">Generic embed</button>
+        <button data-s="sparsemax">Sparsemax</button>
+      </div>
+      <button class="go" id="run">▶ Convert text → quaternion chain</button>
+
+      <div class="panel">
+        <div class="kv"><span>tokens / vocab</span><span class="mono" id="t-tok">—</span></div>
+        <div class="kv"><span>TEXT recovery (keys)</span><span class="mono" id="t-text">—</span></div>
+        <div class="kv"><span>packet parity integrity</span><span class="mono" id="t-par">—</span></div>
+        <div class="kv"><span>single-packet FP8 err</span><span class="mono" id="t-fp8">—</span></div>
+        <div class="kv"><span class="red">Form 0-2 lossy chain</span><span class="mono red" id="t-lossy">—</span></div>
+        <div class="kv"><span class="gold">Form 3 corrected chain</span><span class="mono ok" id="t-corr">—</span></div>
+        <div class="kv"><span>codex dial outer / middle</span><span class="mono" id="t-dial">—</span></div>
+        <div class="kv"><span>storage keys + geometry</span><span class="mono" id="t-store">—</span></div>
+      </div>
+
+      <h2>Recovered text (from keys — exact)</h2>
+      <div class="recov" id="recov">—</div>
+
+      <h2>Packet inspector <span style="color:rgba(255,255,255,.3);font-weight:400;text-transform:none;letter-spacing:0">— token <span id="pk-i" class="gold">0</span></span></h2>
+      <input type="range" id="pk" min="0" max="0" value="0">
+      <div class="kv"><span id="pk-tok" class="cyan">—</span><span class="mono" id="pk-hex">—</span></div>
+      <div class="bits" id="bits"></div>
+      <div class="legend">
+        <span><i class="lg-scaler"></i>scaler</span><span><i class="lg-freq"></i>freq</span><span><i class="lg-spin"></i>spin</span>
+        <span><i class="lg-form"></i>form</span><span><i class="lg-amp"></i>amp</span><span><i class="lg-par"></i>parity</span>
+        <span><i class="lg-w"></i>W</span><span><i class="lg-x"></i>X</span><span><i class="lg-y"></i>Y</span><span><i class="lg-z"></i>Z</span>
+      </div>
+
+      <div class="note">Two channels, both recovered: <b>text</b> from the key stream (token ids — exact,
+        independent of precision); the geometric <b>chain</b> from the quaternion deltas. The default
+        lossy packet (Form 0-2) <b>decays</b> over the chain; Form 3's corrective offset reconstructs it
+        <b>losslessly</b>. TTMPT crystallization is avalanche-like, so the deltas are high-entropy — the
+        outer scale is lossless, middle/inner are SLERP-approximate. Hashing doesn't create
+        compressibility; the keys keep the text exact regardless.</div>
+      <a class="reflink" href="text_to_codex.py">▸ text_to_codex.py (verified reference)</a><br>
+      <a class="reflink" href="index.html">▸ Ontological Codex (the 720→72→10 offload)</a>
+    </div>
+  </div>
+
+  <div class="stage">
+    <canvas id="gl"></canvas>
+    <div id="fallback">This 3-D view needs WebGL + the Three.js CDN.<br>The conversion, telemetry, and packet inspector still compute every number in-page.</div>
+    <div class="badge">token quaternion chain on the toroid</div>
+    <button class="rotbtn" id="rotToggle" title="Toggle camera auto-rotation">⟲ Auto-rotate: Off</button>
+    <div class="hint">drag to rotate · scroll to zoom</div>
+    <div id="cap"></div>
+  </div>
+</div>
+
+<script>
+"use strict";
+const SPREAD=0.55, GROUP=10, Rm=3, rm=1.1;
+/* ---- quaternion ---- */
+function qmul(a,b){return [a[0]*b[0]-a[1]*b[1]-a[2]*b[2]-a[3]*b[3],a[0]*b[1]+a[1]*b[0]+a[2]*b[3]-a[3]*b[2],
+  a[0]*b[2]-a[1]*b[3]+a[2]*b[0]+a[3]*b[1],a[0]*b[3]+a[1]*b[2]-a[2]*b[1]+a[3]*b[0]];}
+function qconj(a){return [a[0],-a[1],-a[2],-a[3]];}
+function qinv(a){return qconj(a);}
+function qnorm(a){const n=Math.hypot(a[0],a[1],a[2],a[3])||1;return a.map(c=>c/n);}
+function geoAngle(a,b){const d=Math.abs(a[0]*b[0]+a[1]*b[1]+a[2]*b[2]+a[3]*b[3]);return 2*Math.acos(Math.max(-1,Math.min(1,d)));}
+function qpow(a,t){const vn=Math.hypot(a[1],a[2],a[3]);if(vn<1e-15)return [1,0,0,0];
+  const th=Math.atan2(vn,Math.max(-1,Math.min(1,a[0])));const s=Math.sin(t*th);return [Math.cos(t*th),s*a[1]/vn,s*a[2]/vn,s*a[3]/vn];}
+/* ---- tokenize ---- */
+function tokenize(text){const toks=(text.toLowerCase().match(/[a-z0-9']+|[^\sa-z0-9]/g))||[];const vocab={};const keys=[];
+  for(const t of toks){if(!(t in vocab))vocab[t]=Object.keys(vocab).length;keys.push(vocab[t]);}
+  const inv={};for(const k in vocab)inv[vocab[k]]=k;return {toks,keys,vocab,inv};}
+/* ---- features ---- */
+function mix(s){s=s>>>0;s=(s+0x6D2B79F5)>>>0;let t=(Math.imul(s^(s>>>15),1|s))>>>0;t=((t+(Math.imul(t^(t>>>7),61|t)>>>0))>>>0)^t;return (t^(t>>>14))>>>0;}
+function ttmptCrystal(tok){let acc=0n;for(let i=0;i<tok.length;i++){let s=(Math.imul(tok.charCodeAt(i),2654435761))>>>0;let grid=0n;
+  for(let b=0;b<64;b++){s=mix(s);grid|=BigInt((s>>>11)&1)<<BigInt(b);}acc^=grid;}return acc&((1n<<64n)-1n);}
+function vecFromBits(v){const a=Number(v&0x1FFFFFn)/0x1FFFFF,b=Number((v>>21n)&0x1FFFFFn)/0x1FFFFF,c=Number((v>>42n)&0x3FFFFFn)/0x3FFFFF;
+  return [(a*2-1)*SPREAD,(b*2-1)*SPREAD,(c*2-1)*SPREAD];}
+function cayley(v){const n=1+v[0]*v[0]+v[1]*v[1]+v[2]*v[2];return [(1-(v[0]*v[0]+v[1]*v[1]+v[2]*v[2]))/n,2*v[0]/n,2*v[1]/n,2*v[2]/n];}
+const LAT=[];for(let i=0;i<64;i++)LAT.push(cayley([((2*((i>>4)&3)-3))/8,((2*((i>>2)&3)-3))/8,((2*(i&3)-3))/8]));
+function tokenQuat(src,str,id){
+  if(src==='ttmpt')return cayley(vecFromBits(ttmptCrystal(str)));
+  if(src==='generic')return cayley(vecFromBits(BigInt(mix(Math.imul(id,2654435761)>>>0))|(BigInt(mix(Math.imul(id,40503)>>>0))<<32n)));
+  return LAT[id%64];
+}
+/* ---- FP8/FP16 + 64-bit packet (BigInt) ---- */
+function f32e4m3(f){if(f===0)return 0;const sign=f<0?1:0;f=Math.abs(f);const e=Math.max(-6,Math.min(8,Math.floor(Math.log2(f))));
+  const m=Math.max(0,Math.min(7,Math.round((f/Math.pow(2,e)-1)*8)));return (sign<<7)|(((e+7)&0xF)<<3)|m;}
+function e4m3f(b){const sign=(b>>7)&1?-1:1,e=((b>>3)&0xF)-7,m=b&0x7;if(((b>>3)&0xF)===0)return sign*Math.pow(2,-6)*(m/8);return sign*Math.pow(2,e)*(1+m/8);}
+function f16(f){if(f===0)return 0;const sign=f<0?0x8000:0;f=Math.abs(f);const e=Math.max(-14,Math.min(15,Math.floor(Math.log2(f))));
+  const m=Math.max(0,Math.min(1023,Math.round((f/Math.pow(2,e)-1)*1024)));return sign|(((e+15)&0x1F)<<10)|m;}
+function pc(n){n>>>=0;let c=0;while(n){c+=n&1;n>>>=1;}return c;}
+function pack(q,scaler=1,form=0,freq=0,spin=0,amp=0){const w=f32e4m3(q[0]),x=f32e4m3(q[1]),y=f32e4m3(q[2]),z=f32e4m3(q[3]);
+  const par=pc(w^x^y^z)&1;
+  return (BigInt(f16(scaler)&0xFFFF)<<48n)|(BigInt(freq&0x1F)<<43n)|(BigInt(spin&7)<<40n)|(BigInt(form&0xF)<<36n)|(BigInt(amp&7)<<33n)|(BigInt(par)<<32n)|(BigInt(w)<<24n)|(BigInt(x)<<16n)|(BigInt(y)<<8n)|BigInt(z);}
+function unpack(p){const w=Number((p>>24n)&0xFFn),x=Number((p>>16n)&0xFFn),y=Number((p>>8n)&0xFFn),z=Number(p&0xFFn);
+  const par=Number((p>>32n)&1n);const parOk=(pc(w^x^y^z)&1)===par;return {q:qnorm([e4m3f(w),e4m3f(x),e4m3f(y),e4m3f(z)]),parOk};}
+function correction(q){return q.map(c=>c-e4m3f(f32e4m3(c)));}
+function decodeCorrected(p,corr){const w=Number((p>>24n)&0xFFn),x=Number((p>>16n)&0xFFn),y=Number((p>>8n)&0xFFn),z=Number(p&0xFFn);
+  return qnorm([e4m3f(w)+corr[0],e4m3f(x)+corr[1],e4m3f(y)+corr[2],e4m3f(z)+corr[3]]);}
+/* ---- offload ---- */
+function outerDeltas(s){const o=[];for(let n=1;n<s.length;n++)o.push(qmul(s[n],qinv(s[n-1])));return o;}
+function middleBlocks(o){const nm=Math.floor(o.length/GROUP),b=[];for(let m=0;m<nm;m++){let net=o[GROUP*m];for(let r=1;r<GROUP;r++)net=qmul(o[GROUP*m+r],net);b.push(net);}return b;}
+function reconOuter(s,o){const r=[s[0]];for(const d of o)r.push(qmul(d,r[r.length-1]));return r;}
+function reconMiddle(s,b){const r=[s[0]];for(const blk of b){const st=qpow(blk,1/GROUP);for(let i=0;i<GROUP;i++)r.push(qmul(st,r[r.length-1]));}return r.slice(0,s.length);}
+function rmse(a,b){const n=Math.min(a.length,b.length);let s=0;for(let i=0;i<n;i++){const e=geoAngle(a[i],b[i]);s+=e*e;}return Math.sqrt(s/n);}
+
+/* ---- convert ---- */
+let SRC='ttmpt', D=null;
+function convert(text,src){
+  const {toks,keys,vocab,inv}=tokenize(text);
+  const states=toks.map((t,i)=>tokenQuat(src,t,keys[i]));
+  const deltas=outerDeltas(states);
+  const packets=deltas.map(d=>pack(d,1,0));
+  const corrs=deltas.map(correction);
+  const dl=packets.map(p=>unpack(p).q);
+  const dc=packets.map((p,i)=>decodeCorrected(p,corrs[i]));
+  return {toks,keys,vocab,inv,states,deltas,packets,corrs,
+          statesLossy:reconOuter(states,dl),statesCorr:reconOuter(states,dc)};
+}
+
+/* ===================== Three.js ===================== */
+let scene,cam,ren,ctrl,world,dyn,glReady=false;
+function windPoint(a,b){const rr=Rm+rm*Math.cos(b);return new THREE.Vector3(rr*Math.cos(a),rm*Math.sin(b),rr*Math.sin(a));}
+function initGL(){
+  if(typeof THREE==='undefined'||!THREE.OrbitControls){document.getElementById('fallback').style.display='flex';return;}
+  try{glReady=true;const c=document.getElementById('gl');
+    scene=new THREE.Scene();scene.fog=new THREE.FogExp2(0x05030a,0.02);
+    cam=new THREE.PerspectiveCamera(50,c.clientWidth/c.clientHeight,0.1,100);cam.position.set(0,6,9.5);
+    ren=new THREE.WebGLRenderer({canvas:c,antialias:true});ren.setSize(c.clientWidth,c.clientHeight);ren.setPixelRatio(Math.min(devicePixelRatio,2));
+    ctrl=new THREE.OrbitControls(cam,ren.domElement);ctrl.enableDamping=true;ctrl.autoRotate=false;ctrl.autoRotateSpeed=0.5;
+    scene.add(new THREE.AmbientLight(0xffffff,0.85));world=new THREE.Group();scene.add(world);
+    const torus=new THREE.Mesh(new THREE.TorusGeometry(Rm,rm,18,80),new THREE.MeshBasicMaterial({color:0xD4AF37,wireframe:true,transparent:true,opacity:0.08}));
+    torus.rotation.x=Math.PI/2;world.add(torus);dyn=new THREE.Group();world.add(dyn);
+    addEventListener('resize',()=>{ren.setSize(c.clientWidth,c.clientHeight);cam.aspect=c.clientWidth/c.clientHeight;cam.updateProjectionMatrix();});
+    (function loop(){requestAnimationFrame(loop);ctrl.update();ren.render(scene,cam);})();
+  }catch(e){glReady=false;document.getElementById('fallback').style.display='flex';}
+}
+function clearDyn(){if(!glReady)return;while(dyn.children.length){const o=dyn.children.pop();o.geometry&&o.geometry.dispose();dyn.remove(o);}}
+function cum(st){const o=[0];let c=0;for(let i=1;i<st.length;i++){c+=geoAngle(st[i-1],st[i]);o.push(c);}return o;}
+function coil(st,mx){const LO=4,p=[];for(let i=0;i<st.length;i+=1){const a=LO*2*Math.PI*i/st.length;p.push(windPoint(a,3.0*cum(st)[i]/mx*Math.PI*2/LO+0.4));}return p;}
+function draw(){if(!glReady||!D)return;clearDyn();
+  const co=cum(D.states),mx=co[co.length-1]||1;
+  const add=(st,col,op)=>dyn.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(coil(st,mx)),new THREE.LineBasicMaterial({color:col,transparent:true,opacity:op})));
+  add(D.statesLossy,0xf87171,0.85); add(D.states,0x00d4ff,0.95); add(D.statesCorr,0xD4AF37,0.8);
+}
+
+/* ===================== UI ===================== */
+const $=id=>document.getElementById(id);
+function cap(h){$('cap').innerHTML=h;}
+function fieldOf(bit){ // bit 63..0
+  if(bit>=48)return 'lg-scaler'; if(bit>=43)return 'lg-freq'; if(bit>=40)return 'lg-spin';
+  if(bit>=36)return 'lg-form'; if(bit>=33)return 'lg-amp'; if(bit===32)return 'lg-par';
+  if(bit>=24)return 'lg-w'; if(bit>=16)return 'lg-x'; if(bit>=8)return 'lg-y'; return 'lg-z';
+}
+function showPacket(i){
+  if(!D||!D.packets.length)return;
+  i=Math.max(0,Math.min(D.packets.length-1,i));
+  const p=D.packets[i];$('pk-i').textContent=i;$('pk-tok').textContent='"'+D.toks[i+1]+'"  (Δ to node '+((i+1)%72)+')';
+  $('pk-hex').textContent='0x'+p.toString(16).padStart(16,'0');
+  let html='';for(let b=63;b>=0;b--){const on=(p>>BigInt(b))&1n;html+=`<div class="bit ${fieldOf(b)} ${on?'':'off'}"></div>`;}
+  $('bits').innerHTML=html;
+}
+function refresh(){
+  D=convert($('txt').value,SRC);
+  const K=D.toks.length,V=Object.keys(D.vocab).length;
+  $('t-tok').textContent=`${K} / ${V}`;
+  // text recovery: keys -> tokens exact
+  const exact=D.keys.every((k,i)=>D.inv[k]===D.toks[i]);
+  $('t-text').innerHTML=exact?'<span class="ok">EXACT ✓</span>':'<span class="bad">FAIL</span>';
+  const parOk=D.packets.every(p=>unpack(p).parOk);
+  $('t-par').innerHTML=parOk?'<span class="ok">ok ✓</span>':'<span class="bad">fail</span>';
+  const fp8=D.deltas.length?Math.max(...D.deltas.map((d,i)=>geoAngle(d,unpack(D.packets[i]).q))):0;
+  $('t-fp8').textContent=(fp8*180/Math.PI).toFixed(2)+'°';
+  const eL=rmse(D.states,D.statesLossy),drL=D.states.length?geoAngle(D.states[D.states.length-1],D.statesLossy[D.statesLossy.length-1]):0;
+  const eC=rmse(D.states,D.statesCorr);
+  $('t-lossy').textContent=`${eL.toFixed(3)} / ${drL.toFixed(2)} rad`;
+  $('t-corr').textContent=`${eC.toExponential(1)} rad`;
+  const nc=Math.floor(D.deltas.length/GROUP)*GROUP;
+  if(nc>=GROUP){const o=D.deltas.slice(0,nc),st=D.states.slice(0,nc+1),b=middleBlocks(o);
+    $('t-dial').textContent=`${rmse(st,reconOuter(st,o)).toExponential(0)} / ${rmse(st,reconMiddle(st,b)).toFixed(2)} rad`;}
+  else $('t-dial').textContent='need ≥10 tokens';
+  const keybits=K*Math.max(1,Math.ceil(Math.log2(Math.max(2,V)))),geo=D.deltas.length*64;
+  $('t-store').textContent=`${keybits} + ${geo} b`;
+  $('recov').textContent=D.keys.map(k=>D.inv[k]).join(' ');
+  $('pk').max=Math.max(0,D.packets.length-1);$('pk').value=0;showPacket(0);
+  draw();
+  cap(`<span class="leg" style="background:#00d4ff"></span><b>original</b> &nbsp;<span class="leg" style="background:#f87171"></span><b>Form 0-2 lossy</b> (decays) &nbsp;<span class="leg" style="background:#D4AF37"></span><b>Form 3 corrected</b> (lossless) · ${K} tokens → nodes (i mod 72)`);
+}
+$('src').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;SRC=b.dataset.s;[...$('src').children].forEach(x=>x.classList.toggle('sel',x===b));refresh();});
+$('run').onclick=refresh;
+$('pk').addEventListener('input',e=>showPacket(+e.target.value));
+
+initGL();
+(function(){const b=$('rotToggle');function sync(){const on=glReady&&ctrl&&ctrl.autoRotate;b.textContent='⟲ Auto-rotate: '+(on?'On':'Off');b.classList.toggle('on',!!on);}
+  if(!glReady){b.style.display='none';return;}b.onclick=()=>{ctrl.autoRotate=!ctrl.autoRotate;sync();};sync();})();
+refresh();
+</script>
+</body>
+</html>

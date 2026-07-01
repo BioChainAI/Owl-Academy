@@ -68,6 +68,33 @@ windings overlap or diverge, and read the **replayable delta-chain log** — the
 the structure. Auto-rotate off by default with a toggle; graceful WebGL fallback; embedded JS validated
 in Node against the reference.
 
+## Text front-end — `text_to_codex.py` / `converter.html`
+
+A conversion program that builds on this codex: paste text → each token becomes a 64-bit SHD-CCP
+packet → placed at node `(i mod 72)` on toroid `(i // 72)` → fed into the offload. **Two recovery
+channels, both exact-or-honest:**
+
+- **TEXT** — recovered from the **key stream** (token ids). Exact, independent of geometry precision.
+- **CHAIN** — the quaternion deltas. Precision is the **Form-ID** choice (the master-switch diagrams):
+  - **Form 0–2 (default, lossy)** — FP8 quaternion; ~3–5° per packet that **decays over the chain**
+    (measured ~0.13–0.26 rad RMSE, ~0.5 rad final drift) — the diagrams' "signal decay" warning, real.
+  - **Form 3 (corrected, lossless)** — FP8 + a corrective offset (the residual) → **RMSE ~1e-9**.
+
+  v1 shows **both** so the decay is visible before defaulting to Form 3 / exact-rational.
+
+**Feature source** is selectable: **TTMPT crystallization** (default — per-character XOR crystal →
+bounded quaternion position), **generic** hash embedding, or **sparsemax** lattice spinor. Honest
+caveat the program measures and states: crystallization/hashing is avalanche-like, so the deltas are
+high-entropy — the **outer scale stays lossless**, but middle/inner SLERP reconstruction is lossy (the
+random-source regime). Locally-correlated embeddings would compress the geometry better; the key stream
+keeps the text exact either way. The packet parity bit is checked on every decode.
+
+```bash
+python3 text_to_codex.py        # text→packets→codex; text-exact, lossy-vs-corrected, the dial
+```
+Open `converter.html` for the live tool (paste text, pick the source, inspect each packet's 64 bits,
+watch the original / lossy / corrected windings, read the recovered text). Embedded JS validated in Node.
+
 ## Where this sits
 
 Flat / Euclidean track. `Engram_Codec` is the single-scale delta codec; the **Ontological Codex** is its
