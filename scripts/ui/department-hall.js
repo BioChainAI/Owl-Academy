@@ -18,7 +18,10 @@ import {
 import { renderTomeSVG } from "../tome-procgen.js";
 
 export const DEPARTMENTS = {
-  I:    { roman: "I",    name: "Sacred Geometry & Topology", sub: "Foundations",          color: "#D4AF37", count: 9,  featured: { href: "Sacred_Geometry/SG_Main.html",            label: "Sacred Geometry — Main Hall" } },
+  I:    { roman: "I",    name: "Sacred Geometry & Topology", sub: "Foundations",          color: "#D4AF37", count: 9,  featured: [
+          { href: "Sacred_Geometry/Platonic_Solids/index.html", label: "Lesson 1 — Platonic Solids & Symmetric Tessellations", tag: "Lesson 1 · Active Tome" },
+          { href: "Sacred_Geometry/SG_Main.html",               label: "Sacred Geometry — Main Hall" },
+        ] },
   II:   { roman: "II",   name: "Cryptography & Sigils",      sub: "Geometric Theory",      color: "#a855f7", count: 9,  featured: { href: "Cryptography/Cryptography_main.html",      label: "Cryptography — Main" } },
   III:  { roman: "III",  name: "Celestial Topology & Kinematics", sub: "Topology",         color: "#3b82f6", count: 9,  featured: null },
   IV:   { roman: "IV",   name: "Hyperbolic Systems",         sub: "Analysis",              color: "#f43f5e", count: 9,  featured: { href: "DeptIV_Main.html",                        label: "Hyperbolic Systems — Curriculum" } },
@@ -92,7 +95,7 @@ export function renderDepartmentHall(deptCode) {
       <section class="glass-panel rounded-xl p-5 md:p-6 mb-6">
         <h2 class="text-xs tracking-[0.2em] font-bold uppercase mb-4" style="color:${meta.color}">Hall Resources</h2>
         <div class="space-y-2">
-          ${meta.featured ? `<a href="${esc(meta.featured.href)}" class="module-link"><span style="color:${meta.color}">⬡</span><span class="flex-grow">${esc(meta.featured.label)}</span><span class="live-tag stub-tag">Available</span><span class="arrow" style="color:${meta.color}">→</span></a>` : ""}
+          ${(Array.isArray(meta.featured) ? meta.featured : meta.featured ? [meta.featured] : []).map((f) => `<a href="${esc(f.href)}" class="module-link"><span style="color:${meta.color}">⬡</span><span class="flex-grow">${esc(f.label)}</span><span class="live-tag stub-tag">${esc(f.tag || "Available")}</span><span class="arrow" style="color:${meta.color}">→</span></a>`).join("")}
           <a href="../../mage_tower/Major_Tome.html" class="module-link"><span style="color:${meta.color}">◈</span><span class="flex-grow">Major Tome Library — request unlock &amp; claim completion</span><span class="arrow" style="color:${meta.color}">→</span></a>
           <a href="../../mage_tower/Seal_Forge.html" class="module-link"><span style="color:${meta.color}">♜</span><span class="flex-grow">Seal Forge — mint a minor tome</span><span class="arrow" style="color:${meta.color}">→</span></a>
         </div>
@@ -120,13 +123,15 @@ export function renderDepartmentHall(deptCode) {
       action = `<button class="hall-btn" data-req="${esc(t.id)}">Request unlock</button>`;
     }
     let sigil = ""; try { if (t.canonId && t.dept) sigil = renderTomeSVG(t, 52); } catch {}
+    // Halls live at Library/<Dept>/ — two levels below the repo root the canon contentPath is relative to.
+    const open = t.contentPath ? `<a class="hall-btn" style="text-decoration:none" href="../../${esc(t.contentPath)}">Open lesson →</a>` : "";
     return `<div class="course-card">
       <div class="flex gap-3 items-start">
         ${sigil ? `<div style="width:52px;height:52px;flex-shrink:0;line-height:0">${sigil}</div>` : ""}
         <div class="min-w-0 flex-grow">
           <div class="flex items-center justify-between gap-2"><span class="text-sm text-white truncate">${esc(t.title)}</span>${chip}</div>
           <div class="text-[10px] text-gray-500 font-mono mt-0.5">${esc(t.canonId || "")}${t.globalIndex ? ` · seat ${t.globalIndex}/145` : ""}</div>
-          <div class="mt-2">${action}</div>
+          <div class="mt-2 flex items-center gap-2 flex-wrap">${open}${action}</div>
         </div>
       </div></div>`;
   }
