@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Owl Academy | Spire Mesh — Validation Nodes</title>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Inter:wght@300;400;500;600&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{ --void:#05030a; --primary:#D4AF37; --primary-light:#FFF8DC; --cyan:#00d4ff; --purple:#8A2BE2; --ok:#34d399; --bad:#f0a; }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background-color:var(--void);color:#e2e8f0;font-family:'Inter',system-ui,sans-serif;line-height:1.7;min-height:100vh;overflow-x:hidden;
+    background:radial-gradient(circle at 50% 0%, color-mix(in srgb, var(--purple) 8%, var(--void)), var(--void) 60%);}
+  a{color:var(--cyan);text-decoration:none} a:hover{text-decoration:underline}
+  .serif{font-family:'Cinzel',serif}.mono{font-family:'Fira Code',ui-monospace,monospace}
+  .starfield{position:fixed;inset:0;z-index:-2;pointer-events:none;opacity:.15;
+    background-image:radial-gradient(2px 2px at 20px 30px,var(--primary),rgba(0,0,0,0)),
+      radial-gradient(2px 2px at 40px 70px,#fff,rgba(0,0,0,0)),
+      radial-gradient(2px 2px at 90px 40px,#fff,rgba(0,0,0,0)),
+      radial-gradient(2px 2px at 130px 80px,var(--primary),rgba(0,0,0,0));
+    background-repeat:repeat;background-size:250px 250px;animation:twinkle 8s infinite alternate;}
+  @keyframes twinkle{0%{opacity:.05}100%{opacity:.2}}
+  header{position:relative;padding:3rem 1.5rem 2.2rem;text-align:center;border-bottom:1px solid rgba(212,175,55,.18);
+    background:rgba(5,3,10,.55);backdrop-filter:blur(10px)}
+  .home-link{position:absolute;top:1.4rem;left:1.4rem;font-size:.62rem;letter-spacing:.22em;text-transform:uppercase;
+    color:rgba(212,175,55,.6);border:1px solid rgba(212,175,55,.3);padding:.5rem .9rem;border-radius:6px;transition:.2s}
+  .home-link:hover{color:var(--primary-light);background:rgba(212,175,55,.12);text-decoration:none}
+  h1{font-size:1.9rem;font-weight:700;letter-spacing:.18em;
+    background:linear-gradient(to right,var(--primary),var(--primary-light),var(--primary));
+    -webkit-background-clip:text;background-clip:text;color:transparent}
+  .eyebrow{font-size:.7rem;letter-spacing:.4em;text-transform:uppercase;color:rgba(212,175,55,.7);margin-bottom:.5rem}
+  .tagline{margin-top:.9rem;color:#9aa5b1;font-weight:300;max-width:46rem;margin-left:auto;margin-right:auto;font-size:.9rem}
+  main{max-width:1080px;margin:2.2rem auto;padding:0 1.5rem}
+  .glass{background:rgba(10,8,20,.45);backdrop-filter:blur(12px);border:1px solid rgba(212,175,55,.15);
+    box-shadow:0 8px 32px rgba(0,0,0,.5);border-radius:14px}
+  section{margin-bottom:2.4rem}
+  h2{font-family:'Cinzel',serif;color:var(--primary-light);font-size:1.2rem;letter-spacing:.08em;margin-bottom:.8rem;
+    display:flex;align-items:center;gap:.7rem}
+  h2 .n{font-family:'Fira Code',monospace;font-size:.7rem;color:rgba(212,175,55,.6);border:1px solid rgba(212,175,55,.3);
+    border-radius:6px;padding:.15rem .5rem}
+  p{font-size:.88rem;color:#aab3bf;margin-bottom:.8rem}
+  strong{color:#e6e9ee}
+  .card{padding:1.3rem 1.5rem}
+  table{width:100%;border-collapse:collapse;font-size:.78rem;margin:.6rem 0}
+  th{font-size:.62rem;letter-spacing:.14em;text-transform:uppercase;color:rgba(212,175,55,.75);text-align:left;
+    border-bottom:1px solid rgba(212,175,55,.25);padding:.5rem .6rem}
+  td{padding:.5rem .6rem;border-bottom:1px solid rgba(255,255,255,.05);color:#aab3bf;vertical-align:top}
+  td:first-child{color:#e6e9ee}
+  .tblwrap{overflow-x:auto}
+  pre{font-family:'Fira Code',monospace;font-size:.72rem;color:#9fd7e8;background:rgba(0,0,0,.45);
+    border:1px solid rgba(0,212,255,.15);border-radius:10px;padding:1rem 1.2rem;overflow-x:auto;line-height:1.55;margin:.6rem 0}
+  code{font-family:'Fira Code',monospace;font-size:.78em;color:var(--cyan);background:rgba(0,212,255,.06);
+    padding:.1em .35em;border-radius:3px}
+  .pill{display:inline-block;font-size:.58rem;text-transform:uppercase;letter-spacing:.12em;padding:.15rem .55rem;
+    border-radius:999px;border:1px solid;margin-right:.4rem}
+  .pill.gold{color:var(--primary);border-color:rgba(212,175,55,.4);background:rgba(212,175,55,.08)}
+  .pill.cyan{color:var(--cyan);border-color:rgba(0,212,255,.4);background:rgba(0,212,255,.08)}
+  .pill.ok{color:var(--ok);border-color:rgba(52,211,153,.4);background:rgba(52,211,153,.08)}
+  .pill.bad{color:var(--bad);border-color:rgba(255,0,170,.4);background:rgba(255,0,170,.08)}
+  /* sim */
+  .simgrid{display:grid;grid-template-columns:1fr 300px;gap:1rem}
+  @media(max-width:820px){.simgrid{grid-template-columns:1fr}}
+  #mesh{width:100%;height:420px;border-radius:10px;background:rgba(0,0,0,.4);border:1px solid rgba(255,255,255,.07);display:block}
+  .simside{display:flex;flex-direction:column;gap:.6rem}
+  .btn{font-family:'Inter',sans-serif;font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;cursor:pointer;
+    padding:.6rem .8rem;border-radius:8px;border:1px solid rgba(212,175,55,.35);background:rgba(212,175,55,.1);
+    color:var(--primary-light);transition:.2s;text-align:left}
+  .btn:hover{background:rgba(212,175,55,.22)}
+  .btn.cy{border-color:rgba(0,212,255,.35);background:rgba(0,212,255,.08);color:#bfeffb}
+  .btn.cy:hover{background:rgba(0,212,255,.18)}
+  .btn.rd{border-color:rgba(255,0,170,.35);background:rgba(255,0,170,.07);color:#ffc4ea}
+  .btn.rd:hover{background:rgba(255,0,170,.16)}
+  #simlog{font-family:'Fira Code',monospace;font-size:.64rem;line-height:1.6;background:rgba(0,0,0,.45);
+    border:1px solid rgba(255,255,255,.07);border-radius:10px;padding:.7rem .8rem;height:160px;overflow-y:auto;color:#8a93a0}
+  #simlog .ok{color:var(--ok)} #simlog .bad{color:var(--bad)} #simlog .au{color:var(--primary)}
+  .stats{display:flex;gap:1rem;font-family:'Fira Code',monospace;font-size:.66rem;color:#7a8290;flex-wrap:wrap;margin-top:.5rem}
+  .stats b{color:var(--primary-light);font-weight:500}
+  footer{text-align:center;padding:2rem;font-size:.7rem;color:rgba(255,255,255,.25)}
+</style>
+</head>
+<body>
+<div class="starfield"></div>
+
+<header>
+  <a href="../index.html" class="home-link">← Experimental Systems</a>
+  <div class="eyebrow serif">Network &amp; Consensus · Polycentria Applied</div>
+  <h1 class="serif">SPIRE MESH</h1>
+  <p class="tagline">Participant-hosted validation nodes for the seal &amp; canon system — the mechanics of
+    <span class="mono">NeuroMesh</span> (P2P gossip, web of trust, contribution quotas) re-grounded in the Academy's
+    own objects: Major Tome, Minor Tome, Artifact, and the S.P.I.R.E. tri-layer.</p>
+</header>
+
+<main>
+
+<section>
+  <h2><span class="n">01</span>The idea</h2>
+  <div class="glass card">
+    <p>Today the Academy's trust chain terminates in two central places: a hard-coded master-key list in a
+    GitHub-hosted file, and Firestore rules in front of one database. <strong>Spire Mesh removes both</strong> by
+    letting any participant run a node that holds a full replica of the canon and independently re-verifies
+    every record — every seal, certificate, unlock request and 2-of-2 grant.</p>
+    <p>The adaptation is honest about its source: <a href="https://github.com/NeuroMesh-ai/neuromesh">NeuroMesh</a>
+    supplies the <em>transport recipe</em> (gossip sync, peer identity, sharing quotas); the Academy already owns the
+    <em>trust machinery</em> (ECDSA P-256 seals, an immutable 145-tome canon, a certificate web of trust). And the
+    S.P.I.R.E. manual already promised the shape: a globally verified crystal matrix (<strong>Core</strong>) beside
+    sovereign local space (<strong>Biostrata</strong>) over a sync substrate (<strong>Hypersim</strong>) — which is
+    exactly NeuroMesh's participant/private split.</p>
+    <p><span class="pill gold">Polycentria cell</span> Every peer that gossips a record is <strong>Helix A</strong> — an
+    untrusted oracle that proposes. Every node's validation processor is <strong>Helix B</strong> — an exact certifier
+    that decides. A record enters a node's SPIRE Core only after <em>that node</em> verified the signatures and walked
+    the certificate chain itself. Many locally-authoritative certifiers composed into a whole: polycentric governance,
+    literally.</p>
+  </div>
+</section>
+
+<section>
+  <h2><span class="n">02</span>Live mesh — proposals vs. certifiers</h2>
+  <div class="glass card">
+    <p style="font-size:.8rem">Twelve nodes (♛ Archon · ⬢ Instructors · ○ Acolytes). Inject records and watch gossip
+    carry them outward; each node runs its own exact checks. <span style="color:var(--ok)">Green</span> = accepted into
+    that node's SPIRE Core, <span style="color:var(--bad)">magenta</span> = quarantined. (Visualization only — the real
+    ECDSA/chain checks run in <code>spire_mesh.py</code>.)</p>
+    <div class="simgrid">
+      <canvas id="mesh" width="720" height="420"></canvas>
+      <div class="simside">
+        <button class="btn"    onclick="inject('canon')">⟐ Inscribe canon record <span style="opacity:.6">(Archon-signed)</span></button>
+        <button class="btn cy" onclick="inject('grant')">✎ 2-of-2 completion grant <span style="opacity:.6">(student + instructor)</span></button>
+        <button class="btn rd" onclick="inject('forged')">☠ Forged Archon certificate</button>
+        <button class="btn rd" onclick="inject('offplane')">☠ Off-plane grant <span style="opacity:.6">(dept-I pen, dept-IV tome)</span></button>
+        <button class="btn"    onclick="inject('recall')">↺ Recall the student's seal</button>
+        <div id="simlog"></div>
+        <div class="stats">
+          <span>gossip rounds <b id="stRounds">0</b></span>
+          <span>accepted <b id="stAcc">0</b></span>
+          <span>quarantined <b id="stQar">0</b></span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <h2><span class="n">03</span>The mapping</h2>
+  <div class="glass card tblwrap">
+    <table>
+      <tr><th>NeuroMesh mechanic</th><th>Spire Mesh adaptation</th><th>Reuses</th></tr>
+      <tr><td>Ed25519 node identity</td><td>Minor Tome seal (ECDSA P-256) as the node's pen; the operator's Cosmological ID as persistent identity</td><td><code>seal-crypto.js</code> · <code>spire-registrar.js</code></td></tr>
+      <tr><td>Shared-secret HMAC handshake</td><td><strong>CERT/2</strong> — certificate chain to a genesis trust anchor; no shared secret</td><td><code>genesis-registrar.js</code> (upgraded)</td></tr>
+      <tr><td>Web of Trust vouching</td><td>The Genesis tier chain <em>is</em> a web of trust: Archon → Instructor, plane-scoped</td><td>Genesis Authority</td></tr>
+      <tr><td>CRDT memory + vector clocks</td><td>Canon = immutable grow-only set; seal <code>status</code> = owner-signed LWW register; requests/grants append-only. Simpler objects → simpler CRDT</td><td><code>major-tome.js</code> · <code>minor-tome.js</code></td></tr>
+      <tr><td>Gossip protocol</td><td>Hypersim anti-entropy over content-addressed digests — measured convergence: 12 nodes, 2 rounds</td><td>new</td></tr>
+      <tr><td>Sharing quota 40/30/20/10</td><td>canon-hosting 40 · validation-work 30 · uptime 20 · web-of-trust rep 10 → read-quota tiers</td><td>new</td></tr>
+      <tr><td>Specialist router (12 schemas)</td><td>Plane router: dept-IV requests route to dept-IV / <code>*</code> certified validators</td><td><code>certifiedPlanes</code></td></tr>
+      <tr><td>Participant / private mode</td><td>SPIRE Core (validated replica) · Biostrata (sovereign local) · Hypersim (sync) — the manual's tri-layer, implemented</td><td>S.P.I.R.E. Manual</td></tr>
+    </table>
+  </div>
+</section>
+
+<section>
+  <h2><span class="n">04</span>The validation processor — <span class="mono" style="font-size:.85em">firestore.rules</span> as pure functions</h2>
+  <div class="glass card">
+    <p>The rules file is already a declarative validation spec in front of one database. Each rule translates
+    line-for-line into an exact check any node can run — that translation <em>is</em> the decentralization:</p>
+<pre>┌ SPIRE NODE ────────────────────────────────────────────────┐
+│ Biostrata (sovereign, never gossiped)                      │
+│   quarantine ledger · local chronicle · counters           │
+│                                                            │
+│ Helix B — VALIDATION PROCESSOR (exact certifier)           │
+│   1 schema check     4 authority: cert-chain walk to a     │
+│   2 ECDSA signatures   genesis anchor + plane scope        │
+│   3 immutability /   5 seal-status (recall) check          │
+│     referential      6 accept → Core | reject → quarantine │
+│                                                            │
+│ SPIRE Core — the validated replica                         │
+│   canon G-Set · seal registry (LWW) · request/grant log    │
+│                                                            │
+│ Hypersim — content-addressed gossip, fanout 2              │
+└────────────────────────────────────────────────────────────┘</pre>
+    <p style="font-size:.8rem"><span class="pill bad">Found &amp; fixed</span> Genesis certificates are HMAC-keyed by the
+    issuer's <em>public</em> Cosmological ID — safe only while Firestore controls writes; forgeable by anyone on an open
+    network. <strong>CERT/2</strong> keeps the exact field layout but signs with the issuer's ECDSA seal.
+    <span class="pill gold">Moved</span> The root of trust moves from <code>GENESIS_MASTER_UIDS</code> in a JS file to
+    trust-anchor genesis IDs baked into the content-addressed genesis snapshot — changing the root becomes a visible
+    hard fork, not a quiet commit. <span class="pill cyan">Rehomed</span> Canon CI (<code>validate-canon.mjs</code>)
+    stops being a GitHub Action and runs inside every node.</p>
+  </div>
+</section>
+
+<section>
+  <h2><span class="n">05</span>Measured (the reference run)</h2>
+  <div class="glass card">
+    <p><code>python3 spire_mesh.py</code> — pure stdlib, deterministic, ~37&nbsp;s, real ECDSA P-256 (the seals' own
+    curve), the exact <code>UNLOCK-REQ/1</code> / <code>UNLOCK-GRANT/1</code> payload bytes, the exact Cosmological-ID
+    pipeline (SHA-256 → holographic inverse → SHD-CCP 4×4×4 φ-fold → XOR). Full output in
+    <code>spire_mesh_output.txt</code>.</p>
+    <table>
+      <tr><th>Check</th><th>Result</th></tr>
+      <tr><td>145-tome canon inscribed (9×9 + 4×16, the real Dept I–X structure)</td><td><span class="pill ok">pass</span></td></tr>
+      <tr><td>12 nodes converge to identical SPIRE Core</td><td><span class="pill ok">2 gossip rounds</span></td></tr>
+      <tr><td>2-of-2 completion grant independently verified</td><td><span class="pill ok">12/12 certifiers</span></td></tr>
+      <tr><td>Forged-signature Archon cert · self-signed promotion · acolyte grant · off-plane grant · tampered canon replay</td><td><span class="pill ok">rejected everywhere</span></td></tr>
+      <tr><td>Seal recall gossips → earlier grant invalidated on every replica</td><td><span class="pill ok">12/12 flipped</span></td></tr>
+      <tr><td>Contribution scores → quota tiers</td><td><span class="pill cyan">accounting shown; differentiation needs scale</span></td></tr>
+    </table>
+    <p style="font-size:.78rem;color:#7a8290">Honest reads: quorum here is verification <em>redundancy</em>, not
+    voting — no node trusts another's verdict. Sybil resistance is inherited from the certificate chain (Sybils can
+    host, never grant). No BFT consensus by design: self-certifying records only need set membership, not ordering —
+    the day artifacts become transferable is the day that stops being true.</p>
+  </div>
+</section>
+
+<section>
+  <h2><span class="n">06</span>Off GitHub, in phases</h2>
+  <div class="glass card tblwrap">
+    <table>
+      <tr><th>Phase</th><th>Authority</th><th>What moves</th></tr>
+      <tr><td>0 — today</td><td>Firestore + GitHub CI</td><td>—</td></tr>
+      <tr><td>1 — shadow mesh</td><td>Firestore</td><td>volunteer nodes replicate &amp; re-verify read-only; discrepancies reported; zero risk</td></tr>
+      <tr><td>2 — dual-write</td><td>both</td><td>browser seals already emit mesh-valid records; CERT/2 re-issuance; genesis snapshot published</td></tr>
+      <tr><td>3 — mesh-authoritative</td><td>the mesh</td><td>Firestore demoted to one mirror; quota rail activates; consoles read from any trusted node</td></tr>
+      <tr><td>4 — content too</td><td>the mesh</td><td>lesson HTML content-addressed; "store the seed" extends to "store the hash"</td></tr>
+    </table>
+  </div>
+</section>
+
+</main>
+<footer>Spire Mesh · Experimental Systems · adapted from NeuroMesh (MIT) · © 2026 Owl Academy</footer>
+
+<script>
+// ── toy mesh visualization (the exact checks live in spire_mesh.py) ─────────
+const cvs = document.getElementById('mesh'), ctx = cvs.getContext('2d');
+const logEl = document.getElementById('simlog');
+const N = 12, nodes = [];
+const roles = ['archon','instr','instr','instr','aco','aco','aco','aco','aco','aco','aco','aco'];
+const names = ['Aldrovanda','Bavol','Ceridwen','Dagny','Edda','Fionn','Grier','Hesper','Iolo','Jarek','Kestrel','Lyra'];
+let rounds = 0, accepted = 0, quarantined = 0, pulses = [], studentRecalled = false;
+
+function layout(){
+  const w = cvs.width = cvs.clientWidth * devicePixelRatio, h = cvs.height = cvs.clientHeight * devicePixelRatio;
+  const cx = w/2, cy = h/2, R = Math.min(w,h)*0.38;
+  nodes.length = 0;
+  for(let i=0;i<N;i++){
+    const a = -Math.PI/2 + i*2*Math.PI/N;
+    nodes.push({x:cx+R*Math.cos(a), y:cy+R*Math.sin(a), role:roles[i], name:names[i], flash:0, flashCol:null, has:{}});
+  }
+}
+function log(msg, cls){ const d=document.createElement('div'); if(cls)d.className=cls; d.textContent=msg;
+  logEl.appendChild(d); logEl.scrollTop=logEl.scrollHeight; while(logEl.children.length>60) logEl.removeChild(logEl.firstChild); }
+
+// verdicts mirror the Python certifier's reasons
+function verdict(kind){
+  if(kind==='canon')  return {ok:true,  why:'archon sig + immutability ✓'};
+  if(kind==='grant')  return studentRecalled ? {ok:false, why:'student seal recalled'} : {ok:true, why:'2-of-2 + plane authority ✓'};
+  if(kind==='forged') return {ok:false, why:'CERT/2 signature invalid'};
+  if(kind==='offplane')return {ok:false, why:'dept-I cert cannot sign dept-IV'};
+  if(kind==='recall') return {ok:true,  why:'owner-signed status flip ✓'};
+}
+let recId = 0;
+function inject(kind){
+  const id = 'r'+(recId++);
+  const origin = kind==='canon' ? 0 : (kind==='grant'||kind==='recall' ? 4 : 4+Math.floor(Math.random()*8));
+  const label = {canon:'CANON/1', grant:'UNLOCK-GRANT/1', forged:'CERT/2 (forged)', offplane:'UNLOCK-GRANT/1 (off-plane)', recall:'SEAL-STATUS/1 recall'}[kind];
+  log('▸ '+label+' proposed at '+names[origin], 'au');
+  deliver(origin, {id, kind}, true);
+  let frontier = [origin], seen = new Set([origin]);
+  const step = () => {
+    rounds++; document.getElementById('stRounds').textContent = rounds;
+    const next = [];
+    frontier.forEach(i => { for(let f=0; f<2; f++){ let j = Math.floor(Math.random()*N);
+      if(!seen.has(j)){ seen.add(j); next.push(j); pulses.push({from:nodes[i],to:nodes[j],t:0,rec:{id,kind}}); } } });
+    frontier = next;
+    if(seen.size < N && frontier.length) setTimeout(step, 420);
+    else if(seen.size < N){ frontier=[...seen]; setTimeout(step, 420); }
+    else { const v = verdict(kind); log((v.ok?'✓ ':'✗ ')+label+' → '+(v.ok?'all cores':'quarantined everywhere')+' — '+v.why, v.ok?'ok':'bad');
+           if(kind==='recall'){ studentRecalled = true; log('↺ earlier grants signed by that seal flip to invalidated on every replica','bad'); } }
+  };
+  setTimeout(step, 420);
+}
+function deliver(i, rec, silent){
+  const n = nodes[i]; if(n.has[rec.id]) return;
+  n.has[rec.id] = true;
+  const v = verdict(rec.kind);
+  n.flash = 1; n.flashCol = v.ok ? '#34d399' : '#f0a';
+  if(v.ok){ accepted++; } else { quarantined++; }
+  document.getElementById('stAcc').textContent = accepted;
+  document.getElementById('stQar').textContent = quarantined;
+}
+function draw(){
+  const w = cvs.width, h = cvs.height;
+  ctx.clearRect(0,0,w,h);
+  ctx.strokeStyle = 'rgba(212,175,55,.07)';
+  for(let i=0;i<N;i++) for(let j=i+1;j<N;j++){ ctx.beginPath(); ctx.moveTo(nodes[i].x,nodes[i].y); ctx.lineTo(nodes[j].x,nodes[j].y); ctx.stroke(); }
+  pulses = pulses.filter(p => p.t <= 1);
+  pulses.forEach(p => { p.t += 0.045;
+    const x = p.from.x + (p.to.x-p.from.x)*p.t, y = p.from.y + (p.to.y-p.from.y)*p.t;
+    ctx.beginPath(); ctx.arc(x,y,4*devicePixelRatio,0,7); ctx.fillStyle = '#00d4ff'; ctx.fill();
+    if(p.t >= 1) deliver(nodes.indexOf(p.to), p.rec);
+  });
+  nodes.forEach(n => {
+    const r = (n.role==='archon'?13:n.role==='instr'?11:9)*devicePixelRatio;
+    if(n.flash > 0){ ctx.beginPath(); ctx.arc(n.x,n.y,r+10*devicePixelRatio*n.flash,0,7);
+      ctx.strokeStyle = n.flashCol; ctx.globalAlpha = n.flash; ctx.stroke(); ctx.globalAlpha = 1; n.flash -= 0.02; }
+    ctx.beginPath(); ctx.arc(n.x,n.y,r,0,7);
+    ctx.fillStyle = 'rgba(5,3,10,.9)'; ctx.fill();
+    ctx.strokeStyle = n.role==='archon' ? '#D4AF37' : n.role==='instr' ? '#00d4ff' : 'rgba(255,255,255,.4)';
+    ctx.lineWidth = devicePixelRatio*(n.role==='archon'?2:1.2); ctx.stroke();
+    ctx.fillStyle = n.role==='archon' ? '#D4AF37' : n.role==='instr' ? '#00d4ff' : '#8a93a0';
+    ctx.font = (n.role==='archon'?11:9)*devicePixelRatio+'px Fira Code';
+    ctx.textAlign='center'; ctx.fillText(n.role==='archon'?'♛':n.role==='instr'?'⬢':'○', n.x, n.y+3.5*devicePixelRatio);
+    ctx.fillStyle = 'rgba(154,165,177,.55)'; ctx.font = 8*devicePixelRatio+'px Inter';
+    ctx.fillText(n.name, n.x, n.y+r+11*devicePixelRatio);
+  });
+  requestAnimationFrame(draw);
+}
+layout(); addEventListener('resize', layout);
+log('mesh idle — 12 certifiers online. Propose something.', 'au');
+draw();
+</script>
+</body>
+</html>
