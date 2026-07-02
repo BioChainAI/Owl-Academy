@@ -1,0 +1,71 @@
+
+──────────────────────────────────────────────────────────────────────────
+SPIRE MESH — genesis
+──────────────────────────────────────────────────────────────────────────
+  root archon genesis id : 0x9EE77BC7C7E1DB36
+  root seal              : S-0009b6a4183ed605ed12ab9b
+  trust anchors baked into the genesis snapshot replace GENESIS_MASTER_UIDS
+  seals registered: 12 · CERT/2 issued: 3
+
+──────────────────────────────────────────────────────────────────────────
+Inscribe the 145-tome canon (immutable G-Set)
+──────────────────────────────────────────────────────────────────────────
+  [PASS] canon inscribed at boot node — 145/145 records
+  genesis snapshot hash  : f3cf7a4d272cca4d5d2e69844cfa0f9e…
+
+──────────────────────────────────────────────────────────────────────────
+Gossip convergence (Hypersim anti-entropy, fanout 2)
+──────────────────────────────────────────────────────────────────────────
+  round 1:  800 records replicated
+  round 2:  960 records replicated
+  [PASS] all 12 nodes converged on identical SPIRE Core — 160 records each after 2 rounds
+
+──────────────────────────────────────────────────────────────────────────
+The workload: request → combine → unlock, validated everywhere
+──────────────────────────────────────────────────────────────────────────
+  [PASS] 2-of-2 completion grant accepted by independent certifiers — 12/12 nodes verified both signatures + authority
+
+──────────────────────────────────────────────────────────────────────────
+Red-owl suite: every attack is proposed by Helix A, killed by Helix B
+──────────────────────────────────────────────────────────────────────────
+  [PASS] forged-signature ARCHON cert rejected — 12/12 nodes: 'CERT/2 signature invalid'
+  [PASS] self-signed promotion rejected (no path to trust anchor)
+  [PASS] acolyte-signed grant rejected (tier gate)
+  [PASS] off-plane grant rejected (dept-I cert cannot sign dept-IV)
+  [PASS] tampered canon record rejected (immutability + signature)
+  [PASS] seal recall invalidates the earlier grant on every node — 12/12 replicas flipped
+
+──────────────────────────────────────────────────────────────────────────
+Contribution scores → sharing quota (NeuroMesh 40/30/20/10, re-based)
+──────────────────────────────────────────────────────────────────────────
+  weights: canon-hosting 40 · validation-work 30 · uptime 20 · web-of-trust rep 10
+
+  node     operator   tier         canon   checks  uptime    score  quota/min
+  node-00  Aldrovanda ARCHON         145      169    0.59     91.8        200
+  node-01  Bavol      INSTRUCTOR     145      169    0.72     92.4        200
+  node-02  Ceridwen   INSTRUCTOR     145      169    0.76     93.2        200
+  node-03  Dagny      INSTRUCTOR     145      169    0.76     93.2        200
+  node-04  Edda       ACOLYTE        145      169    0.71     89.2        200
+  node-05  Fionn      ACOLYTE        145      169    0.66     88.2        200
+  node-06  Grier      ACOLYTE        145      169    0.93     93.6        200
+  node-07  Hesper     ACOLYTE        145      169    0.58     86.6        200
+  node-08  Iolo       ACOLYTE        145      169    0.79     90.8        200
+  node-09  Jarek      ACOLYTE        145      169    0.58     86.6        200
+  node-10  Kestrel    ACOLYTE        145      169    0.82     91.4        200
+  node-11  Lyra       ACOLYTE        145      169    0.75     90.0        200
+
+──────────────────────────────────────────────────────────────────────────
+Verdict
+──────────────────────────────────────────────────────────────────────────
+  ✓ canon inscribed at boot node
+  ✓ all 12 nodes converged on identical SPIRE Core
+  ✓ 2-of-2 completion grant accepted by independent certifiers
+  ✓ forged-signature ARCHON cert rejected
+  ✓ self-signed promotion rejected (no path to trust anchor)
+  ✓ acolyte-signed grant rejected (tier gate)
+  ✓ off-plane grant rejected (dept-I cert cannot sign dept-IV)
+  ✓ tampered canon record rejected (immutability + signature)
+  ✓ seal recall invalidates the earlier grant on every node
+
+  9/9 checks passed · 12 nodes · 164 records in SPIRE Core · 36.3s
+  quarantined proposals across the mesh: 60 (all adversarial, all contained)
