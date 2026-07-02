@@ -1,0 +1,693 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Owl Academy | Lesson 1D Appendix: The Tiling Problem — Deep Dive</title>
+
+    <!-- CSS & Fonts -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Inter:wght@300;400;500;600&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+
+    <!-- MathJax for rendering geometric equations -->
+    <script>
+        window.MathJax = {
+            tex: {
+                inlineMath: [['$', '$'], ['\\(', '\\)']],
+                displayMath: [['$$', '$$'], ['\\[', '\\]']]
+            }
+        };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+    <style>
+        /* Dynamic Theme Variables (Owl Academy Standard) */
+        :root {
+            --accent: #ff3366;
+            --color-void: #090614;
+            --color-primary: #D4AF37;
+            --color-secondary: #8e9eab;
+            --color-holo1: #00d4ff;
+            --color-holo2: #8A2BE2;
+            --color-text: #E6C27A;
+            --color-r3-x: #ff3366;
+            --color-r3-y: #33ff99;
+            --color-r3-z: #00d4ff;
+        }
+
+        body {
+            background-color: var(--color-void);
+            color: #e2e8f0;
+            font-family: 'Inter', sans-serif;
+            background: radial-gradient(circle at 50% 50%, color-mix(in srgb, var(--accent) 10%, var(--color-void)), var(--color-void) 80%);
+            min-height: 100vh;
+            margin: 0;
+            overflow-x: hidden;
+            scroll-behavior: smooth;
+        }
+
+        /* --- ATMOSPHERIC LAYERS --- */
+        .nebula-layer {
+            position: fixed; inset: 0;
+            background:
+                radial-gradient(circle at 20% 30%, var(--color-holo2) 0%, transparent 40%),
+                radial-gradient(circle at 80% 70%, var(--color-holo1) 0%, transparent 40%);
+            opacity: 0.15; mix-blend-mode: screen; filter: blur(80px); pointer-events: none; z-index: 0;
+        }
+        .vignette-layer {
+            position: fixed; inset: 0;
+            background: radial-gradient(circle, transparent 40%, rgba(0,0,0,0.8) 120%);
+            pointer-events: none; z-index: 10;
+        }
+        .starfield {
+            position: fixed; inset: 0;
+            background-image:
+                radial-gradient(2px 2px at 20px 30px, var(--color-primary), rgba(0,0,0,0)),
+                radial-gradient(2px 2px at 40px 70px, #fff, rgba(0,0,0,0)),
+                radial-gradient(2px 2px at 50px 160px, rgba(255,255,255,0.8), rgba(0,0,0,0)),
+                radial-gradient(2px 2px at 90px 40px, #fff, rgba(0,0,0,0)),
+                radial-gradient(2px 2px at 130px 80px, var(--color-primary), rgba(0,0,0,0));
+            background-repeat: repeat; background-size: 250px 250px;
+            animation: twinkle 8s infinite alternate; opacity: 0.35; z-index: 0; pointer-events: none;
+        }
+        .starfield-layer-2 { background-size: 350px 350px; background-position: 50px 50px; opacity: 0.2; animation: twinkle 12s infinite alternate-reverse; }
+        @keyframes twinkle { 0% { opacity: 0.1; transform: scale(1); } 100% { opacity: 0.5; transform: scale(1.05); } }
+
+        .spin-slow { animation: spin 40s linear infinite; transform-origin: center; }
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+
+        /* --- TYPOGRAPHY & PANELS --- */
+        h1, h2, h3, h4, .mystical-font { font-family: 'Cinzel', serif; }
+        .mono { font-family: 'Fira Code', monospace; }
+        .gold-gradient {
+            background: linear-gradient(to right, var(--color-primary), #FFF8DC, var(--color-primary));
+            -webkit-background-clip: text; background-clip: text; color: transparent; text-shadow: 0 0 15px color-mix(in srgb, var(--color-primary) 30%, transparent);
+        }
+
+        .glass-panel {
+            background: rgba(10, 5, 20, 0.5);
+            backdrop-filter: blur(12px);
+            border: 1px solid color-mix(in srgb, var(--color-primary) 20%, transparent);
+            border-radius: 16px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+            margin-bottom: 2rem;
+            padding: 2rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .data-card {
+            background: rgba(15, 10, 25, 0.5);
+            border: 1px solid color-mix(in srgb, var(--color-primary) 10%, transparent);
+            border-top: 1px solid color-mix(in srgb, var(--color-primary) 30%, transparent);
+            border-radius: 12px;
+            padding: 1.5rem;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+        .data-card:hover {
+            border-color: color-mix(in srgb, var(--accent) 40%, transparent);
+            background: rgba(20, 15, 35, 0.7);
+            box-shadow: 0 0 20px color-mix(in srgb, var(--accent) 12%, transparent);
+        }
+
+        .simple-translation {
+            background: color-mix(in srgb, var(--accent) 6%, transparent);
+            border-left: 3px solid color-mix(in srgb, var(--accent) 50%, transparent);
+            padding: 1rem;
+            margin-top: 1.5rem;
+            border-radius: 0 8px 8px 0;
+            font-family: 'Inter', sans-serif;
+        }
+
+        .math-note {
+            border: 1px dashed color-mix(in srgb, var(--color-primary) 40%, transparent);
+            border-radius: 12px;
+            padding: 16px 20px;
+            margin: 24px 0;
+            background: color-mix(in srgb, var(--color-primary) 5%, transparent);
+        }
+
+        .ch-num {
+            font-family: 'Fira Code', monospace;
+            font-weight: 600;
+            font-size: 1rem;
+            color: var(--color-primary);
+            border: 1px solid var(--color-primary);
+            border-radius: 8px;
+            padding: 6px 11px;
+            background: color-mix(in srgb, var(--color-primary) 10%, transparent);
+            display: inline-block;
+        }
+
+        /* Input Range Styling */
+        input[type=range] {
+            -webkit-appearance: none;
+            width: 100%;
+            background: transparent;
+            margin: 14px 0;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 16px; width: 16px;
+            border-radius: 50%;
+            background: var(--accent);
+            cursor: pointer;
+            box-shadow: 0 0 10px var(--accent);
+            margin-top: -6px;
+        }
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%; height: 4px;
+            cursor: pointer;
+            background: rgba(255,255,255,0.2);
+            border-radius: 2px;
+        }
+
+        /* Table */
+        .euler-table { width: 100%; border-collapse: collapse; margin: 20px 0; font-size: .9rem; min-width: 520px; }
+        .euler-table th, .euler-table td { padding: 11px 10px; text-align: center; border-bottom: 1px solid rgba(255,255,255,0.1); }
+        .euler-table th { font-family: "Fira Code", monospace; font-size: .74rem; letter-spacing: .06em; text-transform: uppercase; color: var(--color-secondary); }
+        .euler-table td:first-child, .euler-table th:first-child { text-align: left; }
+        .euler-table tr:hover td { background: color-mix(in srgb, var(--accent) 6%, transparent); }
+
+        /* Glossary */
+        .gloss dt { font-weight: 600; margin-top: 16px; color: var(--color-primary); display: flex; align-items: baseline; gap: 10px; font-family: 'Fira Code', monospace; font-size: 0.9rem;}
+        .gloss dd { margin: .25rem 0 1rem; color: #cbd5e1; font-size: .9rem; font-weight: 300;}
+        .badge { font-family: "Fira Code", monospace; font-size: .6rem; padding: 2px 7px; border-radius: 20px; letter-spacing: .06em; text-transform: uppercase; border: 1px solid color-mix(in srgb, var(--accent) 40%, transparent); color: var(--accent); }
+
+        /* --- Stepper chips (shared chrome) --- */
+        .step-chip{padding:.35rem .7rem;border-radius:.4rem;border:1px solid rgba(255,255,255,.1);color:#94a3b8;text-transform:uppercase;letter-spacing:.08em;transition:all .2s;white-space:nowrap;}
+        .step-chip:hover{color:#fff;border-color:rgba(255,255,255,.35);}
+        .step-chip[aria-current="page"]{color:var(--accent);border-color:var(--accent);background:color-mix(in srgb,var(--accent) 14%,transparent);box-shadow:0 0 12px color-mix(in srgb,var(--accent) 30%,transparent);}
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: rgba(0,0,0,0.2); }
+        ::-webkit-scrollbar-thumb { background: linear-gradient(to bottom, color-mix(in srgb, var(--accent) 40%, transparent), color-mix(in srgb, var(--accent) 75%, transparent)); border-radius: 10px; }
+    </style>
+</head>
+<body class="flex flex-col h-screen overflow-hidden">
+
+    <!-- Atmospheric Layers -->
+    <div class="nebula-layer"></div>
+    <div class="starfield"></div>
+    <div class="starfield starfield-layer-2"></div>
+    <div class="vignette-layer"></div>
+
+    <div class="relative z-20 flex flex-col w-full h-full overflow-y-auto custom-scrollbar">
+
+        <!-- Header / Navigation -->
+        <header class="w-full py-4 border-b border-yellow-600/30 glass-panel z-50 flex-shrink-0 relative shadow-2xl sticky top-0 !mb-0 !rounded-none">
+            <div class="w-full mx-auto px-4 md:px-6 flex flex-col md:flex-row justify-between items-center gap-4">
+
+                <div class="flex items-center space-x-4">
+                    <svg width="40" height="40" viewBox="0 0 100 100" class="fill-none" style="stroke: var(--color-primary); filter: drop-shadow(0 0 5px var(--color-primary));">
+                        <circle cx="50" cy="50" r="45" stroke-width="2"/>
+                        <line x1="30" y1="30" x2="70" y2="70" stroke-width="2.5" stroke-linecap="round"/>
+                        <line x1="70" y1="30" x2="30" y2="70" stroke-width="2.5" stroke-linecap="round"/>
+                        <line x1="50" y1="15" x2="50" y2="85" stroke-width="2.5" stroke-linecap="round"/>
+                        <path d="M 50,15 C 75,15 75,45 50,45" stroke-width="2.5" stroke-linecap="round"/>
+                        <text x="20" y="55" fill="var(--color-primary)" stroke="none" font-family="Cinzel, serif" font-size="16" text-anchor="middle">A</text>
+                        <text x="80" y="55" fill="var(--color-primary)" stroke="none" font-family="Cinzel, serif" font-size="16" text-anchor="middle">Ω</text>
+                    </svg>
+                    <h1 class="text-xl md:text-2xl font-bold tracking-[0.2em] gold-gradient">OWL ACADEMY</h1>
+                </div>
+
+                <div class="text-center hidden md:block flex-grow">
+                    <p class="text-[10px] tracking-[0.3em] uppercase mb-1 font-mono" style="color:var(--accent)">Department I • Lesson 1 · Sub-lesson 1D — Expanded Theory</p>
+                    <h2 class="text-lg font-bold tracking-[0.1em] mystical-font text-white">The Tiling Problem in 3D Space — Deep Dive</h2>
+                </div>
+
+                <div class="flex items-center space-x-4">
+                    <a href="1d_tiling_problem.html" class="flex items-center gap-2 px-4 py-2 rounded text-xs font-bold tracking-[0.15em] mystical-font transition-all border hover:text-white whitespace-nowrap" style="background: color-mix(in srgb, var(--accent) 18%, transparent); color: color-mix(in srgb, var(--accent) 30%, #ffd6df); border-color: color-mix(in srgb, var(--accent) 40%, transparent); box-shadow: 0 0 15px color-mix(in srgb, var(--accent) 15%, transparent);">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+                        SUB-LESSON 1D
+                    </a>
+                </div>
+            </div>
+        </header>
+
+        <!-- ===== Lesson 1 sub-lesson stepper (interweave nav) ===== -->
+        <nav class="w-full max-w-7xl mx-auto px-4 md:px-8 mt-6" aria-label="Lesson 1 sub-lessons">
+          <div class="glass-panel rounded-xl p-3 flex flex-wrap items-center justify-center gap-2 text-[10px] md:text-xs font-mono !mb-0">
+            <a href="index.html" class="px-3 py-1.5 rounded border border-yellow-600/40 text-yellow-500 hover:bg-yellow-500/10 transition-colors tracking-widest uppercase">◆ Hub</a>
+            <span class="text-gray-700 hidden md:inline">/</span>
+            <a href="1a_geometric_primitives.html" class="step-chip">1A · Primitives</a>
+            <a href="1b_topological_invariants.html" class="step-chip">1B · Topology</a>
+            <a href="1c_harmonic_resonance.html" class="step-chip">1C · Resonance</a>
+            <a href="1d_tiling_problem.html" class="step-chip" aria-current="page">1D · Tiling</a>
+            <a href="1e_engine_implementation.html" class="step-chip">1E · Engine</a>
+            <a href="1f_application_lab.html" class="step-chip">1F · Lab</a>
+          </div>
+        </nav>
+
+        <!-- Main Content -->
+        <main class="flex-grow w-full max-w-7xl mx-auto px-4 md:px-8 py-8 space-y-8 relative z-20">
+
+            <!-- HERO SECTION -->
+            <div class="glass-panel">
+                <div class="absolute top-0 left-1/2 -translate-x-1/2 w-3/4 h-1 bg-gradient-to-r from-transparent to-transparent opacity-50" style="--tw-gradient-via: var(--accent); background-image: linear-gradient(to right, transparent, var(--accent), transparent)"></div>
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+                    <div>
+                        <span class="font-mono text-xs uppercase tracking-widest text-yellow-500 flex items-center gap-2 mb-4">
+                            <span class="w-8 h-px bg-yellow-500 block"></span> A field guide for absolute beginners
+                        </span>
+                        <h1 class="text-4xl md:text-5xl font-bold mystical-font text-white leading-tight mb-6">Which shapes fill space without leaving gaps?</h1>
+
+                        <div class="simple-translation !mt-0 mb-6 !border-yellow-500/50 !bg-yellow-500/10">
+                            <h4 class="text-sm font-bold text-yellow-500 mb-1 font-mono uppercase tracking-widest">Zero-Math Disclaimer</h4>
+                            <p class="text-xs text-yellow-100/80 m-0">
+                                Never studied geometry? Perfect. This guide assumes you know nothing. We start with tiling a bathroom floor and end up understanding why the universe stacks certain shapes and not others — all in plain English.
+                            </p>
+                        </div>
+
+                        <p class="text-gray-300 font-light leading-relaxed text-lg mb-8">
+                            Some shapes stack together perfectly, like bricks in a wall. Others always leave awkward gaps, no matter how you turn them. This chapter is the story of <em>why</em> — first on a flat floor, then in solid 3D space.
+                        </p>
+
+                        <!-- Table of Contents -->
+                        <div class="bg-black/50 rounded-xl p-6" style="border: 1px solid color-mix(in srgb, var(--accent) 30%, transparent)">
+                            <h2 class="text-sm font-mono text-gray-400 mb-4 uppercase tracking-widest border-b border-gray-800 pb-2"># Index Directory</h2>
+                            <ul class="grid grid-cols-1 md:grid-cols-2 gap-y-3 gap-x-8 text-sm font-light">
+                                <li><a href="#c1" class="flex items-baseline gap-3 text-gray-300 hover:text-rose-400 transition-colors"><span class="font-mono text-yellow-600 text-xs">01</span> What "tessellation" means</a></li>
+                                <li><a href="#c2" class="flex items-baseline gap-3 text-gray-300 hover:text-rose-400 transition-colors"><span class="font-mono text-yellow-600 text-xs">02</span> The flat floor: only three tiles</a></li>
+                                <li><a href="#c3" class="flex items-baseline gap-3 text-gray-300 hover:text-rose-400 transition-colors"><span class="font-mono text-yellow-600 text-xs">03</span> Try it yourself (interactive)</a></li>
+                                <li><a href="#c4" class="flex items-baseline gap-3 text-gray-300 hover:text-rose-400 transition-colors"><span class="font-mono text-yellow-600 text-xs">04</span> Stepping up to 3D: dihedral angles</a></li>
+                                <li><a href="#c5" class="flex items-baseline gap-3 text-gray-300 hover:text-rose-400 transition-colors"><span class="font-mono text-yellow-600 text-xs">05</span> Why the cube stands alone</a></li>
+                                <li><a href="#c6" class="flex items-baseline gap-3 text-gray-300 hover:text-rose-400 transition-colors"><span class="font-mono text-yellow-600 text-xs">06</span> The tet–oct honeycomb</a></li>
+                                <li><a href="#c7" class="flex items-baseline gap-3 text-gray-300 hover:text-rose-400 transition-colors"><span class="font-mono text-yellow-600 text-xs">07</span> Curious asides: foams &amp; friends</a></li>
+                                <li><a href="#c8" class="flex items-baseline gap-3 text-gray-300 hover:text-rose-400 transition-colors"><span class="font-mono text-yellow-600 text-xs">08</span> Words worth knowing</a></li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <!-- Hero visual: honeycomb -->
+                    <div class="flex justify-center items-center">
+                        <div class="w-full max-w-[420px] aspect-square rounded-2xl flex items-center justify-center relative" style="background: radial-gradient(circle at center, color-mix(in srgb, var(--accent) 12%, transparent) 0%, #05030a 70%); border: 1px solid color-mix(in srgb, var(--accent) 30%, transparent); box-shadow: inset 0 0 40px color-mix(in srgb, var(--accent) 10%, transparent)">
+                            <svg viewBox="0 0 300 300" class="w-[86%] h-[86%]">
+                                <g stroke="#ff3366" stroke-width="2" fill="rgba(255,51,102,0.10)">
+                                    <!-- simple hexagonal honeycomb -->
+                                    <polygon points="150,60 185,80 185,120 150,140 115,120 115,80"/>
+                                    <polygon points="220,60 255,80 255,120 220,140 185,120 185,80"/>
+                                    <polygon points="80,60 115,80 115,120 80,140 45,120 45,80"/>
+                                    <polygon points="150,140 185,160 185,200 150,220 115,200 115,160"/>
+                                    <polygon points="220,140 255,160 255,200 220,220 185,200 185,160"/>
+                                    <polygon points="80,140 115,160 115,200 80,220 45,200 45,160"/>
+                                    <polygon points="150,220 185,240 185,280 150,300 115,280 115,240"/>
+                                </g>
+                                <text x="150" y="30" text-anchor="middle" font-family="Fira Code, monospace" font-size="12" fill="#ff8aa5">no gaps · no overlaps</text>
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- CHAPTER 01 -->
+            <div id="c1" class="glass-panel">
+                <div class="flex items-start gap-4 mb-6">
+                    <span class="ch-num">01</span>
+                    <div>
+                        <h2 class="text-2xl text-white font-bold mystical-font tracking-wide">What "Tessellation" Means</h2>
+                        <p class="text-gray-400 font-light italic text-sm mt-1">You already know this idea — you have walked on it.</p>
+                    </div>
+                </div>
+
+                <div class="prose prose-invert max-w-4xl text-gray-300 font-light leading-relaxed mb-6">
+                    <p>A <strong>tessellation</strong> (say "tess-uh-LAY-shun") is just a way of covering a surface with shapes so that there are <strong>no gaps</strong> and <strong>no overlaps</strong>. The shapes fit together like puzzle pieces that tile forever in every direction.</p>
+                    <p>When every tile is the <em>same</em> regular shape (all sides equal, all corners equal), we call it a <strong>regular tessellation</strong>. Those are the ones we chase in this lesson.</p>
+                </div>
+
+                <div class="simple-translation !border-rose-500/50">
+                    <h4 class="text-sm font-bold mb-1 font-mono uppercase tracking-widest" style="color:var(--accent)">Simply Put: Bathroom Tiles</h4>
+                    <p class="text-xs m-0" style="color:#ffd0dc">
+                        Picture the tiled floor of a bathroom or kitchen. The tiles cover the whole floor — no bare patches, no tiles piled on top of each other. That is a tessellation. Square tiles are the classic choice because squares fit perfectly. Now ask: could the tiler have used regular pentagon tiles instead? The surprising answer is <strong>no</strong> — and there is a beautiful reason why.
+                    </p>
+                </div>
+            </div>
+
+            <!-- CHAPTER 02 -->
+            <div id="c2" class="glass-panel">
+                <div class="flex items-start gap-4 mb-6">
+                    <span class="ch-num">02</span>
+                    <div>
+                        <h2 class="text-2xl text-white font-bold mystical-font tracking-wide">The Flat Floor: Only Three Tiles Work</h2>
+                        <p class="text-gray-400 font-light italic text-sm mt-1">The whole secret is one number: 360.</p>
+                    </div>
+                </div>
+
+                <div class="prose prose-invert max-w-none text-gray-300 font-light leading-relaxed mb-6">
+                    <p>Here is the key idea. Look at any single <strong>corner point</strong> where tiles meet. Walking all the way around that point is one full turn — exactly <strong>360 degrees</strong>. For tiles to meet perfectly, the corner angles crowded around that point must add up to <em>exactly</em> 360°. Too little and you get a gap; too much and they overlap.</p>
+                    <p>Every regular shape has a fixed <strong>interior angle</strong> (the angle at each of its corners). The formula is:</p>
+                    <div class="math-note text-center">
+                        $$\text{interior angle} = \frac{(n-2)\times 180°}{n} \quad \text{for an } n\text{-sided shape}$$
+                    </div>
+                    <p>A shape tiles the flat plane only when its interior angle divides <strong>evenly</strong> into 360°. Let's check the candidates:</p>
+                </div>
+
+                <div class="w-full overflow-x-auto rounded-lg border border-white/10">
+                    <table class="euler-table">
+                        <thead>
+                            <tr><th>Regular shape</th><th>Sides (n)</th><th>Interior angle</th><th>360° ÷ angle</th><th>Tiles the plane?</th></tr>
+                        </thead>
+                        <tbody class="text-gray-200">
+                            <tr><td>Triangle</td><td>3</td><td>60°</td><td>6.00</td><td class="font-bold" style="color:var(--accent)">Yes — 6 fit</td></tr>
+                            <tr><td>Square</td><td>4</td><td>90°</td><td>4.00</td><td class="font-bold" style="color:var(--accent)">Yes — 4 fit</td></tr>
+                            <tr><td>Pentagon</td><td>5</td><td>108°</td><td>3.33…</td><td class="text-red-400 font-bold">No — gap</td></tr>
+                            <tr><td>Hexagon</td><td>6</td><td>120°</td><td>3.00</td><td class="font-bold" style="color:var(--accent)">Yes — 3 fit</td></tr>
+                            <tr><td>Heptagon</td><td>7</td><td>128.57°</td><td>2.80</td><td class="text-red-400 font-bold">No — gap</td></tr>
+                            <tr><td>Octagon</td><td>8</td><td>135°</td><td>2.67</td><td class="text-red-400 font-bold">No — gap</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="simple-translation !border-rose-500/50 mt-6">
+                    <h4 class="text-sm font-bold mb-1 font-mono uppercase tracking-widest" style="color:var(--accent)">Simply Put: Three Winners, Forever</h4>
+                    <p class="text-xs m-0" style="color:#ffd0dc">
+                        Only the <strong>triangle</strong>, the <strong>square</strong>, and the <strong>hexagon</strong> ever tile a flat floor by themselves. Once shapes get to seven or more sides, their corners are so wide that only two fit around a point — leaving a permanent gap. That is the entire reason floor tiles come as squares and honeycomb hexagons, never as pentagons.
+                    </p>
+                </div>
+            </div>
+
+            <!-- CHAPTER 03: INTERACTIVE -->
+            <div id="c3" class="glass-panel">
+                <div class="flex items-start gap-4 mb-6">
+                    <span class="ch-num">03</span>
+                    <div>
+                        <h2 class="text-2xl text-white font-bold mystical-font tracking-wide">Try It Yourself: The Plane-Tiler</h2>
+                        <p class="text-gray-400 font-light italic text-sm mt-1">Drag the slider and watch shapes fit — or fail — around a single corner.</p>
+                    </div>
+                </div>
+
+                <div class="prose prose-invert max-w-none text-gray-300 font-light mb-6">
+                    <p>Below, copies of one regular shape are packed around a central corner. When their angles add to a clean 360°, the ring closes with no gap. When they don't, you'll see the leftover wedge highlighted in red.</p>
+                </div>
+
+                <div class="bg-black/30 rounded-xl p-6" style="border: 1px solid color-mix(in srgb, var(--accent) 25%, transparent)">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
+                        <div class="flex justify-center bg-black/60 rounded-xl p-4 shadow-inner" style="border: 1px solid color-mix(in srgb, var(--accent) 25%, transparent)">
+                            <svg id="tiler-svg" viewBox="0 0 300 300" class="w-full max-w-[300px] h-auto">
+                                <g id="tiler-shapes"></g>
+                                <g id="tiler-gap"></g>
+                                <circle cx="150" cy="150" r="4" fill="#fff"/>
+                            </svg>
+                        </div>
+
+                        <div>
+                            <div class="flex items-baseline gap-3 mb-1">
+                                <div class="font-mono text-4xl font-bold" id="tiler-n" style="color:var(--accent)">6</div>
+                                <div class="text-xs text-gray-500 font-mono uppercase tracking-widest">sides (a hexagon)</div>
+                            </div>
+                            <label for="tiler-range" class="text-xs text-gray-500 font-mono">Drag to change the shape (3 to 8 sides):</label>
+                            <input type="range" id="tiler-range" min="3" max="8" value="6" step="1">
+
+                            <div class="grid grid-cols-2 gap-3 mt-4 font-mono text-[11px]">
+                                <div class="bg-black/40 rounded p-2 border border-white/10"><span class="text-gray-500 block">Interior angle</span><span id="tiler-ang" class="text-white text-base">120°</span></div>
+                                <div class="bg-black/40 rounded p-2 border border-white/10"><span class="text-gray-500 block">Copies that fit</span><span id="tiler-fit" class="text-white text-base">3</span></div>
+                            </div>
+
+                            <div class="mt-4 text-sm font-light text-gray-300 p-3 rounded min-h-[4.5em] flex items-center" style="background: color-mix(in srgb, var(--accent) 6%, transparent); border: 1px solid color-mix(in srgb, var(--accent) 25%, transparent)">
+                                <span id="tiler-verdict"></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- CHAPTER 04 -->
+            <div id="c4" class="glass-panel">
+                <div class="flex items-start gap-4 mb-6">
+                    <span class="ch-num">04</span>
+                    <div>
+                        <h2 class="text-2xl text-white font-bold mystical-font tracking-wide">Stepping Up to 3D: Dihedral Angles</h2>
+                        <p class="text-gray-400 font-light italic text-sm mt-1">The corner becomes an edge, and the angle gets a fancy name.</p>
+                    </div>
+                </div>
+
+                <div class="prose prose-invert max-w-none text-gray-300 font-light leading-relaxed mb-6">
+                    <p>In 3D, solids don't meet at a single point — they meet along a shared <strong>edge</strong> (a line where two faces come together). The angle that matters now is the <strong>dihedral angle</strong>: the angle between the two flat faces that hinge along that edge, like the angle of an open book.</p>
+                    <p>The rule is exactly the same idea as before, just lifted one dimension: for solids to pack around a shared edge with no gaps, their dihedral angles must add up to <strong>360°</strong>. Here are the dihedral angles of all five Platonic solids:</p>
+                </div>
+
+                <div class="w-full overflow-x-auto rounded-lg border border-white/10">
+                    <table class="euler-table">
+                        <thead>
+                            <tr><th>Platonic solid</th><th>Face shape</th><th>Dihedral angle</th><th>360° ÷ angle</th><th>Fills space alone?</th></tr>
+                        </thead>
+                        <tbody class="text-gray-200">
+                            <tr><td>Tetrahedron</td><td>triangle</td><td>70.53°</td><td>5.10</td><td class="text-red-400 font-bold">No</td></tr>
+                            <tr><td>Cube</td><td>square</td><td>90.00°</td><td>4.00</td><td class="font-bold" style="color:var(--accent)">Yes ✓</td></tr>
+                            <tr><td>Octahedron</td><td>triangle</td><td>109.47°</td><td>3.29</td><td class="text-red-400 font-bold">No</td></tr>
+                            <tr><td>Dodecahedron</td><td>pentagon</td><td>116.57°</td><td>3.09</td><td class="text-red-400 font-bold">No</td></tr>
+                            <tr><td>Icosahedron</td><td>triangle</td><td>138.19°</td><td>2.60</td><td class="text-red-400 font-bold">No</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="math-note mt-6">
+                    <span class="font-mono text-[10px] text-yellow-500 uppercase tracking-widest block mb-2 border-b border-yellow-500/30 pb-1">Where do these numbers come from? (optional)</span>
+                    <p class="text-sm m-0 text-gray-300 font-light">You don't need to derive them, but for the curious: each dihedral angle comes from a short piece of trigonometry on the solid's faces. For example, the cube's is obviously $90°$ (two walls of a room). The tetrahedron's is $\arccos(1/3) \approx 70.53°$, and the octahedron's is its supplement, $\arccos(-1/3) \approx 109.47°$. Notice those two are partners — that partnership is exactly what makes the tet–oct honeycomb click together in Chapter 06.</p>
+                </div>
+
+                <div class="simple-translation !border-rose-500/50 mt-6">
+                    <h4 class="text-sm font-bold mb-1 font-mono uppercase tracking-widest" style="color:var(--accent)">Simply Put: The Open-Book Angle</h4>
+                    <p class="text-xs m-0" style="color:#ffd0dc">
+                        Open a book partway and look at it edge-on. The angle the two covers make is a dihedral angle. Every solid has a built-in "book angle" wherever two of its faces meet. To stack solids around a shared line without gaps, those book angles have to add up to a full circle — 360°.
+                    </p>
+                </div>
+            </div>
+
+            <!-- CHAPTER 05 -->
+            <div id="c5" class="glass-panel">
+                <div class="flex items-start gap-4 mb-6">
+                    <span class="ch-num">05</span>
+                    <div>
+                        <h2 class="text-2xl text-white font-bold mystical-font tracking-wide">Why the Cube Stands Alone</h2>
+                        <p class="text-gray-400 font-light italic text-sm mt-1">One solid, one clean division.</p>
+                    </div>
+                </div>
+
+                <div class="prose prose-invert max-w-none text-gray-300 font-light leading-relaxed mb-6">
+                    <p>Scan the "360° ÷ angle" column above. Only <strong>one</strong> row lands on a whole number: the cube, with $360 \div 90 = 4$. Four cubes meet exactly around every edge, and they stack outward forever into a flawless 3D grid. This is why sugar cubes, dice, salt crystals, and children's blocks all pack so neatly.</p>
+                    <p>Every other Platonic solid leaves a fractional remainder — a sliver of empty space that can never be closed, no matter how you rotate or shift the pieces. The regular tetrahedron is the famous "surprise": people long assumed it tiled space (even Aristotle claimed it did), but $5 \times 70.53° = 352.65°$ falls just short of 360°, leaving a thin gap.</p>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="data-card">
+                        <h4 class="font-mono font-bold mb-2" style="color:var(--accent)">✓ The Cube Fills Space</h4>
+                        <div class="bg-black/40 rounded p-3 text-center font-mono text-white mb-2">90° × 4 = 360°</div>
+                        <p class="text-xs text-gray-400 font-light">Four cubes close every edge exactly. Stack them and 3D space is filled with zero waste — the only Platonic solid that can.</p>
+                    </div>
+                    <div class="data-card" style="border-top-color: rgba(255,90,90,0.5)">
+                        <h4 class="font-mono font-bold mb-2 text-red-400">✗ The Tetrahedron Falls Short</h4>
+                        <div class="bg-black/40 rounded p-3 text-center font-mono text-white mb-2">70.53° × 5 = 352.65°</div>
+                        <p class="text-xs text-gray-400 font-light">Five tetrahedra around an edge leave a 7.35° wedge gap. A sixth would overlap. So it cannot tile space alone.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- CHAPTER 06 -->
+            <div id="c6" class="glass-panel">
+                <div class="flex items-start gap-4 mb-6">
+                    <span class="ch-num">06</span>
+                    <div>
+                        <h2 class="text-2xl text-white font-bold mystical-font tracking-wide">The Tet–Oct Honeycomb</h2>
+                        <p class="text-gray-400 font-light italic text-sm mt-1">Two shapes that fail alone succeed as a team.</p>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
+                    <div class="prose prose-invert max-w-none text-gray-300 font-light leading-relaxed">
+                        <p>Here is the magic. The tetrahedron ($70.53°$) and octahedron ($109.47°$) each fail alone — but their angles are partners. Put <strong>two tetrahedra and two octahedra</strong> around a shared edge and watch:</p>
+                        <div class="math-note text-center">
+                            $$70.53°\times 2 + 109.47°\times 2 = 360°$$
+                        </div>
+                        <p>The gap closes exactly. Alternating these two solids builds the <strong>tetrahedral–octahedral honeycomb</strong> (also called the alternated cubic honeycomb). It is rigid, gap-free, and shows up in crystal structures, architecture (space-frame trusses), and the S.P.I.R.E. engine's preferred 3D lattice.</p>
+
+                        <div class="simple-translation !border-rose-500/50">
+                            <h4 class="text-sm font-bold mb-1 font-mono uppercase tracking-widest" style="color:var(--accent)">Simply Put: Teamwork</h4>
+                            <p class="text-xs m-0" style="color:#ffd0dc">
+                                Think of two puzzle pieces that are useless on their own but snap together perfectly. Tetrahedra and octahedra are shaped so their leftover gaps are exactly each other's size. Together they fill space like a flawless 3D brick wall.
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="flex justify-center bg-black/50 rounded-xl p-4" style="border: 1px solid color-mix(in srgb, var(--accent) 25%, transparent)">
+                        <svg viewBox="0 0 320 300" class="w-full max-w-[300px] h-auto">
+                            <circle cx="160" cy="150" r="4" fill="#fff"/>
+                            <text x="160" y="285" text-anchor="middle" font-family="Fira Code, monospace" font-size="10" fill="#8e9eab">around one shared edge (end-on)</text>
+                            <g stroke-width="1.5">
+                                <path d="M160,150 L260,150 A100,100 0 0,0 193.8,55.9 Z" fill="rgba(255,51,102,0.28)" stroke="#ff3366"/>
+                                <path d="M160,150 L193.8,55.9 A100,100 0 0,0 42.9,100.5 Z" fill="rgba(0,212,255,0.22)" stroke="#00d4ff"/>
+                                <path d="M160,150 L42.9,100.5 A100,100 0 0,0 76.7,244.1 Z" fill="rgba(255,51,102,0.28)" stroke="#ff3366"/>
+                                <path d="M160,150 L76.7,244.1 A100,100 0 0,0 260,150 Z" fill="rgba(0,212,255,0.22)" stroke="#00d4ff"/>
+                            </g>
+                            <text x="212" y="115" font-family="Fira Code, monospace" font-size="9" fill="#ff3366">tet 70.53°</text>
+                            <text x="95" y="88" font-family="Fira Code, monospace" font-size="9" fill="#00d4ff">oct 109.47°</text>
+                            <text x="48" y="185" font-family="Fira Code, monospace" font-size="9" fill="#ff3366">tet 70.53°</text>
+                            <text x="128" y="228" font-family="Fira Code, monospace" font-size="9" fill="#00d4ff">oct 109.47°</text>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+
+            <!-- CHAPTER 07 & 08 -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+
+                <!-- Ch 7: Asides -->
+                <div id="c7" class="glass-panel !mb-0">
+                    <div class="flex items-start gap-4 mb-6">
+                        <span class="ch-num">07</span>
+                        <h2 class="text-xl text-white font-bold mystical-font">Curious Asides</h2>
+                    </div>
+                    <p class="text-sm text-gray-300 font-light mb-4">The Platonic solids are just the beginning. Space-filling gets wonderfully strange:</p>
+                    <div class="space-y-3">
+                        <div class="bg-black/30 border border-white/5 rounded p-4">
+                            <h4 class="text-sm font-bold text-white mb-1">The truncated octahedron DOES tile</h4>
+                            <p class="text-[11px] text-gray-400">Slice the corners off an octahedron and you get a 14-faced solid that fills space all by itself. Kelvin proposed it in 1887 as the most efficient way to divide space into equal cells.</p>
+                        </div>
+                        <div class="bg-black/30 border border-white/5 rounded p-4">
+                            <h4 class="text-sm font-bold text-white mb-1">Weaire–Phelan foam beats Kelvin</h4>
+                            <p class="text-[11px] text-gray-400">In 1993, Weaire and Phelan found a two-cell foam pattern with 0.3% less surface area than Kelvin's cells — the best known way to partition space into equal-volume bubbles. It clad the "Water Cube" at the 2008 Olympics.</p>
+                        </div>
+                        <div class="bg-black/30 border border-white/5 rounded p-4">
+                            <h4 class="text-sm font-bold text-white mb-1">Voronoi cells &amp; nature's foams</h4>
+                            <p class="text-[11px] text-gray-400">Soap bubbles, dried mud, giraffe spots, and cells in tissue all form <strong>Voronoi</strong> tessellations: each region is the area closest to one seed point. Nature tiles space to minimise energy, not to be tidy.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Ch 8: Glossary -->
+                <div id="c8" class="glass-panel !mb-0 h-96 overflow-y-auto pr-2 custom-scrollbar">
+                    <div class="flex items-start gap-4 mb-4 sticky top-0 bg-[#0a0514]/90 backdrop-blur pb-2 z-10">
+                        <span class="ch-num">08</span>
+                        <h2 class="text-xl text-white font-bold mystical-font">Data Dictionary</h2>
+                    </div>
+                    <dl class="gloss">
+                        <dt>Tessellation <span class="badge">Tiling</span></dt><dd>Covering a surface (or space) with shapes so there are no gaps and no overlaps. A tiled floor is a 2D tessellation.</dd>
+                        <dt>Interior angle</dt><dd>The angle at each corner of a polygon. For a regular n-gon it equals (n−2)×180°/n.</dd>
+                        <dt>Dihedral angle</dt><dd>In 3D, the angle between two flat faces that meet along a shared edge — like the angle of an open book.</dd>
+                        <dt>Honeycomb</dt><dd>A tessellation of 3D space by solid cells. The tet–oct honeycomb alternates tetrahedra and octahedra.</dd>
+                        <dt>Space-filling</dt><dd>A shape (or set of shapes) that can tile all of 3D space with no gaps. The cube is the only space-filling Platonic solid.</dd>
+                        <dt>Vertex figure</dt><dd>The little shape you get by "slicing off" a corner of a tiling — it records exactly which cells and angles meet at that point or edge.</dd>
+                        <dt>Voronoi tessellation</dt><dd>A tiling where each cell is the region closest to a given seed point. Common in nature and foams.</dd>
+                    </dl>
+                </div>
+            </div>
+
+            <!-- CHECKPOINT + PREV/NEXT -->
+            <div class="mt-8 flex flex-col items-center gap-3">
+              <span class="text-[10px] text-gray-500 font-mono uppercase tracking-[0.3em]">Checkpoint</span>
+              <button id="mark-complete-btn" onclick="owlMarkComplete()" class="px-8 py-3 rounded-lg border font-bold tracking-widest text-xs uppercase mystical-font transition-all hover:scale-[1.02]" style="border-color:var(--accent);color:var(--accent);background:color-mix(in srgb,var(--accent) 6%,transparent);">Mark this part complete ✓</button>
+              <p class="text-[10px] text-gray-600 font-mono text-center max-w-md">Progress saves to this browser. Finish all 12 parts to unlock the Tome signoff on the <a href="index.html" class="underline hover:text-yellow-400">lesson hub</a>.</p>
+            </div>
+            <div class="mt-10 pt-6 border-t border-white/10 flex items-center justify-between gap-3 text-xs font-mono">
+              <a href="1d_tiling_problem.html" class="px-4 py-2 rounded border border-white/10 text-gray-400 hover:text-white hover:border-white/30 transition-colors">← Back to 1D lesson</a>
+              <a href="index.html" class="px-4 py-2 rounded border border-yellow-600/40 text-yellow-500 hover:bg-yellow-500/10 transition-colors tracking-widest uppercase">◆ Hub</a>
+              <a href="1e_engine_implementation.html" class="px-4 py-2 rounded border border-white/10 text-gray-400 hover:text-white hover:border-white/30 transition-colors">1E Engine →</a>
+            </div>
+
+        </main>
+
+        <!-- Footer -->
+        <footer class="w-full border-t border-yellow-900/30 bg-black/60 backdrop-blur-md py-6 text-center mt-auto flex-shrink-0 relative z-20">
+            <p class="text-[10px] uppercase tracking-[0.3em] font-mono" style="color: color-mix(in srgb, var(--accent) 55%, #7a5560)">
+                Department I • Owl Academy Archives
+            </p>
+        </footer>
+    </div>
+
+    <!-- Scripts -->
+    <script>
+        // --- Interactive Plane-Tiler ---
+        (function(){
+            const range = document.getElementById('tiler-range');
+            if(!range) return;
+            const shapesG = document.getElementById('tiler-shapes');
+            const gapG = document.getElementById('tiler-gap');
+            const nEl = document.getElementById('tiler-n');
+            const angEl = document.getElementById('tiler-ang');
+            const fitEl = document.getElementById('tiler-fit');
+            const verdictEl = document.getElementById('tiler-verdict');
+            const CX = 150, CY = 150, D2R = Math.PI/180;
+            const NAMES = {3:'a triangle',4:'a square',5:'a pentagon',6:'a hexagon',7:'a heptagon',8:'an octagon'};
+            const COLORS = { tile: '#ff3366', tileFill: 'rgba(255,51,102,0.16)' };
+
+            function interior(n){ return (n-2)*180/n; }
+
+            // Polygon with one corner at origin, first edge along +x, traced CCW (turtle).
+            function polyPoints(n, L){
+                const ext = (360/n) * D2R;
+                let x=0, y=0, h=0;
+                const pts=[[0,0]];
+                for(let i=1;i<n;i++){ x += L*Math.cos(h); y += L*Math.sin(h); pts.push([x,y]); h += ext; }
+                return pts;
+            }
+            function circumradius(n, L){ return L/(2*Math.sin(Math.PI/n)); }
+
+            function render(n){
+                const A = interior(n);
+                const k = Math.floor(360/A + 1e-6);
+                const gap = 360 - k*A;
+                // scale side length so shapes fit the viewBox
+                const L = n<=4 ? 62 : (n<=6 ? 52 : 44);
+                const R = circumradius(n, L);
+                const basePts = polyPoints(n, L);
+                const ptsStr = basePts.map(p => (CX+p[0]).toFixed(1)+','+(CY+p[1]).toFixed(1)).join(' ');
+
+                // draw k copies, each rotated by j*A about the shared corner
+                let html = '';
+                for(let j=0;j<k;j++){
+                    html += '<polygon points="'+ptsStr+'" transform="rotate('+(j*A).toFixed(3)+' '+CX+' '+CY+')" '
+                          + 'fill="'+COLORS.tileFill+'" stroke="'+COLORS.tile+'" stroke-width="1.6"/>';
+                }
+                shapesG.innerHTML = html;
+
+                // gap / overlap indicator
+                let gapHtml = '';
+                if(gap > 0.5){
+                    // red sector spanning [0,gap], then rotated to sit after the k tiles
+                    const steps = 14; let gp = [[0,0]];
+                    for(let t=0;t<=steps;t++){ const ang=(gap*t/steps)*D2R; gp.push([R*Math.cos(ang), R*Math.sin(ang)]); }
+                    const gpStr = gp.map(p => (CX+p[0]).toFixed(1)+','+(CY+p[1]).toFixed(1)).join(' ');
+                    gapHtml = '<polygon points="'+gpStr+'" transform="rotate('+(k*A).toFixed(3)+' '+CX+' '+CY+')" '
+                            + 'fill="rgba(255,90,90,0.45)" stroke="#ff5a5a" stroke-width="1.4" stroke-dasharray="4 3"/>';
+                }
+                gapG.innerHTML = gapHtml;
+
+                // HUD
+                nEl.textContent = n;
+                nEl.nextElementSibling; // no-op
+                angEl.textContent = (Number.isInteger(A) ? A : A.toFixed(2)) + '°';
+                fitEl.textContent = k;
+                document.querySelector('#tiler-n + .text-xs') && (document.querySelector('#tiler-n + .text-xs').textContent = NAMES[n]);
+
+                if(gap < 0.5){
+                    verdictEl.innerHTML = '<span class="font-bold" style="color:var(--accent)">TILES PERFECTLY.</span> '+k+' copies × '+angEl.textContent+' = 360°. No gap, no overlap — this shape covers a flat floor forever.';
+                } else {
+                    verdictEl.innerHTML = '<span class="font-bold text-red-400">GAP.</span> '+k+' copies reach '+(k*A).toFixed(2)+'°, leaving a '+gap.toFixed(2)+'° wedge (red). A '+(k+1)+'th copy would overlap. This shape cannot tile the plane.';
+                }
+            }
+
+            // update the descriptor next to the big number
+            const descEl = document.querySelector('#tiler-n').parentElement.querySelector('.text-xs');
+            function renderWithDesc(n){ render(n); if(descEl) descEl.textContent = NAMES[n]; }
+
+            range.addEventListener('input', function(){ renderWithDesc(parseInt(this.value,10)); });
+            renderWithDesc(parseInt(range.value,10));
+        })();
+    </script>
+
+    <!-- ===== Completion tracking ===== -->
+    <script>
+    (function(){
+      var KEY='owl.platonic.progress.v1', PART='1d-x';
+      function rd(){ try{ return JSON.parse(localStorage.getItem(KEY))||{}; }catch(e){ return {}; } }
+      function wr(m){ try{ localStorage.setItem(KEY, JSON.stringify(m)); }catch(e){} }
+      window.owlMarkComplete=function(){ var m=rd(); m[PART]=true; wr(m); paint(true); };
+      function paint(done){ var b=document.getElementById('mark-complete-btn'); if(!b) return;
+        if(done){ b.textContent='✓ Part complete'; b.style.background='color-mix(in srgb,var(--accent) 22%,transparent)'; b.setAttribute('disabled',''); b.style.cursor='default'; } }
+      document.addEventListener('DOMContentLoaded', function(){ paint(!!rd()[PART]); });
+    })();
+    </script>
+</body>
+</html>

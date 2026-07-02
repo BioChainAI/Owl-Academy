@@ -1,0 +1,843 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Owl Academy | Lesson 1F: Practical Application Lab</title>
+
+    <!-- CSS & Fonts -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Inter:wght@300;400;500;600&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+
+    <!-- Three.js Core & Addons -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tween.js/18.6.4/tween.umd.js"></script>
+
+    <!-- MathJax for rendering geometric equations -->
+    <script>
+        window.MathJax = {
+            tex: {
+                inlineMath: [['$', '$'], ['\\(', '\\)']],
+                displayMath: [['$$', '$$'], ['\\[', '\\]']]
+            }
+        };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+    <style>
+        /* Dynamic Theme Variables */
+        :root {
+            --accent: #D4AF37;
+            --color-void: #090614;
+            --color-primary: #D4AF37;
+            --color-secondary: #8e9eab;
+            --color-holo1: #00d4ff;
+            --color-holo2: #8A2BE2;
+            --color-text: #E6C27A;
+            --color-ui-border: rgba(212, 175, 55, 0.3);
+            --color-r3-x: #ff3366;
+            --color-r3-y: #33ff99;
+            --color-r3-z: #00d4ff;
+        }
+
+        body {
+            background-color: var(--color-void);
+            color: #e2e8f0;
+            font-family: 'Inter', sans-serif;
+            background: radial-gradient(circle at 50% 50%, color-mix(in srgb, var(--color-holo1) 10%, var(--color-void)), var(--color-void) 80%);
+            min-height: 100vh;
+            margin: 0;
+            overflow-x: hidden;
+            scroll-behavior: smooth;
+        }
+
+        /* --- SIGIL ANIMATIONS --- */
+        .spin-slow         { animation: spin 40s linear infinite; transform-origin: center; }
+        @keyframes spin    { 100% { transform: rotate(360deg); } }
+        .spin-slow-reverse { animation: spinReverse 40s linear infinite; transform-origin: center; }
+        @keyframes spinReverse { 100% { transform: rotate(-360deg); } }
+        .pulse-glow        { animation: pulseGlow 4s ease-in-out infinite alternate; }
+        @keyframes pulseGlow {
+            0%   { filter: drop-shadow(0 0 5px  rgba(212,175,55,0.3)); }
+            100% { filter: drop-shadow(0 0 15px rgba(212,175,55,0.8)); }
+        }
+
+        /* --- ATMOSPHERIC LAYERS --- */
+        .nebula-layer {
+            position: fixed; inset: 0;
+            background:
+                radial-gradient(circle at 20% 30%, var(--color-holo2) 0%, transparent 40%),
+                radial-gradient(circle at 80% 70%, var(--color-holo1) 0%, transparent 40%);
+            opacity: 0.15; mix-blend-mode: screen; filter: blur(80px); pointer-events: none; z-index: 0;
+        }
+        .vignette-layer {
+            position: fixed; inset: 0;
+            background: radial-gradient(circle, transparent 40%, rgba(0,0,0,0.8) 120%);
+            pointer-events: none; z-index: 10;
+        }
+        .starfield {
+            position: fixed; inset: 0;
+            background-image:
+                radial-gradient(2px 2px at 20px 30px, var(--color-primary), rgba(0,0,0,0)),
+                radial-gradient(2px 2px at 40px 70px, #fff, rgba(0,0,0,0)),
+                radial-gradient(2px 2px at 50px 160px, rgba(255,255,255,0.8), rgba(0,0,0,0)),
+                radial-gradient(2px 2px at 90px 40px, #fff, rgba(0,0,0,0)),
+                radial-gradient(2px 2px at 130px 80px, var(--color-primary), rgba(0,0,0,0));
+            background-repeat: repeat; background-size: 250px 250px;
+            animation: twinkle 8s infinite alternate; opacity: 0.35; z-index: 0; pointer-events: none;
+        }
+        .starfield-layer-2 { background-size: 350px 350px; background-position: 50px 50px; opacity: 0.2; animation: twinkle 12s infinite alternate-reverse; }
+        @keyframes twinkle { 0% { opacity: 0.1; transform: scale(1); } 100% { opacity: 0.5; transform: scale(1.05); } }
+
+        /* --- TYPOGRAPHY & PANELS --- */
+        h1, h2, h3, h4, .mystical-font { font-family: 'Cinzel', serif; }
+        .mono { font-family: 'Fira Code', monospace; }
+        .gold-gradient {
+            background: linear-gradient(to right, var(--color-primary), #FFF8DC, var(--color-primary));
+            -webkit-background-clip: text; background-clip: text; color: transparent; text-shadow: 0 0 15px color-mix(in srgb, var(--color-primary) 30%, transparent);
+        }
+
+        .glass-panel {
+            background: rgba(10, 6, 20, 0.6);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--color-ui-border);
+            border-radius: 16px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+        }
+
+        .data-card {
+            background: rgba(15, 10, 25, 0.6);
+            border: 1px solid rgba(255,255,255,0.05);
+            border-top: 1px solid color-mix(in srgb, var(--accent) 40%, transparent);
+            border-radius: 12px;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .simple-translation {
+            background: color-mix(in srgb, var(--accent) 6%, transparent);
+            border-left: 3px solid color-mix(in srgb, var(--accent) 55%, transparent);
+            padding: 1rem;
+            margin-top: 1rem;
+            border-radius: 0 8px 8px 0;
+            font-family: 'Inter', sans-serif;
+        }
+
+        .btn-lab {
+            background: rgba(5, 3, 10, 0.8);
+            border: 1px solid color-mix(in srgb, var(--accent) 40%, transparent);
+            color: color-mix(in srgb, var(--accent) 85%, white);
+            transition: all 0.3s;
+            position: relative;
+            overflow: hidden;
+        }
+        .btn-lab:hover:not(:disabled) {
+            background: color-mix(in srgb, var(--accent) 10%, transparent);
+            color: #fff;
+            box-shadow: 0 0 15px color-mix(in srgb, var(--accent) 40%, transparent);
+            border-color: var(--accent);
+        }
+        .btn-lab:disabled {
+            border-color: rgba(255,255,255,0.1);
+            color: rgba(255,255,255,0.2);
+            cursor: not-allowed;
+        }
+        .btn-lab.active-step {
+            background: color-mix(in srgb, var(--accent) 20%, transparent);
+            border-color: var(--accent);
+            color: #fff;
+            box-shadow: 0 0 15px color-mix(in srgb, var(--accent) 40%, transparent);
+        }
+        .solid-pick {
+            background: rgba(5, 3, 10, 0.8);
+            border: 1px solid rgba(255,255,255,0.12);
+            color: #cbd5e1;
+            transition: all 0.2s;
+        }
+        .solid-pick:hover { border-color: color-mix(in srgb, var(--accent) 60%, transparent); color:#fff; }
+        .solid-pick.active {
+            background: color-mix(in srgb, var(--accent) 18%, transparent);
+            border-color: var(--accent); color:#fff;
+            box-shadow: 0 0 12px color-mix(in srgb, var(--accent) 35%, transparent);
+        }
+
+        /* Certification status pips */
+        .pip { width:14px; height:14px; border-radius:9999px; background:#2a2440; border:1px solid rgba(255,255,255,.15); transition:all .4s; }
+        .pip.pass { background:var(--accent); border-color:var(--accent); box-shadow:0 0 12px color-mix(in srgb,var(--accent) 70%,transparent); }
+
+        #lab-canvas-container {
+            border-radius: 12px;
+            overflow: hidden;
+            border: 1px solid color-mix(in srgb, var(--accent) 30%, transparent);
+            background: radial-gradient(circle at center, rgba(20,15,5,1) 0%, #000 100%);
+            box-shadow: inset 0 0 40px rgba(0,0,0,0.8);
+        }
+
+        .terminal-log {
+            font-family: 'Fira Code', monospace;
+            font-size: 10px;
+            color: #8e9eab;
+            height: 150px;
+            overflow-y: auto;
+            background: rgba(0,0,0,0.6);
+            padding: 8px;
+            border-radius: 4px;
+            border: 1px solid rgba(255,255,255,0.05);
+        }
+        .log-entry { margin-bottom: 4px; animation: slideIn 0.3s ease-out; }
+        .log-time { color: var(--color-primary); margin-right: 8px; }
+        .log-success { color: #33ff99; }
+        .log-info { color: #00d4ff; }
+        @keyframes slideIn { from { opacity: 0; transform: translateX(-10px); } to { opacity: 1; transform: translateX(0); } }
+
+        /* Stepper */
+        .step-chip{padding:.35rem .7rem;border-radius:.4rem;border:1px solid rgba(255,255,255,.1);color:#94a3b8;text-transform:uppercase;letter-spacing:.08em;transition:all .2s;white-space:nowrap;}
+        .step-chip:hover{color:#fff;border-color:rgba(255,255,255,.35);}
+        .step-chip[aria-current="page"]{color:var(--accent);border-color:var(--accent);background:color-mix(in srgb,var(--accent) 14%,transparent);box-shadow:0 0 12px color-mix(in srgb,var(--accent) 30%,transparent);}
+
+        /* Data table */
+        .buf-table { width:100%; border-collapse:collapse; font-family:'Fira Code',monospace; font-size:11px; }
+        .buf-table th, .buf-table td { padding:5px 8px; border-bottom:1px solid rgba(255,255,255,.08); text-align:center; }
+        .buf-table th { color:var(--accent); text-transform:uppercase; letter-spacing:.06em; font-size:9px; }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: rgba(0,0,0,0.4); }
+        ::-webkit-scrollbar-thumb { background: color-mix(in srgb, var(--accent) 50%, transparent); border-radius: 10px; }
+    </style>
+</head>
+<body class="relative">
+
+    <!-- Atmospheric Layers -->
+    <div class="nebula-layer"></div>
+    <div class="starfield"></div>
+    <div class="starfield starfield-layer-2"></div>
+    <div class="vignette-layer"></div>
+
+    <!-- SVG Definitions for Graphs -->
+    <svg width="0" height="0" class="absolute">
+        <defs>
+            <linearGradient id="goldGradLeft" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#C59B3F" />
+                <stop offset="50%" stop-color="#FFF2C8" />
+                <stop offset="100%" stop-color="#996515" />
+            </linearGradient>
+            <linearGradient id="goldGradRight" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#C59B3F" />
+                <stop offset="50%" stop-color="#FFF2C8" />
+                <stop offset="100%" stop-color="#996515" />
+            </linearGradient>
+        </defs>
+    </svg>
+
+    <div class="relative z-20 min-h-screen flex flex-col">
+
+        <!-- Header with Official Sigils -->
+        <header class="w-full pt-8 pb-4 px-4 md:px-12 flex justify-between items-start border-b border-yellow-600/30 glass-panel shadow-2xl !mb-0 !rounded-none">
+
+            <!-- LEFT SIGIL: Mathematical Manifold -->
+            <div class="w-16 h-16 md:w-24 md:h-24 flex-shrink-0 pointer-events-none">
+                <svg viewBox="0 0 200 200" class="w-full h-full pulse-glow" xmlns="http://www.w3.org/2000/svg">
+                    <circle cx="100" cy="100" r="95" fill="none" stroke="url(#goldGradLeft)" stroke-width="1" opacity="0.6"/>
+                    <circle cx="100" cy="100" r="85" fill="none" stroke="url(#goldGradLeft)" stroke-width="0.5" opacity="0.4"/>
+                    <g class="spin-slow" style="transform-origin: 100px 100px;">
+                        <g stroke="url(#goldGradLeft)" stroke-width="1" fill="none" opacity="0.6">
+                            <polygon points="100,15 173.6,142.5 26.4,142.5" />
+                            <polygon points="100,15 173.6,142.5 26.4,142.5" transform="rotate(30 100 100)" />
+                            <polygon points="100,15 173.6,142.5 26.4,142.5" transform="rotate(60 100 100)" />
+                            <polygon points="100,15 173.6,142.5 26.4,142.5" transform="rotate(90 100 100)" />
+                        </g>
+                        <g stroke="#ffffff" stroke-width="0.75" fill="none" opacity="0.4" stroke-dasharray="2 4">
+                            <polygon points="100,15 173.6,142.5 26.4,142.5" transform="rotate(15 100 100)" />
+                            <polygon points="100,15 173.6,142.5 26.4,142.5" transform="rotate(45 100 100)" />
+                            <polygon points="100,15 173.6,142.5 26.4,142.5" transform="rotate(75 100 100)" />
+                            <polygon points="100,15 173.6,142.5 26.4,142.5" transform="rotate(105 100 100)" />
+                        </g>
+                        <g stroke="url(#goldGradLeft)" stroke-width="1.5" fill="none" opacity="0.9">
+                            <polygon points="100,45 147.6,127.5 52.4,127.5" />
+                            <polygon points="100,155 147.6,72.5 52.4,72.5" />
+                        </g>
+                        <circle cx="100" cy="100" r="35" stroke="url(#goldGradLeft)" stroke-width="1" fill="none" opacity="0.6"/>
+                        <polygon points="100,65 134.1,107.8 84.8,131.5 72.6,78.2 127.4,78.2 115.2,131.5 65.9,107.8" stroke="url(#goldGradLeft)" stroke-width="1.2" fill="none" opacity="0.8" />
+                    </g>
+                    <g class="spin-slow-reverse" style="transform-origin: 100px 100px;" filter="drop-shadow(0 0 4px rgba(212,175,55,0.8))">
+                        <line x1="100" y1="80" x2="100" y2="120" stroke="url(#goldGradLeft)" stroke-width="2" stroke-linecap="round"/>
+                        <path d="M 100,80 C 112,80 112,95 100,95" fill="none" stroke="url(#goldGradLeft)" stroke-width="2" stroke-linecap="round"/>
+                        <line x1="88" y1="95" x2="112" y2="112" stroke="url(#goldGradLeft)" stroke-width="2" stroke-linecap="round"/>
+                        <line x1="112" y1="95" x2="88" y2="112" stroke="url(#goldGradLeft)" stroke-width="2" stroke-linecap="round"/>
+                        <text x="82" y="108" fill="#FFF8DC" font-family="Cinzel, serif" font-size="8" text-anchor="middle">A</text>
+                        <text x="118" y="108" fill="#FFF8DC" font-family="Cinzel, serif" font-size="8" text-anchor="middle">Ω</text>
+                    </g>
+                </svg>
+            </div>
+
+            <!-- Center Titles -->
+            <div class="text-center flex-grow pt-2 md:pt-4 z-20">
+                <p class="text-[9px] md:text-[11px] tracking-[0.3em] uppercase mb-2 font-mono" style="color:var(--accent)">Department I • Lesson 1 · Platonic Solids &amp; Symmetric Tessellations</p>
+                <h1 class="text-xl md:text-3xl font-bold tracking-[0.15em] mystical-font text-white drop-shadow-md">SUB-LESSON 1F</h1>
+                <h2 class="text-lg md:text-2xl font-bold gold-gradient tracking-[0.2em] mt-1">Practical Application Lab</h2>
+            </div>
+
+            <!-- RIGHT SIGIL: Archive Cipher -->
+            <a href="../SG_Main.html" title="Return to Department I" class="w-16 h-16 md:w-24 md:h-24 flex-shrink-0 cursor-pointer hover:scale-105 transition-transform duration-300">
+                <svg viewBox="0 0 200 200" class="w-full h-full spin-slow pulse-glow" xmlns="http://www.w3.org/2000/svg">
+                    <circle cx="100" cy="100" r="95" fill="none" stroke="url(#goldGradRight)" stroke-width="1" opacity="0.6"/>
+                    <circle cx="100" cy="100" r="85" fill="none" stroke="url(#goldGradRight)" stroke-width="0.5" opacity="0.4"/>
+                    <polygon points="100,15 173.6,142.5 26.4,142.5" fill="none" stroke="url(#goldGradRight)" stroke-width="1" opacity="0.5"/>
+                    <polygon points="100,185 26.4,57.5 173.6,57.5" fill="none" stroke="url(#goldGradRight)" stroke-width="1" opacity="0.5"/>
+                    <g filter="drop-shadow(0 0 4px rgba(212,175,55,0.8))">
+                        <line x1="100" y1="60" x2="100.01" y2="140" stroke="url(#goldGradRight)" stroke-width="2.5" stroke-linecap="round"/>
+                        <path d="M 100,60 C 120,60 120,90 100,90" fill="none" stroke="url(#goldGradRight)" stroke-width="2.5" stroke-linecap="round"/>
+                        <line x1="80" y1="85" x2="120" y2="125" stroke="url(#goldGradRight)" stroke-width="2.5" stroke-linecap="round"/>
+                        <line x1="120" y1="85" x2="80" y2="125" stroke="url(#goldGradRight)" stroke-width="2.5" stroke-linecap="round"/>
+                        <text x="75" y="115" fill="#FFF8DC" font-family="Cinzel, serif" font-size="10" text-anchor="middle">A</text>
+                        <text x="125" y="115" fill="#FFF8DC" font-family="Cinzel, serif" font-size="10" text-anchor="middle">Ω</text>
+                    </g>
+                    <circle cx="100" cy="100" r="45" fill="none" stroke="url(#goldGradRight)" stroke-width="0.5" stroke-dasharray="2 2" opacity="0.6"/>
+                </svg>
+            </a>
+        </header>
+
+        <!-- ===== Lesson 1 sub-lesson stepper (interweave nav) ===== -->
+        <nav class="w-full max-w-7xl mx-auto px-4 md:px-8 mt-6" aria-label="Lesson 1 sub-lessons">
+          <div class="glass-panel rounded-xl p-3 flex flex-wrap items-center justify-center gap-2 text-[10px] md:text-xs font-mono !mb-0">
+            <a href="index.html" class="px-3 py-1.5 rounded border border-yellow-600/40 text-yellow-500 hover:bg-yellow-500/10 transition-colors tracking-widest uppercase">◆ Hub</a>
+            <span class="text-gray-700 hidden md:inline">/</span>
+            <a href="1a_geometric_primitives.html" class="step-chip">1A · Primitives</a>
+            <a href="1b_topological_invariants.html" class="step-chip">1B · Topology</a>
+            <a href="1c_harmonic_resonance.html" class="step-chip">1C · Resonance</a>
+            <a href="1d_tiling_problem.html" class="step-chip">1D · Tiling</a>
+            <a href="1e_engine_implementation.html" class="step-chip">1E · Engine</a>
+            <a href="1f_application_lab.html" class="step-chip" aria-current="page">1F · Lab</a>
+          </div>
+        </nav>
+
+        <!-- Main Content -->
+        <main class="flex-grow w-full max-w-7xl mx-auto px-4 md:px-8 py-8 space-y-12">
+
+            <!-- Expanded Theory Link Button -->
+            <div class="flex justify-center mb-8">
+                <a href="1f_expanded_theory.html" class="group px-6 py-3 rounded-lg border transition-all text-xs font-bold tracking-[0.15em] mystical-font flex items-center gap-3 hover:bg-yellow-500/10" style="border-color: color-mix(in srgb, var(--accent) 50%, transparent); color: var(--accent); background: rgba(0,0,0,0.6); box-shadow: 0 0 15px rgba(212,175,55,0.15);">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="group-hover:scale-110 transition-transform"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path></svg>
+                    DEEP DIVE: VALIDATION FIELD MANUAL
+                </a>
+            </div>
+
+            <!-- RECAP OF THE ARC -->
+            <div class="glass-panel p-8 md:p-10 relative overflow-hidden">
+                <div class="absolute top-0 right-0 w-64 h-64 bg-yellow-500/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3"></div>
+                <span class="font-mono text-[10px] uppercase tracking-[0.3em] block mb-3" style="color:var(--accent)">Capstone · The complete arc</span>
+                <h2 class="text-2xl md:text-3xl text-white font-bold mystical-font tracking-wide mb-4">Everything, assembled</h2>
+                <p class="text-gray-300 font-light text-sm md:text-base leading-relaxed max-w-3xl mb-8">
+                    You have walked the full path from a single dot to a certified, space-filling engine object.
+                    This capstone puts the whole chain to work: you will instantiate a Platonic solid and run it
+                    through the same four checks the S.P.I.R.E. Engine runs before it trusts a form.
+                </p>
+
+                <div class="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+                    <div class="data-card p-4">
+                        <div class="font-mono text-[10px] text-cyan-400 mb-1">1A · Primitives</div>
+                        <p class="text-[11px] text-gray-400 font-light">Vertices, edges, faces — the B-rep skin that names a shape.</p>
+                    </div>
+                    <div class="data-card p-4">
+                        <div class="font-mono text-[10px] text-purple-400 mb-1">1B · Topology</div>
+                        <p class="text-[11px] text-gray-400 font-light">Euler's $\chi = V-E+F = 2$ — the watertight checksum.</p>
+                    </div>
+                    <div class="data-card p-4">
+                        <div class="font-mono text-[10px] text-emerald-400 mb-1">1C · Resonance</div>
+                        <p class="text-[11px] text-gray-400 font-light">Symmetry order sets the mode spectrum — form as vibration.</p>
+                    </div>
+                    <div class="data-card p-4">
+                        <div class="font-mono text-[10px] text-rose-400 mb-1">1D · Tiling</div>
+                        <p class="text-[11px] text-gray-400 font-light">Dihedral angles decide who fills 3-space — only the cube alone.</p>
+                    </div>
+                    <div class="data-card p-4">
+                        <div class="font-mono text-[10px] text-amber-400 mb-1">1E · Engine</div>
+                        <p class="text-[11px] text-gray-400 font-light">Store the seed, not the asset — compact vertex/index buffers.</p>
+                    </div>
+                </div>
+
+                <div class="simple-translation mt-6">
+                    <h4 class="text-sm font-bold mb-1 flex items-center gap-2" style="color:var(--accent)">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+                        Simply Put: The final exam
+                    </h4>
+                    <p class="text-xs text-yellow-100/80">
+                        Every earlier lesson taught one skill. The Certification Lab below asks a shape to prove all four at once:
+                        is it whole (topology), does it pack (tiling), how does it ring (resonance), and can it be stored cheaply (encoding)?
+                        Pass all four and the form is <strong>canon-ready</strong>.
+                    </p>
+                </div>
+            </div>
+
+            <!-- ===== S.P.I.R.E. CERTIFICATION LAB ===== -->
+            <div id="interactive-lab" class="glass-panel p-1 rounded-2xl overflow-hidden mt-8">
+                <div class="bg-[#0b0c10] rounded-xl overflow-hidden border border-gray-800 flex flex-col lg:flex-row shadow-[0_0_30px_rgba(212,175,55,0.05)]">
+
+                    <!-- Lab Controls -->
+                    <div class="w-full lg:w-1/3 p-6 flex flex-col justify-between border-b lg:border-b-0 lg:border-r border-gray-800 bg-[#05030a] relative z-20">
+                        <div>
+                            <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full text-[10px] tracking-[0.1em] uppercase mono mb-4 border" style="background:color-mix(in srgb,var(--accent) 12%,transparent);color:var(--accent);border-color:color-mix(in srgb,var(--accent) 40%,transparent)">
+                                <span class="w-1.5 h-1.5 rounded-full animate-ping" style="background:var(--accent)"></span> Certification Environment
+                            </div>
+                            <h3 class="text-xl font-bold text-white mystical-font tracking-wider mb-2">S.P.I.R.E. Certification Lab</h3>
+                            <p class="text-xs text-gray-400 leading-relaxed mb-4 font-light">
+                                Step 1 — pick a Platonic solid to instantiate. Step 2 — run the four sequential checks. Each pass lights a pip gold.
+                            </p>
+
+                            <!-- Solid picker -->
+                            <div class="grid grid-cols-3 gap-2 mb-5">
+                                <button data-solid="tetra" onclick="pickSolid('tetra')" class="solid-pick rounded py-2 text-[9px] font-bold uppercase tracking-widest mono">Tetra</button>
+                                <button data-solid="cube" onclick="pickSolid('cube')" class="solid-pick rounded py-2 text-[9px] font-bold uppercase tracking-widest mono">Cube</button>
+                                <button data-solid="octa" onclick="pickSolid('octa')" class="solid-pick rounded py-2 text-[9px] font-bold uppercase tracking-widest mono">Octa</button>
+                                <button data-solid="dodeca" onclick="pickSolid('dodeca')" class="solid-pick rounded py-2 text-[9px] font-bold uppercase tracking-widest mono">Dodeca</button>
+                                <button data-solid="icosa" onclick="pickSolid('icosa')" class="solid-pick rounded py-2 text-[9px] font-bold uppercase tracking-widest mono">Icosa</button>
+                                <button onclick="resetLab()" class="rounded py-2 text-[9px] font-bold uppercase tracking-widest mono text-gray-500 border border-white/10 hover:text-white hover:border-white/30 transition-colors">Reset</button>
+                            </div>
+
+                            <!-- Status pips -->
+                            <div class="grid grid-cols-4 gap-2 mb-5">
+                                <div class="flex flex-col items-center gap-1"><span id="pip-1" class="pip"></span><span class="text-[8px] font-mono text-gray-500 uppercase">Topo</span></div>
+                                <div class="flex flex-col items-center gap-1"><span id="pip-2" class="pip"></span><span class="text-[8px] font-mono text-gray-500 uppercase">Tile</span></div>
+                                <div class="flex flex-col items-center gap-1"><span id="pip-3" class="pip"></span><span class="text-[8px] font-mono text-gray-500 uppercase">Reso</span></div>
+                                <div class="flex flex-col items-center gap-1"><span id="pip-4" class="pip"></span><span class="text-[8px] font-mono text-gray-500 uppercase">Enc</span></div>
+                            </div>
+                        </div>
+
+                        <div class="space-y-3 mb-6">
+                            <button id="btn-check-1" onclick="runCheck(1)" disabled class="w-full py-2 px-4 btn-lab rounded text-[10px] font-bold uppercase tracking-widest mono text-left flex justify-between items-center">
+                                <span>1. Topology · χ = V−E+F</span>
+                                <span class="status-indicator w-2 h-2 rounded-full bg-gray-600"></span>
+                            </button>
+                            <button id="btn-check-2" onclick="runCheck(2)" disabled class="w-full py-2 px-4 btn-lab rounded text-[10px] font-bold uppercase tracking-widest mono text-left flex justify-between items-center">
+                                <span>2. Tiling · dihedral × n → 360°</span>
+                                <span class="status-indicator w-2 h-2 rounded-full bg-gray-600"></span>
+                            </button>
+                            <button id="btn-check-3" onclick="runCheck(3)" disabled class="w-full py-2 px-4 btn-lab rounded text-[10px] font-bold uppercase tracking-widest mono text-left flex justify-between items-center">
+                                <span>3. Resonance · |rotation group|</span>
+                                <span class="status-indicator w-2 h-2 rounded-full bg-gray-600"></span>
+                            </button>
+                            <button id="btn-check-4" onclick="runCheck(4)" disabled class="w-full py-2 px-4 btn-lab rounded text-[10px] font-bold uppercase tracking-widest mono text-left flex justify-between items-center">
+                                <span>4. Encoding · buffers + seed</span>
+                                <span class="status-indicator w-2 h-2 rounded-full bg-gray-600"></span>
+                            </button>
+                        </div>
+
+                        <!-- Terminal Output -->
+                        <div>
+                            <div class="text-[9px] uppercase tracking-widest text-gray-500 mb-2 mono">Certification Console</div>
+                            <div id="terminal" class="terminal-log">
+                                <div class="log-entry"><span class="log-time">[00:00:00]</span><span class="log-info">S.P.I.R.E. Certification Lab online.</span></div>
+                                <div class="log-entry"><span class="log-time">[00:00:01]</span>Select a Platonic solid to instantiate…</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 3D Canvas + readout -->
+                    <div class="w-full lg:w-2/3 flex flex-col">
+                        <div id="lab-canvas-container" class="w-full h-[360px] lg:h-[440px] relative">
+                            <div id="hud" class="absolute top-4 left-4 text-[10px] font-mono pointer-events-none z-10 bg-black/50 p-3 rounded border border-white/10 leading-relaxed">
+                                <div class="text-gray-500">Awaiting instantiation…</div>
+                            </div>
+                        </div>
+                        <!-- Encoding buffer readout -->
+                        <div id="buffer-readout" class="hidden bg-black/40 border-t border-gray-800 p-4 overflow-x-auto">
+                            <div class="text-[9px] uppercase tracking-widest mb-2 mono" style="color:var(--accent)">Compact Encoding · vertex + index buffer</div>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div><div class="text-[9px] text-gray-500 mb-1 mono">VERTEX BUFFER (x,y,z)</div><div id="vbuf" class="max-h-32 overflow-y-auto"></div></div>
+                                <div><div class="text-[9px] text-gray-500 mb-1 mono">INDEX BUFFER (triangles)</div><div id="ibuf" class="max-h-32 overflow-y-auto"></div></div>
+                            </div>
+                            <div class="mt-3 font-mono text-xs"><span class="text-gray-500">DERIVED SEED →</span> <span id="seed-out" style="color:var(--accent)">—</span></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SYNTHESIS QUIZ -->
+            <div class="glass-panel p-8 md:p-10 relative overflow-hidden">
+                <h2 class="text-2xl text-white font-bold mystical-font tracking-wide mb-2">Capstone Synthesis</h2>
+                <p class="text-sm text-gray-400 font-light mb-6 max-w-3xl">One question, three lessons. Tie topology, tiling, and symmetry together.</p>
+                <div class="border-t border-yellow-900/30 pt-6">
+                    <h4 class="text-sm font-bold mb-4 flex items-center gap-2 font-mono uppercase tracking-widest" style="color:var(--accent)">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"></path><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path></svg>
+                        Certification Check
+                    </h4>
+                    <div class="bg-black/40 border border-gray-800 rounded-lg p-5">
+                        <p class="text-sm text-gray-300 mb-4 font-light">A candidate form reports $\chi = V-E+F = 2$, a dihedral angle of exactly $90°$, and a rotation-symmetry group of order $24$. Which Platonic solid is it — and what makes it uniquely "engine-friendly"?</p>
+                        <div class="space-y-2" id="quiz-1-options">
+                            <button onclick="checkQuiz('quiz-1', false, this)" class="w-full text-left p-3 rounded bg-gray-900/50 border border-gray-700 hover:border-yellow-500 hover:text-white transition-all text-xs text-gray-400">A) The icosahedron — its 138.19° dihedral lets it tile space alone.</button>
+                            <button onclick="checkQuiz('quiz-1', true, this)" class="w-full text-left p-3 rounded bg-gray-900/50 border border-gray-700 hover:border-yellow-500 hover:text-white transition-all text-xs text-gray-400">B) The cube — χ=2 makes it watertight, 90°×4 = 360° means it is the only Platonic solid that tiles 3-space alone, and order 24 gives it a rich symmetric mode spectrum.</button>
+                            <button onclick="checkQuiz('quiz-1', false, this)" class="w-full text-left p-3 rounded bg-gray-900/50 border border-gray-700 hover:border-yellow-500 hover:text-white transition-all text-xs text-gray-400">C) The tetrahedron — order 24 is the smallest rotation group, so it packs most efficiently.</button>
+                        </div>
+                        <div id="quiz-1-feedback" class="hidden"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ===== TOME SIGNOFF PANEL ===== -->
+            <section id="signoff" class="glass-panel p-8 md:p-10 relative overflow-hidden border-yellow-600/40 mt-8">
+              <div class="absolute top-0 right-0 w-64 h-64 bg-yellow-500/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3"></div>
+              <div class="flex items-center gap-3 mb-2">
+                <span class="text-[10px] font-mono uppercase tracking-[0.3em] text-yellow-500">Department I · Canon · dept-I/i-08</span>
+              </div>
+              <h2 class="text-2xl md:text-3xl text-white font-bold mystical-font mb-3">Tome Signoff — Platonic Solids &amp; Symmetric Tessellations</h2>
+              <p class="text-sm text-gray-300 font-light mb-6 max-w-3xl">One Tome is awarded for the whole lesson. Complete all 12 parts (six sub-lessons × two parts), then claim completion with your seal. An Instructor or Archon validates it in a genuine 2-of-2 signoff.</p>
+              <div id="signoff-progress" class="mb-6"></div>
+              <div id="signoff-actions" class="flex flex-col sm:flex-row flex-wrap gap-3"></div>
+            </section>
+
+            <!-- ===== Checkpoint + interweave prev/next ===== -->
+            <div class="mt-14 flex flex-col items-center gap-3">
+              <span class="text-[10px] text-gray-500 font-mono uppercase tracking-[0.3em]">Checkpoint</span>
+              <button id="mark-complete-btn" onclick="owlMarkComplete()" class="px-8 py-3 rounded-lg border font-bold tracking-widest text-xs uppercase mystical-font transition-all hover:scale-[1.02]" style="border-color:var(--accent);color:var(--accent);background:color-mix(in srgb,var(--accent) 6%,transparent);">Mark this part complete ✓</button>
+              <p class="text-[10px] text-gray-600 font-mono text-center max-w-md">Progress saves to this browser. Finish all 12 parts to unlock the Tome signoff on the <a href="index.html" class="underline hover:text-yellow-400">lesson hub</a>.</p>
+            </div>
+            <div class="mt-10 pt-6 border-t border-white/10 flex items-center justify-between gap-3 text-xs font-mono">
+              <a href="1e_engine_implementation.html" class="px-4 py-2 rounded border border-white/10 text-gray-400 hover:text-white hover:border-white/30 transition-colors">← 1E Engine</a>
+              <a href="index.html" class="px-4 py-2 rounded border border-yellow-600/40 text-yellow-500 hover:bg-yellow-500/10 transition-colors tracking-widest uppercase">◆ Hub</a>
+              <a href="index.html" class="px-4 py-2 rounded border border-white/10 text-gray-400 hover:text-white hover:border-white/30 transition-colors">Lesson Hub →</a>
+            </div>
+
+        </main>
+
+        <footer class="w-full border-t border-yellow-900/30 bg-black/60 backdrop-blur-md py-6 text-center mt-auto flex-shrink-0 z-20 relative">
+            <p class="text-[10px] text-yellow-700 uppercase tracking-[0.3em] font-mono">
+                Department I • Owl Academy
+            </p>
+        </footer>
+    </div>
+
+    <!-- ===== Certification Lab 3D ===== -->
+    <script>
+        // Per-solid canonical data (§8)
+        const SOLIDS = {
+            tetra:  { name:'Tetrahedron',  V:4,  E:6,  F:4,  dihedral:70.53,  rot:12, mode:'f₁ ≈ 261 Hz (triply degenerate)', tiles:'no (needs tet-oct honeycomb)', geo:()=>new THREE.TetrahedronGeometry(2.6),   color:0xff3366 },
+            cube:   { name:'Cube',         V:8,  E:12, F:6,  dihedral:90.00,  rot:24, mode:'f₁ ≈ 220 Hz (3-fold sets)',       tiles:'YES — tiles 3-space alone (90°×4)', geo:()=>new THREE.BoxGeometry(3,3,3),        color:0xD4AF37 },
+            octa:   { name:'Octahedron',   V:6,  E:12, F:8,  dihedral:109.47, rot:24, mode:'f₁ ≈ 233 Hz (3-fold sets)',       tiles:'no (tet-oct honeycomb w/ tetrahedra)', geo:()=>new THREE.OctahedronGeometry(2.7),   color:0x33ff99 },
+            dodeca: { name:'Dodecahedron', V:20, E:30, F:12, dihedral:116.57, rot:60, mode:'f₁ ≈ 349 Hz (5-fold sets)',       tiles:'no (5-fold symmetry forbids it)', geo:()=>new THREE.DodecahedronGeometry(2.4),  color:0x8A2BE2 },
+            icosa:  { name:'Icosahedron',  V:12, E:30, F:20, dihedral:138.19, rot:60, mode:'f₁ ≈ 392 Hz (5-fold sets)',       tiles:'no (5-fold symmetry forbids it)', geo:()=>new THREE.IcosahedronGeometry(2.5),   color:0x00d4ff }
+        };
+
+        let scene, camera, renderer, controls, mesh, wire;
+        let current = null;      // solid key
+        let checkStage = 0;      // how many checks passed
+
+        function initLab() {
+            const container = document.getElementById('lab-canvas-container');
+            scene = new THREE.Scene();
+            camera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1, 1000);
+            camera.position.set(6, 5, 8);
+
+            renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+            renderer.setSize(container.clientWidth, container.clientHeight);
+            renderer.setPixelRatio(window.devicePixelRatio);
+            container.appendChild(renderer.domElement);
+
+            controls = new THREE.OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true;
+            controls.dampingFactor = 0.05;
+            controls.autoRotate = true;
+            controls.autoRotateSpeed = 1.2;
+
+            const gridHelper = new THREE.GridHelper(16, 16, 0xD4AF37, 0x111111);
+            gridHelper.position.y = -4;
+            gridHelper.material.opacity = 0.15;
+            gridHelper.material.transparent = true;
+            scene.add(gridHelper);
+
+            scene.add(new THREE.AmbientLight(0x606060, 1.6));
+            const dir = new THREE.DirectionalLight(0xffffff, 1.1);
+            dir.position.set(8, 14, 10);
+            scene.add(dir);
+            const rim = new THREE.PointLight(0xD4AF37, 0.8, 40);
+            rim.position.set(-8, -4, -6);
+            scene.add(rim);
+
+            window.addEventListener('resize', () => {
+                if (container.clientWidth === 0) return;
+                camera.aspect = container.clientWidth / container.clientHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(container.clientWidth, container.clientHeight);
+            });
+            animate();
+        }
+
+        function animate(time) {
+            requestAnimationFrame(animate);
+            TWEEN.update(time);
+            controls.update();
+            renderer.render(scene, camera);
+        }
+
+        function logToTerminal(message, type = "info") {
+            const term = document.getElementById('terminal');
+            const now = new Date();
+            const timeStr = `[${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}:${now.getSeconds().toString().padStart(2,'0')}]`;
+            const colorClass = type === "success" ? "log-success" : (type === "warning" ? "text-yellow-400" : "log-info");
+            const entry = document.createElement('div');
+            entry.className = "log-entry";
+            entry.innerHTML = `<span class="log-time">${timeStr}</span><span class="${colorClass}">${message}</span>`;
+            term.appendChild(entry);
+            term.scrollTop = term.scrollHeight;
+        }
+
+        function clearMesh() {
+            if (mesh) { scene.remove(mesh); mesh.geometry.dispose(); mesh = null; }
+            if (wire) { scene.remove(wire); wire.geometry.dispose(); wire = null; }
+        }
+
+        function setPip(n, on) {
+            const p = document.getElementById('pip-'+n);
+            if (on) p.classList.add('pass'); else p.classList.remove('pass');
+        }
+
+        function updateHUD(extra) {
+            const d = SOLIDS[current];
+            document.getElementById('hud').innerHTML =
+                `<div style="color:var(--accent)" class="font-bold mb-1">${d.name}</div>` +
+                `<div class="text-gray-400">V ${d.V} · E ${d.E} · F ${d.F}</div>` +
+                (extra || '');
+        }
+
+        function pickSolid(key) {
+            current = key;
+            checkStage = 0;
+            clearMesh();
+            for (let i=1;i<=4;i++){ setPip(i,false); resetBtn(i); }
+            document.getElementById('buffer-readout').classList.add('hidden');
+
+            const d = SOLIDS[key];
+            document.querySelectorAll('.solid-pick').forEach(b => b.classList.toggle('active', b.dataset.solid === key));
+
+            const geo = d.geo();
+            const mat = new THREE.MeshPhysicalMaterial({ color:d.color, metalness:0.3, roughness:0.35, transparent:true, opacity:0.55, side:THREE.DoubleSide, transmission:0.35, thickness:0.6 });
+            mesh = new THREE.Mesh(geo, mat);
+            scene.add(mesh);
+            wire = new THREE.LineSegments(new THREE.WireframeGeometry(geo), new THREE.LineBasicMaterial({ color:0xffffff, transparent:true, opacity:0.35 }));
+            scene.add(wire);
+            mesh.scale.set(0.01,0.01,0.01); wire.scale.set(0.01,0.01,0.01);
+            new TWEEN.Tween(mesh.scale).to({x:1,y:1,z:1},700).easing(TWEEN.Easing.Back.Out).start();
+            new TWEEN.Tween(wire.scale).to({x:1,y:1,z:1},700).easing(TWEEN.Easing.Back.Out).start();
+
+            updateHUD('<div class="text-gray-600 mt-1">Run check 1 →</div>');
+            logToTerminal(`INSTANTIATE → ${d.name}`, "info");
+            logToTerminal(`Geometry loaded. ${d.V} verts, ${d.E} edges, ${d.F} faces.`, "success");
+
+            // enable only check 1
+            const b1 = document.getElementById('btn-check-1');
+            b1.disabled = false; b1.classList.add('active-step');
+        }
+
+        function resetBtn(n){
+            const b = document.getElementById('btn-check-'+n);
+            b.disabled = true; b.classList.remove('active-step');
+            b.querySelector('.status-indicator').className = "status-indicator w-2 h-2 rounded-full bg-gray-600";
+        }
+
+        function runCheck(n) {
+            if (!current || n !== checkStage + 1) return;
+            const d = SOLIDS[current];
+            const b = document.getElementById('btn-check-'+n);
+            b.disabled = true; b.classList.remove('active-step');
+            b.querySelector('.status-indicator').className = "status-indicator w-2 h-2 rounded-full shadow-[0_0_8px_#D4AF37]";
+            b.querySelector('.status-indicator').style.background = "var(--accent)";
+
+            if (n === 1) {
+                const chi = d.V - d.E + d.F;
+                logToTerminal(`CHECK 1 · TOPOLOGY`, "info");
+                logToTerminal(`χ = V − E + F = ${d.V} − ${d.E} + ${d.F} = ${chi}`, "info");
+                logToTerminal(chi === 2 ? `χ = 2 ✓ watertight (genus 0)` : `χ ≠ 2 — mesh broken`, chi===2?"success":"warning");
+                updateHUD(`<div class="text-gray-400">χ = ${chi} ✓ watertight</div>`);
+            } else if (n === 2) {
+                const ang = d.dihedral;
+                const n360 = 360 / ang;
+                const alone = current === 'cube';
+                logToTerminal(`CHECK 2 · TILING`, "info");
+                logToTerminal(`dihedral = ${ang.toFixed(2)}° · 360°/${ang.toFixed(2)}° = ${n360.toFixed(3)}`, "info");
+                logToTerminal(alone ? `integer n=4 → tiles 3-space ALONE` : `non-integer → cannot tile alone`, alone?"success":"warning");
+                logToTerminal(`verdict: ${d.tiles}`, "info");
+                updateHUD(`<div class="text-gray-400">dihedral ${ang.toFixed(2)}°</div><div class="text-gray-400">${alone?'tiles alone ✓':'tet-oct / none'}</div>`);
+            } else if (n === 3) {
+                logToTerminal(`CHECK 3 · RESONANCE`, "info");
+                logToTerminal(`|rotation group| = ${d.rot}  (full incl. reflections = ${d.rot*2})`, "info");
+                logToTerminal(`characteristic mode: ${d.mode}`, "success");
+                updateHUD(`<div class="text-gray-400">|rot group| = ${d.rot}</div><div class="text-gray-400">mode ${d.mode.split('(')[0].trim()}</div>`);
+            } else if (n === 4) {
+                buildBuffers(d);
+                logToTerminal(`CHECK 4 · ENCODING`, "info");
+                logToTerminal(`vertex buffer + index buffer emitted (see readout)`, "info");
+                const seed = deriveSeed(d);
+                logToTerminal(`derived seed → ${seed}`, "success");
+                document.getElementById('seed-out').textContent = seed;
+                document.getElementById('buffer-readout').classList.remove('hidden');
+            }
+
+            setPip(n, true);
+            checkStage = n;
+
+            if (n < 4) {
+                const nb = document.getElementById('btn-check-'+(n+1));
+                nb.disabled = false; nb.classList.add('active-step');
+            } else {
+                logToTerminal(`━━━ CERTIFICATION COMPLETE · ${d.name} is canon-ready ━━━`, "success");
+                new TWEEN.Tween(controls).to({ autoRotateSpeed: 3.5 }, 800).start();
+                setTimeout(()=> new TWEEN.Tween(controls).to({ autoRotateSpeed: 1.2 }, 1600).start(), 1200);
+            }
+        }
+
+        function buildBuffers(d) {
+            // read actual positions/index from the mesh geometry (rounded, deduped for display)
+            const pos = mesh.geometry.attributes.position;
+            const verts = [];
+            for (let i=0;i<Math.min(pos.count, 12);i++){
+                verts.push([pos.getX(i).toFixed(2), pos.getY(i).toFixed(2), pos.getZ(i).toFixed(2)]);
+            }
+            let vhtml = '<table class="buf-table"><tr><th>#</th><th>x</th><th>y</th><th>z</th></tr>';
+            verts.forEach((v,i)=>{ vhtml += `<tr><td class="text-gray-500">${i}</td><td>${v[0]}</td><td>${v[1]}</td><td>${v[2]}</td></tr>`; });
+            if (pos.count > 12) vhtml += `<tr><td colspan="4" class="text-gray-600">… ${pos.count} entries total</td></tr>`;
+            vhtml += '</table>';
+            document.getElementById('vbuf').innerHTML = vhtml;
+
+            const idx = mesh.geometry.index;
+            let ihtml = '<table class="buf-table"><tr><th>tri</th><th>a</th><th>b</th><th>c</th></tr>';
+            const triCount = idx ? idx.count/3 : pos.count/3;
+            for (let t=0;t<Math.min(triCount, 12);t++){
+                const a = idx ? idx.getX(t*3) : t*3, b = idx ? idx.getX(t*3+1) : t*3+1, c = idx ? idx.getX(t*3+2) : t*3+2;
+                ihtml += `<tr><td class="text-gray-500">${t}</td><td>${a}</td><td>${b}</td><td>${c}</td></tr>`;
+            }
+            if (triCount > 12) ihtml += `<tr><td colspan="4" class="text-gray-600">… ${triCount} triangles total</td></tr>`;
+            ihtml += '</table>';
+            document.getElementById('ibuf').innerHTML = ihtml;
+        }
+
+        function deriveSeed(d) {
+            // deterministic compact seed from canonical invariants
+            let h = 2166136261 >>> 0;
+            const s = `${d.name}|${d.V}.${d.E}.${d.F}|${d.dihedral}|${d.rot}`;
+            for (let i=0;i<s.length;i++){ h ^= s.charCodeAt(i); h = Math.imul(h, 16777619) >>> 0; }
+            return 'SPIRE-' + h.toString(16).toUpperCase().padStart(8,'0');
+        }
+
+        function resetLab() {
+            current = null; checkStage = 0;
+            clearMesh();
+            for (let i=1;i<=4;i++){ setPip(i,false); resetBtn(i); }
+            document.querySelectorAll('.solid-pick').forEach(b=>b.classList.remove('active'));
+            document.getElementById('buffer-readout').classList.add('hidden');
+            document.getElementById('hud').innerHTML = '<div class="text-gray-500">Awaiting instantiation…</div>';
+            document.getElementById('terminal').innerHTML =
+                `<div class="log-entry"><span class="log-time">[${new Date().toLocaleTimeString()}]</span><span class="text-yellow-400">Lab reset.</span></div>` +
+                `<div class="log-entry"><span class="log-info">Select a Platonic solid to instantiate…</span></div>`;
+        }
+
+        // Quiz Verification Logic
+        function checkQuiz(quizId, isCorrect, btnElement) {
+            const optionsContainer = document.getElementById(`${quizId}-options`);
+            const feedbackElement = document.getElementById(`${quizId}-feedback`);
+            const buttons = optionsContainer.querySelectorAll('button');
+
+            buttons.forEach(btn => {
+                btn.disabled = true;
+                btn.classList.add('opacity-50', 'cursor-not-allowed');
+                btn.classList.remove('!border-green-500', '!bg-green-900/30', '!text-green-400', '!border-red-500', '!bg-red-900/30', '!text-red-400');
+            });
+
+            btnElement.classList.remove('opacity-50');
+
+            if (isCorrect) {
+                btnElement.classList.add('!border-green-500', '!bg-green-900/30', '!text-green-400');
+                feedbackElement.innerHTML = `> STATUS: <span class="text-green-400">VERIFIED</span>. Your understanding aligns with the S.P.I.R.E. Engine's logic.`;
+                feedbackElement.className = "mt-4 text-xs p-3 rounded border font-mono bg-green-900/10 border-green-900/50 text-green-300 block";
+            } else {
+                btnElement.classList.add('!border-red-500', '!bg-red-900/30', '!text-red-400');
+                feedbackElement.innerHTML = `> STATUS: <span class="text-red-400">ERROR</span>. Dimensional logic misalignment. We recommend reviewing the <a href="1f_expanded_theory.html" class="text-cyan-400 underline hover:text-cyan-300">Expanded Lesson</a> for a comprehensive overview.<button onclick="resetQuiz('${quizId}')" class="ml-4 px-3 py-1 bg-red-900/50 hover:bg-red-500/50 text-white rounded transition-colors uppercase text-[10px] tracking-widest border border-red-500/50 mt-3 md:mt-0">Recalibrate & Retry</button>`;
+                feedbackElement.className = "mt-4 text-xs p-3 rounded border font-mono bg-red-900/20 border-red-900/50 text-red-400 block md:flex items-center justify-between gap-4";
+            }
+        }
+
+        function resetQuiz(quizId) {
+            const optionsContainer = document.getElementById(`${quizId}-options`);
+            const feedbackElement = document.getElementById(`${quizId}-feedback`);
+            const buttons = optionsContainer.querySelectorAll('button');
+
+            buttons.forEach(btn => {
+                btn.disabled = false;
+                btn.classList.remove('opacity-50', 'cursor-not-allowed', '!border-green-500', '!bg-green-900/30', '!text-green-400', '!border-red-500', '!bg-red-900/30', '!text-red-400');
+            });
+
+            feedbackElement.className = "hidden";
+        }
+
+        window.onload = () => {
+            initLab();
+            setTimeout(() => { window.dispatchEvent(new Event('resize')); }, 100);
+        };
+    </script>
+
+    <!-- ===== TOME SIGNOFF progress script ===== -->
+    <script>
+    (function(){
+        var KEY='owl.platonic.progress.v1';
+        var PARTS=[
+            ['1a','1A Primitives'],['1a-x','1A Expanded'],
+            ['1b','1B Topology'],['1b-x','1B Expanded'],
+            ['1c','1C Resonance'],['1c-x','1C Expanded'],
+            ['1d','1D Tiling'],['1d-x','1D Expanded'],
+            ['1e','1E Engine'],['1e-x','1E Expanded'],
+            ['1f','1F Lab'],['1f-x','1F Expanded']
+        ];
+        var SEAL='../../../../mage_tower/Seal_Forge.html';
+        var TOME='../../../../mage_tower/Major_Tome.html';
+        var CONSOLE='../../../../mage_tower/Unlock_Console.html';
+        function rd(){ try{ return JSON.parse(localStorage.getItem(KEY))||{}; }catch(e){ return {}; } }
+        function render(){
+            var m=rd(), done=0, remaining=[];
+            var pips='';
+            PARTS.forEach(function(p){
+                var ok=!!m[p[0]]; if(ok) done++; else remaining.push(p[1]);
+                pips+='<span title="'+p[1]+'" style="width:16px;height:16px;border-radius:9999px;display:inline-block;'+
+                    (ok?'background:var(--accent);box-shadow:0 0 10px color-mix(in srgb,var(--accent) 70%,transparent);border:1px solid var(--accent);'
+                       :'background:#241f38;border:1px solid rgba(255,255,255,.15);')+'"></span>';
+            });
+            var prog=document.getElementById('signoff-progress');
+            prog.innerHTML =
+                '<div class="flex flex-wrap items-center gap-2 mb-3">'+pips+'</div>'+
+                '<div class="font-mono text-sm '+(done===12?'text-yellow-400':'text-gray-300')+'">'+done+' / 12 complete</div>';
+
+            var act=document.getElementById('signoff-actions');
+            if(done<12){
+                act.innerHTML =
+                    '<div class="w-full bg-black/40 border border-yellow-600/30 rounded-lg p-5">'+
+                    '<div class="font-mono text-sm text-yellow-500 mb-2">🔒 Finish all 12 parts to unlock the signoff</div>'+
+                    '<div class="text-xs text-gray-400 font-light mb-2">Remaining ('+remaining.length+'):</div>'+
+                    '<div class="flex flex-wrap gap-2">'+remaining.map(function(r){
+                        return '<span class="text-[10px] font-mono px-2 py-1 rounded border border-white/10 text-gray-400">'+r+'</span>';
+                    }).join('')+'</div></div>';
+            } else {
+                act.innerHTML =
+                    '<a href="'+SEAL+'" class="flex-1 min-w-[200px] text-center px-5 py-4 rounded-lg border font-bold tracking-wide text-xs uppercase mystical-font transition-all hover:scale-[1.02]" style="border-color:var(--accent);color:var(--accent);background:color-mix(in srgb,var(--accent) 8%,transparent);">1 · Forge your seal</a>'+
+                    '<a href="'+TOME+'" class="flex-1 min-w-[200px] text-center px-5 py-4 rounded-lg border font-bold tracking-wide text-xs uppercase mystical-font transition-all hover:scale-[1.02]" style="border-color:var(--accent);color:var(--accent);background:color-mix(in srgb,var(--accent) 8%,transparent);">2 · Claim completion</a>'+
+                    '<a href="'+CONSOLE+'" class="flex-1 min-w-[200px] text-center px-5 py-4 rounded-lg border font-bold tracking-wide text-xs uppercase mystical-font transition-all hover:scale-[1.02]" style="border-color:var(--accent);color:var(--accent);background:color-mix(in srgb,var(--accent) 8%,transparent);">3 · Instructor validates</a>'+
+                    '<p class="w-full text-[11px] text-gray-400 font-mono mt-2">Flow: forge a Minor-Tome <strong>seal</strong> in the Seal Forge → <strong>claim completion</strong> of this lesson in the Major Tome Library → an Instructor or Archon <strong>validates</strong> it in the Unlock Console, completing the 2-of-2 signoff and minting Tome <span style="color:var(--accent)">dept-I/i-08</span>.</p>';
+            }
+        }
+        document.addEventListener('DOMContentLoaded', render);
+    })();
+    </script>
+
+    <!-- ===== Completion JS ===== -->
+    <script>
+    (function(){
+      var KEY='owl.platonic.progress.v1', PART='1f';
+      function rd(){ try{ return JSON.parse(localStorage.getItem(KEY))||{}; }catch(e){ return {}; } }
+      function wr(m){ try{ localStorage.setItem(KEY, JSON.stringify(m)); }catch(e){} }
+      window.owlMarkComplete=function(){ var m=rd(); m[PART]=true; wr(m); paint(true); };
+      function paint(done){ var b=document.getElementById('mark-complete-btn'); if(!b) return;
+        if(done){ b.textContent='✓ Part complete'; b.style.background='color-mix(in srgb,var(--accent) 22%,transparent)'; b.setAttribute('disabled',''); b.style.cursor='default'; } }
+      document.addEventListener('DOMContentLoaded', function(){ paint(!!rd()[PART]); });
+    })();
+    </script>
+</body>
+</html>
