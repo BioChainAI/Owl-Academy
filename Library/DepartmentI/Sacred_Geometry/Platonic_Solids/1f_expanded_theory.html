@@ -1,0 +1,610 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Owl Academy | Lesson 1F: Practical Application Lab — Deep Dive</title>
+
+    <!-- CSS & Fonts -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Inter:wght@300;400;500;600&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+
+    <!-- MathJax for rendering geometric equations -->
+    <script>
+        window.MathJax = {
+            tex: {
+                inlineMath: [['$', '$'], ['\\(', '\\)']],
+                displayMath: [['$$', '$$'], ['\\[', '\\]']]
+            }
+        };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+    <style>
+        /* Dynamic Theme Variables (Owl Academy Standard) */
+        :root {
+            --accent: #D4AF37;
+            --color-void: #090614;
+            --color-primary: #D4AF37;
+            --color-secondary: #8e9eab;
+            --color-holo1: #00d4ff;
+            --color-holo2: #8A2BE2;
+            --color-text: #E6C27A;
+            --color-r3-x: #ff3366;
+            --color-r3-y: #33ff99;
+            --color-r3-z: #00d4ff;
+        }
+
+        body {
+            background-color: var(--color-void);
+            color: #e2e8f0;
+            font-family: 'Inter', sans-serif;
+            background: radial-gradient(circle at 50% 50%, color-mix(in srgb, var(--accent) 10%, var(--color-void)), var(--color-void) 80%);
+            min-height: 100vh;
+            margin: 0;
+            overflow-x: hidden;
+            scroll-behavior: smooth;
+        }
+
+        /* --- ATMOSPHERIC LAYERS --- */
+        .nebula-layer {
+            position: fixed; inset: 0;
+            background:
+                radial-gradient(circle at 20% 30%, var(--color-holo2) 0%, transparent 40%),
+                radial-gradient(circle at 80% 70%, var(--accent) 0%, transparent 40%);
+            opacity: 0.15; mix-blend-mode: screen; filter: blur(80px); pointer-events: none; z-index: 0;
+        }
+        .vignette-layer {
+            position: fixed; inset: 0;
+            background: radial-gradient(circle, transparent 40%, rgba(0,0,0,0.8) 120%);
+            pointer-events: none; z-index: 10;
+        }
+        .starfield {
+            position: fixed; inset: 0;
+            background-image:
+                radial-gradient(2px 2px at 20px 30px, var(--color-primary), rgba(0,0,0,0)),
+                radial-gradient(2px 2px at 40px 70px, #fff, rgba(0,0,0,0)),
+                radial-gradient(2px 2px at 50px 160px, rgba(255,255,255,0.8), rgba(0,0,0,0)),
+                radial-gradient(2px 2px at 90px 40px, #fff, rgba(0,0,0,0)),
+                radial-gradient(2px 2px at 130px 80px, var(--color-primary), rgba(0,0,0,0));
+            background-repeat: repeat; background-size: 250px 250px;
+            animation: twinkle 8s infinite alternate; opacity: 0.35; z-index: 0; pointer-events: none;
+        }
+        .starfield-layer-2 { background-size: 350px 350px; background-position: 50px 50px; opacity: 0.2; animation: twinkle 12s infinite alternate-reverse; }
+        @keyframes twinkle { 0% { opacity: 0.1; transform: scale(1); } 100% { opacity: 0.5; transform: scale(1.05); } }
+
+        .spin-slow { animation: spin 40s linear infinite; transform-origin: center; }
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+
+        /* --- TYPOGRAPHY & PANELS --- */
+        h1, h2, h3, h4, .mystical-font { font-family: 'Cinzel', serif; }
+        .mono { font-family: 'Fira Code', monospace; }
+        .gold-gradient {
+            background: linear-gradient(to right, var(--color-primary), #FFF8DC, var(--color-primary));
+            -webkit-background-clip: text; background-clip: text; color: transparent; text-shadow: 0 0 15px color-mix(in srgb, var(--color-primary) 30%, transparent);
+        }
+
+        .glass-panel {
+            background: rgba(10, 5, 20, 0.5);
+            backdrop-filter: blur(12px);
+            border: 1px solid color-mix(in srgb, var(--color-primary) 20%, transparent);
+            border-radius: 16px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+            margin-bottom: 2rem;
+            padding: 2rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .data-card {
+            background: rgba(15, 10, 25, 0.5);
+            border: 1px solid color-mix(in srgb, var(--color-primary) 10%, transparent);
+            border-top: 1px solid color-mix(in srgb, var(--color-primary) 30%, transparent);
+            border-radius: 12px;
+            padding: 1.5rem;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+        .data-card:hover {
+            border-color: color-mix(in srgb, var(--accent) 40%, transparent);
+            background: rgba(20, 15, 35, 0.7);
+            box-shadow: 0 0 20px color-mix(in srgb, var(--accent) 10%, transparent);
+        }
+
+        .simple-translation {
+            background: color-mix(in srgb, var(--accent) 6%, transparent);
+            border-left: 3px solid color-mix(in srgb, var(--accent) 50%, transparent);
+            padding: 1rem;
+            margin-top: 1.5rem;
+            border-radius: 0 8px 8px 0;
+            font-family: 'Inter', sans-serif;
+        }
+
+        .math-note {
+            border: 1px dashed color-mix(in srgb, var(--color-primary) 40%, transparent);
+            border-radius: 12px;
+            padding: 16px 20px;
+            margin: 24px 0;
+            background: color-mix(in srgb, var(--color-primary) 5%, transparent);
+        }
+
+        .ch-num {
+            font-family: 'Fira Code', monospace;
+            font-weight: 600;
+            font-size: 1rem;
+            color: var(--color-primary);
+            border: 1px solid var(--color-primary);
+            border-radius: 8px;
+            padding: 6px 11px;
+            background: color-mix(in srgb, var(--color-primary) 10%, transparent);
+            display: inline-block;
+        }
+
+        /* Numbered walkthrough */
+        .walk-step { counter-increment: walk; }
+        .walk-step::before {
+            content: counter(walk);
+            font-family:'Fira Code',monospace; font-weight:600;
+            width:34px; height:34px; flex:0 0 34px;
+            display:flex; align-items:center; justify-content:center;
+            border-radius:9999px; color:var(--accent);
+            border:1px solid var(--accent);
+            background: color-mix(in srgb,var(--accent) 12%,transparent);
+        }
+
+        /* Table */
+        .euler-table { width: 100%; border-collapse: collapse; margin: 20px 0; font-size: .9rem; }
+        .euler-table th, .euler-table td { padding: 11px 10px; text-align: center; border-bottom: 1px solid rgba(255,255,255,0.1); }
+        .euler-table th { font-family: "Fira Code", monospace; font-size: .74rem; letter-spacing: .06em; text-transform: uppercase; color: var(--color-secondary); }
+        .euler-table td:first-child, .euler-table th:first-child { text-align: left; }
+        .euler-table tr:hover td { background: color-mix(in srgb, var(--accent) 5%, transparent); }
+
+        /* Glossary */
+        .gloss dt { font-weight: 600; margin-top: 16px; color: var(--color-primary); display: flex; align-items: baseline; gap: 10px; font-family: 'Fira Code', monospace; font-size: 0.9rem;}
+        .gloss dd { margin: .25rem 0 1rem; color: #cbd5e1; font-size: .9rem; font-weight: 300;}
+        .badge { font-family: "Fira Code", monospace; font-size: .6rem; padding: 2px 7px; border-radius: 20px; letter-spacing: .06em; text-transform: uppercase; border: 1px solid color-mix(in srgb,var(--accent) 40%,transparent); color: var(--accent); }
+
+        /* Stepper */
+        .step-chip{padding:.35rem .7rem;border-radius:.4rem;border:1px solid rgba(255,255,255,.1);color:#94a3b8;text-transform:uppercase;letter-spacing:.08em;transition:all .2s;white-space:nowrap;}
+        .step-chip:hover{color:#fff;border-color:rgba(255,255,255,.35);}
+        .step-chip[aria-current="page"]{color:var(--accent);border-color:var(--accent);background:color-mix(in srgb,var(--accent) 14%,transparent);box-shadow:0 0 12px color-mix(in srgb,var(--accent) 30%,transparent);}
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: rgba(0,0,0,0.2); }
+        ::-webkit-scrollbar-thumb { background: linear-gradient(to bottom, color-mix(in srgb, var(--color-primary) 30%, transparent), color-mix(in srgb, var(--color-primary) 70%, transparent)); border-radius: 10px; }
+
+        /* Details / Accordion */
+        details summary::-webkit-details-marker { display:none; }
+    </style>
+</head>
+<body class="flex flex-col h-screen overflow-hidden">
+
+    <!-- Atmospheric Layers -->
+    <div class="nebula-layer"></div>
+    <div class="starfield"></div>
+    <div class="starfield starfield-layer-2"></div>
+    <div class="vignette-layer"></div>
+
+    <div class="relative z-20 flex flex-col w-full h-full overflow-y-auto custom-scrollbar">
+
+        <!-- Header / Navigation -->
+        <header class="w-full py-4 border-b border-yellow-600/30 glass-panel z-50 flex-shrink-0 relative shadow-2xl sticky top-0 !mb-0 !rounded-none">
+            <div class="w-full mx-auto px-4 md:px-6 flex flex-col md:flex-row justify-between items-center gap-4">
+
+                <div class="flex items-center space-x-4">
+                    <svg width="40" height="40" viewBox="0 0 100 100" class="fill-none" style="stroke: var(--color-primary); filter: drop-shadow(0 0 5px var(--color-primary));">
+                        <circle cx="50" cy="50" r="45" stroke-width="2"/>
+                        <line x1="30" y1="30" x2="70" y2="70" stroke-width="2.5" stroke-linecap="round"/>
+                        <line x1="70" y1="30" x2="30" y2="70" stroke-width="2.5" stroke-linecap="round"/>
+                        <line x1="50" y1="15" x2="50" y2="85" stroke-width="2.5" stroke-linecap="round"/>
+                        <path d="M 50,15 C 75,15 75,45 50,45" stroke-width="2.5" stroke-linecap="round"/>
+                        <text x="20" y="55" fill="var(--color-primary)" stroke="none" font-family="Cinzel, serif" font-size="16" text-anchor="middle">A</text>
+                        <text x="80" y="55" fill="var(--color-primary)" stroke="none" font-family="Cinzel, serif" font-size="16" text-anchor="middle">Ω</text>
+                    </svg>
+                    <h1 class="text-xl md:text-2xl font-bold tracking-[0.2em] gold-gradient">OWL ACADEMY</h1>
+                </div>
+
+                <div class="text-center hidden md:block flex-grow">
+                    <p class="text-[10px] tracking-[0.3em] uppercase mb-1 font-mono" style="color:var(--accent)">Department I • Lesson 1 · Sub-lesson 1F — Expanded Theory</p>
+                    <h2 class="text-lg font-bold tracking-[0.1em] mystical-font text-white">Practical Application Lab — Deep Dive</h2>
+                </div>
+
+                <div class="flex items-center space-x-4">
+                    <a href="1f_application_lab.html" class="flex items-center gap-2 px-4 py-2 rounded text-xs font-bold tracking-[0.15em] mystical-font transition-all border hover:text-white whitespace-nowrap" style="background:color-mix(in srgb,var(--accent) 14%,transparent);color:var(--accent);border-color:color-mix(in srgb,var(--accent) 45%,transparent);">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+                        1F LESSON
+                    </a>
+                </div>
+            </div>
+        </header>
+
+        <!-- ===== Lesson 1 sub-lesson stepper ===== -->
+        <nav class="w-full max-w-7xl mx-auto px-4 md:px-8 mt-6" aria-label="Lesson 1 sub-lessons">
+          <div class="glass-panel rounded-xl p-3 flex flex-wrap items-center justify-center gap-2 text-[10px] md:text-xs font-mono !mb-0">
+            <a href="index.html" class="px-3 py-1.5 rounded border border-yellow-600/40 text-yellow-500 hover:bg-yellow-500/10 transition-colors tracking-widest uppercase">◆ Hub</a>
+            <span class="text-gray-700 hidden md:inline">/</span>
+            <a href="1a_geometric_primitives.html" class="step-chip">1A · Primitives</a>
+            <a href="1b_topological_invariants.html" class="step-chip">1B · Topology</a>
+            <a href="1c_harmonic_resonance.html" class="step-chip">1C · Resonance</a>
+            <a href="1d_tiling_problem.html" class="step-chip">1D · Tiling</a>
+            <a href="1e_engine_implementation.html" class="step-chip">1E · Engine</a>
+            <a href="1f_application_lab.html" class="step-chip" aria-current="page">1F · Lab</a>
+          </div>
+        </nav>
+
+        <!-- Main Content -->
+        <main class="flex-grow w-full max-w-7xl mx-auto px-4 md:px-8 py-8 space-y-8 relative z-20">
+
+            <!-- HERO -->
+            <div class="glass-panel">
+                <div class="absolute top-0 left-1/2 -translate-x-1/2 w-3/4 h-1 bg-gradient-to-r from-transparent via-yellow-500 to-transparent opacity-50"></div>
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+                    <div>
+                        <span class="font-mono text-xs uppercase tracking-widest flex items-center gap-2 mb-4" style="color:var(--accent)">
+                            <span class="w-8 h-px block" style="background:var(--accent)"></span> The Validation Field Manual
+                        </span>
+                        <h1 class="text-4xl md:text-5xl font-bold mystical-font text-white leading-tight mb-6">How you sign off a finished lesson</h1>
+
+                        <div class="simple-translation !mt-0 mb-6">
+                            <h4 class="text-sm font-bold mb-1 font-mono uppercase tracking-widest" style="color:var(--accent)">Zero-jargon disclaimer</h4>
+                            <p class="text-xs text-yellow-100/80 m-0">
+                                You do not need to understand any cryptography to earn your Tome. This manual explains the
+                                <em>how-to</em> — the buttons you press and the people who confirm your work — in plain language.
+                            </p>
+                        </div>
+
+                        <p class="text-gray-300 font-light leading-relaxed text-lg mb-8">
+                            When every part of a lesson is done, the Academy does not just take your word for it. You
+                            <strong>sign</strong> that you finished, and a mentor <strong>signs over the top</strong> to confirm it.
+                            Two signatures, one Tome. This page walks you through exactly how that works.
+                        </p>
+
+                        <div class="bg-black/50 border rounded-xl p-6" style="border-color:color-mix(in srgb,var(--accent) 25%,transparent)">
+                            <h2 class="text-sm font-mono text-gray-400 mb-4 uppercase tracking-widest border-b border-gray-800 pb-2"># Index Directory</h2>
+                            <ul class="grid grid-cols-1 md:grid-cols-2 gap-y-3 gap-x-8 text-sm font-light">
+                                <li><a href="#c1" class="flex items-baseline gap-3 text-gray-300 hover:text-yellow-400 transition-colors"><span class="font-mono text-yellow-600 text-xs">01</span> What a signoff even is</a></li>
+                                <li><a href="#c2" class="flex items-baseline gap-3 text-gray-300 hover:text-yellow-400 transition-colors"><span class="font-mono text-yellow-600 text-xs">02</span> Your Minor Tome seal</a></li>
+                                <li><a href="#c3" class="flex items-baseline gap-3 text-gray-300 hover:text-yellow-400 transition-colors"><span class="font-mono text-yellow-600 text-xs">03</span> The 7.83 Hz timing tick</a></li>
+                                <li><a href="#c4" class="flex items-baseline gap-3 text-gray-300 hover:text-yellow-400 transition-colors"><span class="font-mono text-yellow-600 text-xs">04</span> The 2-of-2 signoff &amp; roles</a></li>
+                                <li><a href="#c5" class="flex items-baseline gap-3 text-gray-300 hover:text-yellow-400 transition-colors"><span class="font-mono text-yellow-600 text-xs">05</span> Step-by-step walkthrough</a></li>
+                                <li><a href="#c6" class="flex items-baseline gap-3 text-gray-300 hover:text-yellow-400 transition-colors"><span class="font-mono text-yellow-600 text-xs">06</span> Capstone problem set</a></li>
+                                <li><a href="#glossary" class="flex items-baseline gap-3 text-gray-300 hover:text-yellow-400 transition-colors"><span class="font-mono text-yellow-600 text-xs">07</span> Seal-system glossary</a></li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <!-- Seal / signoff illustration -->
+                    <div class="flex justify-center">
+                        <svg viewBox="0 0 300 300" class="w-full max-w-[320px] drop-shadow-[0_0_20px_rgba(212,175,55,0.25)]">
+                            <circle cx="150" cy="150" r="120" fill="none" stroke="var(--accent)" stroke-width="1.5" opacity="0.6"/>
+                            <circle cx="150" cy="150" r="120" fill="none" stroke="var(--accent)" stroke-width="6" opacity="0.12"/>
+                            <circle cx="150" cy="150" r="95" fill="none" stroke="var(--accent)" stroke-width="0.75" stroke-dasharray="3 5" opacity="0.5"/>
+                            <g class="spin-slow" style="transform-origin:150px 150px">
+                                <polygon points="150,45 240,205 60,205" fill="none" stroke="var(--accent)" stroke-width="1" opacity="0.4"/>
+                                <polygon points="150,255 60,95 240,95" fill="none" stroke="var(--accent)" stroke-width="1" opacity="0.4"/>
+                            </g>
+                            <text x="150" y="135" text-anchor="middle" font-family="Cinzel, serif" font-size="20" fill="#FFF8DC">2 of 2</text>
+                            <text x="150" y="165" text-anchor="middle" font-family="Fira Code, monospace" font-size="10" fill="var(--accent)" letter-spacing="2">SIGNOFF</text>
+                            <text x="150" y="195" text-anchor="middle" font-family="Fira Code, monospace" font-size="8" fill="#8e9eab">dept-I / i-08</text>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+
+            <!-- CHAPTER 01 -->
+            <div id="c1" class="glass-panel">
+                <div class="flex items-start gap-4 mb-6">
+                    <span class="ch-num">01</span>
+                    <div>
+                        <h2 class="text-2xl text-white font-bold mystical-font tracking-wide">What a "signoff" even is</h2>
+                        <p class="text-gray-400 font-light italic text-sm mt-1">A signature that a computer can check, and nobody can fake.</p>
+                    </div>
+                </div>
+                <div class="prose prose-invert max-w-4xl text-gray-300 font-light leading-relaxed">
+                    <p>When you finish a school assignment on paper, you write your name at the top. A <strong>signoff</strong> is the
+                    digital version of that name — except it is impossible to forge and it is stamped with the exact moment you did it.</p>
+                    <p>At Owl Academy, finishing a lesson is not just clicking "done." The Academy keeps a permanent record — the
+                    <strong>canon</strong> — of who completed what, and when. To be added to the canon, a completion needs two things:
+                    proof it was <em>you</em>, and proof a mentor <em>agreed</em>. That double-check is the whole point.</p>
+                </div>
+                <div class="simple-translation">
+                    <h4 class="text-sm font-bold mb-1 font-mono uppercase tracking-widest" style="color:var(--accent)">Simply Put: A notarized letter</h4>
+                    <p class="text-xs text-yellow-100/80 m-0">
+                        Think of an important letter that needs a notary. You sign it, then the notary stamps it to say "yes, I watched
+                        this person sign, it is real." A signoff is the same idea: your signature, plus a trusted witness's stamp.
+                    </p>
+                </div>
+            </div>
+
+            <!-- CHAPTER 02 -->
+            <div id="c2" class="glass-panel">
+                <div class="flex items-start gap-4 mb-6">
+                    <span class="ch-num">02</span>
+                    <div>
+                        <h2 class="text-2xl text-white font-bold mystical-font tracking-wide">Your Minor Tome seal</h2>
+                        <p class="text-gray-400 font-light italic text-sm mt-1">Your personal signing pen — nobody else has one like it.</p>
+                    </div>
+                </div>
+                <div class="prose prose-invert max-w-4xl text-gray-300 font-light leading-relaxed">
+                    <p>Every student carries a <strong>Minor Tome</strong> — a small personal record book. Inside it lives your
+                    <strong>seal</strong>: a unique signing key that only you hold. When you "sign" a completion, you are pressing that
+                    seal onto it. Anyone can look at the mark and confirm it came from your seal, but nobody can copy your seal to make
+                    a fake mark.</p>
+                    <p>You create your seal once, in the <strong>Seal Forge</strong>. After that, it is yours for every lesson you ever
+                    complete. Guard it the way you would guard the only key to your house.</p>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
+                    <div class="data-card text-center">
+                        <div class="text-3xl mb-2">🖋️</div>
+                        <h4 class="font-mono text-sm font-bold mb-1" style="color:var(--accent)">The Seal = a pen</h4>
+                        <p class="text-xs text-gray-400 font-light">Only you can write with it. It makes a mark unique to you.</p>
+                    </div>
+                    <div class="data-card text-center">
+                        <div class="text-3xl mb-2">📖</div>
+                        <h4 class="font-mono text-sm font-bold mb-1" style="color:var(--accent)">The Minor Tome = your notebook</h4>
+                        <p class="text-xs text-gray-400 font-light">Holds your seal and your personal completion history.</p>
+                    </div>
+                    <div class="data-card text-center">
+                        <div class="text-3xl mb-2">🏛️</div>
+                        <h4 class="font-mono text-sm font-bold mb-1" style="color:var(--accent)">The Major Tome = the library ledger</h4>
+                        <p class="text-xs text-gray-400 font-light">The Academy's shared, permanent record of finished lessons.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- CHAPTER 03 -->
+            <div id="c3" class="glass-panel">
+                <div class="flex items-start gap-4 mb-6">
+                    <span class="ch-num">03</span>
+                    <div>
+                        <h2 class="text-2xl text-white font-bold mystical-font tracking-wide">The 7.83 Hz timing tick</h2>
+                        <p class="text-gray-400 font-light italic text-sm mt-1">A shared clock everyone trusts, borrowed from the planet itself.</p>
+                    </div>
+                </div>
+                <div class="prose prose-invert max-w-4xl text-gray-300 font-light leading-relaxed">
+                    <p>A signature is only meaningful if you also know <em>when</em> it happened. Owl Academy stamps every signoff against a
+                    shared, auditable clock called the <strong>Schumann tick</strong>, named after the Earth's natural electromagnetic
+                    resonance at about <strong>7.83 Hz</strong> — the same frequency the S.P.I.R.E. Engine treats as its heartbeat back in
+                    Sub-lesson 1C.</p>
+                    <p>Because everyone reads the same tick, nobody can secretly back-date a completion or claim they finished before they
+                    really did. The clock is the same for the Acolyte, the Instructor, and the Archon.</p>
+                </div>
+                <div class="math-note">
+                    <span class="font-mono text-[10px] uppercase tracking-widest block mb-2 border-b pb-1" style="color:var(--accent);border-color:color-mix(in srgb,var(--accent) 30%,transparent)">Why 7.83 Hz?</span>
+                    <p class="text-sm m-0">It ties the signoff clock to the same resonance that runs through the whole lesson — form,
+                    vibration, and timing all share one beat. You do not calculate anything with it; just know that the tick is a fixed,
+                    public reference so all signatures agree on "now."</p>
+                </div>
+            </div>
+
+            <!-- CHAPTER 04 -->
+            <div id="c4" class="glass-panel">
+                <div class="flex items-start gap-4 mb-6">
+                    <span class="ch-num">04</span>
+                    <div>
+                        <h2 class="text-2xl text-white font-bold mystical-font tracking-wide">The 2-of-2 signoff &amp; the three roles</h2>
+                        <p class="text-gray-400 font-light italic text-sm mt-1">You sign. A mentor signs over it. Both marks required.</p>
+                    </div>
+                </div>
+                <div class="prose prose-invert max-w-none text-gray-300 font-light leading-relaxed mb-6">
+                    <p>"<strong>2-of-2</strong>" means a completion needs exactly two signatures, and <em>both</em> must be present — no
+                    shortcuts. First you sign with your seal to say "I finished all 12 parts." Then an Instructor or Archon signs over the
+                    top to say "confirmed." Only when both marks sit on the same record does the Tome get minted.</p>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div class="data-card">
+                        <h4 class="font-mono font-bold mb-2" style="color:var(--accent)">Acolyte</h4>
+                        <p class="text-xs text-gray-400 font-light">That is <strong>you</strong> — the student. You provide the first
+                        signature by claiming completion with your seal.</p>
+                    </div>
+                    <div class="data-card">
+                        <h4 class="font-mono font-bold mb-2" style="color:var(--accent)">Instructor</h4>
+                        <p class="text-xs text-gray-400 font-light">A mentor who can review your claim and provide the second signature,
+                        validating your work in the Unlock Console.</p>
+                    </div>
+                    <div class="data-card">
+                        <h4 class="font-mono font-bold mb-2" style="color:var(--accent)">Archon</h4>
+                        <p class="text-xs text-gray-400 font-light">A senior authority who can also validate, and who oversees the canon
+                        itself. Either an Instructor or an Archon can be your second signer.</p>
+                    </div>
+                </div>
+                <div class="simple-translation">
+                    <h4 class="text-sm font-bold mb-1 font-mono uppercase tracking-widest" style="color:var(--accent)">Simply Put: Two keys open the vault</h4>
+                    <p class="text-xs text-yellow-100/80 m-0">
+                        Like a bank vault that needs two different keys turned at once — yours and the manager's — a Tome cannot be
+                        minted with only one signature. This stops anyone (including you) from awarding a Tome that was not truly earned.
+                    </p>
+                </div>
+            </div>
+
+            <!-- CHAPTER 05: WALKTHROUGH -->
+            <div id="c5" class="glass-panel">
+                <div class="flex items-start gap-4 mb-6">
+                    <span class="ch-num">05</span>
+                    <div>
+                        <h2 class="text-2xl text-white font-bold mystical-font tracking-wide">Step-by-step walkthrough</h2>
+                        <p class="text-gray-400 font-light italic text-sm mt-1">Three destinations in the Mage Tower, in order.</p>
+                    </div>
+                </div>
+                <div class="space-y-5" style="counter-reset:walk">
+                    <div class="walk-step flex items-start gap-4 bg-black/40 border border-gray-800 rounded-lg p-5">
+                        <div>
+                            <h4 class="text-white font-bold mystical-font mb-1">Forge your seal — <span class="font-mono text-xs" style="color:var(--accent)">Seal Forge</span></h4>
+                            <p class="text-sm text-gray-400 font-light">Visit the <strong>Seal Forge</strong> and create your Minor Tome seal
+                            (if you have not already). This is your personal signing pen — you only do this once, and you reuse it for every
+                            future lesson.</p>
+                        </div>
+                    </div>
+                    <div class="walk-step flex items-start gap-4 bg-black/40 border border-gray-800 rounded-lg p-5">
+                        <div>
+                            <h4 class="text-white font-bold mystical-font mb-1">Claim completion — <span class="font-mono text-xs" style="color:var(--accent)">Major Tome Library</span></h4>
+                            <p class="text-sm text-gray-400 font-light">Go to the <strong>Major Tome Library</strong> and claim completion of
+                            <em>"Platonic Solids &amp; Symmetric Tessellations."</em> With all 12 parts marked done, you sign the claim using
+                            your seal — that is the <strong>first</strong> of the two signatures.</p>
+                        </div>
+                    </div>
+                    <div class="walk-step flex items-start gap-4 bg-black/40 border border-gray-800 rounded-lg p-5">
+                        <div>
+                            <h4 class="text-white font-bold mystical-font mb-1">Get validated — <span class="font-mono text-xs" style="color:var(--accent)">Unlock Console</span></h4>
+                            <p class="text-sm text-gray-400 font-light">An Instructor or Archon opens the <strong>Unlock Console</strong>,
+                            reviews your claim, and signs over your signature — the <strong>second</strong> signature. That completes the
+                            2-of-2, and Tome <span class="font-mono" style="color:var(--accent)">dept-I/i-08</span> is minted to your name.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-black/40 border rounded-xl p-5 mt-6 flex flex-wrap items-center justify-center gap-3 font-mono text-xs md:text-sm" style="border-color:color-mix(in srgb,var(--accent) 25%,transparent)">
+                    <span class="px-3 py-1 rounded border border-gray-700" style="color:var(--accent)">Seal Forge</span>
+                    <span class="text-gray-500">→</span>
+                    <span class="px-3 py-1 rounded border border-gray-700" style="color:var(--accent)">Major Tome Library</span>
+                    <span class="text-gray-500">→</span>
+                    <span class="px-3 py-1 rounded border border-gray-700" style="color:var(--accent)">Unlock Console</span>
+                    <span class="text-gray-500">→</span>
+                    <span class="px-3 py-1 rounded border border-yellow-600/50 text-white font-bold shadow-[0_0_15px_rgba(212,175,55,0.2)]">Tome minted 🏅</span>
+                </div>
+                <p class="text-[11px] text-gray-500 font-mono text-center mt-4">The live version of these three buttons appears on the
+                    <a href="1f_application_lab.html" class="underline hover:text-yellow-400">1F lesson page</a> and the
+                    <a href="index.html" class="underline hover:text-yellow-400">lesson hub</a>, unlocking once all 12 parts are complete.</p>
+            </div>
+
+            <!-- CHAPTER 06: CAPSTONE PROBLEM SET -->
+            <div id="c6" class="glass-panel">
+                <div class="flex items-start gap-4 mb-6">
+                    <span class="ch-num">06</span>
+                    <div>
+                        <h2 class="text-2xl text-white font-bold mystical-font tracking-wide">Capstone problem set</h2>
+                        <p class="text-gray-400 font-light italic text-sm mt-1">Synthesize the whole lesson. Try each before revealing.</p>
+                    </div>
+                </div>
+                <div class="space-y-3">
+                    <details class="bg-black/40 border border-gray-800 hover:border-yellow-500/50 transition-colors rounded-lg p-4 cursor-pointer group">
+                        <summary class="font-mono text-sm select-none outline-none list-none flex items-center justify-between" style="color:var(--accent)">
+                            1. A mesh reports V = 8, E = 12, F = 6. Compute χ and say what it proves.
+                            <span class="text-gray-500 group-open:rotate-180 transition-transform text-xs">▼</span>
+                        </summary>
+                        <div class="mt-4 pt-4 border-t border-gray-800 text-gray-300 font-light text-sm">
+                            χ = V − E + F = 8 − 12 + 6 = <strong class="text-white">2</strong>. A value of 2 means the surface is a closed,
+                            watertight sphere-type solid (genus 0) with no holes or cracks — it is the cube.
+                        </div>
+                    </details>
+                    <details class="bg-black/40 border border-gray-800 hover:border-yellow-500/50 transition-colors rounded-lg p-4 cursor-pointer group">
+                        <summary class="font-mono text-sm select-none outline-none list-none flex items-center justify-between" style="color:var(--accent)">
+                            2. Which single Platonic solid fills 3-space by itself, and why is it the only one?
+                            <span class="text-gray-500 group-open:rotate-180 transition-transform text-xs">▼</span>
+                        </summary>
+                        <div class="mt-4 pt-4 border-t border-gray-800 text-gray-300 font-light text-sm">
+                            The <strong class="text-white">cube</strong>. Its dihedral angle is exactly 90°, and 90° × 4 = 360°, so four cubes
+                            close perfectly around every shared edge with no gap. No other Platonic solid has a dihedral angle that divides
+                            360° evenly (tetra 70.53°, octa 109.47°, dodeca 116.57°, icosa 138.19°).
+                        </div>
+                    </details>
+                    <details class="bg-black/40 border border-gray-800 hover:border-yellow-500/50 transition-colors rounded-lg p-4 cursor-pointer group">
+                        <summary class="font-mono text-sm select-none outline-none list-none flex items-center justify-between" style="color:var(--accent)">
+                            3. Tetrahedra alone leave gaps. What combination does fill space, and how do the angles work?
+                            <span class="text-gray-500 group-open:rotate-180 transition-transform text-xs">▼</span>
+                        </summary>
+                        <div class="mt-4 pt-4 border-t border-gray-800 text-gray-300 font-light text-sm">
+                            The <strong class="text-white">tetrahedral–octahedral honeycomb</strong>: alternating tetrahedra and octahedra.
+                            Around a shared edge, 2 × 70.53° + 2 × 109.47° = <strong>360°</strong>, so the mix closes exactly even though
+                            neither shape can do it alone. This is why the engine favors the tet-oct lattice.
+                        </div>
+                    </details>
+                    <details class="bg-black/40 border border-gray-800 hover:border-yellow-500/50 transition-colors rounded-lg p-4 cursor-pointer group">
+                        <summary class="font-mono text-sm select-none outline-none list-none flex items-center justify-between" style="color:var(--accent)">
+                            4. The icosahedron and dodecahedron both have rotation group order 60. What does that tell you?
+                            <span class="text-gray-500 group-open:rotate-180 transition-transform text-xs">▼</span>
+                        </summary>
+                        <div class="mt-4 pt-4 border-t border-gray-800 text-gray-300 font-light text-sm">
+                            They are <strong class="text-white">duals</strong> — same symmetry group, just with vertices and faces swapped
+                            (the cube and octahedron are the other dual pair, both order 24). High symmetry forces many <em>degenerate</em>
+                            (repeated) vibration modes, giving these solids the richest resonant spectra of the five.
+                        </div>
+                    </details>
+                    <details class="bg-black/40 border border-gray-800 hover:border-yellow-500/50 transition-colors rounded-lg p-4 cursor-pointer group">
+                        <summary class="font-mono text-sm select-none outline-none list-none flex items-center justify-between" style="color:var(--accent)">
+                            5. Why does the engine "store the seed, not the asset," and how does χ help?
+                            <span class="text-gray-500 group-open:rotate-180 transition-transform text-xs">▼</span>
+                        </summary>
+                        <div class="mt-4 pt-4 border-t border-gray-800 text-gray-300 font-light text-sm">
+                            A compact seed plus deterministic rules regenerates the full vertex/index buffer on demand, saving memory. After
+                            regenerating, the engine recomputes χ = V − E + F as a <strong class="text-white">checksum</strong>: if it is not
+                            2, the rebuild introduced a hole or crack and the geometry is rejected before it is ever certified.
+                        </div>
+                    </details>
+                </div>
+            </div>
+
+            <!-- GLOSSARY -->
+            <div id="glossary" class="glass-panel">
+                <div class="flex items-start gap-4 mb-4">
+                    <span class="ch-num">07</span>
+                    <h2 class="text-2xl text-white font-bold mystical-font">Seal-system glossary</h2>
+                </div>
+                <dl class="gloss">
+                    <dt>Minor Tome</dt><dd>Your personal record book. It holds your seal and your own history of completed parts.</dd>
+                    <dt>Seal</dt><dd>Your unique signing key — like a pen only you can write with. Used to sign completions.</dd>
+                    <dt>Major Tome</dt><dd>The Academy's shared, permanent library ledger of finished lessons. One Tome per lesson.</dd>
+                    <dt>Canon</dt><dd>The official, tamper-proof record of who completed what. Being "in the canon" means it is verified and permanent.</dd>
+                    <dt>2-of-2 signoff <span class="badge">two signatures</span></dt><dd>A completion needs two signatures — yours plus an Instructor's or Archon's. Both required, no exceptions.</dd>
+                    <dt>Schumann tick <span class="badge">7.83 Hz</span></dt><dd>The shared, auditable clock every signoff is stamped against, so all signatures agree on "when."</dd>
+                    <dt>Acolyte / Instructor / Archon</dt><dd>The three roles: the student who signs first, the mentor who validates, and the senior authority who oversees the canon.</dd>
+                    <dt>Genus <span class="badge">recap</span></dt><dd>The number of holes in a surface. A Platonic solid has genus 0 (no holes), which is why χ = 2 − 2g = 2.</dd>
+                    <dt>Dihedral angle <span class="badge">recap</span></dt><dd>The angle between two faces meeting at an edge. It decides whether copies of a solid can close around an edge to fill space (only the cube's 90° does it alone).</dd>
+                </dl>
+            </div>
+
+            <!-- ===== Checkpoint + interweave prev/next ===== -->
+            <div class="mt-14 flex flex-col items-center gap-3">
+              <span class="text-[10px] text-gray-500 font-mono uppercase tracking-[0.3em]">Checkpoint</span>
+              <button id="mark-complete-btn" onclick="owlMarkComplete()" class="px-8 py-3 rounded-lg border font-bold tracking-widest text-xs uppercase mystical-font transition-all hover:scale-[1.02]" style="border-color:var(--accent);color:var(--accent);background:color-mix(in srgb,var(--accent) 6%,transparent);">Mark this part complete ✓</button>
+              <p class="text-[10px] text-gray-600 font-mono text-center max-w-md">Progress saves to this browser. Finish all 12 parts to unlock the Tome signoff on the <a href="index.html" class="underline hover:text-yellow-400">lesson hub</a>.</p>
+            </div>
+            <div class="mt-10 pt-6 border-t border-white/10 flex items-center justify-between gap-3 text-xs font-mono">
+              <a href="1f_application_lab.html" class="px-4 py-2 rounded border border-white/10 text-gray-400 hover:text-white hover:border-white/30 transition-colors">← Back to 1F lesson</a>
+              <a href="index.html" class="px-4 py-2 rounded border border-yellow-600/40 text-yellow-500 hover:bg-yellow-500/10 transition-colors tracking-widest uppercase">◆ Hub</a>
+              <a href="index.html" class="px-4 py-2 rounded border border-white/10 text-gray-400 hover:text-white hover:border-white/30 transition-colors">Lesson Hub →</a>
+            </div>
+
+            <!-- CLOSER -->
+            <div class="glass-panel text-center mt-8 shadow-[0_0_40px_rgba(212,175,55,0.05)] border-yellow-600/30">
+                <span class="font-mono text-[10px] uppercase tracking-widest block mb-4" style="color:var(--accent)">Capstone Directive</span>
+                <h2 class="text-2xl md:text-3xl text-white font-bold mystical-font mb-4">Sign it, and it is yours forever</h2>
+                <p class="text-gray-300 font-light max-w-2xl mx-auto text-sm md:text-base mb-8">
+                    Twelve parts finished, two seals pressed, one Tome minted into the canon. You have proven the whole arc —
+                    from a single vertex to a certified, space-filling form.
+                </p>
+                <div class="flex justify-center items-center gap-2 md:gap-4 flex-wrap font-mono text-xs md:text-sm">
+                    <span class="bg-black/50 border border-gray-700 px-3 py-1 rounded" style="color:var(--accent)">Finish 12 parts</span>
+                    <span class="text-gray-500">→</span>
+                    <span class="bg-black/50 border border-gray-700 px-3 py-1 rounded" style="color:var(--accent)">Sign with your seal</span>
+                    <span class="text-gray-500">→</span>
+                    <span class="bg-black/50 border border-gray-700 px-3 py-1 rounded" style="color:var(--accent)">Mentor validates</span>
+                    <span class="text-gray-500">→</span>
+                    <span class="bg-black/50 border border-yellow-600/50 px-3 py-1 rounded text-white font-bold shadow-[0_0_15px_rgba(212,175,55,0.2)]">Tome dept-I/i-08</span>
+                </div>
+            </div>
+
+        </main>
+
+        <!-- Footer -->
+        <footer class="w-full border-t border-yellow-900/30 bg-black/60 backdrop-blur-md py-6 text-center mt-auto flex-shrink-0 relative z-20">
+            <p class="text-[10px] text-yellow-700 uppercase tracking-[0.3em] font-mono">
+                Department I • Owl Academy Archives
+            </p>
+        </footer>
+    </div>
+
+    <!-- ===== Completion JS ===== -->
+    <script>
+    (function(){
+      var KEY='owl.platonic.progress.v1', PART='1f-x';
+      function rd(){ try{ return JSON.parse(localStorage.getItem(KEY))||{}; }catch(e){ return {}; } }
+      function wr(m){ try{ localStorage.setItem(KEY, JSON.stringify(m)); }catch(e){} }
+      window.owlMarkComplete=function(){ var m=rd(); m[PART]=true; wr(m); paint(true); };
+      function paint(done){ var b=document.getElementById('mark-complete-btn'); if(!b) return;
+        if(done){ b.textContent='✓ Part complete'; b.style.background='color-mix(in srgb,var(--accent) 22%,transparent)'; b.setAttribute('disabled',''); b.style.cursor='default'; } }
+      document.addEventListener('DOMContentLoaded', function(){ paint(!!rd()[PART]); });
+    })();
+    </script>
+</body>
+</html>

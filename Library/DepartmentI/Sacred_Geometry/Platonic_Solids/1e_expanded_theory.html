@@ -1,0 +1,803 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Owl Academy | Lesson 1E Appendix: Engine Implementation — Deep Dive</title>
+
+    <!-- CSS & Fonts -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Inter:wght@300;400;500;600&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+
+    <!-- MathJax for rendering geometric equations -->
+    <script>
+        window.MathJax = {
+            tex: {
+                inlineMath: [['$', '$'], ['\\(', '\\)']],
+                displayMath: [['$$', '$$'], ['\\[', '\\]']]
+            }
+        };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+    <style>
+        /* Dynamic Theme Variables (Owl Academy Standard) */
+        :root {
+            --accent: #f59e0b;
+            --color-void: #090614;
+            --color-primary: #D4AF37;
+            --color-secondary: #8e9eab;
+            --color-holo1: #00d4ff;
+            --color-holo2: #8A2BE2;
+            --color-text: #E6C27A;
+            --color-r3-x: #ff3366;
+            --color-r3-y: #33ff99;
+            --color-r3-z: #00d4ff;
+        }
+
+        body {
+            background-color: var(--color-void);
+            color: #e2e8f0;
+            font-family: 'Inter', sans-serif;
+            background: radial-gradient(circle at 50% 50%, color-mix(in srgb, var(--accent) 10%, var(--color-void)), var(--color-void) 80%);
+            min-height: 100vh;
+            margin: 0;
+            overflow-x: hidden;
+            scroll-behavior: smooth;
+        }
+
+        /* --- ATMOSPHERIC LAYERS --- */
+        .nebula-layer {
+            position: fixed; inset: 0;
+            background:
+                radial-gradient(circle at 20% 30%, var(--color-holo2) 0%, transparent 40%),
+                radial-gradient(circle at 80% 70%, var(--color-holo1) 0%, transparent 40%);
+            opacity: 0.15; mix-blend-mode: screen; filter: blur(80px); pointer-events: none; z-index: 0;
+        }
+        .vignette-layer {
+            position: fixed; inset: 0;
+            background: radial-gradient(circle, transparent 40%, rgba(0,0,0,0.8) 120%);
+            pointer-events: none; z-index: 10;
+        }
+        .starfield {
+            position: fixed; inset: 0;
+            background-image:
+                radial-gradient(2px 2px at 20px 30px, var(--color-primary), rgba(0,0,0,0)),
+                radial-gradient(2px 2px at 40px 70px, #fff, rgba(0,0,0,0)),
+                radial-gradient(2px 2px at 50px 160px, rgba(255,255,255,0.8), rgba(0,0,0,0)),
+                radial-gradient(2px 2px at 90px 40px, #fff, rgba(0,0,0,0)),
+                radial-gradient(2px 2px at 130px 80px, var(--color-primary), rgba(0,0,0,0));
+            background-repeat: repeat; background-size: 250px 250px;
+            animation: twinkle 8s infinite alternate; opacity: 0.35; z-index: 0; pointer-events: none;
+        }
+        .starfield-layer-2 { background-size: 350px 350px; background-position: 50px 50px; opacity: 0.2; animation: twinkle 12s infinite alternate-reverse; }
+        @keyframes twinkle { 0% { opacity: 0.1; transform: scale(1); } 100% { opacity: 0.5; transform: scale(1.05); } }
+
+        .spin-slow { animation: spin 40s linear infinite; transform-origin: center; }
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+
+        /* --- TYPOGRAPHY & PANELS --- */
+        h1, h2, h3, h4, .mystical-font { font-family: 'Cinzel', serif; }
+        .mono { font-family: 'Fira Code', monospace; }
+        .gold-gradient {
+            background: linear-gradient(to right, var(--color-primary), #FFF8DC, var(--color-primary));
+            -webkit-background-clip: text; background-clip: text; color: transparent; text-shadow: 0 0 15px color-mix(in srgb, var(--color-primary) 30%, transparent);
+        }
+
+        .glass-panel {
+            background: rgba(10, 5, 20, 0.5);
+            backdrop-filter: blur(12px);
+            border: 1px solid color-mix(in srgb, var(--color-primary) 20%, transparent);
+            border-radius: 16px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+            margin-bottom: 2rem;
+            padding: 2rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .data-card {
+            background: rgba(15, 10, 25, 0.5);
+            border: 1px solid color-mix(in srgb, var(--color-primary) 10%, transparent);
+            border-top: 1px solid color-mix(in srgb, var(--color-primary) 30%, transparent);
+            border-radius: 12px;
+            padding: 1.5rem;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+        .data-card:hover {
+            border-color: color-mix(in srgb, var(--accent) 40%, transparent);
+            background: rgba(20, 15, 35, 0.7);
+            box-shadow: 0 0 20px color-mix(in srgb, var(--accent) 10%, transparent);
+        }
+
+        .simple-translation {
+            background: color-mix(in srgb, var(--accent) 6%, transparent);
+            border-left: 3px solid color-mix(in srgb, var(--accent) 50%, transparent);
+            padding: 1rem;
+            margin-top: 1.5rem;
+            border-radius: 0 8px 8px 0;
+            font-family: 'Inter', sans-serif;
+        }
+
+        .math-note {
+            border: 1px dashed color-mix(in srgb, var(--color-primary) 40%, transparent);
+            border-radius: 12px;
+            padding: 16px 20px;
+            margin: 24px 0;
+            background: color-mix(in srgb, var(--color-primary) 5%, transparent);
+        }
+
+        .ch-num {
+            font-family: 'Fira Code', monospace;
+            font-weight: 600;
+            font-size: 1rem;
+            color: var(--accent);
+            border: 1px solid var(--accent);
+            border-radius: 8px;
+            padding: 6px 11px;
+            background: color-mix(in srgb, var(--accent) 10%, transparent);
+            display: inline-block;
+        }
+
+        /* code block */
+        pre.codeblock {
+            background: #05030a;
+            border: 1px solid color-mix(in srgb, var(--accent) 30%, transparent);
+            border-radius: 12px;
+            padding: 16px 18px;
+            overflow-x: auto;
+            font-family: 'Fira Code', monospace;
+            font-size: .78rem;
+            line-height: 1.6;
+            color: #cbd5e1;
+        }
+        pre.codeblock .kw { color: var(--accent); }
+        pre.codeblock .cm { color: #64748b; font-style: italic; }
+        pre.codeblock .st { color: #33ff99; }
+
+        /* Input Range Styling */
+        input[type=range] {
+            -webkit-appearance: none;
+            width: 100%;
+            background: transparent;
+            margin: 14px 0;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 16px; width: 16px;
+            border-radius: 50%;
+            background: var(--accent);
+            cursor: pointer;
+            box-shadow: 0 0 10px var(--accent);
+            margin-top: -6px;
+        }
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%; height: 4px;
+            cursor: pointer;
+            background: rgba(255,255,255,0.2);
+            border-radius: 2px;
+        }
+
+        /* Table */
+        .euler-table { width: 100%; border-collapse: collapse; margin: 20px 0; font-size: .9rem; }
+        .euler-table th, .euler-table td { padding: 11px 10px; text-align: center; border-bottom: 1px solid rgba(255,255,255,0.1); }
+        .euler-table th { font-family: "Fira Code", monospace; font-size: .74rem; letter-spacing: .06em; text-transform: uppercase; color: var(--color-secondary); }
+        .euler-table td:first-child, .euler-table th:first-child { text-align: left; }
+        .euler-table tr:hover td { background: color-mix(in srgb, var(--accent) 6%, transparent); }
+        .tbl-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
+        /* Glossary */
+        .gloss dt { font-weight: 600; margin-top: 16px; color: var(--accent); display: flex; align-items: baseline; gap: 10px; font-family: 'Fira Code', monospace; font-size: 0.9rem;}
+        .gloss dd { margin: .25rem 0 1rem; color: #cbd5e1; font-size: .9rem; font-weight: 300;}
+        .badge { font-family: "Fira Code", monospace; font-size: .6rem; padding: 2px 7px; border-radius: 20px; letter-spacing: .06em; text-transform: uppercase; border: 1px solid color-mix(in srgb, var(--accent) 40%, transparent); color: var(--accent); }
+
+        /* Stepper chips (§3B) */
+        .step-chip{padding:.35rem .7rem;border-radius:.4rem;border:1px solid rgba(255,255,255,.1);color:#94a3b8;text-transform:uppercase;letter-spacing:.08em;transition:all .2s;white-space:nowrap;}
+        .step-chip:hover{color:#fff;border-color:rgba(255,255,255,.35);}
+        .step-chip[aria-current="page"]{color:var(--accent);border-color:var(--accent);background:color-mix(in srgb,var(--accent) 14%,transparent);box-shadow:0 0 12px color-mix(in srgb,var(--accent) 30%,transparent);}
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: rgba(0,0,0,0.2); }
+        ::-webkit-scrollbar-thumb { background: linear-gradient(to bottom, color-mix(in srgb, var(--accent) 30%, transparent), color-mix(in srgb, var(--accent) 70%, transparent)); border-radius: 10px; }
+    </style>
+</head>
+<body class="flex flex-col h-screen overflow-hidden">
+
+    <!-- Atmospheric Layers -->
+    <div class="nebula-layer"></div>
+    <div class="starfield"></div>
+    <div class="starfield starfield-layer-2"></div>
+    <div class="vignette-layer"></div>
+
+    <div class="relative z-20 flex flex-col w-full h-full overflow-y-auto custom-scrollbar">
+
+        <!-- Header / Navigation -->
+        <header class="w-full py-4 border-b border-yellow-600/30 glass-panel z-50 flex-shrink-0 relative shadow-2xl sticky top-0 !mb-0 !rounded-none">
+            <div class="w-full mx-auto px-4 md:px-6 flex flex-col md:flex-row justify-between items-center gap-4">
+
+                <div class="flex items-center space-x-4">
+                    <svg width="40" height="40" viewBox="0 0 100 100" class="fill-none spin-slow" style="stroke: var(--color-primary); filter: drop-shadow(0 0 5px var(--color-primary));">
+                        <circle cx="50" cy="50" r="45" stroke-width="2"/>
+                        <line x1="30" y1="30" x2="70" y2="70" stroke-width="2.5" stroke-linecap="round"/>
+                        <line x1="70" y1="30" x2="30" y2="70" stroke-width="2.5" stroke-linecap="round"/>
+                        <line x1="50" y1="15" x2="50" y2="85" stroke-width="2.5" stroke-linecap="round"/>
+                        <path d="M 50,15 C 75,15 75,45 50,45" stroke-width="2.5" stroke-linecap="round"/>
+                        <text x="20" y="55" fill="var(--color-primary)" stroke="none" font-family="Cinzel, serif" font-size="16" text-anchor="middle">A</text>
+                        <text x="80" y="55" fill="var(--color-primary)" stroke="none" font-family="Cinzel, serif" font-size="16" text-anchor="middle">Ω</text>
+                    </svg>
+                    <h1 class="text-xl md:text-2xl font-bold tracking-[0.2em] gold-gradient">OWL ACADEMY</h1>
+                </div>
+
+                <div class="text-center hidden md:block flex-grow">
+                    <p class="text-[10px] tracking-[0.3em] uppercase mb-1 font-mono" style="color:var(--accent)">Department I • Lesson 1 · Sub-lesson 1E — Expanded Theory</p>
+                    <h2 class="text-lg font-bold tracking-[0.1em] mystical-font text-white">Engine Implementation — Deep Dive</h2>
+                </div>
+
+                <div class="flex items-center space-x-4">
+                    <a href="1e_engine_implementation.html" class="flex items-center gap-2 px-4 py-2 rounded text-xs font-bold tracking-[0.15em] mystical-font transition-all whitespace-nowrap" style="background:color-mix(in srgb, var(--accent) 18%, transparent);color:var(--accent);border:1px solid color-mix(in srgb, var(--accent) 45%, transparent);">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+                        SUB-LESSON 1E
+                    </a>
+                </div>
+            </div>
+        </header>
+
+        <!-- ===== Lesson 1 sub-lesson stepper (interweave nav) ===== -->
+        <nav class="w-full max-w-7xl mx-auto px-4 md:px-8 mt-6" aria-label="Lesson 1 sub-lessons">
+          <div class="glass-panel rounded-xl p-3 flex flex-wrap items-center justify-center gap-2 text-[10px] md:text-xs font-mono !mb-0">
+            <a href="index.html" class="px-3 py-1.5 rounded border border-yellow-600/40 text-yellow-500 hover:bg-yellow-500/10 transition-colors tracking-widest uppercase">◆ Hub</a>
+            <span class="text-gray-700 hidden md:inline">/</span>
+            <a href="1a_geometric_primitives.html" class="step-chip">1A · Primitives</a>
+            <a href="1b_topological_invariants.html" class="step-chip">1B · Topology</a>
+            <a href="1c_harmonic_resonance.html" class="step-chip">1C · Resonance</a>
+            <a href="1d_tiling_problem.html" class="step-chip">1D · Tiling</a>
+            <a href="1e_engine_implementation.html" class="step-chip" aria-current="page">1E · Engine</a>
+            <a href="1f_application_lab.html" class="step-chip">1F · Lab</a>
+          </div>
+        </nav>
+
+        <!-- Main Content -->
+        <main class="flex-grow w-full max-w-7xl mx-auto px-4 md:px-8 py-8 space-y-8 relative z-20">
+
+            <!-- HERO SECTION -->
+            <div class="glass-panel">
+                <div class="absolute top-0 left-1/2 -translate-x-1/2 w-3/4 h-1 bg-gradient-to-r from-transparent to-transparent opacity-50" style="--tw-gradient-via:var(--accent);background:linear-gradient(to right,transparent,var(--accent),transparent)"></div>
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+                    <div>
+                        <span class="font-mono text-xs uppercase tracking-widest flex items-center gap-2 mb-4" style="color:var(--accent)">
+                            <span class="w-8 h-px block" style="background:var(--accent)"></span> A field guide for absolute beginners
+                        </span>
+                        <h1 class="text-4xl md:text-5xl font-bold mystical-font text-white leading-tight mb-6">How a computer keeps a shape in its memory</h1>
+
+                        <div class="simple-translation !mt-0 mb-6" style="border-left-color:color-mix(in srgb,var(--accent) 60%,transparent);background:color-mix(in srgb,var(--accent) 10%,transparent)">
+                            <h4 class="text-sm font-bold mb-1 font-mono uppercase tracking-widest" style="color:var(--accent)">Zero-Math Disclaimer</h4>
+                            <p class="text-xs m-0" style="color:color-mix(in srgb,var(--accent) 25%,#fde9c8)">
+                                No coding experience needed. We will show that a 3D shape, inside a computer, is really just two ordinary lists of numbers — one for the corners, one for the recipes that connect them. That's the whole secret.
+                            </p>
+                        </div>
+
+                        <p class="text-gray-300 font-light leading-relaxed text-lg mb-8">
+                            In sub-lesson 1A you learned a shape is made of dots, lines and surfaces. In 1B you learned the magic checksum $V-E+F=2$. Now we answer the practical question: when the S.P.I.R.E. Engine "holds" a cube, what is actually sitting in its memory? The answer is refreshingly simple.
+                        </p>
+
+                        <!-- Table of Contents -->
+                        <div class="bg-black/50 rounded-xl p-6" style="border:1px solid color-mix(in srgb,var(--accent) 30%,transparent)">
+                            <h2 class="text-sm font-mono text-gray-400 mb-4 uppercase tracking-widest border-b border-gray-800 pb-2"># Index Directory</h2>
+                            <ul class="grid grid-cols-1 md:grid-cols-2 gap-y-3 gap-x-8 text-sm font-light">
+                                <li><a href="#c1" class="flex items-baseline gap-3 text-gray-300 hover:text-amber-400 transition-colors"><span class="font-mono text-yellow-600 text-xs">01</span> From dots to buffers</a></li>
+                                <li><a href="#c2" class="flex items-baseline gap-3 text-gray-300 hover:text-amber-400 transition-colors"><span class="font-mono text-yellow-600 text-xs">02</span> The vertex table (a GPS list)</a></li>
+                                <li><a href="#c3" class="flex items-baseline gap-3 text-gray-300 hover:text-amber-400 transition-colors"><span class="font-mono text-yellow-600 text-xs">03</span> The face table (recipe cards)</a></li>
+                                <li><a href="#c4" class="flex items-baseline gap-3 text-gray-300 hover:text-amber-400 transition-colors"><span class="font-mono text-yellow-600 text-xs">04</span> The half-edge structure</a></li>
+                                <li><a href="#c5" class="flex items-baseline gap-3 text-gray-300 hover:text-amber-400 transition-colors"><span class="font-mono text-yellow-600 text-xs">05</span> Asking the mesh questions</a></li>
+                                <li><a href="#c6" class="flex items-baseline gap-3 text-gray-300 hover:text-amber-400 transition-colors"><span class="font-mono text-yellow-600 text-xs">06</span> Computing χ in code</a></li>
+                                <li><a href="#c7" class="flex items-baseline gap-3 text-gray-300 hover:text-amber-400 transition-colors"><span class="font-mono text-yellow-600 text-xs">07</span> The buffer explorer</a></li>
+                                <li><a href="#c8" class="flex items-baseline gap-3 text-gray-300 hover:text-amber-400 transition-colors"><span class="font-mono text-yellow-600 text-xs">08</span> Store the seed, not the asset</a></li>
+                                <li><a href="#c9" class="flex items-baseline gap-3 text-gray-300 hover:text-amber-400 transition-colors"><span class="font-mono text-yellow-600 text-xs">09</span> Words worth knowing</a></li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <!-- Hero visual: two lists -->
+                    <div class="bg-black/40 rounded-2xl p-6 border border-gray-800">
+                        <div class="text-center font-mono text-[10px] uppercase tracking-widest mb-4" style="color:var(--accent)">One triangle · two little lists</div>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div class="bg-black/50 border border-white/10 rounded-lg p-3">
+                                <div class="text-[10px] text-gray-500 mono mb-2">VERTEX LIST</div>
+                                <div class="font-mono text-[11px] space-y-1 text-gray-300">
+                                    <div><span style="color:var(--accent)">0:</span> (0, 0, 0)</div>
+                                    <div><span style="color:var(--accent)">1:</span> (2, 0, 0)</div>
+                                    <div><span style="color:var(--accent)">2:</span> (1, 2, 0)</div>
+                                </div>
+                            </div>
+                            <div class="bg-black/50 border border-white/10 rounded-lg p-3">
+                                <div class="text-[10px] text-gray-500 mono mb-2">FACE LIST</div>
+                                <div class="font-mono text-[11px] space-y-1 text-gray-300">
+                                    <div><span style="color:var(--accent)">face 0:</span></div>
+                                    <div>&nbsp;&nbsp;[ 0, 1, 2 ]</div>
+                                </div>
+                            </div>
+                        </div>
+                        <svg viewBox="0 0 200 150" class="w-full max-w-[220px] mx-auto mt-4">
+                            <polygon points="40,120 160,120 100,25" fill="color-mix(in srgb, #f59e0b 15%, transparent)" stroke="#f59e0b" stroke-width="2"/>
+                            <circle cx="40" cy="120" r="6" fill="#D4AF37"/><text x="24" y="124" fill="#fff" font-family="Fira Code, monospace" font-size="11">0</text>
+                            <circle cx="160" cy="120" r="6" fill="#D4AF37"/><text x="168" y="124" fill="#fff" font-family="Fira Code, monospace" font-size="11">1</text>
+                            <circle cx="100" cy="25" r="6" fill="#D4AF37"/><text x="100" y="18" fill="#fff" font-family="Fira Code, monospace" font-size="11" text-anchor="middle">2</text>
+                        </svg>
+                        <div class="text-center font-mono text-[10px] text-gray-500">that's the entire shape, stored</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- CHAPTER 01 -->
+            <div id="c1" class="glass-panel">
+                <div class="flex items-start gap-4 mb-6">
+                    <span class="ch-num">01</span>
+                    <div>
+                        <h2 class="text-2xl text-white font-bold mystical-font tracking-wide">From Dots to Buffers</h2>
+                        <p class="text-gray-400 font-light italic text-sm mt-1">A "buffer" is just a fancy word for a list of numbers.</p>
+                    </div>
+                </div>
+
+                <div class="prose prose-invert max-w-4xl text-gray-300 font-light leading-relaxed mb-6">
+                    <p>Back in 1A we said any solid can be described by its <strong>skin</strong> — its corners, edges and flat faces. Programmers call storing "just the skin" a <strong>boundary representation</strong>, or <strong>B-rep</strong>. When it comes time to actually save that skin in a computer, it becomes two plain lists:</p>
+                    <ul class="list-disc pl-5 space-y-1">
+                        <li>a list of every <strong>corner</strong> and where it sits, and</li>
+                        <li>a list of every <strong>face</strong> and which corners it joins.</li>
+                    </ul>
+                    <p>Each of these lists is called a <strong>buffer</strong>. A buffer is nothing scary — it is literally a numbered row of values, like a spreadsheet column. Two buffers, and you have a shape.</p>
+                </div>
+
+                <div class="simple-translation">
+                    <h4 class="text-sm font-bold mb-1 font-mono uppercase tracking-widest" style="color:var(--accent)">Simply Put: A Dot-to-Dot Book</h4>
+                    <p class="text-xs m-0" style="color:color-mix(in srgb,var(--accent) 25%,#fde9c8)">
+                        Remember dot-to-dot puzzles? One page lists numbered dots printed at fixed spots. The instructions say "draw from 1 to 2 to 3." The computer does exactly this: one list places the numbered dots, the other list says which dots to join. Nothing more.
+                    </p>
+                </div>
+            </div>
+
+            <!-- CHAPTER 02 -->
+            <div id="c2" class="glass-panel">
+                <div class="flex items-start gap-4 mb-6">
+                    <span class="ch-num">02</span>
+                    <div>
+                        <h2 class="text-2xl text-white font-bold mystical-font tracking-wide">The Vertex Table — a GPS List</h2>
+                        <p class="text-gray-400 font-light italic text-sm mt-1">Where every corner lives.</p>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
+                    <div class="prose prose-invert max-w-none text-gray-300 font-light leading-relaxed">
+                        <p>The first buffer is the <strong>vertex buffer</strong>. It is a numbered list of GPS addresses. Row 0 holds the coordinates of corner 0, row 1 holds corner 1, and so on. Every corner appears <em>exactly once</em>. Its row number is its permanent name — its <strong>index</strong>.</p>
+                        <p>Here is a cube. Eight corners, eight rows:</p>
+                    </div>
+                    <div class="tbl-scroll bg-black/40 border border-gray-800 rounded-xl p-3">
+                        <table class="euler-table w-full text-xs" style="min-width:300px">
+                            <thead><tr><th>index</th><th>x</th><th>y</th><th>z</th></tr></thead>
+                            <tbody class="text-gray-300 mono">
+                                <tr><td style="color:var(--accent)">0</td><td>&minus;1</td><td>&minus;1</td><td>&minus;1</td></tr>
+                                <tr><td style="color:var(--accent)">1</td><td>+1</td><td>&minus;1</td><td>&minus;1</td></tr>
+                                <tr><td style="color:var(--accent)">2</td><td>+1</td><td>+1</td><td>&minus;1</td></tr>
+                                <tr><td style="color:var(--accent)">3</td><td>&minus;1</td><td>+1</td><td>&minus;1</td></tr>
+                                <tr><td style="color:var(--accent)">4</td><td>&minus;1</td><td>&minus;1</td><td>+1</td></tr>
+                                <tr><td style="color:var(--accent)">5</td><td>+1</td><td>&minus;1</td><td>+1</td></tr>
+                                <tr><td style="color:var(--accent)">6</td><td>+1</td><td>+1</td><td>+1</td></tr>
+                                <tr><td style="color:var(--accent)">7</td><td>&minus;1</td><td>+1</td><td>+1</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="simple-translation">
+                    <h4 class="text-sm font-bold mb-1 font-mono uppercase tracking-widest" style="color:var(--accent)">Simply Put: A Contacts List</h4>
+                    <p class="text-xs m-0" style="color:color-mix(in srgb,var(--accent) 25%,#fde9c8)">
+                        Think of the phone contacts on your phone. Each contact has a name and a number, and you never store the same person twice. The vertex buffer is the shape's contacts list: each corner stored once, with a fixed position, referred to later just by its slot.
+                    </p>
+                </div>
+            </div>
+
+            <!-- CHAPTER 03 -->
+            <div id="c3" class="glass-panel">
+                <div class="flex items-start gap-4 mb-6">
+                    <span class="ch-num">03</span>
+                    <div>
+                        <h2 class="text-2xl text-white font-bold mystical-font tracking-wide">The Face Table — Recipe Cards</h2>
+                        <p class="text-gray-400 font-light italic text-sm mt-1">Which corners to join, and why we point instead of copy.</p>
+                    </div>
+                </div>
+
+                <div class="prose prose-invert max-w-none text-gray-300 font-light leading-relaxed mb-6">
+                    <p>The second buffer is the <strong>index buffer</strong> (also called the face buffer). Each entry is a small recipe: a list of corner <em>numbers</em> to connect into one face. It never writes coordinates — only the slot numbers from the vertex list. A cube has six square faces, so six recipe cards:</p>
+                </div>
+
+                <div class="tbl-scroll bg-black/40 border border-gray-800 rounded-xl p-3 mb-6">
+                    <table class="euler-table w-full text-xs" style="min-width:360px">
+                        <thead><tr><th>face</th><th>corner a</th><th>corner b</th><th>corner c</th><th>corner d</th></tr></thead>
+                        <tbody class="text-gray-300 mono">
+                            <tr><td style="color:var(--accent)">0 · bottom</td><td>0</td><td>1</td><td>5</td><td>4</td></tr>
+                            <tr><td style="color:var(--accent)">1 · top</td><td>3</td><td>7</td><td>6</td><td>2</td></tr>
+                            <tr><td style="color:var(--accent)">2 · front</td><td>4</td><td>5</td><td>6</td><td>7</td></tr>
+                            <tr><td style="color:var(--accent)">3 · back</td><td>0</td><td>3</td><td>2</td><td>1</td></tr>
+                            <tr><td style="color:var(--accent)">4 · right</td><td>1</td><td>2</td><td>6</td><td>5</td></tr>
+                            <tr><td style="color:var(--accent)">5 · left</td><td>0</td><td>4</td><td>7</td><td>3</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="prose prose-invert max-w-none text-gray-300 font-light leading-relaxed mb-4">
+                    <h3 class="text-xl text-white mystical-font mb-2">Why point at a corner instead of copying it?</h3>
+                    <p>Corner 6 shows up on the top, front <em>and</em> right faces. If each face copied out the full coordinates, that one corner would be written three times. Multiply across a whole model and you waste memory — and worse, if you nudge the corner you must remember to fix all three copies or the shape tears open. By storing the number <span class="mono" style="color:var(--accent)">6</span> instead, every face shares the one true corner. Fix it once, fixed everywhere.</p>
+                </div>
+
+                <div class="simple-translation">
+                    <h4 class="text-sm font-bold mb-1 font-mono uppercase tracking-widest" style="color:var(--accent)">Simply Put: Don't Re-type the Address</h4>
+                    <p class="text-xs m-0" style="color:color-mix(in srgb,var(--accent) 25%,#fde9c8)">
+                        When three friends live at the same house, you don't paste the full street address next to each name — you just say "same as above." If the family moves, you update one address, not three. Indexing is the mesh saying "same corner as slot 6" instead of re-typing where slot 6 is.
+                    </p>
+                </div>
+            </div>
+
+            <!-- CHAPTER 04 -->
+            <div id="c4" class="glass-panel">
+                <div class="flex items-start gap-4 mb-6">
+                    <span class="ch-num">04</span>
+                    <div>
+                        <h2 class="text-2xl text-white font-bold mystical-font tracking-wide">The Half-Edge Structure</h2>
+                        <p class="text-gray-400 font-light italic text-sm mt-1">A smarter address book for walking the surface.</p>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
+                    <div class="prose prose-invert max-w-none text-gray-300 font-light leading-relaxed">
+                        <p>Two buffers are great for <em>drawing</em> a shape, but clumsy for <em>exploring</em> it. Suppose you're standing on one face and want to step to the face right next door. With only the two lists you'd have to search through every recipe to find the neighbour. Slow.</p>
+                        <p>So engines add a third structure: the <strong>half-edge</strong> (its formal name is a <em>doubly-connected edge list</em>). The idea: take every edge and split it into two one-way arrows pointing opposite directions. Each arrow — a "half-edge" — remembers four things:</p>
+                        <ul class="list-disc pl-5 space-y-1 text-sm">
+                            <li><strong style="color:var(--accent)">origin</strong> — the corner it starts from,</li>
+                            <li><strong style="color:var(--accent)">twin</strong> — its partner arrow going the other way,</li>
+                            <li><strong style="color:var(--accent)">next</strong> — the arrow after it around the same face,</li>
+                            <li><strong style="color:var(--accent)">face</strong> — the face it hugs.</li>
+                        </ul>
+                    </div>
+
+                    <div class="bg-black/50 border border-gray-800 rounded-xl p-4">
+                        <div class="tbl-scroll flex justify-center">
+                        <svg viewBox="0 0 320 260" class="w-full max-w-[320px] h-auto">
+                            <!-- two triangles sharing an edge -->
+                            <line x1="160" y1="30" x2="60" y2="150" stroke="#334155" stroke-width="1"/>
+                            <line x1="60" y1="150" x2="260" y2="150" stroke="#334155" stroke-width="1"/>
+                            <line x1="260" y1="150" x2="160" y2="30" stroke="#334155" stroke-width="1"/>
+                            <line x1="60" y1="150" x2="160" y2="240" stroke="#334155" stroke-width="1"/>
+                            <line x1="160" y1="240" x2="260" y2="150" stroke="#334155" stroke-width="1"/>
+
+                            <!-- twin half-edges on shared edge -->
+                            <line x1="72" y1="144" x2="248" y2="144" stroke="#f59e0b" stroke-width="2.5" marker-end="url(#hh1)"/>
+                            <line x1="248" y1="156" x2="72" y2="156" stroke="#00d4ff" stroke-width="2.5" marker-end="url(#hh2)"/>
+                            <text x="150" y="136" fill="#f59e0b" font-family="Fira Code, monospace" font-size="10">half-edge</text>
+                            <text x="150" y="174" fill="#00d4ff" font-family="Fira Code, monospace" font-size="10">its twin</text>
+                            <text x="160" y="100" fill="#94a3b8" font-family="Fira Code, monospace" font-size="10" text-anchor="middle">Face A</text>
+                            <text x="160" y="205" fill="#94a3b8" font-family="Fira Code, monospace" font-size="10" text-anchor="middle">Face B</text>
+
+                            <circle cx="160" cy="30" r="5" fill="#D4AF37"/>
+                            <circle cx="60" cy="150" r="5" fill="#D4AF37"/>
+                            <circle cx="260" cy="150" r="5" fill="#D4AF37"/>
+                            <circle cx="160" cy="240" r="5" fill="#D4AF37"/>
+                            <defs>
+                                <marker id="hh1" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto"><path d="M0,0 L0,6 L8,3 z" fill="#f59e0b"/></marker>
+                                <marker id="hh2" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto"><path d="M0,0 L0,6 L8,3 z" fill="#00d4ff"/></marker>
+                            </defs>
+                        </svg>
+                        </div>
+                        <p class="text-[10px] text-gray-500 font-mono mt-3 text-center">The shared edge becomes two twin arrows. Cross a twin and you're on the neighbouring face — instantly.</p>
+                    </div>
+                </div>
+
+                <div class="simple-translation">
+                    <h4 class="text-sm font-bold mb-1 font-mono uppercase tracking-widest" style="color:var(--accent)">Simply Put: A Revolving Door</h4>
+                    <p class="text-xs m-0" style="color:color-mix(in srgb,var(--accent) 25%,#fde9c8)">
+                        Picture a revolving door between two rooms. Each pane is a one-way arrow: follow the panes around and you circle one room (that's <strong>next</strong>, walking a face). Step through to the pane facing you and you're in the room next door (that's <strong>twin</strong>, crossing to the neighbouring face). You never need a map of the whole building — just keep following doors.
+                    </p>
+                </div>
+            </div>
+
+            <!-- CHAPTER 05 -->
+            <div id="c5" class="glass-panel">
+                <div class="flex items-start gap-4 mb-6">
+                    <span class="ch-num">05</span>
+                    <div>
+                        <h2 class="text-2xl text-white font-bold mystical-font tracking-wide">Asking the Mesh Questions</h2>
+                        <p class="text-gray-400 font-light italic text-sm mt-1">These questions are called adjacency queries.</p>
+                    </div>
+                </div>
+
+                <div class="prose prose-invert max-w-none text-gray-300 font-light leading-relaxed mb-4">
+                    <p>Once the half-edges are in place, questions about who-touches-what become tiny walks. In geometry the umbrella term for "what is next to what" is <strong>adjacency</strong>. Two common queries:</p>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="data-card">
+                        <h4 class="font-mono font-bold mb-2" style="color:var(--accent)">Walk around a face</h4>
+                        <p class="text-sm text-gray-300 font-light">Start at any half-edge, keep following <span class="mono" style="color:var(--accent)">next</span> until you return home. Each hop is instant, so listing a face's corners costs only as many steps as it has sides.</p>
+                        <div class="mono text-[11px] text-gray-400 mt-3 bg-black/40 rounded p-2">h → next → next → … → back to h</div>
+                    </div>
+                    <div class="data-card" style="border-top-color:color-mix(in srgb,var(--color-holo1) 40%,transparent)">
+                        <h4 class="font-mono font-bold mb-2 text-cyan-400">Fan around a corner</h4>
+                        <p class="text-sm text-gray-300 font-light">To find every face meeting at one corner, alternate <span class="mono text-cyan-400">twin</span> then <span class="mono text-cyan-400">next</span>. You spin around the corner like the spokes of a wheel, touching each neighbouring face once.</p>
+                        <div class="mono text-[11px] text-gray-400 mt-3 bg-black/40 rounded p-2">h → twin → next → twin → next → …</div>
+                    </div>
+                </div>
+
+                <div class="simple-translation">
+                    <h4 class="text-sm font-bold mb-1 font-mono uppercase tracking-widest" style="color:var(--accent)">Simply Put: Following Signposts</h4>
+                    <p class="text-xs m-0" style="color:color-mix(in srgb,var(--accent) 25%,#fde9c8)">
+                        Instead of unfolding a giant map every time, you just read the signpost at your feet: "next corner this way," "neighbour that way." A few steps and you've answered the question — no searching the whole model.
+                    </p>
+                </div>
+            </div>
+
+            <!-- CHAPTER 06 -->
+            <div id="c6" class="glass-panel">
+                <div class="flex items-start gap-4 mb-6">
+                    <span class="ch-num">06</span>
+                    <div>
+                        <h2 class="text-2xl text-white font-bold mystical-font tracking-wide">Computing χ in Code</h2>
+                        <p class="text-gray-400 font-light italic text-sm mt-1">The health check that must equal 2.</p>
+                    </div>
+                </div>
+
+                <div class="prose prose-invert max-w-none text-gray-300 font-light leading-relaxed mb-4">
+                    <p>Here's the payoff for storing things as buffers: Euler's checksum from 1B falls out of them almost for free. Count the vertex rows to get <strong>V</strong>. Count the face rows to get <strong>F</strong>. For edges, add up every face's number of sides and halve it — because each edge is shared by two faces and would otherwise be counted twice. Then check $V-E+F$ is <strong>2</strong>. If it isn't, the mesh has a hole or a crack.</p>
+                </div>
+
+                <pre class="codeblock"><span class="cm"># pseudo-code: is this mesh watertight?</span>
+<span class="kw">function</span> eulerCheck(vertexBuffer, faceBuffer):
+    V = length(vertexBuffer)          <span class="cm"># count the corners</span>
+    F = length(faceBuffer)            <span class="cm"># count the faces</span>
+
+    sideTotal = 0
+    <span class="kw">for</span> face <span class="kw">in</span> faceBuffer:
+        sideTotal += length(face)     <span class="cm"># 3 for a triangle, 4 for a quad…</span>
+
+    E = sideTotal / 2                 <span class="cm"># every edge shared by 2 faces</span>
+
+    chi = V - E + F
+    <span class="kw">if</span> chi == 2:
+        <span class="kw">return</span> <span class="st">"OK — watertight, genus-0 ✓"</span>
+    <span class="kw">else</span>:
+        <span class="kw">return</span> <span class="st">"BROKEN — chi = "</span> + chi   <span class="cm"># a hole, crack, or stray vertex</span>
+</pre>
+
+                <div class="tbl-scroll mt-4">
+                    <table class="euler-table w-full text-xs" style="min-width:480px">
+                        <thead><tr><th>Solid</th><th>V</th><th>faces × sides</th><th>E</th><th>F</th><th>χ</th></tr></thead>
+                        <tbody class="text-gray-300">
+                            <tr><td>Tetrahedron</td><td style="color:var(--accent)">4</td><td>4 × 3 = 12</td><td>6</td><td style="color:var(--accent)">4</td><td class="font-bold text-white">2</td></tr>
+                            <tr><td>Cube</td><td style="color:var(--accent)">8</td><td>6 × 4 = 24</td><td>12</td><td style="color:var(--accent)">6</td><td class="font-bold text-white">2</td></tr>
+                            <tr><td>Octahedron</td><td style="color:var(--accent)">6</td><td>8 × 3 = 24</td><td>12</td><td style="color:var(--accent)">8</td><td class="font-bold text-white">2</td></tr>
+                            <tr><td>Dodecahedron</td><td style="color:var(--accent)">20</td><td>12 × 5 = 60</td><td>30</td><td style="color:var(--accent)">12</td><td class="font-bold text-white">2</td></tr>
+                            <tr><td>Icosahedron</td><td style="color:var(--accent)">12</td><td>20 × 3 = 60</td><td>30</td><td style="color:var(--accent)">20</td><td class="font-bold text-white">2</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- CHAPTER 07: INTERACTIVE BUFFER EXPLORER -->
+            <div id="c7" class="glass-panel">
+                <div class="flex items-start gap-4 mb-6">
+                    <span class="ch-num">07</span>
+                    <div>
+                        <h2 class="text-2xl text-white font-bold mystical-font tracking-wide">Interactive: The Buffer Explorer</h2>
+                        <p class="text-gray-400 font-light italic text-sm mt-1">Split every triangle into four and watch χ refuse to budge.</p>
+                    </div>
+                </div>
+
+                <div class="prose prose-invert max-w-none text-gray-300 font-light leading-relaxed mb-6">
+                    <p>Here is a tetrahedron's surface, shown as one of its triangular faces. Drag the slider to <strong>subdivide</strong>: every triangle splits into four smaller ones by adding a dot at the middle of each edge. Watch the buffers below balloon — more vertices, more edges, more faces — yet the checksum $\chi$ never leaves <strong>2</strong>. That stubbornness is exactly what makes it trustworthy: detail changes, topology doesn't.</p>
+                </div>
+
+                <div class="bg-black/30 rounded-xl p-6" style="border:1px solid color-mix(in srgb,var(--accent) 25%,transparent)">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
+                        <div class="flex justify-center bg-black/60 rounded-xl p-4 border border-gray-800 shadow-inner">
+                            <canvas id="subdiv-canvas" width="320" height="300" class="w-full max-w-[300px] h-auto" aria-label="A triangle being subdivided into smaller triangles"></canvas>
+                        </div>
+                        <div>
+                            <label for="subdiv-range" class="text-xs text-gray-500 font-mono">Subdivision level (each step splits every triangle into 4):</label>
+                            <input type="range" id="subdiv-range" min="0" max="3" value="0" step="1">
+                            <div class="font-mono text-sm mb-4" style="color:var(--accent)">level = <span id="subdiv-level">0</span></div>
+
+                            <div class="grid grid-cols-4 gap-2 text-center mb-4">
+                                <div class="bg-black/50 border border-white/10 rounded p-2"><div class="text-[9px] text-gray-500 mono">V</div><div id="sd-v" class="text-lg font-bold mono" style="color:var(--accent)">4</div></div>
+                                <div class="bg-black/50 border border-white/10 rounded p-2"><div class="text-[9px] text-gray-500 mono">E</div><div id="sd-e" class="text-lg font-bold mono" style="color:var(--accent)">6</div></div>
+                                <div class="bg-black/50 border border-white/10 rounded p-2"><div class="text-[9px] text-gray-500 mono">F</div><div id="sd-f" class="text-lg font-bold mono" style="color:var(--accent)">4</div></div>
+                                <div class="bg-black/50 border border-white/10 rounded p-2"><div class="text-[9px] text-gray-500 mono">χ</div><div id="sd-chi" class="text-lg font-bold mono text-[#33ff99]">2</div></div>
+                            </div>
+                            <div class="text-sm font-light text-gray-300 bg-black/40 p-3 rounded border border-gray-800 min-h-[4em] flex items-center">
+                                <span id="sd-verdict">The whole closed tetrahedron: 4 corners, 6 edges, 4 faces. χ = 2.</span>
+                            </div>
+                            <p class="text-[10px] text-gray-600 font-mono mt-2">The panel draws one face; the counters track the whole closed tetrahedron so χ stays meaningful.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- CHAPTER 08 -->
+            <div id="c8" class="glass-panel">
+                <div class="flex items-start gap-4 mb-6">
+                    <span class="ch-num">08</span>
+                    <div>
+                        <h2 class="text-2xl text-white font-bold mystical-font tracking-wide">Store the Seed, Not the Asset</h2>
+                        <p class="text-gray-400 font-light italic text-sm mt-1">And a word on memory footprint.</p>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
+                    <div class="prose prose-invert max-w-none text-gray-300 font-light leading-relaxed">
+                        <p>A Platonic solid is fully pinned down by a <em>rule</em>. So the engine often doesn't bother saving the buffers at all — it saves a tiny <strong>seed</strong> (which solid, how big, which way it faces) and rebuilds the buffers on demand. Same seed in, same shape out, every single time.</p>
+                        <p>This is the <strong>procedural generation</strong> idea behind the rotating sigils around this Academy: a sigil isn't a saved picture, it's a small recipe replayed by a generator. Store the recipe, bake the picture fresh.</p>
+                        <div class="simple-translation">
+                            <h4 class="text-sm font-bold mb-1 font-mono uppercase tracking-widest" style="color:var(--accent)">Simply Put: Text the Recipe</h4>
+                            <p class="text-xs m-0" style="color:color-mix(in srgb,var(--accent) 25%,#fde9c8)">
+                                Mailing a photo of a cake is big and clumsy; texting the recipe is tiny, and anyone who follows it bakes the identical cake. The engine keeps the recipe.
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="data-card">
+                        <h4 class="font-mono font-bold mb-3" style="color:var(--accent)">Memory footprint, roughly</h4>
+                        <p class="text-sm text-gray-300 font-light mb-3">Storing an icosahedron three ways:</p>
+                        <ul class="text-sm text-gray-300 space-y-2 list-none">
+                            <li class="flex justify-between border-b border-white/10 pb-2"><span>Triangle soup (60 copied verts)</span><span class="mono" style="color:#ff6b6b">~720 B</span></li>
+                            <li class="flex justify-between border-b border-white/10 pb-2"><span>Indexed (12 verts + 20 faces)</span><span class="mono text-cyan-400">~384 B</span></li>
+                            <li class="flex justify-between"><span>Seed ("icosa, scale 3")</span><span class="mono text-[#33ff99]">~8 B</span></li>
+                        </ul>
+                        <p class="text-[10px] text-gray-500 font-mono mt-3">Figures are illustrative (floats + ints). The point is the <em>ratio</em>: a recipe is orders of magnitude smaller than the baked mesh.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- CHAPTER 09: GLOSSARY -->
+            <div id="c9" class="glass-panel">
+                <div class="flex items-start gap-4 mb-4">
+                    <span class="ch-num">09</span>
+                    <h2 class="text-2xl text-white font-bold mystical-font">Words Worth Knowing</h2>
+                </div>
+                <dl class="gloss">
+                    <dt>Vertex buffer</dt><dd>A numbered list storing each corner's $(x,y,z)$ position exactly once.</dd>
+                    <dt>Index buffer <span class="badge">face buffer</span></dt><dd>A list of faces, where each face is a group of corner <em>numbers</em> (indices), not coordinates.</dd>
+                    <dt>B-rep <span class="badge">boundary representation</span></dt><dd>Describing a solid only by its outer skin (corners, edges, faces), never its filled interior.</dd>
+                    <dt>Half-edge</dt><dd>One of the two one-way arrows an edge is split into; it remembers its origin, twin, next, and face.</dd>
+                    <dt>Twin</dt><dd>The partner half-edge running the opposite way along the same edge; crossing it lands you on the neighbouring face.</dd>
+                    <dt>Adjacency</dt><dd>Which pieces touch which — e.g. the faces meeting at a corner. Answered by short half-edge walks.</dd>
+                    <dt>Watertight / Manifold</dt><dd>A surface with no holes or cracks where every edge borders exactly two faces. A watertight closed solid has $\chi = 2$.</dd>
+                </dl>
+            </div>
+
+            <!-- CLOSER -->
+            <div class="glass-panel text-center mt-8" style="box-shadow:0 0 40px color-mix(in srgb,var(--accent) 6%,transparent);border-color:color-mix(in srgb,var(--accent) 40%,transparent)">
+                <span class="font-mono text-[10px] uppercase tracking-widest block mb-4" style="color:var(--accent)">Core Architecture Directive</span>
+                <h2 class="text-2xl md:text-3xl text-white font-bold mystical-font mb-4">Two lists, one checksum, a seed</h2>
+                <p class="text-gray-300 font-light max-w-2xl mx-auto text-sm md:text-base mb-8">
+                    A shape in memory is a vertex buffer plus an index buffer. Add half-edges and you can walk it fast; add $V-E+F$ and you can prove it's whole; keep only the seed and you can carry it in a whisper.
+                </p>
+                <div class="flex justify-center items-center gap-2 md:gap-4 flex-wrap font-mono text-xs md:text-sm">
+                    <span class="bg-black/50 border border-gray-700 px-3 py-1 rounded" style="color:var(--accent)">Vertex Buffer</span>
+                    <span class="text-gray-500">+</span>
+                    <span class="bg-black/50 border border-gray-700 px-3 py-1 rounded text-cyan-400">Index Buffer</span>
+                    <span class="text-gray-500">→</span>
+                    <span class="bg-black/50 border border-gray-700 px-3 py-1 rounded text-purple-400">χ = 2 ✓</span>
+                    <span class="text-gray-500">→</span>
+                    <span class="bg-black/50 px-3 py-1 rounded text-white font-bold" style="border:1px solid color-mix(in srgb,var(--accent) 50%,transparent);box-shadow:0 0 15px color-mix(in srgb,var(--accent) 20%,transparent)">Seed</span>
+                </div>
+            </div>
+
+            <!-- ===== Checkpoint + interweave prev/next ===== -->
+            <div class="mt-14 flex flex-col items-center gap-3">
+              <span class="text-[10px] text-gray-500 font-mono uppercase tracking-[0.3em]">Checkpoint</span>
+              <button id="mark-complete-btn" onclick="owlMarkComplete()" class="px-8 py-3 rounded-lg border font-bold tracking-widest text-xs uppercase mystical-font transition-all hover:scale-[1.02]" style="border-color:var(--accent);color:var(--accent);background:color-mix(in srgb,var(--accent) 6%,transparent);">Mark this part complete ✓</button>
+              <p class="text-[10px] text-gray-600 font-mono text-center max-w-md">Progress saves to this browser. Finish all 12 parts to unlock the Tome signoff on the <a href="index.html" class="underline hover:text-yellow-400">lesson hub</a>.</p>
+            </div>
+            <div class="mt-10 pt-6 border-t border-white/10 flex items-center justify-between gap-3 text-xs font-mono">
+              <a href="1e_engine_implementation.html" class="px-4 py-2 rounded border border-white/10 text-gray-400 hover:text-white hover:border-white/30 transition-colors">← Back to 1E lesson</a>
+              <a href="index.html" class="px-4 py-2 rounded border border-yellow-600/40 text-yellow-500 hover:bg-yellow-500/10 transition-colors tracking-widest uppercase">◆ Hub</a>
+              <a href="1f_application_lab.html" class="px-4 py-2 rounded border border-white/10 text-gray-400 hover:text-white hover:border-white/30 transition-colors">1F Lab →</a>
+            </div>
+
+        </main>
+
+        <!-- Footer -->
+        <footer class="w-full border-t border-yellow-900/30 bg-black/60 backdrop-blur-md py-6 text-center mt-auto flex-shrink-0 relative z-20">
+            <p class="text-[10px] uppercase tracking-[0.3em] font-mono" style="color:color-mix(in srgb, var(--accent) 60%, #6b5b2a)">
+                Department I • Owl Academy Archives
+            </p>
+        </footer>
+    </div>
+
+    <!-- Scripts -->
+    <script>
+        // --- Buffer Explorer: subdivide a triangle; counts track the whole closed tetrahedron ---
+        (function(){
+            const canvas = document.getElementById('subdiv-canvas');
+            const range  = document.getElementById('subdiv-range');
+            if(!canvas || !range || !canvas.getContext) return;
+            const ctx = canvas.getContext('2d');
+
+            // big triangle corners
+            const A = {x:160, y:24}, B = {x:36, y:270}, C = {x:284, y:270};
+            function lerp(P,Q,t){ return {x:P.x+(Q.x-P.x)*t, y:P.y+(Q.y-P.y)*t}; }
+
+            function drawTriangle(level){
+                const n = Math.pow(2, level);              // segments per side
+                ctx.clearRect(0,0,canvas.width,canvas.height);
+                // fill
+                ctx.beginPath(); ctx.moveTo(A.x,A.y); ctx.lineTo(B.x,B.y); ctx.lineTo(C.x,C.y); ctx.closePath();
+                ctx.fillStyle = 'rgba(245,158,11,0.12)'; ctx.fill();
+
+                ctx.strokeStyle = 'rgba(245,158,11,0.7)';
+                ctx.lineWidth = 1;
+                // three families of parallel grid lines
+                for(let k=1;k<n;k++){
+                    const t=k/n;
+                    // parallel to BC: from AB to AC
+                    let p=lerp(A,B,t), q=lerp(A,C,t);
+                    ctx.beginPath(); ctx.moveTo(p.x,p.y); ctx.lineTo(q.x,q.y); ctx.stroke();
+                    // parallel to AC: from BA to BC
+                    p=lerp(B,A,t); q=lerp(B,C,t);
+                    ctx.beginPath(); ctx.moveTo(p.x,p.y); ctx.lineTo(q.x,q.y); ctx.stroke();
+                    // parallel to AB: from CA to CB
+                    p=lerp(C,A,t); q=lerp(C,B,t);
+                    ctx.beginPath(); ctx.moveTo(p.x,p.y); ctx.lineTo(q.x,q.y); ctx.stroke();
+                }
+                // outer border
+                ctx.strokeStyle = '#f59e0b'; ctx.lineWidth = 2.5;
+                ctx.beginPath(); ctx.moveTo(A.x,A.y); ctx.lineTo(B.x,B.y); ctx.lineTo(C.x,C.y); ctx.closePath(); ctx.stroke();
+
+                // corner dots
+                ctx.fillStyle = '#D4AF37';
+                [A,B,C].forEach(P=>{ ctx.beginPath(); ctx.arc(P.x,P.y,5,0,Math.PI*2); ctx.fill(); });
+            }
+
+            // Whole closed tetrahedron under Loop-style 1→4 subdivision:
+            // V' = V + E ; E' = 2E + 3F ; F' = 4F   (start V=4,E=6,F=4)
+            function tetraCounts(level){
+                let V=4,E=6,F=4;
+                for(let i=0;i<level;i++){ const nV=V+E, nE=2*E+3*F, nF=4*F; V=nV;E=nE;F=nF; }
+                return {V,E,F,chi:V-E+F};
+            }
+
+            const verdicts = [
+                'The whole closed tetrahedron: 4 corners, 6 edges, 4 faces. χ = 2.',
+                'One pass: each of the 4 faces became 4 → 16 faces, midpoints added. χ is still 2.',
+                'Two passes: 64 faces now. Far more detail, identical topology. χ = 2.',
+                'Three passes: 256 faces. The surface is denser but no holes appeared — χ = 2.'
+            ];
+
+            function update(){
+                const lvl = parseInt(range.value,10);
+                drawTriangle(lvl);
+                const c = tetraCounts(lvl);
+                document.getElementById('subdiv-level').textContent = lvl;
+                document.getElementById('sd-v').textContent = c.V;
+                document.getElementById('sd-e').textContent = c.E;
+                document.getElementById('sd-f').textContent = c.F;
+                document.getElementById('sd-chi').textContent = c.chi;
+                document.getElementById('sd-verdict').textContent = verdicts[lvl];
+            }
+            range.addEventListener('input', update);
+            update();
+        })();
+    </script>
+
+    <!-- Completion tracking (§3D) -->
+    <script>
+    (function(){
+      var KEY='owl.platonic.progress.v1', PART='1e-x';
+      function rd(){ try{ return JSON.parse(localStorage.getItem(KEY))||{}; }catch(e){ return {}; } }
+      function wr(m){ try{ localStorage.setItem(KEY, JSON.stringify(m)); }catch(e){} }
+      window.owlMarkComplete=function(){ var m=rd(); m[PART]=true; wr(m); paint(true); };
+      function paint(done){ var b=document.getElementById('mark-complete-btn'); if(!b) return;
+        if(done){ b.textContent='✓ Part complete'; b.style.background='color-mix(in srgb,var(--accent) 22%,transparent)'; b.setAttribute('disabled',''); b.style.cursor='default'; } }
+      document.addEventListener('DOMContentLoaded', function(){ paint(!!rd()[PART]); });
+    })();
+    </script>
+</body>
+</html>

@@ -1,0 +1,956 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Owl Academy | Lesson 1E: Engine Implementation</title>
+
+    <!-- CSS & Fonts -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Inter:wght@300;400;500;600&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+
+    <!-- Three.js Core & Addons -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tween.js/18.6.4/tween.umd.js"></script>
+
+    <!-- MathJax for rendering geometric equations -->
+    <script>
+        window.MathJax = {
+            tex: {
+                inlineMath: [['$', '$'], ['\\(', '\\)']],
+                displayMath: [['$$', '$$'], ['\\[', '\\]']]
+            }
+        };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+    <style>
+        /* Dynamic Theme Variables */
+        :root {
+            --accent: #f59e0b;
+            --color-void: #090614;
+            --color-primary: #D4AF37;
+            --color-secondary: #8e9eab;
+            --color-holo1: #00d4ff;
+            --color-holo2: #8A2BE2;
+            --color-text: #E6C27A;
+            --color-ui-border: rgba(212, 175, 55, 0.3);
+            --color-r3-x: #ff3366;
+            --color-r3-y: #33ff99;
+            --color-r3-z: #00d4ff;
+        }
+
+        body {
+            background-color: var(--color-void);
+            color: #e2e8f0;
+            font-family: 'Inter', sans-serif;
+            background: radial-gradient(circle at 50% 50%, color-mix(in srgb, var(--color-holo1) 10%, var(--color-void)), var(--color-void) 80%);
+            min-height: 100vh;
+            margin: 0;
+            overflow-x: hidden;
+            scroll-behavior: smooth;
+        }
+
+        /* --- SIGIL ANIMATIONS --- */
+        .spin-slow         { animation: spin 40s linear infinite; transform-origin: center; }
+        @keyframes spin    { 100% { transform: rotate(360deg); } }
+        .spin-slow-reverse { animation: spinReverse 40s linear infinite; transform-origin: center; }
+        @keyframes spinReverse { 100% { transform: rotate(-360deg); } }
+        .pulse-glow        { animation: pulseGlow 4s ease-in-out infinite alternate; }
+        @keyframes pulseGlow {
+            0%   { filter: drop-shadow(0 0 5px  rgba(212,175,55,0.3)); }
+            100% { filter: drop-shadow(0 0 15px rgba(212,175,55,0.8)); }
+        }
+
+        /* --- ATMOSPHERIC LAYERS --- */
+        .nebula-layer {
+            position: fixed; inset: 0;
+            background:
+                radial-gradient(circle at 20% 30%, var(--color-holo2) 0%, transparent 40%),
+                radial-gradient(circle at 80% 70%, var(--color-holo1) 0%, transparent 40%);
+            opacity: 0.15; mix-blend-mode: screen; filter: blur(80px); pointer-events: none; z-index: 0;
+        }
+        .vignette-layer {
+            position: fixed; inset: 0;
+            background: radial-gradient(circle, transparent 40%, rgba(0,0,0,0.8) 120%);
+            pointer-events: none; z-index: 10;
+        }
+        .starfield {
+            position: fixed; inset: 0;
+            background-image:
+                radial-gradient(2px 2px at 20px 30px, var(--color-primary), rgba(0,0,0,0)),
+                radial-gradient(2px 2px at 40px 70px, #fff, rgba(0,0,0,0)),
+                radial-gradient(2px 2px at 50px 160px, rgba(255,255,255,0.8), rgba(0,0,0,0)),
+                radial-gradient(2px 2px at 90px 40px, #fff, rgba(0,0,0,0)),
+                radial-gradient(2px 2px at 130px 80px, var(--color-primary), rgba(0,0,0,0));
+            background-repeat: repeat; background-size: 250px 250px;
+            animation: twinkle 8s infinite alternate; opacity: 0.35; z-index: 0; pointer-events: none;
+        }
+        .starfield-layer-2 { background-size: 350px 350px; background-position: 50px 50px; opacity: 0.2; animation: twinkle 12s infinite alternate-reverse; }
+        @keyframes twinkle { 0% { opacity: 0.1; transform: scale(1); } 100% { opacity: 0.5; transform: scale(1.05); } }
+
+        /* --- TYPOGRAPHY & PANELS --- */
+        h1, h2, h3, h4, .mystical-font { font-family: 'Cinzel', serif; }
+        .mono { font-family: 'Fira Code', monospace; }
+        .gold-gradient {
+            background: linear-gradient(to right, var(--color-primary), #FFF8DC, var(--color-primary));
+            -webkit-background-clip: text; background-clip: text; color: transparent; text-shadow: 0 0 15px color-mix(in srgb, var(--color-primary) 30%, transparent);
+        }
+
+        .glass-panel {
+            background: rgba(10, 6, 20, 0.6);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--color-ui-border);
+            border-radius: 16px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+        }
+
+        .data-card {
+            background: rgba(15, 10, 25, 0.6);
+            border: 1px solid rgba(255,255,255,0.05);
+            border-top: 1px solid color-mix(in srgb, var(--accent) 40%, transparent);
+            border-radius: 12px;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        .data-card::before {
+            content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: radial-gradient(circle at top right, color-mix(in srgb, var(--accent) 6%, transparent), transparent 70%);
+            pointer-events: none;
+        }
+
+        .simple-translation {
+            background: color-mix(in srgb, var(--accent) 6%, transparent);
+            border-left: 3px solid color-mix(in srgb, var(--accent) 55%, transparent);
+            padding: 1rem;
+            margin-top: 1rem;
+            border-radius: 0 8px 8px 0;
+            font-family: 'Inter', sans-serif;
+        }
+
+        .btn-lab {
+            background: rgba(5, 3, 10, 0.8);
+            border: 1px solid color-mix(in srgb, var(--accent) 40%, transparent);
+            color: color-mix(in srgb, var(--accent) 85%, white);
+            transition: all 0.3s;
+            position: relative;
+            overflow: hidden;
+        }
+        .btn-lab:hover:not(:disabled) {
+            background: color-mix(in srgb, var(--accent) 10%, transparent);
+            color: #fff;
+            box-shadow: 0 0 15px color-mix(in srgb, var(--accent) 40%, transparent);
+            border-color: var(--accent);
+        }
+        .btn-lab:disabled {
+            border-color: rgba(255,255,255,0.1);
+            color: rgba(255,255,255,0.2);
+            cursor: not-allowed;
+        }
+        .btn-lab.active-step {
+            background: color-mix(in srgb, var(--accent) 20%, transparent);
+            border-color: var(--accent);
+            color: #fff;
+            box-shadow: 0 0 15px color-mix(in srgb, var(--accent) 40%, transparent);
+        }
+
+        #lab-canvas-container {
+            border-radius: 12px;
+            overflow: hidden;
+            border: 1px solid color-mix(in srgb, var(--accent) 30%, transparent);
+            background: radial-gradient(circle at center, rgba(10,15,30,1) 0%, #000 100%);
+            box-shadow: inset 0 0 40px rgba(0,0,0,0.8);
+        }
+
+        .terminal-log {
+            font-family: 'Fira Code', monospace;
+            font-size: 10px;
+            color: #8e9eab;
+            height: 120px;
+            overflow-y: auto;
+            background: rgba(0,0,0,0.6);
+            padding: 8px;
+            border-radius: 4px;
+            border: 1px solid rgba(255,255,255,0.05);
+        }
+        .log-entry { margin-bottom: 4px; animation: slideIn 0.3s ease-out; }
+        .log-time { color: var(--color-primary); margin-right: 8px; }
+        .log-success { color: #33ff99; }
+        .log-info { color: var(--accent); }
+        @keyframes slideIn { from { opacity: 0; transform: translateX(-10px); } to { opacity: 1; transform: translateX(0); } }
+
+        /* Buffer tables */
+        .buf-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+        .buf-table { width: 100%; border-collapse: collapse; font-family: 'Fira Code', monospace; font-size: .72rem; min-width: 320px; }
+        .buf-table th, .buf-table td { padding: 6px 10px; text-align: center; border-bottom: 1px solid rgba(255,255,255,0.08); white-space: nowrap; }
+        .buf-table th { font-size: .62rem; letter-spacing: .08em; text-transform: uppercase; color: var(--color-secondary); border-bottom: 1px solid color-mix(in srgb, var(--accent) 40%, transparent); }
+        .buf-table td.idx { color: var(--accent); font-weight: 600; }
+        .buf-table tr:hover td { background: color-mix(in srgb, var(--accent) 7%, transparent); }
+
+        /* Stepper chips (§3B) */
+        .step-chip{padding:.35rem .7rem;border-radius:.4rem;border:1px solid rgba(255,255,255,.1);color:#94a3b8;text-transform:uppercase;letter-spacing:.08em;transition:all .2s;white-space:nowrap;}
+        .step-chip:hover{color:#fff;border-color:rgba(255,255,255,.35);}
+        .step-chip[aria-current="page"]{color:var(--accent);border-color:var(--accent);background:color-mix(in srgb,var(--accent) 14%,transparent);box-shadow:0 0 12px color-mix(in srgb,var(--accent) 30%,transparent);}
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: rgba(0,0,0,0.4); }
+        ::-webkit-scrollbar-thumb { background: color-mix(in srgb, var(--accent) 50%, transparent); border-radius: 10px; }
+    </style>
+</head>
+<body class="relative">
+
+    <!-- Atmospheric Layers -->
+    <div class="nebula-layer"></div>
+    <div class="starfield"></div>
+    <div class="starfield starfield-layer-2"></div>
+    <div class="vignette-layer"></div>
+
+    <!-- SVG Definitions for Graphs -->
+    <svg width="0" height="0" class="absolute">
+        <defs>
+            <marker id="arrowX" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto" markerUnits="strokeWidth"><path d="M0,0 L0,6 L9,3 z" fill="#ff3366" /></marker>
+            <marker id="arrowY" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto" markerUnits="strokeWidth"><path d="M0,0 L0,6 L9,3 z" fill="#33ff99" /></marker>
+            <marker id="arrowZ" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto" markerUnits="strokeWidth"><path d="M0,0 L0,6 L9,3 z" fill="#00d4ff" /></marker>
+            <marker id="heArrow" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto" markerUnits="strokeWidth"><path d="M0,0 L0,6 L8,3 z" fill="#f59e0b" /></marker>
+            <marker id="heArrowB" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto" markerUnits="strokeWidth"><path d="M0,0 L0,6 L8,3 z" fill="#00d4ff" /></marker>
+
+            <!-- Sigil Gradients -->
+            <linearGradient id="goldGradLeft" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#C59B3F" />
+                <stop offset="50%" stop-color="#FFF2C8" />
+                <stop offset="100%" stop-color="#996515" />
+            </linearGradient>
+            <linearGradient id="goldGradRight" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#C59B3F" />
+                <stop offset="50%" stop-color="#FFF2C8" />
+                <stop offset="100%" stop-color="#996515" />
+            </linearGradient>
+        </defs>
+    </svg>
+
+    <div class="relative z-20 min-h-screen flex flex-col">
+
+        <!-- Header with Official Sigils -->
+        <header class="w-full pt-8 pb-4 px-4 md:px-12 flex justify-between items-start border-b border-yellow-600/30 glass-panel shadow-2xl !mb-0 !rounded-none">
+
+            <!-- LEFT SIGIL: Mathematical Manifold -->
+            <div class="w-16 h-16 md:w-24 md:h-24 flex-shrink-0 pointer-events-none">
+                <svg viewBox="0 0 200 200" class="w-full h-full pulse-glow" xmlns="http://www.w3.org/2000/svg">
+                    <circle cx="100" cy="100" r="95" fill="none" stroke="url(#goldGradLeft)" stroke-width="1" opacity="0.6"/>
+                    <circle cx="100" cy="100" r="85" fill="none" stroke="url(#goldGradLeft)" stroke-width="0.5" opacity="0.4"/>
+                    <g class="spin-slow" style="transform-origin: 100px 100px;">
+                        <g stroke="url(#goldGradLeft)" stroke-width="1" fill="none" opacity="0.6">
+                            <polygon points="100,15 173.6,142.5 26.4,142.5" />
+                            <polygon points="100,15 173.6,142.5 26.4,142.5" transform="rotate(30 100 100)" />
+                            <polygon points="100,15 173.6,142.5 26.4,142.5" transform="rotate(60 100 100)" />
+                            <polygon points="100,15 173.6,142.5 26.4,142.5" transform="rotate(90 100 100)" />
+                        </g>
+                        <g stroke="#ffffff" stroke-width="0.75" fill="none" opacity="0.4" stroke-dasharray="2 4">
+                            <polygon points="100,15 173.6,142.5 26.4,142.5" transform="rotate(15 100 100)" />
+                            <polygon points="100,15 173.6,142.5 26.4,142.5" transform="rotate(45 100 100)" />
+                            <polygon points="100,15 173.6,142.5 26.4,142.5" transform="rotate(75 100 100)" />
+                            <polygon points="100,15 173.6,142.5 26.4,142.5" transform="rotate(105 100 100)" />
+                        </g>
+                        <g stroke="url(#goldGradLeft)" stroke-width="1.5" fill="none" opacity="0.9">
+                            <polygon points="100,45 147.6,127.5 52.4,127.5" />
+                            <polygon points="100,155 147.6,72.5 52.4,72.5" />
+                        </g>
+                        <circle cx="100" cy="100" r="35" stroke="url(#goldGradLeft)" stroke-width="1" fill="none" opacity="0.6"/>
+                        <polygon points="100,65 134.1,107.8 84.8,131.5 72.6,78.2 127.4,78.2 115.2,131.5 65.9,107.8" stroke="url(#goldGradLeft)" stroke-width="1.2" fill="none" opacity="0.8" />
+                    </g>
+                    <g class="spin-slow-reverse" style="transform-origin: 100px 100px;" filter="drop-shadow(0 0 4px rgba(212,175,55,0.8))">
+                        <line x1="100" y1="80" x2="100" y2="120" stroke="url(#goldGradLeft)" stroke-width="2" stroke-linecap="round"/>
+                        <path d="M 100,80 C 112,80 112,95 100,95" fill="none" stroke="url(#goldGradLeft)" stroke-width="2" stroke-linecap="round"/>
+                        <line x1="88" y1="95" x2="112" y2="112" stroke="url(#goldGradLeft)" stroke-width="2" stroke-linecap="round"/>
+                        <line x1="112" y1="95" x2="88" y2="112" stroke="url(#goldGradLeft)" stroke-width="2" stroke-linecap="round"/>
+                        <text x="82" y="108" fill="#FFF8DC" font-family="Cinzel, serif" font-size="8" text-anchor="middle">A</text>
+                        <text x="118" y="108" fill="#FFF8DC" font-family="Cinzel, serif" font-size="8" text-anchor="middle">Ω</text>
+                    </g>
+                </svg>
+            </div>
+
+            <!-- Center Titles -->
+            <div class="text-center flex-grow pt-2 md:pt-4 z-20">
+                <p class="text-[9px] md:text-[11px] tracking-[0.3em] uppercase mb-2 font-mono" style="color:var(--accent)">Department I • Lesson 1 · Platonic Solids &amp; Symmetric Tessellations</p>
+                <h1 class="text-xl md:text-3xl font-bold tracking-[0.15em] mystical-font text-white drop-shadow-md">SUB-LESSON 1E</h1>
+                <h2 class="text-lg md:text-2xl font-bold gold-gradient tracking-[0.2em] mt-1">Engine Implementation</h2>
+            </div>
+
+            <!-- RIGHT SIGIL: Archive Cipher -->
+            <a href="../SG_Main.html" title="Return to Department I" class="w-16 h-16 md:w-24 md:h-24 flex-shrink-0 cursor-pointer hover:scale-105 transition-transform duration-300">
+                <svg viewBox="0 0 200 200" class="w-full h-full spin-slow pulse-glow" xmlns="http://www.w3.org/2000/svg">
+                    <circle cx="100" cy="100" r="95" fill="none" stroke="url(#goldGradRight)" stroke-width="1" opacity="0.6"/>
+                    <circle cx="100" cy="100" r="85" fill="none" stroke="url(#goldGradRight)" stroke-width="0.5" opacity="0.4"/>
+                    <polygon points="100,15 173.6,142.5 26.4,142.5" fill="none" stroke="url(#goldGradRight)" stroke-width="1" opacity="0.5"/>
+                    <polygon points="100,185 26.4,57.5 173.6,57.5" fill="none" stroke="url(#goldGradRight)" stroke-width="1" opacity="0.5"/>
+                    <g filter="drop-shadow(0 0 4px rgba(212,175,55,0.8))">
+                        <line x1="100" y1="60" x2="100.01" y2="140" stroke="url(#goldGradRight)" stroke-width="2.5" stroke-linecap="round"/>
+                        <path d="M 100,60 C 120,60 120,90 100,90" fill="none" stroke="url(#goldGradRight)" stroke-width="2.5" stroke-linecap="round"/>
+                        <line x1="80" y1="85" x2="120" y2="125" stroke="url(#goldGradRight)" stroke-width="2.5" stroke-linecap="round"/>
+                        <line x1="120" y1="85" x2="80" y2="125" stroke="url(#goldGradRight)" stroke-width="2.5" stroke-linecap="round"/>
+                        <text x="75" y="115" fill="#FFF8DC" font-family="Cinzel, serif" font-size="10" text-anchor="middle">A</text>
+                        <text x="125" y="115" fill="#FFF8DC" font-family="Cinzel, serif" font-size="10" text-anchor="middle">Ω</text>
+                    </g>
+                    <circle cx="100" cy="100" r="45" fill="none" stroke="url(#goldGradRight)" stroke-width="0.5" stroke-dasharray="2 2" opacity="0.6"/>
+                </svg>
+            </a>
+        </header>
+
+        <!-- ===== Lesson 1 sub-lesson stepper (interweave nav) ===== -->
+        <nav class="w-full max-w-7xl mx-auto px-4 md:px-8 mt-6" aria-label="Lesson 1 sub-lessons">
+          <div class="glass-panel rounded-xl p-3 flex flex-wrap items-center justify-center gap-2 text-[10px] md:text-xs font-mono !mb-0">
+            <a href="index.html" class="px-3 py-1.5 rounded border border-yellow-600/40 text-yellow-500 hover:bg-yellow-500/10 transition-colors tracking-widest uppercase">◆ Hub</a>
+            <span class="text-gray-700 hidden md:inline">/</span>
+            <a href="1a_geometric_primitives.html" class="step-chip">1A · Primitives</a>
+            <a href="1b_topological_invariants.html" class="step-chip">1B · Topology</a>
+            <a href="1c_harmonic_resonance.html" class="step-chip">1C · Resonance</a>
+            <a href="1d_tiling_problem.html" class="step-chip">1D · Tiling</a>
+            <a href="1e_engine_implementation.html" class="step-chip" aria-current="page">1E · Engine</a>
+            <a href="1f_application_lab.html" class="step-chip">1F · Lab</a>
+          </div>
+        </nav>
+
+        <!-- Main Content -->
+        <main class="flex-grow w-full max-w-7xl mx-auto px-4 md:px-8 py-8 space-y-12">
+
+            <!-- Expanded Theory Link Button -->
+            <div class="flex justify-center mb-8">
+                <a href="1e_expanded_theory.html" class="group px-6 py-3 rounded-lg border transition-all text-xs font-bold tracking-[0.15em] mystical-font flex items-center gap-3 hover:bg-yellow-500/10" style="border-color: color-mix(in srgb, var(--accent) 50%, transparent); color: var(--accent); background: rgba(0,0,0,0.6); box-shadow: 0 0 15px color-mix(in srgb, var(--accent) 15%, transparent);">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="group-hover:scale-110 transition-transform"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path></svg>
+                    DEEP DIVE: EXPANDED THEORY
+                </a>
+            </div>
+
+            <!-- Intro -->
+            <div class="glass-panel p-8 md:p-10 relative overflow-hidden">
+                <div class="absolute top-0 right-0 w-64 h-64 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3" style="background:color-mix(in srgb, var(--accent) 6%, transparent)"></div>
+                <p class="text-[10px] font-mono uppercase tracking-[0.3em] mb-3" style="color:var(--accent)">From Idea to Bytes</p>
+                <h2 class="text-2xl md:text-3xl text-white font-bold mystical-font tracking-wide mb-4">How the Engine Actually <span class="gold-gradient">Stores</span> a Solid</h2>
+                <p class="text-gray-300 font-light text-sm md:text-base leading-relaxed max-w-3xl">
+                    Sub-lessons 1A and 1B taught the <em>idea</em> of a solid: corners, edges, faces (a boundary representation), and the topological checksum $\chi = V - E + F$. This chapter is the bridge to <strong>code</strong>. When the S.P.I.R.E. Engine holds an icosahedron in memory, it is not holding a "shape" — it is holding two flat lists of numbers. Here we open the box and read them.
+                </p>
+            </div>
+
+            <!-- SECTION 1: B-rep recap + indexed geometry -->
+            <div class="glass-panel p-8 md:p-10 relative overflow-hidden">
+                <h2 class="text-2xl text-white font-bold mystical-font tracking-wide mb-4">1 · Indexed Geometry — Two Buffers</h2>
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
+                    <div class="prose prose-invert max-w-none text-gray-300 font-light text-sm md:text-base leading-relaxed space-y-4">
+                        <p>
+                            Recall <strong>boundary representation (B-rep)</strong>: to describe a solid you store only its <em>skin</em> — never the interior. In practice the skin is stored as <strong>indexed geometry</strong>, which is exactly two arrays:
+                        </p>
+                        <ul class="list-disc pl-5 space-y-2 text-sm">
+                            <li><strong style="color:var(--accent)">Vertex buffer</strong> — a flat list of every corner as a coordinate tuple $(x,y,z)$. Position <code>0</code> is vertex&nbsp;0, position <code>1</code> is vertex&nbsp;1, and so on.</li>
+                            <li><strong style="color:var(--accent)">Index buffer</strong> (a.k.a. the face buffer) — a list of triangles, where each triangle is a <em>triple of vertex indices</em> pointing back into the vertex buffer. It never stores coordinates, only the integer positions.</li>
+                        </ul>
+                        <p>
+                            The tetrahedron below has 4 corners and 4 triangular faces. Its entire geometry is these two little tables:
+                        </p>
+
+                        <div class="simple-translation">
+                            <h4 class="text-sm font-bold mb-1 flex items-center gap-2" style="color:var(--accent)">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+                                Simply Put: Dots and a Recipe
+                            </h4>
+                            <p class="text-xs" style="color:color-mix(in srgb, var(--accent) 30%, #fde9c8)">
+                                The <strong>vertex buffer</strong> is a numbered list of dots and where each one sits — like a page of addresses. The <strong>index buffer</strong> is a stack of recipe cards; each card just says "connect dot 0, dot 2 and dot 1 into a triangle." The recipe never re-writes the addresses; it points at them by number.
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="space-y-5">
+                        <!-- Vertex buffer table -->
+                        <div>
+                            <div class="text-[10px] font-mono uppercase tracking-widest mb-2" style="color:var(--accent)">Vertex Buffer — 4 corners</div>
+                            <div class="buf-scroll bg-black/40 border border-white/10 rounded-lg p-2">
+                                <table class="buf-table">
+                                    <thead><tr><th>index</th><th>x</th><th>y</th><th>z</th></tr></thead>
+                                    <tbody>
+                                        <tr><td class="idx">0</td><td>+1</td><td>+1</td><td>+1</td></tr>
+                                        <tr><td class="idx">1</td><td>&minus;1</td><td>&minus;1</td><td>+1</td></tr>
+                                        <tr><td class="idx">2</td><td>&minus;1</td><td>+1</td><td>&minus;1</td></tr>
+                                        <tr><td class="idx">3</td><td>+1</td><td>&minus;1</td><td>&minus;1</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        <!-- Index buffer table -->
+                        <div>
+                            <div class="text-[10px] font-mono uppercase tracking-widest mb-2" style="color:var(--accent)">Index Buffer — 4 triangles</div>
+                            <div class="buf-scroll bg-black/40 border border-white/10 rounded-lg p-2">
+                                <table class="buf-table">
+                                    <thead><tr><th>face</th><th>a</th><th>b</th><th>c</th></tr></thead>
+                                    <tbody>
+                                        <tr><td class="idx">0</td><td>0</td><td>2</td><td>1</td></tr>
+                                        <tr><td class="idx">1</td><td>0</td><td>1</td><td>3</td></tr>
+                                        <tr><td class="idx">2</td><td>0</td><td>3</td><td>2</td></tr>
+                                        <tr><td class="idx">3</td><td>1</td><td>2</td><td>3</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                            <p class="text-[10px] text-gray-500 font-mono mt-2">Each face is a triple of <em>vertex indices</em>, not coordinates.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Why index? -->
+                <div class="mt-8 bg-black/30 border rounded-xl p-5" style="border-color:color-mix(in srgb, var(--accent) 25%, transparent)">
+                    <h4 class="text-sm font-bold text-white mystical-font mb-2">Why point by index instead of repeating coordinates?</h4>
+                    <p class="text-sm text-gray-300 font-light leading-relaxed">
+                        In the tetrahedron, vertex&nbsp;0 is a corner of <em>three</em> different faces. If every face stored its own copies of the coordinates, the shared corner $(1,1,1)$ would be written three times. A cube corner is shared by 3 faces; an icosahedron vertex is shared by <strong>5</strong>. Indexing writes each corner <strong>once</strong> and lets faces reference it — so moving a vertex updates every face automatically, welds are guaranteed watertight, and memory drops sharply. A naive "triangle soup" of the icosahedron needs $20\times3 = 60$ stored vertices; indexed, it needs only $12$.
+                    </p>
+                </div>
+
+                <!-- Quiz 1 -->
+                <div class="mt-8 border-t pt-6" style="border-color:color-mix(in srgb, var(--accent) 25%, transparent)">
+                    <h4 class="text-sm font-bold mb-4 flex items-center gap-2 font-mono uppercase tracking-widest" style="color:var(--accent)">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"></path><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path></svg>
+                        System Check 1E.1
+                    </h4>
+                    <div class="bg-black/40 border border-gray-800 rounded-lg p-5">
+                        <p class="text-sm text-gray-300 mb-4 font-light">In indexed geometry, what does a single entry of the <strong>index (face) buffer</strong> store?</p>
+                        <div class="space-y-2" id="quiz-1-options">
+                            <button onclick="checkQuiz('quiz-1', false, this)" class="w-full text-left p-3 rounded bg-gray-900/50 border border-gray-700 hover:border-amber-500 hover:text-white transition-all text-xs text-gray-400">A) Three full $(x,y,z)$ coordinates copied out for that face.</button>
+                            <button onclick="checkQuiz('quiz-1', true, this)" class="w-full text-left p-3 rounded bg-gray-900/50 border border-gray-700 hover:border-amber-500 hover:text-white transition-all text-xs text-gray-400">B) A triple of integer vertex indices pointing into the vertex buffer.</button>
+                            <button onclick="checkQuiz('quiz-1', false, this)" class="w-full text-left p-3 rounded bg-gray-900/50 border border-gray-700 hover:border-amber-500 hover:text-white transition-all text-xs text-gray-400">C) The surface area and normal vector of that face.</button>
+                        </div>
+                        <div id="quiz-1-feedback" class="hidden"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SECTION 2: Half-edge -->
+            <div class="glass-panel p-8 md:p-10 relative overflow-hidden">
+                <h2 class="text-2xl text-white font-bold mystical-font tracking-wide mb-4">2 · The Half-Edge Structure</h2>
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
+                    <div class="prose prose-invert max-w-none text-gray-300 font-light text-sm md:text-base leading-relaxed space-y-4">
+                        <p>
+                            Two buffers are perfect for <em>drawing</em>, but slow for <em>walking</em> the surface — "which faces touch this vertex?" means scanning the whole index buffer. When the engine needs to traverse connectivity fast, it upgrades to a <strong>half-edge</strong> structure (a doubly-connected edge list, or DCEL).
+                        </p>
+                        <p>Split every edge into <strong>two directed half-edges</strong> pointing opposite ways. Each half-edge stores four links:</p>
+                        <ul class="list-disc pl-5 space-y-1 text-sm">
+                            <li><strong style="color:var(--accent)">origin</strong> — the vertex it starts at.</li>
+                            <li><strong style="color:var(--accent)">twin</strong> — the partner half-edge running the other way (the same physical edge, opposite face).</li>
+                            <li><strong style="color:var(--accent)">next</strong> — the following half-edge around the same face.</li>
+                            <li><strong style="color:var(--accent)">face</strong> — the face it borders.</li>
+                        </ul>
+                        <p>
+                            With just <em>next</em> you loop a face in $O(1)$ steps per edge; hop through <em>twin&nbsp;→&nbsp;next</em> repeatedly and you fan around a vertex. No scanning, ever.
+                        </p>
+                        <div class="simple-translation">
+                            <h4 class="text-sm font-bold mb-1 flex items-center gap-2" style="color:var(--accent)">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+                                Simply Put: One-Way Streets
+                            </h4>
+                            <p class="text-xs" style="color:color-mix(in srgb, var(--accent) 30%, #fde9c8)">
+                                Picture every edge as a pair of one-way streets running side by side in opposite directions. <em>next</em> is "the next street as you drive around a block" (a face). <em>twin</em> is "the street going the other way, which belongs to the block next door." Knowing those two directions, you can drive anywhere on the map without ever consulting a master list.
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Half-edge SVG diagram -->
+                    <div class="bg-black/50 border border-gray-800 rounded-xl p-4 flex flex-col items-center justify-center">
+                        <div class="buf-scroll w-full flex justify-center">
+                        <svg viewBox="0 0 320 300" class="w-full max-w-[320px] h-auto" xmlns="http://www.w3.org/2000/svg">
+                            <!-- two adjacent triangles sharing an edge V1-V2 -->
+                            <!-- vertices -->
+                            <!-- V0 top, V1 mid-left, V2 mid-right, V3 bottom -->
+                            <!-- Left face F0 (V0,V1,V2), Right face F1 (V2,V1,V3) -->
+                            <line x1="160" y1="40" x2="70" y2="170" stroke="#334155" stroke-width="1"/>
+                            <line x1="70" y1="170" x2="250" y2="170" stroke="#334155" stroke-width="1"/>
+                            <line x1="250" y1="170" x2="160" y2="40" stroke="#334155" stroke-width="1"/>
+                            <line x1="70" y1="170" x2="160" y2="290" stroke="#334155" stroke-width="1"/>
+                            <line x1="160" y1="290" x2="250" y2="170" stroke="#334155" stroke-width="1"/>
+
+                            <!-- shared edge, two half-edges (offset) -->
+                            <line x1="80" y1="164" x2="240" y2="164" stroke="#f59e0b" stroke-width="2.5" marker-end="url(#heArrow)"/>
+                            <line x1="240" y1="176" x2="80" y2="176" stroke="#00d4ff" stroke-width="2.5" marker-end="url(#heArrowB)"/>
+                            <text x="150" y="156" fill="#f59e0b" font-family="Fira Code, monospace" font-size="10">he</text>
+                            <text x="150" y="196" fill="#00d4ff" font-family="Fira Code, monospace" font-size="10">twin(he)</text>
+
+                            <!-- face labels -->
+                            <text x="160" y="120" fill="#94a3b8" font-family="Fira Code, monospace" font-size="11" text-anchor="middle">Face F0</text>
+                            <text x="160" y="235" fill="#94a3b8" font-family="Fira Code, monospace" font-size="11" text-anchor="middle">Face F1</text>
+
+                            <!-- vertices -->
+                            <circle cx="160" cy="40" r="6" fill="#D4AF37"/><text x="160" y="28" fill="#fff" font-family="Fira Code, monospace" font-size="11" text-anchor="middle">V0</text>
+                            <circle cx="70" cy="170" r="6" fill="#D4AF37"/><text x="52" y="174" fill="#fff" font-family="Fira Code, monospace" font-size="11">V1</text>
+                            <circle cx="250" cy="170" r="6" fill="#D4AF37"/><text x="258" y="174" fill="#fff" font-family="Fira Code, monospace" font-size="11">V2</text>
+                            <circle cx="160" cy="290" r="6" fill="#D4AF37"/><text x="160" y="285" fill="#fff" font-family="Fira Code, monospace" font-size="11" text-anchor="middle">V3</text>
+
+                            <!-- next arrows around F0 (small, orange) -->
+                            <path d="M154,52 L84,158" stroke="#f59e0b" stroke-width="1.4" fill="none" opacity="0.55" marker-end="url(#heArrow)"/>
+                            <path d="M236,158 L166,52" stroke="#f59e0b" stroke-width="1.4" fill="none" opacity="0.55" marker-end="url(#heArrow)"/>
+                            <text x="96" y="104" fill="#f59e0b" font-family="Fira Code, monospace" font-size="9" opacity="0.8">next</text>
+                            <text x="210" y="104" fill="#f59e0b" font-family="Fira Code, monospace" font-size="9" opacity="0.8">next</text>
+                        </svg>
+                        </div>
+                        <p class="text-[10px] text-gray-500 font-mono mt-3 text-center">Graph 1E.1: the shared edge V1&ndash;V2 becomes two twin half-edges. <span style="color:var(--accent)">next</span> walks face F0; <span style="color:#00d4ff">twin</span> crosses into F1.</p>
+                    </div>
+                </div>
+
+                <!-- Quiz 2 (half-edge) -->
+                <div class="mt-8 border-t pt-6" style="border-color:color-mix(in srgb, var(--accent) 25%, transparent)">
+                    <h4 class="text-sm font-bold mb-4 flex items-center gap-2 font-mono uppercase tracking-widest" style="color:var(--accent)">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"></path><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path></svg>
+                        System Check 1E.2
+                    </h4>
+                    <div class="bg-black/40 border border-gray-800 rounded-lg p-5">
+                        <p class="text-sm text-gray-300 mb-4 font-light">In a half-edge structure, what is the purpose of the <code>twin</code> and <code>next</code> pointers?</p>
+                        <div class="space-y-2" id="quiz-2-options">
+                            <button onclick="checkQuiz('quiz-2', false, this)" class="w-full text-left p-3 rounded bg-gray-900/50 border border-gray-700 hover:border-amber-500 hover:text-white transition-all text-xs text-gray-400">A) <code>twin</code> stores the vertex colour and <code>next</code> stores its brightness.</button>
+                            <button onclick="checkQuiz('quiz-2', true, this)" class="w-full text-left p-3 rounded bg-gray-900/50 border border-gray-700 hover:border-amber-500 hover:text-white transition-all text-xs text-gray-400">B) <code>next</code> walks to the following half-edge around the same face; <code>twin</code> jumps to the opposite half-edge on the neighbouring face — enabling $O(1)$ traversal.</button>
+                            <button onclick="checkQuiz('quiz-2', false, this)" class="w-full text-left p-3 rounded bg-gray-900/50 border border-gray-700 hover:border-amber-500 hover:text-white transition-all text-xs text-gray-400">C) They both point at the origin vertex so the edge has a backup copy.</button>
+                        </div>
+                        <div id="quiz-2-feedback" class="hidden"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SECTION 3: Computing chi -->
+            <div class="glass-panel p-8 md:p-10 relative overflow-hidden">
+                <h2 class="text-2xl text-white font-bold mystical-font tracking-wide mb-4">3 · Computing $\chi$ Straight From the Buffers</h2>
+                <div class="prose prose-invert max-w-none text-gray-300 font-light text-sm md:text-base leading-relaxed space-y-4 max-w-3xl">
+                    <p>
+                        The buffers hand you Euler's checksum for free. Read them directly:
+                    </p>
+                    <ul class="list-disc pl-5 space-y-1 text-sm">
+                        <li><strong style="color:var(--accent)">V</strong> = length of the vertex buffer.</li>
+                        <li><strong style="color:var(--accent)">F</strong> = length of the index (face) buffer.</li>
+                        <li><strong style="color:var(--accent)">E</strong> = $\dfrac{\sum(\text{sides per face})}{2}$ — every edge is shared by exactly two faces, so summing each face's side-count double-counts edges; divide by two.</li>
+                    </ul>
+                    <div class="bg-black/40 border border-white/10 p-4 rounded-lg my-4 text-center overflow-x-auto">
+                        $$\chi = V - E + F = 2 \quad\Longleftarrow\quad \text{watertight, genus-0}$$
+                    </div>
+                    <p>
+                        Tie back to <a href="1b_topological_invariants.html" class="underline" style="color:var(--accent)">1B</a>: for any single closed watertight solid the answer must be $2$. If a build script returns anything else, the mesh has a hole, a crack, or a duplicated/orphan vertex — the number is a <strong>self-checking guarantee</strong>, computed in microseconds, that the surface really closes.
+                    </p>
+                    <div class="simple-translation">
+                        <h4 class="text-sm font-bold mb-1 flex items-center gap-2" style="color:var(--accent)">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+                            Simply Put: A Receipt That Must Total 2
+                        </h4>
+                        <p class="text-xs" style="color:color-mix(in srgb, var(--accent) 30%, #fde9c8)">
+                            Think of $V - E + F$ as a checkout receipt for a sealed object: it always rings up to exactly 2. If your receipt says 1, 3 or 0, you know a face is missing or an extra copy sneaked in — no need to eyeball the model, the arithmetic already caught the leak.
+                        </p>
+                    </div>
+                </div>
+
+                <!-- worked table -->
+                <div class="mt-6 buf-scroll bg-black/40 border border-white/10 rounded-lg p-3">
+                    <table class="buf-table" style="min-width:520px">
+                        <thead><tr><th>Solid</th><th>V</th><th>faces × sides</th><th>E = Σsides / 2</th><th>F</th><th>χ = V−E+F</th></tr></thead>
+                        <tbody>
+                            <tr><td style="text-align:left;color:#fff">Tetrahedron</td><td class="idx">4</td><td>4 × 3 = 12</td><td>6</td><td class="idx">4</td><td style="color:#33ff99;font-weight:600">2</td></tr>
+                            <tr><td style="text-align:left;color:#fff">Cube</td><td class="idx">8</td><td>6 × 4 = 24</td><td>12</td><td class="idx">6</td><td style="color:#33ff99;font-weight:600">2</td></tr>
+                            <tr><td style="text-align:left;color:#fff">Octahedron</td><td class="idx">6</td><td>8 × 3 = 24</td><td>12</td><td class="idx">8</td><td style="color:#33ff99;font-weight:600">2</td></tr>
+                            <tr><td style="text-align:left;color:#fff">Dodecahedron</td><td class="idx">20</td><td>12 × 5 = 60</td><td>30</td><td class="idx">12</td><td style="color:#33ff99;font-weight:600">2</td></tr>
+                            <tr><td style="text-align:left;color:#fff">Icosahedron</td><td class="idx">12</td><td>20 × 3 = 60</td><td>30</td><td class="idx">20</td><td style="color:#33ff99;font-weight:600">2</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Quiz 3 (E formula) -->
+                <div class="mt-8 border-t pt-6" style="border-color:color-mix(in srgb, var(--accent) 25%, transparent)">
+                    <h4 class="text-sm font-bold mb-4 flex items-center gap-2 font-mono uppercase tracking-widest" style="color:var(--accent)">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"></path><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path></svg>
+                        System Check 1E.3
+                    </h4>
+                    <div class="bg-black/40 border border-gray-800 rounded-lg p-5">
+                        <p class="text-sm text-gray-300 mb-4 font-light">A triangle mesh has $F$ triangular faces. Reading only the index buffer, how do you get the edge count $E$?</p>
+                        <div class="space-y-2" id="quiz-3-options">
+                            <button onclick="checkQuiz('quiz-3', false, this)" class="w-full text-left p-3 rounded bg-gray-900/50 border border-gray-700 hover:border-amber-500 hover:text-white transition-all text-xs text-gray-400">A) $E = 3F$ — each face simply owns three brand-new edges.</button>
+                            <button onclick="checkQuiz('quiz-3', true, this)" class="w-full text-left p-3 rounded bg-gray-900/50 border border-gray-700 hover:border-amber-500 hover:text-white transition-all text-xs text-gray-400">B) $E = \dfrac{\sum(\text{face sides})}{2} = \dfrac{3F}{2}$ — every edge is shared by two faces, so divide the total by two.</button>
+                            <button onclick="checkQuiz('quiz-3', false, this)" class="w-full text-left p-3 rounded bg-gray-900/50 border border-gray-700 hover:border-amber-500 hover:text-white transition-all text-xs text-gray-400">C) $E = V - F$ — subtract the face count from the vertex count.</button>
+                        </div>
+                        <div id="quiz-3-feedback" class="hidden"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SECTION 4: Store the seed -->
+            <div class="glass-panel p-8 md:p-10 relative overflow-hidden">
+                <h2 class="text-2xl text-white font-bold mystical-font tracking-wide mb-4">4 · Store the Seed, Not the Asset</h2>
+                <div class="prose prose-invert max-w-none text-gray-300 font-light text-sm md:text-base leading-relaxed space-y-4 max-w-3xl">
+                    <p>
+                        Here is the engine's final trick. A Platonic solid is fully determined by a <em>rule</em>, so S.P.I.R.E. often does not persist the buffers at all — it persists a compact <strong>seed</strong> (which solid, a scale, an orientation) and regenerates the vertex/index buffers deterministically at load. The same seed always yields the same mesh, bit for bit.
+                    </p>
+                    <p>
+                        This is the <strong>tome-procgen</strong> principle behind the rotating sigils you see in this Academy: a sigil is not a stored picture but a small seed replayed by a generator. Storing the recipe instead of the baked asset is why a 12-vertex integer seed can stand in for a mesh that would otherwise cost kilobytes — and why every learner's icosahedron is provably identical.
+                    </p>
+                    <div class="simple-translation">
+                        <h4 class="text-sm font-bold mb-1 flex items-center gap-2" style="color:var(--accent)">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+                            Simply Put: A Recipe Beats a Photo
+                        </h4>
+                        <p class="text-xs" style="color:color-mix(in srgb, var(--accent) 30%, #fde9c8)">
+                            You could mail a friend a giant photo of a cake, or you could text them the one-line recipe. The recipe is tiny, and everyone who follows it bakes the exact same cake. The engine keeps the recipe (the seed) and bakes the shape fresh whenever it is needed.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- INTERACTIVE LAB: Mesh Inspector -->
+            <div id="interactive-lab" class="glass-panel p-1 rounded-2xl overflow-hidden mt-8">
+                <div class="bg-[#0b0c10] rounded-xl overflow-hidden border border-gray-800 flex flex-col lg:flex-row" style="box-shadow:0 0 30px color-mix(in srgb, var(--accent) 8%, transparent)">
+
+                    <!-- Lab Controls -->
+                    <div class="w-full lg:w-1/3 p-6 flex flex-col justify-between border-b lg:border-b-0 lg:border-r border-gray-800 bg-[#05030a] relative z-20">
+                        <div>
+                            <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full text-[10px] tracking-[0.1em] uppercase mono mb-4 border" style="background:color-mix(in srgb, var(--accent) 12%, transparent);color:var(--accent);border-color:color-mix(in srgb, var(--accent) 40%, transparent)">
+                                <span class="w-1.5 h-1.5 rounded-full animate-ping" style="background:var(--accent)"></span> Mesh Inspector
+                            </div>
+                            <h3 class="text-xl font-bold text-white mystical-font tracking-wider mb-2">Read the Buffers</h3>
+                            <p class="text-xs text-gray-400 leading-relaxed mb-4 font-light">
+                                Pick a solid. The engine loads its vertex &amp; index buffers, tallies $V,E,F$, and rings up $\chi$ as a watertight checksum. Click a face in the viewport to highlight it.
+                            </p>
+
+                            <div class="grid grid-cols-2 gap-2 mb-5">
+                                <button data-solid="tetra" onclick="pickSolid('tetra')" class="solid-btn py-2 px-3 btn-lab rounded text-[10px] font-bold uppercase tracking-widest mono active-step">Tetrahedron</button>
+                                <button data-solid="cube" onclick="pickSolid('cube')" class="solid-btn py-2 px-3 btn-lab rounded text-[10px] font-bold uppercase tracking-widest mono">Cube</button>
+                                <button data-solid="octa" onclick="pickSolid('octa')" class="solid-btn py-2 px-3 btn-lab rounded text-[10px] font-bold uppercase tracking-widest mono">Octahedron</button>
+                                <button data-solid="dodeca" onclick="pickSolid('dodeca')" class="solid-btn py-2 px-3 btn-lab rounded text-[10px] font-bold uppercase tracking-widest mono">Dodecahedron</button>
+                                <button data-solid="icosa" onclick="pickSolid('icosa')" class="solid-btn py-2 px-3 btn-lab rounded text-[10px] font-bold uppercase tracking-widest mono col-span-2">Icosahedron</button>
+                            </div>
+
+                            <button id="wire-toggle" onclick="toggleWire()" class="w-full py-2 px-3 btn-lab rounded text-[10px] font-bold uppercase tracking-widest mono mb-5">Render: Solid ▸ toggle Wireframe</button>
+
+                            <!-- HUD -->
+                            <div class="grid grid-cols-4 gap-2 mb-5 text-center">
+                                <div class="bg-black/50 border border-white/10 rounded p-2"><div class="text-[9px] text-gray-500 mono">V</div><div id="hud-v" class="text-lg font-bold mono" style="color:var(--accent)">4</div></div>
+                                <div class="bg-black/50 border border-white/10 rounded p-2"><div class="text-[9px] text-gray-500 mono">E</div><div id="hud-e" class="text-lg font-bold mono" style="color:var(--accent)">6</div></div>
+                                <div class="bg-black/50 border border-white/10 rounded p-2"><div class="text-[9px] text-gray-500 mono">F</div><div id="hud-f" class="text-lg font-bold mono" style="color:var(--accent)">4</div></div>
+                                <div class="bg-black/50 border border-white/10 rounded p-2"><div class="text-[9px] text-gray-500 mono">χ</div><div id="hud-chi" class="text-lg font-bold mono text-[#33ff99]">2</div></div>
+                            </div>
+                        </div>
+
+                        <!-- Terminal Output -->
+                        <div>
+                            <div class="text-[9px] uppercase tracking-widest text-gray-500 mb-2 mono">System Console</div>
+                            <div id="terminal" class="terminal-log">
+                                <div class="log-entry"><span class="log-time">[00:00:00]</span><span class="log-info">Mesh Inspector online.</span></div>
+                                <div class="log-entry"><span class="log-time">[00:00:01]</span>Select a solid to load its buffers...</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 3D Canvas -->
+                    <div id="lab-canvas-container" class="w-full h-[360px] lg:h-[560px] relative cursor-crosshair">
+                        <div class="absolute bottom-4 left-4 text-[10px] font-mono font-bold pointer-events-none z-10 bg-black/50 p-2 rounded border border-white/10">
+                            <div style="color:var(--accent)" id="canvas-label">Tetrahedron · click a face</div>
+                            <div class="text-gray-500">drag to orbit · scroll to zoom</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Buffer tables (live) -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-[#0b0c10]">
+                    <div>
+                        <div class="text-[10px] font-mono uppercase tracking-widest mb-2" style="color:var(--accent)">Vertex Buffer <span id="vb-count" class="text-gray-500">(4)</span></div>
+                        <div class="buf-scroll bg-black/40 border border-white/10 rounded-lg p-2" style="max-height:240px;overflow-y:auto">
+                            <table class="buf-table"><thead><tr><th>idx</th><th>x</th><th>y</th><th>z</th></tr></thead><tbody id="vb-body"></tbody></table>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="text-[10px] font-mono uppercase tracking-widest mb-2" style="color:var(--accent)">Index / Face Buffer <span id="ib-count" class="text-gray-500">(4)</span></div>
+                        <div class="buf-scroll bg-black/40 border border-white/10 rounded-lg p-2" style="max-height:240px;overflow-y:auto">
+                            <table class="buf-table"><thead><tr id="ib-head"><th>face</th><th>a</th><th>b</th><th>c</th></tr></thead><tbody id="ib-body"></tbody></table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ===== Checkpoint + interweave prev/next ===== -->
+            <div class="mt-14 flex flex-col items-center gap-3">
+              <span class="text-[10px] text-gray-500 font-mono uppercase tracking-[0.3em]">Checkpoint</span>
+              <button id="mark-complete-btn" onclick="owlMarkComplete()" class="px-8 py-3 rounded-lg border font-bold tracking-widest text-xs uppercase mystical-font transition-all hover:scale-[1.02]" style="border-color:var(--accent);color:var(--accent);background:color-mix(in srgb,var(--accent) 6%,transparent);">Mark this part complete ✓</button>
+              <p class="text-[10px] text-gray-600 font-mono text-center max-w-md">Progress saves to this browser. Finish all 12 parts to unlock the Tome signoff on the <a href="index.html" class="underline hover:text-yellow-400">lesson hub</a>.</p>
+            </div>
+            <div class="mt-10 pt-6 border-t border-white/10 flex items-center justify-between gap-3 text-xs font-mono">
+              <a href="1d_tiling_problem.html" class="px-4 py-2 rounded border border-white/10 text-gray-400 hover:text-white hover:border-white/30 transition-colors">← 1D Tiling</a>
+              <a href="index.html" class="px-4 py-2 rounded border border-yellow-600/40 text-yellow-500 hover:bg-yellow-500/10 transition-colors tracking-widest uppercase">◆ Hub</a>
+              <a href="1f_application_lab.html" class="px-4 py-2 rounded border border-white/10 text-gray-400 hover:text-white hover:border-white/30 transition-colors">1F Lab →</a>
+            </div>
+
+        </main>
+
+        <footer class="w-full border-t border-yellow-900/30 bg-black/60 backdrop-blur-md py-6 text-center mt-auto flex-shrink-0 z-20 relative">
+            <p class="text-[10px] uppercase tracking-[0.3em] font-mono" style="color:color-mix(in srgb, var(--accent) 60%, #6b5b2a)">
+                Department I • Owl Academy
+            </p>
+        </footer>
+    </div>
+
+    <!-- Mesh Inspector Application -->
+    <script>
+        const PHI = (1 + Math.sqrt(5)) / 2;
+
+        // Canonical buffers. E is derived: (sum of face sides)/2.
+        const SOLIDS = {
+            tetra: {
+                label: 'Tetrahedron', sides: 3, three: () => new THREE.TetrahedronGeometry(3),
+                verts: [[1,1,1],[-1,-1,1],[-1,1,-1],[1,-1,-1]],
+                faces: [[0,2,1],[0,1,3],[0,3,2],[1,2,3]]
+            },
+            cube: {
+                label: 'Cube', sides: 4, three: () => new THREE.BoxGeometry(4,4,4),
+                verts: [[-1,-1,-1],[1,-1,-1],[1,1,-1],[-1,1,-1],[-1,-1,1],[1,-1,1],[1,1,1],[-1,1,1]],
+                faces: [[0,1,5,4],[3,7,6,2],[4,5,6,7],[0,3,2,1],[1,2,6,5],[0,4,7,3]]
+            },
+            octa: {
+                label: 'Octahedron', sides: 3, three: () => new THREE.OctahedronGeometry(3),
+                verts: [[1,0,0],[-1,0,0],[0,1,0],[0,-1,0],[0,0,1],[0,0,-1]],
+                faces: [[0,2,4],[2,1,4],[1,3,4],[3,0,4],[2,0,5],[1,2,5],[3,1,5],[0,3,5]]
+            },
+            dodeca: {
+                label: 'Dodecahedron', sides: 5, three: () => new THREE.DodecahedronGeometry(3),
+                verts: [
+                    [1,1,1],[1,1,-1],[1,-1,1],[1,-1,-1],[-1,1,1],[-1,1,-1],[-1,-1,1],[-1,-1,-1],
+                    [0, 1/PHI, PHI],[0, 1/PHI, -PHI],[0, -1/PHI, PHI],[0, -1/PHI, -PHI],
+                    [1/PHI, PHI, 0],[1/PHI, -PHI, 0],[-1/PHI, PHI, 0],[-1/PHI, -PHI, 0],
+                    [PHI, 0, 1/PHI],[PHI, 0, -1/PHI],[-PHI, 0, 1/PHI],[-PHI, 0, -1/PHI]
+                ],
+                faceCount: 12, condensed: true
+            },
+            icosa: {
+                label: 'Icosahedron', sides: 3, three: () => new THREE.IcosahedronGeometry(3),
+                verts: [
+                    [0,1,PHI],[0,1,-PHI],[0,-1,PHI],[0,-1,-PHI],
+                    [1,PHI,0],[1,-PHI,0],[-1,PHI,0],[-1,-PHI,0],
+                    [PHI,0,1],[PHI,0,-1],[-PHI,0,1],[-PHI,0,-1]
+                ],
+                faceCount: 20, condensed: true
+            }
+        };
+
+        let scene, camera, renderer, controls, mesh, edgeLines, highlight;
+        let raycaster, mouse, wire = false, currentKey = 'tetra';
+
+        function initLab() {
+            const container = document.getElementById('lab-canvas-container');
+            scene = new THREE.Scene();
+            camera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1, 1000);
+            camera.position.set(7, 6, 9);
+
+            renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+            renderer.setSize(container.clientWidth, container.clientHeight);
+            renderer.setPixelRatio(window.devicePixelRatio);
+            container.appendChild(renderer.domElement);
+
+            controls = new THREE.OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true;
+            controls.dampingFactor = 0.05;
+            controls.autoRotate = true;
+            controls.autoRotateSpeed = 0.9;
+
+            const grid = new THREE.GridHelper(16, 16, 0xf59e0b, 0x111111);
+            grid.position.y = -4;
+            grid.material.opacity = 0.15; grid.material.transparent = true;
+            scene.add(grid);
+
+            scene.add(new THREE.AmbientLight(0x404040, 1.6));
+            const dl = new THREE.DirectionalLight(0xffffff, 1);
+            dl.position.set(10, 20, 10); scene.add(dl);
+
+            raycaster = new THREE.Raycaster();
+            mouse = new THREE.Vector2();
+            renderer.domElement.addEventListener('pointerdown', onPick);
+
+            window.addEventListener('resize', () => {
+                if (container.clientWidth === 0) return;
+                camera.aspect = container.clientWidth / container.clientHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(container.clientWidth, container.clientHeight);
+            });
+
+            buildMesh('tetra');
+            animate();
+        }
+
+        function buildMesh(key) {
+            if (mesh) { scene.remove(mesh); mesh.geometry.dispose(); }
+            if (edgeLines) { scene.remove(edgeLines); }
+            if (highlight) { scene.remove(highlight); highlight = null; }
+
+            const geo = SOLIDS[key].three();
+            const mat = new THREE.MeshPhysicalMaterial({
+                color: 0xf59e0b, metalness: 0.15, roughness: 0.35,
+                transparent: true, opacity: wire ? 0.08 : 0.55,
+                side: THREE.DoubleSide, transmission: 0.3, thickness: 0.5, flatShading: true
+            });
+            mesh = new THREE.Mesh(geo, mat);
+            scene.add(mesh);
+
+            edgeLines = new THREE.LineSegments(
+                new THREE.EdgesGeometry(geo),
+                new THREE.LineBasicMaterial({ color: 0xffd27a, transparent: true, opacity: 0.9 })
+            );
+            scene.add(edgeLines);
+        }
+
+        function onPick(ev) {
+            const rect = renderer.domElement.getBoundingClientRect();
+            mouse.x = ((ev.clientX - rect.left) / rect.width) * 2 - 1;
+            mouse.y = -((ev.clientY - rect.top) / rect.height) * 2 + 1;
+            raycaster.setFromCamera(mouse, camera);
+            const hits = raycaster.intersectObject(mesh, false);
+            if (!hits.length) return;
+            const f = hits[0].face;
+            if (highlight) scene.remove(highlight);
+            const g = new THREE.BufferGeometry();
+            const pos = mesh.geometry.attributes.position;
+            const a = new THREE.Vector3().fromBufferAttribute(pos, f.a);
+            const b = new THREE.Vector3().fromBufferAttribute(pos, f.b);
+            const c = new THREE.Vector3().fromBufferAttribute(pos, f.c);
+            g.setFromPoints([a, b, c]);
+            g.setIndex([0,1,2]);
+            highlight = new THREE.Mesh(g, new THREE.MeshBasicMaterial({ color: 0x33ff99, side: THREE.DoubleSide, transparent: true, opacity: 0.85 }));
+            scene.add(highlight);
+            logToTerminal('Face picked → render-buffer (triangulated) indices (' + f.a + ', ' + f.b + ', ' + f.c + ') — quads/pentagons are split into triangles for the GPU, so these can differ from the index tables below', 'info');
+        }
+
+        function animate(t) {
+            requestAnimationFrame(animate);
+            if (typeof TWEEN !== 'undefined') TWEEN.update(t);
+            controls.update();
+            renderer.render(scene, camera);
+        }
+
+        function toggleWire() {
+            wire = !wire;
+            if (mesh) mesh.material.opacity = wire ? 0.08 : 0.55;
+            document.getElementById('wire-toggle').textContent = wire ? 'Render: Wireframe ▸ toggle Solid' : 'Render: Solid ▸ toggle Wireframe';
+        }
+
+        function renderTables(key) {
+            const s = SOLIDS[key];
+            // vertex buffer
+            const vb = document.getElementById('vb-body');
+            vb.innerHTML = s.verts.map((v, i) =>
+                '<tr><td class="idx">' + i + '</td><td>' + fmt(v[0]) + '</td><td>' + fmt(v[1]) + '</td><td>' + fmt(v[2]) + '</td></tr>'
+            ).join('');
+            document.getElementById('vb-count').textContent = '(' + s.verts.length + ')';
+
+            // index buffer
+            const ibHead = document.getElementById('ib-head');
+            const ib = document.getElementById('ib-body');
+            if (s.faces) {
+                const cols = s.sides === 4 ? ['a','b','c','d'] : ['a','b','c'];
+                ibHead.innerHTML = '<th>face</th>' + cols.map(c => '<th>' + c + '</th>').join('');
+                ib.innerHTML = s.faces.map((f, i) =>
+                    '<tr><td class="idx">' + i + '</td>' + f.map(x => '<td>' + x + '</td>').join('') + '</tr>'
+                ).join('');
+                document.getElementById('ib-count').textContent = '(' + s.faces.length + ')';
+            } else {
+                ibHead.innerHTML = '<th>face</th><th colspan="3">vertex indices (' + s.sides + '-gon)</th>';
+                ib.innerHTML = '<tr><td class="idx">0…' + (s.faceCount - 1) + '</td><td colspan="3" style="color:#94a3b8">' +
+                    s.faceCount + ' ' + (s.sides === 3 ? 'triangle' : 'pentagon') + ' faces — buffer condensed for space</td></tr>';
+                document.getElementById('ib-count').textContent = '(' + s.faceCount + ')';
+            }
+        }
+
+        function fmt(n) {
+            if (Math.abs(n - Math.round(n)) < 1e-9) return (n >= 0 ? '+' : '') + Math.round(n);
+            return (n >= 0 ? '+' : '') + n.toFixed(3);
+        }
+
+        function pickSolid(key) {
+            currentKey = key;
+            const s = SOLIDS[key];
+            document.querySelectorAll('.solid-btn').forEach(b =>
+                b.classList.toggle('active-step', b.dataset.solid === key));
+
+            const V = s.verts.length;
+            const F = s.faces ? s.faces.length : s.faceCount;
+            const sumSides = s.faces ? s.faces.reduce((a, f) => a + f.length, 0) : F * s.sides;
+            const E = sumSides / 2;
+            const chi = V - E + F;
+
+            document.getElementById('hud-v').textContent = V;
+            document.getElementById('hud-e').textContent = E;
+            document.getElementById('hud-f').textContent = F;
+            document.getElementById('hud-chi').textContent = chi;
+            document.getElementById('canvas-label').textContent = s.label + ' · click a face';
+
+            renderTables(key);
+            buildMesh(key);
+
+            logToTerminal('Loaded ' + s.label + ' buffers.', 'info');
+            logToTerminal('V=' + V + '  E=Σsides/2=' + sumSides + '/2=' + E + '  F=' + F, 'info');
+            logToTerminal('χ = V − E + F = ' + V + ' − ' + E + ' + ' + F + ' = ' + chi + (chi === 2 ? ' ✓ watertight' : ' ✗ BROKEN'), chi === 2 ? 'success' : 'warning');
+        }
+
+        function logToTerminal(message, type = "info") {
+            const term = document.getElementById('terminal');
+            const now = new Date();
+            const timeStr = `[${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}:${now.getSeconds().toString().padStart(2,'0')}]`;
+            const colorClass = type === "success" ? "log-success" : (type === "warning" ? "text-yellow-400" : "log-info");
+            const entry = document.createElement('div');
+            entry.className = "log-entry";
+            entry.innerHTML = `<span class="log-time">${timeStr}</span><span class="${colorClass}">${message}</span>`;
+            term.appendChild(entry);
+            term.scrollTop = term.scrollHeight;
+        }
+
+        // Quiz Verification Logic (verbatim from 1A exemplar; expanded link → this sub-lesson)
+        function checkQuiz(quizId, isCorrect, btnElement) {
+            const optionsContainer = document.getElementById(`${quizId}-options`);
+            const feedbackElement = document.getElementById(`${quizId}-feedback`);
+            const buttons = optionsContainer.querySelectorAll('button');
+
+            buttons.forEach(btn => {
+                btn.disabled = true;
+                btn.classList.add('opacity-50', 'cursor-not-allowed');
+                btn.classList.remove('!border-green-500', '!bg-green-900/30', '!text-green-400', '!border-red-500', '!bg-red-900/30', '!text-red-400');
+            });
+
+            btnElement.classList.remove('opacity-50');
+
+            if (isCorrect) {
+                btnElement.classList.add('!border-green-500', '!bg-green-900/30', '!text-green-400');
+                feedbackElement.innerHTML = `> STATUS: <span class="text-green-400">VERIFIED</span>. Your understanding aligns with the S.P.I.R.E. Engine's logic.`;
+                feedbackElement.className = "mt-4 text-xs p-3 rounded border font-mono bg-green-900/10 border-green-900/50 text-green-300 block";
+            } else {
+                btnElement.classList.add('!border-red-500', '!bg-red-900/30', '!text-red-400');
+                feedbackElement.innerHTML = `> STATUS: <span class="text-red-400">ERROR</span>. Dimensional logic misalignment. We recommend reviewing the <a href="1e_expanded_theory.html" class="text-cyan-400 underline hover:text-cyan-300">Expanded Lesson</a> for a comprehensive overview.<button onclick="resetQuiz('${quizId}')" class="ml-4 px-3 py-1 bg-red-900/50 hover:bg-red-500/50 text-white rounded transition-colors uppercase text-[10px] tracking-widest border border-red-500/50 mt-3 md:mt-0">Recalibrate & Retry</button>`;
+                feedbackElement.className = "mt-4 text-xs p-3 rounded border font-mono bg-red-900/20 border-red-900/50 text-red-400 block md:flex items-center justify-between gap-4";
+            }
+        }
+
+        function resetQuiz(quizId) {
+            const optionsContainer = document.getElementById(`${quizId}-options`);
+            const feedbackElement = document.getElementById(`${quizId}-feedback`);
+            const buttons = optionsContainer.querySelectorAll('button');
+
+            buttons.forEach(btn => {
+                btn.disabled = false;
+                btn.classList.remove('opacity-50', 'cursor-not-allowed', '!border-green-500', '!bg-green-900/30', '!text-green-400', '!border-red-500', '!bg-red-900/30', '!text-red-400');
+            });
+
+            feedbackElement.className = "hidden";
+        }
+
+        window.onload = () => {
+            initLab();
+            pickSolid('tetra');
+            setTimeout(() => { window.dispatchEvent(new Event('resize')); }, 100);
+        };
+    </script>
+
+    <!-- Completion tracking (§3D) -->
+    <script>
+    (function(){
+      var KEY='owl.platonic.progress.v1', PART='1e';
+      function rd(){ try{ return JSON.parse(localStorage.getItem(KEY))||{}; }catch(e){ return {}; } }
+      function wr(m){ try{ localStorage.setItem(KEY, JSON.stringify(m)); }catch(e){} }
+      window.owlMarkComplete=function(){ var m=rd(); m[PART]=true; wr(m); paint(true); };
+      function paint(done){ var b=document.getElementById('mark-complete-btn'); if(!b) return;
+        if(done){ b.textContent='✓ Part complete'; b.style.background='color-mix(in srgb,var(--accent) 22%,transparent)'; b.setAttribute('disabled',''); b.style.cursor='default'; } }
+      document.addEventListener('DOMContentLoaded', function(){ paint(!!rd()[PART]); });
+    })();
+    </script>
+</body>
+</html>

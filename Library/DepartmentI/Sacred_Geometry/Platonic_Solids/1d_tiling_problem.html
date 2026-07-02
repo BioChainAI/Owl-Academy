@@ -1,0 +1,915 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Owl Academy | Lesson 1D: The Tiling Problem in 3D Space</title>
+
+    <!-- CSS & Fonts -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Inter:wght@300;400;500;600&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+
+    <!-- Three.js Core & Addons -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tween.js/18.6.4/tween.umd.js"></script>
+
+    <!-- MathJax for rendering geometric equations -->
+    <script>
+        window.MathJax = {
+            tex: {
+                inlineMath: [['$', '$'], ['\\(', '\\)']],
+                displayMath: [['$$', '$$'], ['\\[', '\\]']]
+            }
+        };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+    <style>
+        /* Dynamic Theme Variables */
+        :root {
+            --accent: #ff3366;
+            --color-void: #090614;
+            --color-primary: #D4AF37;
+            --color-secondary: #8e9eab;
+            --color-holo1: #00d4ff;
+            --color-holo2: #8A2BE2;
+            --color-text: #E6C27A;
+            --color-ui-border: rgba(212, 175, 55, 0.3);
+            --color-r3-x: #ff3366;
+            --color-r3-y: #33ff99;
+            --color-r3-z: #00d4ff;
+        }
+
+        body {
+            background-color: var(--color-void);
+            color: #e2e8f0;
+            font-family: 'Inter', sans-serif;
+            background: radial-gradient(circle at 50% 50%, color-mix(in srgb, var(--accent) 10%, var(--color-void)), var(--color-void) 80%);
+            min-height: 100vh;
+            margin: 0;
+            overflow-x: hidden;
+            scroll-behavior: smooth;
+        }
+
+        /* --- SIGIL ANIMATIONS --- */
+        .spin-slow         { animation: spin 40s linear infinite; transform-origin: center; }
+        @keyframes spin    { 100% { transform: rotate(360deg); } }
+        .spin-slow-reverse { animation: spinReverse 40s linear infinite; transform-origin: center; }
+        @keyframes spinReverse { 100% { transform: rotate(-360deg); } }
+        .pulse-glow        { animation: pulseGlow 4s ease-in-out infinite alternate; }
+        @keyframes pulseGlow {
+            0%   { filter: drop-shadow(0 0 5px  rgba(212,175,55,0.3)); }
+            100% { filter: drop-shadow(0 0 15px rgba(212,175,55,0.8)); }
+        }
+
+        /* --- ATMOSPHERIC LAYERS --- */
+        .nebula-layer {
+            position: fixed; inset: 0;
+            background:
+                radial-gradient(circle at 20% 30%, var(--color-holo2) 0%, transparent 40%),
+                radial-gradient(circle at 80% 70%, var(--color-holo1) 0%, transparent 40%);
+            opacity: 0.15; mix-blend-mode: screen; filter: blur(80px); pointer-events: none; z-index: 0;
+        }
+        .vignette-layer {
+            position: fixed; inset: 0;
+            background: radial-gradient(circle, transparent 40%, rgba(0,0,0,0.8) 120%);
+            pointer-events: none; z-index: 10;
+        }
+        .starfield {
+            position: fixed; inset: 0;
+            background-image:
+                radial-gradient(2px 2px at 20px 30px, var(--color-primary), rgba(0,0,0,0)),
+                radial-gradient(2px 2px at 40px 70px, #fff, rgba(0,0,0,0)),
+                radial-gradient(2px 2px at 50px 160px, rgba(255,255,255,0.8), rgba(0,0,0,0)),
+                radial-gradient(2px 2px at 90px 40px, #fff, rgba(0,0,0,0)),
+                radial-gradient(2px 2px at 130px 80px, var(--color-primary), rgba(0,0,0,0));
+            background-repeat: repeat; background-size: 250px 250px;
+            animation: twinkle 8s infinite alternate; opacity: 0.35; z-index: 0; pointer-events: none;
+        }
+        .starfield-layer-2 { background-size: 350px 350px; background-position: 50px 50px; opacity: 0.2; animation: twinkle 12s infinite alternate-reverse; }
+        @keyframes twinkle { 0% { opacity: 0.1; transform: scale(1); } 100% { opacity: 0.5; transform: scale(1.05); } }
+
+        /* --- TYPOGRAPHY & PANELS --- */
+        h1, h2, h3, h4, .mystical-font { font-family: 'Cinzel', serif; }
+        .mono { font-family: 'Fira Code', monospace; }
+        .gold-gradient {
+            background: linear-gradient(to right, var(--color-primary), #FFF8DC, var(--color-primary));
+            -webkit-background-clip: text; background-clip: text; color: transparent; text-shadow: 0 0 15px color-mix(in srgb, var(--color-primary) 30%, transparent);
+        }
+
+        .glass-panel {
+            background: rgba(10, 6, 20, 0.6);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--color-ui-border);
+            border-radius: 16px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+        }
+
+        .data-card {
+            background: rgba(15, 10, 25, 0.6);
+            border: 1px solid rgba(255,255,255,0.05);
+            border-top: 1px solid color-mix(in srgb, var(--accent) 40%, transparent);
+            border-radius: 12px;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        .data-card::before {
+            content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: radial-gradient(circle at top right, color-mix(in srgb, var(--accent) 6%, transparent), transparent 70%);
+            pointer-events: none;
+        }
+
+        .simple-translation {
+            background: color-mix(in srgb, var(--accent) 6%, transparent);
+            border-left: 3px solid color-mix(in srgb, var(--accent) 55%, transparent);
+            padding: 1rem;
+            margin-top: 1rem;
+            border-radius: 0 8px 8px 0;
+            font-family: 'Inter', sans-serif;
+        }
+
+        .btn-lab {
+            background: rgba(5, 3, 10, 0.8);
+            border: 1px solid color-mix(in srgb, var(--accent) 40%, transparent);
+            color: color-mix(in srgb, var(--accent) 85%, white 15%);
+            transition: all 0.3s;
+            position: relative;
+            overflow: hidden;
+        }
+        .btn-lab:hover:not(:disabled) {
+            background: color-mix(in srgb, var(--accent) 12%, transparent);
+            color: #fff;
+            box-shadow: 0 0 15px color-mix(in srgb, var(--accent) 40%, transparent);
+            border-color: var(--accent);
+        }
+        .btn-lab:disabled {
+            border-color: rgba(255,255,255,0.1);
+            color: rgba(255,255,255,0.2);
+            cursor: not-allowed;
+        }
+        .btn-lab.active-step {
+            background: color-mix(in srgb, var(--accent) 20%, transparent);
+            border-color: var(--accent);
+            color: #fff;
+            box-shadow: 0 0 15px color-mix(in srgb, var(--accent) 40%, transparent);
+        }
+
+        #lab-canvas-container {
+            border-radius: 12px;
+            overflow: hidden;
+            border: 1px solid color-mix(in srgb, var(--accent) 30%, transparent);
+            background: radial-gradient(circle at center, rgba(20,10,20,1) 0%, #000 100%);
+            box-shadow: inset 0 0 40px rgba(0,0,0,0.8);
+        }
+
+        .terminal-log {
+            font-family: 'Fira Code', monospace;
+            font-size: 10px;
+            color: #8e9eab;
+            height: 120px;
+            overflow-y: auto;
+            background: rgba(0,0,0,0.6);
+            padding: 8px;
+            border-radius: 4px;
+            border: 1px solid rgba(255,255,255,0.05);
+        }
+        .log-entry { margin-bottom: 4px; animation: slideIn 0.3s ease-out; }
+        .log-time { color: var(--color-primary); margin-right: 8px; }
+        .log-success { color: #33ff99; }
+        .log-info { color: var(--accent); }
+        .log-fail { color: #ff5a5a; }
+        @keyframes slideIn { from { opacity: 0; transform: translateX(-10px); } to { opacity: 1; transform: translateX(0); } }
+
+        /* --- Data table (scrolls on mobile) --- */
+        .dihedral-table { width: 100%; border-collapse: collapse; font-size: .85rem; min-width: 560px; }
+        .dihedral-table th, .dihedral-table td { padding: 11px 12px; text-align: center; border-bottom: 1px solid rgba(255,255,255,0.1); }
+        .dihedral-table th { font-family: "Fira Code", monospace; font-size: .72rem; letter-spacing: .06em; text-transform: uppercase; color: var(--color-secondary); }
+        .dihedral-table td:first-child, .dihedral-table th:first-child { text-align: left; }
+        .dihedral-table tr:hover td { background: color-mix(in srgb, var(--accent) 6%, transparent); }
+        .row-hit td { background: color-mix(in srgb, var(--accent) 12%, transparent) !important; }
+
+        /* --- Stepper chips (shared chrome) --- */
+        .step-chip{padding:.35rem .7rem;border-radius:.4rem;border:1px solid rgba(255,255,255,.1);color:#94a3b8;text-transform:uppercase;letter-spacing:.08em;transition:all .2s;white-space:nowrap;}
+        .step-chip:hover{color:#fff;border-color:rgba(255,255,255,.35);}
+        .step-chip[aria-current="page"]{color:var(--accent);border-color:var(--accent);background:color-mix(in srgb,var(--accent) 14%,transparent);box-shadow:0 0 12px color-mix(in srgb,var(--accent) 30%,transparent);}
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: rgba(0,0,0,0.4); }
+        ::-webkit-scrollbar-thumb { background: color-mix(in srgb, var(--accent) 55%, transparent); border-radius: 10px; }
+    </style>
+</head>
+<body class="relative">
+
+    <!-- Atmospheric Layers -->
+    <div class="nebula-layer"></div>
+    <div class="starfield"></div>
+    <div class="starfield starfield-layer-2"></div>
+    <div class="vignette-layer"></div>
+
+    <!-- SVG Definitions for Graphs -->
+    <svg width="0" height="0" class="absolute">
+        <defs>
+            <marker id="arrowX" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto" markerUnits="strokeWidth"><path d="M0,0 L0,6 L9,3 z" fill="#ff3366" /></marker>
+            <marker id="arrowY" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto" markerUnits="strokeWidth"><path d="M0,0 L0,6 L9,3 z" fill="#33ff99" /></marker>
+            <marker id="arrowZ" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto" markerUnits="strokeWidth"><path d="M0,0 L0,6 L9,3 z" fill="#00d4ff" /></marker>
+
+            <!-- Sigil Gradients -->
+            <linearGradient id="goldGradLeft" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#C59B3F" />
+                <stop offset="50%" stop-color="#FFF2C8" />
+                <stop offset="100%" stop-color="#996515" />
+            </linearGradient>
+            <linearGradient id="goldGradRight" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#C59B3F" />
+                <stop offset="50%" stop-color="#FFF2C8" />
+                <stop offset="100%" stop-color="#996515" />
+            </linearGradient>
+        </defs>
+    </svg>
+
+    <div class="relative z-20 min-h-screen flex flex-col">
+
+        <!-- Header with Official Sigils -->
+        <header class="w-full pt-8 pb-4 px-4 md:px-12 flex justify-between items-start border-b border-yellow-600/30 glass-panel shadow-2xl !mb-0 !rounded-none">
+
+            <!-- LEFT SIGIL: Mathematical Manifold -->
+            <div class="w-16 h-16 md:w-24 md:h-24 flex-shrink-0 pointer-events-none">
+                <svg viewBox="0 0 200 200" class="w-full h-full pulse-glow" xmlns="http://www.w3.org/2000/svg">
+                    <circle cx="100" cy="100" r="95" fill="none" stroke="url(#goldGradLeft)" stroke-width="1" opacity="0.6"/>
+                    <circle cx="100" cy="100" r="85" fill="none" stroke="url(#goldGradLeft)" stroke-width="0.5" opacity="0.4"/>
+                    <g class="spin-slow" style="transform-origin: 100px 100px;">
+                        <g stroke="url(#goldGradLeft)" stroke-width="1" fill="none" opacity="0.6">
+                            <polygon points="100,15 173.6,142.5 26.4,142.5" />
+                            <polygon points="100,15 173.6,142.5 26.4,142.5" transform="rotate(30 100 100)" />
+                            <polygon points="100,15 173.6,142.5 26.4,142.5" transform="rotate(60 100 100)" />
+                            <polygon points="100,15 173.6,142.5 26.4,142.5" transform="rotate(90 100 100)" />
+                        </g>
+                        <g stroke="#ffffff" stroke-width="0.75" fill="none" opacity="0.4" stroke-dasharray="2 4">
+                            <polygon points="100,15 173.6,142.5 26.4,142.5" transform="rotate(15 100 100)" />
+                            <polygon points="100,15 173.6,142.5 26.4,142.5" transform="rotate(45 100 100)" />
+                            <polygon points="100,15 173.6,142.5 26.4,142.5" transform="rotate(75 100 100)" />
+                            <polygon points="100,15 173.6,142.5 26.4,142.5" transform="rotate(105 100 100)" />
+                        </g>
+                        <g stroke="url(#goldGradLeft)" stroke-width="1.5" fill="none" opacity="0.9">
+                            <polygon points="100,45 147.6,127.5 52.4,127.5" />
+                            <polygon points="100,155 147.6,72.5 52.4,72.5" />
+                        </g>
+                        <circle cx="100" cy="100" r="35" stroke="url(#goldGradLeft)" stroke-width="1" fill="none" opacity="0.6"/>
+                        <polygon points="100,65 134.1,107.8 84.8,131.5 72.6,78.2 127.4,78.2 115.2,131.5 65.9,107.8" stroke="url(#goldGradLeft)" stroke-width="1.2" fill="none" opacity="0.8" />
+                    </g>
+                    <g class="spin-slow-reverse" style="transform-origin: 100px 100px;" filter="drop-shadow(0 0 4px rgba(212,175,55,0.8))">
+                        <line x1="100" y1="80" x2="100" y2="120" stroke="url(#goldGradLeft)" stroke-width="2" stroke-linecap="round"/>
+                        <path d="M 100,80 C 112,80 112,95 100,95" fill="none" stroke="url(#goldGradLeft)" stroke-width="2" stroke-linecap="round"/>
+                        <line x1="88" y1="95" x2="112" y2="112" stroke="url(#goldGradLeft)" stroke-width="2" stroke-linecap="round"/>
+                        <line x1="112" y1="95" x2="88" y2="112" stroke="url(#goldGradLeft)" stroke-width="2" stroke-linecap="round"/>
+                        <text x="82" y="108" fill="#FFF8DC" font-family="Cinzel, serif" font-size="8" text-anchor="middle">A</text>
+                        <text x="118" y="108" fill="#FFF8DC" font-family="Cinzel, serif" font-size="8" text-anchor="middle">Ω</text>
+                    </g>
+                </svg>
+            </div>
+
+            <!-- Center Titles -->
+            <div class="text-center flex-grow pt-2 md:pt-4 z-20">
+                <p class="text-[9px] md:text-[11px] tracking-[0.3em] uppercase mb-2 font-mono" style="color:var(--accent)">Department I • Lesson 1 · Platonic Solids &amp; Symmetric Tessellations</p>
+                <h1 class="text-xl md:text-3xl font-bold tracking-[0.15em] mystical-font text-white drop-shadow-md">SUB-LESSON 1D</h1>
+                <h2 class="text-lg md:text-2xl font-bold gold-gradient tracking-[0.2em] mt-1">The Tiling Problem in 3D Space</h2>
+            </div>
+
+            <!-- RIGHT SIGIL: Archive Cipher -->
+            <a href="../SG_Main.html" title="Return to Department I" class="w-16 h-16 md:w-24 md:h-24 flex-shrink-0 cursor-pointer hover:scale-105 transition-transform duration-300">
+                <svg viewBox="0 0 200 200" class="w-full h-full spin-slow pulse-glow" xmlns="http://www.w3.org/2000/svg">
+                    <circle cx="100" cy="100" r="95" fill="none" stroke="url(#goldGradRight)" stroke-width="1" opacity="0.6"/>
+                    <circle cx="100" cy="100" r="85" fill="none" stroke="url(#goldGradRight)" stroke-width="0.5" opacity="0.4"/>
+                    <polygon points="100,15 173.6,142.5 26.4,142.5" fill="none" stroke="url(#goldGradRight)" stroke-width="1" opacity="0.5"/>
+                    <polygon points="100,185 26.4,57.5 173.6,57.5" fill="none" stroke="url(#goldGradRight)" stroke-width="1" opacity="0.5"/>
+                    <g filter="drop-shadow(0 0 4px rgba(212,175,55,0.8))">
+                        <line x1="100" y1="60" x2="100.01" y2="140" stroke="url(#goldGradRight)" stroke-width="2.5" stroke-linecap="round"/>
+                        <path d="M 100,60 C 120,60 120,90 100,90" fill="none" stroke="url(#goldGradRight)" stroke-width="2.5" stroke-linecap="round"/>
+                        <line x1="80" y1="85" x2="120" y2="125" stroke="url(#goldGradRight)" stroke-width="2.5" stroke-linecap="round"/>
+                        <line x1="120" y1="85" x2="80" y2="125" stroke="url(#goldGradRight)" stroke-width="2.5" stroke-linecap="round"/>
+                        <text x="75" y="115" fill="#FFF8DC" font-family="Cinzel, serif" font-size="10" text-anchor="middle">A</text>
+                        <text x="125" y="115" fill="#FFF8DC" font-family="Cinzel, serif" font-size="10" text-anchor="middle">Ω</text>
+                    </g>
+                    <circle cx="100" cy="100" r="45" fill="none" stroke="url(#goldGradRight)" stroke-width="0.5" stroke-dasharray="2 2" opacity="0.6"/>
+                </svg>
+            </a>
+        </header>
+
+        <!-- ===== Lesson 1 sub-lesson stepper (interweave nav) ===== -->
+        <nav class="w-full max-w-7xl mx-auto px-4 md:px-8 mt-6" aria-label="Lesson 1 sub-lessons">
+          <div class="glass-panel rounded-xl p-3 flex flex-wrap items-center justify-center gap-2 text-[10px] md:text-xs font-mono !mb-0">
+            <a href="index.html" class="px-3 py-1.5 rounded border border-yellow-600/40 text-yellow-500 hover:bg-yellow-500/10 transition-colors tracking-widest uppercase">◆ Hub</a>
+            <span class="text-gray-700 hidden md:inline">/</span>
+            <a href="1a_geometric_primitives.html" class="step-chip">1A · Primitives</a>
+            <a href="1b_topological_invariants.html" class="step-chip">1B · Topology</a>
+            <a href="1c_harmonic_resonance.html" class="step-chip">1C · Resonance</a>
+            <a href="1d_tiling_problem.html" class="step-chip" aria-current="page">1D · Tiling</a>
+            <a href="1e_engine_implementation.html" class="step-chip">1E · Engine</a>
+            <a href="1f_application_lab.html" class="step-chip">1F · Lab</a>
+          </div>
+        </nav>
+
+        <!-- Main Content -->
+        <main class="flex-grow w-full max-w-7xl mx-auto px-4 md:px-8 py-8 space-y-12">
+
+            <!-- Expanded Theory Link Button -->
+            <div class="flex justify-center mb-8">
+                <a href="1d_expanded_theory.html" class="group px-6 py-3 rounded-lg border transition-all text-xs font-bold tracking-[0.15em] mystical-font flex items-center gap-3 hover:bg-yellow-500/10" style="border-color: color-mix(in srgb, var(--color-primary) 50%, transparent); color: var(--color-primary); background: rgba(0,0,0,0.6); box-shadow: 0 0 15px rgba(212,175,55,0.15);">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="group-hover:scale-110 transition-transform"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path></svg>
+                    DEEP DIVE: EXPANDED THEORY
+                </a>
+            </div>
+
+            <!-- Theory Section: 2D Recap -->
+            <div class="glass-panel p-8 md:p-10 relative overflow-hidden">
+                <div class="absolute top-0 right-0 w-64 h-64 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3" style="background: color-mix(in srgb, var(--accent) 6%, transparent)"></div>
+
+                <h2 class="text-2xl text-white font-bold mystical-font tracking-wide mb-4">Step 1 — The Flat Case: Why Only Three Tiles</h2>
+
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
+                    <div class="prose prose-invert max-w-none text-gray-300 font-light text-sm md:text-base leading-relaxed space-y-4">
+                        <p>
+                            Before we conquer 3D space, warm up in the plane. A <strong>regular tessellation</strong> is a way of covering an infinite flat floor using copies of one regular polygon, with no gaps and no overlaps. Astonishingly, out of the infinitely many regular polygons, <strong>exactly three</strong> can do it.
+                        </p>
+                        <p>
+                            The rule is pure arithmetic. Where polygons meet at a shared corner, their interior angles must sum to a full turn, $360°$. So a regular $n$-gon tiles the plane only if its interior angle divides $360°$ evenly:
+                        </p>
+                        <div class="bg-black/40 border border-white/10 p-4 rounded-lg my-4 text-center overflow-x-auto">
+                            $$\text{Triangle } 60°\times 6 = 360° \quad\;\; \text{Square } 90°\times 4 = 360° \quad\;\; \text{Hexagon } 120°\times 3 = 360°$$
+                        </div>
+                        <p>
+                            The regular <strong>pentagon</strong> fails: its interior angle is $108°$, and $360° \div 108° = 3.33\ldots$ — not a whole number. Three pentagons around a point leave a $360 - 324 = 36°$ wedge gap; four would overlap. No arrangement works.
+                        </p>
+
+                        <div class="simple-translation">
+                            <h4 class="text-sm font-bold mb-1 flex items-center gap-2" style="color:var(--accent)">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+                                Simply Put: The Bathroom Floor Test
+                            </h4>
+                            <p class="text-xs" style="color: color-mix(in srgb, var(--accent) 25%, #ffe3ea)">
+                                Think of tiling a bathroom floor with one shape. Triangles work. Squares work. Hexagons work (that is why honeycomb and soccer-ball patterns show up everywhere). Try it with regular pentagons and you always get ugly gaps you would have to fill with grout. The corners just refuse to add up to a clean full turn.
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Visual: 2D tilings -->
+                    <div class="bg-black/50 border border-gray-800 rounded-xl p-4 flex flex-col items-center justify-center h-full min-h-[250px]">
+                        <div class="w-full overflow-x-auto">
+                        <svg viewBox="0 0 420 220" class="w-full min-w-[380px] h-auto">
+                            <!-- Triangles -->
+                            <g stroke="#33ff99" stroke-width="1.5" fill="rgba(51,255,153,0.12)">
+                                <polygon points="20,90 50,40 80,90"/><polygon points="50,40 80,90 110,40"/>
+                                <polygon points="80,90 110,40 140,90"/><polygon points="20,90 50,140 80,90"/>
+                                <polygon points="50,140 80,90 110,140"/><polygon points="80,90 110,140 140,90"/>
+                            </g>
+                            <text x="80" y="175" text-anchor="middle" font-family="Fira Code, monospace" font-size="11" fill="#33ff99">60°×6 ✓</text>
+                            <!-- Squares -->
+                            <g stroke="#00d4ff" stroke-width="1.5" fill="rgba(0,212,255,0.12)">
+                                <rect x="170" y="45" width="35" height="35"/><rect x="205" y="45" width="35" height="35"/>
+                                <rect x="170" y="80" width="35" height="35"/><rect x="205" y="80" width="35" height="35"/>
+                            </g>
+                            <text x="205" y="175" text-anchor="middle" font-family="Fira Code, monospace" font-size="11" fill="#00d4ff">90°×4 ✓</text>
+                            <!-- Pentagon fail -->
+                            <g stroke="#ff5a5a" stroke-width="1.5" fill="rgba(255,90,90,0.12)">
+                                <polygon points="330,55 358,75 347,108 313,108 302,75"/>
+                                <polygon points="358,75 386,55 397,88 375,112 347,108"/>
+                                <polygon points="302,75 313,108 291,132 269,108 280,75"/>
+                            </g>
+                            <path d="M330,108 L347,108 L338,140 Z" fill="rgba(255,90,90,0.5)" stroke="#ff5a5a" stroke-width="1" stroke-dasharray="3 2"/>
+                            <text x="340" y="175" text-anchor="middle" font-family="Fira Code, monospace" font-size="11" fill="#ff5a5a">108°×3 ✗ gap</text>
+                        </svg>
+                        </div>
+                        <p class="text-[10px] text-gray-500 font-mono mt-3 text-center">Graph 1D.0: Three shapes tile; the pentagon leaves a 36° wedge.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Theory Section: The 3D Rule + Dihedral Table -->
+            <div class="glass-panel p-8 md:p-10 relative overflow-hidden">
+                <h2 class="text-2xl text-white font-bold mystical-font tracking-wide mb-4">Step 2 — The 3D Rule: Angles Around a Shared Edge</h2>
+
+                <div class="prose prose-invert max-w-none text-gray-300 font-light text-sm md:text-base leading-relaxed space-y-4">
+                    <p>
+                        In 3D the shared "corner" becomes a shared <strong>edge</strong>. When solids pack around a common edge, the <strong>dihedral angles</strong> — the angle between the two faces meeting at that edge — must sum to a full turn, $360°$, with no gap and no overlap. It is the exact same divisibility argument, lifted one dimension.
+                    </p>
+                    <div class="bg-black/40 border border-white/10 p-4 rounded-lg text-center overflow-x-auto" style="color:var(--accent)">
+                        $$\sum_{\text{cells around an edge}} \theta_{\text{dihedral}} = 360°$$
+                    </div>
+                </div>
+
+                <div class="mt-6 w-full overflow-x-auto rounded-lg border border-white/10">
+                    <table class="dihedral-table">
+                        <thead>
+                            <tr><th>Platonic Solid</th><th>Faces</th><th>Dihedral θ</th><th>360° ÷ θ</th><th>Whole number?</th></tr>
+                        </thead>
+                        <tbody class="text-gray-200">
+                            <tr><td>Tetrahedron</td><td>triangles</td><td>70.53°</td><td>5.10</td><td class="text-red-400 font-bold">No</td></tr>
+                            <tr class="row-hit"><td>Cube</td><td>squares</td><td>90.00°</td><td class="font-bold text-white">4.00</td><td class="font-bold" style="color:var(--accent)">Yes → tiles alone</td></tr>
+                            <tr><td>Octahedron</td><td>triangles</td><td>109.47°</td><td>3.29</td><td class="text-red-400 font-bold">No</td></tr>
+                            <tr><td>Dodecahedron</td><td>pentagons</td><td>116.57°</td><td>3.09</td><td class="text-red-400 font-bold">No</td></tr>
+                            <tr><td>Icosahedron</td><td>triangles</td><td>138.19°</td><td>2.60</td><td class="text-red-400 font-bold">No</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="simple-translation mt-6">
+                    <h4 class="text-sm font-bold mb-1 flex items-center gap-2" style="color:var(--accent)">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+                        Simply Put: The Slice-of-Pie Rule
+                    </h4>
+                    <p class="text-xs" style="color: color-mix(in srgb, var(--accent) 25%, #ffe3ea)">
+                        Look at a shared edge end-on and each solid takes up a wedge, like a slice of pie. To wrap all the way around the edge with no leftover crust, your slice angles have to add up to a perfect $360°$. Only the cube's $90°$ slice divides evenly (four slices, done). Every other Platonic solid leaves a sliver of empty pie — or would need to overlap.
+                    </p>
+                </div>
+            </div>
+
+            <!-- Theory Section: Result + Honeycomb -->
+            <div class="glass-panel p-8 md:p-10 relative overflow-hidden">
+                <h2 class="text-2xl text-white font-bold mystical-font tracking-wide mb-4">Step 3 — The Verdict: The Cube Stands Alone (But Friends Help)</h2>
+
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
+                    <div class="prose prose-invert max-w-none text-gray-300 font-light text-sm md:text-base leading-relaxed space-y-4">
+                        <p>
+                            Running the table gives a clean result: <strong>the cube is the only Platonic solid that fills 3-space by itself.</strong> Four cubes meet snugly around every edge ($90°\times 4 = 360°$), stacking into an infinite lattice with no gaps — exactly how table-salt crystals (NaCl) and children's building blocks pack.
+                        </p>
+                        <p>
+                            But solids can team up. The star combination is the <strong>tetrahedral–octahedral honeycomb</strong>: alternate regular tetrahedra and octahedra so that around each shared edge you place two of each:
+                        </p>
+                        <div class="bg-black/40 border border-white/10 p-4 rounded-lg text-center overflow-x-auto" style="color:var(--accent)">
+                            $$70.53°\times 2 \;+\; 109.47°\times 2 \;=\; 141.06° + 218.94° = 360°$$
+                        </div>
+                        <p>
+                            The wedges lock together perfectly. This "tet–oct" lattice (also called the <em>alternated cubic honeycomb</em>) is one of nature's favourite scaffolds — and it is why the S.P.I.R.E. engine reaches for the tet–oct packing when it needs a rigid, gap-free 3D grid.
+                        </p>
+                        <div class="simple-translation">
+                            <h4 class="text-sm font-bold mb-1" style="color:var(--accent)">Real-world aside</h4>
+                            <p class="text-xs" style="color: color-mix(in srgb, var(--accent) 25%, #ffe3ea)">
+                                Chasing the best way to fill space is a live problem. For equal-sized bubbles, Lord Kelvin's truncated-octahedron cells were the champion for a century — until the <strong>Weaire–Phelan foam</strong> (1993) beat them with slightly less surface area. That foam's pattern was famously used for the "Water Cube" swimming venue at the 2008 Beijing Olympics.
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Honeycomb schematic -->
+                    <div class="bg-black/50 border border-gray-800 rounded-xl p-4 flex flex-col items-center justify-center h-full min-h-[250px]">
+                        <div class="w-full overflow-x-auto">
+                        <svg viewBox="0 0 360 260" class="w-full min-w-[320px] h-auto">
+                            <!-- shared edge (end-on = center point) -->
+                            <circle cx="180" cy="130" r="4" fill="#fff"/>
+                            <text x="180" y="250" text-anchor="middle" font-family="Fira Code, monospace" font-size="10" fill="#8e9eab">looking down one shared edge</text>
+                            <!-- four wedges: tet, oct, tet, oct -->
+                            <g stroke-width="1.5">
+                                <path d="M180,130 L280,130 A100,100 0 0,0 213.8,35.9 Z" fill="rgba(255,51,102,0.28)" stroke="#ff3366"/>
+                                <path d="M180,130 L213.8,35.9 A100,100 0 0,0 62.9,80.5 Z" fill="rgba(0,212,255,0.22)" stroke="#00d4ff"/>
+                                <path d="M180,130 L62.9,80.5 A100,100 0 0,0 96.7,224.1 Z" fill="rgba(255,51,102,0.28)" stroke="#ff3366"/>
+                                <path d="M180,130 L96.7,224.1 A100,100 0 0,0 280,130 Z" fill="rgba(0,212,255,0.22)" stroke="#00d4ff"/>
+                            </g>
+                            <text x="232" y="95" font-family="Fira Code, monospace" font-size="9" fill="#ff3366">tet 70.53°</text>
+                            <text x="118" y="70" font-family="Fira Code, monospace" font-size="9" fill="#00d4ff">oct 109.47°</text>
+                            <text x="70" y="165" font-family="Fira Code, monospace" font-size="9" fill="#ff3366">tet 70.53°</text>
+                            <text x="150" y="205" font-family="Fira Code, monospace" font-size="9" fill="#00d4ff">oct 109.47°</text>
+                        </svg>
+                        </div>
+                        <p class="text-[10px] text-gray-500 font-mono mt-3 text-center">Graph 1D.1: Two tets + two octs close the full 360° around an edge.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quiz 1 -->
+            <div class="glass-panel p-8 md:p-10">
+                <h4 class="text-sm font-bold mb-4 flex items-center gap-2 font-mono uppercase tracking-widest" style="color:var(--accent)">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"></path><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path></svg>
+                    System Check 1D.0 — The Divisibility Rule
+                </h4>
+                <div class="bg-black/40 border border-gray-800 rounded-lg p-5">
+                    <p class="text-sm text-gray-300 mb-4 font-light">For identical solids to fill space around a shared edge with no gaps, what must be true of their dihedral angle $\theta$?</p>
+                    <div class="space-y-2" id="quiz-1-options">
+                        <button onclick="checkQuiz('quiz-1', false, this)" class="w-full text-left p-3 rounded bg-gray-900/50 border border-gray-700 hover:border-rose-500 hover:text-white transition-all text-xs text-gray-400">A) $\theta$ must be greater than $90°$.</button>
+                        <button onclick="checkQuiz('quiz-1', true, this)" class="w-full text-left p-3 rounded bg-gray-900/50 border border-gray-700 hover:border-rose-500 hover:text-white transition-all text-xs text-gray-400">B) $\theta$ must divide $360°$ a whole number of times (an integer $n$ with $n\theta = 360°$).</button>
+                        <button onclick="checkQuiz('quiz-1', false, this)" class="w-full text-left p-3 rounded bg-gray-900/50 border border-gray-700 hover:border-rose-500 hover:text-white transition-all text-xs text-gray-400">C) $\theta$ must equal the interior angle of one of its faces.</button>
+                    </div>
+                    <div id="quiz-1-feedback" class="hidden"></div>
+                </div>
+            </div>
+
+            <!-- Interactive Lab: Space-Filling Foundry -->
+            <div id="interactive-lab" class="glass-panel p-1 rounded-2xl overflow-hidden mt-8">
+                <div class="bg-[#0b0c10] rounded-xl overflow-hidden border border-gray-800 flex flex-col lg:flex-row" style="box-shadow: 0 0 30px color-mix(in srgb, var(--accent) 6%, transparent)">
+
+                    <!-- Lab Controls -->
+                    <div class="w-full lg:w-1/3 p-6 flex flex-col justify-between border-b lg:border-b-0 lg:border-r border-gray-800 bg-[#0a0308] relative z-20">
+                        <div>
+                            <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full text-[10px] tracking-[0.1em] uppercase mono mb-4 border" style="background: color-mix(in srgb, var(--accent) 12%, transparent); color:var(--accent); border-color: color-mix(in srgb, var(--accent) 40%, transparent)">
+                                <span class="w-1.5 h-1.5 rounded-full animate-ping" style="background:var(--accent)"></span> Space-Filling Foundry
+                            </div>
+                            <h3 class="text-xl font-bold text-white mystical-font tracking-wider mb-2">Fill the Void</h3>
+                            <p class="text-xs text-gray-400 leading-relaxed mb-4 font-light">
+                                Pick a strategy and watch whether copies pack around a shared edge with no gaps. The HUD reads the dihedral angle and tests whether it closes a full <strong>360°</strong>.
+                            </p>
+
+                            <!-- HUD -->
+                            <div class="bg-black/60 border rounded-lg p-3 mb-4 font-mono text-[11px]" style="border-color: color-mix(in srgb, var(--accent) 30%, transparent)">
+                                <div class="flex justify-between mb-1"><span class="text-gray-500">MODE</span><span id="hud-mode" class="text-white">—</span></div>
+                                <div class="flex justify-between mb-1"><span class="text-gray-500">DIHEDRAL θ</span><span id="hud-theta" style="color:var(--accent)">—</span></div>
+                                <div class="flex justify-between mb-1"><span class="text-gray-500">360° ÷ θ</span><span id="hud-div" class="text-white">—</span></div>
+                                <div class="flex justify-between"><span class="text-gray-500">CLOSES 360°?</span><span id="hud-verdict" class="text-white">—</span></div>
+                            </div>
+                        </div>
+
+                        <div class="space-y-3 mb-6">
+                            <button id="btn-cube" onclick="runMode('cube')" class="w-full py-2 px-4 btn-lab rounded text-[10px] font-bold uppercase tracking-widest mono text-left flex justify-between items-center">
+                                <span>◼ Cube — 3×3×3 stack</span><span class="status-indicator w-2 h-2 rounded-full bg-gray-600"></span>
+                            </button>
+                            <button id="btn-tet" onclick="runMode('tet')" class="w-full py-2 px-4 btn-lab rounded text-[10px] font-bold uppercase tracking-widest mono text-left flex justify-between items-center">
+                                <span>▲ Tetrahedron only</span><span class="status-indicator w-2 h-2 rounded-full bg-gray-600"></span>
+                            </button>
+                            <button id="btn-tetoct" onclick="runMode('tetoct')" class="w-full py-2 px-4 btn-lab rounded text-[10px] font-bold uppercase tracking-widest mono text-left flex justify-between items-center">
+                                <span>◈ Tet + Oct honeycomb</span><span class="status-indicator w-2 h-2 rounded-full bg-gray-600"></span>
+                            </button>
+                            <button id="btn-dodeca" onclick="runMode('dodeca')" class="w-full py-2 px-4 btn-lab rounded text-[10px] font-bold uppercase tracking-widest mono text-left flex justify-between items-center">
+                                <span>⬠ Dodecahedron</span><span class="status-indicator w-2 h-2 rounded-full bg-gray-600"></span>
+                            </button>
+                            <button id="btn-clear" onclick="clearLattice(true)" class="w-full mt-2 py-2 text-gray-500 hover:text-white transition-colors text-[9px] uppercase mono underline decoration-gray-700 underline-offset-4">
+                                Purge Foundry
+                            </button>
+                        </div>
+
+                        <!-- Terminal Output -->
+                        <div>
+                            <div class="text-[9px] uppercase tracking-widest text-gray-500 mb-2 mono">System Console</div>
+                            <div id="terminal" class="terminal-log">
+                                <div class="log-entry"><span class="log-time">[00:00:00]</span><span class="log-info">Foundry initialized.</span></div>
+                                <div class="log-entry"><span class="log-time">[00:00:01]</span>Select a strategy to test space-filling...</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 3D Canvas -->
+                    <div id="lab-canvas-container" class="w-full h-[400px] lg:h-[600px] relative cursor-crosshair">
+                        <div class="absolute bottom-4 left-4 text-[10px] font-mono font-bold pointer-events-none z-10 bg-black/50 p-2 rounded border border-white/10">
+                            <div style="color:var(--accent)">Foundry: pack copies around a shared edge</div>
+                            <div class="text-gray-400">Drag to orbit · scroll to zoom</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quiz 2 -->
+            <div class="glass-panel p-8 md:p-10">
+                <h4 class="text-sm font-bold mb-4 flex items-center gap-2 font-mono uppercase tracking-widest" style="color:var(--accent)">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"></path><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path></svg>
+                    System Check 1D.1 — The Lone Tiler
+                </h4>
+                <div class="bg-black/40 border border-gray-800 rounded-lg p-5">
+                    <p class="text-sm text-gray-300 mb-4 font-light">Which single Platonic solid can fill 3D space entirely on its own, with no gaps or overlaps?</p>
+                    <div class="space-y-2" id="quiz-2-options">
+                        <button onclick="checkQuiz('quiz-2', false, this)" class="w-full text-left p-3 rounded bg-gray-900/50 border border-gray-700 hover:border-rose-500 hover:text-white transition-all text-xs text-gray-400">A) The regular tetrahedron.</button>
+                        <button onclick="checkQuiz('quiz-2', true, this)" class="w-full text-left p-3 rounded bg-gray-900/50 border border-gray-700 hover:border-rose-500 hover:text-white transition-all text-xs text-gray-400">B) The cube ($90°\times 4 = 360°$).</button>
+                        <button onclick="checkQuiz('quiz-2', false, this)" class="w-full text-left p-3 rounded bg-gray-900/50 border border-gray-700 hover:border-rose-500 hover:text-white transition-all text-xs text-gray-400">C) The dodecahedron.</button>
+                        <button onclick="checkQuiz('quiz-2', false, this)" class="w-full text-left p-3 rounded bg-gray-900/50 border border-gray-700 hover:border-rose-500 hover:text-white transition-all text-xs text-gray-400">D) All five solids tile space alone.</button>
+                    </div>
+                    <div id="quiz-2-feedback" class="hidden"></div>
+                </div>
+            </div>
+
+            <!-- Quiz 3 -->
+            <div class="glass-panel p-8 md:p-10">
+                <h4 class="text-sm font-bold mb-4 flex items-center gap-2 font-mono uppercase tracking-widest" style="color:var(--accent)">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"></path><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path></svg>
+                    System Check 1D.2 — The Winning Team
+                </h4>
+                <div class="bg-black/40 border border-gray-800 rounded-lg p-5">
+                    <p class="text-sm text-gray-300 mb-4 font-light">The tetrahedral–octahedral honeycomb fills space because two tetrahedra and two octahedra close each shared edge. Which sum proves it?</p>
+                    <div class="space-y-2" id="quiz-3-options">
+                        <button onclick="checkQuiz('quiz-3', false, this)" class="w-full text-left p-3 rounded bg-gray-900/50 border border-gray-700 hover:border-rose-500 hover:text-white transition-all text-xs text-gray-400">A) $70.53° \times 5 = 352.65°$</button>
+                        <button onclick="checkQuiz('quiz-3', true, this)" class="w-full text-left p-3 rounded bg-gray-900/50 border border-gray-700 hover:border-rose-500 hover:text-white transition-all text-xs text-gray-400">B) $70.53°\times 2 + 109.47°\times 2 = 360°$</button>
+                        <button onclick="checkQuiz('quiz-3', false, this)" class="w-full text-left p-3 rounded bg-gray-900/50 border border-gray-700 hover:border-rose-500 hover:text-white transition-all text-xs text-gray-400">C) $90° \times 4 = 360°$</button>
+                        <button onclick="checkQuiz('quiz-3', false, this)" class="w-full text-left p-3 rounded bg-gray-900/50 border border-gray-700 hover:border-rose-500 hover:text-white transition-all text-xs text-gray-400">D) $116.57° \times 3 = 349.71°$</button>
+                    </div>
+                    <div id="quiz-3-feedback" class="hidden"></div>
+                </div>
+            </div>
+
+            <!-- ===== Checkpoint + interweave prev/next ===== -->
+            <div class="mt-14 flex flex-col items-center gap-3">
+              <span class="text-[10px] text-gray-500 font-mono uppercase tracking-[0.3em]">Checkpoint</span>
+              <button id="mark-complete-btn" onclick="owlMarkComplete()" class="px-8 py-3 rounded-lg border font-bold tracking-widest text-xs uppercase mystical-font transition-all hover:scale-[1.02]" style="border-color:var(--accent);color:var(--accent);background:color-mix(in srgb,var(--accent) 6%,transparent);">Mark this part complete ✓</button>
+              <p class="text-[10px] text-gray-600 font-mono text-center max-w-md">Progress saves to this browser. Finish all 12 parts to unlock the Tome signoff on the <a href="index.html" class="underline hover:text-yellow-400">lesson hub</a>.</p>
+            </div>
+            <div class="mt-10 pt-6 border-t border-white/10 flex items-center justify-between gap-3 text-xs font-mono">
+              <a href="1c_harmonic_resonance.html" class="px-4 py-2 rounded border border-white/10 text-gray-400 hover:text-white hover:border-white/30 transition-colors">← 1C Resonance</a>
+              <a href="index.html" class="px-4 py-2 rounded border border-yellow-600/40 text-yellow-500 hover:bg-yellow-500/10 transition-colors tracking-widest uppercase">◆ Hub</a>
+              <a href="1e_engine_implementation.html" class="px-4 py-2 rounded border border-white/10 text-gray-400 hover:text-white hover:border-white/30 transition-colors">1E Engine →</a>
+            </div>
+
+        </main>
+
+        <footer class="w-full border-t border-yellow-900/30 bg-black/60 backdrop-blur-md py-6 text-center mt-auto flex-shrink-0 z-20 relative">
+            <p class="text-[10px] uppercase tracking-[0.3em] font-mono" style="color: color-mix(in srgb, var(--accent) 55%, #7a5560)">
+                Department I • Owl Academy
+            </p>
+        </footer>
+    </div>
+
+    <!-- Interactive 3D Application -->
+    <script>
+        let scene, camera, renderer, controls;
+        let latticeGroup, spinObjects = [];
+
+        // Dihedral data (degrees)
+        const DIHEDRAL = { tet: 70.53, cube: 90, oct: 109.47, dodeca: 116.57 };
+        const D2R = Math.PI / 180;
+
+        function initLab() {
+            const container = document.getElementById('lab-canvas-container');
+            scene = new THREE.Scene();
+            camera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1, 1000);
+            camera.position.set(9, 7, 12);
+
+            renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+            renderer.setSize(container.clientWidth, container.clientHeight);
+            renderer.setPixelRatio(window.devicePixelRatio);
+            container.appendChild(renderer.domElement);
+
+            controls = new THREE.OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true;
+            controls.dampingFactor = 0.05;
+            controls.autoRotate = true;
+            controls.autoRotateSpeed = 0.9;
+
+            const gridHelper = new THREE.GridHelper(24, 24, 0xff3366, 0x111111);
+            gridHelper.position.y = -4;
+            gridHelper.material.opacity = 0.18;
+            gridHelper.material.transparent = true;
+            scene.add(gridHelper);
+
+            const createAxis = (color, endPos) => {
+                const mat = new THREE.LineBasicMaterial({ color: color, transparent: true, opacity: 0.5 });
+                const geo = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0,0,0), endPos]);
+                return new THREE.Line(geo, mat);
+            };
+            scene.add(createAxis(0xff3366, new THREE.Vector3(8, 0, 0)));
+            scene.add(createAxis(0x33ff99, new THREE.Vector3(0, 8, 0)));
+            scene.add(createAxis(0x00d4ff, new THREE.Vector3(0, 0, 8)));
+
+            scene.add(new THREE.AmbientLight(0x606060, 1.6));
+            const dir = new THREE.DirectionalLight(0xffffff, 1.1);
+            dir.position.set(10, 20, 12);
+            scene.add(dir);
+            const dir2 = new THREE.DirectionalLight(0xff88aa, 0.35);
+            dir2.position.set(-10, -6, -8);
+            scene.add(dir2);
+
+            latticeGroup = new THREE.Group();
+            scene.add(latticeGroup);
+
+            window.addEventListener('resize', () => {
+                if (container.clientWidth === 0) return;
+                camera.aspect = container.clientWidth / container.clientHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(container.clientWidth, container.clientHeight);
+            });
+
+            animate();
+        }
+
+        function animate(time) {
+            requestAnimationFrame(animate);
+            TWEEN.update(time);
+            controls.update();
+            renderer.render(scene, camera);
+        }
+
+        function logToTerminal(message, type = "info") {
+            const term = document.getElementById('terminal');
+            const now = new Date();
+            const timeStr = `[${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}:${now.getSeconds().toString().padStart(2,'0')}]`;
+            const colorClass = type === "success" ? "log-success" : (type === "fail" ? "log-fail" : (type === "warning" ? "text-yellow-400" : "log-info"));
+            const entry = document.createElement('div');
+            entry.className = "log-entry";
+            entry.innerHTML = `<span class="log-time">${timeStr}</span><span class="${colorClass}">${message}</span>`;
+            term.appendChild(entry);
+            term.scrollTop = term.scrollHeight;
+        }
+
+        function clearLattice(userInitiated) {
+            if (!latticeGroup) return;
+            while (latticeGroup.children.length) {
+                const c = latticeGroup.children.pop();
+                if (c.geometry) c.geometry.dispose();
+                if (c.material) c.material.dispose();
+            }
+            spinObjects = [];
+            latticeGroup.rotation.set(0, 0, 0);
+            document.querySelectorAll('#interactive-lab .btn-lab').forEach(b => {
+                b.classList.remove('active-step');
+                const ind = b.querySelector('.status-indicator');
+                if (ind) ind.className = "status-indicator w-2 h-2 rounded-full bg-gray-600";
+            });
+            if (userInitiated) {
+                setHUD('—', '—', '—', '—', '');
+                logToTerminal('Foundry purged. Awaiting strategy.', 'warning');
+            }
+        }
+
+        function setHUD(mode, theta, div, verdict, verdictType) {
+            document.getElementById('hud-mode').textContent = mode;
+            document.getElementById('hud-theta').textContent = theta;
+            document.getElementById('hud-div').textContent = div;
+            const v = document.getElementById('hud-verdict');
+            v.textContent = verdict;
+            v.className = verdictType === 'yes' ? 'log-success' : (verdictType === 'no' ? 'log-fail' : 'text-white');
+        }
+
+        function markActive(id, ok) {
+            const b = document.getElementById(id);
+            b.classList.add('active-step');
+            const ind = b.querySelector('.status-indicator');
+            ind.className = "status-indicator w-2 h-2 rounded-full " + (ok ? "bg-emerald-400 shadow-[0_0_8px_#33ff99]" : "bg-red-500 shadow-[0_0_8px_#ff5a5a]");
+        }
+
+        // --- Geometry helpers ---
+        // A solid "wedge" = extruded circular sector of the dihedral angle, apex on the shared edge (the y-axis).
+        function makeWedge(startDeg, spanDeg, color, radius, height) {
+            const shape = new THREE.Shape();
+            const a0 = startDeg * D2R, a1 = (startDeg + spanDeg) * D2R;
+            shape.moveTo(0, 0);
+            shape.lineTo(radius * Math.cos(a0), radius * Math.sin(a0));
+            shape.absarc(0, 0, radius, a0, a1, false);
+            shape.lineTo(0, 0);
+            const geo = new THREE.ExtrudeGeometry(shape, { depth: height, bevelEnabled: false });
+            geo.translate(0, 0, -height / 2);
+            geo.rotateX(-Math.PI / 2); // extrude axis (z) -> vertical (y): shared edge is the y-axis
+            const mat = new THREE.MeshPhysicalMaterial({
+                color: color, metalness: 0.1, roughness: 0.35,
+                transparent: true, opacity: 0, side: THREE.DoubleSide
+            });
+            const mesh = new THREE.Mesh(geo, mat);
+            new TWEEN.Tween(mat).to({ opacity: 0.55 }, 500).start();
+            return mesh;
+        }
+
+        function addSharedEdge(height) {
+            const g = new THREE.BufferGeometry().setFromPoints([
+                new THREE.Vector3(0, -height/2, 0), new THREE.Vector3(0, height/2, 0)
+            ]);
+            const line = new THREE.Line(g, new THREE.LineBasicMaterial({ color: 0xffffff }));
+            latticeGroup.add(line);
+        }
+
+        // Fan a list of {span,color} cells around the shared edge; returns total degrees placed.
+        function fanCells(cells, radius, height) {
+            let acc = 0;
+            cells.forEach((c, i) => {
+                const start = acc;
+                setTimeout(() => latticeGroup.add(makeWedge(start + c.pad0, c.span, c.color, radius, height)), i * 180);
+                acc += c.span;
+            });
+            return acc;
+        }
+
+        function runMode(mode) {
+            clearLattice(false);
+            controls.autoRotate = true;
+
+            if (mode === 'cube') {
+                setHUD('CUBE', '90.00°', '4.00', 'YES — tiles alone', 'yes');
+                logToTerminal('MODE: Cube — building 3×3×3 stack...', 'info');
+                const size = 0.96, N = 3, off = (N - 1) / 2;
+                let idx = 0;
+                for (let x = 0; x < N; x++) for (let y = 0; y < N; y++) for (let z = 0; z < N; z++) {
+                    (function(px, py, pz, delay) {
+                        setTimeout(() => {
+                            const geo = new THREE.BoxGeometry(size, size, size);
+                            const mat = new THREE.MeshPhysicalMaterial({ color: 0xff3366, metalness: 0.15, roughness: 0.35, transparent: true, opacity: 0 });
+                            const cube = new THREE.Mesh(geo, mat);
+                            cube.position.set((px - off) * 1.0, (py - off) * 1.0, (pz - off) * 1.0);
+                            latticeGroup.add(cube);
+                            const edges = new THREE.LineSegments(new THREE.EdgesGeometry(geo), new THREE.LineBasicMaterial({ color: 0xffd0dc, transparent: true, opacity: 0.5 }));
+                            cube.add(edges);
+                            new TWEEN.Tween(mat).to({ opacity: 0.85 }, 400).start();
+                        }, delay);
+                    })(x, y, z, idx * 45);
+                    idx++;
+                }
+                setTimeout(() => {
+                    logToTerminal('27 cells placed. Around every interior edge: 90°×4 = 360°.', 'success');
+                    logToTerminal('VERDICT: gap-free lattice. The cube TILES 3-space alone. ✓', 'success');
+                    markActive('btn-cube', true);
+                }, 27 * 45 + 500);
+                return;
+            }
+
+            // Wedge-fan modes: look down one shared edge (vertical y-axis)
+            const R = 3.4, H = 5.5;
+            addSharedEdge(H);
+
+            if (mode === 'tet') {
+                setHUD('TETRAHEDRON', '70.53°', '5.10', 'NO — leaves 7.35° gap', 'no');
+                logToTerminal('MODE: Tetrahedron only — packing wedges of 70.53°...', 'info');
+                const cells = [];
+                for (let i = 0; i < 5; i++) cells.push({ span: 70.53, color: 0xff3366, pad0: 0 });
+                const total = fanCells(cells, R, H);
+                setTimeout(() => {
+                    latticeGroup.add(makeWedge(total, 360 - total, 0xff5a5a, R, H)); // red gap
+                    logToTerminal('5 tetrahedra span 5×70.53° = 352.65°.', 'warning');
+                    logToTerminal('VERDICT: 7.35° wedge GAP remains — cannot close 360°. FAIL. ✗', 'fail');
+                    markActive('btn-tet', false);
+                }, 5 * 180 + 200);
+                return;
+            }
+
+            if (mode === 'tetoct') {
+                setHUD('TET + OCT', '70.53° / 109.47°', '—', 'YES — 2 tet + 2 oct = 360°', 'yes');
+                logToTerminal('MODE: Tet+Oct honeycomb — interleaving cells...', 'info');
+                const cells = [
+                    { span: 70.53, color: 0xff3366, pad0: 0 },
+                    { span: 109.47, color: 0x00d4ff, pad0: 0 },
+                    { span: 70.53, color: 0xff3366, pad0: 0 },
+                    { span: 109.47, color: 0x00d4ff, pad0: 0 }
+                ];
+                fanCells(cells, R, H);
+                setTimeout(() => {
+                    logToTerminal('70.53°×2 + 109.47°×2 = 360.00°.', 'success');
+                    logToTerminal('VERDICT: no gap, no overlap. Tet+Oct FILLS space. ✓', 'success');
+                    markActive('btn-tetoct', true);
+                }, 4 * 180 + 300);
+                return;
+            }
+
+            if (mode === 'dodeca') {
+                setHUD('DODECAHEDRON', '116.57°', '3.09', 'NO — leaves 10.29° gap', 'no');
+                logToTerminal('MODE: Dodecahedron — packing wedges of 116.57°...', 'info');
+                const cells = [];
+                for (let i = 0; i < 3; i++) cells.push({ span: 116.57, color: 0xff3366, pad0: 0 });
+                const total = fanCells(cells, R, H);
+                setTimeout(() => {
+                    latticeGroup.add(makeWedge(total, 360 - total, 0xff5a5a, R, H));
+                    logToTerminal('3 dodecahedra span 3×116.57° = 349.71°.', 'warning');
+                    logToTerminal('VERDICT: 10.29° wedge GAP — a 4th cell would overlap. FAIL. ✗', 'fail');
+                    markActive('btn-dodeca', false);
+                }, 3 * 180 + 200);
+                return;
+            }
+        }
+
+        // Quiz Verification Logic
+        function checkQuiz(quizId, isCorrect, btnElement) {
+            const optionsContainer = document.getElementById(`${quizId}-options`);
+            const feedbackElement = document.getElementById(`${quizId}-feedback`);
+            const buttons = optionsContainer.querySelectorAll('button');
+
+            buttons.forEach(btn => {
+                btn.disabled = true;
+                btn.classList.add('opacity-50', 'cursor-not-allowed');
+                btn.classList.remove('!border-green-500', '!bg-green-900/30', '!text-green-400', '!border-red-500', '!bg-red-900/30', '!text-red-400');
+            });
+
+            btnElement.classList.remove('opacity-50');
+
+            if (isCorrect) {
+                btnElement.classList.add('!border-green-500', '!bg-green-900/30', '!text-green-400');
+                feedbackElement.innerHTML = `> STATUS: <span class="text-green-400">VERIFIED</span>. Your understanding aligns with the S.P.I.R.E. Engine's logic.`;
+                feedbackElement.className = "mt-4 text-xs p-3 rounded border font-mono bg-green-900/10 border-green-900/50 text-green-300 block";
+            } else {
+                btnElement.classList.add('!border-red-500', '!bg-red-900/30', '!text-red-400');
+                feedbackElement.innerHTML = `> STATUS: <span class="text-red-400">ERROR</span>. Dimensional logic misalignment. We recommend reviewing the <a href="1d_expanded_theory.html" class="text-cyan-400 underline hover:text-cyan-300">Expanded Lesson</a> for a comprehensive overview.<button onclick="resetQuiz('${quizId}')" class="ml-4 px-3 py-1 bg-red-900/50 hover:bg-red-500/50 text-white rounded transition-colors uppercase text-[10px] tracking-widest border border-red-500/50 mt-3 md:mt-0">Recalibrate & Retry</button>`;
+                feedbackElement.className = "mt-4 text-xs p-3 rounded border font-mono bg-red-900/20 border-red-900/50 text-red-400 block md:flex items-center justify-between gap-4";
+            }
+        }
+
+        function resetQuiz(quizId) {
+            const optionsContainer = document.getElementById(`${quizId}-options`);
+            const feedbackElement = document.getElementById(`${quizId}-feedback`);
+            const buttons = optionsContainer.querySelectorAll('button');
+
+            buttons.forEach(btn => {
+                btn.disabled = false;
+                btn.classList.remove('opacity-50', 'cursor-not-allowed', '!border-green-500', '!bg-green-900/30', '!text-green-400', '!border-red-500', '!bg-red-900/30', '!text-red-400');
+            });
+
+            feedbackElement.className = "hidden";
+        }
+
+        window.onload = () => {
+            initLab();
+            setTimeout(() => { window.dispatchEvent(new Event('resize')); }, 100);
+        };
+    </script>
+
+    <!-- ===== Completion tracking ===== -->
+    <script>
+    (function(){
+      var KEY='owl.platonic.progress.v1', PART='1d';
+      function rd(){ try{ return JSON.parse(localStorage.getItem(KEY))||{}; }catch(e){ return {}; } }
+      function wr(m){ try{ localStorage.setItem(KEY, JSON.stringify(m)); }catch(e){} }
+      window.owlMarkComplete=function(){ var m=rd(); m[PART]=true; wr(m); paint(true); };
+      function paint(done){ var b=document.getElementById('mark-complete-btn'); if(!b) return;
+        if(done){ b.textContent='✓ Part complete'; b.style.background='color-mix(in srgb,var(--accent) 22%,transparent)'; b.setAttribute('disabled',''); b.style.cursor='default'; } }
+      document.addEventListener('DOMContentLoaded', function(){ paint(!!rd()[PART]); });
+    })();
+    </script>
+</body>
+</html>
