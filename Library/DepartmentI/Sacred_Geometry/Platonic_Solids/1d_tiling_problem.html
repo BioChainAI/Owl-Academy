@@ -763,7 +763,8 @@
         function fanCells(cells, radius, height) {
             let acc = 0;
             cells.forEach((c, i) => {
-                setTimeout(() => latticeGroup.add(makeWedge(acc + c.pad0, c.span, c.color, radius, height)), i * 180);
+                const start = acc;
+                setTimeout(() => latticeGroup.add(makeWedge(start + c.pad0, c.span, c.color, radius, height)), i * 180);
                 acc += c.span;
             });
             return acc;

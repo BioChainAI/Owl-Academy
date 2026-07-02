@@ -662,7 +662,7 @@
             } else if (n === 3) {
                 logToTerminal(`CHECK 3 · RESONANCE`, "info");
                 logToTerminal(`|rotation group| = ${d.rot}  (full incl. reflections = ${d.rot*2})`, "info");
-                logToTerminal(`characteristic mode: ${d.mode}`, "success");
+                logToTerminal(`characteristic mode: ${d.mode} — stylized model (see 1C)`, "success");
                 updateHUD(`<div class="text-gray-400">|rot group| = ${d.rot}</div><div class="text-gray-400">mode ${d.mode.split('(')[0].trim()}</div>`);
             } else if (n === 4) {
                 buildBuffers(d);
@@ -727,9 +727,9 @@
             document.querySelectorAll('.solid-pick').forEach(b=>b.classList.remove('active'));
             document.getElementById('buffer-readout').classList.add('hidden');
             document.getElementById('hud').innerHTML = '<div class="text-gray-500">Awaiting instantiation…</div>';
-            document.getElementById('terminal').innerHTML =
-                `<div class="log-entry"><span class="log-time">[${new Date().toLocaleTimeString()}]</span><span class="text-yellow-400">Lab reset.</span></div>` +
-                `<div class="log-entry"><span class="log-info">Select a Platonic solid to instantiate…</span></div>`;
+            document.getElementById('terminal').innerHTML = '';
+            logToTerminal('Lab reset.', 'warning');
+            logToTerminal('Select a Platonic solid to instantiate…', 'info');
         }
 
         // Quiz Verification Logic

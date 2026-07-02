@@ -656,10 +656,8 @@
 
                 // HUD
                 nEl.textContent = n;
-                nEl.nextElementSibling; // no-op
                 angEl.textContent = (Number.isInteger(A) ? A : A.toFixed(2)) + '°';
                 fitEl.textContent = k;
-                document.querySelector('#tiler-n + .text-xs') && (document.querySelector('#tiler-n + .text-xs').textContent = NAMES[n]);
 
                 if(gap < 0.5){
                     verdictEl.innerHTML = '<span class="font-bold" style="color:var(--accent)">TILES PERFECTLY.</span> '+k+' copies × '+angEl.textContent+' = 360°. No gap, no overlap — this shape covers a flat floor forever.';

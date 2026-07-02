@@ -809,7 +809,7 @@
             g.setIndex([0,1,2]);
             highlight = new THREE.Mesh(g, new THREE.MeshBasicMaterial({ color: 0x33ff99, side: THREE.DoubleSide, transparent: true, opacity: 0.85 }));
             scene.add(highlight);
-            logToTerminal('Face picked → vertex indices (' + f.a + ', ' + f.b + ', ' + f.c + ')', 'info');
+            logToTerminal('Face picked → render-buffer (triangulated) indices (' + f.a + ', ' + f.b + ', ' + f.c + ') — quads/pentagons are split into triangles for the GPU, so these can differ from the index tables below', 'info');
         }
 
         function animate(t) {
