@@ -1,0 +1,1047 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Owl Academy | Lesson I: Geometric Primitives</title>
+    
+    <!-- CSS & Fonts -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Inter:wght@300;400;500;600&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+    
+    <!-- Three.js Core & Addons -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tween.js/18.6.4/tween.umd.js"></script>
+
+    <!-- MathJax for rendering geometric equations -->
+    <script>
+        window.MathJax = {
+            tex: {
+                inlineMath: [['$', '$'], ['\\(', '\\)']],
+                displayMath: [['$$', '$$'], ['\\[', '\\]']]
+            }
+        };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+    <style>
+        /* Dynamic Theme Variables */
+        :root {
+            --accent: #00d4ff;
+            --color-void: #090614;
+            --color-primary: #D4AF37;
+            --color-secondary: #8e9eab;
+            --color-holo1: #00d4ff;
+            --color-holo2: #8A2BE2;
+            --color-text: #E6C27A;
+            --color-ui-border: rgba(212, 175, 55, 0.3);
+            --color-r3-x: #ff3366;
+            --color-r3-y: #33ff99;
+            --color-r3-z: #00d4ff;
+        }
+
+        body {
+            background-color: var(--color-void);
+            color: #e2e8f0;
+            font-family: 'Inter', sans-serif;
+            background: radial-gradient(circle at 50% 50%, color-mix(in srgb, var(--color-holo1) 10%, var(--color-void)), var(--color-void) 80%);
+            min-height: 100vh;
+            margin: 0;
+            overflow-x: hidden;
+            scroll-behavior: smooth;
+        }
+
+        /* --- SIGIL ANIMATIONS --- */
+        .spin-slow         { animation: spin 40s linear infinite; transform-origin: center; }
+        @keyframes spin    { 100% { transform: rotate(360deg); } }
+        .spin-slow-reverse { animation: spinReverse 40s linear infinite; transform-origin: center; }
+        @keyframes spinReverse { 100% { transform: rotate(-360deg); } }
+        .pulse-glow        { animation: pulseGlow 4s ease-in-out infinite alternate; }
+        @keyframes pulseGlow {
+            0%   { filter: drop-shadow(0 0 5px  rgba(212,175,55,0.3)); }
+            100% { filter: drop-shadow(0 0 15px rgba(212,175,55,0.8)); }
+        }
+
+        /* --- ATMOSPHERIC LAYERS --- */
+        .nebula-layer {
+            position: fixed; inset: 0;
+            background: 
+                radial-gradient(circle at 20% 30%, var(--color-holo2) 0%, transparent 40%),
+                radial-gradient(circle at 80% 70%, var(--color-holo1) 0%, transparent 40%);
+            opacity: 0.15; mix-blend-mode: screen; filter: blur(80px); pointer-events: none; z-index: 0;
+        }
+        .vignette-layer {
+            position: fixed; inset: 0;
+            background: radial-gradient(circle, transparent 40%, rgba(0,0,0,0.8) 120%);
+            pointer-events: none; z-index: 10;
+        }
+        .starfield {
+            position: fixed; inset: 0;
+            background-image:
+                radial-gradient(2px 2px at 20px 30px, var(--color-primary), rgba(0,0,0,0)),
+                radial-gradient(2px 2px at 40px 70px, #fff, rgba(0,0,0,0)),
+                radial-gradient(2px 2px at 50px 160px, rgba(255,255,255,0.8), rgba(0,0,0,0)),
+                radial-gradient(2px 2px at 90px 40px, #fff, rgba(0,0,0,0)),
+                radial-gradient(2px 2px at 130px 80px, var(--color-primary), rgba(0,0,0,0));
+            background-repeat: repeat; background-size: 250px 250px;
+            animation: twinkle 8s infinite alternate; opacity: 0.35; z-index: 0; pointer-events: none;
+        }
+        .starfield-layer-2 { background-size: 350px 350px; background-position: 50px 50px; opacity: 0.2; animation: twinkle 12s infinite alternate-reverse; }
+
+        /* --- TYPOGRAPHY & PANELS --- */
+        h1, h2, h3, h4, .mystical-font { font-family: 'Cinzel', serif; }
+        .mono { font-family: 'Fira Code', monospace; }
+        .gold-gradient {
+            background: linear-gradient(to right, var(--color-primary), #FFF8DC, var(--color-primary));
+            -webkit-background-clip: text; background-clip: text; color: transparent; text-shadow: 0 0 15px color-mix(in srgb, var(--color-primary) 30%, transparent);
+        }
+
+        .glass-panel {
+            background: rgba(10, 6, 20, 0.6);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--color-ui-border);
+            border-radius: 16px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+        }
+
+        .data-card {
+            background: rgba(15, 10, 25, 0.6);
+            border: 1px solid rgba(255,255,255,0.05);
+            border-top: 1px solid rgba(0, 212, 255, 0.3);
+            border-radius: 12px;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        .data-card::before {
+            content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: radial-gradient(circle at top right, rgba(0,212,255,0.05), transparent 70%);
+            pointer-events: none;
+        }
+
+        .simple-translation {
+            background: rgba(0, 212, 255, 0.05);
+            border-left: 3px solid rgba(0, 212, 255, 0.5);
+            padding: 1rem;
+            margin-top: 1rem;
+            border-radius: 0 8px 8px 0;
+            font-family: 'Inter', sans-serif;
+        }
+
+        .btn-lab {
+            background: rgba(5, 3, 10, 0.8);
+            border: 1px solid rgba(0, 212, 255, 0.4);
+            color: rgba(0, 212, 255, 0.8);
+            transition: all 0.3s;
+            position: relative;
+            overflow: hidden;
+        }
+        .btn-lab:hover:not(:disabled) {
+            background: rgba(0, 212, 255, 0.1);
+            color: #fff;
+            box-shadow: 0 0 15px rgba(0, 212, 255, 0.4);
+            border-color: #00d4ff;
+        }
+        .btn-lab:disabled {
+            border-color: rgba(255,255,255,0.1);
+            color: rgba(255,255,255,0.2);
+            cursor: not-allowed;
+        }
+        .btn-lab.active-step {
+            background: rgba(0, 212, 255, 0.2);
+            border-color: #00d4ff;
+            color: #fff;
+            box-shadow: 0 0 15px rgba(0, 212, 255, 0.4);
+        }
+
+        #lab-canvas-container {
+            border-radius: 12px;
+            overflow: hidden;
+            border: 1px solid rgba(0, 212, 255, 0.3);
+            background: radial-gradient(circle at center, rgba(10,15,30,1) 0%, #000 100%);
+            box-shadow: inset 0 0 40px rgba(0,0,0,0.8);
+        }
+
+        .terminal-log {
+            font-family: 'Fira Code', monospace;
+            font-size: 10px;
+            color: #8e9eab;
+            height: 120px;
+            overflow-y: auto;
+            background: rgba(0,0,0,0.6);
+            padding: 8px;
+            border-radius: 4px;
+            border: 1px solid rgba(255,255,255,0.05);
+        }
+        .log-entry { margin-bottom: 4px; animation: slideIn 0.3s ease-out; }
+        .log-time { color: var(--color-primary); margin-right: 8px; }
+        .log-success { color: #33ff99; }
+        .log-info { color: #00d4ff; }
+        @keyframes slideIn { from { opacity: 0; transform: translateX(-10px); } to { opacity: 1; transform: translateX(0); } }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: rgba(0,0,0,0.4); }
+        ::-webkit-scrollbar-thumb { background: rgba(0, 212, 255, 0.5); border-radius: 10px; }
+
+        /* Sub-lesson stepper chips */
+        .step-chip{padding:.35rem .7rem;border-radius:.4rem;border:1px solid rgba(255,255,255,.1);color:#94a3b8;text-transform:uppercase;letter-spacing:.08em;transition:all .2s;white-space:nowrap;}
+        .step-chip:hover{color:#fff;border-color:rgba(255,255,255,.35);}
+        .step-chip[aria-current="page"]{color:var(--accent);border-color:var(--accent);background:color-mix(in srgb,var(--accent) 14%,transparent);box-shadow:0 0 12px color-mix(in srgb,var(--accent) 30%,transparent);}
+    </style>
+</head>
+<body class="relative">
+
+    <!-- Atmospheric Layers -->
+    <div class="nebula-layer"></div>
+    <div class="starfield"></div>
+    <div class="starfield starfield-layer-2"></div>
+    <div class="vignette-layer"></div>
+
+    <!-- SVG Definitions for Graphs -->
+    <svg width="0" height="0" class="absolute">
+        <defs>
+            <marker id="arrowX" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto" markerUnits="strokeWidth"><path d="M0,0 L0,6 L9,3 z" fill="#ff3366" /></marker>
+            <marker id="arrowY" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto" markerUnits="strokeWidth"><path d="M0,0 L0,6 L9,3 z" fill="#33ff99" /></marker>
+            <marker id="arrowZ" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto" markerUnits="strokeWidth"><path d="M0,0 L0,6 L9,3 z" fill="#00d4ff" /></marker>
+            
+            <!-- Sigil Gradients -->
+            <linearGradient id="goldGradLeft" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#C59B3F" />
+                <stop offset="50%" stop-color="#FFF2C8" />
+                <stop offset="100%" stop-color="#996515" />
+            </linearGradient>
+            <linearGradient id="goldGradRight" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#C59B3F" />
+                <stop offset="50%" stop-color="#FFF2C8" />
+                <stop offset="100%" stop-color="#996515" />
+            </linearGradient>
+        </defs>
+    </svg>
+
+    <div class="relative z-20 min-h-screen flex flex-col">
+        
+        <!-- Header with Official Sigils -->
+        <header class="w-full pt-8 pb-4 px-4 md:px-12 flex justify-between items-start border-b border-yellow-600/30 glass-panel shadow-2xl !mb-0 !rounded-none">
+            
+            <!-- LEFT SIGIL: Mathematical Manifold -->
+            <div class="w-16 h-16 md:w-24 md:h-24 flex-shrink-0 pointer-events-none">
+                <svg viewBox="0 0 200 200" class="w-full h-full pulse-glow" xmlns="http://www.w3.org/2000/svg">
+                    <circle cx="100" cy="100" r="95" fill="none" stroke="url(#goldGradLeft)" stroke-width="1" opacity="0.6"/>
+                    <circle cx="100" cy="100" r="85" fill="none" stroke="url(#goldGradLeft)" stroke-width="0.5" opacity="0.4"/>
+                    <g class="spin-slow" style="transform-origin: 100px 100px;">
+                        <g stroke="url(#goldGradLeft)" stroke-width="1" fill="none" opacity="0.6">
+                            <polygon points="100,15 173.6,142.5 26.4,142.5" />
+                            <polygon points="100,15 173.6,142.5 26.4,142.5" transform="rotate(30 100 100)" />
+                            <polygon points="100,15 173.6,142.5 26.4,142.5" transform="rotate(60 100 100)" />
+                            <polygon points="100,15 173.6,142.5 26.4,142.5" transform="rotate(90 100 100)" />
+                        </g>
+                        <g stroke="#ffffff" stroke-width="0.75" fill="none" opacity="0.4" stroke-dasharray="2 4">
+                            <polygon points="100,15 173.6,142.5 26.4,142.5" transform="rotate(15 100 100)" />
+                            <polygon points="100,15 173.6,142.5 26.4,142.5" transform="rotate(45 100 100)" />
+                            <polygon points="100,15 173.6,142.5 26.4,142.5" transform="rotate(75 100 100)" />
+                            <polygon points="100,15 173.6,142.5 26.4,142.5" transform="rotate(105 100 100)" />
+                        </g>
+                        <g stroke="url(#goldGradLeft)" stroke-width="1.5" fill="none" opacity="0.9">
+                            <polygon points="100,45 147.6,127.5 52.4,127.5" />
+                            <polygon points="100,155 147.6,72.5 52.4,72.5" />
+                        </g>
+                        <circle cx="100" cy="100" r="35" stroke="url(#goldGradLeft)" stroke-width="1" fill="none" opacity="0.6"/>
+                        <polygon points="100,65 134.1,107.8 84.8,131.5 72.6,78.2 127.4,78.2 115.2,131.5 65.9,107.8" stroke="url(#goldGradLeft)" stroke-width="1.2" fill="none" opacity="0.8" />
+                    </g>
+                    <g class="spin-slow-reverse" style="transform-origin: 100px 100px;" filter="drop-shadow(0 0 4px rgba(212,175,55,0.8))">
+                        <line x1="100" y1="80" x2="100" y2="120" stroke="url(#goldGradLeft)" stroke-width="2" stroke-linecap="round"/>
+                        <path d="M 100,80 C 112,80 112,95 100,95" fill="none" stroke="url(#goldGradLeft)" stroke-width="2" stroke-linecap="round"/>
+                        <line x1="88" y1="95" x2="112" y2="112" stroke="url(#goldGradLeft)" stroke-width="2" stroke-linecap="round"/>
+                        <line x1="112" y1="95" x2="88" y2="112" stroke="url(#goldGradLeft)" stroke-width="2" stroke-linecap="round"/>
+                        <text x="82" y="108" fill="#FFF8DC" font-family="Cinzel, serif" font-size="8" text-anchor="middle">A</text>
+                        <text x="118" y="108" fill="#FFF8DC" font-family="Cinzel, serif" font-size="8" text-anchor="middle">Ω</text>
+                    </g>
+                </svg>
+            </div>
+
+            <!-- Center Titles -->
+            <div class="text-center flex-grow pt-2 md:pt-4 z-20">
+                <p class="text-[9px] md:text-[11px] tracking-[0.3em] uppercase mb-2 font-mono" style="color:var(--accent)">Department I • Lesson 1 · Platonic Solids &amp; Symmetric Tessellations</p>
+                <h1 class="text-xl md:text-3xl font-bold tracking-[0.15em] mystical-font text-white drop-shadow-md">SUB-LESSON 1A</h1>
+                <h2 class="text-lg md:text-2xl font-bold gold-gradient tracking-[0.2em] mt-1">Geometric Primitives</h2>
+            </div>
+
+            <!-- RIGHT SIGIL: Archive Cipher -->
+            <a href="../SG_Main.html" title="Return to Department I" class="w-16 h-16 md:w-24 md:h-24 flex-shrink-0 cursor-pointer hover:scale-105 transition-transform duration-300">
+                <svg viewBox="0 0 200 200" class="w-full h-full spin-slow pulse-glow" xmlns="http://www.w3.org/2000/svg">
+                    <circle cx="100" cy="100" r="95" fill="none" stroke="url(#goldGradRight)" stroke-width="1" opacity="0.6"/>
+                    <circle cx="100" cy="100" r="85" fill="none" stroke="url(#goldGradRight)" stroke-width="0.5" opacity="0.4"/>
+                    <polygon points="100,15 173.6,142.5 26.4,142.5" fill="none" stroke="url(#goldGradRight)" stroke-width="1" opacity="0.5"/>
+                    <polygon points="100,185 26.4,57.5 173.6,57.5" fill="none" stroke="url(#goldGradRight)" stroke-width="1" opacity="0.5"/>
+                    <g filter="drop-shadow(0 0 4px rgba(212,175,55,0.8))">
+                        <line x1="100" y1="60" x2="100.01" y2="140" stroke="url(#goldGradRight)" stroke-width="2.5" stroke-linecap="round"/>
+                        <path d="M 100,60 C 120,60 120,90 100,90" fill="none" stroke="url(#goldGradRight)" stroke-width="2.5" stroke-linecap="round"/>
+                        <line x1="80" y1="85" x2="120" y2="125" stroke="url(#goldGradRight)" stroke-width="2.5" stroke-linecap="round"/>
+                        <line x1="120" y1="85" x2="80" y2="125" stroke="url(#goldGradRight)" stroke-width="2.5" stroke-linecap="round"/>
+                        <text x="75" y="115" fill="#FFF8DC" font-family="Cinzel, serif" font-size="10" text-anchor="middle">A</text>
+                        <text x="125" y="115" fill="#FFF8DC" font-family="Cinzel, serif" font-size="10" text-anchor="middle">Ω</text>
+                    </g>
+                    <circle cx="100" cy="100" r="45" fill="none" stroke="url(#goldGradRight)" stroke-width="0.5" stroke-dasharray="2 2" opacity="0.6"/>
+                </svg>
+            </a>
+        </header>
+
+        <!-- ===== Lesson 1 sub-lesson stepper (interweave nav) ===== -->
+        <nav class="w-full max-w-7xl mx-auto px-4 md:px-8 mt-6" aria-label="Lesson 1 sub-lessons">
+          <div class="glass-panel rounded-xl p-3 flex flex-wrap items-center justify-center gap-2 text-[10px] md:text-xs font-mono !mb-0">
+            <a href="index.html" class="px-3 py-1.5 rounded border border-yellow-600/40 text-yellow-500 hover:bg-yellow-500/10 transition-colors tracking-widest uppercase">◆ Hub</a>
+            <span class="text-gray-700 hidden md:inline">/</span>
+            <a href="1a_geometric_primitives.html" class="step-chip" aria-current="page">1A · Primitives</a>
+            <a href="1b_topological_invariants.html" class="step-chip">1B · Topology</a>
+            <a href="1c_harmonic_resonance.html" class="step-chip">1C · Resonance</a>
+            <a href="1d_tiling_problem.html" class="step-chip">1D · Tiling</a>
+            <a href="1e_engine_implementation.html" class="step-chip">1E · Engine</a>
+            <a href="1f_application_lab.html" class="step-chip">1F · Lab</a>
+          </div>
+        </nav>
+
+        <!-- Main Content -->
+        <main class="flex-grow w-full max-w-7xl mx-auto px-4 md:px-8 py-8 space-y-12">
+            
+            <!-- Expanded Theory Link Button -->
+            <div class="flex justify-center mb-8">
+                <a href="1a_expanded_theory.html" class="group px-6 py-3 rounded-lg border transition-all text-xs font-bold tracking-[0.15em] mystical-font flex items-center gap-3 hover:bg-yellow-500/10" style="border-color: color-mix(in srgb, var(--color-primary) 50%, transparent); color: var(--color-primary); background: rgba(0,0,0,0.6); box-shadow: 0 0 15px rgba(212,175,55,0.15);">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="group-hover:scale-110 transition-transform"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path></svg>
+                    DEEP DIVE: EXPANDED THEORY
+                </a>
+            </div>
+
+            <!-- Theory Section: Coordinates -->
+            <div class="glass-panel p-8 md:p-10 relative overflow-hidden">
+                <div class="absolute top-0 right-0 w-64 h-64 bg-cyan-500/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3"></div>
+                
+                <h2 class="text-2xl text-white font-bold mystical-font tracking-wide mb-4">The $\mathbb{R}^3$ Coordinate Space</h2>
+                
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
+                    <div class="prose prose-invert max-w-none text-gray-300 font-light text-sm md:text-base leading-relaxed space-y-4">
+                        <p>
+                            Before the S.P.I.R.E. Engine can instantiate an idea, it requires a dimensional theater. The fundamental canvas of our objective reality is <strong>$\mathbb{R}^3$ space</strong>. It is an infinite, continuous set of coordinates mapped across three orthogonal axes. 
+                        </p>
+                        <p>
+                            Mathematically, $\mathbb{R}^3$ is defined as a vector space over real numbers where every spatial singularity (a point) is defined by an exact tuple:
+                        </p>
+                        <div class="bg-black/40 border border-white/10 p-4 rounded-lg my-4 text-center">
+                            $$\mathbb{R}^3 = \{ (x, y, z) \mid x, y, z \in \mathbb{R} \}$$
+                        </div>
+                        
+                        <!-- Simplified Explanation -->
+                        <div class="simple-translation">
+                            <h4 class="text-sm font-bold text-cyan-400 mb-1 flex items-center gap-2">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+                                Simply Put: The 3D Room
+                            </h4>
+                            <p class="text-xs text-cyan-100/80">
+                                Imagine a giant, empty room. To pinpoint exactly where a fly is hovering in that room, you need three measurements: 
+                                <br>1. How far <strong>left/right</strong> (the <span class="text-[#ff3366] font-bold">X</span> axis).
+                                <br>2. How high <strong>up/down</strong> (the <span class="text-[#33ff99] font-bold">Y</span> axis).
+                                <br>3. How far <strong>forward/backward</strong> (the <span class="text-[#00d4ff] font-bold">Z</span> axis).
+                                <br>This 3D grid is what mathematicians call $\mathbb{R}^3$ space. The tuple $(x, y, z)$ is just the fly's GPS address.
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Visual Graph: Coordinate System -->
+                    <div class="bg-black/50 border border-gray-800 rounded-xl p-4 flex flex-col items-center justify-center h-full min-h-[250px]">
+                        <svg viewBox="0 0 200 200" class="w-full max-w-[250px] h-auto drop-shadow-[0_0_15px_rgba(0,212,255,0.2)]">
+                            <!-- Z Axis (Depth) -->
+                            <line x1="100" y1="120" x2="40" y2="160" stroke="#00d4ff" stroke-width="2" marker-end="url(#arrowZ)"/>
+                            <text x="30" y="170" fill="#00d4ff" font-size="10" font-family="monospace">Z (Depth)</text>
+                            
+                            <!-- X Axis (Width) -->
+                            <line x1="100" y1="120" x2="170" y2="120" stroke="#ff3366" stroke-width="2" marker-end="url(#arrowX)"/>
+                            <text x="175" y="125" fill="#ff3366" font-size="10" font-family="monospace">X (Width)</text>
+                            
+                            <!-- Y Axis (Height) -->
+                            <line x1="100" y1="120" x2="100" y2="40" stroke="#33ff99" stroke-width="2" marker-end="url(#arrowY)"/>
+                            <text x="95" y="30" fill="#33ff99" font-size="10" font-family="monospace">Y (Height)</text>
+                            
+                            <!-- The Point -->
+                            <circle cx="140" cy="70" r="4" fill="#fff" class="animate-pulse"/>
+                            <text x="148" y="68" fill="#fff" font-size="10" font-family="monospace">(x, y, z)</text>
+
+                            <!-- Tracing Lines -->
+                            <line x1="140" y1="70" x2="140" y2="120" stroke="#fff" stroke-width="1" stroke-dasharray="4" opacity="0.4"/>
+                            <line x1="140" y1="70" x2="100" y2="70" stroke="#fff" stroke-width="1" stroke-dasharray="4" opacity="0.4"/>
+                        </svg>
+                        <p class="text-[10px] text-gray-500 font-mono mt-4 text-center">Graph 1.0: Locating a singularity in 3-dimensional space.</p>
+                    </div>
+                </div>
+
+                <!-- Quiz 1 -->
+                <div class="mt-8 border-t border-cyan-900/30 pt-6">
+                    <h4 class="text-sm font-bold text-cyan-400 mb-4 flex items-center gap-2 font-mono uppercase tracking-widest">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"></path><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path></svg>
+                        System Check 1.0
+                    </h4>
+                    <div class="bg-black/40 border border-gray-800 rounded-lg p-5">
+                        <p class="text-sm text-gray-300 mb-4 font-light">What does the mathematical tuple $(x, y, z)$ represent within $\mathbb{R}^3$ space?</p>
+                        <div class="space-y-2" id="quiz-1-options">
+                            <button onclick="checkQuiz('quiz-1', false, this)" class="w-full text-left p-3 rounded bg-gray-900/50 border border-gray-700 hover:border-cyan-500 hover:text-white transition-all text-xs text-gray-400">A) The color, brightness, and opacity of a data point.</button>
+                            <button onclick="checkQuiz('quiz-1', true, this)" class="w-full text-left p-3 rounded bg-gray-900/50 border border-gray-700 hover:border-cyan-500 hover:text-white transition-all text-xs text-gray-400">B) The exact spatial coordinate (width, height, depth) of a singularity.</button>
+                            <button onclick="checkQuiz('quiz-1', false, this)" class="w-full text-left p-3 rounded bg-gray-900/50 border border-gray-700 hover:border-cyan-500 hover:text-white transition-all text-xs text-gray-400">C) The temporal distance from the initial compilation of the engine.</button>
+                        </div>
+                        <div id="quiz-1-feedback" class="hidden"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Theory Section: Euclidean Distance -->
+            <div class="glass-panel p-8 md:p-10 relative overflow-hidden">
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
+                    
+                    <!-- Visual Graph: Distance -->
+                    <div class="bg-black/50 border border-gray-800 rounded-xl p-4 flex flex-col items-center justify-center h-full min-h-[200px] order-2 lg:order-1">
+                        <svg viewBox="0 0 200 150" class="w-full max-w-[250px] h-auto">
+                            <!-- Point A -->
+                            <circle cx="50" cy="100" r="4" fill="#ff3366"/>
+                            <text x="35" y="115" fill="#ff3366" font-size="10" font-family="monospace">Point A</text>
+                            
+                            <!-- Point B -->
+                            <circle cx="150" cy="40" r="4" fill="#00d4ff"/>
+                            <text x="145" y="30" fill="#00d4ff" font-size="10" font-family="monospace">Point B</text>
+
+                            <!-- Distance Line -->
+                            <line x1="50" y1="100" x2="150" y2="40" stroke="#D4AF37" stroke-width="2" stroke-dasharray="4" class="animate-[pulse_2s_ease-in-out_infinite]"/>
+                            <text x="90" y="65" fill="#D4AF37" font-size="10" font-family="monospace">Distance (d)</text>
+
+                            <!-- Triangle to show Pythagorean relation -->
+                            <line x1="50" y1="100" x2="150" y2="100" stroke="#ffffff" stroke-width="1" opacity="0.2"/>
+                            <line x1="150" y1="100" x2="150" y2="40" stroke="#ffffff" stroke-width="1" opacity="0.2"/>
+                        </svg>
+                        <p class="text-[10px] text-gray-500 font-mono mt-4 text-center">Graph 1.1: Euclidean vector measurement.</p>
+                    </div>
+
+                    <div class="prose prose-invert max-w-none text-gray-300 font-light text-sm md:text-base leading-relaxed space-y-4 order-1 lg:order-2">
+                        <p>
+                            Within this void, we establish order through <strong>Geometric Primitives</strong>. These are the ascending dimensional constructs that bridge the gap between nothingness (0D) and volumetric existence (3D). The absolute Euclidean distance between any two anchors $A(x_1, y_1, z_1)$ and $B(x_2, y_2, z_2)$ forms the logic vectors of the Engine:
+                        </p>
+                        <div class="bg-black/40 border border-white/10 p-4 rounded-lg text-center text-yellow-500 overflow-x-auto">
+                            $$d(A,B) = \sqrt{(x_2 - x_1)^2 + (y_2 - y_1)^2 + (z_2 - z_1)^2}$$
+                        </div>
+
+                        <!-- Simplified Explanation -->
+                        <div class="simple-translation border-yellow-500/50 bg-yellow-500/5">
+                            <h4 class="text-sm font-bold text-yellow-500 mb-1 flex items-center gap-2">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+                                Simply Put: The 3D Ruler
+                            </h4>
+                            <p class="text-xs text-yellow-100/80">
+                                This scary-looking math formula is just the famous Pythagorean theorem ($A^2 + B^2 = C^2$) upgraded for 3D space. If you want to know the length of a straight line connecting two dots in space, this formula acts as your digital ruler.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Quiz 2 -->
+                <div class="mt-8 border-t border-yellow-600/30 pt-6">
+                    <h4 class="text-sm font-bold text-yellow-500 mb-4 flex items-center gap-2 font-mono uppercase tracking-widest">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"></path><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path></svg>
+                        System Check 1.1
+                    </h4>
+                    <div class="bg-black/40 border border-gray-800 rounded-lg p-5">
+                        <p class="text-sm text-gray-300 mb-4 font-light">The Euclidean distance formula is primarily an upgraded, 3D version of which fundamental mathematical concept?</p>
+                        <div class="space-y-2" id="quiz-2-options">
+                            <button onclick="checkQuiz('quiz-2', false, this)" class="w-full text-left p-3 rounded bg-gray-900/50 border border-gray-700 hover:border-yellow-500 hover:text-white transition-all text-xs text-gray-400">A) Euler's characteristic ($\chi = V - E + F = 2$)</button>
+                            <button onclick="checkQuiz('quiz-2', false, this)" class="w-full text-left p-3 rounded bg-gray-900/50 border border-gray-700 hover:border-yellow-500 hover:text-white transition-all text-xs text-gray-400">B) The Theory of Relativity ($E = mc^2$)</button>
+                            <button onclick="checkQuiz('quiz-2', true, this)" class="w-full text-left p-3 rounded bg-gray-900/50 border border-gray-700 hover:border-yellow-500 hover:text-white transition-all text-xs text-gray-400">C) The Pythagorean theorem ($A^2 + B^2 = C^2$)</button>
+                        </div>
+                        <div id="quiz-2-feedback" class="hidden"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- The Dimensions Grid -->
+            <div>
+                <h3 class="text-xl text-white font-bold mystical-font tracking-wide mb-6 text-center">The Dimensional Ascent</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    
+                    <!-- 0D -->
+                    <div class="data-card p-5 flex flex-col">
+                        <div class="flex justify-between items-start mb-3">
+                            <h4 class="text-sm font-bold text-white tracking-widest mono">0D: Vertex</h4>
+                            <span class="text-xs text-gray-500 font-mono">Dim: 0</span>
+                        </div>
+                        <div class="h-12 flex items-center justify-center mb-3">
+                            <div class="w-2 h-2 bg-white rounded-full shadow-[0_0_10px_#fff]"></div>
+                        </div>
+                        <p class="text-[11px] text-gray-400 font-light flex-grow">
+                            A singularity in the manifold. It has no length, width, or depth; only a definitive spatial coordinate $(x, y, z)$. It is the anchor of intent.
+                        </p>
+                        <div class="mt-4 pt-3 border-t border-gray-700/50">
+                            <p class="text-[10px] text-cyan-300 font-mono"><strong>Simply Put:</strong> A single dot. It has no size, it just marks a specific location.</p>
+                        </div>
+                    </div>
+
+                    <!-- 1D -->
+                    <div class="data-card p-5 flex flex-col">
+                        <div class="flex justify-between items-start mb-3">
+                            <h4 class="text-sm font-bold text-white tracking-widest mono">1D: Edge</h4>
+                            <span class="text-xs text-gray-500 font-mono">Dim: 1</span>
+                        </div>
+                        <div class="h-12 flex items-center justify-center mb-3">
+                            <div class="w-16 h-px bg-cyan-400 shadow-[0_0_10px_#00d4ff] relative">
+                                <div class="absolute -left-1 -top-1 w-2 h-2 bg-white rounded-full"></div>
+                                <div class="absolute -right-1 -top-1 w-2 h-2 bg-white rounded-full"></div>
+                            </div>
+                        </div>
+                        <p class="text-[11px] text-gray-400 font-light flex-grow">
+                            The shortest path binding two vertices. An edge possesses length but lacks area or volume. It represents a logical vector relationship.
+                        </p>
+                        <div class="mt-4 pt-3 border-t border-gray-700/50">
+                            <p class="text-[10px] text-cyan-300 font-mono"><strong>Simply Put:</strong> A line connecting two dots. You can measure how long it is, but it has no width.</p>
+                        </div>
+                    </div>
+
+                    <!-- 2D -->
+                    <div class="data-card p-5 flex flex-col">
+                        <div class="flex justify-between items-start mb-3">
+                            <h4 class="text-sm font-bold text-white tracking-widest mono">2D: Face</h4>
+                            <span class="text-xs text-gray-500 font-mono">Dim: 2</span>
+                        </div>
+                        <div class="h-12 flex items-center justify-center mb-3">
+                            <div class="w-12 h-10 border border-purple-400 bg-purple-500/20 skew-x-12 relative">
+                                <div class="absolute -left-1 -top-1 w-2 h-2 bg-white rounded-full"></div>
+                                <div class="absolute -right-1 -top-1 w-2 h-2 bg-white rounded-full"></div>
+                                <div class="absolute -left-1 -bottom-1 w-2 h-2 bg-white rounded-full"></div>
+                                <div class="absolute -right-1 -bottom-1 w-2 h-2 bg-white rounded-full"></div>
+                            </div>
+                        </div>
+                        <p class="text-[11px] text-gray-400 font-light flex-grow">
+                            A planar surface enclosed by three or more edges. Faces establish a boundary condition, creating an internal and external context.
+                        </p>
+                        <div class="mt-4 pt-3 border-t border-gray-700/50">
+                            <p class="text-[10px] text-cyan-300 font-mono"><strong>Simply Put:</strong> A flat shape, like a sheet of paper. It has surface area, but no thickness.</p>
+                        </div>
+                    </div>
+
+                    <!-- 3D -->
+                    <div class="data-card p-5 flex flex-col">
+                        <div class="flex justify-between items-start mb-3">
+                            <h4 class="text-sm font-bold text-white tracking-widest mono">3D: Volume</h4>
+                            <span class="text-xs text-gray-500 font-mono">Dim: 3</span>
+                        </div>
+                        <div class="h-12 flex items-center justify-center mb-3 text-yellow-500">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
+                        </div>
+                        <p class="text-[11px] text-gray-400 font-light flex-grow">
+                            The encapsulated space bound by multiple intersecting faces. The engine utilizes complete volumetric solids to store uncorrupted data states.
+                        </p>
+                        <div class="mt-4 pt-3 border-t border-gray-700/50">
+                            <p class="text-[10px] text-cyan-300 font-mono"><strong>Simply Put:</strong> A solid object, like a box. It takes up real space and you can put things inside it.</p>
+                        </div>
+                    </div>
+
+                </div>
+
+                <!-- Quiz 3 -->
+                <div class="mt-8 border-t border-purple-900/30 pt-6">
+                    <h4 class="text-sm font-bold text-purple-400 mb-4 flex items-center gap-2 font-mono uppercase tracking-widest">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"></path><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path></svg>
+                        System Check 1.2
+                    </h4>
+                    <div class="bg-black/40 border border-gray-800 rounded-lg p-5">
+                        <p class="text-sm text-gray-300 mb-4 font-light">Which dimensional primitive establishes a boundary condition (surface area), creating an internal and external context, but completely lacks volume or thickness?</p>
+                        <div class="space-y-2" id="quiz-3-options">
+                            <button onclick="checkQuiz('quiz-3', false, this)" class="w-full text-left p-3 rounded bg-gray-900/50 border border-gray-700 hover:border-purple-500 hover:text-white transition-all text-xs text-gray-400">A) 0D: Vertex</button>
+                            <button onclick="checkQuiz('quiz-3', false, this)" class="w-full text-left p-3 rounded bg-gray-900/50 border border-gray-700 hover:border-purple-500 hover:text-white transition-all text-xs text-gray-400">B) 1D: Edge</button>
+                            <button onclick="checkQuiz('quiz-3', true, this)" class="w-full text-left p-3 rounded bg-gray-900/50 border border-gray-700 hover:border-purple-500 hover:text-white transition-all text-xs text-gray-400">C) 2D: Face</button>
+                            <button onclick="checkQuiz('quiz-3', false, this)" class="w-full text-left p-3 rounded bg-gray-900/50 border border-gray-700 hover:border-purple-500 hover:text-white transition-all text-xs text-gray-400">D) 3D: Volume</button>
+                        </div>
+                        <div id="quiz-3-feedback" class="hidden"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Interactive Lab -->
+            <div id="interactive-lab" class="glass-panel p-1 rounded-2xl overflow-hidden mt-8">
+                <div class="bg-[#0b0c10] rounded-xl overflow-hidden border border-gray-800 flex flex-col lg:flex-row shadow-[0_0_30px_rgba(0,212,255,0.05)]">
+                    
+                    <!-- Lab Controls -->
+                    <div class="w-full lg:w-1/3 p-6 flex flex-col justify-between border-b lg:border-b-0 lg:border-r border-gray-800 bg-[#05030a] relative z-20">
+                        <div>
+                            <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-cyan-950/40 text-cyan-400 text-[10px] tracking-[0.1em] uppercase mono mb-4 border border-cyan-900/50">
+                                <span class="w-1.5 h-1.5 bg-cyan-400 rounded-full animate-ping"></span> Simulation Environment
+                            </div>
+                            <h3 class="text-xl font-bold text-white mystical-font tracking-wider mb-2">Primitive Assembly</h3>
+                            <p class="text-xs text-gray-400 leading-relaxed mb-4 font-light">
+                                Execute the dimensional ascent sequence to construct the most fundamental 3D primitive: <strong>The Tetrahedron</strong>. 
+                            </p>
+                            
+                            <!-- Lab Layman Translation -->
+                            <div class="bg-gray-900/80 border border-gray-700 rounded p-3 mb-6">
+                                <p class="text-[10px] text-cyan-300 font-mono">
+                                    <strong>Goal:</strong> We are going to build a 3D pyramid from scratch.<br>
+                                    • First, we place 4 dots (Vertices).<br>
+                                    • Then, we connect them with 6 lines (Edges).<br>
+                                    • Next, we fill in the 4 flat sides (Faces).<br>
+                                    • Finally, it becomes a solid 3D shape (Volume).
+                                </p>
+                            </div>
+                        </div>
+                        
+                        <div class="space-y-3 mb-6">
+                            <button id="btn-step-1" onclick="executeStep(1)" class="w-full py-2 px-4 btn-lab rounded text-[10px] font-bold uppercase tracking-widest mono text-left flex justify-between items-center active-step">
+                                <span>1. Plot 4 Vertices (0D)</span>
+                                <span class="status-indicator w-2 h-2 rounded-full bg-gray-600"></span>
+                            </button>
+                            <button id="btn-step-2" onclick="executeStep(2)" disabled class="w-full py-2 px-4 btn-lab rounded text-[10px] font-bold uppercase tracking-widest mono text-left flex justify-between items-center">
+                                <span>2. Establish 6 Edges (1D)</span>
+                                <span class="status-indicator w-2 h-2 rounded-full bg-gray-600"></span>
+                            </button>
+                            <button id="btn-step-3" onclick="executeStep(3)" disabled class="w-full py-2 px-4 btn-lab rounded text-[10px] font-bold uppercase tracking-widest mono text-left flex justify-between items-center">
+                                <span>3. Enclose 4 Faces (2D)</span>
+                                <span class="status-indicator w-2 h-2 rounded-full bg-gray-600"></span>
+                            </button>
+                            <button id="btn-step-4" onclick="executeStep(4)" disabled class="w-full py-2 px-4 btn-lab rounded text-[10px] font-bold uppercase tracking-widest mono text-left flex justify-between items-center">
+                                <span>4. Volumetric Resolve (3D)</span>
+                                <span class="status-indicator w-2 h-2 rounded-full bg-gray-600"></span>
+                            </button>
+                            
+                            <button id="btn-reset" onclick="resetLab()" class="w-full mt-4 py-2 text-gray-500 hover:text-white transition-colors text-[9px] uppercase mono underline decoration-gray-700 underline-offset-4 hidden">
+                                Purge Canvas
+                            </button>
+                        </div>
+
+                        <!-- Terminal Output -->
+                        <div>
+                            <div class="text-[9px] uppercase tracking-widest text-gray-500 mb-2 mono">System Console</div>
+                            <div id="terminal" class="terminal-log">
+                                <div class="log-entry"><span class="log-time">[00:00:00]</span><span class="log-info">R3 Space Initialized.</span></div>
+                                <div class="log-entry"><span class="log-time">[00:00:01]</span>Awaiting dimensional commands...</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 3D Canvas -->
+                    <div id="lab-canvas-container" class="w-full h-[400px] lg:h-[600px] relative cursor-crosshair">
+                        <!-- Axis Labels overlay -->
+                        <div class="absolute bottom-4 left-4 text-[10px] font-mono font-bold pointer-events-none z-10 bg-black/50 p-2 rounded border border-white/10">
+                            <div class="text-[#ff3366]">X-Axis (Width / Left-Right)</div>
+                            <div class="text-[#33ff99]">Y-Axis (Height / Up-Down)</div>
+                            <div class="text-[#00d4ff]">Z-Axis (Depth / Forward-Back)</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ===== Checkpoint + interweave prev/next ===== -->
+            <div class="mt-14 flex flex-col items-center gap-3">
+              <span class="text-[10px] text-gray-500 font-mono uppercase tracking-[0.3em]">Checkpoint</span>
+              <button id="mark-complete-btn" onclick="owlMarkComplete()" class="px-8 py-3 rounded-lg border font-bold tracking-widest text-xs uppercase mystical-font transition-all hover:scale-[1.02]" style="border-color:var(--accent);color:var(--accent);background:color-mix(in srgb,var(--accent) 6%,transparent);">Mark this part complete ✓</button>
+              <p class="text-[10px] text-gray-600 font-mono text-center max-w-md">Progress saves to this browser. Finish all 12 parts to unlock the Tome signoff on the <a href="index.html" class="underline hover:text-yellow-400">lesson hub</a>.</p>
+            </div>
+            <div class="mt-10 pt-6 border-t border-white/10 flex items-center justify-between gap-3 text-xs font-mono">
+              <a href="index.html" class="px-4 py-2 rounded border border-white/10 text-gray-400 hover:text-white hover:border-white/30 transition-colors">← Lesson Hub</a>
+              <a href="index.html" class="px-4 py-2 rounded border border-yellow-600/40 text-yellow-500 hover:bg-yellow-500/10 transition-colors tracking-widest uppercase">◆ Hub</a>
+              <a href="1b_topological_invariants.html" class="px-4 py-2 rounded border border-white/10 text-gray-400 hover:text-white hover:border-white/30 transition-colors">1B Topology →</a>
+            </div>
+
+        </main>
+
+        <footer class="w-full border-t border-cyan-900/30 bg-black/60 backdrop-blur-md py-6 text-center mt-auto flex-shrink-0 z-20 relative">
+            <p class="text-[10px] text-cyan-700 uppercase tracking-[0.3em] font-mono">
+                Department I • Owl Academy
+            </p>
+        </footer>
+    </div>
+
+    <!-- Interactive 3D Application -->
+    <script>
+        let scene, camera, renderer, controls;
+        let currentStep = 0;
+        
+        // 3D Objects Storage
+        const vertices = [];
+        const edges = [];
+        let solidFaceMesh;
+
+        // Base Coordinates for a perfect Tetrahedron in R3 space
+        // Using a side length calculated to fit nicely in view
+        const scale = 3;
+        const tetCoords = [
+            new THREE.Vector3( 1,  1,  1).multiplyScalar(scale),
+            new THREE.Vector3(-1, -1,  1).multiplyScalar(scale),
+            new THREE.Vector3(-1,  1, -1).multiplyScalar(scale),
+            new THREE.Vector3( 1, -1, -1).multiplyScalar(scale)
+        ];
+
+        // Edge pairs (indices of tetCoords)
+        const edgePairs = [
+            [0, 1], [0, 2], [0, 3],
+            [1, 2], [1, 3], [2, 3]
+        ];
+
+        function initLab() {
+            const container = document.getElementById('lab-canvas-container');
+            
+            // 1. Scene & Camera
+            scene = new THREE.Scene();
+            camera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1, 1000);
+            camera.position.set(12, 10, 15);
+            
+            // 2. Renderer
+            renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+            renderer.setSize(container.clientWidth, container.clientHeight);
+            renderer.setPixelRatio(window.devicePixelRatio);
+            container.appendChild(renderer.domElement);
+
+            // 3. Controls
+            controls = new THREE.OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true;
+            controls.dampingFactor = 0.05;
+            controls.autoRotate = true;
+            controls.autoRotateSpeed = 0.8;
+
+            // 4. Base R3 Environment (Axes & Grid)
+            const gridHelper = new THREE.GridHelper(20, 20, 0x00d4ff, 0x111111);
+            gridHelper.position.y = -scale - 1; // Put grid below the shape
+            gridHelper.material.opacity = 0.2;
+            gridHelper.material.transparent = true;
+            scene.add(gridHelper);
+
+            // Custom glowing axes
+            const createAxis = (color, endPos) => {
+                const mat = new THREE.LineBasicMaterial({ color: color, transparent: true, opacity: 0.6 });
+                const geo = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0,0,0), endPos]);
+                return new THREE.Line(geo, mat);
+            };
+            scene.add(createAxis(0xff3366, new THREE.Vector3(10, 0, 0))); // X Red
+            scene.add(createAxis(0x33ff99, new THREE.Vector3(0, 10, 0))); // Y Green
+            scene.add(createAxis(0x00d4ff, new THREE.Vector3(0, 0, 10))); // Z Blue
+
+            // Lighting
+            const ambient = new THREE.AmbientLight(0x404040, 1.5);
+            scene.add(ambient);
+            const dirLight = new THREE.DirectionalLight(0xffffff, 1);
+            dirLight.position.set(10, 20, 10);
+            scene.add(dirLight);
+
+            // Handle Resize
+            window.addEventListener('resize', () => {
+                if(container.clientWidth === 0) return;
+                camera.aspect = container.clientWidth / container.clientHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(container.clientWidth, container.clientHeight);
+            });
+
+            // Start loop
+            animate();
+        }
+
+        function animate(time) {
+            requestAnimationFrame(animate);
+            TWEEN.update(time);
+            
+            // Pulse vertices if they exist
+            if (vertices.length > 0 && currentStep < 4) {
+                const s = 1 + Math.sin(time * 0.005) * 0.15;
+                vertices.forEach(v => v.scale.set(s,s,s));
+            }
+
+            controls.update();
+            renderer.render(scene, camera);
+        }
+
+        // --- Core Simulation Logic ---
+
+        function executeStep(step) {
+            if (step !== currentStep + 1) return;
+            currentStep = step;
+
+            // Immediately mark the current button as completed (locked)
+            const btn = document.getElementById(`btn-step-${step}`);
+            btn.disabled = true;
+            btn.classList.remove('active-step');
+            const indicator = btn.querySelector('.status-indicator');
+            indicator.className = "status-indicator w-2 h-2 rounded-full bg-cyan-500 shadow-[0_0_8px_#00d4ff]";
+
+            switch(step) {
+                case 1: plotVertices(); break;
+                case 2: drawEdges(); break;
+                case 3: generateFaces(); break;
+                case 4: finalizeVolume(); break;
+            }
+        }
+
+        // Unlocks the next step only after the current animation is fully complete
+        function unlockStep(step) {
+            if (step <= 4) {
+                const nextBtn = document.getElementById(`btn-step-${step}`);
+                if (nextBtn) {
+                    nextBtn.disabled = false;
+                    nextBtn.classList.add('active-step');
+                }
+            } else {
+                document.getElementById('btn-reset').classList.remove('hidden');
+            }
+        }
+
+        function logToTerminal(message, type = "info") {
+            const term = document.getElementById('terminal');
+            const now = new Date();
+            const timeStr = `[${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}:${now.getSeconds().toString().padStart(2,'0')}]`;
+            
+            const colorClass = type === "success" ? "log-success" : (type === "warning" ? "text-yellow-400" : "log-info");
+            
+            const entry = document.createElement('div');
+            entry.className = "log-entry";
+            entry.innerHTML = `<span class="log-time">${timeStr}</span><span class="${colorClass}">${message}</span>`;
+            
+            term.appendChild(entry);
+            term.scrollTop = term.scrollHeight;
+        }
+
+        // Action 1: Plotting 0D
+        function plotVertices() {
+            logToTerminal("Executing command: PLOT_VERTICES", "info");
+            
+            const sphereGeo = new THREE.SphereGeometry(0.2, 16, 16);
+            const sphereMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+            
+            tetCoords.forEach((coord, i) => {
+                setTimeout(() => {
+                    const sphere = new THREE.Mesh(sphereGeo, sphereMat);
+                    // Start at origin, tween to target
+                    sphere.position.set(0,0,0);
+                    scene.add(sphere);
+                    vertices.push(sphere);
+
+                    new TWEEN.Tween(sphere.position)
+                        .to({ x: coord.x, y: coord.y, z: coord.z }, 1000)
+                        .easing(TWEEN.Easing.Exponential.Out)
+                        .start();
+                    
+                    logToTerminal(`Vertex V${i} instantiated at (${coord.x}, ${coord.y}, ${coord.z})`, "info");
+                    
+                    if (i === tetCoords.length - 1) {
+                        setTimeout(() => {
+                            logToTerminal("0D State Complete. Spatial anchors (dots) established.", "success");
+                            unlockStep(2); // Unlock next step now that animation is done
+                        }, 1000);
+                    }
+                }, i * 300); // Staggered spawn
+            });
+        }
+
+        // Action 2: 1D Edges
+        function drawEdges() {
+            logToTerminal("Executing command: BIND_VECTORS", "info");
+            
+            const lineMat = new THREE.LineBasicMaterial({ color: 0x00d4ff, transparent: true, opacity: 0, linewidth: 2 });
+            
+            edgePairs.forEach((pair, i) => {
+                setTimeout(() => {
+                    const points = [tetCoords[pair[0]], tetCoords[pair[1]]];
+                    const geo = new THREE.BufferGeometry().setFromPoints(points);
+                    const line = new THREE.Line(geo, lineMat.clone());
+                    
+                    scene.add(line);
+                    edges.push(line);
+
+                    // Fade in edge
+                    new TWEEN.Tween(line.material)
+                        .to({ opacity: 0.8 }, 600)
+                        .start();
+                    
+                    logToTerminal(`Logic Vector (Line) drawn: V${pair[0]} -> V${pair[1]}`, "info");
+                    
+                    if(i === edgePairs.length -1) {
+                        setTimeout(() => {
+                            logToTerminal("1D State Complete. Wireframe matrix bound.", "success");
+                            unlockStep(3); // Unlock next step now that animation is done
+                        }, 800);
+                    }
+                }, i * 200);
+            });
+        }
+
+        // Action 3: 2D Faces
+        function generateFaces() {
+            logToTerminal("Executing command: ENCLOSE_MANIFOLD", "info");
+            
+            // Build geometry directly from perfectly aligned tetCoords
+            const geometry = new THREE.BufferGeometry();
+            const indices = [
+                0, 2, 1,
+                0, 1, 3,
+                0, 3, 2,
+                1, 2, 3
+            ];
+            
+            geometry.setFromPoints(tetCoords);
+            geometry.setIndex(indices);
+            geometry.computeVertexNormals();
+            
+            const material = new THREE.MeshPhysicalMaterial({
+                color: 0x8A2BE2,
+                metalness: 0.1,
+                roughness: 0.2,
+                transparent: true,
+                opacity: 0,
+                side: THREE.DoubleSide,
+                transmission: 0.5,
+                thickness: 0.5
+            });
+
+            solidFaceMesh = new THREE.Mesh(geometry, material);
+            scene.add(solidFaceMesh);
+
+            new TWEEN.Tween(solidFaceMesh.material)
+                .to({ opacity: 0.4 }, 2000)
+                .easing(TWEEN.Easing.Cubic.InOut)
+                .onComplete(() => {
+                    logToTerminal("2D State Complete. Flat surfaces (faces) established.", "success");
+                    unlockStep(4); // Unlock next step now that animation is done
+                })
+                .start();
+        }
+
+        // Action 4: 3D Volume (Culmination)
+        function finalizeVolume() {
+            logToTerminal("Executing command: RESOLVE_STATE", "info");
+            
+            // Rapid rotation speed up
+            new TWEEN.Tween(controls)
+                .to({ autoRotateSpeed: 4.0 }, 1000)
+                .start();
+
+            // Transform Faces to Solid Gold/Yellow
+            new TWEEN.Tween(solidFaceMesh.material)
+                .to({ 
+                    opacity: 0.9, 
+                    color: { r: 212/255, g: 175/255, b: 55/255 }, // Gold
+                    transmission: 0 
+                }, 1500)
+                .easing(TWEEN.Easing.Quadratic.Out)
+                .start();
+
+            // Explode vertices outward slightly then snap back
+            vertices.forEach((v, i) => {
+                const target = tetCoords[i];
+                const explode = target.clone().multiplyScalar(1.2);
+                
+                new TWEEN.Tween(v.position)
+                    .to({x: explode.x, y: explode.y, z: explode.z}, 500)
+                    .easing(TWEEN.Easing.Quadratic.Out)
+                    .onComplete(() => {
+                        new TWEEN.Tween(v.position)
+                            .to({x: target.x, y: target.y, z: target.z}, 500)
+                            .easing(TWEEN.Easing.Bounce.Out)
+                            .start();
+                    })
+                    .start();
+            });
+
+            setTimeout(() => {
+                new TWEEN.Tween(controls)
+                    .to({ autoRotateSpeed: 1.0 }, 2000)
+                    .start();
+                logToTerminal("3D State Complete. Solid Volumetric Primitive created.", "success");
+                unlockStep(5); // Unlocks the reset button
+            }, 1500);
+        }
+
+        function resetLab() {
+            // Remove all objects
+            vertices.forEach(v => scene.remove(v));
+            edges.forEach(e => scene.remove(e));
+            if(solidFaceMesh) scene.remove(solidFaceMesh);
+            
+            vertices.length = 0;
+            edges.length = 0;
+            solidFaceMesh = null;
+            
+            currentStep = 0;
+
+            // Reset UI
+            for(let i = 1; i <= 4; i++) {
+                const btn = document.getElementById(`btn-step-${i}`);
+                const indicator = btn.querySelector('.status-indicator');
+                
+                if (i === 1) {
+                    btn.disabled = false;
+                    btn.classList.add('active-step');
+                } else {
+                    btn.disabled = true;
+                    btn.classList.remove('active-step');
+                }
+                indicator.className = "status-indicator w-2 h-2 rounded-full bg-gray-600";
+            }
+
+            document.getElementById('btn-reset').classList.add('hidden');
+            document.getElementById('terminal').innerHTML = `
+                <div class="log-entry"><span class="log-time">[${new Date().toLocaleTimeString()}]</span><span class="text-yellow-400">Canvas Purged.</span></div>
+                <div class="log-entry"><span class="log-info">Awaiting dimensional commands...</span></div>
+            `;
+            
+            controls.autoRotateSpeed = 0.8;
+        }
+
+        // Quiz Verification Logic
+        function checkQuiz(quizId, isCorrect, btnElement) {
+            const optionsContainer = document.getElementById(`${quizId}-options`);
+            const feedbackElement = document.getElementById(`${quizId}-feedback`);
+            const buttons = optionsContainer.querySelectorAll('button');
+
+            // Disable all buttons to lock in the answer
+            buttons.forEach(btn => {
+                btn.disabled = true;
+                btn.classList.add('opacity-50', 'cursor-not-allowed');
+                // Clean up previous states just in case
+                btn.classList.remove('!border-green-500', '!bg-green-900/30', '!text-green-400', '!border-red-500', '!bg-red-900/30', '!text-red-400');
+            });
+
+            // Highlight chosen button specifically
+            btnElement.classList.remove('opacity-50');
+            
+            if (isCorrect) {
+                btnElement.classList.add('!border-green-500', '!bg-green-900/30', '!text-green-400');
+                feedbackElement.innerHTML = `> STATUS: <span class="text-green-400">VERIFIED</span>. Your understanding aligns with the S.P.I.R.E. Engine's logic.`;
+                feedbackElement.className = "mt-4 text-xs p-3 rounded border font-mono bg-green-900/10 border-green-900/50 text-green-300 block";
+            } else {
+                btnElement.classList.add('!border-red-500', '!bg-red-900/30', '!text-red-400');
+                feedbackElement.innerHTML = `> STATUS: <span class="text-red-400">ERROR</span>. Dimensional logic misalignment. We recommend reviewing the <a href="1a_expanded_theory.html" class="text-cyan-400 underline hover:text-cyan-300">Expanded Lesson</a> for a comprehensive overview.<button onclick="resetQuiz('${quizId}')" class="ml-4 px-3 py-1 bg-red-900/50 hover:bg-red-500/50 text-white rounded transition-colors uppercase text-[10px] tracking-widest border border-red-500/50 mt-3 md:mt-0">Recalibrate & Retry</button>`;
+                feedbackElement.className = "mt-4 text-xs p-3 rounded border font-mono bg-red-900/20 border-red-900/50 text-red-400 block md:flex items-center justify-between gap-4";
+            }
+        }
+
+        function resetQuiz(quizId) {
+            const optionsContainer = document.getElementById(`${quizId}-options`);
+            const feedbackElement = document.getElementById(`${quizId}-feedback`);
+            const buttons = optionsContainer.querySelectorAll('button');
+
+            buttons.forEach(btn => {
+                btn.disabled = false;
+                btn.classList.remove('opacity-50', 'cursor-not-allowed', '!border-green-500', '!bg-green-900/30', '!text-green-400', '!border-red-500', '!bg-red-900/30', '!text-red-400');
+            });
+            
+            feedbackElement.className = "hidden";
+        }
+
+        window.onload = () => {
+            initLab();
+            setTimeout(() => { window.dispatchEvent(new Event('resize')); }, 100);
+        };
+    </script>
+
+    <!-- ===== Completion tracking ===== -->
+    <script>
+    (function(){
+      var KEY='owl.platonic.progress.v1', PART='1a';
+      function rd(){ try{ return JSON.parse(localStorage.getItem(KEY))||{}; }catch(e){ return {}; } }
+      function wr(m){ try{ localStorage.setItem(KEY, JSON.stringify(m)); }catch(e){} }
+      window.owlMarkComplete=function(){ var m=rd(); m[PART]=true; wr(m); paint(true); };
+      function paint(done){ var b=document.getElementById('mark-complete-btn'); if(!b) return;
+        if(done){ b.textContent='✓ Part complete'; b.style.background='color-mix(in srgb,var(--accent) 22%,transparent)'; b.setAttribute('disabled',''); b.style.cursor='default'; } }
+      document.addEventListener('DOMContentLoaded', function(){ paint(!!rd()[PART]); });
+    })();
+    </script>
+</body>
+</html>

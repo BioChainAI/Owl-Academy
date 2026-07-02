@@ -1,0 +1,926 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Owl Academy | Lesson I Appendix: Expanded Theory</title>
+    
+    <!-- CSS & Fonts -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Inter:wght@300;400;500;600&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+    
+    <!-- MathJax for rendering geometric equations -->
+    <script>
+        window.MathJax = {
+            tex: {
+                inlineMath: [['$', '$'], ['\\(', '\\)']],
+                displayMath: [['$$', '$$'], ['\\[', '\\]']]
+            }
+        };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+    <style>
+        /* Dynamic Theme Variables (Owl Academy Standard) */
+        :root {
+            --accent: #00d4ff;
+            --color-void: #090614;
+            --color-primary: #D4AF37;
+            --color-secondary: #8e9eab;
+            --color-holo1: #00d4ff;
+            --color-holo2: #8A2BE2;
+            --color-text: #E6C27A;
+            --color-r3-x: #ff3366;
+            --color-r3-y: #33ff99;
+            --color-r3-z: #00d4ff;
+        }
+
+        body {
+            background-color: var(--color-void);
+            color: #e2e8f0;
+            font-family: 'Inter', sans-serif;
+            background: radial-gradient(circle at 50% 50%, color-mix(in srgb, var(--color-holo2) 10%, var(--color-void)), var(--color-void) 80%);
+            min-height: 100vh;
+            margin: 0;
+            overflow-x: hidden;
+            scroll-behavior: smooth;
+        }
+
+        /* --- ATMOSPHERIC LAYERS --- */
+        .nebula-layer {
+            position: fixed; inset: 0;
+            background: 
+                radial-gradient(circle at 20% 30%, var(--color-holo2) 0%, transparent 40%),
+                radial-gradient(circle at 80% 70%, var(--color-holo1) 0%, transparent 40%);
+            opacity: 0.15; mix-blend-mode: screen; filter: blur(80px); pointer-events: none; z-index: 0;
+        }
+        .vignette-layer {
+            position: fixed; inset: 0;
+            background: radial-gradient(circle, transparent 40%, rgba(0,0,0,0.8) 120%);
+            pointer-events: none; z-index: 10;
+        }
+        .starfield {
+            position: fixed; inset: 0;
+            background-image:
+                radial-gradient(2px 2px at 20px 30px, var(--color-primary), rgba(0,0,0,0)),
+                radial-gradient(2px 2px at 40px 70px, #fff, rgba(0,0,0,0)),
+                radial-gradient(2px 2px at 50px 160px, rgba(255,255,255,0.8), rgba(0,0,0,0)),
+                radial-gradient(2px 2px at 90px 40px, #fff, rgba(0,0,0,0)),
+                radial-gradient(2px 2px at 130px 80px, var(--color-primary), rgba(0,0,0,0));
+            background-repeat: repeat; background-size: 250px 250px;
+            animation: twinkle 8s infinite alternate; opacity: 0.35; z-index: 0; pointer-events: none;
+        }
+        .starfield-layer-2 { background-size: 350px 350px; background-position: 50px 50px; opacity: 0.2; animation: twinkle 12s infinite alternate-reverse; }
+        @keyframes twinkle { 0% { opacity: 0.1; transform: scale(1); } 100% { opacity: 0.5; transform: scale(1.05); } }
+        
+        .spin-slow { animation: spin 40s linear infinite; transform-origin: center; }
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+
+        /* --- TYPOGRAPHY & PANELS --- */
+        h1, h2, h3, h4, .mystical-font { font-family: 'Cinzel', serif; }
+        .mono { font-family: 'Fira Code', monospace; }
+        .gold-gradient {
+            background: linear-gradient(to right, var(--color-primary), #FFF8DC, var(--color-primary));
+            -webkit-background-clip: text; background-clip: text; color: transparent; text-shadow: 0 0 15px color-mix(in srgb, var(--color-primary) 30%, transparent);
+        }
+
+        .glass-panel {
+            background: rgba(10, 5, 20, 0.5);
+            backdrop-filter: blur(12px);
+            border: 1px solid color-mix(in srgb, var(--color-primary) 20%, transparent);
+            border-radius: 16px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+            margin-bottom: 2rem;
+            padding: 2rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .data-card {
+            background: rgba(15, 10, 25, 0.5);
+            border: 1px solid color-mix(in srgb, var(--color-primary) 10%, transparent);
+            border-top: 1px solid color-mix(in srgb, var(--color-primary) 30%, transparent);
+            border-radius: 12px;
+            padding: 1.5rem;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+        .data-card:hover {
+            border-color: color-mix(in srgb, var(--color-holo1) 40%, transparent);
+            background: rgba(20, 15, 35, 0.7);
+            box-shadow: 0 0 20px rgba(0, 212, 255, 0.1);
+        }
+
+        .simple-translation {
+            background: rgba(0, 212, 255, 0.05);
+            border-left: 3px solid color-mix(in srgb, var(--color-holo1) 50%, transparent);
+            padding: 1rem;
+            margin-top: 1.5rem;
+            border-radius: 0 8px 8px 0;
+            font-family: 'Inter', sans-serif;
+        }
+
+        .math-note {
+            border: 1px dashed color-mix(in srgb, var(--color-primary) 40%, transparent);
+            border-radius: 12px;
+            padding: 16px 20px;
+            margin: 24px 0;
+            background: color-mix(in srgb, var(--color-primary) 5%, transparent);
+        }
+
+        /* --- CUSTOM ELEMENTS --- */
+        .cube-stage {
+            aspect-ratio: 1/1;
+            width: 100%;
+            max-width: 420px;
+            margin: 0 auto;
+            background: radial-gradient(circle at center, rgba(0, 212, 255, 0.1) 0%, #05030a 70%);
+            border: 1px solid color-mix(in srgb, var(--color-holo1) 30%, transparent);
+            border-radius: 18px;
+            box-shadow: inset 0 0 40px rgba(0, 212, 255, 0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+        #cube-canvas { width: 88%; height: 88%; }
+
+        .ch-num {
+            font-family: 'Fira Code', monospace;
+            font-weight: 600;
+            font-size: 1rem;
+            color: var(--color-primary);
+            border: 1px solid var(--color-primary);
+            border-radius: 8px;
+            padding: 6px 11px;
+            background: color-mix(in srgb, var(--color-primary) 10%, transparent);
+            display: inline-block;
+        }
+
+        /* Input Range Styling */
+        input[type=range] {
+            -webkit-appearance: none;
+            width: 100%;
+            background: transparent;
+            margin: 14px 0;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 16px; width: 16px;
+            border-radius: 50%;
+            background: var(--color-holo1);
+            cursor: pointer;
+            box-shadow: 0 0 10px var(--color-holo1);
+            margin-top: -6px;
+        }
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%; height: 4px;
+            cursor: pointer;
+            background: rgba(255,255,255,0.2);
+            border-radius: 2px;
+        }
+
+        /* Table */
+        .euler-table { width: 100%; border-collapse: collapse; margin: 20px 0; font-size: .9rem; }
+        .euler-table th, .euler-table td { padding: 11px 10px; text-align: center; border-bottom: 1px solid rgba(255,255,255,0.1); }
+        .euler-table th { font-family: "Fira Code", monospace; font-size: .74rem; letter-spacing: .06em; text-transform: uppercase; color: var(--color-secondary); }
+        .euler-table td:first-child, .euler-table th:first-child { text-align: left; }
+        .euler-table tr:hover td { background: rgba(0, 212, 255, 0.05); }
+
+        /* Glossary */
+        .gloss dt { font-weight: 600; margin-top: 16px; color: var(--color-primary); display: flex; align-items: baseline; gap: 10px; font-family: 'Fira Code', monospace; font-size: 0.9rem;}
+        .gloss dd { margin: .25rem 0 1rem; color: #cbd5e1; font-size: .9rem; font-weight: 300;}
+        .badge { font-family: "Fira Code", monospace; font-size: .6rem; padding: 2px 7px; border-radius: 20px; letter-spacing: .06em; text-transform: uppercase; border: 1px solid rgba(0,212,255,0.3); color: var(--color-holo1); }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: rgba(0,0,0,0.2); }
+        ::-webkit-scrollbar-thumb { background: linear-gradient(to bottom, color-mix(in srgb, var(--color-primary) 30%, transparent), color-mix(in srgb, var(--color-primary) 70%, transparent)); border-radius: 10px; }
+
+        /* Sub-lesson stepper chips */
+        .step-chip{padding:.35rem .7rem;border-radius:.4rem;border:1px solid rgba(255,255,255,.1);color:#94a3b8;text-transform:uppercase;letter-spacing:.08em;transition:all .2s;white-space:nowrap;}
+        .step-chip:hover{color:#fff;border-color:rgba(255,255,255,.35);}
+        .step-chip[aria-current="page"]{color:var(--accent);border-color:var(--accent);background:color-mix(in srgb,var(--accent) 14%,transparent);box-shadow:0 0 12px color-mix(in srgb,var(--accent) 30%,transparent);}
+    </style>
+</head>
+<body class="flex flex-col h-screen overflow-hidden">
+
+    <!-- Atmospheric Layers -->
+    <div class="nebula-layer"></div>
+    <div class="starfield"></div>
+    <div class="starfield starfield-layer-2"></div>
+    <div class="vignette-layer"></div>
+
+    <div class="relative z-20 flex flex-col w-full h-full overflow-y-auto custom-scrollbar">
+        
+        <!-- Header / Navigation -->
+        <header class="w-full py-4 border-b border-yellow-600/30 glass-panel z-50 flex-shrink-0 relative shadow-2xl sticky top-0 !mb-0 !rounded-none">
+            <div class="w-full mx-auto px-4 md:px-6 flex flex-col md:flex-row justify-between items-center gap-4">
+                
+                <div class="flex items-center space-x-4">
+                    <svg width="40" height="40" viewBox="0 0 100 100" class="fill-none" style="stroke: var(--color-primary); filter: drop-shadow(0 0 5px var(--color-primary));">
+                        <circle cx="50" cy="50" r="45" stroke-width="2"/>
+                        <line x1="30" y1="30" x2="70" y2="70" stroke-width="2.5" stroke-linecap="round"/>
+                        <line x1="70" y1="30" x2="30" y2="70" stroke-width="2.5" stroke-linecap="round"/>
+                        <line x1="50" y1="15" x2="50" y2="85" stroke-width="2.5" stroke-linecap="round"/>
+                        <path d="M 50,15 C 75,15 75,45 50,45" stroke-width="2.5" stroke-linecap="round"/>
+                        <text x="20" y="55" fill="var(--color-primary)" stroke="none" font-family="Cinzel, serif" font-size="16" text-anchor="middle">A</text>
+                        <text x="80" y="55" fill="var(--color-primary)" stroke="none" font-family="Cinzel, serif" font-size="16" text-anchor="middle">Ω</text>
+                    </svg>
+                    <h1 class="text-xl md:text-2xl font-bold tracking-[0.2em] gold-gradient">OWL ACADEMY</h1>
+                </div>
+
+                <div class="text-center hidden md:block flex-grow">
+                    <p class="text-[10px] tracking-[0.3em] uppercase mb-1 text-purple-400 font-mono">Department I • Lesson 1 · Sub-lesson 1A — Expanded Theory</p>
+                    <h2 class="text-lg font-bold tracking-[0.1em] mystical-font text-white">Geometric Primitives — Deep Dive</h2>
+                </div>
+
+                <div class="flex items-center space-x-4">
+                    <a href="1a_geometric_primitives.html" class="flex items-center gap-2 px-4 py-2 rounded text-xs font-bold tracking-[0.15em] mystical-font transition-all bg-purple-900/30 text-purple-300 border border-purple-500/40 hover:bg-purple-800/50 hover:text-white shadow-[0_0_15px_rgba(138,43,226,0.15)] whitespace-nowrap">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+                        1A LESSON
+                    </a>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="flex-grow w-full max-w-7xl mx-auto px-4 md:px-8 py-8 space-y-8 relative z-20">
+
+            <!-- ===== Lesson 1 sub-lesson stepper (interweave nav) ===== -->
+            <nav class="w-full" aria-label="Lesson 1 sub-lessons">
+              <div class="glass-panel rounded-xl p-3 flex flex-wrap items-center justify-center gap-2 text-[10px] md:text-xs font-mono !mb-0">
+                <a href="index.html" class="px-3 py-1.5 rounded border border-yellow-600/40 text-yellow-500 hover:bg-yellow-500/10 transition-colors tracking-widest uppercase">◆ Hub</a>
+                <span class="text-gray-700 hidden md:inline">/</span>
+                <a href="1a_geometric_primitives.html" class="step-chip" aria-current="page">1A · Primitives</a>
+                <a href="1b_topological_invariants.html" class="step-chip">1B · Topology</a>
+                <a href="1c_harmonic_resonance.html" class="step-chip">1C · Resonance</a>
+                <a href="1d_tiling_problem.html" class="step-chip">1D · Tiling</a>
+                <a href="1e_engine_implementation.html" class="step-chip">1E · Engine</a>
+                <a href="1f_application_lab.html" class="step-chip">1F · Lab</a>
+              </div>
+            </nav>
+
+            <!-- HERO SECTION -->
+            <div class="glass-panel">
+                <div class="absolute top-0 left-1/2 -translate-x-1/2 w-3/4 h-1 bg-gradient-to-r from-transparent via-purple-500 to-transparent opacity-50"></div>
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+                    <div>
+                        <span class="font-mono text-xs text-gold-deep uppercase tracking-widest text-yellow-500 flex items-center gap-2 mb-4">
+                            <span class="w-8 h-px bg-yellow-500 block"></span> A field guide for absolute beginners
+                        </span>
+                        <h1 class="text-4xl md:text-5xl font-bold mystical-font text-white leading-tight mb-6">From a single dot to a solid shape</h1>
+                        
+                        <div class="simple-translation !mt-0 mb-6 !border-yellow-500/50 !bg-yellow-500/10">
+                            <h4 class="text-sm font-bold text-yellow-500 mb-1 font-mono uppercase tracking-widest">Zero-Math Disclaimer</h4>
+                            <p class="text-xs text-yellow-100/80 m-0">
+                                If you have never studied math or geometry, do not worry. This guide assumes you know nothing. We will translate complicated academic concepts into plain English, step-by-step.
+                            </p>
+                        </div>
+
+                        <p class="text-gray-300 font-light leading-relaxed text-lg mb-8">
+                            How do you describe a 3D object (like a box, a ball, or a building) precisely enough that a computer, a 3D printer, or the S.P.I.R.E. Engine could rebuild it <em>exactly</em>? You start with three humble, everyday ingredients: corners, lines, and surfaces.
+                        </p>
+                        
+                        <!-- Table of Contents -->
+                        <div class="bg-black/50 border border-purple-900/50 rounded-xl p-6">
+                            <h2 class="text-sm font-mono text-gray-400 mb-4 uppercase tracking-widest border-b border-gray-800 pb-2"># Index Directory</h2>
+                            <ul class="grid grid-cols-1 md:grid-cols-2 gap-y-3 gap-x-8 text-sm font-light">
+                                <li><a href="#c1" class="flex items-baseline gap-3 text-gray-300 hover:text-cyan-400 transition-colors"><span class="font-mono text-yellow-600 text-xs">01</span> The space everything lives in</a></li>
+                                <li><a href="#c2" class="flex items-baseline gap-3 text-gray-300 hover:text-cyan-400 transition-colors"><span class="font-mono text-yellow-600 text-xs">02</span> The three building blocks</a></li>
+                                <li><a href="#c3" class="flex items-baseline gap-3 text-gray-300 hover:text-cyan-400 transition-colors"><span class="font-mono text-yellow-600 text-xs">03</span> Wrapping a surface into a solid</a></li>
+                                <li><a href="#c4" class="flex items-baseline gap-3 text-gray-300 hover:text-cyan-400 transition-colors"><span class="font-mono text-yellow-600 text-xs">04</span> Meet the primitive shapes</a></li>
+                                <li><a href="#c5" class="flex items-baseline gap-3 text-gray-300 hover:text-cyan-400 transition-colors"><span class="font-mono text-yellow-600 text-xs">05</span> A hidden pattern (Euler's formula)</a></li>
+                                <li><a href="#c6" class="flex items-baseline gap-3 text-gray-300 hover:text-cyan-400 transition-colors"><span class="font-mono text-yellow-600 text-xs">06</span> Curves: exact vs. approximate</a></li>
+                                <li><a href="#c7" class="flex items-baseline gap-3 text-gray-300 hover:text-cyan-400 transition-colors"><span class="font-mono text-yellow-600 text-xs">07</span> Where this shows up</a></li>
+                                <li><a href="#c8" class="flex items-baseline gap-3 text-gray-300 hover:text-cyan-400 transition-colors"><span class="font-mono text-yellow-600 text-xs">08</span> Words worth knowing</a></li>
+                            </ul>
+                        </div>
+                    </div>
+                    
+                    <!-- Interactive Canvas Cube -->
+                    <div class="cube-stage">
+                        <canvas id="cube-canvas" width="600" height="600" aria-label="A wireframe cube slowly rotating"></canvas>
+                        <div class="absolute bottom-4 text-center font-mono text-[10px] text-cyan-500 tracking-widest w-full">
+                            > a cube, exactly as memory holds it
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- CHAPTER 01 -->
+            <div id="c1" class="glass-panel">
+                <div class="flex items-start gap-4 mb-6">
+                    <span class="ch-num">01</span>
+                    <div>
+                        <h2 class="text-2xl text-white font-bold mystical-font tracking-wide">The Space Everything Lives In</h2>
+                        <p class="text-gray-400 font-light italic text-sm mt-1">Before you can describe a shape, you need somewhere to put it.</p>
+                    </div>
+                </div>
+                
+                <div class="prose prose-invert max-w-4xl text-gray-300 font-light leading-relaxed mb-8">
+                    <p>Geometry is the study of shapes and space. Everything we'll build sits inside a kind of "stage." To understand that stage, we need one idea: <strong>dimension</strong>. Dimension just means <em>how many directions you can move</em>.</p>
+                </div>
+
+                <!-- Dimension SVG -->
+                <div class="bg-black/40 border border-gray-800 rounded-xl p-6 mb-8 overflow-x-auto">
+                    <svg viewBox="0 0 760 200" xmlns="http://www.w3.org/2000/svg" class="w-full min-w-[600px] h-auto">
+                        <!-- 0D -->
+                        <text x="95" y="30" text-anchor="middle" font-family="Fira Code, monospace" font-size="13" fill="#8e9eab">0D · a point</text>
+                        <circle cx="95" cy="110" r="7" fill="#D4AF37" class="animate-pulse"/>
+                        <text x="95" y="180" text-anchor="middle" font-family="Fira Code, monospace" font-size="11" fill="#00d4ff">needs 0 numbers</text>
+                        <!-- 1D -->
+                        <text x="285" y="30" text-anchor="middle" font-family="Fira Code, monospace" font-size="13" fill="#8e9eab">1D · a line</text>
+                        <line x1="210" y1="110" x2="360" y2="110" stroke="#00d4ff" stroke-width="2.5"/>
+                        <circle cx="210" cy="110" r="6" fill="#D4AF37"/><circle cx="360" cy="110" r="6" fill="#D4AF37"/>
+                        <circle cx="285" cy="110" r="4.5" fill="#fff"/>
+                        <text x="285" y="180" text-anchor="middle" font-family="Fira Code, monospace" font-size="11" fill="#00d4ff">needs 1 number</text>
+                        <!-- 2D -->
+                        <text x="475" y="30" text-anchor="middle" font-family="Fira Code, monospace" font-size="13" fill="#8e9eab">2D · a surface</text>
+                        <rect x="420" y="55" width="110" height="100" fill="rgba(0,212,255,0.1)" stroke="#00d4ff" stroke-width="2"/>
+                        <circle cx="475" cy="105" r="4.5" fill="#fff"/>
+                        <text x="475" y="180" text-anchor="middle" font-family="Fira Code, monospace" font-size="11" fill="#00d4ff">needs 2 numbers</text>
+                        <!-- 3D -->
+                        <text x="665" y="30" text-anchor="middle" font-family="Fira Code, monospace" font-size="13" fill="#8e9eab">3D · space</text>
+                        <g stroke="#00d4ff" stroke-width="2" fill="none">
+                            <path d="M615 70 L695 70 L695 150 L615 150 Z"/>
+                            <path d="M640 50 L720 50 L720 130 L640 130 Z"/>
+                            <line x1="615" y1="70" x2="640" y2="50"/><line x1="695" y1="70" x2="720" y2="50"/>
+                            <line x1="695" y1="150" x2="720" y2="130"/><line x1="615" y1="150" x2="640" y2="130"/>
+                        </g>
+                        <circle cx="665" cy="100" r="4.5" fill="#fff"/>
+                        <text x="665" y="180" text-anchor="middle" font-family="Fira Code, monospace" font-size="11" fill="#00d4ff">needs 3 numbers</text>
+                    </svg>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
+                    <div class="prose prose-invert max-w-none text-gray-300 font-light leading-relaxed">
+                        <h3 class="text-xl text-white mystical-font mb-2">What is "Euclidean Space"?</h3>
+                        
+                        <div class="simple-translation !mt-0 !border-cyan-500/50 !bg-cyan-500/10 mb-4">
+                            <h4 class="text-sm font-bold text-cyan-400 mb-1 font-mono uppercase tracking-widest">Simply Put: Normal, Flat Reality</h4>
+                            <p class="text-xs text-cyan-100/80 m-0">
+                                You will often hear math teachers talk about "Euclidean Space" (named after an ancient Greek guy named Euclid). Don't let the fancy name scare you. It just means <strong>normal, everyday, flat space</strong>. <br><br>
+                                It is the kind of space where a flat table sits on a flat floor, and if you draw two straight lines next to each other, they will never crash into each other. It's the 3D world you walk around in every single day.
+                            </p>
+                        </div>
+                        
+                        <h3 class="text-xl text-white mystical-font mb-2 mt-6">How we say "where": Coordinates</h3>
+                        <p>To pin down a location in this normal 3D space, we use <strong>coordinates</strong>. Think of coordinates as a GPS address for a single tiny speck. The starting point, where everything reads zero, is called the <strong>origin</strong>. We use three numbers, usually written <span class="font-mono text-cyan-300">(x, y, z)</span>.</p>
+                        
+                        <div class="math-note">
+                            <span class="font-mono text-[10px] text-yellow-500 uppercase tracking-widest block mb-2 border-b border-yellow-500/30 pb-1">Don't be scared of the symbol ℝ³</span>
+                            <p class="text-sm m-0"><span class="font-mono text-lg text-white font-bold mr-2">ℝ³</span> (say "R-three") is just shorthand for <strong>three-dimensional space</strong>. The <span class="font-mono">ℝ</span> stands for the <em>real numbers</em> (every measurement you could find on a ruler), and the <span class="font-mono">³</span> means "three of them" (width, height, depth). When you see "ℝ³ volumes," just read it as "solid objects in a 3D room."</p>
+                        </div>
+                    </div>
+                    
+                    <!-- Axes SVG -->
+                    <div class="bg-black/50 border border-gray-800 rounded-xl p-4 flex justify-center">
+                        <svg viewBox="0 0 420 260" class="w-full max-w-[350px] h-auto drop-shadow-[0_0_15px_rgba(0,212,255,0.1)]">
+                            <defs>
+                                <marker id="aX" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto"><path d="M0,0 L0,6 L6,3 z" fill="#ff3366" /></marker>
+                                <marker id="aY" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto"><path d="M0,0 L0,6 L6,3 z" fill="#33ff99" /></marker>
+                                <marker id="aZ" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto"><path d="M0,0 L0,6 L6,3 z" fill="#00d4ff" /></marker>
+                            </defs>
+                            <g stroke-width="2">
+                                <line x1="90" y1="190" x2="360" y2="190" stroke="#ff3366" marker-end="url(#aX)"/>
+                                <line x1="90" y1="190" x2="90" y2="30" stroke="#33ff99" marker-end="url(#aY)"/>
+                                <line x1="90" y1="190" x2="20" y2="240" stroke="#00d4ff" marker-end="url(#aZ)"/>
+                            </g>
+                            <text x="365" y="210" font-family="Fira Code, monospace" font-size="11" fill="#ff3366">x (right)</text>
+                            <text x="62" y="34" font-family="Fira Code, monospace" font-size="11" fill="#33ff99">y (up)</text>
+                            <text x="2" y="252" font-family="Fira Code, monospace" font-size="11" fill="#00d4ff">z (forward)</text>
+                            
+                            <circle cx="90" cy="190" r="4" fill="#fff"/>
+                            <text x="96" y="207" font-family="Fira Code, monospace" font-size="10" fill="#8e9eab">Origin (0,0,0)</text>
+                            
+                            <g stroke="#D4AF37" stroke-width="1.5" stroke-dasharray="4 3" fill="none">
+                                <line x1="230" y1="190" x2="230" y2="110"/>
+                                <line x1="90" y1="190" x2="230" y2="190"/>
+                            </g>
+                            <circle cx="230" cy="110" r="6" fill="#D4AF37" class="animate-pulse"/>
+                            <text x="242" y="106" font-family="Fira Code, monospace" font-size="12" font-weight="600" fill="#D4AF37">Point (3, 2, 1)</text>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+
+            <!-- CHAPTER 02 -->
+            <div id="c2" class="glass-panel">
+                <div class="flex items-start gap-4 mb-6">
+                    <span class="ch-num">02</span>
+                    <div>
+                        <h2 class="text-2xl text-white font-bold mystical-font tracking-wide">The Three Building Blocks</h2>
+                        <p class="text-gray-400 font-light italic text-sm mt-1">Almost any shape breaks down into just three kinds of pieces.</p>
+                    </div>
+                </div>
+                
+                <p class="text-gray-300 font-light mb-6">
+                    The word <strong>primitive</strong> means "a simplest building block, something you can't break down any further." In 3D geometry, there are three of them, and they stack on top of each other.
+                </p>
+
+                <!-- Triptych Grid -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                    <!-- Vertex -->
+                    <div class="data-card text-center flex flex-col h-full">
+                        <svg viewBox="0 0 160 120" class="w-full h-24 mb-4 mx-auto drop-shadow-[0_0_10px_rgba(212,175,55,0.5)]">
+                            <circle cx="80" cy="60" r="9" fill="#D4AF37"/>
+                        </svg>
+                        <h4 class="font-mono text-yellow-500 font-bold mb-1">Vertex (Corner)</h4>
+                        <p class="text-xs text-gray-400 font-light mb-4 flex-grow">A single point in space. Pure position, infinitely small. It is defined entirely by its coordinates (like a GPS address).</p>
+                        <div class="bg-yellow-900/20 p-2 rounded border border-yellow-500/30">
+                            <p class="text-[10px] text-yellow-200"><strong>Everyday Example:</strong> A single tiny dot made by the tip of a very sharp pencil.</p>
+                        </div>
+                    </div>
+                    <!-- Edge -->
+                    <div class="data-card text-center flex flex-col h-full" style="border-top-color: color-mix(in srgb, var(--color-holo1) 40%, transparent);">
+                        <svg viewBox="0 0 160 120" class="w-full h-24 mb-4 mx-auto drop-shadow-[0_0_10px_rgba(0,212,255,0.5)]">
+                            <line x1="35" y1="80" x2="125" y2="40" stroke="#00d4ff" stroke-width="3"/>
+                            <circle cx="35" cy="80" r="6" fill="#D4AF37"/><circle cx="125" cy="40" r="6" fill="#D4AF37"/>
+                        </svg>
+                        <h4 class="font-mono text-cyan-400 font-bold mb-1">Edge (Line)</h4>
+                        <p class="text-xs text-gray-400 font-light mb-4 flex-grow">A straight line connecting two vertices. It has <em>length</em>, but no thickness.</p>
+                        <div class="bg-cyan-900/20 p-2 rounded border border-cyan-500/30">
+                            <p class="text-[10px] text-cyan-200"><strong>Everyday Example:</strong> A taut piece of string pulled tightly between two thumbtacks.</p>
+                        </div>
+                    </div>
+                    <!-- Face -->
+                    <div class="data-card text-center flex flex-col h-full" style="border-top-color: color-mix(in srgb, var(--color-holo2) 40%, transparent);">
+                        <svg viewBox="0 0 160 120" class="w-full h-24 mb-4 mx-auto">
+                            <polygon points="30,95 80,25 130,90" fill="rgba(138,43,226,0.3)" stroke="#8A2BE2" stroke-width="3"/>
+                            <circle cx="30" cy="95" r="6" fill="#D4AF37"/><circle cx="80" cy="25" r="6" fill="#D4AF37"/><circle cx="130" cy="90" r="6" fill="#D4AF37"/>
+                        </svg>
+                        <h4 class="font-mono text-purple-400 font-bold mb-1">Face (Surface)</h4>
+                        <p class="text-xs text-gray-400 font-light mb-4 flex-grow">A flat surface bordered by edges, with vertices at its corners. It has <em>area</em>, but no thickness.</p>
+                        <div class="bg-purple-900/20 p-2 rounded border border-purple-500/30">
+                            <p class="text-[10px] text-purple-200"><strong>Everyday Example:</strong> A perfectly flat sheet of glass, or a piece of paper.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="simple-translation !border-purple-500/50 bg-purple-500/5">
+                    <h4 class="text-sm font-bold text-purple-400 mb-1 font-mono uppercase tracking-widest">Why designers are obsessed with triangles</h4>
+                    <p class="text-xs text-purple-100/80 m-0">
+                        Notice how the Face example above is a triangle? Any three dots in space will <em>always</em> form a perfectly flat surface. You can't bend a triangle out of flatness. But four or more dots might <em>not</em> line up flat (think of a wobbly chair with 4 legs). The triangle is the only shape <strong>guaranteed</strong> to stay perfectly flat. That's why 3D models in games are built almost entirely out of tiny triangles.
+                    </p>
+                </div>
+            </div>
+
+            <!-- CHAPTER 03 -->
+            <div id="c3" class="glass-panel">
+                <div class="flex items-start gap-4 mb-6">
+                    <span class="ch-num">03</span>
+                    <div>
+                        <h2 class="text-2xl text-white font-bold mystical-font tracking-wide">Wrapping a Surface into a Solid</h2>
+                        <p class="text-gray-400 font-light italic text-sm mt-1">A face is flat and thin. So how do we get to a solid you could actually hold?</p>
+                    </div>
+                </div>
+
+                <div class="prose prose-invert max-w-none text-gray-300 font-light mb-6">
+                    <p>
+                        The trick is to <strong>enclose space</strong>. If you arrange flat faces so they completely surround a region with absolutely no gaps, then the empty space trapped inside becomes a <strong>volume</strong> (a solid object).
+                    </p>
+                    <p>
+                        This approach has a name: <strong>boundary representation</strong> (often shortened to B-rep). The idea is simple but powerful: you describe a solid <em>only by describing its skin</em>. The skin tells the computer exactly where the "inside" is.
+                    </p>
+                    
+                    <div class="simple-translation !mt-4 !border-yellow-500/50 !bg-yellow-500/10 mb-6">
+                        <h4 class="text-sm font-bold text-yellow-500 mb-1 font-mono uppercase tracking-widest">Simply Put: The Hollow Chocolate Bunny</h4>
+                        <p class="text-xs text-yellow-100/80 m-0">
+                            Think of a hollow chocolate bunny. You don't need solid chocolate all the way through to know it is shaped like a bunny. The thin shell of chocolate on the outside is enough to define the shape. In 3D computer graphics, <em>everything</em> is a hollow chocolate bunny. We just build the shell out of flat faces.
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Cube Assembly -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 bg-black/40 p-6 rounded-xl border border-gray-800 shadow-inner">
+                    <div class="text-center">
+                        <svg viewBox="0 0 220 200" class="w-full max-w-[150px] mx-auto mb-2">
+                            <g fill="#D4AF37">
+                                <circle cx="40" cy="60" r="5"/><circle cx="140" cy="60" r="5"/>
+                                <circle cx="140" cy="160" r="5"/><circle cx="40" cy="160" r="5"/>
+                                <circle cx="90" cy="25" r="5"/><circle cx="190" cy="25" r="5"/>
+                                <circle cx="190" cy="125" r="5"/><circle cx="90" cy="125" r="5"/>
+                            </g>
+                        </svg>
+                        <span class="font-mono text-[10px] text-yellow-500 block mb-1 uppercase tracking-widest">1. Place Corners</span>
+                        <span class="text-[10px] text-gray-500">8 vertices (dots) floating</span>
+                    </div>
+                    <div class="text-center">
+                        <svg viewBox="0 0 220 200" class="w-full max-w-[150px] mx-auto mb-2">
+                            <g stroke="#00d4ff" stroke-width="2" fill="none">
+                                <path d="M40 60 L140 60 L140 160 L40 160 Z"/>
+                                <path d="M90 25 L190 25 L190 125 L90 125 Z"/>
+                                <line x1="40" y1="60" x2="90" y2="25"/><line x1="140" y1="60" x2="190" y2="25"/>
+                                <line x1="140" y1="160" x2="190" y2="125"/><line x1="40" y1="160" x2="90" y2="125"/>
+                            </g>
+                            <g fill="#D4AF37"><circle cx="40" cy="60" r="4"/><circle cx="140" cy="60" r="4"/><circle cx="140" cy="160" r="4"/><circle cx="40" cy="160" r="4"/><circle cx="90" cy="25" r="4"/><circle cx="190" cy="25" r="4"/><circle cx="190" cy="125" r="4"/><circle cx="90" cy="125" r="4"/></g>
+                        </svg>
+                        <span class="font-mono text-[10px] text-cyan-400 block mb-1 uppercase tracking-widest">2. Connect Lines</span>
+                        <span class="text-[10px] text-gray-500">12 edges (wireframe)</span>
+                    </div>
+                    <div class="text-center">
+                        <svg viewBox="0 0 220 200" class="w-full max-w-[150px] mx-auto mb-2">
+                            <g stroke="#8e9eab" stroke-width="1" stroke-dasharray="2 2" fill="none">
+                                <path d="M90 25 L190 25 L190 125 L90 125 Z"/>
+                                <line x1="40" y1="60" x2="90" y2="25"/>
+                            </g>
+                            <polygon points="40,60 140,60 190,25 90,25" fill="rgba(138,43,226,0.5)" stroke="#8A2BE2" stroke-width="2"/>
+                            <polygon points="140,60 190,25 190,125 140,160" fill="rgba(138,43,226,0.3)" stroke="#8A2BE2" stroke-width="2"/>
+                            <polygon points="40,60 140,60 140,160 40,160" fill="rgba(138,43,226,0.1)" stroke="#8A2BE2" stroke-width="2"/>
+                        </svg>
+                        <span class="font-mono text-[10px] text-purple-400 block mb-1 uppercase tracking-widest">3. Fill Surfaces</span>
+                        <span class="text-[10px] text-gray-500">6 faces enclose the shell</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- CHAPTER 04 & 05 (Grid Layout) -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <!-- Ch 4: Primitives -->
+                <div id="c4" class="glass-panel !mb-0 flex flex-col">
+                    <div class="flex items-start gap-4 mb-4">
+                        <span class="ch-num">04</span>
+                        <h2 class="text-xl text-white font-bold mystical-font">Meet the Primitives</h2>
+                    </div>
+                    <p class="text-sm text-gray-300 font-light mb-2">
+                        A small starter kit of basic shapes that everything else is built from. There are two families:
+                    </p>
+                    
+                    <ul class="text-sm text-gray-400 mb-4 list-disc pl-5">
+                        <li><span class="text-yellow-500 font-bold">Polyhedra:</span> Shapes made ONLY of flat faces (Poly = Many, Hedra = Faces).</li>
+                        <li><span class="text-cyan-400 font-bold">Curved Solids:</span> Shapes with rounded surfaces (like a ball).</li>
+                    </ul>
+                    
+                    <div class="grid grid-cols-3 gap-4 mt-auto">
+                        <!-- Cube -->
+                        <div class="bg-black/40 border border-white/5 rounded p-2 text-center">
+                            <svg viewBox="0 0 100 90" class="w-full h-12 mb-2">
+                                <polygon points="20,30 60,30 60,70 20,70" fill="none" stroke="#D4AF37" stroke-width="1.5"/>
+                                <polygon points="20,30 40,15 80,15 60,30" fill="rgba(212,175,55,0.2)" stroke="#D4AF37" stroke-width="1.5"/>
+                                <polygon points="60,30 80,15 80,55 60,70" fill="rgba(212,175,55,0.1)" stroke="#D4AF37" stroke-width="1.5"/>
+                            </svg>
+                            <div class="font-mono text-[9px] text-yellow-500">Box (Cube)</div>
+                        </div>
+                        <!-- Pyramid -->
+                        <div class="bg-black/40 border border-white/5 rounded p-2 text-center">
+                            <svg viewBox="0 0 100 90" class="w-full h-12 mb-2">
+                                <polygon points="50,12 22,70 78,70" fill="rgba(212,175,55,0.1)" stroke="#D4AF37" stroke-width="1.5"/>
+                                <polygon points="50,12 78,70 60,78 32,78" fill="rgba(212,175,55,0.2)" stroke="#D4AF37" stroke-width="1.5"/>
+                            </svg>
+                            <div class="font-mono text-[9px] text-yellow-500">Pyramid</div>
+                        </div>
+                        <!-- Sphere -->
+                        <div class="bg-black/40 border border-white/5 rounded p-2 text-center">
+                            <svg viewBox="0 0 100 90" class="w-full h-12 mb-2">
+                                <circle cx="50" cy="45" r="30" fill="rgba(0,212,255,0.1)" stroke="#00d4ff" stroke-width="1.5"/>
+                                <ellipse cx="50" cy="45" rx="30" ry="10" fill="none" stroke="#00d4ff" stroke-width="1" stroke-dasharray="2 2"/>
+                            </svg>
+                            <div class="font-mono text-[9px] text-cyan-400">Sphere</div>
+                        </div>
+                        <!-- Cylinder -->
+                        <div class="bg-black/40 border border-white/5 rounded p-2 text-center">
+                            <svg viewBox="0 0 100 90" class="w-full h-12 mb-2">
+                                <rect x="30" y="25" width="40" height="40" fill="rgba(0,212,255,0.05)" stroke="#00d4ff" stroke-width="1.5"/>
+                                <ellipse cx="50" cy="65" rx="20" ry="8" fill="rgba(0,212,255,0.2)" stroke="#00d4ff" stroke-width="1.5"/>
+                                <ellipse cx="50" cy="25" rx="20" ry="8" fill="rgba(0,212,255,0.1)" stroke="#00d4ff" stroke-width="1.5"/>
+                            </svg>
+                            <div class="font-mono text-[9px] text-cyan-400">Cylinder</div>
+                        </div>
+                        <!-- Cone -->
+                        <div class="bg-black/40 border border-white/5 rounded p-2 text-center">
+                            <svg viewBox="0 0 100 90" class="w-full h-12 mb-2">
+                                <polygon points="50,15 30,65 70,65" fill="rgba(0,212,255,0.05)" stroke="#00d4ff" stroke-width="1.5"/>
+                                <ellipse cx="50" cy="65" rx="20" ry="7" fill="rgba(0,212,255,0.1)" stroke="#00d4ff" stroke-width="1.5"/>
+                            </svg>
+                            <div class="font-mono text-[9px] text-cyan-400">Cone</div>
+                        </div>
+                        <!-- Tet -->
+                        <div class="bg-black/40 border border-white/5 rounded p-2 text-center">
+                            <svg viewBox="0 0 100 90" class="w-full h-12 mb-2">
+                                <polygon points="50,15 25,70 75,70" fill="rgba(212,175,55,0.1)" stroke="#D4AF37" stroke-width="1.5"/>
+                                <line x1="50" y1="15" x2="55" y2="60" stroke="#D4AF37" stroke-width="1" stroke-dasharray="2 2"/>
+                            </svg>
+                            <div class="font-mono text-[9px] text-yellow-500">Tetrahedron</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Ch 5: Euler -->
+                <div id="c5" class="glass-panel !mb-0 flex flex-col">
+                    <div class="flex items-start gap-4 mb-4">
+                        <span class="ch-num">05</span>
+                        <h2 class="text-xl text-white font-bold mystical-font">A Hidden Pattern</h2>
+                    </div>
+                    
+                    <p class="text-sm text-gray-300 font-light mb-4">
+                        Take any solid made of flat faces, count its pieces, and do this basic math: <br>
+                        <strong>(Corners) minus (Edges) plus (Faces)</strong>. <br>
+                        You will always, <em>always</em> get the number 2. This is Euler's formula.
+                    </p>
+
+                    <div class="text-center bg-black/40 border border-purple-900/50 rounded-lg p-4 mb-4 shadow-[inset_0_0_20px_rgba(138,43,226,0.1)]">
+                        <div class="font-mono text-2xl font-bold tracking-widest text-white mb-2">
+                            <span class="text-yellow-500">V</span> &minus; <span class="text-cyan-400">E</span> + <span class="text-purple-400">F</span> = 2
+                        </div>
+                        <p class="text-[10px] text-gray-400 font-mono">vertices &minus; edges + faces = two</p>
+                    </div>
+
+                    <table class="euler-table w-full text-xs mt-auto">
+                        <thead>
+                            <tr><th>Solid</th><th>Corners</th><th>Edges</th><th>Faces</th><th>Sum</th></tr>
+                        </thead>
+                        <tbody class="text-gray-300">
+                            <tr><td>Tetrahedron</td><td class="text-yellow-500">4</td><td class="text-cyan-400">6</td><td class="text-purple-400">4</td><td class="font-bold text-white">2</td></tr>
+                            <tr><td>Cube</td><td class="text-yellow-500">8</td><td class="text-cyan-400">12</td><td class="text-purple-400">6</td><td class="font-bold text-white">2</td></tr>
+                            <tr><td>Pyramid</td><td class="text-yellow-500">5</td><td class="text-cyan-400">8</td><td class="text-purple-400">5</td><td class="font-bold text-white">2</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- CHAPTER 06: INTERACTIVE TESSELLATION -->
+            <div id="c6" class="glass-panel">
+                <div class="flex items-start gap-4 mb-6">
+                    <span class="ch-num">06</span>
+                    <div>
+                        <h2 class="text-2xl text-white font-bold mystical-font tracking-wide">Curves: Exact vs Approximate</h2>
+                        <p class="text-gray-400 font-light italic text-sm mt-1">A cube is easy. How do you describe a perfectly round ball?</p>
+                    </div>
+                </div>
+
+                <div class="prose prose-invert max-w-none text-gray-300 font-light mb-6">
+                    <p>
+                        A true sphere has zero flat faces and zero straight edges. You can't list its corners because it doesn't have any. So, computers that need to draw shapes quickly often <em>fake</em> the curve instead.
+                    </p>
+                    <p>
+                        They cover the ball in hundreds of tiny flat triangles, a process called <strong>tessellation</strong>. The resulting patchwork is called a <strong>mesh</strong>.
+                    </p>
+                    
+                    <div class="simple-translation !mt-4 !border-cyan-500/50 !bg-cyan-500/10 mb-6">
+                        <h4 class="text-sm font-bold text-cyan-400 mb-1 font-mono uppercase tracking-widest">Simply Put: Like Pixels on a TV</h4>
+                        <p class="text-xs text-cyan-100/80 m-0">
+                            Think about a video game on a TV screen. If you get really close to the TV, you can see that Mario is actually just made of tiny square blocks (pixels). But from the couch, he looks smooth. Tessellation is the exact same thing, but for 3D shapes. Computers build a "fake" ball out of flat blocks. 
+                        </p>
+                    </div>
+                </div>
+
+                <div class="bg-black/30 border border-cyan-900/30 rounded-xl p-6">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
+                        <div class="flex justify-center bg-black/60 rounded-xl p-4 border border-cyan-900/30 shadow-inner">
+                            <svg id="tess-svg" viewBox="0 0 240 240" class="w-full max-w-[200px] h-auto drop-shadow-[0_0_15px_rgba(0,212,255,0.2)]">
+                                <circle cx="120" cy="120" r="92" fill="none" stroke="#8e9eab" stroke-width="1.5" stroke-dasharray="4 4" opacity="0.4"/>
+                                <polygon id="tess-poly" points="" fill="rgba(138,43,226,0.15)" stroke="#00d4ff" stroke-width="2"/>
+                                <g id="tess-dots"></g>
+                            </svg>
+                        </div>
+                        
+                        <div>
+                            <div class="font-mono text-4xl font-bold text-cyan-400 mb-1" id="tess-count">8</div>
+                            <div class="text-xs text-cyan-700 font-mono uppercase tracking-widest mb-6">Flat Edges Rendered</div>
+                            
+                            <label for="tess-range" class="text-xs text-gray-500 font-mono">Drag to add more pieces (Resolution):</label>
+                            <input type="range" id="tess-range" min="3" max="48" value="8" step="1">
+                            
+                            <div class="mt-4 text-sm font-light text-gray-300 bg-cyan-950/20 p-3 rounded border border-cyan-900/30 min-h-[4em] flex items-center">
+                                <span id="tess-verdict"></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- CHAPTER 07 & 08 -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                
+                <!-- Ch 7: Applications -->
+                <div id="c7" class="glass-panel !mb-0">
+                    <div class="flex items-start gap-4 mb-6">
+                        <span class="ch-num">07</span>
+                        <h2 class="text-xl text-white font-bold mystical-font">Why does this matter?</h2>
+                    </div>
+                    <p class="text-sm text-gray-300 font-light mb-4">These three simple building blocks run the modern digital world.</p>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div class="bg-black/30 border border-white/5 rounded p-4">
+                            <h4 class="text-sm font-bold text-white mb-1">Video Games</h4>
+                            <p class="text-[10px] text-gray-400">Characters are just thousands of flat triangles (faces) drawn 60 times a second.</p>
+                        </div>
+                        <div class="bg-black/30 border border-white/5 rounded p-4">
+                            <h4 class="text-sm font-bold text-white mb-1">Manufacturing</h4>
+                            <p class="text-[10px] text-gray-400">Car engines are designed using exact geometry so parts fit together perfectly.</p>
+                        </div>
+                        <div class="bg-black/30 border border-white/5 rounded p-4">
+                            <h4 class="text-sm font-bold text-white mb-1">3D Printing</h4>
+                            <p class="text-[10px] text-gray-400">Printers read the hollow outer faces (B-rep) to know where to squirt plastic.</p>
+                        </div>
+                        <div class="bg-black/30 border border-white/5 rounded p-4">
+                            <h4 class="text-sm font-bold text-white mb-1">Robotics</h4>
+                            <p class="text-[10px] text-gray-400">Robots use these shapes to know if they are going to bump into a wall.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Ch 8: Glossary -->
+                <div id="c8" class="glass-panel !mb-0 h-96 overflow-y-auto pr-2 custom-scrollbar">
+                    <div class="flex items-start gap-4 mb-4 sticky top-0 bg-[#0a0514]/90 backdrop-blur pb-2 z-10">
+                        <span class="ch-num">08</span>
+                        <h2 class="text-xl text-white font-bold mystical-font">Data Dictionary</h2>
+                    </div>
+                    <dl class="gloss">
+                        <dt>Dimension</dt><dd>Directions you can move. (1D = a line, 2D = a sheet of paper, 3D = the real world).</dd>
+                        <dt>Euclidean Space</dt><dd>Normal, everyday flat space where parallel lines don't cross.</dd>
+                        <dt>ℝ³ <span class="badge">R-three</span></dt><dd>Math shorthand for standard 3D space.</dd>
+                        <dt>Vertex <span class="badge">Corner</span></dt><dd>A single dot in space. It has no size, just a location.</dd>
+                        <dt>Edge <span class="badge">Line</span></dt><dd>A straight line joining two dots. Has length, no thickness.</dd>
+                        <dt>Face <span class="badge">Surface</span></dt><dd>A flat surface (like paper) bordered by edges. Has area, no thickness.</dd>
+                        <dt>Polyhedron</dt><dd>A 3D solid made entirely of flat faces (like a cardboard box).</dd>
+                        <dt>Volume / Solid</dt><dd>The enclosed 3D space trapped inside the faces.</dd>
+                        <dt>Mesh / Tessellation</dt><dd>Faking a curve by covering it in hundreds of tiny flat pieces.</dd>
+                    </dl>
+                </div>
+            </div>
+
+            <!-- CLOSER -->
+            <div class="glass-panel text-center mt-8 shadow-[0_0_40px_rgba(212,175,55,0.05)] border-yellow-600/30">
+                <span class="font-mono text-[10px] text-yellow-500 uppercase tracking-widest block mb-4">Core Architecture Directive</span>
+                <h2 class="text-2xl md:text-3xl text-white font-bold mystical-font mb-4">Stack the ladder, define it exactly</h2>
+                <p class="text-gray-300 font-light max-w-2xl mx-auto text-sm md:text-base mb-8">
+                    A point becomes a line, lines enclose a surface, and surfaces enclose a solid. Define those simple pieces precisely, and you can construct absolutely anything inside a computer.
+                </p>
+                <div class="flex justify-center items-center gap-2 md:gap-4 flex-wrap font-mono text-xs md:text-sm">
+                    <span class="bg-black/50 border border-gray-700 px-3 py-1 rounded text-yellow-500">Point (Dot)</span>
+                    <span class="text-gray-500">→</span>
+                    <span class="bg-black/50 border border-gray-700 px-3 py-1 rounded text-cyan-400">Edge (Line)</span>
+                    <span class="text-gray-500">→</span>
+                    <span class="bg-black/50 border border-gray-700 px-3 py-1 rounded text-purple-400">Face (Sheet)</span>
+                    <span class="text-gray-500">→</span>
+                    <span class="bg-black/50 border border-yellow-600/50 px-3 py-1 rounded text-white font-bold shadow-[0_0_15px_rgba(212,175,55,0.2)]">Solid Object</span>
+                </div>
+            </div>
+
+            <!-- ===== Checkpoint + interweave prev/next ===== -->
+            <div class="mt-14 flex flex-col items-center gap-3">
+              <span class="text-[10px] text-gray-500 font-mono uppercase tracking-[0.3em]">Checkpoint</span>
+              <button id="mark-complete-btn" onclick="owlMarkComplete()" class="px-8 py-3 rounded-lg border font-bold tracking-widest text-xs uppercase mystical-font transition-all hover:scale-[1.02]" style="border-color:var(--accent);color:var(--accent);background:color-mix(in srgb,var(--accent) 6%,transparent);">Mark this part complete ✓</button>
+              <p class="text-[10px] text-gray-600 font-mono text-center max-w-md">Progress saves to this browser. Finish all 12 parts to unlock the Tome signoff on the <a href="index.html" class="underline hover:text-yellow-400">lesson hub</a>.</p>
+            </div>
+            <div class="mt-10 pt-6 border-t border-white/10 flex items-center justify-between gap-3 text-xs font-mono">
+              <a href="1a_geometric_primitives.html" class="px-4 py-2 rounded border border-white/10 text-gray-400 hover:text-white hover:border-white/30 transition-colors">← Back to 1A lesson</a>
+              <a href="index.html" class="px-4 py-2 rounded border border-yellow-600/40 text-yellow-500 hover:bg-yellow-500/10 transition-colors tracking-widest uppercase">◆ Hub</a>
+              <a href="1b_topological_invariants.html" class="px-4 py-2 rounded border border-white/10 text-gray-400 hover:text-white hover:border-white/30 transition-colors">1B Topology →</a>
+            </div>
+
+        </main>
+
+        <!-- Footer -->
+        <footer class="w-full border-t border-purple-900/30 bg-black/60 backdrop-blur-md py-6 text-center mt-auto flex-shrink-0 relative z-20">
+            <p class="text-[10px] text-purple-500 uppercase tracking-[0.3em] font-mono">
+                Department I • Owl Academy Archives
+            </p>
+        </footer>
+    </div>
+
+    <!-- Scripts -->
+    <script>
+        // --- 1. Rotating Wireframe Cube ---
+        (function(){
+            const canvas = document.getElementById('cube-canvas');
+            if(!canvas || !canvas.getContext) return;
+            const ctx = canvas.getContext('2d');
+            
+            const GOLD = '#D4AF37'; // var(--color-primary)
+            const INK = 'rgba(0, 212, 255, 0.6)'; // cyan lines
+            
+            const V = [
+                [-1,-1,-1],[1,-1,-1],[1,1,-1],[-1,1,-1],
+                [-1,-1, 1],[1,-1, 1],[1,1, 1],[-1,1, 1]
+            ];
+            const E = [[0,1],[1,2],[2,3],[3,0],[4,5],[5,6],[6,7],[7,4],[0,4],[1,5],[2,6],[3,7]];
+            let ax = -0.5, ay = 0.6;
+
+            function size(){
+                const dpr = window.devicePixelRatio || 1;
+                const r = canvas.getBoundingClientRect();
+                canvas.width = Math.max(2, r.width * dpr);
+                canvas.height = Math.max(2, r.height * dpr);
+                ctx.setTransform(dpr,0,0,dpr,0,0);
+            }
+            size();
+            window.addEventListener('resize', size);
+
+            function project(p){
+                const cy = Math.cos(ay), sy = Math.sin(ay);
+                let x = p[0]*cy - p[2]*sy;
+                let z = p[0]*sy + p[2]*cy;
+                const cx = Math.cos(ax), sx = Math.sin(ax);
+                let y = p[1]*cx - z*sx;
+                z = p[1]*sx + z*cx;
+                const d = 5, s = d/(d - z);
+                return {x: x*s, y: y*s, z: z};
+            }
+
+            function draw(){
+                const r = canvas.getBoundingClientRect();
+                const w = r.width, h = r.height;
+                ctx.clearRect(0,0,w,h);
+                const cx = w/2, cy = h/2, scale = Math.min(w,h)*0.26;
+                const pts = V.map(project);
+                
+                // Draw edges
+                ctx.lineCap = 'round';
+                for(let i=0; i<E.length; i++){
+                    const a = pts[E[i][0]], b = pts[E[i][1]];
+                    const depth = (a.z + b.z)/2;
+                    ctx.strokeStyle = INK;
+                    ctx.globalAlpha = depth > 0 ? 1 : 0.2;
+                    ctx.lineWidth = depth > 0 ? 2 : 1;
+                    ctx.beginPath();
+                    ctx.moveTo(cx + a.x*scale, cy - a.y*scale);
+                    ctx.lineTo(cx + b.x*scale, cy - b.y*scale);
+                    ctx.stroke();
+                }
+                
+                // Draw vertices
+                for(let j=0; j<pts.length; j++){
+                    const p = pts[j];
+                    ctx.globalAlpha = p.z > 0 ? 1 : 0.3;
+                    ctx.fillStyle = GOLD;
+                    ctx.beginPath();
+                    ctx.arc(cx + p.x*scale, cy - p.y*scale, p.z > 0 ? 5 : 3, 0, Math.PI*2);
+                    ctx.fill();
+                    
+                    // Add glow to front vertices
+                    if (p.z > 0) {
+                        ctx.fillStyle = 'rgba(212, 175, 55, 0.3)';
+                        ctx.beginPath();
+                        ctx.arc(cx + p.x*scale, cy - p.y*scale, 10, 0, Math.PI*2);
+                        ctx.fill();
+                    }
+                }
+                ctx.globalAlpha = 1;
+            }
+
+            function loop(){
+                ay += 0.005; ax += 0.002;
+                draw();
+                requestAnimationFrame(loop);
+            }
+            loop();
+        })();
+
+        // --- 2. Interactive Tessellation ---
+        (function(){
+            const range = document.getElementById('tess-range');
+            if(!range) return;
+            
+            const poly = document.getElementById('tess-poly');
+            const dots = document.getElementById('tess-dots');
+            const countEl = document.getElementById('tess-count');
+            const verdictEl = document.getElementById('tess-verdict');
+            const CX = 120, CY = 120, R = 92;
+
+            function verdict(n){
+                if(n <= 4) return 'Extremely low resolution. Barely a circle: you can count every corner. This is what early 1990s video games looked like.';
+                if(n <= 8) return 'Basic approximation. Getting rounder, but the straight edges are still very obvious.';
+                if(n <= 16) return 'Standard mesh. Smooth from a distance, but jagged if you look closely.';
+                if(n <= 30) return 'High resolution. Looks like a perfect curve to the human eye, even though it is still made of flat math.';
+                return 'Ultra resolution. You can no longer see the flat pieces at all.';
+            }
+
+            function render(n){
+                let pts = [], html = '';
+                for(let k=0; k<n; k++){
+                    const ang = -Math.PI/2 + (2*Math.PI*k)/n;
+                    const x = CX + R*Math.cos(ang);
+                    const y = CY + R*Math.sin(ang);
+                    pts.push(x.toFixed(1)+','+y.toFixed(1));
+                    const rad = n <= 24 ? 3 : (n <= 36 ? 2 : 1.5);
+                    // Using cyan for vertices to match the dark theme feel here
+                    html += '<circle cx="'+x.toFixed(1)+'" cy="'+y.toFixed(1)+'" r="'+rad+'" fill="#00d4ff" filter="drop-shadow(0 0 2px #00d4ff)"/>';
+                }
+                poly.setAttribute('points', pts.join(' '));
+                dots.innerHTML = html;
+                countEl.textContent = n;
+                verdictEl.innerHTML = '<span class="text-white font-bold">' + n + ' pieces:</span> ' + verdict(n);
+            }
+            
+            range.addEventListener('input', function(){ render(parseInt(this.value, 10)); });
+            // Initial render
+            render(parseInt(range.value, 10));
+        })();
+    </script>
+
+    <!-- ===== Completion tracking ===== -->
+    <script>
+    (function(){
+      var KEY='owl.platonic.progress.v1', PART='1a-x';
+      function rd(){ try{ return JSON.parse(localStorage.getItem(KEY))||{}; }catch(e){ return {}; } }
+      function wr(m){ try{ localStorage.setItem(KEY, JSON.stringify(m)); }catch(e){} }
+      window.owlMarkComplete=function(){ var m=rd(); m[PART]=true; wr(m); paint(true); };
+      function paint(done){ var b=document.getElementById('mark-complete-btn'); if(!b) return;
+        if(done){ b.textContent='✓ Part complete'; b.style.background='color-mix(in srgb,var(--accent) 22%,transparent)'; b.setAttribute('disabled',''); b.style.cursor='default'; } }
+      document.addEventListener('DOMContentLoaded', function(){ paint(!!rd()[PART]); });
+    })();
+    </script>
+</body>
+</html>

@@ -1,0 +1,837 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Owl Academy | Lesson II: Topological Invariants</title>
+    
+    <!-- CSS & Fonts -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Inter:wght@300;400;500;600&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+    
+    <!-- Three.js Core & Addons -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tween.js/18.6.4/tween.umd.js"></script>
+
+    <!-- MathJax for rendering geometric equations -->
+    <script>
+        window.MathJax = {
+            tex: {
+                inlineMath: [['$', '$'], ['\\(', '\\)']],
+                displayMath: [['$$', '$$'], ['\\[', '\\]']]
+            }
+        };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+    <style>
+        /* Dynamic Theme Variables */
+        :root {
+            --accent: #8A2BE2;
+            --color-void: #090614;
+            --color-primary: #D4AF37;
+            --color-secondary: #8e9eab;
+            --color-holo1: #00d4ff;
+            --color-holo2: #8A2BE2;
+            --color-text: #E6C27A;
+            --color-ui-border: rgba(212, 175, 55, 0.3);
+            --color-r3-x: #ff3366;
+            --color-r3-y: #33ff99;
+            --color-r3-z: #00d4ff;
+        }
+
+        body {
+            background-color: var(--color-void);
+            color: #e2e8f0;
+            font-family: 'Inter', sans-serif;
+            background: radial-gradient(circle at 50% 50%, color-mix(in srgb, var(--color-holo2) 10%, var(--color-void)), var(--color-void) 80%);
+            min-height: 100vh;
+            margin: 0;
+            overflow-x: hidden;
+            scroll-behavior: smooth;
+        }
+
+        /* --- SIGIL ANIMATIONS --- */
+        .spin-slow         { animation: spin 40s linear infinite; transform-origin: center; }
+        @keyframes spin    { 100% { transform: rotate(360deg); } }
+        .spin-slow-reverse { animation: spinReverse 40s linear infinite; transform-origin: center; }
+        @keyframes spinReverse { 100% { transform: rotate(-360deg); } }
+        .pulse-glow        { animation: pulseGlow 4s ease-in-out infinite alternate; }
+        @keyframes pulseGlow {
+            0%   { filter: drop-shadow(0 0 5px  rgba(212,175,55,0.3)); }
+            100% { filter: drop-shadow(0 0 15px rgba(212,175,55,0.8)); }
+        }
+
+        /* --- ATMOSPHERIC LAYERS --- */
+        .nebula-layer {
+            position: fixed; inset: 0;
+            background: 
+                radial-gradient(circle at 20% 30%, var(--color-holo2) 0%, transparent 40%),
+                radial-gradient(circle at 80% 70%, var(--color-holo1) 0%, transparent 40%);
+            opacity: 0.15; mix-blend-mode: screen; filter: blur(80px); pointer-events: none; z-index: 0;
+        }
+        .vignette-layer {
+            position: fixed; inset: 0;
+            background: radial-gradient(circle, transparent 40%, rgba(0,0,0,0.8) 120%);
+            pointer-events: none; z-index: 10;
+        }
+        .starfield {
+            position: fixed; inset: 0;
+            background-image:
+                radial-gradient(2px 2px at 20px 30px, var(--color-primary), rgba(0,0,0,0)),
+                radial-gradient(2px 2px at 40px 70px, #fff, rgba(0,0,0,0)),
+                radial-gradient(2px 2px at 50px 160px, rgba(255,255,255,0.8), rgba(0,0,0,0)),
+                radial-gradient(2px 2px at 90px 40px, #fff, rgba(0,0,0,0)),
+                radial-gradient(2px 2px at 130px 80px, var(--color-primary), rgba(0,0,0,0));
+            background-repeat: repeat; background-size: 250px 250px;
+            animation: twinkle 8s infinite alternate; opacity: 0.35; z-index: 0; pointer-events: none;
+        }
+        .starfield-layer-2 { background-size: 350px 350px; background-position: 50px 50px; opacity: 0.2; animation: twinkle 12s infinite alternate-reverse; }
+
+        /* --- TYPOGRAPHY & PANELS --- */
+        h1, h2, h3, h4, .mystical-font { font-family: 'Cinzel', serif; }
+        .mono { font-family: 'Fira Code', monospace; }
+        .gold-gradient {
+            background: linear-gradient(to right, var(--color-primary), #FFF8DC, var(--color-primary));
+            -webkit-background-clip: text; background-clip: text; color: transparent; text-shadow: 0 0 15px color-mix(in srgb, var(--color-primary) 30%, transparent);
+        }
+
+        .glass-panel {
+            background: rgba(10, 6, 20, 0.6);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--color-ui-border);
+            border-radius: 16px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+        }
+
+        .data-card {
+            background: rgba(15, 10, 25, 0.6);
+            border: 1px solid rgba(255,255,255,0.05);
+            border-top: 1px solid rgba(138, 43, 226, 0.4);
+            border-radius: 12px;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        .data-card::before {
+            content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: radial-gradient(circle at top right, rgba(138,43,226,0.05), transparent 70%);
+            pointer-events: none;
+        }
+
+        .simple-translation {
+            background: rgba(138, 43, 226, 0.05);
+            border-left: 3px solid rgba(138, 43, 226, 0.5);
+            padding: 1.5rem;
+            margin-top: 1.5rem;
+            border-radius: 0 8px 8px 0;
+            font-family: 'Inter', sans-serif;
+        }
+
+        .btn-lab {
+            background: rgba(5, 3, 10, 0.8);
+            border: 1px solid rgba(138, 43, 226, 0.4);
+            color: rgba(216, 180, 254, 0.8);
+            transition: all 0.3s;
+            position: relative;
+            overflow: hidden;
+        }
+        .btn-lab:hover:not(:disabled) {
+            background: rgba(138, 43, 226, 0.15);
+            color: #fff;
+            box-shadow: 0 0 15px rgba(138, 43, 226, 0.4);
+            border-color: #d8b4fe;
+        }
+        .btn-lab.active-step {
+            background: rgba(138, 43, 226, 0.3);
+            border-color: #d8b4fe;
+            color: #fff;
+            box-shadow: 0 0 15px rgba(138, 43, 226, 0.6);
+        }
+
+        #lab-canvas-container {
+            border-radius: 12px;
+            overflow: hidden;
+            border: 1px solid rgba(138, 43, 226, 0.3);
+            background: radial-gradient(circle at center, rgba(10,5,20,1) 0%, #000 100%);
+            box-shadow: inset 0 0 40px rgba(0,0,0,0.8);
+        }
+
+        .terminal-log {
+            font-family: 'Fira Code', monospace;
+            font-size: 10px;
+            color: #8e9eab;
+            height: 120px;
+            overflow-y: auto;
+            background: rgba(0,0,0,0.6);
+            padding: 8px;
+            border-radius: 4px;
+            border: 1px solid rgba(255,255,255,0.05);
+        }
+        .log-entry { margin-bottom: 4px; animation: slideIn 0.3s ease-out; }
+        .log-time { color: var(--color-primary); margin-right: 8px; }
+        .log-success { color: #d8b4fe; }
+        .log-info { color: #8A2BE2; }
+        @keyframes slideIn { from { opacity: 0; transform: translateX(-10px); } to { opacity: 1; transform: translateX(0); } }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: rgba(0,0,0,0.4); }
+        ::-webkit-scrollbar-thumb { background: rgba(138, 43, 226, 0.5); border-radius: 10px; }
+
+        /* Sub-lesson stepper chips */
+        .step-chip{padding:.35rem .7rem;border-radius:.4rem;border:1px solid rgba(255,255,255,.1);color:#94a3b8;text-transform:uppercase;letter-spacing:.08em;transition:all .2s;white-space:nowrap;}
+        .step-chip:hover{color:#fff;border-color:rgba(255,255,255,.35);}
+        .step-chip[aria-current="page"]{color:var(--accent);border-color:var(--accent);background:color-mix(in srgb,var(--accent) 14%,transparent);box-shadow:0 0 12px color-mix(in srgb,var(--accent) 30%,transparent);}
+    </style>
+</head>
+<body class="relative">
+
+    <!-- Atmospheric Layers -->
+    <div class="nebula-layer"></div>
+    <div class="starfield"></div>
+    <div class="starfield starfield-layer-2"></div>
+    <div class="vignette-layer"></div>
+
+    <!-- SVG Definitions for Graphs -->
+    <svg width="0" height="0" class="absolute">
+        <defs>
+            <linearGradient id="goldGradLeft" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#C59B3F" />
+                <stop offset="50%" stop-color="#FFF2C8" />
+                <stop offset="100%" stop-color="#996515" />
+            </linearGradient>
+            <linearGradient id="goldGradRight" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#C59B3F" />
+                <stop offset="50%" stop-color="#FFF2C8" />
+                <stop offset="100%" stop-color="#996515" />
+            </linearGradient>
+        </defs>
+    </svg>
+
+    <div class="relative z-20 min-h-screen flex flex-col">
+        
+        <!-- Header -->
+        <header class="w-full pt-8 pb-4 px-4 md:px-12 flex justify-between items-start border-b border-yellow-600/30 glass-panel shadow-2xl !mb-0 !rounded-none">
+            
+            <!-- LEFT SIGIL -->
+            <div class="w-16 h-16 md:w-24 md:h-24 flex-shrink-0 pointer-events-none">
+                <svg viewBox="0 0 200 200" class="w-full h-full pulse-glow" xmlns="http://www.w3.org/2000/svg">
+                    <circle cx="100" cy="100" r="95" fill="none" stroke="url(#goldGradLeft)" stroke-width="1" opacity="0.6"/>
+                    <circle cx="100" cy="100" r="85" fill="none" stroke="url(#goldGradLeft)" stroke-width="0.5" opacity="0.4"/>
+                    <g class="spin-slow" style="transform-origin: 100px 100px;">
+                        <g stroke="url(#goldGradLeft)" stroke-width="1" fill="none" opacity="0.6">
+                            <polygon points="100,15 173.6,142.5 26.4,142.5" />
+                            <polygon points="100,15 173.6,142.5 26.4,142.5" transform="rotate(30 100 100)" />
+                            <polygon points="100,15 173.6,142.5 26.4,142.5" transform="rotate(60 100 100)" />
+                            <polygon points="100,15 173.6,142.5 26.4,142.5" transform="rotate(90 100 100)" />
+                        </g>
+                        <g stroke="#ffffff" stroke-width="0.75" fill="none" opacity="0.4" stroke-dasharray="2 4">
+                            <polygon points="100,15 173.6,142.5 26.4,142.5" transform="rotate(15 100 100)" />
+                            <polygon points="100,15 173.6,142.5 26.4,142.5" transform="rotate(45 100 100)" />
+                            <polygon points="100,15 173.6,142.5 26.4,142.5" transform="rotate(75 100 100)" />
+                            <polygon points="100,15 173.6,142.5 26.4,142.5" transform="rotate(105 100 100)" />
+                        </g>
+                        <g stroke="url(#goldGradLeft)" stroke-width="1.5" fill="none" opacity="0.9">
+                            <polygon points="100,45 147.6,127.5 52.4,127.5" />
+                            <polygon points="100,155 147.6,72.5 52.4,72.5" />
+                        </g>
+                        <circle cx="100" cy="100" r="35" stroke="url(#goldGradLeft)" stroke-width="1" fill="none" opacity="0.6"/>
+                        <polygon points="100,65 134.1,107.8 84.8,131.5 72.6,78.2 127.4,78.2 115.2,131.5 65.9,107.8" stroke="url(#goldGradLeft)" stroke-width="1.2" fill="none" opacity="0.8" />
+                    </g>
+                </svg>
+            </div>
+
+            <!-- Center Titles -->
+            <div class="text-center flex-grow pt-2 md:pt-4 z-20">
+                <p class="text-[9px] md:text-[11px] tracking-[0.3em] uppercase mb-2 font-mono" style="color:var(--accent)">Department I • Lesson 1 · Platonic Solids &amp; Symmetric Tessellations</p>
+                <h1 class="text-xl md:text-3xl font-bold tracking-[0.15em] mystical-font text-white drop-shadow-md">SUB-LESSON 1B</h1>
+                <h2 class="text-lg md:text-2xl font-bold gold-gradient tracking-[0.2em] mt-1">Topological Invariants</h2>
+            </div>
+
+            <!-- RIGHT SIGIL: Archive Cipher -->
+            <a href="../SG_Main.html" title="Return to Department I" class="w-16 h-16 md:w-24 md:h-24 flex-shrink-0 cursor-pointer hover:scale-105 transition-transform duration-300">
+                <svg viewBox="0 0 200 200" class="w-full h-full spin-slow pulse-glow" xmlns="http://www.w3.org/2000/svg">
+                    <circle cx="100" cy="100" r="95" fill="none" stroke="url(#goldGradRight)" stroke-width="1" opacity="0.6"/>
+                    <circle cx="100" cy="100" r="85" fill="none" stroke="url(#goldGradRight)" stroke-width="0.5" opacity="0.4"/>
+                    <polygon points="100,15 173.6,142.5 26.4,142.5" fill="none" stroke="url(#goldGradRight)" stroke-width="1" opacity="0.5"/>
+                    <polygon points="100,185 26.4,57.5 173.6,57.5" fill="none" stroke="url(#goldGradRight)" stroke-width="1" opacity="0.5"/>
+                    <g filter="drop-shadow(0 0 4px rgba(212,175,55,0.8))">
+                        <line x1="100" y1="60" x2="100.01" y2="140" stroke="url(#goldGradRight)" stroke-width="2.5" stroke-linecap="round"/>
+                        <path d="M 100,60 C 120,60 120,90 100,90" fill="none" stroke="url(#goldGradRight)" stroke-width="2.5" stroke-linecap="round"/>
+                        <line x1="80" y1="85" x2="120" y2="125" stroke="url(#goldGradRight)" stroke-width="2.5" stroke-linecap="round"/>
+                        <line x1="120" y1="85" x2="80" y2="125" stroke="url(#goldGradRight)" stroke-width="2.5" stroke-linecap="round"/>
+                        <text x="75" y="115" fill="#FFF8DC" font-family="Cinzel, serif" font-size="10" text-anchor="middle">A</text>
+                        <text x="125" y="115" fill="#FFF8DC" font-family="Cinzel, serif" font-size="10" text-anchor="middle">Ω</text>
+                    </g>
+                    <circle cx="100" cy="100" r="45" fill="none" stroke="url(#goldGradRight)" stroke-width="0.5" stroke-dasharray="2 2" opacity="0.6"/>
+                </svg>
+            </a>
+        </header>
+
+        <!-- ===== Lesson 1 sub-lesson stepper (interweave nav) ===== -->
+        <nav class="w-full max-w-7xl mx-auto px-4 md:px-8 mt-6" aria-label="Lesson 1 sub-lessons">
+          <div class="glass-panel rounded-xl p-3 flex flex-wrap items-center justify-center gap-2 text-[10px] md:text-xs font-mono !mb-0">
+            <a href="index.html" class="px-3 py-1.5 rounded border border-yellow-600/40 text-yellow-500 hover:bg-yellow-500/10 transition-colors tracking-widest uppercase">◆ Hub</a>
+            <span class="text-gray-700 hidden md:inline">/</span>
+            <a href="1a_geometric_primitives.html" class="step-chip">1A · Primitives</a>
+            <a href="1b_topological_invariants.html" class="step-chip" aria-current="page">1B · Topology</a>
+            <a href="1c_harmonic_resonance.html" class="step-chip">1C · Resonance</a>
+            <a href="1d_tiling_problem.html" class="step-chip">1D · Tiling</a>
+            <a href="1e_engine_implementation.html" class="step-chip">1E · Engine</a>
+            <a href="1f_application_lab.html" class="step-chip">1F · Lab</a>
+          </div>
+        </nav>
+
+        <!-- Main Content -->
+        <main class="flex-grow w-full max-w-7xl mx-auto px-4 md:px-8 py-8 space-y-12">
+            
+            <!-- Expanded Theory Link Button -->
+            <div class="flex justify-center mb-8">
+                <a href="1b_expanded_theory.html" class="group px-6 py-3 rounded-lg border transition-all text-xs font-bold tracking-[0.15em] mystical-font flex items-center gap-3 hover:bg-purple-500/10" style="border-color: color-mix(in srgb, var(--color-holo2) 50%, transparent); color: var(--color-holo2); background: rgba(0,0,0,0.6); box-shadow: 0 0 15px rgba(138,43,226,0.15);">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="group-hover:scale-110 transition-transform"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path></svg>
+                    DEEP DIVE: EXPANDED THEORY
+                </a>
+            </div>
+
+            <!-- Theory Section: What is Topology? -->
+            <div class="glass-panel p-8 md:p-10 relative overflow-hidden">
+                <div class="absolute top-0 right-0 w-64 h-64 bg-purple-500/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3"></div>
+                
+                <h2 class="text-2xl text-white font-bold mystical-font tracking-wide mb-6">Topology: The Geometry of Connections</h2>
+                
+                <div class="prose prose-invert max-w-none text-gray-300 font-light text-sm md:text-base leading-relaxed space-y-5">
+                    <p>
+                        In Lesson I, we learned how to build rigid, perfect solids using precise $\mathbb{R}^3$ coordinates. We defined the boundaries of an object exactly. However, in the architecture of the void, rigid coordinates are inherently fragile. 
+                    </p>
+                    <p>
+                        When spatial manifolds fold under the immense computational pressure of hyper-dimensional routing, strict angles, exact lengths, and coordinate anchor points distort. A perfect cube might become warped, stretched, or compressed. If the S.P.I.R.E. Engine relied solely on exact geometry to recognize data structures, the data would instantly corrupt upon movement.
+                    </p>
+                    <p>
+                        <strong>Topology</strong> is the mathematical discipline of <em>structural preservation</em>. It completely ignores the transient metrics of distance, straightness, and angle. Instead, it focuses entirely on <strong>intrinsic connectivity</strong>. It asks a far deeper question: "What fundamental properties of a shape survive even if you infinitely stretch, twist, or bend it, as long as you do not tear it apart or glue new pieces together?"
+                    </p>
+                    <p>
+                        In topological terms, two objects are considered identical (a state called <em>Homeomorphism</em>) if one can be smoothly deformed into the other without breaking its continuous surface. 
+                    </p>
+                    
+                    <!-- Simplified Explanation -->
+                    <div class="simple-translation">
+                        <h4 class="text-sm font-bold text-purple-400 mb-2 flex items-center gap-2 uppercase tracking-widest font-mono">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><path d="M12 16v-4"></path><path d="M12 8h.01"></path></svg>
+                            Simply Put: Rubber Sheet Math
+                        </h4>
+                        <p class="text-xs text-purple-100/90 leading-relaxed m-0">
+                            Imagine sculpting a perfectly sharp, rigid cube out of extremely flexible clay. Without tearing the clay, or taking two separate pieces and squishing them together, you could easily roll that cube in your hands until it becomes a perfectly round sphere.<br><br>
+                            Because of this, to a topologist, <strong>a cube and a sphere are exactly the same shape.</strong> They just look different on the outside. Their underlying "connectivity" is identical. <br><br>
+                            However, you <em>cannot</em> mold that cube into a donut shape without violently poking a hole right through the middle of it. Poking a hole is an illegal move in topology because it destroys the original structure. That hole represents a permanent structural limit.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Theory Section: Euler's Characteristic -->
+            <div class="glass-panel p-8 md:p-10 relative overflow-hidden">
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+                    
+                    <div class="prose prose-invert max-w-none text-gray-300 font-light text-sm md:text-base leading-relaxed space-y-5">
+                        <h2 class="text-2xl text-white font-bold mystical-font tracking-wide mb-6">The Magic Rule: $\chi = 2$</h2>
+                        <p>
+                            To prove these structural limits mathematically, and to ensure that a localized data volume has not been corrupted or torn, the S.P.I.R.E. Engine relies on a profound cosmic checksum known as <strong>Euler's Characteristic ($\chi$)</strong>. 
+                        </p>
+                        <p>
+                            Take <em>any</em> solid object made of flat faces (a convex polyhedron), or any shape topologically equivalent to a sphere. It does not matter how complex, distorted, or asymmetrical it is. If you count its primitive building blocks—the vertices, edges, and faces—and combine them via a specific formula, they will always resolve to the exact same invariant number.
+                        </p>
+                        
+                        <div class="bg-black/60 border border-purple-900/50 p-6 rounded-lg my-6 text-center shadow-[inset_0_0_30px_rgba(138,43,226,0.15)] relative overflow-hidden">
+                            <div class="absolute inset-0 bg-gradient-to-br from-purple-900/10 to-transparent pointer-events-none"></div>
+                            <div class="text-3xl md:text-4xl font-mono text-white mb-4 relative z-10 drop-shadow-[0_0_10px_rgba(216,180,254,0.5)]">
+                                $\chi = V - E + F = 2$
+                            </div>
+                            <div class="text-[10px] text-gray-400 font-mono tracking-widest uppercase relative z-10">
+                                <span class="text-yellow-500">Vertices</span> minus <span class="text-cyan-400">Edges</span> plus <span class="text-purple-400">Faces</span> equals <span class="text-white font-bold">Two</span>
+                            </div>
+                        </div>
+
+                        <p>
+                            This is not just a mathematical curiosity; it is a law of dimensional physics. You can test its resilience through subdivision. If you take a simple cube and arbitrarily slice one of its flat faces into one hundred smaller triangles, you will drastically increase the total number of Vertices, Edges, and Faces. Yet, through a miracle of topological symmetry, the equation $V - E + F$ instantly rebalances. The net sum will <em>still</em> be exactly 2.
+                        </p>
+
+                        <div class="simple-translation !border-yellow-500/50 !bg-yellow-500/5 mt-6">
+                            <h4 class="text-sm font-bold text-yellow-500 mb-2 flex items-center gap-2 uppercase tracking-widest font-mono">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+                                Simply Put: The Ultimate Verification Test
+                            </h4>
+                            <p class="text-xs text-yellow-100/90 leading-relaxed m-0">
+                                Imagine you are a computer trying to verify that a downloaded 3D model isn't glitchy or broken. Looking at the millions of coordinates takes too long. Instead, you just count the pieces.<br><br>
+                                Count every corner (V), subtract every line (E), and add every flat side (F). If the math equals exactly 2, you know for an absolute fact that the 3D shape is fully closed, watertight, and structurally sound. If it equals 1, or 3, or anything else, you know immediately that the shape is broken, missing a piece, or has an illegal gap in its surface.
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Visual Graph: The Grid -->
+                    <div class="flex flex-col gap-5 bg-black/30 p-6 rounded-2xl border border-white/5">
+                        <h3 class="text-sm font-bold text-gray-400 uppercase tracking-widest font-mono text-center mb-4 border-b border-gray-800 pb-4">Visual Proof of Concept</h3>
+                        
+                        <!-- Box Proof -->
+                        <div class="bg-black/60 border border-gray-800 rounded-lg p-5 flex items-center justify-between shadow-lg">
+                            <div class="w-20 h-20 flex-shrink-0 relative">
+                                <div class="absolute inset-0 bg-yellow-500/5 rounded-full blur-xl"></div>
+                                <svg viewBox="0 0 100 100" class="w-full h-full relative z-10 drop-shadow-[0_0_8px_rgba(212,175,55,0.4)]">
+                                    <polygon points="25,35 75,35 75,85 25,85" fill="none" stroke="#D4AF37" stroke-width="2"/>
+                                    <polygon points="25,35 50,15 100,15 75,35" fill="rgba(212,175,55,0.2)" stroke="#D4AF37" stroke-width="2"/>
+                                    <polygon points="75,35 100,15 100,65 75,85" fill="rgba(212,175,55,0.1)" stroke="#D4AF37" stroke-width="2"/>
+                                </svg>
+                            </div>
+                            <div class="flex-grow px-6 font-mono text-sm text-center">
+                                <div class="text-yellow-500 font-bold mb-2 tracking-widest">CUBE</div>
+                                <div class="text-gray-300 bg-gray-900/80 py-2 px-3 rounded border border-gray-700">
+                                    <span class="text-yellow-500">8</span> - <span class="text-cyan-400">12</span> + <span class="text-purple-400">6</span> = <span class="text-white font-bold text-lg">2</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Pyramid Proof -->
+                        <div class="bg-black/60 border border-gray-800 rounded-lg p-5 flex items-center justify-between shadow-lg">
+                            <div class="w-20 h-20 flex-shrink-0 relative">
+                                <div class="absolute inset-0 bg-yellow-500/5 rounded-full blur-xl"></div>
+                                <svg viewBox="0 0 100 100" class="w-full h-full relative z-10 drop-shadow-[0_0_8px_rgba(212,175,55,0.4)]">
+                                    <polygon points="50,15 20,80 80,80" fill="rgba(212,175,55,0.1)" stroke="#D4AF37" stroke-width="2"/>
+                                    <polygon points="50,15 80,80 60,90 30,90" fill="rgba(212,175,55,0.2)" stroke="#D4AF37" stroke-width="2"/>
+                                </svg>
+                            </div>
+                            <div class="flex-grow px-6 font-mono text-sm text-center">
+                                <div class="text-yellow-500 font-bold mb-2 tracking-widest">PYRAMID</div>
+                                <div class="text-gray-300 bg-gray-900/80 py-2 px-3 rounded border border-gray-700">
+                                    <span class="text-yellow-500">5</span> - <span class="text-cyan-400">8</span> + <span class="text-purple-400">5</span> = <span class="text-white font-bold text-lg">2</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Octahedron Proof -->
+                        <div class="bg-black/60 border border-gray-800 rounded-lg p-5 flex items-center justify-between shadow-lg">
+                            <div class="w-20 h-20 flex-shrink-0 relative">
+                                <div class="absolute inset-0 bg-yellow-500/5 rounded-full blur-xl"></div>
+                                <svg viewBox="0 0 100 100" class="w-full h-full relative z-10 drop-shadow-[0_0_8px_rgba(212,175,55,0.4)]">
+                                    <polygon points="50,10 20,50 80,50" fill="rgba(212,175,55,0.15)" stroke="#D4AF37" stroke-width="2"/>
+                                    <polygon points="50,90 20,50 80,50" fill="rgba(212,175,55,0.05)" stroke="#D4AF37" stroke-width="2"/>
+                                    <polygon points="50,10 50,90 80,50" fill="rgba(212,175,55,0.25)" stroke="#D4AF37" stroke-width="2"/>
+                                </svg>
+                            </div>
+                            <div class="flex-grow px-6 font-mono text-sm text-center">
+                                <div class="text-yellow-500 font-bold mb-2 tracking-widest">OCTAHEDRON</div>
+                                <div class="text-gray-300 bg-gray-900/80 py-2 px-3 rounded border border-gray-700">
+                                    <span class="text-yellow-500">6</span> - <span class="text-cyan-400">12</span> + <span class="text-purple-400">8</span> = <span class="text-white font-bold text-lg">2</span>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+
+                <!-- Quiz 1 -->
+                <div class="mt-12 border-t border-purple-900/30 pt-8">
+                    <h4 class="text-sm font-bold text-purple-400 mb-6 flex items-center gap-3 font-mono uppercase tracking-widest">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"></path><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path></svg>
+                        System Check 2.0
+                    </h4>
+                    <div class="bg-black/40 border border-gray-800 rounded-xl p-6 shadow-inner">
+                        <p class="text-sm text-gray-300 mb-6 font-light leading-relaxed">According to Euler's topological formula, if you take a standard, completely enclosed 3D shape and calculate (Corners minus Edges plus Faces), what will the invariant answer always be?</p>
+                        <div class="space-y-3" id="quiz-1-options">
+                            <button onclick="checkQuiz('quiz-1', false, this)" class="w-full text-left p-4 rounded-lg bg-gray-900/50 border border-gray-700 hover:border-purple-500 hover:bg-purple-900/20 hover:text-white transition-all text-sm text-gray-400">A) It depends on the scale and size of the shape.</button>
+                            <button onclick="checkQuiz('quiz-1', false, this)" class="w-full text-left p-4 rounded-lg bg-gray-900/50 border border-gray-700 hover:border-purple-500 hover:bg-purple-900/20 hover:text-white transition-all text-sm text-gray-400">B) 0</button>
+                            <button onclick="checkQuiz('quiz-1', true, this)" class="w-full text-left p-4 rounded-lg bg-gray-900/50 border border-gray-700 hover:border-purple-500 hover:bg-purple-900/20 hover:text-white transition-all text-sm text-gray-400">C) 2</button>
+                            <button onclick="checkQuiz('quiz-1', false, this)" class="w-full text-left p-4 rounded-lg bg-gray-900/50 border border-gray-700 hover:border-purple-500 hover:bg-purple-900/20 hover:text-white transition-all text-sm text-gray-400">D) The number of triangles in the rendered mesh.</button>
+                        </div>
+                        <div id="quiz-1-feedback" class="hidden"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Theory Section: The Hole Exception (Toroids) -->
+            <div class="glass-panel p-8 md:p-10 relative overflow-hidden border-cyan-900/30">
+                <div class="absolute top-0 left-0 w-64 h-64 bg-cyan-500/5 rounded-full blur-3xl -translate-y-1/2 -translate-x-1/3"></div>
+                
+                <h2 class="text-2xl text-white font-bold mystical-font tracking-wide mb-6">Breaking the Rule: The Hole Exception</h2>
+                
+                <div class="prose prose-invert max-w-none text-gray-300 font-light text-sm md:text-base leading-relaxed space-y-5">
+                    <p>
+                        There is exactly one way to "break" the magic number 2. You must violently alter the intrinsic topology of the space by puncturing a hole entirely through the object. A hole is not merely empty space; it is a topological artifact. In advanced data structures, a hole (a tunnel through the volume) allows distinct information streams to bypass one another without intersection.
+                    </p>
+                    <p>
+                        In mathematics, a shape with a hole bored through it is called a <strong>Torus</strong>. A shape's number of holes is defined mathematically as its <strong>Genus ($g$)</strong>. The moment a hole is introduced, the structural rules of reality shift, and Euler's formula gracefully expands to accommodate the new topology:
+                    </p>
+                    
+                    <div class="bg-black/60 border border-cyan-900/50 p-6 rounded-lg my-6 text-center shadow-[inset_0_0_30px_rgba(0,212,255,0.1)] relative overflow-hidden">
+                        <div class="absolute inset-0 bg-gradient-to-tr from-cyan-900/10 to-transparent pointer-events-none"></div>
+                        <div class="text-3xl font-mono text-white mb-4 relative z-10 drop-shadow-[0_0_8px_rgba(0,212,255,0.5)]">
+                            $\chi = V - E + F = 2 - 2g$
+                        </div>
+                        <div class="text-[11px] text-gray-400 font-mono tracking-widest uppercase relative z-10">
+                            Where <span class="text-cyan-400 font-bold">$g$</span> is the number of holes (genus).
+                        </div>
+                    </div>
+
+                    <p>
+                        Topological classification states that surfaces are entirely defined by their genus. If you take a standard shape ($g=0$), the formula evaluates normally: $2 - 2(0) = 2$. <br><br>
+                        But if you create a Torus with exactly one hole ($g=1$), the formula becomes $2 - 2(1) = 0$. <br>
+                        If you create a complex "figure-eight" shape with two holes ($g=2$), the formula drops into the negative: $2 - 2(2) = -2$.
+                    </p>
+                    <p>
+                        <strong>Therefore, for any object shaped like a standard ring or a donut, the sum of its Vertices minus Edges plus Faces will always equal exactly Zero.</strong>
+                    </p>
+
+                    <!-- Simplified Explanation -->
+                    <div class="simple-translation !border-cyan-500/50 !bg-cyan-500/10 mt-8">
+                        <h4 class="text-sm font-bold text-cyan-400 mb-2 flex items-center gap-2 uppercase tracking-widest font-mono">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><path d="M8 14s1.5 2 4 2 4-2 4-2"></path><line x1="9" y1="9" x2="9.01" y2="9"></line><line x1="15" y1="9" x2="15.01" y2="9"></line></svg>
+                            Simply Put: The Coffee Mug Joke
+                        </h4>
+                        <p class="text-xs text-cyan-100/90 leading-relaxed m-0">
+                            There is an old, famous math joke: <em>"A topologist is someone who can't tell the difference between a coffee mug and a donut."</em> <br><br>
+                            Why? Because to a topologist, they are exactly the same shape! Both of them are just blobs of material with exactly <strong>one hole</strong> bored through them (the donut hole, and the handle loop of the mug). Because they share the exact same number of holes (a genus of 1), their structural math will always balance out to exactly the same number. For both the mug and the donut, $V - E + F = 0$.
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Quiz 2 -->
+                <div class="mt-12 border-t border-cyan-900/30 pt-8">
+                    <h4 class="text-sm font-bold text-cyan-400 mb-6 flex items-center gap-3 font-mono uppercase tracking-widest">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"></path><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path></svg>
+                        System Check 2.1
+                    </h4>
+                    <div class="bg-black/40 border border-gray-800 rounded-xl p-6 shadow-inner">
+                        <p class="text-sm text-gray-300 mb-6 font-light leading-relaxed">If you were to build a 3D model of a donut (a Torus) out of thousands of flat, triangular building blocks, and then asked a computer to calculate its Euler Characteristic ($V - E + F$), what would the final result be?</p>
+                        <div class="space-y-3" id="quiz-2-options">
+                            <button onclick="checkQuiz('quiz-2', false, this)" class="w-full text-left p-4 rounded-lg bg-gray-900/50 border border-gray-700 hover:border-cyan-500 hover:bg-cyan-900/20 hover:text-white transition-all text-sm text-gray-400">A) 2</button>
+                            <button onclick="checkQuiz('quiz-2', true, this)" class="w-full text-left p-4 rounded-lg bg-gray-900/50 border border-gray-700 hover:border-cyan-500 hover:bg-cyan-900/20 hover:text-white transition-all text-sm text-gray-400">B) 0</button>
+                            <button onclick="checkQuiz('quiz-2', false, this)" class="w-full text-left p-4 rounded-lg bg-gray-900/50 border border-gray-700 hover:border-cyan-500 hover:bg-cyan-900/20 hover:text-white transition-all text-sm text-gray-400">C) It is impossible to calculate for shapes that are meant to be round.</button>
+                            <button onclick="checkQuiz('quiz-2', false, this)" class="w-full text-left p-4 rounded-lg bg-gray-900/50 border border-gray-700 hover:border-cyan-500 hover:bg-cyan-900/20 hover:text-white transition-all text-sm text-gray-400">D) 4</button>
+                        </div>
+                        <div id="quiz-2-feedback" class="hidden"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Interactive Lab: Euler's Proof Engine -->
+            <div id="interactive-lab" class="glass-panel p-1 rounded-2xl overflow-hidden mt-8">
+                <div class="bg-[#0b0c10] rounded-xl overflow-hidden border border-gray-800 flex flex-col lg:flex-row shadow-[0_0_30px_rgba(138,43,226,0.1)]">
+                    
+                    <!-- Lab Controls -->
+                    <div class="w-full lg:w-1/3 p-6 md:p-8 flex flex-col justify-between border-b lg:border-b-0 lg:border-r border-gray-800 bg-[#05030a] relative z-20">
+                        <div>
+                            <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-purple-950/40 text-purple-400 text-[10px] tracking-[0.1em] uppercase mono mb-4 border border-purple-900/50">
+                                <span class="w-1.5 h-1.5 bg-purple-400 rounded-full animate-ping"></span> Verification Tool
+                            </div>
+                            <h3 class="text-xl md:text-2xl font-bold text-white mystical-font tracking-wider mb-3">Euler's Proof Engine</h3>
+                            <p class="text-xs text-gray-400 leading-relaxed mb-8 font-light">
+                                Instantiate different primitive geometries within the void. The proof engine will dynamically scan the mesh, extracting and counting every single Vertex, Edge, and Face to mathematically prove the Topological Invariant of the shape in real-time.
+                            </p>
+                        </div>
+                        
+                        <div class="space-y-3 mb-8">
+                            <div class="text-[10px] text-gray-500 uppercase tracking-widest mono mb-3 border-b border-gray-800 pb-1">Standard Geometries ($g=0$)</div>
+                            <button onclick="spawnGeometry('tetrahedron')" class="w-full py-3 px-4 btn-lab rounded text-xs font-bold uppercase tracking-widest mono text-left hover:bg-purple-900/30">
+                                ◬ Tetrahedron
+                            </button>
+                            <button onclick="spawnGeometry('cube')" class="w-full py-3 px-4 btn-lab rounded text-xs font-bold uppercase tracking-widest mono text-left hover:bg-purple-900/30">
+                                ⬚ Hexahedron (Cube)
+                            </button>
+                            <button onclick="spawnGeometry('octahedron')" class="w-full py-3 px-4 btn-lab rounded text-xs font-bold uppercase tracking-widest mono text-left hover:bg-purple-900/30">
+                                ✧ Octahedron
+                            </button>
+                            
+                            <div class="text-[10px] text-cyan-700 uppercase tracking-widest mono mb-3 border-b border-gray-800 pb-1 pt-6">Complex Topology ($g=1$)</div>
+                            <button onclick="spawnGeometry('torus')" class="w-full py-3 px-4 bg-cyan-950/30 border border-cyan-900/50 text-cyan-400 rounded text-xs font-bold uppercase tracking-widest mono text-left hover:bg-cyan-900/50 hover:text-white transition-colors shadow-[0_0_10px_rgba(0,212,255,0.1)]">
+                                ◎ Torus (Donut)
+                            </button>
+                        </div>
+
+                        <!-- Real-time HUD -->
+                        <div class="bg-black/80 border border-gray-800 rounded-xl p-5 shadow-inner">
+                            <div class="text-xs uppercase tracking-widest text-gray-500 mb-4 mono flex justify-between">
+                                <span>Live Scan Status</span>
+                                <span id="scan-status" class="text-yellow-600 font-bold">IDLE</span>
+                            </div>
+                            <div class="grid grid-cols-3 gap-3 text-center mono mb-4">
+                                <div class="bg-gray-900/80 border border-gray-700 rounded-lg py-3">
+                                    <div class="text-xs text-gray-500 mb-1">VERTICES</div>
+                                    <div id="hud-v" class="text-2xl text-yellow-500 font-bold">--</div>
+                                </div>
+                                <div class="bg-gray-900/80 border border-gray-700 rounded-lg py-3">
+                                    <div class="text-xs text-gray-500 mb-1">EDGES</div>
+                                    <div id="hud-e" class="text-2xl text-cyan-400 font-bold">--</div>
+                                </div>
+                                <div class="bg-gray-900/80 border border-gray-700 rounded-lg py-3">
+                                    <div class="text-xs text-gray-500 mb-1">FACES</div>
+                                    <div id="hud-f" class="text-2xl text-purple-400 font-bold">--</div>
+                                </div>
+                            </div>
+                            <div class="bg-gray-900 border border-gray-600 rounded-lg p-3 text-center mono flex items-center justify-between px-6">
+                                <span class="text-sm text-gray-400">Checksum Result ($\chi$):</span>
+                                <span id="hud-result" class="text-3xl text-white font-bold drop-shadow-[0_0_5px_#fff] transition-transform duration-300">--</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 3D Canvas -->
+                    <div id="lab-canvas-container" class="w-full h-[500px] lg:h-auto relative cursor-grab active:cursor-grabbing">
+                        <!-- Instructions overlay -->
+                        <div class="absolute inset-0 flex items-center justify-center pointer-events-none z-10" id="lab-overlay">
+                            <div class="bg-black/60 backdrop-blur border border-purple-500/30 px-6 py-3 rounded-full text-purple-200 text-xs font-mono uppercase tracking-widest animate-pulse shadow-lg">
+                                Select a geometry to initiate proof
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ===== Checkpoint + interweave prev/next ===== -->
+            <div class="mt-14 flex flex-col items-center gap-3">
+              <span class="text-[10px] text-gray-500 font-mono uppercase tracking-[0.3em]">Checkpoint</span>
+              <button id="mark-complete-btn" onclick="owlMarkComplete()" class="px-8 py-3 rounded-lg border font-bold tracking-widest text-xs uppercase mystical-font transition-all hover:scale-[1.02]" style="border-color:var(--accent);color:var(--accent);background:color-mix(in srgb,var(--accent) 6%,transparent);">Mark this part complete ✓</button>
+              <p class="text-[10px] text-gray-600 font-mono text-center max-w-md">Progress saves to this browser. Finish all 12 parts to unlock the Tome signoff on the <a href="index.html" class="underline hover:text-yellow-400">lesson hub</a>.</p>
+            </div>
+            <div class="mt-10 pt-6 border-t border-white/10 flex items-center justify-between gap-3 text-xs font-mono">
+              <a href="1a_geometric_primitives.html" class="px-4 py-2 rounded border border-white/10 text-gray-400 hover:text-white hover:border-white/30 transition-colors">← 1A Primitives</a>
+              <a href="index.html" class="px-4 py-2 rounded border border-yellow-600/40 text-yellow-500 hover:bg-yellow-500/10 transition-colors tracking-widest uppercase">◆ Hub</a>
+              <a href="1c_harmonic_resonance.html" class="px-4 py-2 rounded border border-white/10 text-gray-400 hover:text-white hover:border-white/30 transition-colors">1C Resonance →</a>
+            </div>
+
+        </main>
+
+        <footer class="w-full border-t border-purple-900/30 bg-black/60 backdrop-blur-md py-6 text-center mt-auto flex-shrink-0 z-20 relative">
+            <p class="text-[10px] text-purple-700 uppercase tracking-[0.3em] font-mono">
+                Department I • Owl Academy
+            </p>
+        </footer>
+    </div>
+
+    <!-- Interactive 3D Application -->
+    <script>
+        let scene, camera, renderer, controls;
+        let currentMesh = null;
+        let currentWireframe = null;
+        let isAnimating = false;
+
+        function initLab() {
+            const container = document.getElementById('lab-canvas-container');
+            
+            // Scene & Camera
+            scene = new THREE.Scene();
+            camera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1, 1000);
+            camera.position.set(10, 8, 12);
+            
+            // Renderer
+            renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+            renderer.setSize(container.clientWidth, container.clientHeight);
+            renderer.setPixelRatio(window.devicePixelRatio);
+            container.appendChild(renderer.domElement);
+
+            // Controls
+            controls = new THREE.OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true;
+            controls.dampingFactor = 0.05;
+            controls.autoRotate = true;
+            controls.autoRotateSpeed = 1.0;
+
+            // Environment
+            const gridHelper = new THREE.GridHelper(20, 20, 0x8A2BE2, 0x111111);
+            gridHelper.position.y = -3; 
+            gridHelper.material.opacity = 0.1;
+            gridHelper.material.transparent = true;
+            scene.add(gridHelper);
+
+            // Lighting
+            const ambient = new THREE.AmbientLight(0x404040, 2.0);
+            scene.add(ambient);
+            const dirLight = new THREE.DirectionalLight(0xffffff, 1.5);
+            dirLight.position.set(10, 20, 10);
+            scene.add(dirLight);
+            const spotLight = new THREE.SpotLight(0x00d4ff, 2);
+            spotLight.position.set(-10, 10, -10);
+            scene.add(spotLight);
+
+            // Handle Resize
+            window.addEventListener('resize', () => {
+                if(container.clientWidth === 0) return;
+                camera.aspect = container.clientWidth / container.clientHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(container.clientWidth, container.clientHeight);
+            });
+
+            animate();
+        }
+
+        function animate(time) {
+            requestAnimationFrame(animate);
+            TWEEN.update(time);
+            controls.update();
+            renderer.render(scene, camera);
+        }
+
+        // Action: Spawn Shape & Run Proof
+        function spawnGeometry(type) {
+            if (isAnimating) return;
+            isAnimating = true;
+            
+            // Clear overlay
+            const overlay = document.getElementById('lab-overlay');
+            if (overlay) overlay.style.display = 'none';
+
+            // Reset HUD
+            updateHUD('--', '--', '--', '--', 'COMPUTING...');
+            document.getElementById('scan-status').className = "text-yellow-400 animate-pulse font-bold";
+
+            // Remove existing mesh
+            if (currentMesh) {
+                scene.remove(currentMesh);
+                scene.remove(currentWireframe);
+            }
+
+            let geometry;
+            let expectedV, expectedE, expectedF, expectedChi;
+            let scale = 3;
+            let meshColor = 0x8A2BE2; // Purple
+
+            // Define Geometry & Expected Exact Math based on the standard objects
+            if (type === 'tetrahedron') {
+                geometry = new THREE.TetrahedronGeometry(scale);
+                expectedV = 4; expectedE = 6; expectedF = 4; expectedChi = 2;
+            } else if (type === 'cube') {
+                geometry = new THREE.BoxGeometry(scale*1.2, scale*1.2, scale*1.2);
+                expectedV = 8; expectedE = 12; expectedF = 6; expectedChi = 2;
+            } else if (type === 'octahedron') {
+                geometry = new THREE.OctahedronGeometry(scale);
+                expectedV = 6; expectedE = 12; expectedF = 8; expectedChi = 2;
+            } else if (type === 'torus') {
+                // A "chunky" torus (4x4 segments) mathematically creates exactly 16 Vertices, 32 Edges, 16 Faces. 16-32+16 = 0.
+                geometry = new THREE.TorusGeometry(scale*0.8, scale*0.3, 4, 4);
+                expectedV = 16; expectedE = 32; expectedF = 16; expectedChi = 0;
+                meshColor = 0x00d4ff; // Cyan for anomaly
+            }
+
+            // Material
+            const material = new THREE.MeshPhysicalMaterial({
+                color: meshColor,
+                metalness: 0.2,
+                roughness: 0.1,
+                transparent: true,
+                opacity: 0, // start invisible
+                side: THREE.DoubleSide
+            });
+
+            currentMesh = new THREE.Mesh(geometry, material);
+            
+            // Edges (Wireframe)
+            const edgesGeo = new THREE.EdgesGeometry(geometry);
+            const lineMat = new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0 });
+            currentWireframe = new THREE.LineSegments(edgesGeo, lineMat);
+
+            scene.add(currentMesh);
+            scene.add(currentWireframe);
+
+            // Intro Animation (Fade in)
+            new TWEEN.Tween(currentMesh.material)
+                .to({ opacity: 0.8 }, 1000)
+                .easing(TWEEN.Easing.Cubic.Out)
+                .start();
+                
+            new TWEEN.Tween(currentWireframe.material)
+                .to({ opacity: 0.6 }, 1000)
+                .start();
+
+            // Simulate the Engine "Scanning" the object sequentially
+            setTimeout(() => {
+                updateHUD(expectedV, '--', '--', '--', 'SCANNING V...');
+            }, 1200);
+
+            setTimeout(() => {
+                updateHUD(expectedV, expectedE, '--', '--', 'SCANNING E...');
+            }, 2000);
+
+            setTimeout(() => {
+                updateHUD(expectedV, expectedE, expectedF, '--', 'RESOLVING...');
+            }, 2800);
+
+            setTimeout(() => {
+                updateHUD(expectedV, expectedE, expectedF, expectedChi, 'VERIFIED');
+                document.getElementById('scan-status').className = "text-green-400 font-bold";
+                
+                // Animate the final result number
+                const resultEl = document.getElementById('hud-result');
+                resultEl.classList.add('text-green-400', 'scale-150');
+                setTimeout(() => { resultEl.classList.remove('text-green-400', 'scale-150'); }, 500);
+
+                isAnimating = false;
+            }, 3600);
+        }
+
+        function updateHUD(v, e, f, chi, status) {
+            document.getElementById('hud-v').innerText = v;
+            document.getElementById('hud-e').innerText = e;
+            document.getElementById('hud-f').innerText = f;
+            document.getElementById('hud-result').innerText = chi;
+            document.getElementById('scan-status').innerText = status;
+        }
+
+        // Quiz Verification Logic
+        function checkQuiz(quizId, isCorrect, btnElement) {
+            const optionsContainer = document.getElementById(`${quizId}-options`);
+            const feedbackElement = document.getElementById(`${quizId}-feedback`);
+            const buttons = optionsContainer.querySelectorAll('button');
+
+            // Disable all buttons to lock in the answer
+            buttons.forEach(btn => {
+                btn.disabled = true;
+                btn.classList.add('opacity-50', 'cursor-not-allowed');
+                // Clean up previous states just in case
+                btn.classList.remove('!border-green-500', '!bg-green-900/30', '!text-green-400', '!border-red-500', '!bg-red-900/30', '!text-red-400');
+            });
+
+            // Highlight chosen button specifically
+            btnElement.classList.remove('opacity-50');
+            
+            if (isCorrect) {
+                btnElement.classList.add('!border-green-500', '!bg-green-900/30', '!text-green-400');
+                feedbackElement.innerHTML = `> STATUS: <span class="text-green-400 font-bold">VERIFIED</span>. Your understanding aligns with the S.P.I.R.E. Engine's logic.`;
+                feedbackElement.className = "mt-4 text-sm p-4 rounded-lg border font-mono bg-green-900/10 border-green-900/50 text-green-300 block";
+            } else {
+                btnElement.classList.add('!border-red-500', '!bg-red-900/30', '!text-red-400');
+                feedbackElement.innerHTML = `> STATUS: <span class="text-red-400 font-bold">ERROR</span>. Dimensional logic misalignment. We recommend reviewing the <a href="1b_expanded_theory.html" class="text-purple-400 underline hover:text-purple-300">Expanded Lesson</a> for a comprehensive overview.<button onclick="resetQuiz('${quizId}')" class="w-full md:w-auto px-4 py-2 bg-red-900/50 hover:bg-red-500/50 text-white rounded transition-colors uppercase text-xs tracking-widest border border-red-500/50 mt-4 md:mt-0">Recalibrate & Retry</button>`;
+                feedbackElement.className = "mt-4 text-sm p-4 rounded-lg border font-mono bg-red-900/20 border-red-900/50 text-red-400 block md:flex items-center justify-between gap-4";
+            }
+        }
+
+        function resetQuiz(quizId) {
+            const optionsContainer = document.getElementById(`${quizId}-options`);
+            const feedbackElement = document.getElementById(`${quizId}-feedback`);
+            const buttons = optionsContainer.querySelectorAll('button');
+
+            buttons.forEach(btn => {
+                btn.disabled = false;
+                btn.classList.remove('opacity-50', 'cursor-not-allowed', '!border-green-500', '!bg-green-900/30', '!text-green-400', '!border-red-500', '!bg-red-900/30', '!text-red-400');
+            });
+            
+            feedbackElement.className = "hidden";
+        }
+
+        window.onload = () => {
+            initLab();
+            setTimeout(() => { window.dispatchEvent(new Event('resize')); }, 100);
+        };
+    </script>
+
+    <script>
+    (function(){
+      var KEY='owl.platonic.progress.v1', PART='1b';
+      function rd(){ try{ return JSON.parse(localStorage.getItem(KEY))||{}; }catch(e){ return {}; } }
+      function wr(m){ try{ localStorage.setItem(KEY, JSON.stringify(m)); }catch(e){} }
+      window.owlMarkComplete=function(){ var m=rd(); m[PART]=true; wr(m); paint(true); };
+      function paint(done){ var b=document.getElementById('mark-complete-btn'); if(!b) return;
+        if(done){ b.textContent='✓ Part complete'; b.style.background='color-mix(in srgb,var(--accent) 22%,transparent)'; b.setAttribute('disabled',''); b.style.cursor='default'; } }
+      document.addEventListener('DOMContentLoaded', function(){ paint(!!rd()[PART]); });
+    })();
+    </script>
+</body>
+</html>

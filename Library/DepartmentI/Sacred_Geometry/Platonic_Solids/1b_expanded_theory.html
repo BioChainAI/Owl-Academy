@@ -1,0 +1,694 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Owl Academy | Lesson 1B: Expanded Theory</title>
+    
+    <!-- CSS & Fonts -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Inter:wght@300;400;500;600&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+    
+    <!-- MathJax for rendering geometric equations -->
+    <script>
+        window.MathJax = {
+            tex: {
+                inlineMath: [['$', '$'], ['\\(', '\\)']],
+                displayMath: [['$$', '$$'], ['\\[', '\\]']]
+            }
+        };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+    <style>
+        /* Dynamic Theme Variables (Owl Academy Standard) */
+        :root {
+            --accent: #8A2BE2;
+            --color-void: #090614;
+            --color-primary: #D4AF37;
+            --color-secondary: #8e9eab;
+            --color-holo1: #00d4ff;
+            --color-holo2: #8A2BE2;
+            --color-text: #E6C27A;
+            --color-ui-border: rgba(212, 175, 55, 0.3);
+        }
+
+        body {
+            background-color: var(--color-void);
+            color: #e2e8f0;
+            font-family: 'Inter', sans-serif;
+            background: radial-gradient(circle at 50% 50%, color-mix(in srgb, var(--color-holo2) 10%, var(--color-void)), var(--color-void) 80%);
+            min-height: 100vh;
+            margin: 0;
+            overflow-x: hidden;
+            scroll-behavior: smooth;
+        }
+
+        /* --- ATMOSPHERIC LAYERS --- */
+        .nebula-layer {
+            position: fixed; inset: 0;
+            background: 
+                radial-gradient(circle at 20% 30%, var(--color-holo2) 0%, transparent 40%),
+                radial-gradient(circle at 80% 70%, var(--color-holo1) 0%, transparent 40%);
+            opacity: 0.15; mix-blend-mode: screen; filter: blur(80px); pointer-events: none; z-index: 0;
+        }
+        .vignette-layer {
+            position: fixed; inset: 0;
+            background: radial-gradient(circle, transparent 40%, rgba(0,0,0,0.8) 120%);
+            pointer-events: none; z-index: 10;
+        }
+        .starfield {
+            position: fixed; inset: 0;
+            background-image:
+                radial-gradient(2px 2px at 20px 30px, var(--color-primary), rgba(0,0,0,0)),
+                radial-gradient(2px 2px at 40px 70px, #fff, rgba(0,0,0,0)),
+                radial-gradient(2px 2px at 50px 160px, rgba(255,255,255,0.8), rgba(0,0,0,0)),
+                radial-gradient(2px 2px at 90px 40px, #fff, rgba(0,0,0,0)),
+                radial-gradient(2px 2px at 130px 80px, var(--color-primary), rgba(0,0,0,0));
+            background-repeat: repeat; background-size: 250px 250px;
+            animation: twinkle 8s infinite alternate; opacity: 0.35; z-index: 0; pointer-events: none;
+        }
+        .starfield-layer-2 { background-size: 350px 350px; background-position: 50px 50px; opacity: 0.2; animation: twinkle 12s infinite alternate-reverse; }
+        @keyframes twinkle { 0% { opacity: 0.1; transform: scale(1); } 100% { opacity: 0.5; transform: scale(1.05); } }
+        
+        .spin-slow { animation: spin 40s linear infinite; transform-origin: center; }
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+
+        /* --- TYPOGRAPHY & PANELS --- */
+        h1, h2, h3, h4, .mystical-font { font-family: 'Cinzel', serif; }
+        .mono { font-family: 'Fira Code', monospace; }
+        .gold-gradient {
+            background: linear-gradient(to right, var(--color-primary), #FFF8DC, var(--color-primary));
+            -webkit-background-clip: text; background-clip: text; color: transparent; text-shadow: 0 0 15px color-mix(in srgb, var(--color-primary) 30%, transparent);
+        }
+
+        .glass-panel {
+            background: rgba(10, 5, 20, 0.5);
+            backdrop-filter: blur(12px);
+            border: 1px solid color-mix(in srgb, var(--color-primary) 20%, transparent);
+            border-radius: 16px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+            margin-bottom: 2rem;
+            padding: 2rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .data-card {
+            background: rgba(15, 10, 25, 0.5);
+            border: 1px solid color-mix(in srgb, var(--color-primary) 10%, transparent);
+            border-top: 1px solid color-mix(in srgb, var(--color-primary) 30%, transparent);
+            border-radius: 12px;
+            padding: 1.5rem;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+        .data-card:hover {
+            border-color: color-mix(in srgb, var(--color-holo1) 40%, transparent);
+            background: rgba(20, 15, 35, 0.7);
+            box-shadow: 0 0 20px rgba(0, 212, 255, 0.1);
+        }
+
+        .simple-translation {
+            background: rgba(138, 43, 226, 0.05);
+            border-left: 3px solid rgba(138, 43, 226, 0.5);
+            padding: 1rem;
+            margin-top: 1.5rem;
+            border-radius: 0 8px 8px 0;
+            font-family: 'Inter', sans-serif;
+        }
+
+        .ch-num {
+            font-family: 'Fira Code', monospace;
+            font-weight: 600;
+            font-size: 1rem;
+            color: var(--color-primary);
+            border: 1px solid var(--color-primary);
+            border-radius: 8px;
+            padding: 6px 11px;
+            background: color-mix(in srgb, var(--color-primary) 10%, transparent);
+            display: inline-block;
+        }
+
+        /* Table */
+        .euler-table { width: 100%; border-collapse: collapse; margin: 20px 0; font-size: .9rem; }
+        .euler-table th, .euler-table td { padding: 11px 10px; text-align: center; border-bottom: 1px solid rgba(255,255,255,0.1); }
+        .euler-table th { font-family: "Fira Code", monospace; font-size: .74rem; letter-spacing: .06em; text-transform: uppercase; color: var(--color-secondary); }
+        .euler-table td:first-child, .euler-table th:first-child { text-align: left; }
+        .euler-table tr:hover td { background: rgba(0, 212, 255, 0.05); }
+
+        /* Glossary */
+        .gloss dt { font-weight: 600; margin-top: 16px; color: var(--color-primary); display: flex; align-items: baseline; gap: 10px; font-family: 'Fira Code', monospace; font-size: 0.9rem;}
+        .gloss dd { margin: .25rem 0 1rem; color: #cbd5e1; font-size: .9rem; font-weight: 300;}
+        .badge { font-family: "Fira Code", monospace; font-size: .6rem; padding: 2px 7px; border-radius: 20px; letter-spacing: .06em; text-transform: uppercase; border: 1px solid rgba(0,212,255,0.3); color: var(--color-holo1); }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: rgba(0,0,0,0.2); }
+        ::-webkit-scrollbar-thumb { background: linear-gradient(to bottom, color-mix(in srgb, var(--color-primary) 30%, transparent), color-mix(in srgb, var(--color-primary) 70%, transparent)); border-radius: 10px; }
+
+        /* Details / Accordion */
+        details summary::-webkit-details-marker { display:none; }
+
+        /* Sub-lesson stepper chips */
+        .step-chip{padding:.35rem .7rem;border-radius:.4rem;border:1px solid rgba(255,255,255,.1);color:#94a3b8;text-transform:uppercase;letter-spacing:.08em;transition:all .2s;white-space:nowrap;}
+        .step-chip:hover{color:#fff;border-color:rgba(255,255,255,.35);}
+        .step-chip[aria-current="page"]{color:var(--accent);border-color:var(--accent);background:color-mix(in srgb,var(--accent) 14%,transparent);box-shadow:0 0 12px color-mix(in srgb,var(--accent) 30%,transparent);}
+    </style>
+</head>
+<body class="flex flex-col h-screen overflow-hidden">
+
+    <!-- Atmospheric Layers -->
+    <div class="nebula-layer"></div>
+    <div class="starfield"></div>
+    <div class="starfield starfield-layer-2"></div>
+    <div class="vignette-layer"></div>
+
+    <div class="relative z-20 flex flex-col w-full h-full overflow-y-auto custom-scrollbar">
+        
+        <!-- Header / Navigation -->
+        <header class="w-full py-4 border-b border-yellow-600/30 glass-panel z-50 flex-shrink-0 relative shadow-2xl sticky top-0 !mb-0 !rounded-none">
+            <div class="w-full mx-auto px-4 md:px-6 flex flex-col md:flex-row justify-between items-center gap-4">
+                
+                <div class="flex items-center space-x-4">
+                    <svg width="40" height="40" viewBox="0 0 100 100" class="fill-none" style="stroke: var(--color-primary); filter: drop-shadow(0 0 5px var(--color-primary));">
+                        <circle cx="50" cy="50" r="45" stroke-width="2"/>
+                        <line x1="30" y1="30" x2="70" y2="70" stroke-width="2.5" stroke-linecap="round"/>
+                        <line x1="70" y1="30" x2="30" y2="70" stroke-width="2.5" stroke-linecap="round"/>
+                        <line x1="50" y1="15" x2="50" y2="85" stroke-width="2.5" stroke-linecap="round"/>
+                        <path d="M 50,15 C 75,15 75,45 50,45" stroke-width="2.5" stroke-linecap="round"/>
+                        <text x="20" y="55" fill="var(--color-primary)" stroke="none" font-family="Cinzel, serif" font-size="16" text-anchor="middle">A</text>
+                        <text x="80" y="55" fill="var(--color-primary)" stroke="none" font-family="Cinzel, serif" font-size="16" text-anchor="middle">Ω</text>
+                    </svg>
+                    <h1 class="text-xl md:text-2xl font-bold tracking-[0.2em] gold-gradient">OWL ACADEMY</h1>
+                </div>
+
+                <div class="text-center hidden md:block flex-grow">
+                    <p class="text-[10px] tracking-[0.3em] uppercase mb-1 text-purple-400 font-mono">Department I • Lesson 1 · Sub-lesson 1B — Expanded Theory</p>
+                    <h2 class="text-lg font-bold tracking-[0.1em] mystical-font text-white">LESSON 1B: EULER's CHARACTERISTICS</h2>
+                </div>
+
+                <div class="flex items-center space-x-4">
+                    <a href="1b_topological_invariants.html" class="flex items-center gap-2 px-4 py-2 rounded text-xs font-bold tracking-[0.15em] mystical-font transition-all bg-purple-900/30 text-purple-300 border border-purple-500/40 hover:bg-purple-800/50 hover:text-white shadow-[0_0_15px_rgba(138,43,226,0.15)] whitespace-nowrap">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+                        ← Sub-lesson 1B
+                    </a>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="flex-grow w-full max-w-7xl mx-auto px-4 md:px-8 py-8 space-y-8 relative z-20" id="top">
+
+            <!-- ===== Lesson 1 sub-lesson stepper (interweave nav) ===== -->
+            <nav class="w-full" aria-label="Lesson 1 sub-lessons">
+              <div class="glass-panel rounded-xl p-3 flex flex-wrap items-center justify-center gap-2 text-[10px] md:text-xs font-mono !mb-0">
+                <a href="index.html" class="px-3 py-1.5 rounded border border-yellow-600/40 text-yellow-500 hover:bg-yellow-500/10 transition-colors tracking-widest uppercase">◆ Hub</a>
+                <span class="text-gray-700 hidden md:inline">/</span>
+                <a href="1a_geometric_primitives.html" class="step-chip">1A · Primitives</a>
+                <a href="1b_topological_invariants.html" class="step-chip" aria-current="page">1B · Topology</a>
+                <a href="1c_harmonic_resonance.html" class="step-chip">1C · Resonance</a>
+                <a href="1d_tiling_problem.html" class="step-chip">1D · Tiling</a>
+                <a href="1e_engine_implementation.html" class="step-chip">1E · Engine</a>
+                <a href="1f_application_lab.html" class="step-chip">1F · Lab</a>
+              </div>
+            </nav>
+
+            <!-- HERO SECTION -->
+            <div class="glass-panel">
+                <div class="absolute top-0 left-1/2 -translate-x-1/2 w-3/4 h-1 bg-gradient-to-r from-transparent via-purple-500 to-transparent opacity-50"></div>
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+                    <div>
+                        <span class="font-mono text-xs text-gold-deep uppercase tracking-widest text-yellow-500 flex items-center gap-2 mb-4">
+                            <span class="w-8 h-px bg-yellow-500 block"></span> A field guide for absolute beginners
+                        </span>
+                        <h1 class="text-4xl md:text-5xl font-bold mystical-font text-white leading-tight mb-6">Euler's Characteristic</h1>
+                        <p class="text-xl text-gray-400 font-light italic mb-6">
+                            A topological invariant, and how one counting rule proves the limits of structure.
+                        </p>
+                        
+                        <div class="bg-black/60 border border-purple-900/50 p-4 rounded-lg my-6 text-center shadow-[inset_0_0_20px_rgba(138,43,226,0.15)] max-w-md mx-auto lg:mx-0">
+                            <div class="text-3xl font-mono text-white mb-2">
+                                $\chi = V - E + F = 2$
+                            </div>
+                        </div>
+
+                        <p class="text-gray-300 font-light leading-relaxed text-base mb-8">
+                            There is a simple counting rule that every ball-shaped solid in the universe obeys. Once you understand it, you can <strong class="text-white">prove that certain shapes are impossible</strong> and others are forced to exist exactly the way they do.
+                        </p>
+                        
+                        <!-- Table of Contents -->
+                        <div class="bg-black/50 border border-yellow-600/30 rounded-xl p-6">
+                            <h2 class="text-sm font-mono text-gray-400 mb-4 uppercase tracking-widest border-b border-gray-800 pb-2"># Index Directory</h2>
+                            <ul class="grid grid-cols-1 md:grid-cols-2 gap-y-3 gap-x-8 text-sm font-light">
+                                <li><a href="#p1" class="flex items-baseline gap-3 text-gray-300 hover:text-yellow-400 transition-colors"><span class="font-mono text-yellow-600 text-xs">01</span> Three everyday words</a></li>
+                                <li><a href="#p2" class="flex items-baseline gap-3 text-gray-300 hover:text-yellow-400 transition-colors"><span class="font-mono text-yellow-600 text-xs">02</span> The discovery</a></li>
+                                <li><a href="#p3" class="flex items-baseline gap-3 text-gray-300 hover:text-yellow-400 transition-colors"><span class="font-mono text-yellow-600 text-xs">03</span> Giving it a name</a></li>
+                                <li><a href="#p4" class="flex items-baseline gap-3 text-gray-300 hover:text-yellow-400 transition-colors"><span class="font-mono text-yellow-600 text-xs">04</span> Why is it always 2?</a></li>
+                                <li><a href="#p5" class="flex items-baseline gap-3 text-gray-300 hover:text-yellow-400 transition-colors"><span class="font-mono text-yellow-600 text-xs">05</span> A topological invariant</a></li>
+                                <li><a href="#p6" class="flex items-baseline gap-3 text-gray-300 hover:text-yellow-400 transition-colors"><span class="font-mono text-yellow-600 text-xs">06</span> Proving structural limits</a></li>
+                                <li><a href="#p7" class="flex items-baseline gap-3 text-gray-300 hover:text-yellow-400 transition-colors"><span class="font-mono text-yellow-600 text-xs">07</span> Where it shows up</a></li>
+                                <li><a href="#p8" class="flex items-baseline gap-3 text-gray-300 hover:text-yellow-400 transition-colors"><span class="font-mono text-yellow-600 text-xs">08</span> Suggested lesson flow</a></li>
+                                <li><a href="#p9" class="flex items-baseline gap-3 text-gray-300 hover:text-yellow-400 transition-colors"><span class="font-mono text-yellow-600 text-xs">09</span> Common misconceptions</a></li>
+                                <li><a href="#p10" class="flex items-baseline gap-3 text-gray-300 hover:text-yellow-400 transition-colors"><span class="font-mono text-yellow-600 text-xs">10</span> Check for understanding</a></li>
+                                <li><a href="#glossary" class="flex items-baseline gap-3 text-gray-300 hover:text-yellow-400 transition-colors"><span class="font-mono text-yellow-600 text-xs">—</span> Glossary</a></li>
+                            </ul>
+                        </div>
+                    </div>
+                    
+                    <!-- Instructor Note -->
+                    <div class="bg-purple-900/10 border border-purple-500/30 rounded-xl p-6 lg:p-8 shadow-inner h-full flex flex-col justify-center">
+                        <span class="font-mono text-[10px] text-purple-400 uppercase tracking-widest block mb-4 border-b border-purple-500/30 pb-2">Instructor's Terminal</span>
+                        <p class="text-sm text-purple-200/80 leading-relaxed mb-4">
+                            This page is written for an operator preparing to understand the topology of the S.P.I.R.E. Engine, assuming the audience has never studied mathematics or geometry beyond everyday life.
+                        </p>
+                        <p class="text-sm text-purple-200/80 leading-relaxed">
+                            The whole approach rests on one principle: <strong class="text-white">let learners count and discover the pattern first, and reveal the abstraction only after they have already felt it.</strong> Nobody needs algebra to count the corners of a box. By the time a learner has counted parts on a few real objects and noticed that a certain number always comes out the same, the surprise is already in the room. Everything formal we add afterward is just a way of explaining something they discovered with their own hands.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- PART 1 & 2 -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                
+                <!-- Part 1 -->
+                <div id="p1" class="glass-panel !mb-0 flex flex-col">
+                    <div class="flex items-start gap-4 mb-6">
+                        <span class="ch-num">01</span>
+                        <div>
+                            <h2 class="text-xl text-white font-bold mystical-font tracking-wide">Three everyday words</h2>
+                        </div>
+                    </div>
+                    <div class="prose prose-invert text-sm text-gray-300 font-light leading-relaxed flex-grow space-y-4">
+                        <p>Before anything else, learners need exactly three words. Each one names something you can point at on an ordinary cardboard box. Hold up a box (a tissue box, a die, a shoebox) and name the parts out loud.</p>
+                        <ul class="list-disc pl-5 space-y-2">
+                            <li>A <strong class="text-yellow-500">vertex</strong> is a <em>corner</em>: a sharp point where the box comes to a tip. (The plural is "vertices".)</li>
+                            <li>An <strong class="text-cyan-400">edge</strong> is a <em>straight line where two flat sides meet</em>: the crease you'd run a finger along.</li>
+                            <li>A <strong class="text-purple-400">face</strong> is a <em>flat side</em>: a panel you could rest flat on a table.</li>
+                        </ul>
+                        <p>That is the entire vocabulary. Vertices are corners, edges are lines, faces are flat sides. No symbols yet, no formulas: just three words for three things you can touch.</p>
+                    </div>
+                </div>
+
+                <!-- Part 2 -->
+                <div id="p2" class="glass-panel !mb-0 flex flex-col">
+                    <div class="flex items-start gap-4 mb-6">
+                        <span class="ch-num">02</span>
+                        <div>
+                            <h2 class="text-xl text-white font-bold mystical-font tracking-wide">Count, and watch a pattern appear</h2>
+                        </div>
+                    </div>
+                    
+                    <!-- Cube Proof SVG -->
+                    <div class="bg-black/50 border border-gray-800 rounded-lg p-4 flex flex-col items-center justify-center mb-6">
+                        <svg viewBox="0 0 500 220" class="w-full h-auto drop-shadow-lg" aria-label="Counting a cube: vertices, edges, and faces">
+                            <!-- Cube drawing -->
+                            <polygon points="50,180 140,180 140,90 50,90" fill="rgba(138,43,226,0.15)" style="stroke:none"/>
+                            <g stroke="#00d4ff" stroke-width="2" stroke-linecap="round">
+                                <line x1="50" y1="180" x2="140" y2="180"/><line x1="140" y1="180" x2="140" y2="90"/>
+                                <line x1="140" y1="90" x2="50" y2="90"/><line x1="50" y1="90" x2="50" y2="180"/>
+                                <line x1="90" y1="145" x2="180" y2="145"/><line x1="180" y1="145" x2="180" y2="55"/>
+                                <line x1="180" y1="55" x2="90" y2="55"/><line x1="90" y1="55" x2="90" y2="145"/>
+                                <line x1="50" y1="180" x2="90" y2="145"/><line x1="140" y1="180" x2="180" y2="145"/>
+                                <line x1="140" y1="90" x2="180" y2="55"/><line x1="50" y1="90" x2="90" y2="55"/>
+                            </g>
+                            <g fill="#D4AF37">
+                                <circle cx="50" cy="180" r="4"/><circle cx="140" cy="180" r="4"/><circle cx="140" cy="90" r="4"/>
+                                <circle cx="50" cy="90" r="4"/><circle cx="90" cy="145" r="4"/><circle cx="180" cy="145" r="4"/>
+                                <circle cx="180" cy="55" r="4"/><circle cx="90" cy="55" r="4"/>
+                            </g>
+                            
+                            <!-- Legend and math -->
+                            <rect x="220" y="60" width="250" height="135" rx="8" fill="rgba(0,0,0,0.4)" stroke="#37425a" stroke-width="1"/>
+                            
+                            <circle cx="240" cy="85" r="4" fill="#D4AF37"/>
+                            <text x="255" y="89" font-family="Fira Code, monospace" font-size="12" fill="#8e9eab">Vertices (corners)</text>
+                            <text x="440" y="89" font-family="Fira Code, monospace" font-weight="bold" font-size="14" fill="#D4AF37">8</text>
+                            
+                            <line x1="234" y1="110" x2="246" y2="110" stroke="#00d4ff" stroke-width="2" stroke-linecap="round"/>
+                            <text x="255" y="114" font-family="Fira Code, monospace" font-size="12" fill="#8e9eab">Edges (lines)</text>
+                            <text x="440" y="114" font-family="Fira Code, monospace" font-weight="bold" font-size="14" fill="#00d4ff">12</text>
+                            
+                            <rect x="235" y="130" width="10" height="10" rx="1" fill="rgba(138,43,226,0.3)" stroke="#8A2BE2" stroke-width="1"/>
+                            <text x="255" y="139" font-family="Fira Code, monospace" font-size="12" fill="#8e9eab">Faces (sides)</text>
+                            <text x="440" y="139" font-family="Fira Code, monospace" font-weight="bold" font-size="14" fill="#8A2BE2">6</text>
+                            
+                            <line x1="230" y1="160" x2="460" y2="160" stroke="#37425a" stroke-width="1"/>
+                            
+                            <text x="345" y="180" font-family="Fira Code, monospace" font-size="14" fill="#e2e8f0" text-anchor="middle">
+                                <tspan fill="#D4AF37">8</tspan> - <tspan fill="#00d4ff">12</tspan> + <tspan fill="#8A2BE2">6</tspan> = <tspan fill="#fff" font-weight="bold">2</tspan>
+                            </text>
+                        </svg>
+                    </div>
+
+                    <p class="text-sm text-gray-300 font-light">Fill in the counts in a shared table as you go:</p>
+                    <table class="euler-table text-xs mt-2">
+                        <thead><tr><th>Shape</th><th class="text-yellow-500">Vertices</th><th class="text-cyan-400">Edges</th><th class="text-purple-400">Faces</th><th class="text-white">V - E + F</th></tr></thead>
+                        <tbody class="text-gray-300">
+                            <tr><td>Triangular pyramid</td><td class="font-mono">4</td><td class="font-mono">6</td><td class="font-mono">4</td><td class="font-bold text-white">2</td></tr>
+                            <tr><td>Cube</td><td class="font-mono">8</td><td class="font-mono">12</td><td class="font-mono">6</td><td class="font-bold text-white">2</td></tr>
+                            <tr><td>Octahedron (gem)</td><td class="font-mono">6</td><td class="font-mono">12</td><td class="font-mono">8</td><td class="font-bold text-white">2</td></tr>
+                            <tr><td>House (cube + roof)</td><td class="font-mono">10</td><td class="font-mono">15</td><td class="font-mono">7</td><td class="font-bold text-white">2</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- PART 3 & 4 -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                
+                <!-- Part 3 -->
+                <div id="p3" class="glass-panel !mb-0 flex flex-col">
+                    <div class="flex items-start gap-4 mb-6">
+                        <span class="ch-num">03</span>
+                        <div>
+                            <h2 class="text-xl text-white font-bold mystical-font tracking-wide">Giving it a name</h2>
+                        </div>
+                    </div>
+                    <div class="prose prose-invert text-sm text-gray-300 font-light leading-relaxed flex-grow space-y-4">
+                        <p>Now, and only now, we name the thing they discovered. The quantity "corners minus lines plus flat sides" is called the <strong>Euler characteristic</strong>, after the mathematician Leonhard Euler, and it's written with the Greek letter chi: $\chi$. Using the first letters of the three words, the discovery becomes a short sentence:</p>
+                        
+                        <div class="bg-black/60 border border-purple-900/50 p-4 rounded-lg my-6 text-center shadow-[inset_0_0_20px_rgba(138,43,226,0.15)]">
+                            <div class="text-2xl font-mono text-white">
+                                $\chi = V - E + F = 2$
+                            </div>
+                        </div>
+
+                        <p>Two things are worth stressing, because both are surprising. It does <strong>not</strong> depend on size: a matchbox and a shipping container both give 2. And it does <strong>not</strong> depend on how lumpy or pointy the shape is: you can dent it, twist it, add bumps, and as long as you don't tear it or poke a hole through it, the number is locked at 2.</p>
+                        <p>That independence is the clue that we've found something deeper than ordinary measuring. We've found a property of the shape's <em>connection pattern</em> rather than its size.</p>
+                    </div>
+                </div>
+
+                <!-- Part 4 -->
+                <div id="p4" class="glass-panel !mb-0 flex flex-col">
+                    <div class="flex items-start gap-4 mb-6">
+                        <span class="ch-num">04</span>
+                        <div>
+                            <h2 class="text-xl text-white font-bold mystical-font tracking-wide">Why is it always 2?</h2>
+                        </div>
+                    </div>
+                    
+                    <p class="text-sm text-gray-300 font-light mb-6">
+                        Imagine the surface of the shape is a thin balloon. Poke a hole in one face and stretch that hole wide open, until you can flatten the whole balloon onto a tabletop.
+                    </p>
+
+                    <!-- Flattening SVG -->
+                    <div class="bg-black/50 border border-gray-800 rounded-lg p-4 flex flex-col items-center justify-center mb-6">
+                        <svg viewBox="0 0 680 195" class="w-full h-auto drop-shadow-lg" aria-label="Flattening a cube to prove the Euler characteristic">
+                            <defs>
+                                <marker id="ar" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                                    <path d="M2 1L8 5L2 9" fill="none" stroke="#8e9eab" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                                </marker>
+                            </defs>
+                            
+                            <!-- Panel A: cube with hole -->
+                            <g stroke="#00d4ff" stroke-width="2" stroke-linecap="round" fill="none">
+                                <path d="M60 70 H125 V135 H60 Z"/>
+                                <path d="M88 46 H153 V111 H88 Z"/>
+                                <path d="M60 70 L88 46 M125 70 L153 46 M125 135 L153 111 M60 135 L88 111"/>
+                            </g>
+                            <ellipse cx="92" cy="102" rx="12" ry="8" fill="#090614" stroke="#ff3366" stroke-width="2" stroke-dasharray="4 3"/>
+                            <text x="106" y="172" font-family="Inter, sans-serif" font-size="12" fill="#8e9eab" text-anchor="middle">1. Poke a hole in a face</text>
+                            
+                            <!-- arrow -->
+                            <line x1="190" y1="92" x2="240" y2="92" stroke="#8e9eab" stroke-width="2" marker-end="url(#ar)"/>
+                            
+                            <!-- Panel B: flattened map -->
+                            <polygon points="317,74 363,74 363,120 317,120" fill="rgba(138,43,226,0.3)" style="stroke:none"/>
+                            <g stroke="#00d4ff" stroke-width="2" stroke-linecap="round" fill="none">
+                                <path d="M270 52 H410 V142 H270 Z"/>
+                                <path d="M317 74 H363 V120 H317 Z"/>
+                                <path d="M270 52 L317 74 M410 52 L363 74 M410 142 L363 120 M270 142 L317 120"/>
+                            </g>
+                            <text x="340" y="172" font-family="Inter, sans-serif" font-size="12" fill="#8e9eab" text-anchor="middle">2. Stretch it out flat</text>
+                            
+                            <!-- arrow -->
+                            <line x1="440" y1="92" x2="490" y2="92" stroke="#8e9eab" stroke-width="2" marker-end="url(#ar)"/>
+                            
+                            <!-- Panel C: single triangle -->
+                            <polygon points="495,142 620,142 557,50" fill="rgba(138,43,226,0.3)" stroke="#00d4ff" stroke-width="2" stroke-linejoin="round"/>
+                            <text x="557" y="120" font-family="Fira Code, monospace" font-size="14" fill="#fff" text-anchor="middle" font-weight="bold">
+                                3 - 3 + 2 = <tspan fill="#D4AF37">2</tspan>
+                            </text>
+                            <text x="557" y="172" font-family="Inter, sans-serif" font-size="12" fill="#8e9eab" text-anchor="middle">3. Reduce to one triangle</text>
+                        </svg>
+                    </div>
+
+                    <p class="text-sm text-gray-300 font-light leading-relaxed">
+                        Now we have a flat map. On the map we simplify step by step, and the magic is that <strong>the number never changes while we simplify</strong>. Keep peeling edges away until a single triangle is left: 3 corners, 3 lines, and 2 regions (the triangle plus the empty space around it representing the hole we poked), so $3 - 3 + 2 = 2$.
+                    </p>
+                </div>
+            </div>
+
+            <!-- PART 5 -->
+            <div id="p5" class="glass-panel relative overflow-hidden border-cyan-900/30">
+                <div class="absolute top-0 right-0 w-64 h-64 bg-cyan-500/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3"></div>
+                
+                <div class="flex items-start gap-4 mb-6">
+                    <span class="ch-num !border-cyan-500 !text-cyan-400 bg-cyan-500/10">05</span>
+                    <div>
+                        <h2 class="text-2xl text-white font-bold mystical-font tracking-wide">The deep idea: a "topological invariant"</h2>
+                    </div>
+                </div>
+
+                <div class="prose prose-invert max-w-none text-gray-300 font-light text-sm md:text-base leading-relaxed space-y-4">
+                    <p>
+                        <strong>Topology</strong> is sometimes called "rubber-sheet geometry": the study of the features of a shape that <em>survive bending and stretching</em>. To a topologist, a coffee mug and a donut are the <em>same shape</em>: each is a single lump with exactly one hole (the mug's hole is its handle).
+                    </p>
+                    <p>
+                        A property that survives all that bending is called an <strong>invariant</strong>. What the Euler characteristic actually measures is almost absurdly simple: <strong>the number of holes.</strong> Writing $g$ for the number of holes (mathematicians call this the "genus"), the rule generalizes beautifully:
+                    </p>
+                    
+                    <div class="bg-black/60 border border-cyan-900/50 p-6 rounded-lg my-6 text-center shadow-[inset_0_0_20px_rgba(0,212,255,0.1)]">
+                        <div class="text-2xl font-mono text-white mb-2">
+                            $\chi = 2 - 2g$
+                        </div>
+                    </div>
+
+                    <div class="overflow-x-auto">
+                        <table class="euler-table w-full text-xs text-left">
+                            <thead><tr><th class="w-16"></th><th>Shape</th><th class="text-center">Holes ($g$)</th><th class="text-center text-cyan-400">$\chi$</th></tr></thead>
+                            <tbody class="text-gray-300">
+                                <tr>
+                                    <td class="text-center"><svg width="32" height="22" class="inline"><circle cx="16" cy="11" r="8.5" fill="rgba(0,212,255,0.1)" stroke="#00d4ff" stroke-width="1.3"/></svg></td>
+                                    <td>Sphere / any ball-shaped solid</td><td class="font-mono text-center">0</td><td class="font-mono text-cyan-400 font-bold text-center">2</td>
+                                </tr>
+                                <tr>
+                                    <td class="text-center"><svg width="32" height="22" class="inline"><circle cx="16" cy="11" r="8.5" fill="rgba(0,212,255,0.1)" stroke="#00d4ff" stroke-width="1.3"/><circle cx="16" cy="11" r="3.4" fill="#090614"/></svg></td>
+                                    <td>Donut / coffee mug</td><td class="font-mono text-center">1</td><td class="font-mono text-cyan-400 font-bold text-center">0</td>
+                                </tr>
+                                <tr>
+                                    <td class="text-center"><svg width="40" height="22" class="inline"><circle cx="12" cy="11" r="7.5" fill="rgba(0,212,255,0.1)" stroke="#00d4ff" stroke-width="1.3"/><circle cx="12" cy="11" r="3" fill="#090614"/><circle cx="27" cy="11" r="7.5" fill="rgba(0,212,255,0.1)" stroke="#00d4ff" stroke-width="1.3"/><circle cx="27" cy="11" r="3" fill="#090614"/></svg></td>
+                                    <td>Two-holed pretzel</td><td class="font-mono text-center">2</td><td class="font-mono text-cyan-400 font-bold text-center">-2</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- PART 6 -->
+            <div id="p6" class="glass-panel">
+                <div class="flex items-start gap-4 mb-6">
+                    <span class="ch-num">06</span>
+                    <div>
+                        <h2 class="text-2xl text-white font-bold mystical-font tracking-wide">Proving structural limits</h2>
+                    </div>
+                </div>
+
+                <div class="prose prose-invert max-w-none text-gray-300 font-light text-sm md:text-base leading-relaxed space-y-4 mb-8">
+                    <p>
+                        This is where it becomes a <em>tool</em>. A little counting can rule out infinitely many "what if" shapes in a single stroke. 
+                    </p>
+                    <h3 class="text-lg text-white font-bold mystical-font mt-6 mb-2">Limit 1: Exactly five regular solids</h3>
+                    <p>
+                        How many ways are there to build a <em>perfectly regular</em> solid, where every face is the same regular shape, and the same number of faces meet at every corner? You might guess infinitely many. There are exactly five: the <strong>Platonic solids</strong>. By running the math through Euler's formula, every other configuration fails to equal 2.
+                    </p>
+                </div>
+
+                <div class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
+                    <!-- Tet -->
+                    <div class="bg-black/40 border border-yellow-600/30 rounded-xl p-4 text-center hover:bg-yellow-900/20 transition-colors">
+                        <svg width="48" height="48" viewBox="0 0 48 48" class="mx-auto mb-3"><polygon points="24,8 42,40 6,40" fill="rgba(212,175,55,0.15)" stroke="#D4AF37" stroke-width="1.4" stroke-linejoin="round"/></svg>
+                        <p class="font-mono font-bold text-xs text-yellow-500 mb-1">Tetrahedron</p>
+                        <p class="text-[10px] text-gray-400 leading-tight">4 triangles</p>
+                    </div>
+                    <!-- Cube -->
+                    <div class="bg-black/40 border border-yellow-600/30 rounded-xl p-4 text-center hover:bg-yellow-900/20 transition-colors">
+                        <svg width="48" height="48" viewBox="0 0 48 48" class="mx-auto mb-3"><rect x="9" y="9" width="30" height="30" rx="2" fill="rgba(212,175,55,0.15)" stroke="#D4AF37" stroke-width="1.4"/></svg>
+                        <p class="font-mono font-bold text-xs text-yellow-500 mb-1">Cube</p>
+                        <p class="text-[10px] text-gray-400 leading-tight">6 squares</p>
+                    </div>
+                    <!-- Octahedron -->
+                    <div class="bg-black/40 border border-yellow-600/30 rounded-xl p-4 text-center hover:bg-yellow-900/20 transition-colors">
+                        <svg width="48" height="48" viewBox="0 0 48 48" class="mx-auto mb-3"><polygon points="24,8 42,40 6,40" fill="rgba(212,175,55,0.15)" stroke="#D4AF37" stroke-width="1.4" stroke-linejoin="round"/></svg>
+                        <p class="font-mono font-bold text-xs text-yellow-500 mb-1">Octahedron</p>
+                        <p class="text-[10px] text-gray-400 leading-tight">8 triangles</p>
+                    </div>
+                    <!-- Dodecahedron -->
+                    <div class="bg-black/40 border border-yellow-600/30 rounded-xl p-4 text-center hover:bg-yellow-900/20 transition-colors">
+                        <svg width="48" height="48" viewBox="0 0 48 48" class="mx-auto mb-3"><polygon points="24,6 41.1,18.4 34.6,38.6 13.4,38.6 6.9,18.4" fill="rgba(212,175,55,0.15)" stroke="#D4AF37" stroke-width="1.4" stroke-linejoin="round"/></svg>
+                        <p class="font-mono font-bold text-xs text-yellow-500 mb-1">Dodecahedron</p>
+                        <p class="text-[10px] text-gray-400 leading-tight">12 pentagons</p>
+                    </div>
+                    <!-- Icosahedron -->
+                    <div class="bg-black/40 border border-yellow-600/30 rounded-xl p-4 text-center hover:bg-yellow-900/20 transition-colors">
+                        <svg width="48" height="48" viewBox="0 0 48 48" class="mx-auto mb-3"><polygon points="24,8 42,40 6,40" fill="rgba(212,175,55,0.15)" stroke="#D4AF37" stroke-width="1.4" stroke-linejoin="round"/></svg>
+                        <p class="font-mono font-bold text-xs text-yellow-500 mb-1">Icosahedron</p>
+                        <p class="text-[10px] text-gray-400 leading-tight">20 triangles</p>
+                    </div>
+                </div>
+
+                <div class="simple-translation !border-purple-500/50 !bg-purple-500/10">
+                    <h4 class="text-sm font-bold text-purple-400 mb-1 font-mono uppercase tracking-widest">Limit 2: Every soccer ball has exactly 12 pentagons</h4>
+                    <p class="text-xs text-purple-100/80 m-0">
+                        A classic soccer ball is stitched from black pentagons and white hexagons. If you use Euler's formula, the math proves that you can use as many hexagons as you want, but you are <em>forced</em> to use exactly 12 pentagons to make it curl shut into a ball. The same law governs carbon molecules (buckyballs) and virus shells.
+                    </p>
+                </div>
+            </div>
+
+            <!-- PART 7, 8, 9 -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <!-- Part 7 -->
+                <div id="p7" class="glass-panel !p-6 !mb-0">
+                    <span class="ch-num text-xs mb-3">07</span>
+                    <h3 class="text-sm font-bold text-white mb-2 font-mono uppercase tracking-widest">Where it shows up</h3>
+                    <p class="text-xs text-gray-400 font-light leading-relaxed">
+                        In <strong>chemistry</strong>, carbon fullerenes are governed by the 12-pentagon law. In <strong>biology</strong>, virus shells follow the same constraints. In <strong>computer graphics</strong>, software checks the Euler characteristic as a fast sanity test: if a solid ball doesn't return 2, there is a hole in the 3D model.
+                    </p>
+                </div>
+                <!-- Part 8 -->
+                <div id="p8" class="glass-panel !p-6 !mb-0">
+                    <span class="ch-num text-xs mb-3">08</span>
+                    <h3 class="text-sm font-bold text-white mb-2 font-mono uppercase tracking-widest">Suggested lesson flow</h3>
+                    <p class="text-xs text-gray-400 font-light leading-relaxed">
+                        Open with physical objects, not words. Put a die and a ball on the table. Run the discovery activity. Let them notice the answer is always 2. Name it only after the pattern is felt. A genuinely effective option: build shapes from toothpicks and gumdrops.
+                    </p>
+                </div>
+                <!-- Part 9 -->
+                <div id="p9" class="glass-panel !p-6 !mb-0">
+                    <span class="ch-num text-xs mb-3">09</span>
+                    <h3 class="text-sm font-bold text-white mb-2 font-mono uppercase tracking-widest">Misconceptions</h3>
+                    <p class="text-xs text-gray-400 font-light leading-relaxed">
+                        <strong class="text-gray-300">"Bigger shapes should give a bigger number."</strong> Lean into the surprise that Euler ignores size completely.<br>
+                        <strong class="text-gray-300">"A donut should give 2."</strong> The donut gives 0 precisely because of its hole. The difference is the whole reason the number is interesting.
+                    </p>
+                </div>
+            </div>
+
+            <!-- PART 10: Check for Understanding -->
+            <div id="p10" class="glass-panel">
+                <div class="flex items-start gap-4 mb-6">
+                    <span class="ch-num">10</span>
+                    <div>
+                        <h2 class="text-2xl text-white font-bold mystical-font tracking-wide">Check for understanding</h2>
+                        <p class="text-gray-400 font-light italic text-sm mt-1">Graduated from simple counting to applying structural limits.</p>
+                    </div>
+                </div>
+
+                <div class="space-y-3">
+                    <details class="bg-black/40 border border-gray-800 hover:border-cyan-500/50 transition-colors rounded-lg p-4 cursor-pointer group">
+                        <summary class="font-mono text-sm text-cyan-400 select-none outline-none list-none flex items-center justify-between">
+                            1. Count the V, E, and F of a square-based pyramid. Compute V - E + F.
+                            <span class="text-gray-500 group-open:rotate-180 transition-transform text-xs">▼</span>
+                        </summary>
+                        <div class="mt-4 pt-4 border-t border-gray-800 text-gray-300 font-light text-sm">
+                            5 corners - 8 lines + 5 faces = <strong class="text-white">2</strong>.
+                        </div>
+                    </details>
+                    
+                    <details class="bg-black/40 border border-gray-800 hover:border-cyan-500/50 transition-colors rounded-lg p-4 cursor-pointer group">
+                        <summary class="font-mono text-sm text-cyan-400 select-none outline-none list-none flex items-center justify-between">
+                            2. Without counting, what is V - E + F for a soccer ball?
+                            <span class="text-gray-500 group-open:rotate-180 transition-transform text-xs">▼</span>
+                        </summary>
+                        <div class="mt-4 pt-4 border-t border-gray-800 text-gray-300 font-light text-sm">
+                            <strong class="text-white">2</strong> — because it is a completely enclosed ball-shaped solid with no holes.
+                        </div>
+                    </details>
+
+                    <details class="bg-black/40 border border-gray-800 hover:border-cyan-500/50 transition-colors rounded-lg p-4 cursor-pointer group">
+                        <summary class="font-mono text-sm text-cyan-400 select-none outline-none list-none flex items-center justify-between">
+                            3. Why can't a solid be made entirely of hexagons?
+                            <span class="text-gray-500 group-open:rotate-180 transition-transform text-xs">▼</span>
+                        </summary>
+                        <div class="mt-4 pt-4 border-t border-gray-800 text-gray-300 font-light text-sm">
+                            Hexagons meeting three to a corner lie perfectly flat instead of curving to close, so they tile an endless flat floor and never form a closed solid.
+                        </div>
+                    </details>
+
+                    <details class="bg-black/40 border border-gray-800 hover:border-cyan-500/50 transition-colors rounded-lg p-4 cursor-pointer group">
+                        <summary class="font-mono text-sm text-cyan-400 select-none outline-none list-none flex items-center justify-between">
+                            4. Why does a coffee mug have the same Euler characteristic as a donut?
+                            <span class="text-gray-500 group-open:rotate-180 transition-transform text-xs">▼</span>
+                        </summary>
+                        <div class="mt-4 pt-4 border-t border-gray-800 text-gray-300 font-light text-sm">
+                            Each is a single lump with exactly one hole (the mug's hole is its handle), so both have the same Euler characteristic, which is <strong class="text-white">0</strong>.
+                        </div>
+                    </details>
+                </div>
+            </div>
+
+            <!-- GLOSSARY -->
+            <div id="glossary" class="glass-panel h-96 overflow-y-auto pr-2 custom-scrollbar">
+                <div class="flex items-start gap-4 mb-4 sticky top-0 bg-[#0a0514]/90 backdrop-blur pb-2 z-10 border-b border-gray-800">
+                    <h2 class="text-xl text-white font-bold mystical-font">Glossary of Terms</h2>
+                </div>
+                <dl class="gloss">
+                    <dt>Euler characteristic ($\chi$)</dt><dd>The number you get from "vertices minus edges plus faces". Equals 2 for any ball-shaped solid.</dd>
+                    <dt>Topology</dt><dd>"Rubber-sheet geometry": the study of shape features that survive bending and stretching but not tearing or gluing.</dd>
+                    <dt>Invariant</dt><dd>A property that does not change when a shape is bent or stretched. The Euler characteristic is one.</dd>
+                    <dt>Genus ($g$)</dt><dd>The number of holes in a shape (0 for a ball, 1 for a donut). Linked to $\chi$ by $\chi = 2 - 2g$.</dd>
+                    <dt>Platonic solid</dt><dd>A perfectly regular solid: identical regular faces, with the same number meeting at every corner. There are exactly five.</dd>
+                    <dt>Fullerene / buckyball</dt><dd>A carbon molecule ($C_{60}$) shaped like a soccer ball, with exactly 12 pentagons and 20 hexagons.</dd>
+                </dl>
+            </div>
+
+            <!-- CLOSER -->
+            <div class="glass-panel text-center mt-8 shadow-[0_0_40px_rgba(138,43,226,0.05)] border-purple-900/50">
+                <span class="font-mono text-[10px] text-purple-400 uppercase tracking-widest block mb-4">Core Architecture Directive</span>
+                <h2 class="text-2xl md:text-3xl text-white font-bold mystical-font mb-4">The limits of the universe</h2>
+                <p class="text-gray-300 font-light max-w-2xl mx-auto text-sm md:text-base mb-8">
+                    The relationship between curvature and the Euler characteristic is made exact by a result called the <strong>Gauss-Bonnet theorem</strong>. This small counting rule opens directly onto serious mathematics, dictating the structure of viruses, molecules, architectures, and the data stored within the S.P.I.R.E. Engine.
+                </p>
+                <div class="flex justify-center">
+                    <a href="#top" class="px-6 py-2 border border-purple-500/50 text-purple-300 text-xs font-mono tracking-widest rounded hover:bg-purple-500/20 transition-all">RETURN TO TOP ↑</a>
+                </div>
+            </div>
+
+            <!-- ===== Checkpoint + interweave prev/next ===== -->
+            <div class="mt-14 flex flex-col items-center gap-3">
+              <span class="text-[10px] text-gray-500 font-mono uppercase tracking-[0.3em]">Checkpoint</span>
+              <button id="mark-complete-btn" onclick="owlMarkComplete()" class="px-8 py-3 rounded-lg border font-bold tracking-widest text-xs uppercase mystical-font transition-all hover:scale-[1.02]" style="border-color:var(--accent);color:var(--accent);background:color-mix(in srgb,var(--accent) 6%,transparent);">Mark this part complete ✓</button>
+              <p class="text-[10px] text-gray-600 font-mono text-center max-w-md">Progress saves to this browser. Finish all 12 parts to unlock the Tome signoff on the <a href="index.html" class="underline hover:text-yellow-400">lesson hub</a>.</p>
+            </div>
+            <div class="mt-10 pt-6 border-t border-white/10 flex items-center justify-between gap-3 text-xs font-mono">
+              <a href="1b_topological_invariants.html" class="px-4 py-2 rounded border border-white/10 text-gray-400 hover:text-white hover:border-white/30 transition-colors">← Back to 1B lesson</a>
+              <a href="index.html" class="px-4 py-2 rounded border border-yellow-600/40 text-yellow-500 hover:bg-yellow-500/10 transition-colors tracking-widest uppercase">◆ Hub</a>
+              <a href="1c_harmonic_resonance.html" class="px-4 py-2 rounded border border-white/10 text-gray-400 hover:text-white hover:border-white/30 transition-colors">1C Resonance →</a>
+            </div>
+
+        </main>
+        
+        <!-- Footer -->
+        <footer class="w-full border-t border-purple-900/30 bg-black/60 backdrop-blur-md py-6 text-center mt-auto flex-shrink-0 relative z-20">
+            <p class="text-[10px] text-purple-500 uppercase tracking-[0.3em] font-mono">
+                Department I • Owl Academy Archives
+            </p>
+        </footer>
+    </div>
+
+    <script>
+    (function(){
+      var KEY='owl.platonic.progress.v1', PART='1b-x';
+      function rd(){ try{ return JSON.parse(localStorage.getItem(KEY))||{}; }catch(e){ return {}; } }
+      function wr(m){ try{ localStorage.setItem(KEY, JSON.stringify(m)); }catch(e){} }
+      window.owlMarkComplete=function(){ var m=rd(); m[PART]=true; wr(m); paint(true); };
+      function paint(done){ var b=document.getElementById('mark-complete-btn'); if(!b) return;
+        if(done){ b.textContent='✓ Part complete'; b.style.background='color-mix(in srgb,var(--accent) 22%,transparent)'; b.setAttribute('disabled',''); b.style.cursor='default'; } }
+      document.addEventListener('DOMContentLoaded', function(){ paint(!!rd()[PART]); });
+    })();
+    </script>
+</body>
+</html>
