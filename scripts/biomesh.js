@@ -30,7 +30,8 @@ import { getTick } from "./schumann-oracle.js";
 import { signWithMinorTome, verifySealBlock } from "./minor-tome.js";
 import * as SC from "./seal-crypto.js";
 
-export const MAX_GROW_BYTES = 60000;   // Firestore doc budget (streams stored inline)
+export const MAX_GROW_BYTES = 60000;   // Firestore doc budget (stream stored inline)
+export const STREAM_VERSION = "shdccp/2";
 const CHUNK = 720, SEGMENTS = 7;
 
 // ─── the Biostrata grow cell (pure; mirrors BioChain_Enterprise/codex_engine) ─
@@ -52,6 +53,60 @@ function crystalQuat(bytes) {
   return qn([0.5 + s(24) / 254, s(16) / 127, s(8) / 127, s(0) / 127]);
 }
 const quatHex = q => q.map(v => v.toFixed(12)).join(",");
+
+// ─── SHD-CCP 64-bit packet (byte-identical to shdccp_kernel.crystallize) ──────
+// Field map (MSB..LSB of the 64-bit word):
+//   63..60 form · 59 parity · 58..56 spin · 55..24 quat32 · 23..8 payload16 · 7..3 freq · 2..0 amp
+// A biochain body is stored as ONE framed stream of these packets instead of
+// parallel per-chunk arrays: each chunk contributes its crystal packet (which
+// carries the chunk length in its payload field) followed by a length-prefixed
+// residual. Self-describing → no array-index alignment to keep in sync, and no
+// nested arrays for Firestore to choke on.
+const PAR_MASK = M64 ^ (1n << 59n);        // all 64 bits except the parity bit
+function popcountEven(word) {               // parity over the other 63 bits
+  let b = word & PAR_MASK, c = 0n;
+  while (b) { c ^= (b & 1n); b >>= 1n; }
+  return c;                                 // 0n | 1n
+}
+/** chunk bytes → 16-hex SHD-CCP crystal packet (form 9, payload = chunk length). */
+function crystallize(bytes) {
+  const acc = fold64(bytes);
+  const crystal32 = (acc ^ (acc >> 32n)) & 0xFFFFFFFFn;
+  let csum = 0; for (const b of bytes) csum += b; csum &= 0xFF;
+  let word = (9n << 60n) | (crystal32 << 24n)
+           | (BigInt(bytes.length & 0xFFFF) << 8n)
+           | (BigInt(csum >> 3) << 3n) | BigInt(csum & 7);
+  word |= (popcountEven(word) << 59n);      // set parity last
+  return word.toString(16).toUpperCase().padStart(16, "0");
+}
+/** decode a crystal packet → { chunkLen, parityOk }. */
+function unpackPacket(hex) {
+  const word = BigInt("0x" + hex);
+  const parityBit = (word >> 59n) & 1n;
+  return { chunkLen: Number((word >> 8n) & 0xFFFFn), parityOk: popcountEven(word) === parityBit };
+}
+
+/** Frame parallel packet/residual lists into one self-describing hex stream. */
+function frameStream(packetsHex, residualsHex) {
+  let s = "";
+  for (let i = 0; i < packetsHex.length; i++) {
+    const r = residualsHex[i];
+    s += packetsHex[i] + (r.length / 2).toString(16).padStart(8, "0") + r;
+  }
+  return s;
+}
+/** Parse a framed stream back into [{ packet, chunkLen, residual, parityOk }]. */
+export function parseBiochainStream(streamHex) {
+  const frames = []; let p = 0;
+  while (p < streamHex.length) {
+    const packet = streamHex.slice(p, p + 16); p += 16;
+    const rbytes = parseInt(streamHex.slice(p, p + 8), 16); p += 8;
+    if (!Number.isFinite(rbytes)) throw new Error("malformed stream frame");
+    const residual = streamHex.slice(p, p + rbytes * 2); p += rbytes * 2;
+    frames.push({ packet, residual, ...unpackPacket(packet) });
+  }
+  return frames;
+}
 
 class BW { constructor(){ this.bits = []; }
   w(v, n){ for (let i = n - 1; i >= 0; i--) this.bits.push((v >> i) & 1); }
@@ -93,13 +148,13 @@ export async function growBiochain(text) {
   if (!data.length) throw new Error("Nothing to grow.");
   if (data.length > MAX_GROW_BYTES) throw new Error(`Grow input capped at ${MAX_GROW_BYTES} bytes (got ${data.length}).`);
   const chunks = []; for (let i = 0; i < data.length; i += CHUNK) chunks.push(data.slice(i, i + CHUNK));
-  const streams = [], lens = [], leafHashes = [];
-  let ship = 24;
+  const packets = [], residuals = [], leafHashes = [];
   for (let i = 0; i < chunks.length; i++) {
-    const hex = encodeChunk(chunks[i]);
-    streams.push(hex); lens.push(chunks[i].length); ship += hex.length / 2 + 8;
+    residuals.push(encodeChunk(chunks[i]));
+    packets.push(crystallize(chunks[i]));   // carries chunk length in its payload field
     leafHashes.push(await SC.sha256Hex(i + "|" + await SC.sha256Hex(String.fromCharCode(...chunks[i]))));
   }
+  const stream = frameStream(packets, residuals);   // ONE self-describing SHD-CCP stream
   let root = leafHashes.slice();
   while (root.length > 1) {
     if (root.length & 1) root.push(root[root.length - 1]);
@@ -115,28 +170,58 @@ export async function growBiochain(text) {
   for (const c of [...chunks].reverse()) wm = qn(qmul(qconj(crystalQuat(c)), wm));
   const merkleRoot = root[0] || await SC.sha256Hex("empty");
   const chainId = "BC-" + (await SC.sha256Hex(merkleRoot + "|" + quatHex(wf))).slice(0, 24);
+  // shipped = the stream + the leaf-commitment vector + root/weave overhead
+  const ship = stream.length / 2 + leafHashes.length * 32 + 40;
   return {
-    chainId, streams, chunkLens: lens, leafHashes, merkleRoot,
+    chainId, stream, streamVersion: STREAM_VERSION, leafHashes, merkleRoot,
     weaveChiral: quatHex(wf), weaveMirror: quatHex(wm), segCuts, segments: SEGMENTS,
     origBytes: data.length, shippedBytes: Math.round(ship),
     value: +(data.length / ship).toFixed(4),
   };
 }
 
-/** Recreate + verify a chain record client-side. Returns {ok, reasons}. */
+/** Recreate + verify a chain record client-side. Returns {ok, reasons}.
+ *  Reads the single SHD-CCP `stream` (v2); falls back to legacy parallel
+ *  `streams`/`chunkLens` arrays if a pre-stream record is encountered. */
 export async function verifyIntegrity(chain) {
   const reasons = [];
   try {
+    let frames;
+    if (typeof chain.stream === "string") {
+      frames = parseBiochainStream(chain.stream);
+    } else if (Array.isArray(chain.streams)) {                       // legacy record
+      frames = chain.streams.map((residual, i) =>
+        ({ residual, chunkLen: chain.chunkLens[i], parityOk: true }));
+    } else {
+      return { ok: false, reasons: ["no stream data on record"] };
+    }
     const out = [];
-    for (let i = 0; i < chain.streams.length; i++) out.push(decodeChunk(chain.streams[i], chain.chunkLens[i]));
+    for (let i = 0; i < frames.length; i++) {
+      if (frames[i].parityOk === false) { reasons.push(`packet ${i} parity failed`); return { ok: false, reasons }; }
+      out.push(decodeChunk(frames[i].residual, frames[i].chunkLen));
+    }
+    // leaves: each recreated chunk must hash to its committed leaf
+    const leaves = [];
     for (let i = 0; i < out.length; i++) {
       const h = await SC.sha256Hex(i + "|" + await SC.sha256Hex(String.fromCharCode(...out[i])));
-      if (h !== chain.leafHashes[i]) { reasons.push(`leaf ${i} mismatch`); return { ok: false, reasons }; }
+      if (chain.leafHashes && h !== chain.leafHashes[i]) { reasons.push(`leaf ${i} mismatch`); return { ok: false, reasons }; }
+      leaves.push(h);
     }
+    // rebuild the Merkle root from recreated leaves and match the committed root
+    let root = leaves.slice();
+    if (!root.length) root = [await SC.sha256Hex("empty")];
+    while (root.length > 1) {
+      if (root.length & 1) root.push(root[root.length - 1]);
+      const next = [];
+      for (let i = 0; i < root.length; i += 2) next.push(await SC.sha256Hex(root[i] + root[i + 1]));
+      root = next;
+    }
+    if (chain.merkleRoot && root[0] !== chain.merkleRoot) { reasons.push("merkle root mismatch"); return { ok: false, reasons }; }
+    // chiral weave must reproduce
     let wf = [1, 0, 0, 0];
     for (const c of out) wf = qn(qmul(crystalQuat(c), wf));
     if (quatHex(wf) !== chain.weaveChiral) { reasons.push("chiral weave mismatch"); return { ok: false, reasons }; }
-    reasons.push(`recreated ${out.reduce((a, c) => a + c.length, 0)} B · leaves + chiral weave verified`);
+    reasons.push(`recreated ${out.reduce((a, c) => a + c.length, 0)} B · parity + leaves + merkle + chiral weave verified`);
     return { ok: true, reasons };
   } catch (e) {
     return { ok: false, reasons: ["decode failure: " + e.message] };
