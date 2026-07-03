@@ -1,0 +1,15 @@
+SHD-CCP KERNEL PROTOCOL — ABI self-test
+field map: form@60:4b | parity@59:1b | spin@56:3b | quat@24:32b | payload@8:16b | freq@3:5b | amp@0:3b
+
+  [PASS] pack → unpack identity (10,000 random packets)
+  [PASS] parity catches all 64 single-bit flips — 64/64
+  [PASS] quaternion fixed-point error ≤ 1/254 — worst 0.003937
+  [PASS] code −128 normalizes to −127
+  [PASS] payload FP16 view round-trips representable values
+  [PASS] crystallize is deterministic — 98252586A800187A
+  [PASS] crystallize is input-sensitive (1-byte change) — 98252586A800187A ≠ 982525E8C800185A
+
+  golden ABI hash: 882a841362ae14e793d361c782f884148f71b2e930fcc81d24134e6bfa199ef6
+  [PASS] golden ABI hash stable — pin this value in the protocol spec
+
+8/8 ABI checks passed — Total Allocation: 64 / 64 bits
