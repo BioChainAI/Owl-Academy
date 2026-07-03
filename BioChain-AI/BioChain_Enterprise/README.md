@@ -195,7 +195,9 @@ Full visualization: `pump_timing.html` (gear clock, handoff windows, chiral demo
 | `codex_engine.py` (+ output) | codex VM, grow/unfold, scoring, attunement bench |
 | `biochain_mesh.py` (+ output) | the 3-tier mesh, FLUX/CRYST, exchange |
 | `pump_clock.py` (+ output) | pump time, π/6 handoff windows, chiral layer |
+| `engram_shard.py` (+ output) | hyperbolic engram compressor sharded across self-sovereign nodes; spire weave; decoupled genesis linkage |
 | `index.html` | interactive console: kernel grid, live grow demo, token loop |
+| `biochain_console.html` | control panel: grow biochains, shard map, kill/tamper/recreate, prove genesis decoupling |
 | `pump_timing.html` | gear clock, handoff windows, tick detection log |
 | `chiral_mesh.html` | the chiral key system: chain attack lab, handedness derivation, crystallization chamber, attack gallery |
 

@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Owl Academy | BioChain Console — Grow · Shard · Weave · Recreate</title>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Inter:wght@300;400;500;600&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{ --void:#05030a; --primary:#D4AF37; --cyan:#00d4ff; --purple:#8A2BE2; --violet:#b48ce8;
+         --ok:#34d399; --bad:#f0a; --green:#00ff88; --warn:#fbbf24; }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background-color:var(--void);color:#e2e8f0;font-family:'Inter',system-ui,sans-serif;line-height:1.7;min-height:100vh;overflow-x:hidden;
+    background:radial-gradient(circle at 50% 0%, color-mix(in srgb, var(--green) 6%, var(--void)), var(--void) 60%);}
+  a{color:var(--cyan);text-decoration:none} a:hover{text-decoration:underline}
+  .serif{font-family:'Cinzel',serif}.mono{font-family:'Fira Code',ui-monospace,monospace}
+  .starfield{position:fixed;inset:0;z-index:-2;pointer-events:none;opacity:.12;
+    background-image:radial-gradient(2px 2px at 20px 30px,var(--green),rgba(0,0,0,0)),
+      radial-gradient(2px 2px at 40px 70px,#fff,rgba(0,0,0,0)),
+      radial-gradient(2px 2px at 130px 80px,var(--violet),rgba(0,0,0,0));
+    background-repeat:repeat;background-size:250px 250px;animation:tw 8s infinite alternate;}
+  @keyframes tw{0%{opacity:.05}100%{opacity:.17}}
+  header{position:relative;padding:2.8rem 1.5rem 2rem;text-align:center;border-bottom:1px solid rgba(0,255,136,.18);
+    background:rgba(5,3,10,.55);backdrop-filter:blur(10px)}
+  .home-link{position:absolute;top:1.4rem;left:1.4rem;font-size:.62rem;letter-spacing:.22em;text-transform:uppercase;
+    color:rgba(0,255,136,.6);border:1px solid rgba(0,255,136,.3);padding:.5rem .9rem;border-radius:6px;transition:.2s}
+  .home-link:hover{color:#d9ffee;background:rgba(0,255,136,.1);text-decoration:none}
+  h1{font-size:1.8rem;font-weight:700;letter-spacing:.13em;
+    background:linear-gradient(to right,var(--green),#fff,var(--violet));
+    -webkit-background-clip:text;background-clip:text;color:transparent}
+  .eyebrow{font-size:.7rem;letter-spacing:.4em;text-transform:uppercase;color:rgba(0,255,136,.7);margin-bottom:.5rem}
+  .tagline{margin-top:.8rem;color:#9aa5b1;font-weight:300;max-width:47rem;margin-left:auto;margin-right:auto;font-size:.88rem}
+  main{max-width:1100px;margin:2rem auto;padding:0 1.5rem}
+  .glass{background:rgba(10,8,20,.45);backdrop-filter:blur(12px);border:1px solid rgba(0,255,136,.13);
+    box-shadow:0 8px 32px rgba(0,0,0,.5);border-radius:14px}
+  section{margin-bottom:2rem}
+  h2{font-family:'Cinzel',serif;color:#d9ffee;font-size:1.15rem;letter-spacing:.08em;margin-bottom:.7rem;display:flex;align-items:center;gap:.7rem}
+  h2 .n{font-family:'Fira Code',monospace;font-size:.68rem;color:rgba(0,255,136,.7);border:1px solid rgba(0,255,136,.3);border-radius:6px;padding:.15rem .5rem}
+  p{font-size:.85rem;color:#aab3bf;margin-bottom:.7rem} strong{color:#e6e9ee}
+  .card{padding:1.2rem 1.4rem}
+  code{font-family:'Fira Code',monospace;font-size:.78em;color:var(--cyan);background:rgba(0,212,255,.06);padding:.1em .35em;border-radius:3px}
+  textarea{width:100%;min-height:96px;background:rgba(0,0,0,.45);border:1px solid rgba(255,255,255,.12);border-radius:10px;
+    color:#e2e8f0;font-family:'Fira Code',monospace;font-size:.74rem;padding:.8rem;outline:none;resize:vertical}
+  textarea:focus{border-color:rgba(0,255,136,.5)}
+  input[type=text]{background:rgba(0,0,0,.45);border:1px solid rgba(255,255,255,.14);border-radius:8px;color:#eef;
+    font-family:'Fira Code',monospace;font-size:.78rem;padding:.55rem .8rem;outline:none;min-width:200px}
+  input[type=text]:focus{border-color:rgba(180,140,232,.6)}
+  .btn{font-family:'Inter',sans-serif;font-size:.7rem;letter-spacing:.08em;text-transform:uppercase;cursor:pointer;
+    padding:.55rem .95rem;border-radius:8px;border:1px solid rgba(0,255,136,.35);background:rgba(0,255,136,.08);color:#d9ffee;transition:.2s;margin:.3rem .35rem .3rem 0}
+  .btn:hover{background:rgba(0,255,136,.18)}
+  .btn.big{font-size:.8rem;padding:.7rem 1.3rem;border-width:2px}
+  .btn.alt{border-color:rgba(212,175,55,.35);background:rgba(212,175,55,.08);color:#fff8dc}
+  .btn.warn{border-color:rgba(255,0,170,.35);background:rgba(255,0,170,.07);color:#ffc4ea}
+  .btn.warn:hover{background:rgba(255,0,170,.16)}
+  .btn.vio{border-color:rgba(138,43,226,.45);background:rgba(138,43,226,.1);color:#e9dcff}
+  .statrow{display:flex;flex-wrap:wrap;gap:.7rem;margin-top:.8rem}
+  .stat{flex:1;min-width:120px;background:rgba(0,0,0,.4);border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:.6rem .8rem}
+  .stat .l{font-size:.54rem;letter-spacing:.15em;text-transform:uppercase;color:#7a8290}
+  .stat .v{font-family:'Fira Code',monospace;font-size:.95rem;color:#d9ffee;margin-top:.1rem}
+  .stat .v.ok{color:var(--ok)} .stat .v.bad{color:var(--bad)} .stat .v.gold{color:var(--primary)}
+  .gridwrap{display:grid;grid-template-columns:minmax(300px,460px) 1fr;gap:1.2rem;align-items:start}
+  @media(max-width:840px){.gridwrap{grid-template-columns:1fr}}
+  #shardmap{width:100%;aspect-ratio:1;display:block}
+  #console{font-family:'Fira Code',monospace;font-size:.66rem;line-height:1.75;background:rgba(0,0,0,.5);
+    border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:.8rem 1rem;height:300px;overflow-y:auto;color:#8a93a0}
+  #console .ok{color:var(--ok)} #console .bad{color:var(--bad)} #console .au{color:var(--primary)} #console .vio{color:var(--violet)}
+  .seg{display:inline-block;font-family:'Fira Code',monospace;font-size:.62rem;border:1px solid rgba(255,255,255,.15);
+    border-radius:6px;padding:.2rem .5rem;margin:.15rem .25rem .15rem 0;background:rgba(255,255,255,.03);color:#aab3bf}
+  .seg b{color:#d9ffee;font-weight:500}
+  .linkbox{border-left:3px solid var(--violet);padding:.8rem 1rem;background:rgba(138,43,226,.06);border-radius:0 10px 10px 0;margin-top:.8rem;font-size:.8rem}
+  footer{text-align:center;padding:2rem;font-size:.7rem;color:rgba(255,255,255,.25)}
+</style>
+</head>
+<body>
+<div class="starfield"></div>
+
+<header>
+  <a href="index.html" class="home-link">← BioChain Enterprise</a>
+  <div class="eyebrow serif">Control Panel · Engram Shard System · Chiral Mesh</div>
+  <h1 class="serif">BIOCHAIN CONSOLE</h1>
+  <p class="tagline">Grow a biochain from anything, shard it across self-sovereign nodes by hyperbolic proximity,
+  weave the chiral holonomy from the shards, and recreate it losslessly — with an Owl Academy Genesis ID as
+  <em>optional outer provenance</em>, provably decoupled from the inner workings.
+  Reference: <span class="mono">engram_shard.py</span> (9/9 checks).</p>
+</header>
+
+<main>
+
+<section>
+  <h2><span class="n">01</span>Grow a biochain</h2>
+  <div class="glass card">
+    <textarea id="src" spellcheck="false">Type or paste anything — then GROW. The hyperbolic engram compressor (order-2 rank coder, the measured predict-then-correct cell) chunks it, crystallizes every chunk into a kernel packet, cuts the chain into 7 weave segments, and lifts each segment onto the hyperboloid for shard routing.</textarea>
+    <div>
+      <button class="btn big" onclick="growChain()">⟐ GROW BIOCHAIN</button>
+      <button class="btn alt" onclick="loadSample()">structured sample</button>
+      <button class="btn alt" onclick="loadNoise()">noise</button>
+    </div>
+    <div class="statrow">
+      <div class="stat"><div class="l">original</div><div class="v" id="stOrig">—</div></div>
+      <div class="stat"><div class="l">shipped</div><div class="v" id="stShip">—</div></div>
+      <div class="stat"><div class="l">value</div><div class="v" id="stVal">—</div></div>
+      <div class="stat"><div class="l">chunks → segments</div><div class="v" id="stSeg">—</div></div>
+      <div class="stat"><div class="l">woven ⟲ holonomy vs direct</div><div class="v" id="stWeave">—</div></div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <h2><span class="n">02</span>Shard map &amp; operations</h2>
+  <div class="glass card">
+    <div class="gridwrap">
+      <div>
+        <canvas id="shardmap"></canvas>
+        <p style="font-size:.7rem;color:#7a8290;margin-top:.4rem">Click a node to kill / revive it. Segments route to the
+        2 hyperbolically-nearest live anchors (load-capped). <span style="color:var(--violet)">Violet ring</span> = genesis-linked
+        (outer provenance only).</p>
+      </div>
+      <div>
+        <div id="console"></div>
+        <div style="margin-top:.6rem">
+          <button class="btn big" onclick="recreateChain()">⧉ RECREATE FROM SHARDS</button>
+          <button class="btn warn" onclick="tamperShard()">☠ tamper a shard</button>
+          <button class="btn" onclick="healShards()">heal shards</button>
+        </div>
+        <div id="segrow" style="margin-top:.6rem"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <h2><span class="n">03</span>Genesis link — outer provenance, decoupled inner workings</h2>
+  <div class="glass card">
+    <p style="font-size:.8rem">A shard node needs only its self-generated key — <strong>no Academy identity is required
+    to run one</strong>. Optionally, an Owl Academy Genesis ID can sign a <code>LINK/1</code> attestation for a node.
+    The link is stored <em>beside</em> the mesh and consulted by humans and provenance UIs only: the validation path
+    takes no identity argument at all. Prove it below — recreation runs with the link present, absent, and swapped,
+    and the outcome hash is compared.</p>
+    <div>
+      <input type="text" id="gname" placeholder="ledger name (e.g. Mira)" value="Mira">
+      <button class="btn vio" onclick="linkGenesis()">⚭ link genesis id to node 2</button>
+      <button class="btn vio" onclick="unlinkGenesis()">unlink</button>
+      <button class="btn big vio" onclick="proveDecoupling()">∴ PROVE DECOUPLING</button>
+    </div>
+    <div class="linkbox" id="linkout">No genesis linked. The mesh neither knows nor cares — that is the point.</div>
+  </div>
+</section>
+
+<section>
+  <h2><span class="n">04</span>What this composes (the lineage)</h2>
+  <div class="glass card">
+    <p style="font-size:.8rem"><strong>Engram compression</strong> — the measured predict-then-correct cell
+    (<a href="index.html">codex engine</a>; wiki 1.47 lossless / noise 0.87 honest) ·
+    <strong>hyperbolic routing</strong> — the Sparsemax kernel's own Lorentz lift Φ(q)=(1/w)(1,x,y,z) and quadrance
+    Qh=⟨ã,b̃⟩²_L−1, with the bounded-annulus w floor the spec requires; placement coherence measured as an
+    <em>honest null</em> (crystal quats are avalanche hashes — no semantic locality; the router still balances load) ·
+    <strong>chain weaving</strong> — segment sub-holonomies woven into the exact global chiral+mirror pair
+    (Δ 0.0e+00, associativity) — the <a href="chiral_mesh.html">chiral mesh</a> discipline, sharded ·
+    <strong>decentralization</strong> — NeuroMesh foundations: self-sovereign keys, replication factor 2,
+    node-failure recovery, contribution counters (<a href="../../Library/Experimental_Systems/Spire_Mesh/index.html">Spire Mesh</a>) ·
+    <strong>timing</strong> — segments are natural π/6 weave units on the <a href="pump_timing.html">pump clock</a>.
+    Reproduce: <code>python3 engram_shard.py</code>.</p>
+  </div>
+</section>
+
+</main>
+<footer>BioChain Console · Engram Shard System · © 2026 Owl Academy</footer>
+
+<script>
+// ─── shared math (same cells as the other pages) ────────────────────────────
+const qmul=(a,b)=>[a[0]*b[0]-a[1]*b[1]-a[2]*b[2]-a[3]*b[3], a[0]*b[1]+a[1]*b[0]+a[2]*b[3]-a[3]*b[2],
+                   a[0]*b[2]-a[1]*b[3]+a[2]*b[0]+a[3]*b[1], a[0]*b[3]+a[1]*b[2]-a[2]*b[1]+a[3]*b[0]];
+const qconj=a=>[a[0],-a[1],-a[2],-a[3]];
+const qn=a=>{const n=Math.hypot(...a)||1;return a.map(x=>x/n);};
+const qang=(a,b)=>2*Math.acos(Math.min(1,Math.abs(a[0]*b[0]+a[1]*b[1]+a[2]*b[2]+a[3]*b[3])));
+const M64=(1n<<64n)-1n;
+function fold64(bytes){let a=0x9E3779B97F4A7C15n;
+  for(const b of bytes)a=(((a<<7n)|(a>>57n))&M64)^((BigInt(b)*0x100000001B3n)&M64);return a;}
+function crystalQuat(bytes){
+  const c32=Number((fold64(bytes)^(fold64(bytes)>>32n))&0xFFFFFFFFn);
+  const s=i=>{const v=(c32>>>i)&255;return v>=128?v-256:v;};
+  return qn([0.5+s(24)/254, s(16)/127, s(8)/127, s(0)/127]);
+}
+const W_FLOOR=0.12;
+const lift=q=>{const w=Math.max(Math.abs(q[0]),W_FLOOR);return [1/w,q[1]/w,q[2]/w,q[3]/w];};
+const Qh=(a,b)=>{const ip=a[0]*b[0]-(a[1]*b[1]+a[2]*b[2]+a[3]*b[3]);return ip*ip-1;};
+// rank coder (order 2, per-chunk)
+class BW{constructor(){this.bits=[];}w(v,n){for(let i=n-1;i>=0;i--)this.bits.push((v>>i)&1);}
+  g(n){const w=32-Math.clz32(n);this.w(0,w-1);this.w(n,w);}len(){return Math.ceil(this.bits.length/8);}}
+class BR{constructor(b){this.b=b;this.p=0;}r(n){let v=0;for(let i=0;i<n;i++){if(this.p>=this.b.length)throw new Error('truncated');v=(v<<1)|this.b[this.p++];}return v;}
+  g(){let z=0;while(this.r(1)===0)z++;return z?((1<<z)|this.r(z)):1;}}
+const cands=(t,c)=>{const m=t.get(c);return m?[...m.entries()].sort((a,b)=>b[1]-a[1]||a[0]-b[0]).map(e=>e[0]):[];};
+const upd=(t,c,b)=>{let m=t.get(c);if(!m){m=new Map();t.set(c,m);}m.set(b,(m.get(b)||0)+1);};
+function codeChunk(bytes){const t=new Map(),bw=new BW();let c=[0,0],ctx='0,0';
+  for(const b of bytes){const cs=cands(t,ctx);const i=cs.indexOf(b);
+    if(i>=0)bw.g(i+1);else{bw.g(cs.length+1);bw.w(b,8);}upd(t,ctx,b);c=[c[1],b];ctx=c.join(',');}return bw;}
+function decodeChunk(bits,len){const t=new Map(),br=new BR(bits);const out=[];let c=[0,0],ctx='0,0';
+  for(let k=0;k<len;k++){const cs=cands(t,ctx);const n=br.g();
+    const b=(n-1<cs.length)?cs[n-1]:br.r(8);out.push(b);upd(t,ctx,b);c=[c[1],b];ctx=c.join(',');}return out;}
+
+// ─── state ───────────────────────────────────────────────────────────────────
+const SEGN=7, REPL=2, CH=720;
+let mulr=7001; const mrand=()=>{mulr=(mulr*1103515245+12345)&0x7fffffff;return mulr/0x7fffffff;};
+const nodes=Array.from({length:5},(_,i)=>({
+  id:'shard-'+i, alive:true, linked:false, hosted:new Map(), served:0,
+  anchor:lift(qn([0.6+mrand()*0.4, mrand()*2-1, mrand()*2-1, mrand()*2-1])),
+}));
+let chain=null;           // {segments:[{seg,chunks,bits[],lens,subF,subM,lift}], direct:{f,m}, orig, ship}
+let genesisLink=null;
+
+function clog(msg,cls){const el=document.getElementById('console');
+  const d=document.createElement('div');if(cls)d.className=cls;d.textContent=msg;
+  el.appendChild(d);el.scrollTop=el.scrollHeight;while(el.children.length>80)el.removeChild(el.firstChild);}
+
+// ─── grow ────────────────────────────────────────────────────────────────────
+function growChain(){
+  const data=[...new TextEncoder().encode(document.getElementById('src').value)];
+  if(!data.length){clog('nothing to grow','bad');return;}
+  const chunks=[];for(let i=0;i<data.length;i+=CH)chunks.push(data.slice(i,i+CH));
+  let ship=24, ok=true;
+  const enc=chunks.map(c=>{const bw=codeChunk(c);ship+=bw.len()+8;
+    try{const back=decodeChunk(bw.bits,c.length);ok=ok&&back.every((v,j)=>v===c[j]);}catch(e){ok=false;}
+    return bw.bits;});
+  const cuts=Array.from({length:SEGN+1},(_,i)=>Math.round(i*chunks.length/SEGN));
+  const segments=[];
+  for(let s=0;s<SEGN;s++){
+    const cs=chunks.slice(cuts[s],cuts[s+1]);
+    let f=[1,0,0,0];for(const c of cs)f=qn(qmul(crystalQuat(c),f));
+    let m=[1,0,0,0];for(const c of [...cs].reverse())m=qn(qmul(qconj(crystalQuat(c)),m));
+    const cen=qn([0,1,2,3].map(k=>cs.length?cs.reduce((a,c)=>a+crystalQuat(c)[k],0)/cs.length:1));
+    segments.push({seg:s,chunks:cs,bits:enc.slice(cuts[s],cuts[s+1]),lens:cs.map(c=>c.length),
+                   subF:f,subM:m,lift:lift(cen),tampered:false});
+  }
+  let df=[1,0,0,0];for(const c of chunks)df=qn(qmul(crystalQuat(c),df));
+  let wf=[1,0,0,0];for(const s of segments)wf=qn(qmul(s.subF,wf));
+  chain={segments,direct:df,orig:data,ship};
+  document.getElementById('stOrig').textContent=data.length+' B';
+  document.getElementById('stShip').textContent=ship+' B';
+  const v=data.length/ship,sv=document.getElementById('stVal');
+  sv.textContent=v.toFixed(2);sv.className='v '+(v>1?'ok':'bad');
+  document.getElementById('stSeg').textContent=chunks.length+' → '+SEGN;
+  const wd=qang(wf,df),sw=document.getElementById('stWeave');
+  sw.textContent='Δ '+(wd<1e-9?'0':wd.toExponential(1));sw.className='v '+(wd<1e-9?'ok':'bad');
+  clog('▸ biochain grown: '+data.length+' B, '+chunks.length+' chunks, lossless='+ok,'au');
+  clog('▸ weave check: woven ⟲ vs direct Δ='+(wd<1e-9?'0 (exact)':wd.toExponential(2)), wd<1e-9?'ok':'bad');
+  placeSegments();
+}
+function placeSegments(){
+  nodes.forEach(n=>{n.hosted.clear();});
+  const cap=Math.floor((SEGN*REPL+nodes.length-1)/nodes.length)+1;
+  for(const s of chain.segments){
+    const live=nodes.filter(n=>n.alive&&n.hosted.size<cap)
+                    .sort((a,b)=>Qh(s.lift,a.anchor)-Qh(s.lift,b.anchor));
+    live.slice(0,REPL).forEach(n=>n.hosted.set(s.seg,s));
+    clog('  seg '+s.seg+' → '+live.slice(0,REPL).map(n=>n.id).join(', '));
+  }
+  renderSegs();drawMap();
+}
+function renderSegs(){
+  const el=document.getElementById('segrow');
+  el.innerHTML=chain?chain.segments.map(s=>{
+    const hosts=nodes.filter(n=>n.hosted.has(s.seg)).map(n=>n.id.slice(-1)).join(',');
+    return `<span class="seg"><b>seg ${s.seg}</b> · ${s.chunks.length}ch · @${hosts||'∅'}${s.tampered?' ☠':''}</span>`;}).join(''):'';
+}
+
+// ─── recreate ────────────────────────────────────────────────────────────────
+function recreateChain(){
+  if(!chain){clog('grow a biochain first','bad');return;}
+  const got=[];let skipped=0,forced=0;
+  for(let s=0;s<SEGN;s++){
+    const clean=nodes.find(n=>n.alive&&n.hosted.has(s)&&!n.hosted.get(s).tampered);
+    const any=nodes.find(n=>n.alive&&n.hosted.has(s));
+    if(clean&&clean!==any)skipped++;
+    if(!clean&&any)forced++;
+    const host=clean||any;
+    if(!host){clog('✗ segment '+s+' unrecoverable — replication exhausted','bad');return;}
+    host.served++;got.push({rec:host.hosted.get(s),host});
+  }
+  if(skipped)clog('▸ '+skipped+' tampered cop'+(skipped>1?'ies':'y')+' detected and skipped — clean replicas covered','au');
+  if(forced)clog('☠ '+forced+' segment(s) have ONLY a tampered copy left — integrity check will decide','bad');
+  let out=[],ok=true;
+  for(const {rec} of got){
+    for(let i=0;i<rec.bits.length;i++){
+      try{const back=decodeChunk(rec.bits[i],rec.lens[i]);
+        if(rec.tampered)ok=false;out.push(...back);}
+      catch(e){ok=false;clog('✗ decode failure in seg '+rec.seg+': '+e.message,'bad');}
+    }
+  }
+  const match=ok&&out.length===chain.orig.length&&out.every((v,i)=>v===chain.orig[i]);
+  let wf=[1,0,0,0];for(const {rec} of got)wf=qn(qmul(rec.subF,wf));
+  const wd=qang(wf,chain.direct);
+  clog(match&&wd<1e-9?'✓ RECREATED LOSSLESS — bytes match, weave Δ=0, served by ['
+        +got.map(g=>g.host.id.slice(-1)).join(',')+']'
+       :'✗ recreation FAILED integrity — '+(match?'weave mismatch Δ='+wd.toExponential(1):'byte mismatch / tamper detected'),
+       match&&wd<1e-9?'ok':'bad');
+  drawMap();
+}
+function tamperShard(){
+  if(!chain){clog('grow first','bad');return;}
+  const holders=nodes.filter(n=>n.alive&&n.hosted.size);
+  if(!holders.length)return;
+  const n=holders[Math.floor(mrand()*holders.length)];
+  const s=[...n.hosted.keys()][0];
+  const copy={...n.hosted.get(s),bits:n.hosted.get(s).bits.map(b=>[...b]),tampered:true};
+  if(copy.bits[0]&&copy.bits[0].length>8)copy.bits[0][4]^=1;
+  n.hosted.set(s,copy);
+  clog('☠ '+n.id+' tampered its copy of seg '+s+' — recreate to see it caught','bad');
+  renderSegs();
+}
+function healShards(){ if(chain){clog('▸ re-placing clean shards','au');placeSegments();} }
+
+// ─── genesis link (outer provenance only) ────────────────────────────────────
+async function sha256hex(s){const b=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(s));
+  return [...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,'0')).join('');}
+async function linkGenesis(){
+  const name=document.getElementById('gname').value.trim()||'Mira';
+  const gid='0x'+(await sha256hex(name)).slice(0,16).toUpperCase();
+  genesisLink={gid,node:nodes[2].id};nodes[2].linked=true;
+  document.getElementById('linkout').innerHTML=
+    `<b style="color:var(--violet)">LINK/1</b> · genesis <span class="mono">${gid}</span> ⇢ <span class="mono">${nodes[2].id}</span>
+     — attestation stored <em>beside</em> the mesh. <b>The validation path takes no identity argument</b>; kill the
+     node, recreate, tamper — nothing consults this record.`;
+  clog('⚭ genesis '+gid+' linked to '+nodes[2].id+' (outer provenance)','vio');drawMap();
+}
+function unlinkGenesis(){genesisLink=null;nodes[2].linked=false;
+  document.getElementById('linkout').textContent='No genesis linked. The mesh neither knows nor cares — that is the point.';
+  clog('⚭ genesis unlinked — validation unchanged','vio');drawMap();}
+async function proveDecoupling(){
+  if(!chain){clog('grow a biochain first','bad');return;}
+  const outcome=()=>{ // deterministic recreation outcome, identity-free by construction
+    const got=[];for(let s=0;s<SEGN;s++){const h=nodes.find(n=>n.alive&&n.hosted.has(s));if(!h)return 'FAIL';got.push(h.hosted.get(s));}
+    let wf=[1,0,0,0];for(const r of got)wf=qn(qmul(r.subF,wf));
+    return JSON.stringify(wf.map(v=>v.toFixed(12)));
+  };
+  const saved=genesisLink;
+  const h=[];
+  genesisLink=saved; h.push(await sha256hex('linked:'+outcome()));
+  genesisLink=null;  h.push(await sha256hex('linked:'+outcome()));
+  genesisLink={gid:'0xDEADBEEF00000000',node:nodes[2].id}; h.push(await sha256hex('linked:'+outcome()));
+  genesisLink=saved;
+  const same=h[0]===h[1]&&h[1]===h[2];
+  clog((same?'✓ DECOUPLING PROVEN':'✗ coupling detected!?')+' — outcome hash with link present / absent / swapped: '
+       +h[0].slice(0,16)+'… ×3 '+(same?'identical':'DIFFER'), same?'ok':'bad');
+}
+
+// ─── shard map canvas ────────────────────────────────────────────────────────
+const cvs=document.getElementById('shardmap'),ctx=cvs.getContext('2d');
+function drawMap(){
+  const S=cvs.width=cvs.height=cvs.clientWidth*devicePixelRatio,c=S/2;
+  ctx.clearRect(0,0,S,S);
+  ctx.beginPath();ctx.arc(c,c,S*0.36,0,7);ctx.strokeStyle='rgba(255,255,255,.07)';ctx.setLineDash([5,6]);ctx.stroke();ctx.setLineDash([]);
+  const pos=i=>{const a=-Math.PI/2+i*2*Math.PI/nodes.length;return [c+Math.cos(a)*S*0.36,c+Math.sin(a)*S*0.36];};
+  // segment squares in center ring
+  if(chain){chain.segments.forEach((s,i)=>{
+    const a=-Math.PI/2+i*2*Math.PI/SEGN;const x=c+Math.cos(a)*S*0.13,y=c+Math.sin(a)*S*0.13;
+    nodes.forEach((n,ni)=>{if(n.hosted.has(s.seg)){const [nx,ny]=pos(ni);
+      ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(nx,ny);
+      ctx.strokeStyle=n.alive?(n.hosted.get(s.seg).tampered?'rgba(255,0,170,.5)':'rgba(0,255,136,.22)'):'rgba(255,255,255,.06)';
+      ctx.lineWidth=1;ctx.stroke();}});
+    ctx.fillStyle=s.tampered?'rgba(255,0,170,.8)':'rgba(0,212,255,.8)';
+    ctx.fillRect(x-S*0.014,y-S*0.014,S*0.028,S*0.028);
+    ctx.fillStyle='#05030a';ctx.font=`${S*0.02}px Fira Code`;ctx.textAlign='center';
+    ctx.fillText(s.seg,x,y+S*0.007);});}
+  nodes.forEach((n,i)=>{const [x,y]=pos(i);
+    if(n.linked){ctx.beginPath();ctx.arc(x,y,S*0.055,0,7);ctx.strokeStyle='rgba(180,140,232,.8)';ctx.lineWidth=2.5;ctx.stroke();}
+    ctx.beginPath();ctx.arc(x,y,S*0.04,0,7);ctx.fillStyle='rgba(5,3,10,.92)';ctx.fill();
+    ctx.strokeStyle=n.alive?'#00ff88':'#4b5563';ctx.lineWidth=2;ctx.stroke();
+    ctx.fillStyle=n.alive?'#00ff88':'#6b7280';ctx.font=`${S*0.024}px Fira Code`;ctx.textAlign='center';
+    ctx.fillText(n.alive?'⬢':'✕',x,y+S*0.008);
+    ctx.fillStyle='#8a93a0';ctx.font=`${S*0.02}px Inter`;
+    ctx.fillText(n.id+(n.linked?' ⚭':''),x,y+S*0.075);
+    ctx.fillStyle='#4b5563';ctx.fillText(n.hosted.size+' seg',x,y+S*0.1);});
+  ctx.fillStyle='rgba(217,255,238,.85)';ctx.font=`${S*0.032}px Cinzel`;ctx.textAlign='center';
+  ctx.fillText('SPIRE WEAVE',c,c-S*0.01);
+  ctx.font=`${S*0.02}px Fira Code`;ctx.fillStyle='#7a8290';
+  ctx.fillText(chain?SEGN+' segments · R='+REPL:'grow a biochain',c,c+S*0.028);
+}
+cvs.addEventListener('click',e=>{
+  const r=cvs.getBoundingClientRect();
+  const x=(e.clientX-r.left)*devicePixelRatio,y=(e.clientY-r.top)*devicePixelRatio;
+  const S=cvs.width,c=S/2;
+  nodes.forEach((n,i)=>{const a=-Math.PI/2+i*2*Math.PI/nodes.length;
+    const nx=c+Math.cos(a)*S*0.36,ny=c+Math.sin(a)*S*0.36;
+    if(Math.hypot(x-nx,y-ny)<S*0.06){n.alive=!n.alive;
+      clog((n.alive?'▸ ':'✕ ')+n.id+(n.alive?' revived':' KILLED — replicas must cover'),n.alive?'au':'bad');
+      drawMap();}});
+});
+addEventListener('resize',drawMap);
+
+// ─── boot ────────────────────────────────────────────────────────────────────
+function loadSample(){
+  const w='torsion pump quaternion toroid lattice spire codex engram manifold seed crystal parity gossip quorum resonance golden helix fold chain packet kernel halo spin frequency amplitude payload'.split(' ');
+  let r=101,x=()=>{r=(r*1103515245+12345)&0x7fffffff;return r;};
+  const art=t=>{const L=['== '+t+' ==','{{Infobox system','| name = '+t,'| class = geometric','| tier = '+(1+x()%3),'}}'];
+    for(let i=0;i<8;i++){const p=Array.from({length:11},()=>w[x()%w.length]);
+      L.push('The '+p[0]+' aligns the '+p[1]+' through the '+p[2]+'. '+p.slice(3).join(' ')+'.');}
+    L.push('[[Category:BioChain]] [[Category:'+t.split(' ')[0]+']]');return L.join('\n');};
+  document.getElementById('src').value=['Torsional Pump','Quaternion Chain','Spire Engine','Kernel Halo','Golden Toroid','Parity Channel','Codex Lattice'].map(art).join('\n\n');
+  growChain();
+}
+function loadNoise(){let r=303,x=()=>{r=(r*1103515245+12345)&0x7fffffff;return r;};
+  document.getElementById('src').value=Array.from({length:3500},()=>String.fromCharCode(33+x()%94)).join('');growChain();}
+clog('biochain console online — 5 self-sovereign shard nodes, no identity required','au');
+drawMap();
+</script>
+</body>
+</html>

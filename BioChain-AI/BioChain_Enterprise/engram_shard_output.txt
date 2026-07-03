@@ -1,0 +1,60 @@
+
+──────────────────────────────────────────────────────────────────────────
+ENGRAM SHARD — hyperbolic compressor + spire weave, sharded
+──────────────────────────────────────────────────────────────────────────
+  biochain grown: 10600 B → 6312 B shipped · value 1.68 · 15 chunks → 7 segments
+
+──────────────────────────────────────────────────────────────────────────
+[1] the weave is exact (associativity = the spire engine's license)
+──────────────────────────────────────────────────────────────────────────
+  [PASS] woven chiral holonomy == direct global product — Δ 0.0e+00 rad
+  [PASS] woven mirror holonomy == direct global mirror — Δ 0.0e+00 rad
+
+──────────────────────────────────────────────────────────────────────────
+[2] hyperbolic placement across self-sovereign shard nodes
+──────────────────────────────────────────────────────────────────────────
+    N-69a57a93424e5203 · shard-0  hosts 3 segment(s) [0, 5, 6]
+    N-0feac575f2046f7f · shard-1  hosts 4 segment(s) [1, 2, 3, 4]
+    N-e8367bcfb55829bc · shard-2  hosts 3 segment(s) [0, 5, 6]
+    N-462fd58b81723977 · shard-3  hosts 0 segment(s) []
+    N-96cc46fb52f8bdb8 · shard-4  hosts 4 segment(s) [1, 2, 3, 4]
+  [PASS] every segment hosted at replication factor 2
+    placement coherence: intra-shard Qh 8.697 vs random 8.285 → no significant locality (ratio 1.05) — honest null; router still balances load
+  [PASS] hyperbolic router placed and load-capped (coherence reported honestly) — no significant locality (ratio 1.05) — honest null; router still balances load
+
+──────────────────────────────────────────────────────────────────────────
+[3] recreation: gather → verify → unfold (no identity consulted)
+──────────────────────────────────────────────────────────────────────────
+  [PASS] recreated biochain is lossless (Merkle + XOR + weave verified)
+
+──────────────────────────────────────────────────────────────────────────
+[4] node failure: replication covers
+──────────────────────────────────────────────────────────────────────────
+  [PASS] full recreation with node 'shard-0' dead — replicas served [3, 8, 3, 0, 0]
+
+──────────────────────────────────────────────────────────────────────────
+[5] shard tampering caught without any authority
+──────────────────────────────────────────────────────────────────────────
+  [PASS] tampered shard rejected (stale manifest sig → segment unrecoverable) — residual stream 9 truncated or corrupt
+
+──────────────────────────────────────────────────────────────────────────
+[6] genesis linkage — present, absent, swapped: provably decoupled
+──────────────────────────────────────────────────────────────────────────
+    LINK/1: genesis 0xEF9EE12DA914A3B0 ⇢ node N-e8367bcfb55829bc · attestation verifies
+  [PASS] identical outcome hash with link present / absent / swapped — 8e9d8d7458eef53236a01655…
+  [PASS] LINK/1 attestation verifies as OUTER provenance — consulted by humans and UIs — never by the validation path
+
+──────────────────────────────────────────────────────────────────────────
+Verdict
+──────────────────────────────────────────────────────────────────────────
+  ✓ woven chiral holonomy == direct global product
+  ✓ woven mirror holonomy == direct global mirror
+  ✓ every segment hosted at replication factor 2
+  ✓ hyperbolic router placed and load-capped (coherence reported honestly)
+  ✓ recreated biochain is lossless (Merkle + XOR + weave verified)
+  ✓ full recreation with node 'shard-0' dead
+  ✓ tampered shard rejected (stale manifest sig → segment unrecoverable)
+  ✓ identical outcome hash with link present / absent / swapped
+  ✓ LINK/1 attestation verifies as OUTER provenance
+
+  9/9 engram-shard checks passed
