@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Owl Academy | Polycentria Governance — Conversion &amp; Compatibility</title>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Inter:wght@300;400;500;600&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{ --void:#05030a; --primary:#D4AF37; --primary-light:#FFF8DC; --cyan:#00d4ff; --purple:#8A2BE2; --violet:#b48ce8;
+         --ok:#34d399; --bad:#f0a; --green:#00ff88; --warn:#fbbf24; }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background-color:var(--void);color:#e2e8f0;font-family:'Inter',system-ui,sans-serif;line-height:1.7;min-height:100vh;overflow-x:hidden;
+    background:radial-gradient(circle at 50% 0%, color-mix(in srgb, var(--purple) 9%, var(--void)), var(--void) 60%);}
+  a{color:var(--cyan);text-decoration:none} a:hover{text-decoration:underline}
+  .serif{font-family:'Cinzel',serif}.mono{font-family:'Fira Code',ui-monospace,monospace}
+  .starfield{position:fixed;inset:0;z-index:-2;pointer-events:none;opacity:.13;
+    background-image:radial-gradient(2px 2px at 20px 30px,var(--violet),rgba(0,0,0,0)),
+      radial-gradient(2px 2px at 40px 70px,#fff,rgba(0,0,0,0)),
+      radial-gradient(2px 2px at 130px 80px,var(--primary),rgba(0,0,0,0));
+    background-repeat:repeat;background-size:250px 250px;animation:tw 8s infinite alternate;}
+  @keyframes tw{0%{opacity:.05}100%{opacity:.18}}
+  header{position:relative;padding:3rem 1.5rem 2.2rem;text-align:center;border-bottom:1px solid rgba(138,43,226,.25);
+    background:rgba(5,3,10,.55);backdrop-filter:blur(10px)}
+  .home-link{position:absolute;top:1.4rem;left:1.4rem;font-size:.62rem;letter-spacing:.22em;text-transform:uppercase;
+    color:rgba(180,140,232,.7);border:1px solid rgba(138,43,226,.4);padding:.5rem .9rem;border-radius:6px;transition:.2s}
+  .home-link:hover{color:#e9dcff;background:rgba(138,43,226,.12);text-decoration:none}
+  h1{font-size:1.85rem;font-weight:700;letter-spacing:.13em;
+    background:linear-gradient(to right,var(--violet),#fff,var(--primary));
+    -webkit-background-clip:text;background-clip:text;color:transparent}
+  .eyebrow{font-size:.7rem;letter-spacing:.4em;text-transform:uppercase;color:rgba(180,140,232,.75);margin-bottom:.5rem}
+  .tagline{margin-top:.9rem;color:#9aa5b1;font-weight:300;max-width:49rem;margin-left:auto;margin-right:auto;font-size:.9rem}
+  main{max-width:1100px;margin:2.2rem auto;padding:0 1.5rem}
+  .glass{background:rgba(10,8,20,.45);backdrop-filter:blur(12px);border:1px solid rgba(138,43,226,.2);
+    box-shadow:0 8px 32px rgba(0,0,0,.5);border-radius:14px}
+  section{margin-bottom:2.4rem}
+  h2{font-family:'Cinzel',serif;color:#e9dcff;font-size:1.2rem;letter-spacing:.08em;margin-bottom:.8rem;display:flex;align-items:center;gap:.7rem;flex-wrap:wrap}
+  h2 .n{font-family:'Fira Code',monospace;font-size:.7rem;color:rgba(180,140,232,.8);border:1px solid rgba(138,43,226,.4);border-radius:6px;padding:.15rem .5rem}
+  p{font-size:.88rem;color:#aab3bf;margin-bottom:.8rem} strong{color:#e6e9ee} em{color:#c8d0da}
+  .card{padding:1.3rem 1.5rem}
+  table{width:100%;border-collapse:collapse;font-size:.77rem;margin:.6rem 0}
+  th{font-size:.6rem;letter-spacing:.14em;text-transform:uppercase;color:rgba(180,140,232,.85);text-align:left;border-bottom:1px solid rgba(138,43,226,.35);padding:.5rem .6rem}
+  td{padding:.5rem .6rem;border-bottom:1px solid rgba(255,255,255,.05);color:#aab3bf;vertical-align:top}
+  td:first-child{color:#e6e9ee}
+  .tblwrap{overflow-x:auto}
+  pre{font-family:'Fira Code',monospace;font-size:.71rem;color:#d9c8f5;background:rgba(0,0,0,.45);
+    border:1px solid rgba(138,43,226,.25);border-radius:10px;padding:1rem 1.2rem;overflow-x:auto;line-height:1.6;margin:.6rem 0}
+  code{font-family:'Fira Code',monospace;font-size:.78em;color:var(--cyan);background:rgba(0,212,255,.06);padding:.1em .35em;border-radius:3px}
+  .pill{display:inline-block;font-size:.56rem;text-transform:uppercase;letter-spacing:.1em;padding:.15rem .55rem;border-radius:999px;border:1px solid;margin:.12rem .35rem .12rem 0;font-family:'Fira Code',monospace}
+  .pill.ok{color:var(--ok);border-color:rgba(52,211,153,.4);background:rgba(52,211,153,.08)}
+  .pill.bad{color:var(--bad);border-color:rgba(255,0,170,.4);background:rgba(255,0,170,.08)}
+  .pill.gold{color:var(--primary);border-color:rgba(212,175,55,.4);background:rgba(212,175,55,.08)}
+  .pill.warn{color:var(--warn);border-color:rgba(251,191,36,.4);background:rgba(251,191,36,.08)}
+  .pill.vio{color:var(--violet);border-color:rgba(138,43,226,.45);background:rgba(138,43,226,.1)}
+  .pill.cy{color:var(--cyan);border-color:rgba(0,212,255,.4);background:rgba(0,212,255,.08)}
+  .twocol{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
+  @media(max-width:780px){.twocol{grid-template-columns:1fr}}
+  .sys{border-radius:12px;border:1px solid rgba(255,255,255,.1);padding:1rem 1.2rem;background:rgba(0,0,0,.35)}
+  .sys h3{font-family:'Cinzel',serif;font-size:.95rem;margin-bottom:.4rem}
+  .sys.bio h3{color:var(--green)} .sys.poly h3{color:var(--violet)}
+  .sys ul{list-style:none;font-size:.76rem;color:#aab3bf}
+  .sys li{padding:.22rem 0;border-bottom:1px dashed rgba(255,255,255,.05)}
+  .sys li b{color:#e6e9ee;font-weight:500}
+  .gate{border-left:3px solid var(--warn);padding:.7rem 1rem;background:rgba(251,191,36,.05);border-radius:0 10px 10px 0;margin:.7rem 0;font-size:.8rem}
+  .gate b{color:var(--warn)}
+  .step{display:flex;gap:.9rem;padding:.75rem 0;border-bottom:1px solid rgba(255,255,255,.05);align-items:flex-start}
+  .step .ph{font-family:'Fira Code',monospace;font-size:.66rem;color:var(--violet);border:1px solid rgba(138,43,226,.4);
+    border-radius:8px;padding:.3rem .55rem;white-space:nowrap;margin-top:.15rem}
+  .step .bd{font-size:.8rem;color:#aab3bf} .step .bd b{color:#e6e9ee}
+  footer{text-align:center;padding:2rem;font-size:.7rem;color:rgba(255,255,255,.25)}
+  .legend{font-family:'Fira Code',monospace;font-size:.62rem;color:#7a8290;line-height:2}
+</style>
+</head>
+<body>
+<div class="starfield"></div>
+
+<header>
+  <a href="../BioChain_Architect_intro.html" class="home-link">← BioChain AI</a>
+  <div class="eyebrow serif">BioChain-AI · Polycentria-Governance · Conversion Study</div>
+  <h1 class="serif">BIOCHAIN ⇄ POLYCENTRIA GOVERNANCE</h1>
+  <p class="tagline">How the BioChain Enterprise governance system converts into the Polycentria governance topology
+  (the six Points, three invariants, tamper-evidence), what each side adds to the other, and the implementation path —
+  with the compatibility gates stated honestly. Claims below carry Polycentria's own honesty tags.</p>
+  <p class="legend" style="margin-top:.7rem">[IN-CODE] measured in a repo · [IN-CODE-UNTESTED] built, not run ·
+  [TO-SUBSTANTIATE] asserted, unmeasured · [ASPIRATIONAL] intent · [OPEN-PROBLEM] unresolved</p>
+</header>
+
+<main>
+
+<section>
+  <h2><span class="n">00</span>Compatibility verdict</h2>
+  <div class="glass card">
+    <p><span class="pill ok">deeply compatible</span><span class="pill warn">3 hard gates</span>
+    The two systems are convergent evolution from the same instinct: <strong>a 64-bit packet as the atom of
+    verifiable state, an untrusted proposer split from an exact certifier, and honesty as an engineering
+    discipline.</strong> Our POLYCENTRIA.md dual-helix (oracle proposes / certifier decides) and their six-Point
+    topology describe the same governance shape at two altitudes. Conversion is therefore mostly a
+    <em>mapping</em>, not a rewrite — but three gates must clear first (§05): the naming collision, the
+    IP-assignment chain for the pump kernel, and public-repo disclosure hygiene.</p>
+  </div>
+</section>
+
+<section>
+  <h2><span class="n">01</span>The two systems at a glance</h2>
+  <div class="glass card">
+    <div class="twocol">
+      <div class="sys bio">
+        <h3>BioChain Enterprise (this repo)</h3>
+        <ul>
+          <li><b>Atom:</b> 64-bit SHD-CCP kernel packet (form/parity/spin/quat-core/payload/freq/amp) — golden ABI hash pinned [IN-CODE]</li>
+          <li><b>Governance cell:</b> Polycentria Dual-Helix — gossip peers propose (Helix A), every node's validation processor decides (Helix B)</li>
+          <li><b>Topology:</b> three tiers = three gears — Biostrata edge · Hypersim mesh · SPIRE Core quorum</li>
+          <li><b>Trust:</b> ECDSA seals · CERT/2 web of trust · dual chiral anchors · L/R pairing rule [IN-CODE]</li>
+          <li><b>Integrity:</b> chiral + mirror holonomy (order-sensitive) · Merkle spot-checks · telescoping boundaries [IN-CODE]</li>
+          <li><b>Time:</b> pump clock — logical gear time, π/6 handoff windows, tick-6/12 crystallization [IN-CODE]</li>
+          <li><b>Economy:</b> FLUX meter (infinite, non-transferable) · CRYST compute credit (measured value × ε) [IN-CODE, synthetic corpora]</li>
+        </ul>
+      </div>
+      <div class="sys poly">
+        <h3>Polycentria (Emotivity Inc.)</h3>
+        <ul>
+          <li><b>Atom:</b> signed 64-bit codex packet — quaternion → TDA(H₁) → torus → packet, composed by an associative monoid [IN-CODE]</li>
+          <li><b>Governance topology:</b> six Points on one axis — Relation → Interpretation → Intersection → Reconciliation → Control, with Calibration as the dial at every point</li>
+          <li><b>Invariants:</b> A1 topological persistence (SW=0.055, gate SW&lt;0.20) · A2 geodesic curvature (0.07° median) · A3 compositional invariance (512/512 triples) [IN-CODE — real data]</li>
+          <li><b>Security property:</b> tamper-evident hash chain (bit-flip localized, 0.25 ms verify) [IN-CODE]; post-quantum signing [IN-CODE-UNTESTED]</li>
+          <li><b>Discipline:</b> honesty tags · real-data boundary (EuRoC MH_01, 36,382 quaternions) · 51 bit-exact conformance vectors · SO(3) frame-equivariance on the do-not-publish list [OPEN-PROBLEM]</li>
+          <li><b>Offering:</b> Calibration · Compression · Compliance — verification <em>beneath language</em></li>
+        </ul>
+      </div>
+    </div>
+    <p style="font-size:.76rem;color:#7a8290;margin-top:.7rem">The rhyme is not cosmetic: both stacks refuse a
+    privileged center (their "composition privileges no participant" ↔ our "no node trusts another's verdict"),
+    both measure instead of asserting, and both put the checkpoint <em>before</em> the action (their Point of
+    Control ↔ our crystallization windows).</p>
+  </div>
+</section>
+
+<section>
+  <h2><span class="n">02</span>The conversion map — six Points, landed on the mesh</h2>
+  <div class="glass card">
+<pre>POLYCENTRIA AXIS   upstream (formation) ─────────────────────────► downstream (action)
+                   RELATION → INTERPRETATION → INTERSECTION → RECONCILIATION → CONTROL
+                                     ▲ CALIBRATION tunes every point ▲
+
+BIOCHAIN TIERS     Biostrata edge ──────────► Hypersim mesh ──────────► SPIRE Core
+                   (grows/forms)              (meets/verifies)          (checkpoint/acts)</pre>
+    <div class="tblwrap"><table>
+      <tr><th>Point</th><th>Polycentria meaning</th><th>BioChain mechanism that already lands there</th><th>conversion action</th></tr>
+      <tr><td><strong>Relation</strong> (anchor)</td><td>how a system forms its orientation; the adapter contract — the one boundary that touches the world</td><td>the kernel ABI + codex ABI gate: what counts as a valid packet/program before anything acts on it [IN-CODE]</td><td>declare the kernel ABI + adapter contract as the same Point; adopt their <code>finalize(raw, convention)</code> adapter shape for engram ingestion</td></tr>
+      <tr><td><strong>Interpretation</strong></td><td>assigning structure to the raw stream; the SW gate is where interpretation <em>commits</em></td><td>codex growth (predict-then-correct) commits a representation; value/stability scores are the commit gates [IN-CODE]</td><td>add SW(H₁) beside value/stability as a third commit gate (see §04)</td></tr>
+      <tr><td><strong>Intersection</strong></td><td>polycentricity-as-a-place; packet composition privileges no participant (A3)</td><td>gossip set-union CRDT + quorum-as-verification-redundancy: every node verifies, none is the aggregator [IN-CODE]</td><td>compose packet streams with their monoid for <em>pooling</em>; commit our chiral holonomy for <em>history</em> (the two are different objects — §04)</td></tr>
+      <tr><td><strong>Reconciliation</strong></td><td>symmetric verification — no verifier exempt from the verification it applies; renamed from Arbitration to kill the sovereign connotation</td><td>the chiral pairing rule: growth by one hand may only be attested by the opposite hand; self-attestation impossible by type; dual anchors kill the single root [IN-CODE]</td><td><strong>this is BioChain's strongest export</strong> — chirality is Reconciliation <em>mechanized</em> rather than stated</td></tr>
+      <tr><td><strong>Calibration</strong> (dial)</td><td>gate thresholds, conformance vectors, torus sizing — tuned at every point; also the commercial offering</td><td>quota thresholds, ε-uplift benches, golden ABI hashes, hand-census-scaled quorums [IN-CODE]</td><td>merge the two conformance disciplines: their 51 bit-exact vectors + our golden hashes = one cross-implementation contract</td></tr>
+      <tr><td><strong>Control</strong> (anchor)</td><td>the checkpoint before an action executes; the runtime gate that passes or blocks</td><td>crystallization at tick-6/12 windows: full replay + twin receipts + quorum multi-sig before CRYST issues [IN-CODE]</td><td>bind their runtime gate to pump-clock windows so "before action" has a shared logical time (see §04)</td></tr>
+    </table></div>
+    <p style="font-size:.76rem;color:#7a8290">Reading the map top-down: the BioChain governance system converts into
+    Polycentria's topology <em>without inventing anything</em> — every Point already has a measured mechanism living
+    at it. The conversion is adopting their names, their axis, and their tags as the canonical description layer.</p>
+  </div>
+</section>
+
+<section>
+  <h2><span class="n">03</span>Invariants ↔ measured checks — the technical crosswalk</h2>
+  <div class="glass card tblwrap">
+    <table>
+      <tr><th>Polycentria invariant / property</th><th>their evidence</th><th>BioChain counterpart</th><th>our evidence</th><th>compatibility</th></tr>
+      <tr><td>A1 · topological persistence (H₁ survives compression)</td><td>SW=0.055 global; 100% keyframe windows &lt; 0.20 [IN-CODE — real data]</td><td>rate–distortion dial: outer chain lossless, telescoping exact; RMSE per scale</td><td>exactly-0 telescoping (rational source); 0.001–0.113 rad middle [IN-CODE, synthetic]</td><td><span class="pill ok">complementary</span> theirs measures topology, ours measures trajectory — adopt both gates</td></tr>
+      <tr><td>A2 · geodesic curvature (efficient motion on S³)</td><td>0.07° median reconstruction [IN-CODE — real data]</td><td>SLERP lifts on principal branch; (q^{1/N})^N = q exact</td><td>reconstruction angle 0 (Prop 4) [IN-CODE]</td><td><span class="pill ok">same mathematics</span> — both live on S³, both SLERP-reconstruct</td></tr>
+      <tr><td>A3 · compositional invariance (order-independent pooling)</td><td>512/512 associativity triples [IN-CODE]</td><td>chiral + mirror holonomy (order-<em>sensitive</em> history)</td><td>XOR blind to reorder; chiral catches Δ 1.77 rad [IN-CODE]</td><td><span class="pill gold">two objects, one lesson</span> — pooling wants order-free, history wants order-bound; ship both (§04)</td></tr>
+      <tr><td>Tamper-evidence (security property, not an invariant)</td><td>bit-flip localized, 192-entry chain, 0.25 ms [IN-CODE]</td><td>Merkle spot-checks + holonomy words + seal signatures</td><td>sampled screening 2/9, full replay certain [IN-CODE]</td><td><span class="pill ok">merge cleanly</span> — their hash chain within a stream, our Merkle across chunks</td></tr>
+      <tr><td>Conformance vectors (interoperability contract)</td><td>51 bit-exact vectors, frozen [IN-CODE]</td><td>golden ABI hash + golden claim hash + deterministic replay</td><td>bit-identical independent runs [IN-CODE]</td><td><span class="pill ok">same discipline</span> — publish one joint contract</td></tr>
+      <tr><td>SO(3) frame-equivariance</td><td>measured to <em>fail</em>; do-not-publish list [OPEN-PROBLEM]</td><td>we make no frame claims; handedness is ID-derived, frame-free</td><td>—</td><td><span class="pill warn">adopt their discipline</span> — the phrase never appears in our pages either</td></tr>
+      <tr><td>Real-data boundary</td><td>EuRoC MH_01 is <em>the</em> measured stream, named as the boundary</td><td>our corpora are synthetic (pseudo-wiki, seeded noise)</td><td>honest but synthetic</td><td><span class="pill bad">our gap</span> — BioChain has no real-data stream yet; §04 fixes this</td></tr>
+    </table>
+  </div>
+</section>
+
+<section>
+  <h2><span class="n">04</span>What each side adds to the other</h2>
+  <div class="glass card">
+    <p style="margin-bottom:.4rem"><strong style="color:var(--green)">BioChain → Polycentria</strong> (improvements to their governance system):</p>
+    <div class="tblwrap"><table>
+      <tr><th>addition</th><th>what it fixes for them</th><th>status</th></tr>
+      <tr><td><strong>Chiral + mirror holonomy for composition history</strong></td><td>A3's order-independence is a feature for pooling and a blind spot for history: once streams from many parties are pooled through the monoid, <em>who-composed-when</em> leaves no fingerprint. The ordered product + mirror commit (three words, 40 bytes) makes reorder/splice visible without touching the monoid. Their hash chain protects one stream; this protects the composition.</td><td>[IN-CODE] here — measured XOR-blindness, Δ 1.77 rad catch</td></tr>
+      <tr><td><strong>Chiral pairing rule + dual anchors for Reconciliation</strong></td><td>"No verifier exempt from the verification it applies" is stated as a principle; handedness makes it a <em>type system</em>: self-attestation structurally impossible, single-root capture structurally impossible. Reconciliation stops being a norm and becomes an ABI.</td><td>[IN-CODE] here — 4/4 pairing checks</td></tr>
+      <tr><td><strong>Pump clock + π/6 handoff windows for swarm composition</strong></td><td>Their swarm milestone is blocked on a coordination spec. The gear clock gives multi-node composition a shared <em>logical</em> time (no wall clock, bit-reproducible), legal handoff windows, and "silence is exact" boundary checks — the missing synchronization substrate.</td><td>[IN-CODE] here; on their stack [TO-SUBSTANTIATE]</td></tr>
+      <tr><td><strong>Predict-then-correct residual channel</strong></td><td>Their known limit: 12/36 packets-only windows miss the SW gate ("real attitude isn't a clean torus"). A rank-coded residual stream on exactly those windows makes every window clear the gate <em>losslessly</em> — the keyframe path, generalized, with the residual priced into the compression ratio honestly.</td><td>[TO-SUBSTANTIATE] — measurable on EuRoC MH_01 (§06 phase 2)</td></tr>
+      <tr><td><strong>The two-token rail under Calibration·Compression·Compliance</strong></td><td>FLUX (infinite meter, non-transferable — validation work) and CRYST (scarce, compute-backed — measured value × ε) give the commercial offering a usage economy that can't be farmed, with the Goodhart attack priced out by counting everything shipped.</td><td>[IN-CODE] here, synthetic; commercial fit [ASPIRATIONAL]</td></tr>
+    </table></div>
+    <p style="margin:.9rem 0 .4rem"><strong style="color:var(--violet)">Polycentria → BioChain</strong> (improvements to our governance system):</p>
+    <div class="tblwrap"><table>
+      <tr><th>addition</th><th>what it fixes for us</th><th>status</th></tr>
+      <tr><td><strong>The honesty-tag vocabulary</strong></td><td>We measure everything but tag nothing. Adopting [IN-CODE] / [TO-SUBSTANTIATE] / [ASPIRATIONAL] / [OPEN-PROBLEM] as literal annotations across BioChain Enterprise docs makes claim status machine-checkable, not tonal.</td><td>adopt — this page already uses them</td></tr>
+      <tr><td><strong>The real-data boundary discipline</strong></td><td>Every BioChain bench runs on synthetic corpora. Their rule — <em>one named real stream is the boundary of what's measured; synthetic is never presented as real</em> — is the single biggest honesty upgrade available to us. EuRoC MH_01 (quaternion attitude) feeds our engram codec directly.</td><td>[TO-SUBSTANTIATE] — phase 2</td></tr>
+      <tr><td><strong>SW(H₁) as a third crystallization score</strong></td><td>CRYST issuance scores value (compression) and ε (attunement) but nothing <em>topological</em> — a grown manifold could preserve bytes yet destroy loop structure. SW&lt;0.20 on persistence diagrams adds the fidelity axis our dial lacks.</td><td>[TO-SUBSTANTIATE]</td></tr>
+      <tr><td><strong>The adapter contract</strong></td><td>Engram growth currently ingests raw bytes. Their <code>finalize(raw, convention)</code> contract (quaternion convention, frame, timestamps) is how real sensors enter without per-domain hacks — the Relation Point, made concrete.</td><td>adopt at phase 3</td></tr>
+      <tr><td><strong>The Points as a review checklist</strong></td><td>Six questions for every new mesh feature: what does it treat as signal (Relation)? where does interpretation commit? does composition privilege anyone? is verification symmetric? what dials calibrate it? where is the checkpoint? Cheap, catches design drift early.</td><td>adopt immediately</td></tr>
+    </table></div>
+  </div>
+</section>
+
+<section>
+  <h2><span class="n">05</span>Compatibility gates — the troubleshoot, honestly</h2>
+  <div class="glass card">
+    <div class="gate"><b>GATE 1 · The naming collision.</b> "Polycentria" is simultaneously our governance model
+    (the Polycentria Dual-Helix, <code>Library/Experimental_Systems/POLYCENTRIA.md</code>) and their organization
+    (Emotivity Inc., dba Polycentria). Worse, the two document sets <em>contradict each other on Schism Labs</em>:
+    our POLYCENTRIA.md says "the organization name Schism Labs is unchanged," their staged content says "the
+    Schism Labs second entity is deprecated — do not reintroduce." Resolution needed before any shared publication:
+    one owner for each name, one sentence recording the relationship. Proposed: the <em>model</em> keeps
+    "Polycentria Dual-Helix" with an attribution line; the <em>org</em> is always "Polycentria (Emotivity Inc.)".
+    <span class="pill warn">decision, not code</span></div>
+    <div class="gate"><b>GATE 2 · The IP assignment chain for the pump.</b> The Hyperbolic Sparsemax Pump — the
+    executable kernel this whole BioChain deployment uses as its consensus clock — originates here
+    ("BioChain AI · Owl Academy — Experimental Systems") and is simultaneously tracked in their internal new-matter
+    inventory pending an assignment-chain confirmation to Emotivity Inc. Until that chain is confirmed in writing,
+    <strong>merging code between the repos is a legal event, not a git event.</strong> Everything in this study is
+    mapping and interface design; no code crosses until the assignment question is resolved by counsel.
+    <span class="pill warn">legal gate</span></div>
+    <div class="gate"><b>GATE 3 · Disclosure hygiene.</b> This repo serves public GitHub Pages; two of the four
+    reviewed documents are internal (one legal-confidential). Rule adopted for this page and everything after it:
+    <strong>public pages cite public concepts only</strong> — no claim inventories, no filing specifics, no counsel
+    or partner names, no internal roadmap items. Their own discipline ("disclosure to partners is a
+    patent-disclosure event") applies to us the moment we touch shared material. Also worth their attention in the
+    other direction: the pump proof has been publicly visible in this repo's Experimental Systems — the
+    already-public boundary should be inventoried by counsel too. <span class="pill warn">process gate</span></div>
+    <p style="font-size:.8rem;margin-top:.8rem">Technical frictions (all resolvable, none blocking):</p>
+    <table>
+      <tr><th>friction</th><th>resolution</th></tr>
+      <tr><td>Two different 64-bit packet layouts (our kernel fields vs their TDA/torus packet)</td><td>the kernel's <strong>Structural Form ID</strong> is the designed extension point: reserve a Form value for "Polycentria codex packet," carry theirs as payload family — one wire, two dialects [TO-SUBSTANTIATE]</td></tr>
+      <tr><td>A3 order-independence vs chiral order-sensitivity</td><td>not a conflict — pooling (monoid) and history (holonomy) are different objects; ship both fingerprints side by side</td></tr>
+      <tr><td>Their FALCON-512 signing [IN-CODE-UNTESTED] vs our ECDSA P-256 seals</td><td>seal registry already versions key types; a PQ seal class slots in when their hardware validation lands — no architectural change</td></tr>
+      <tr><td>Their SW gate needs GUDHI/TDA deps; our house rule is pure stdlib</td><td>keep TDA at their layer; exchange only diagrams/gate verdicts as signed records — the mesh validates signatures and thresholds, not the computation</td></tr>
+    </table>
+  </div>
+</section>
+
+<section>
+  <h2><span class="n">06</span>Implementation steps</h2>
+  <div class="glass card">
+    <div class="step"><div class="ph">PHASE 0 · gates</div><div class="bd"><b>Clear the three gates.</b> Naming decision recorded in both document sets · assignment chain for the pump confirmed by counsel before any code crosses · disclosure rule (public pages ↔ public concepts) adopted in writing. Nothing else starts until these do. <span class="pill warn">decision + legal</span></div></div>
+    <div class="step"><div class="ph">PHASE 1 · vocabulary</div><div class="bd"><b>Convert the description layer.</b> Tag every BioChain Enterprise claim with honesty tags · adopt the six Points as section headers in the spec (each mesh mechanism filed under its Point, per the §02 map) · add the Points checklist to the review process · publish the joint conformance contract (their 51 vectors + our golden hashes) as one document. <span class="pill ok">docs only — zero risk</span></div></div>
+    <div class="step"><div class="ph">PHASE 2 · measure</div><div class="bd"><b>One real stream, three experiments.</b> Ingest EuRoC MH_01 through the engram codec (our first real-data boundary) · run the residual channel on their 12/36 gate-missing windows — target: 100% of windows clear SW&lt;0.20 losslessly, with the residual cost priced honestly · add SW(H₁) as the third crystallization score on our side. All three are benchable without any code crossing repos: the stream is public, the methods are papers. <span class="pill cy">[TO-SUBSTANTIATE] → [IN-CODE]</span></div></div>
+    <div class="step"><div class="ph">PHASE 3 · interfaces</div><div class="bd"><b>One wire, two dialects.</b> Reserve the Structural Form ID for Polycentria packets · adopt their adapter contract for engram ingestion (Relation Point) · exchange signed SW-gate verdicts as mesh records (their TDA stays their-side; we verify signatures + thresholds). <span class="pill gold">after gates clear</span></div></div>
+    <div class="step"><div class="ph">PHASE 4 · governance merge</div><div class="bd"><b>Mechanize Reconciliation.</b> Chiral holonomy commits beside their monoid pooling · pairing rule + dual anchors offered as the verifier-network discipline · pump-clock windows as the swarm synchronization substrate · crystallization = their Point of Control bound to tick-6/12. <span class="pill gold">the actual conversion</span></div></div>
+    <div class="step"><div class="ph">PHASE 5 · economy</div><div class="bd"><b>Calibration · Compression · Compliance on the two-token rail.</b> FLUX meters verification work across both networks; CRYST backs compute redemption; value × ε × SW becomes the three-axis crystallization score. <span class="pill vio">[ASPIRATIONAL]</span></div></div>
+  </div>
+</section>
+
+<section>
+  <h2><span class="n">07</span>Sources &amp; lineage</h2>
+  <div class="glass card">
+    <p style="font-size:.8rem">This study draws on Polycentria's governance/technical lens documents (the Points,
+    invariants, honesty tags, real-data boundary) and their repo map; internal/legal materials informed the gates in
+    §05 but are not reproduced here — by their own disclosure rule and ours. BioChain side:
+    <a href="../BioChain_Enterprise/index.html">Enterprise console</a> ·
+    <a href="../BioChain_Enterprise/pump_timing.html">Pump Clock</a> ·
+    <a href="../BioChain_Enterprise/chiral_mesh.html">Chiral Mesh</a> ·
+    <a href="../../Library/Experimental_Systems/POLYCENTRIA.md">Polycentria Dual-Helix note</a> ·
+    <a href="../../Library/Experimental_Systems/Spire_Mesh/index.html">Spire Mesh</a>.
+    All BioChain numbers cited are reproduced by the four reference modules (8/8 · 11/11 · 11/11 · 13/13).</p>
+  </div>
+</section>
+
+</main>
+<footer>Polycentria-Governance · BioChain-AI · © 2026 Owl Academy</footer>
+</body>
+</html>
