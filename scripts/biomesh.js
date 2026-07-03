@@ -107,17 +107,17 @@ export async function growBiochain(text) {
     for (let i = 0; i < root.length; i += 2) next.push(await SC.sha256Hex(root[i] + root[i + 1]));
     root = next;
   }
-  const cuts = Array.from({ length: SEGMENTS + 1 }, (_, i) => Math.round(i * chunks.length / SEGMENTS));
+  // Segment cut boundaries as a FLAT array — segment s spans segCuts[s]..segCuts[s+1].
+  // (Firestore rejects nested arrays, so this must not be an array of [lo,hi] pairs.)
+  const segCuts = Array.from({ length: SEGMENTS + 1 }, (_, i) => Math.round(i * chunks.length / SEGMENTS));
   let wf = [1, 0, 0, 0], wm = [1, 0, 0, 0];
-  const segRanges = [];
-  for (let s = 0; s < SEGMENTS; s++) segRanges.push([cuts[s], cuts[s + 1]]);
   for (const c of chunks) wf = qn(qmul(crystalQuat(c), wf));
   for (const c of [...chunks].reverse()) wm = qn(qmul(qconj(crystalQuat(c)), wm));
   const merkleRoot = root[0] || await SC.sha256Hex("empty");
   const chainId = "BC-" + (await SC.sha256Hex(merkleRoot + "|" + quatHex(wf))).slice(0, 24);
   return {
     chainId, streams, chunkLens: lens, leafHashes, merkleRoot,
-    weaveChiral: quatHex(wf), weaveMirror: quatHex(wm), segRanges,
+    weaveChiral: quatHex(wf), weaveMirror: quatHex(wm), segCuts, segments: SEGMENTS,
     origBytes: data.length, shippedBytes: Math.round(ship),
     value: +(data.length / ship).toFixed(4),
   };
