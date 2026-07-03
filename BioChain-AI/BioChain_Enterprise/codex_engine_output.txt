@@ -1,0 +1,75 @@
+
+──────────────────────────────────────────────────────────────────────────
+CODEX ENGINE — two user-authored unfolding logics
+──────────────────────────────────────────────────────────────────────────
+  prose codex   : order 2 · chunk 720 · 2 packets · 1f47c218235d83aa…
+  generic codex : order 1 · chunk 240 · 2 packets · 1ffb97970de007bb…
+
+──────────────────────────────────────────────────────────────────────────
+Grow → unfold: lossless by construction, priced by residual
+──────────────────────────────────────────────────────────────────────────
+  corpus                 codex        orig B shipped B    value  lossless
+  wiki (structured)      prose          5363      3651     1.47       yes
+  wiki (structured)      generic        5363      5025     1.07       yes
+  noise (entropy)        prose          3000      3444     0.87       yes
+  noise (entropy)        generic        3000      3779     0.79       yes
+  [PASS] all four grow→unfold round-trips are lossless
+  [PASS] structured data grows at value > 1 (prose codex) — value 1.47
+  [PASS] entropy is priced honestly (value < 1 on noise) — value 0.87 — no unfolding logic beats entropy
+  [PASS] customization is measurable (prose ≠ generic value on wiki)
+
+──────────────────────────────────────────────────────────────────────────
+Geometric synchronization + sampled verification (Tier-2 economics)
+──────────────────────────────────────────────────────────────────────────
+  [PASS] spot-check: 5 sampled chunks replay to committed leaves — chunks [5, 2, 6, 0, 1]
+  [PASS] tampered residual caught by spot-check AND full unfold — residual stream 1 truncated or corrupt
+  bioseed chain: 8 packets · holonomy word 004BA8322C0393CD (cumulative XOR closes the chain)
+
+──────────────────────────────────────────────────────────────────────────
+The Goodhart attack, priced: hide the corpus in the codex
+──────────────────────────────────────────────────────────────────────────
+  honest codex :     2 packets → value 1.47
+  dump codex   :   528 packets → value 0.97  (residual shrinks, codex explodes)
+  [PASS] value formula prices the dump below the honest codex — 0.97 < 1.47 — counting seed+codex+residual+chain closes the loophole
+
+──────────────────────────────────────────────────────────────────────────
+Attunement: crystallized knowledge as a prior (measured, not assumed)
+──────────────────────────────────────────────────────────────────────────
+  held-out wiki_b residual: fresh 3350 B → attuned 1457 B  (ε = +56.5% prediction uplift)
+  one-shot value: fresh 1.52 vs attuned 1.10 (attuned pays its 402-packet codex once)
+  amortized over 50 growths: attuned value 3.29
+  [PASS] attunement uplift on same-domain held-out data is positive — ε = +0.565
+  [PASS] attunement gives ~no uplift on entropy (honest null) — ε = -0.001
+
+──────────────────────────────────────────────────────────────────────────
+ABI gate: malformed unfolding logic never runs
+──────────────────────────────────────────────────────────────────────────
+    · flipped bit (parity)       → parity check failed: packet 120000020002D000 is corrupt
+    · order 7 (clamp)            → model order 7 outside ABI clamp 1..3
+    · unknown opcode FORM 11     → unknown opcode FORM 11 — closed instruction set
+  [PASS] all three malformed codexes rejected at parse
+  halting: no jump opcodes exist — every codex halts by construction;
+  fuel spent on honest wiki growth: 18525 (budget 1082600)
+
+──────────────────────────────────────────────────────────────────────────
+Stability: bit-identical replay (the consensus requirement)
+──────────────────────────────────────────────────────────────────────────
+  [PASS] independent growth runs are bit-identical
+  golden claim hash: 71b3a3ffaec33eafef14f02ef9cf5d91…
+
+──────────────────────────────────────────────────────────────────────────
+Verdict
+──────────────────────────────────────────────────────────────────────────
+  ✓ all four grow→unfold round-trips are lossless
+  ✓ structured data grows at value > 1 (prose codex)
+  ✓ entropy is priced honestly (value < 1 on noise)
+  ✓ customization is measurable (prose ≠ generic value on wiki)
+  ✓ spot-check: 5 sampled chunks replay to committed leaves
+  ✓ tampered residual caught by spot-check AND full unfold
+  ✓ value formula prices the dump below the honest codex
+  ✓ attunement uplift on same-domain held-out data is positive
+  ✓ attunement gives ~no uplift on entropy (honest null)
+  ✓ all three malformed codexes rejected at parse
+  ✓ independent growth runs are bit-identical
+
+  11/11 codex-engine checks passed

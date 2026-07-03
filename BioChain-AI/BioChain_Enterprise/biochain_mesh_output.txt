@@ -1,0 +1,71 @@
+
+──────────────────────────────────────────────────────────────────────────
+BIOCHAIN MESH — genesis (Tier 3 quorum + Tier 2 validators + Tier 1 edge)
+──────────────────────────────────────────────────────────────────────────
+  10 operators · trust anchor 0xFA4E00D5E80F81F7 · 9 nodes across 3 tiers
+  genesis (seals + CERT/2) converged in 1 gossip rounds
+
+──────────────────────────────────────────────────────────────────────────
+Tier 1 — Biostrata: Mira authors a codex and grows a bioseed claim
+──────────────────────────────────────────────────────────────────────────
+  codex 6643c03d96266df3… (122 packets, primed) · claim BL-c776b26d28c17a5196cb
+  grown: 5363 B corpus → 3709 B shipped · declared value 1.446 · holonomy 004BA8322C0393CD
+
+──────────────────────────────────────────────────────────────────────────
+Tier 2 — Hypersim: gossip + independent sampled verification
+──────────────────────────────────────────────────────────────────────────
+  [PASS] claim verified by every node (each samples its own chunks) — 9/9 nodes · 2 gossip rounds
+
+──────────────────────────────────────────────────────────────────────────
+Red-owl suite at the mesh boundary
+──────────────────────────────────────────────────────────────────────────
+  [PASS] inflated-value claim rejected (every node recomputes)
+  [PASS] illegal-opcode codex rejected at the ABI gate
+  [PASS] tampered residual: sampled screening catches at 2/9 nodes, full replay with certainty
+
+──────────────────────────────────────────────────────────────────────────
+Tier 3 — SPIRE Core: full replay, twin attunement bench, crystallization
+──────────────────────────────────────────────────────────────────────────
+  [PASS] governance full replay is lossless (holonomy + Merkle verified)
+  [PASS] twin simulation receipts agree bit-for-bit (deterministic bench) — ε = +25.0% on held-out corpus
+  [PASS] crystal accepted mesh-wide (2-governor multi-sig) — 36 CRYST issued to Mira (value 1.45 × ε 0.250 × 100)
+
+──────────────────────────────────────────────────────────────────────────
+The exchange: sequenced CRYST transfers + compute redemption
+──────────────────────────────────────────────────────────────────────────
+  [PASS] sequenced transfer settles on every node — Mira 12 · Okku 24
+  [PASS] double-spend replay rejected by sequence rule
+  [PASS] overdraft rejected (Vex earned nothing)
+  redemption rate: 1 CRYST = 12 compute-seconds → Okku redeems 24 CRYST = 288 s on the fleet
+
+──────────────────────────────────────────────────────────────────────────
+FLUX meter → read quota (Token A: infinite, non-transferable, un-farmable)
+──────────────────────────────────────────────────────────────────────────
+  node     operator   tier   validations     FLUX  quota/min  CRYST balance
+  core-0   Aldrovanda core            20      5.6         10              0
+  core-1   Bavol      core            20      5.6         10              0
+  core-2   Ceridwen   core            20      5.6         10              0
+  mesh-0   Dagny      mesh            20      5.6         10              0
+  mesh-1   Edda       mesh            20      5.6         10              0
+  mesh-2   Fionn      mesh            20      5.6         10              0
+  mesh-3   Grier      mesh            20      5.6         10              0
+  edge-0   Mira       edge            20      5.6         10             12
+  edge-1   Vex        edge            20      5.6         10              0
+  [PASS] FLUX was metered but never transferred (no FLUX field in any record)
+
+──────────────────────────────────────────────────────────────────────────
+Verdict
+──────────────────────────────────────────────────────────────────────────
+  ✓ claim verified by every node (each samples its own chunks)
+  ✓ inflated-value claim rejected (every node recomputes)
+  ✓ illegal-opcode codex rejected at the ABI gate
+  ✓ tampered residual: sampled screening catches at 2/9 nodes, full replay with certainty
+  ✓ governance full replay is lossless (holonomy + Merkle verified)
+  ✓ twin simulation receipts agree bit-for-bit (deterministic bench)
+  ✓ crystal accepted mesh-wide (2-governor multi-sig)
+  ✓ sequenced transfer settles on every node
+  ✓ double-spend replay rejected by sequence rule
+  ✓ overdraft rejected (Vex earned nothing)
+  ✓ FLUX was metered but never transferred (no FLUX field in any record)
+
+  11/11 mesh checks passed · 16 records in every core · quarantined 36 · 3.1s

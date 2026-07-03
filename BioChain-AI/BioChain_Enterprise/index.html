@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Owl Academy | BioChain Enterprise — Three-Tier Engram Economy</title>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Inter:wght@300;400;500;600&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{ --void:#05030a; --primary:#D4AF37; --primary-light:#FFF8DC; --cyan:#00d4ff; --purple:#8A2BE2;
+         --ok:#34d399; --bad:#f0a; --green:#00ff88;
+         --f-form:#a78bfa; --f-parity:#94a3b8; --f-pay:#10b981; --f-quat:#ec4899; --f-freq:#3b82f6; --f-spin:#ef4444; --f-amp:#f59e0b; }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background-color:var(--void);color:#e2e8f0;font-family:'Inter',system-ui,sans-serif;line-height:1.7;min-height:100vh;overflow-x:hidden;
+    background:radial-gradient(circle at 50% 0%, color-mix(in srgb, var(--green) 5%, var(--void)), var(--void) 60%);}
+  a{color:var(--cyan);text-decoration:none} a:hover{text-decoration:underline}
+  .serif{font-family:'Cinzel',serif}.mono{font-family:'Fira Code',ui-monospace,monospace}
+  .starfield{position:fixed;inset:0;z-index:-2;pointer-events:none;opacity:.13;
+    background-image:radial-gradient(2px 2px at 20px 30px,var(--green),rgba(0,0,0,0)),
+      radial-gradient(2px 2px at 40px 70px,#fff,rgba(0,0,0,0)),
+      radial-gradient(2px 2px at 130px 80px,var(--primary),rgba(0,0,0,0));
+    background-repeat:repeat;background-size:250px 250px;animation:twinkle 8s infinite alternate;}
+  @keyframes twinkle{0%{opacity:.05}100%{opacity:.18}}
+  header{position:relative;padding:3rem 1.5rem 2.2rem;text-align:center;border-bottom:1px solid rgba(0,255,136,.18);
+    background:rgba(5,3,10,.55);backdrop-filter:blur(10px)}
+  .home-link{position:absolute;top:1.4rem;left:1.4rem;font-size:.62rem;letter-spacing:.22em;text-transform:uppercase;
+    color:rgba(0,255,136,.6);border:1px solid rgba(0,255,136,.3);padding:.5rem .9rem;border-radius:6px;transition:.2s}
+  .home-link:hover{color:#d9ffee;background:rgba(0,255,136,.1);text-decoration:none}
+  h1{font-size:1.9rem;font-weight:700;letter-spacing:.16em;
+    background:linear-gradient(to right,var(--green),#d9ffee,var(--primary));
+    -webkit-background-clip:text;background-clip:text;color:transparent}
+  .eyebrow{font-size:.7rem;letter-spacing:.4em;text-transform:uppercase;color:rgba(0,255,136,.7);margin-bottom:.5rem}
+  .tagline{margin-top:.9rem;color:#9aa5b1;font-weight:300;max-width:47rem;margin-left:auto;margin-right:auto;font-size:.9rem}
+  main{max-width:1080px;margin:2.2rem auto;padding:0 1.5rem}
+  .glass{background:rgba(10,8,20,.45);backdrop-filter:blur(12px);border:1px solid rgba(0,255,136,.14);
+    box-shadow:0 8px 32px rgba(0,0,0,.5);border-radius:14px}
+  section{margin-bottom:2.4rem}
+  h2{font-family:'Cinzel',serif;color:#d9ffee;font-size:1.2rem;letter-spacing:.08em;margin-bottom:.8rem;display:flex;align-items:center;gap:.7rem}
+  h2 .n{font-family:'Fira Code',monospace;font-size:.7rem;color:rgba(0,255,136,.7);border:1px solid rgba(0,255,136,.3);border-radius:6px;padding:.15rem .5rem}
+  p{font-size:.88rem;color:#aab3bf;margin-bottom:.8rem} strong{color:#e6e9ee}
+  .card{padding:1.3rem 1.5rem}
+  table{width:100%;border-collapse:collapse;font-size:.78rem;margin:.6rem 0}
+  th{font-size:.62rem;letter-spacing:.14em;text-transform:uppercase;color:rgba(0,255,136,.75);text-align:left;border-bottom:1px solid rgba(0,255,136,.25);padding:.5rem .6rem}
+  td{padding:.5rem .6rem;border-bottom:1px solid rgba(255,255,255,.05);color:#aab3bf;vertical-align:top}
+  td:first-child{color:#e6e9ee}
+  .tblwrap{overflow-x:auto}
+  pre{font-family:'Fira Code',monospace;font-size:.72rem;color:#9fe8c8;background:rgba(0,0,0,.45);
+    border:1px solid rgba(0,255,136,.14);border-radius:10px;padding:1rem 1.2rem;overflow-x:auto;line-height:1.55;margin:.6rem 0}
+  code{font-family:'Fira Code',monospace;font-size:.78em;color:var(--cyan);background:rgba(0,212,255,.06);padding:.1em .35em;border-radius:3px}
+  .pill{display:inline-block;font-size:.58rem;text-transform:uppercase;letter-spacing:.12em;padding:.15rem .55rem;border-radius:999px;border:1px solid;margin-right:.4rem}
+  .pill.ok{color:var(--ok);border-color:rgba(52,211,153,.4);background:rgba(52,211,153,.08)}
+  .pill.bad{color:var(--bad);border-color:rgba(255,0,170,.4);background:rgba(255,0,170,.08)}
+  .pill.gold{color:var(--primary);border-color:rgba(212,175,55,.4);background:rgba(212,175,55,.08)}
+  .pill.cy{color:var(--cyan);border-color:rgba(0,212,255,.4);background:rgba(0,212,255,.08)}
+  /* kernel grid */
+  .kwrap{display:grid;grid-template-columns:minmax(280px,420px) 1fr;gap:1.2rem}
+  @media(max-width:760px){.kwrap{grid-template-columns:1fr}}
+  .kgrid{display:grid;grid-template-columns:repeat(8,1fr);gap:5px;aspect-ratio:1;max-width:420px}
+  .kcell{border-radius:7px;display:flex;align-items:center;justify-content:center;font-family:'Fira Code',monospace;
+    font-size:.6rem;font-weight:600;color:rgba(0,0,0,.75);cursor:pointer;transition:.15s;user-select:none}
+  .kcell.dim{opacity:.25}
+  .kinfo{font-size:.8rem;color:#aab3bf}
+  .kinfo h3{font-family:'Cinzel',serif;color:#fff;font-size:1rem;margin-bottom:.3rem}
+  .klegend{display:flex;flex-wrap:wrap;gap:.7rem;margin-top:.8rem;font-size:.64rem;font-family:'Fira Code',monospace;color:#7a8290}
+  .klegend span{display:flex;align-items:center;gap:.35rem}
+  .klegend i{width:10px;height:10px;border-radius:3px;display:inline-block}
+  .halo-label{font-family:'Fira Code',monospace;font-size:.6rem;letter-spacing:.25em;text-transform:uppercase;color:#8A2BE2;text-align:center;margin:.4rem 0}
+  /* demo */
+  textarea{width:100%;min-height:110px;background:rgba(0,0,0,.45);border:1px solid rgba(255,255,255,.12);border-radius:10px;
+    color:#e2e8f0;font-family:'Fira Code',monospace;font-size:.75rem;padding:.8rem;outline:none;resize:vertical}
+  textarea:focus{border-color:rgba(0,255,136,.5)}
+  .btn{font-family:'Inter',sans-serif;font-size:.7rem;letter-spacing:.08em;text-transform:uppercase;cursor:pointer;
+    padding:.55rem .95rem;border-radius:8px;border:1px solid rgba(0,255,136,.35);background:rgba(0,255,136,.08);color:#d9ffee;transition:.2s;margin:.5rem .4rem 0 0}
+  .btn:hover{background:rgba(0,255,136,.18)}
+  .btn.alt{border-color:rgba(212,175,55,.35);background:rgba(212,175,55,.08);color:var(--primary-light)}
+  .statrow{display:flex;flex-wrap:wrap;gap:.8rem;margin-top:1rem}
+  .stat{flex:1;min-width:130px;background:rgba(0,0,0,.4);border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:.7rem .9rem}
+  .stat .l{font-size:.56rem;letter-spacing:.16em;text-transform:uppercase;color:#7a8290}
+  .stat .v{font-family:'Fira Code',monospace;font-size:1.05rem;color:#d9ffee;margin-top:.15rem}
+  .stat .v.ok{color:var(--ok)} .stat .v.bad{color:var(--bad)} .stat .v.gold{color:var(--primary)}
+  footer{text-align:center;padding:2rem;font-size:.7rem;color:rgba(255,255,255,.25)}
+</style>
+</head>
+<body>
+<div class="starfield"></div>
+
+<header>
+  <a href="../BioChain_Architect_intro.html" class="home-link">← BioChain AI</a>
+  <div class="eyebrow serif">BioChain-AI · Enterprise Deployment · Polycentria Applied</div>
+  <h1 class="serif">BIOCHAIN ENTERPRISE</h1>
+  <p class="tagline">The three-tier engram economy: a 64-bit SHD-CCP kernel protocol, user-authored codexes that grow
+  data manifolds losslessly, participant-hosted validation nodes, and the two-token loop —
+  <span class="mono">FLUX</span> the infinite meter, <span class="mono">CRYST</span> the compute-backed credit.</p>
+</header>
+
+<main>
+
+<section>
+  <h2><span class="n">01</span>The stack — measured, end to end</h2>
+  <div class="glass card">
+<pre>Tier 1  BIOSTRATA (edge)      grow: data → packets → quaternion crystals →
+                              bioseed chain + rank-coded residual        codex_engine.py
+Tier 2  HYPERSIM  (mesh)      gossip · seal sigs · CERT/2 chain · codex ABI gate ·
+                              sampled spot-checks · holonomy + Merkle sync ·
+                              FLUX meters the work                       biochain_mesh.py
+Tier 3  SPIRE CORE (quorum)   full lossless replay · twin attunement bench
+                              (bit-identical receipts) · crystallization →
+                              CRYST issued · sequenced exchange · redemption</pre>
+    <p>Reference run: <span class="pill ok">8/8 kernel</span><span class="pill ok">11/11 codex</span>
+       <span class="pill ok">11/11 mesh</span> — claim verified 9/9 nodes in 2 gossip rounds, ε = +25.0 % twin-receipt
+       agreement, 36 CRYST issued, transfer + redemption settled, double-spend rejected. Full logs in the
+       <code>*_output.txt</code> captures; spec in the <a href="README.md">README</a>.</p>
+  </div>
+</section>
+
+<section>
+  <h2><span class="n">02</span>Kernel Group Design — the 64-bit ABI (hover / click)</h2>
+  <div class="glass card">
+    <div class="halo-label">North Halo (Row 0)</div>
+    <div class="kwrap">
+      <div>
+        <div class="kgrid" id="kgrid"></div>
+        <div class="halo-label" style="margin-top:.6rem">South Halo (Row 7)</div>
+        <div class="klegend" id="klegend"></div>
+      </div>
+      <div class="kinfo" id="kinfo">
+        <h3>Total Allocation: 64 / 64 bits</h3>
+        <p>One packet = one 64-bit word. The 8×8 Einstein-tile grid is a <em>presentation</em> of the word —
+        canonical bit positions are the single source of truth:
+        <code>63..60 form · 59 parity · 58..56 spin · 55..24 quaternion · 23..8 payload · 7..3 freq · 2..0 amp</code>.</p>
+        <p>Protocol law: quaternion components are exact fixed-point (<code>code/127</code>, −128 forbidden);
+        consensus reads raw integers (the FP16 payload view is display-only); even parity over the other 63 bits —
+        the self-test catches all 64 single-bit flips. Codexes are programs written <em>in these packets</em>:
+        Form ID is the opcode, and the instruction set is closed (GEAR · PRIME · HALT — no jumps, so every
+        codex halts by construction).</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <h2><span class="n">03</span>Live: grow → unfold on this machine</h2>
+  <div class="glass card">
+    <p style="font-size:.8rem">The same predict-then-correct cell as <code>codex_engine.py</code>, in your browser:
+    an order-2 rank coder (fresh per 720-byte chunk), Elias-gamma residual, per-chunk crystallization into kernel
+    packets, holonomy word, and the value formula that counts <strong>everything shipped</strong>. Recreation is
+    verified byte-for-byte before anything is reported.</p>
+    <textarea id="src" spellcheck="false">Paste or type anything here — then Grow. Structured, repetitive text grows at value > 1; short or random input is priced honestly below 1 (model warm-up and entropy are real costs, not rounding errors).</textarea>
+    <div>
+      <button class="btn" onclick="runGrow()">⟐ Grow &amp; unfold</button>
+      <button class="btn alt" onclick="loadSample()">Load structured sample</button>
+      <button class="btn alt" onclick="loadNoise()">Load noise</button>
+    </div>
+    <div class="statrow">
+      <div class="stat"><div class="l">original</div><div class="v" id="stOrig">—</div></div>
+      <div class="stat"><div class="l">shipped (seed+codex+residual+chain)</div><div class="v" id="stShip">—</div></div>
+      <div class="stat"><div class="l">value</div><div class="v" id="stVal">—</div></div>
+      <div class="stat"><div class="l">lossless</div><div class="v" id="stLoss">—</div></div>
+      <div class="stat"><div class="l">holonomy word</div><div class="v" id="stHolo" style="font-size:.75rem">—</div></div>
+      <div class="stat"><div class="l">if crystallized at ε=+25%</div><div class="v gold" id="stCryst">—</div></div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <h2><span class="n">04</span>The two-token loop</h2>
+  <div class="glass card tblwrap">
+    <table>
+      <tr><th></th><th>FLUX — Token A</th><th>CRYST — Token B</th></tr>
+      <tr><td>Nature</td><td>infinite <strong>meter</strong> of validation work</td><td>scarce <strong>credit</strong>, backed by fleet compute</td></tr>
+      <tr><td>Earned by</td><td>hosting, replaying, spot-checking (Tier 2)</td><td>crystallized growths: <code>100 × value × ε</code>, both measured</td></tr>
+      <tr><td>Spendable on</td><td>read quota only — <strong>never transferable</strong>, so never farmable</td><td>compute-seconds (burned on redemption); transfers sequenced by the governance quorum</td></tr>
+      <tr><td>Consensus need</td><td>none (local accounting)</td><td>ordering only — every node still verifies sigs, balances, sequence</td></tr>
+      <tr><td>Attack priced out</td><td>junk-engram farming (meter buys nothing tradable)</td><td>corpus-in-codex Goodhart (value counts everything shipped: measured 0.97 vs honest 1.47) · double-spend (sequence rule) · fake ε (twin bit-identical receipts)</td></tr>
+    </table>
+    <p style="font-size:.78rem;color:#7a8290">Honest physics, printed not hidden: sampled screening caught a tampered
+    chunk at 2/9 nodes — single-node sampling is probabilistic; mesh-wide screening plus Tier-3 full replay before
+    crystallization is the guarantee. Attunement ε is real on same-domain held-out data (+56.5 % in the codex bench,
+    +25.0 % in the mesh run) and honestly null on entropy (−0.1 %).</p>
+  </div>
+</section>
+
+<section>
+  <h2><span class="n">05</span>Run it yourself</h2>
+  <div class="glass card">
+<pre>python3 shdccp_kernel.py     #  8/8 — the packet ABI, golden hash pinned
+python3 codex_engine.py      # 11/11 — grow/unfold, Goodhart priced, attunement measured
+python3 biochain_mesh.py     # 11/11 — the whole economy, ~3 s, deterministic</pre>
+    <p style="font-size:.8rem">Pure standard library. Lineage:
+      <a href="../../Library/Experimental_Systems/Spire_Mesh/index.html">Spire Mesh</a> (validation-node anatomy) ·
+      <a href="../../Library/Experimental_Systems/Engram_Codec/index.html">Engram Codec</a> /
+      <a href="../../Library/Experimental_Systems/Ontological_Codex/index.html">Ontological Codex</a> (delta-chain math) ·
+      <a href="../../Library/Experimental_Systems/POLYCENTRIA.md">Polycentria</a> (oracle proposes, certifier decides) ·
+      <a href="../../Library/SPIRE/SPIRE_Manual.html">S.P.I.R.E. Manual</a> (the tri-layer).</p>
+  </div>
+</section>
+
+</main>
+<footer>BioChain Enterprise · BioChain-AI · © 2026 Owl Academy</footer>
+
+<script>
+// ── kernel grid (presentation of the canonical 64-bit layout) ───────────────
+const FIELDS = {
+  form:  {label:'ST', name:'Structural Form ID', bits:'4 bits · INT4 · HALO',  color:'var(--f-form)',
+          desc:'The opcode / seed-form selector (Form IDs 0–15). In a codex: 0=HALT, 1=GEAR, 2=PRIME.'},
+  parity:{label:'PA', name:'Parity',              bits:'1 bit · UINT · HALO',  color:'var(--f-parity)',
+          desc:'Even parity over the other 63 bits — any single flipped bit invalidates the packet (64/64 caught in the self-test).'},
+  pay:   {label:'PA', name:'Payload Scale',       bits:'16 bits · uint16 (FP16 view)', color:'var(--f-pay)',
+          desc:'Raw uint16 for consensus (chunk size in GEAR, context in PRIME); IEEE binary16 view is display-only.'},
+  quat:  {label:'CO', name:'Comp. Quaternion',    bits:'32 bits · 4×8 fixed-point · CORE', color:'var(--f-quat)',
+          desc:'w,x,y,z as exact fixed-point code/127 (−128 forbidden). Carries the crystal in bioseed-chain packets and packed operands in PRIME.'},
+  freq:  {label:'FR', name:'Frequency ID',        bits:'5 bits · INT8-class',  color:'var(--f-freq)',
+          desc:'South-halo propulsion / selector field. Carries the high checksum split in crystallization packets.'},
+  spin:  {label:'SP', name:'Spin Class',          bits:'3 bits · INT4-class',  color:'var(--f-spin)',
+          desc:'Model order in GEAR (clamped 1..3 by the ABI gate — order 7 is rejected at parse), context length in PRIME.'},
+  amp:   {label:'AM', name:'Amplitude ID',        bits:'3 bits · INT4-class',  color:'var(--f-amp)',
+          desc:'South-halo propulsion / selector field. Low checksum split in crystallization packets.'},
+};
+const LAYOUT = [
+  'form','form','form','form','parity','pay','pay','pay',
+  'pay','pay','pay','pay','pay','pay','pay','pay',
+  ...Array(32).fill('quat'),
+  'pay','pay','pay','pay','pay','freq','freq','freq',
+  'freq','freq','spin','spin','spin','amp','amp','amp',
+];
+const grid = document.getElementById('kgrid'), info = document.getElementById('kinfo');
+LAYOUT.forEach(f => {
+  const d = document.createElement('div');
+  d.className = 'kcell'; d.dataset.f = f;
+  d.style.background = FIELDS[f].color; d.textContent = FIELDS[f].label;
+  d.onmouseenter = () => { document.querySelectorAll('.kcell').forEach(c => c.classList.toggle('dim', c.dataset.f !== f)); showField(f); };
+  d.onmouseleave = () => document.querySelectorAll('.kcell').forEach(c => c.classList.remove('dim'));
+  d.onclick = () => showField(f);
+  grid.appendChild(d);
+});
+document.getElementById('klegend').innerHTML = Object.entries(FIELDS).map(([k,f]) =>
+  `<span><i style="background:${f.color}"></i>${f.name}</span>`).join('');
+function showField(f){
+  const x = FIELDS[f];
+  info.innerHTML = `<h3>${x.name}</h3><p class="mono" style="color:${x.color};font-size:.72rem">${x.bits}</p><p>${x.desc}</p>
+    <p style="font-size:.72rem;color:#7a8290">Canonical positions: form 63..60 · parity 59 · spin 58..56 · quaternion 55..24 · payload 23..8 · freq 7..3 · amp 2..0</p>`;
+}
+
+// ── live grow→unfold (mirrors codex_engine.py: order-2 rank coder) ──────────
+class BW { constructor(){this.bits=[];}
+  w(v,n){for(let i=n-1;i>=0;i--)this.bits.push((v>>i)&1);}
+  g(n){const w=32-Math.clz32(n);this.w(0,w-1);this.w(n,w);}
+  len(){return Math.ceil(this.bits.length/8);} }
+class BR { constructor(bits){this.b=bits;this.p=0;}
+  r(n){let v=0;for(let i=0;i<n;i++){if(this.p>=this.b.length)throw new Error('truncated');v=(v<<1)|this.b[this.p++];}return v;}
+  g(){let z=0;while(this.r(1)===0)z++;return z?((1<<z)|this.r(z)):1;} }
+function cands(t,ctx){const m=t.get(ctx);if(!m)return[];return[...m.entries()].sort((a,b)=>b[1]-a[1]||a[0]-b[0]).map(e=>e[0]);}
+function upd(t,ctx,b){let m=t.get(ctx);if(!m){m=new Map();t.set(ctx,m);}m.set(b,(m.get(b)||0)+1);}
+function codeChunk(bytes){                       // encode, fresh model
+  const t=new Map(),bw=new BW();let ctx='0,0';
+  const arr=[];let c=[0,0];
+  for(const b of bytes){const cs=cands(t,ctx);const i=cs.indexOf(b);
+    if(i>=0)bw.g(i+1);else{bw.g(cs.length+1);bw.w(b,8);}
+    upd(t,ctx,b);c=[c[1],b];ctx=c.join(',');}
+  return bw;}
+function decodeChunk(bits,len){const t=new Map(),br=new BR(bits);const out=[];let c=[0,0],ctx='0,0';
+  for(let k=0;k<len;k++){const cs=cands(t,ctx);const n=br.g();
+    const b=(n-1<cs.length)?cs[n-1]:br.r(8);out.push(b);upd(t,ctx,b);c=[c[1],b];ctx=c.join(',');}
+  return out;}
+const M64=(1n<<64n)-1n;
+function crystal(bytes){let a=0x9E3779B97F4A7C15n;
+  for(const b of bytes)a=(((a<<7n)|(a>>57n))&M64)^((BigInt(b)*0x100000001B3n)&M64);
+  return (a^(a>>32n))&0xFFFFFFFFn;}
+function runGrow(){
+  const data=new TextEncoder().encode(document.getElementById('src').value);
+  const CH=720;let ship=8+16;let holo=0n;let ok=true;const chunks=Math.ceil(data.length/CH)||1;
+  for(let i=0;i<data.length||i===0;i+=CH){
+    const chunk=[...data.slice(i,i+CH)];
+    const bw=codeChunk(chunk);ship+=bw.len()+8;
+    holo^=crystal(chunk);
+    try{const back=decodeChunk(bw.bits,chunk.length);
+      ok=ok&&back.length===chunk.length&&back.every((v,j)=>v===chunk[j]);}
+    catch(e){ok=false;}
+    if(data.length===0)break;}
+  const val=data.length/ship;
+  document.getElementById('stOrig').textContent=data.length+' B';
+  document.getElementById('stShip').textContent=ship+' B';
+  const sv=document.getElementById('stVal');sv.textContent=val.toFixed(2);
+  sv.className='v '+(val>1?'ok':'bad');
+  const sl=document.getElementById('stLoss');sl.textContent=ok?'yes ✓':'NO ✗';sl.className='v '+(ok?'ok':'bad');
+  document.getElementById('stHolo').textContent=holo.toString(16).toUpperCase().padStart(16,'0');
+  const cryst=Math.round(100*val*0.25);
+  document.getElementById('stCryst').textContent=(ok&&val>0)?cryst+' CRYST → '+(cryst*12)+' s':'—';
+}
+function loadSample(){
+  const w='torsion pump quaternion toroid lattice spire codex engram manifold seed crystal parity gossip quorum resonance golden helix fold chain packet kernel halo spin frequency amplitude payload'.split(' ');
+  let r=101,x=()=>{r=(r*1103515245+12345)&0x7fffffff;return r;};
+  const art=t=>{const L=['== '+t+' ==','{{Infobox system','| name = '+t,'| class = geometric','| tier = '+(1+x()%3),'}}'];
+    for(let i=0;i<8;i++){const p=Array.from({length:11},()=>w[x()%w.length]);
+      L.push('The '+p[0]+' aligns the '+p[1]+' through the '+p[2]+'. '+p.slice(3).join(' ')+'.');}
+    L.push('[[Category:BioChain]] [[Category:'+t.split(' ')[0]+']]');return L.join('\n');};
+  document.getElementById('src').value=['Torsional Pump','Quaternion Chain','Spire Engine','Kernel Halo','Golden Toroid'].map(art).join('\n\n');
+  runGrow();
+}
+function loadNoise(){
+  let r=303,x=()=>{r=(r*1103515245+12345)&0x7fffffff;return r;};
+  document.getElementById('src').value=Array.from({length:2000},()=>String.fromCharCode(33+x()%94)).join('');
+  runGrow();
+}
+showField('quat');
+</script>
+</body>
+</html>
