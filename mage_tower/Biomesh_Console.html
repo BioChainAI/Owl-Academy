@@ -125,7 +125,13 @@
       <input id="gTitle" placeholder="Title">
       <select id="gSeal" class="fix" style="min-width:220px"></select>
     </div>
-    <textarea id="gText" placeholder="Paste the knowledge to grow (≤ 60,000 bytes)…"></textarea>
+    <div class="row">
+      <select id="gParent"><option value="">— grow a new chain —</option></select>
+      <span class="meta fix" style="max-width:380px">Pick one of your chains to <b style="color:var(--green)">grow it further</b>:
+        the parent is recreated losslessly, your text is appended, and a new epoch is minted with a GROWTH/1 seal
+        binding parent → child. The parent stays frozen.</span>
+    </div>
+    <textarea id="gText" placeholder="Paste the knowledge to grow (≤ 60,000 bytes total). Text is archived losslessly AND crystallized as Mind-Eye-compatible token engrams…"></textarea>
     <div class="row">
       <button class="btn fix" onclick="doGrow()">⟐ Grow</button>
       <button class="btn gold fix" id="pubBtn" onclick="doPublish()" disabled>✒ Certify &amp; publish</button>
@@ -227,6 +233,9 @@ async function refresh() {
   // selectors
   const opts = chains.map(c => `<option value="${c.chainId}">${c.title} · ${c.chainId.slice(0,14)}…</option>`).join("");
   $("xChain").innerHTML = opts; $("tChain").innerHTML = opts;
+  $("gParent").innerHTML = `<option value="">— grow a new chain —</option>` +
+    chains.filter(c => c.ownerUid === uid)
+          .map(c => `<option value="${c.chainId}">extend: ${c.title} · epoch ${c.epoch || 1} · ${c.origBytes} B</option>`).join("");
   const seals = (await listMinorTomes(uid).catch(() => [])).filter(s => s.status === "active");
   const sopts = seals.length
     ? seals.map(s => `<option value="${s.sealId}">${s.label} · ${s.sealId.slice(0,12)}…</option>`).join("")
@@ -251,9 +260,11 @@ function chainCard(c, score, cert, ratings) {
   const d = document.createElement("div"); d.className = "chain-card";
   d.innerHTML =
     `<h4>${c.title} <span class="pill ${cert.valid ? "ok" : "bad"}">${cert.valid ? "certified grown" : "UNCERTIFIED"}</span>
-       <span class="pill ${c.status === "listed" ? "gold" : "cy"}">${c.status}</span></h4>
-     <div class="meta">grower ${c.growerGenesisId} · owner ${c.ownerGenesisId || c.ownerUid} · ${c.origBytes} B · value ${c.value}</div>
-     <div class="meta">${c.chainId} · weave ${String(c.weaveChiral).slice(0, 34)}…</div>
+       <span class="pill ${c.status === "listed" ? "gold" : "cy"}">${c.status}</span>
+       ${c.parentChainId ? `<span class="pill cy">epoch ${c.epoch || "?"}</span>` : ""}
+       ${c.pairedCodexHash ? `<span class="pill gold">⚭ codex</span>` : ""}</h4>
+     <div class="meta">grower ${c.growerGenesisId} · owner ${c.ownerGenesisId || c.ownerUid} · ${c.origBytes} B · value ${c.value}${c.engramCount ? ` · ${c.engramCount} engrams` : ""}</div>
+     <div class="meta">${c.chainId} · weave ${String(c.weaveChiral).slice(0, 34)}…${c.parentChainId ? `<br>grown from ${c.parentChainId}` : ""}${c.pairedCodexHash ? `<br>codex ${c.pairedCodexHash}` : ""}</div>
      <div class="scorebar"><i style="width:${score.total}%"></i></div>
      <div class="meta">success ${score.total}/100 — value ${score.parts.value} · integrity ${score.parts.integrity} ·
        stars ${score.parts.stars} (${score.ratingCount} ratings, ${score.verifiedCount} verified) · adoption ${score.parts.adoption}</div>`;
@@ -271,16 +282,40 @@ function chainCard(c, score, cert, ratings) {
     l.textContent = c.status === "listed" ? "Unlist" : "List on market";
     l.onclick = async () => { await BM.setListing(uid, c.chainId, c.status !== "listed"); refresh(); };
     d.appendChild(l);
+    if (!c.pairedCodexHash) {
+      const p = document.createElement("button"); p.className = "btn sm"; p.style.marginLeft = ".4rem";
+      p.textContent = "⚭ Pair codex";
+      p.onclick = async () => {
+        try {
+          const sealId = $("gSeal").value || $("xSeal").value;
+          if (!sealId) return toast("Mint a minor tome in the Seal Forge first.");
+          const codex = await BM.deriveCodex(BM.recreateText(c));
+          await BM.publishCodex(uid, sealId, codex, { title: c.title + " — codex", derivedFromChainId: c.chainId });
+          await BM.pairCodex(uid, sealId, c.chainId, codex.codexHash);
+          toast(`Codex ${codex.codexHash} distilled (${codex.entryCount} PRIME entries) and paired.`);
+          refresh();
+        } catch (e) { toast(e.message); }
+      };
+      d.appendChild(p);
+    }
   }
   return d;
 }
 
 window.doGrow = async () => {
   try {
-    grown = await BM.growBiochain($("gText").value);
-    $("growOut").textContent = `${grown.chainId} · ${grown.origBytes} B → ${grown.shippedBytes} B · value ${grown.value} · root ${grown.merkleRoot.slice(0,16)}…`;
+    const parentId = $("gParent").value;
+    if (parentId) {
+      const parent = await BM.getBiochain(parentId);
+      grown = await BM.extendBiochain(parent, $("gText").value);
+      $("growOut").textContent = `epoch ${grown.epoch} · ${grown.chainId} · +${grown.addedBytes} B (total ${grown.origBytes}) · ${grown.engramCount} engrams · grown from ${parentId.slice(0,14)}…`;
+      toast(`Parent recreated losslessly — epoch ${grown.epoch} ready. Certify & publish.`);
+    } else {
+      grown = await BM.growBiochain($("gText").value);
+      $("growOut").textContent = `${grown.chainId} · ${grown.origBytes} B → ${grown.shippedBytes} B · value ${grown.value} · ${grown.engramCount} token engrams (J̄ ${grown.engramMeanJ}) · root ${grown.merkleRoot.slice(0,16)}…`;
+      toast("Grown. Now certify & publish with your seal.");
+    }
     $("pubBtn").disabled = false;
-    toast("Grown. Now certify & publish with your seal.");
   } catch (e) { toast(e.message); }
 };
 window.doPublish = async () => {
@@ -305,8 +340,16 @@ window.doTrace = async () => {
     let html = `<div class="chain-card"><h4>${tr.chain.title}</h4>
       <div class="meta">GROWN/1: <span class="pill ${tr.grown.valid ? "ok" : "bad"}">${tr.grown.reason}</span>
         seal ${tr.chain.growerSealId} · tier ${tr.grown.tier || "?"}</div>
-      <div class="meta">integrity: <span class="pill ${tr.integrity.ok ? "ok" : "bad"}">${tr.integrity.reasons[0]}</span></div>
-      <div class="meta">lineage (${(tr.chain.lineage || []).length} events):</div>`;
+      <div class="meta">integrity: <span class="pill ${tr.integrity.ok ? "ok" : "bad"}">${tr.integrity.reasons[0]}</span></div>`;
+    if (tr.chain.parentChainId) {
+      const g = await BM.verifyGrowth(tr.chain);
+      html += `<div class="meta">GROWTH/1: <span class="pill ${g.valid ? "ok" : "bad"}">${g.reason}</span></div>`;
+    }
+    if (tr.chain.pairedCodexHash) {
+      const p = await BM.verifyPair(tr.chain);
+      html += `<div class="meta">PAIR/1: <span class="pill ${p.valid ? "ok" : "bad"}">${p.reason}</span></div>`;
+    }
+    html += `<div class="meta">lineage (${(tr.chain.lineage || []).length} events):</div>`;
     for (const ev of tr.chain.lineage || [])
       html += `<div class="meta">· ${ev.event} — ${(ev.genesisId || ev.fromGenesisId || "")} ${ev.toGenesisId ? "→ " + ev.toGenesisId : ""} @ ${ev.tick || ""}</div>`;
     html += `<div class="meta">transfer hops, seal-verified:</div>`;
