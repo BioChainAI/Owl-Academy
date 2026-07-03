@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Owl Academy | The Chiral Authentication Key System</title>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Inter:wght@300;400;500;600&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{ --void:#05030a; --primary:#D4AF37; --primary-light:#FFF8DC; --cyan:#00d4ff; --purple:#8A2BE2;
+         --ok:#34d399; --bad:#f0a; --green:#00ff88; --levo:#7dd3fc; --dextro:#fda4af; }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background-color:var(--void);color:#e2e8f0;font-family:'Inter',system-ui,sans-serif;line-height:1.7;min-height:100vh;overflow-x:hidden;
+    background:radial-gradient(circle at 30% 0%, color-mix(in srgb, var(--levo) 6%, var(--void)),
+               radial-gradient(circle at 70% 0%, color-mix(in srgb, var(--dextro) 6%, var(--void)), var(--void)) 60%);}
+  a{color:var(--cyan);text-decoration:none} a:hover{text-decoration:underline}
+  .serif{font-family:'Cinzel',serif}.mono{font-family:'Fira Code',ui-monospace,monospace}
+  .starfield{position:fixed;inset:0;z-index:-2;pointer-events:none;opacity:.13;
+    background-image:radial-gradient(2px 2px at 20px 30px,var(--levo),rgba(0,0,0,0)),
+      radial-gradient(2px 2px at 40px 70px,#fff,rgba(0,0,0,0)),
+      radial-gradient(2px 2px at 130px 80px,var(--dextro),rgba(0,0,0,0));
+    background-repeat:repeat;background-size:250px 250px;animation:tw 8s infinite alternate;}
+  @keyframes tw{0%{opacity:.05}100%{opacity:.18}}
+  header{position:relative;padding:2.6rem 1.5rem 0;text-align:center;border-bottom:1px solid rgba(255,255,255,.09);
+    background:rgba(5,3,10,.55);backdrop-filter:blur(10px)}
+  .home-link{position:absolute;top:1.4rem;left:1.4rem;font-size:.62rem;letter-spacing:.22em;text-transform:uppercase;z-index:5;
+    color:rgba(255,255,255,.55);border:1px solid rgba(255,255,255,.25);padding:.5rem .9rem;border-radius:6px;transition:.2s}
+  .home-link:hover{color:#fff;background:rgba(255,255,255,.08);text-decoration:none}
+  h1{font-size:1.9rem;font-weight:700;letter-spacing:.12em;
+    background:linear-gradient(to right,var(--levo),#fff,var(--dextro));
+    -webkit-background-clip:text;background-clip:text;color:transparent}
+  .eyebrow{font-size:.7rem;letter-spacing:.4em;text-transform:uppercase;color:rgba(255,255,255,.5);margin-bottom:.5rem}
+  .tagline{margin-top:.9rem;color:#9aa5b1;font-weight:300;max-width:47rem;margin-left:auto;margin-right:auto;font-size:.9rem}
+  #helix{display:block;width:100%;max-width:900px;height:190px;margin:0 auto}
+  main{max-width:1080px;margin:2.2rem auto;padding:0 1.5rem}
+  .glass{background:rgba(10,8,20,.45);backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,.12);
+    box-shadow:0 8px 32px rgba(0,0,0,.5);border-radius:14px}
+  section{margin-bottom:2.4rem}
+  h2{font-family:'Cinzel',serif;color:#eef;font-size:1.2rem;letter-spacing:.08em;margin-bottom:.8rem;display:flex;align-items:center;gap:.7rem}
+  h2 .n{font-family:'Fira Code',monospace;font-size:.7rem;color:rgba(255,255,255,.55);border:1px solid rgba(255,255,255,.25);border-radius:6px;padding:.15rem .5rem}
+  p{font-size:.88rem;color:#aab3bf;margin-bottom:.8rem} strong{color:#e6e9ee}
+  .card{padding:1.3rem 1.5rem}
+  table{width:100%;border-collapse:collapse;font-size:.78rem;margin:.6rem 0}
+  th{font-size:.62rem;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.6);text-align:left;border-bottom:1px solid rgba(255,255,255,.2);padding:.5rem .6rem}
+  td{padding:.45rem .6rem;border-bottom:1px solid rgba(255,255,255,.05);color:#aab3bf;vertical-align:top}
+  td:first-child{color:#e6e9ee}
+  .tblwrap{overflow-x:auto}
+  pre{font-family:'Fira Code',monospace;font-size:.72rem;color:#cfe8ff;background:rgba(0,0,0,.45);
+    border:1px solid rgba(255,255,255,.12);border-radius:10px;padding:1rem 1.2rem;overflow-x:auto;line-height:1.55;margin:.6rem 0}
+  code{font-family:'Fira Code',monospace;font-size:.78em;color:var(--cyan);background:rgba(0,212,255,.06);padding:.1em .35em;border-radius:3px}
+  .pill{display:inline-block;font-size:.58rem;text-transform:uppercase;letter-spacing:.12em;padding:.15rem .55rem;border-radius:999px;border:1px solid;margin:.15rem .4rem .15rem 0}
+  .pill.ok{color:var(--ok);border-color:rgba(52,211,153,.4);background:rgba(52,211,153,.08)}
+  .pill.bad{color:var(--bad);border-color:rgba(255,0,170,.4);background:rgba(255,0,170,.08)}
+  .pill.gold{color:var(--primary);border-color:rgba(212,175,55,.4);background:rgba(212,175,55,.08)}
+  .pill.levo{color:var(--levo);border-color:rgba(125,211,252,.45);background:rgba(125,211,252,.08)}
+  .pill.dex{color:var(--dextro);border-color:rgba(253,164,175,.45);background:rgba(253,164,175,.08)}
+  .btn{font-family:'Inter',sans-serif;font-size:.7rem;letter-spacing:.08em;text-transform:uppercase;cursor:pointer;
+    padding:.55rem .95rem;border-radius:8px;border:1px solid rgba(255,255,255,.3);background:rgba(255,255,255,.06);color:#eef;transition:.2s;margin:.25rem .35rem .25rem 0}
+  .btn:hover{background:rgba(255,255,255,.14)}
+  .btn.warn{border-color:rgba(255,0,170,.4);background:rgba(255,0,170,.07);color:#ffc4ea}
+  .btn.warn:hover{background:rgba(255,0,170,.16)}
+  /* chain lab */
+  .chain{display:flex;gap:6px;flex-wrap:wrap;margin:.8rem 0}
+  .chunk{flex:1;min-width:64px;border-radius:8px;border:1px solid rgba(255,255,255,.15);padding:.45rem .3rem;text-align:center;
+    font-family:'Fira Code',monospace;font-size:.62rem;color:#aab3bf;background:rgba(255,255,255,.03);transition:.25s}
+  .chunk .cx{font-size:.55rem;color:#5b6472;margin-top:.15rem}
+  .chunk.moved{border-color:var(--primary);background:rgba(212,175,55,.1)}
+  .chunk.tampered{border-color:var(--bad);background:rgba(255,0,170,.12)}
+  .verdicts{display:grid;grid-template-columns:1fr 1fr;gap:.8rem;margin-top:.8rem}
+  @media(max-width:700px){.verdicts{grid-template-columns:1fr}}
+  .vd{border-radius:10px;padding:.8rem 1rem;border:1px solid rgba(255,255,255,.1);background:rgba(0,0,0,.4);font-family:'Fira Code',monospace}
+  .vd .t{font-size:.6rem;letter-spacing:.16em;text-transform:uppercase;color:#7a8290}
+  .vd .w{font-size:.72rem;margin:.3rem 0;word-break:break-all;color:#cfe8ff}
+  .vd .s{font-size:.72rem;font-weight:600}
+  .vd.blind{border-color:rgba(255,0,170,.45)} .vd.blind .s{color:var(--bad)}
+  .vd.caught{border-color:rgba(52,211,153,.45)} .vd.caught .s{color:var(--ok)}
+  .vd.same .s{color:#7a8290}
+  /* handedness playground */
+  .hrow{display:flex;gap:.6rem;flex-wrap:wrap;align-items:center}
+  .hrow input{flex:1;min-width:200px;background:rgba(0,0,0,.45);border:1px solid rgba(255,255,255,.15);border-radius:8px;
+    color:#eef;font-family:'Fira Code',monospace;font-size:.8rem;padding:.6rem .8rem;outline:none}
+  .hrow input:focus{border-color:rgba(125,211,252,.6)}
+  #hout{font-family:'Fira Code',monospace;font-size:.78rem;background:rgba(0,0,0,.4);border:1px solid rgba(255,255,255,.1);
+    border-radius:10px;padding:.9rem 1.1rem;margin-top:.8rem;line-height:2}
+  #hout .L{color:var(--levo)} #hout .R{color:var(--dextro)} #hout .dim{color:#5b6472}
+  .roster{display:flex;flex-wrap:wrap;gap:.4rem;margin-top:.7rem}
+  /* chamber */
+  .chamberwrap{display:grid;grid-template-columns:minmax(280px,420px) 1fr;gap:1.2rem;align-items:start}
+  @media(max-width:820px){.chamberwrap{grid-template-columns:1fr}}
+  #chamber{width:100%;aspect-ratio:1;display:block}
+  .hand{display:inline-flex;align-items:center;gap:.4rem;padding:.35rem .7rem;border-radius:8px;border:1px solid;cursor:pointer;
+    font-family:'Fira Code',monospace;font-size:.66rem;margin:.2rem .3rem .2rem 0;transition:.15s;user-select:none}
+  .hand.L{color:var(--levo);border-color:rgba(125,211,252,.4);background:rgba(125,211,252,.05)}
+  .hand.R{color:var(--dextro);border-color:rgba(253,164,175,.4);background:rgba(253,164,175,.05)}
+  .hand.sel{box-shadow:0 0 0 2px currentColor inset}
+  #verdict{font-family:'Fira Code',monospace;font-size:.75rem;padding:.8rem 1rem;border-radius:10px;margin-top:.7rem;
+    background:rgba(0,0,0,.45);border:1px solid rgba(255,255,255,.08);color:#8a93a0;line-height:1.9}
+  .lab{font-size:.62rem;letter-spacing:.16em;text-transform:uppercase;color:#7a8290;margin-top:.6rem}
+  /* attack gallery */
+  .gallery{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:.9rem}
+  .atk{border-radius:12px;border:1px solid rgba(255,255,255,.1);padding:1rem 1.1rem;background:rgba(0,0,0,.35)}
+  .atk h3{font-family:'Cinzel',serif;font-size:.9rem;color:#fff;margin-bottom:.35rem}
+  .atk p{font-size:.74rem;margin-bottom:.4rem}
+  footer{text-align:center;padding:2rem;font-size:.7rem;color:rgba(255,255,255,.25)}
+</style>
+</head>
+<body>
+<div class="starfield"></div>
+
+<header>
+  <a href="pump_timing.html" class="home-link">← Pump Clock</a>
+  <div class="eyebrow serif">BioChain Enterprise · Decentralization Hardening · Measured by pump_clock.py</div>
+  <h1 class="serif">THE CHIRAL AUTHENTICATION KEY SYSTEM</h1>
+  <p class="tagline">Two hands, one network. <span style="color:var(--levo)">⟲ LEVO</span> grows,
+  <span style="color:var(--dextro)">⟳ DEXTRO</span> attests — and no identity can ever be its own opposite hand.
+  Structure that makes self-dealing and single-root capture impossible by type, with the honest limits stated.</p>
+  <canvas id="helix"></canvas>
+</header>
+
+<main>
+
+<section>
+  <h2><span class="n">01</span>Why chirality — the three centralization pressure points</h2>
+  <div class="glass card">
+    <p>Everything in the mesh already verifies <em>signatures</em>; chirality decides <strong>who may sign what</strong>.
+    The design attacks the three places where the system could quietly re-centralize:</p>
+    <table>
+      <tr><th>pressure point</th><th>without chirality</th><th>chiral answer</th></tr>
+      <tr><td>The root of trust</td><td>one master-key list — whoever holds it mints all authority</td><td><strong>dual chiral anchors</strong>: genesis bakes an ⟲L party <em>and</em> an ⟳R party; every certificate and crystallization needs both hands</td></tr>
+      <tr><td>Self-dealing</td><td>a grower could attest its own claims through sock-puppet approvals</td><td><strong>pairing rule</strong>: growth by one hand may only be attested by the opposite hand — your hand is fixed at sealing, so you can never approve yourself</td></tr>
+      <tr><td>Chain history</td><td>the XOR holonomy is commutative — <em>reordering chunks is invisible</em> (measured)</td><td><strong>chiral holonomy</strong>: the ordered quaternion product + its mirror; order is part of the fingerprint</td></tr>
+    </table>
+    <p style="font-size:.78rem;color:#7a8290">One law above all of it: chirality is <em>structure, not hardness</em>.
+    ECDSA seals remain the only lock. Quaternion math is trivially computable — it partitions authority; it never
+    replaces cryptography.</p>
+  </div>
+</section>
+
+<section>
+  <h2><span class="n">02</span>Chain attack lab — XOR vs the chiral holonomy, live</h2>
+  <div class="glass card">
+    <p style="font-size:.8rem">A bioseed chain of 8 chunks, each crystallized into a kernel packet (the real fold, in
+    your browser). The chain commits three fingerprints: the commutative <strong>XOR word</strong>, the ordered
+    <strong>⟲ chiral holonomy</strong>, and its <strong>⟳ mirror</strong> (conjugates, reverse order). Run the attacks:</p>
+    <div>
+      <button class="btn warn" onclick="attackSwap()">⇄ swap chunks 2 ↔ 5</button>
+      <button class="btn warn" onclick="attackTamper()">☠ tamper chunk 4</button>
+      <button class="btn warn" onclick="attackReverse()">↺ reverse the whole chain</button>
+      <button class="btn" onclick="resetChain()">reset</button>
+    </div>
+    <div class="chain" id="chain"></div>
+    <div class="verdicts" id="verdicts"></div>
+    <p style="font-size:.74rem;color:#7a8290;margin-top:.8rem">Reference numbers from <code>pump_clock.py §5</code>:
+    forward vs mirror differ by 2.86 rad (non-commutativity is real) · swap 2↔5 → XOR word bit-identical
+    (<strong>blind</strong>) while the chiral holonomy moves 1.77 rad (<strong>caught</strong>) · content tampering →
+    both catch. Every claim should therefore ship <code>{xor, chiral⟲, mirror⟳}</code> — three words, 40 bytes,
+    and reorder/splice/time-reversal attacks all become visible.</p>
+  </div>
+</section>
+
+<section>
+  <h2><span class="n">03</span>Handedness — derived, never chosen</h2>
+  <div class="glass card">
+    <p style="font-size:.8rem">A node's hand comes from the digest parity of its <em>sealed</em> Cosmological ID —
+    the registrar is write-once, so after sealing the hand is public, verifiable by anyone, and unpickable.
+    Type any ledger name to walk the derivation (same rule as <code>pump_clock.py handedness()</code>):</p>
+    <div class="hrow">
+      <input id="hname" placeholder="ledger name — e.g. Aldrovanda" value="Mira" spellcheck="false">
+      <button class="btn" onclick="derive()">derive hand</button>
+    </div>
+    <div id="hout" class="dim">…</div>
+    <div class="roster" id="roster"></div>
+    <p style="font-size:.74rem;color:#7a8290;margin-top:.6rem">Digest parity splits the network ~50/50 at scale
+    (measured 4L/6R at n=10). Grinding fresh IDs to pick a hand is cheap — and buys nothing: hands carry no authority
+    without tier certificates, which chain to the dual anchors. Quorum thresholds should follow the live hand census.</p>
+  </div>
+</section>
+
+<section>
+  <h2><span class="n">04</span>The crystallization chamber — pairing rule + dual anchors</h2>
+  <div class="glass card">
+    <p style="font-size:.8rem">A claim crystallizes only when the chamber is chirally balanced: the grower's hand on
+    one side, <strong>≥2 opposite-hand attesters</strong> on the other, under an <strong>⟲L + ⟳R anchor pair</strong>.
+    Pick a grower and toggle attesters/anchors — the chamber shows why it passes or fails
+    (same logic as <code>pump_clock.py §6</code>, 4/4 checks).</p>
+    <div class="chamberwrap">
+      <canvas id="chamber"></canvas>
+      <div>
+        <div class="lab">grower (one)</div><div id="rowG"></div>
+        <div class="lab">attesters (toggle)</div><div id="rowA"></div>
+        <div class="lab">anchors (toggle)</div><div id="rowN"></div>
+        <div id="verdict"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <h2><span class="n">05</span>Attack gallery — what dies, what survives (honest)</h2>
+  <div class="glass card">
+    <div class="gallery">
+      <div class="atk"><h3>Single-root capture</h3><span class="pill ok">impossible by structure</span>
+        <p>The genesis snapshot with one-handed anchors is rejected by every validator (measured). Capture now
+        requires compromising two independent parties — and tick-12 cross-rotation keeps the pair moving.</p></div>
+      <div class="atk"><h3>Self-attestation</h3><span class="pill ok">impossible by type</span>
+        <p>Your hand is fixed when your Cosmological ID seals. You can never be your own opposite hand, so
+        grow-and-approve sock-puppetry fails at the type level, not the policy level.</p></div>
+      <div class="atk"><h3>Same-hand collusion ring</h3><span class="pill ok">rejected</span>
+        <p>An L-grower with L-friends has zero valid attesters, however many friends it has. A ring must recruit
+        across the chiral divide — which is exactly the population it can't pre-select.</p></div>
+      <div class="atk"><h3>Chain reorder / splice</h3><span class="pill ok">caught — Δ 1.77 rad</span>
+        <p>Invisible to the XOR word (measured), visible to the ordered product. The mirror commitment doubles the
+        constraint: a forger must satisfy both orderings simultaneously.</p></div>
+      <div class="atk"><h3>Sybil identity farming</h3><span class="pill gold">unchanged — be honest</span>
+        <p>Hands don't stop Sybils. Grinding IDs for a hand is cheap; but hands carry no authority without
+        certificates, so grinding buys nothing. Sybil resistance still lives in the cert chain.</p></div>
+      <div class="atk"><h3>Two-anchor collusion</h3><span class="pill gold">residual 2-party risk</span>
+        <p>The L and R anchors can still conspire. Mitigations: tick-12 rotation, public chronicles, and the fact
+        that every validator checks the pair independently. Defense-in-depth, not a proof.</p></div>
+      <div class="atk"><h3>Quaternion ops as crypto</h3><span class="pill bad">never</span>
+        <p>The chiral layer decides <em>who may sign what</em> — never <em>whether signatures can be forged</em>.
+        ECDSA P-256 seals remain the single cryptographic lock in the whole system.</p></div>
+      <div class="atk"><h3>Hand-population imbalance</h3><span class="pill gold">monitor</span>
+        <p>Digest parity trends 50/50 but small networks skew (4L/6R at n=10). Attestation thresholds should scale
+        with the live census so neither hand becomes a bottleneck or a chokepoint.</p></div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <h2><span class="n">06</span>Where it lives in the stack</h2>
+  <div class="glass card">
+<pre>grow      Biostrata edge   claim ships {xor, chiral⟲, mirror⟳} + grower seal (hand = L|R)
+validate  Hypersim mesh    every node: ECDSA sig → cert chain → codex ABI → spot-check
+                           → BOTH holonomies replayed → hand-typing of all signers
+attest    opposite hand    ≥2 attesters whose hand ≠ grower's — enforced by type
+crystallize SPIRE Core     at tick 6/12 windows · dual ⟲L+⟳R anchor countersign
+rotate    every tick 12    L-anchor signs R's successor, R signs L's — the pair moves</pre>
+    <p style="font-size:.8rem">Reproduce every number: <code>python3 pump_clock.py</code> (13/13 — §5 chiral holonomy,
+    §6 pairing rule &amp; anchors). Related: <a href="pump_timing.html">Pump Clock &amp; π/6 handoff windows</a> ·
+    <a href="index.html">Enterprise console</a> · <a href="README.md">spec</a>.</p>
+  </div>
+</section>
+
+</main>
+<footer>The Chiral Authentication Key System · BioChain Enterprise · © 2026 Owl Academy</footer>
+
+<script>
+// ─── shared math ─────────────────────────────────────────────────────────────
+const qmul=(a,b)=>[a[0]*b[0]-a[1]*b[1]-a[2]*b[2]-a[3]*b[3], a[0]*b[1]+a[1]*b[0]+a[2]*b[3]-a[3]*b[2],
+                   a[0]*b[2]-a[1]*b[3]+a[2]*b[0]+a[3]*b[1], a[0]*b[3]+a[1]*b[2]-a[2]*b[1]+a[3]*b[0]];
+const qconj=a=>[a[0],-a[1],-a[2],-a[3]];
+const qn=a=>{const n=Math.hypot(...a)||1;return a.map(x=>x/n);};
+const qang=(a,b)=>2*Math.acos(Math.min(1,Math.abs(a[0]*b[0]+a[1]*b[1]+a[2]*b[2]+a[3]*b[3])));
+const M64=(1n<<64n)-1n;
+function fold64(bytes){let a=0x9E3779B97F4A7C15n;
+  for(const b of bytes)a=(((a<<7n)|(a>>57n))&M64)^((BigInt(b)*0x100000001B3n)&M64);
+  return a;}
+function crystalQuat(bytes){
+  const c32=Number((fold64(bytes)^(fold64(bytes)>>32n))&0xFFFFFFFFn);
+  const s=i=>{const v=(c32>>>i)&255;return v>=128?v-256:v;};
+  return qn([0.5+s(24)/254, s(16)/127, s(8)/127, s(0)/127]);
+}
+
+// ─── hero: counter-rotating helices ──────────────────────────────────────────
+const hx=document.getElementById('helix'),hctx=hx.getContext('2d');
+let ht=0;
+function drawHelix(){
+  const W=hx.width=hx.clientWidth*devicePixelRatio,H=hx.height=hx.clientHeight*devicePixelRatio;
+  hctx.clearRect(0,0,W,H);
+  const mid=H*0.52,amp=H*0.3,n=140;
+  for(const [sgn,col] of [[1,'rgba(125,211,252,'],[-1,'rgba(253,164,175,']]){
+    for(const ph of [0,Math.PI]){
+      hctx.beginPath();
+      for(let i=0;i<=n;i++){
+        const x=W*0.06+ (W*0.88)*i/n;
+        const y=mid+Math.sin(sgn*(i*0.22+ht)+ph)*amp*(0.55+0.45*Math.sin(i*0.02+ht*0.3));
+        i?hctx.lineTo(x,y):hctx.moveTo(x,y);
+      }
+      hctx.strokeStyle=col+'0.55)';hctx.lineWidth=1.4*devicePixelRatio;hctx.stroke();
+    }
+  }
+  hctx.font=`${H*0.09}px Fira Code`;hctx.textAlign='left';
+  hctx.fillStyle='rgba(125,211,252,.9)';hctx.fillText('⟲ LEVO — grows',W*0.06,H*0.14);
+  hctx.textAlign='right';hctx.fillStyle='rgba(253,164,175,.9)';hctx.fillText('attests — DEXTRO ⟳',W*0.94,H*0.94);
+  ht+=0.02;requestAnimationFrame(drawHelix);
+}
+drawHelix();
+
+// ─── chain attack lab ────────────────────────────────────────────────────────
+function mkChunks(){
+  let r=606,x=()=>{r=(r*1103515245+12345)&0x7fffffff;return r;};
+  return Array.from({length:8},()=>Array.from({length:240},()=>x()%256));
+}
+const BASE=mkChunks();
+function fingerprints(chunks){
+  let xw=0n; for(const c of chunks) xw^=fold64(c);
+  let f=[1,0,0,0]; for(const c of chunks) f=qn(qmul(crystalQuat(c),f));
+  let m=[1,0,0,0]; for(const c of [...chunks].reverse()) m=qn(qmul(qconj(crystalQuat(c)),m));
+  return {xor:xw.toString(16).toUpperCase().padStart(16,'0'), chi:f, mir:m};
+}
+const BASEF=fingerprints(BASE);
+let chain=BASE.map(c=>[...c]), marks={};
+function attackSwap(){ resetChain(true); [chain[2],chain[5]]=[chain[5],chain[2]]; marks={2:'moved',5:'moved'}; renderChain('swap 2↔5'); }
+function attackTamper(){ resetChain(true); chain[4]=chain[4].map(b=>255-b); marks={4:'tampered'}; renderChain('tamper #4'); }
+function attackReverse(){ resetChain(true); chain=[...chain].reverse(); marks=Object.fromEntries(chain.map((_,i)=>[i,'moved'])); renderChain('full reverse'); }
+function resetChain(silent){ chain=BASE.map(c=>[...c]); marks={}; if(!silent) renderChain('baseline'); }
+function renderChain(label){
+  const el=document.getElementById('chain'); el.innerHTML='';
+  chain.forEach((c,i)=>{
+    const d=document.createElement('div');
+    d.className='chunk '+(marks[i]||'');
+    const cq=(fold64(c)^(fold64(c)>>32n))&0xFFFFFFFFn;
+    d.innerHTML=`<div>#${i}</div><div class="cx">${cq.toString(16).toUpperCase().padStart(8,'0')}</div>`;
+    el.appendChild(d);
+  });
+  const f=fingerprints(chain);
+  const dChi=qang(BASEF.chi,f.chi), dMir=qang(BASEF.mir,f.mir);
+  const xorSame=f.xor===BASEF.xor, isBase=xorSame&&dChi<1e-9;
+  const vd=document.getElementById('verdicts');
+  const cell=(title,word,same,delta,blindable)=>{
+    const cls=isBase?'same':(same?(blindable?'blind':'same'):'caught');
+    const st=isBase?'— baseline':(same?(blindable?'✗ UNCHANGED — attack invisible to this detector':'unchanged'):`✓ CAUGHT — Δ ${delta}`);
+    return `<div class="vd ${cls}"><div class="t">${title}</div><div class="w">${word}</div><div class="s">${st}</div></div>`;
+  };
+  vd.innerHTML =
+    cell('XOR word (commutative)', f.xor, xorSame, 'word changed', true)
+  + cell('⟲ chiral holonomy (ordered product)', f.chi.map(v=>v.toFixed(3)).join(' '), dChi<1e-9, dChi.toFixed(3)+' rad', false)
+  + cell('⟳ mirror holonomy (conj · reversed)', f.mir.map(v=>v.toFixed(3)).join(' '), dMir<1e-9, dMir.toFixed(3)+' rad', false)
+  + `<div class="vd ${isBase?'same':''}"><div class="t">scenario</div><div class="w">${label}</div>
+     <div class="s" style="color:#aab3bf">${isBase?'chain intact — all three fingerprints match':
+       (xorSame?'XOR blind · chiral layer caught it — this is the measured vulnerability':'all detectors caught it')}</div></div>`;
+}
+renderChain('baseline');
+
+// ─── handedness playground (crypto.subtle; same rule as pump_clock.py) ──────
+async function sha256hex(s){
+  const b=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(s));
+  return [...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,'0')).join('');
+}
+function parityOfHex(h){
+  let p=0; for(const ch of h) p^=[0,1,1,2,1,2,2,3,1,2,2,3,2,3,3,4][parseInt(ch,16)]&1? 1:0;
+  return p;
+}
+async function handOf(name){
+  const gid='0x'+(await sha256hex(name)).slice(0,16).toUpperCase();
+  const parity=parityOfHex(await sha256hex(gid));
+  return {gid, hand: parity? 'L':'R'};
+}
+async function derive(){
+  const name=document.getElementById('hname').value.trim()||'Mira';
+  const out=document.getElementById('hout');
+  try{
+    const gidHash=await sha256hex(name);
+    const gid='0x'+gidHash.slice(0,16).toUpperCase();
+    const idHash=await sha256hex(gid);
+    const parity=parityOfHex(idHash);
+    const hand=parity?'L':'R';
+    out.innerHTML=
+      `<span class="dim">ledger name</span>  ${name}<br>`+
+      `<span class="dim">cosmological id</span>  ${gid} <span class="dim">(sealed once — write-once registrar)</span><br>`+
+      `<span class="dim">id digest</span>  ${idHash.slice(0,32)}…<br>`+
+      `<span class="dim">bit parity</span>  ${parity?'odd':'even'}  →  hand: `+
+      `<span class="${hand}" style="font-size:1rem">${hand==='L'?'⟲ LEVO':'⟳ DEXTRO'}</span>`+
+      `<span class="dim"> — ${hand==='L'?'may grow claims that R-nodes attest':'may attest claims that L-nodes grow'}</span>`;
+  }catch(e){ out.textContent='crypto.subtle unavailable in this context — open over https or modern file:// browser'; }
+}
+document.getElementById('hname').addEventListener('keydown',e=>{if(e.key==='Enter')derive();});
+const OPS=['Aldrovanda','Bavol','Ceridwen','Dagny','Edda','Fionn','Grier','Mira','Vex','Okku'];
+const HAND={Aldrovanda:'R',Bavol:'R',Ceridwen:'L',Dagny:'R',Edda:'L',Fionn:'R',Grier:'R',Mira:'L',Vex:'R',Okku:'L'};
+document.getElementById('roster').innerHTML=OPS.map(o=>
+  `<span class="hand ${HAND[o]}" onclick="document.getElementById('hname').value='${o}';derive()">${HAND[o]==='L'?'⟲':'⟳'} ${o}</span>`).join('');
+derive();
+
+// ─── crystallization chamber ─────────────────────────────────────────────────
+let grower='Mira'; const attesters=new Set(['Bavol','Dagny']); const anchors=new Set(['Aldrovanda','Ceridwen']);
+function chamberState(){
+  const opp=HAND[grower]==='L'?'R':'L';
+  const valid=[...attesters].filter(a=>a!==grower&&HAND[a]===opp);
+  const self=attesters.has(grower);
+  const anchorHands=new Set([...anchors].map(a=>HAND[a]));
+  const msgs=[];
+  if(self)msgs.push(['warn',"self-attestation stripped — the grower's hand cannot attest its own growth"]);
+  let ok=true;
+  if(valid.length<2){ok=false;msgs.push(['bad',`REJECT: needs ≥2 opposite-hand (${opp}) attesters, has ${valid.length}`]);}
+  if(anchors.size<2||anchorHands.size!==2){ok=false;msgs.push(['bad','REJECT: anchor set is not a chiral pair (needs one ⟲L and one ⟳R)']);}
+  if(ok)msgs.push(['ok',`OK: ${HAND[grower]}-grown claim · ${valid.length} ${opp}-attesters · dual chiral anchors — crystallizes at the next tick-6/12 window`]);
+  return {ok,valid,self,msgs,opp};
+}
+const ccv=document.getElementById('chamber'),cctx=ccv.getContext('2d');
+let ct=0;
+function drawChamber(){
+  const S=ccv.width=ccv.height=ccv.clientWidth*devicePixelRatio, c=S/2;
+  cctx.clearRect(0,0,S,S);
+  const st=chamberState();
+  // chamber ring
+  cctx.beginPath();cctx.arc(c,c,S*0.44,0,7);
+  cctx.strokeStyle=st.ok?'rgba(52,211,153,.5)':'rgba(255,0,170,.4)';cctx.lineWidth=2;cctx.setLineDash([6,6]);cctx.stroke();cctx.setLineDash([]);
+  const col=h=>h==='L'?'#7dd3fc':'#fda4af';
+  // anchors on top
+  const As=[...anchors];
+  As.forEach((a,i)=>{
+    const x=c+(i-(As.length-1)/2)*S*0.22, y=S*0.1;
+    cctx.beginPath();cctx.moveTo(x,y+S*0.035);cctx.lineTo(c,c-S*0.05);
+    cctx.strokeStyle='rgba(212,175,55,.35)';cctx.lineWidth=1;cctx.stroke();
+    cctx.beginPath();cctx.arc(x,y,S*0.03,0,7);cctx.fillStyle='rgba(5,3,10,.9)';cctx.fill();
+    cctx.strokeStyle=col(HAND[a]);cctx.lineWidth=2;cctx.stroke();
+    cctx.fillStyle='#D4AF37';cctx.font=`${S*0.024}px Fira Code`;cctx.textAlign='center';
+    cctx.fillText('♛',x,y+S*0.008);
+    cctx.fillStyle=col(HAND[a]);cctx.fillText(`${HAND[a]==='L'?'⟲':'⟳'}${a}`,x,y+S*0.062);
+  });
+  // grower center
+  cctx.beginPath();cctx.arc(c,c,S*0.055,0,7);cctx.fillStyle='rgba(5,3,10,.9)';cctx.fill();
+  cctx.strokeStyle=col(HAND[grower]);cctx.lineWidth=3;cctx.stroke();
+  cctx.fillStyle=col(HAND[grower]);cctx.font=`${S*0.03}px Fira Code`;cctx.textAlign='center';
+  cctx.fillText(HAND[grower]==='L'?'⟲':'⟳',c,c-S*0.004);
+  cctx.fillText(grower,c,c+S*0.095);
+  // attesters around
+  const Ats=[...attesters];
+  Ats.forEach((a,i)=>{
+    const ang=Math.PI*0.25+i*2*Math.PI/Math.max(6,Ats.length)+Math.sin(ct*0.01)*0.02;
+    const x=c+Math.cos(ang)*S*0.33, y=c+Math.sin(ang)*S*0.33;
+    const legal=a!==grower&&HAND[a]===st.opp;
+    cctx.beginPath();cctx.moveTo(x,y);cctx.lineTo(c,c);
+    cctx.strokeStyle=legal?'rgba(52,211,153,.5)':'rgba(255,0,170,.5)';
+    cctx.lineWidth=legal?2:1;if(!legal)cctx.setLineDash([3,4]);cctx.stroke();cctx.setLineDash([]);
+    cctx.beginPath();cctx.arc(x,y,S*0.028,0,7);cctx.fillStyle='rgba(5,3,10,.9)';cctx.fill();
+    cctx.strokeStyle=col(HAND[a]);cctx.lineWidth=2;cctx.stroke();
+    cctx.fillStyle=col(HAND[a]);cctx.font=`${S*0.022}px Fira Code`;
+    cctx.fillText(`${HAND[a]==='L'?'⟲':'⟳'}${a}`,x,y+S*0.055);
+    if(!legal){cctx.fillStyle='#f0a';cctx.fillText('✗',x+S*0.03,y-S*0.025);}
+  });
+  cctx.fillStyle=st.ok?'rgba(52,211,153,.85)':'rgba(255,0,170,.8)';
+  cctx.font=`${S*0.032}px Cinzel`;
+  cctx.fillText(st.ok?'CHAMBER BALANCED':'CHAMBER UNBALANCED',c,S*0.94);
+  ct++;
+}
+function renderChamber(){
+  const row=(id,pick,set)=>{document.getElementById(id).innerHTML=OPS.map(o=>
+    `<span class="hand ${HAND[o]} ${set.has(o)?'sel':''}" onclick="${pick}('${o}')">${HAND[o]==='L'?'⟲':'⟳'} ${o}</span>`).join('');};
+  row('rowG','pickG',new Set([grower])); row('rowA','pickA',attesters); row('rowN','pickN',anchors);
+  const st=chamberState();
+  document.getElementById('verdict').innerHTML=st.msgs.map(([c,m])=>
+    `<div style="color:${c==='bad'?'#f0a':(c==='ok'?'#34d399':'#D4AF37')}">${m}</div>`).join('');
+  drawChamber();
+}
+function pickG(o){grower=o;renderChamber();}
+function pickA(o){attesters.has(o)?attesters.delete(o):attesters.add(o);renderChamber();}
+function pickN(o){anchors.has(o)?anchors.delete(o):anchors.add(o);renderChamber();}
+renderChamber();
+setInterval(drawChamber,80);
+addEventListener('resize',()=>{renderChamber();});
+</script>
+</body>
+</html>
