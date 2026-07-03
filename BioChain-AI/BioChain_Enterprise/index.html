@@ -106,9 +106,11 @@ Tier 3  SPIRE CORE (quorum)   full lossless replay · twin attunement bench
                               (bit-identical receipts) · crystallization →
                               CRYST issued · sequenced exchange · redemption</pre>
     <p>Reference run: <span class="pill ok">8/8 kernel</span><span class="pill ok">11/11 codex</span>
-       <span class="pill ok">11/11 mesh</span> — claim verified 9/9 nodes in 2 gossip rounds, ε = +25.0 % twin-receipt
-       agreement, 36 CRYST issued, transfer + redemption settled, double-spend rejected. Full logs in the
-       <code>*_output.txt</code> captures; spec in the <a href="README.md">README</a>.</p>
+       <span class="pill ok">11/11 mesh</span><span class="pill ok">13/13 clock</span> — claim verified 9/9 nodes in 2
+       gossip rounds, ε = +25.0 % twin-receipt agreement, 36 CRYST issued, transfer + redemption settled, double-spend
+       rejected. Full logs in the <code>*_output.txt</code> captures; spec in the <a href="README.md">README</a>.
+       Timing, π/6 handoff windows and the chiral key system live on the
+       <a href="pump_timing.html"><strong>Pump Clock &amp; Chiral Mesh</strong></a> page.</p>
   </div>
 </section>
 
@@ -184,7 +186,8 @@ Tier 3  SPIRE CORE (quorum)   full lossless replay · twin attunement bench
   <div class="glass card">
 <pre>python3 shdccp_kernel.py     #  8/8 — the packet ABI, golden hash pinned
 python3 codex_engine.py      # 11/11 — grow/unfold, Goodhart priced, attunement measured
-python3 biochain_mesh.py     # 11/11 — the whole economy, ~3 s, deterministic</pre>
+python3 biochain_mesh.py     # 11/11 — the whole economy, ~3 s, deterministic
+python3 pump_clock.py        # 13/13 — π/6 timing, handoff windows, chiral layer</pre>
     <p style="font-size:.8rem">Pure standard library. Lineage:
       <a href="../../Library/Experimental_Systems/Spire_Mesh/index.html">Spire Mesh</a> (validation-node anatomy) ·
       <a href="../../Library/Experimental_Systems/Engram_Codec/index.html">Engram Codec</a> /

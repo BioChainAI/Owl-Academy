@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Owl Academy | Pump Timing &amp; the Chiral Mesh</title>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Inter:wght@300;400;500;600&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{ --void:#05030a; --primary:#D4AF37; --primary-light:#FFF8DC; --cyan:#00d4ff; --purple:#8A2BE2;
+         --ok:#34d399; --bad:#f0a; --green:#00ff88; --levo:#7dd3fc; --dextro:#fda4af; }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background-color:var(--void);color:#e2e8f0;font-family:'Inter',system-ui,sans-serif;line-height:1.7;min-height:100vh;overflow-x:hidden;
+    background:radial-gradient(circle at 50% 0%, color-mix(in srgb, var(--purple) 7%, var(--void)), var(--void) 60%);}
+  a{color:var(--cyan);text-decoration:none} a:hover{text-decoration:underline}
+  .serif{font-family:'Cinzel',serif}.mono{font-family:'Fira Code',ui-monospace,monospace}
+  .starfield{position:fixed;inset:0;z-index:-2;pointer-events:none;opacity:.13;
+    background-image:radial-gradient(2px 2px at 20px 30px,var(--green),rgba(0,0,0,0)),
+      radial-gradient(2px 2px at 40px 70px,#fff,rgba(0,0,0,0)),
+      radial-gradient(2px 2px at 130px 80px,var(--primary),rgba(0,0,0,0));
+    background-repeat:repeat;background-size:250px 250px;animation:tw 8s infinite alternate;}
+  @keyframes tw{0%{opacity:.05}100%{opacity:.18}}
+  header{position:relative;padding:3rem 1.5rem 2.2rem;text-align:center;border-bottom:1px solid rgba(0,255,136,.18);
+    background:rgba(5,3,10,.55);backdrop-filter:blur(10px)}
+  .home-link{position:absolute;top:1.4rem;left:1.4rem;font-size:.62rem;letter-spacing:.22em;text-transform:uppercase;
+    color:rgba(0,255,136,.6);border:1px solid rgba(0,255,136,.3);padding:.5rem .9rem;border-radius:6px;transition:.2s}
+  .home-link:hover{color:#d9ffee;background:rgba(0,255,136,.1);text-decoration:none}
+  h1{font-size:1.85rem;font-weight:700;letter-spacing:.14em;
+    background:linear-gradient(to right,var(--levo),#d9ffee,var(--dextro));
+    -webkit-background-clip:text;background-clip:text;color:transparent}
+  .eyebrow{font-size:.7rem;letter-spacing:.4em;text-transform:uppercase;color:rgba(0,255,136,.7);margin-bottom:.5rem}
+  .tagline{margin-top:.9rem;color:#9aa5b1;font-weight:300;max-width:48rem;margin-left:auto;margin-right:auto;font-size:.9rem}
+  main{max-width:1080px;margin:2.2rem auto;padding:0 1.5rem}
+  .glass{background:rgba(10,8,20,.45);backdrop-filter:blur(12px);border:1px solid rgba(0,255,136,.14);
+    box-shadow:0 8px 32px rgba(0,0,0,.5);border-radius:14px}
+  section{margin-bottom:2.4rem}
+  h2{font-family:'Cinzel',serif;color:#d9ffee;font-size:1.2rem;letter-spacing:.08em;margin-bottom:.8rem;display:flex;align-items:center;gap:.7rem}
+  h2 .n{font-family:'Fira Code',monospace;font-size:.7rem;color:rgba(0,255,136,.7);border:1px solid rgba(0,255,136,.3);border-radius:6px;padding:.15rem .5rem}
+  p{font-size:.88rem;color:#aab3bf;margin-bottom:.8rem} strong{color:#e6e9ee}
+  .card{padding:1.3rem 1.5rem}
+  table{width:100%;border-collapse:collapse;font-size:.78rem;margin:.6rem 0}
+  th{font-size:.62rem;letter-spacing:.14em;text-transform:uppercase;color:rgba(0,255,136,.75);text-align:left;border-bottom:1px solid rgba(0,255,136,.25);padding:.5rem .6rem}
+  td{padding:.45rem .6rem;border-bottom:1px solid rgba(255,255,255,.05);color:#aab3bf;vertical-align:top}
+  td:first-child{color:#e6e9ee}
+  .tblwrap{overflow-x:auto}
+  pre{font-family:'Fira Code',monospace;font-size:.72rem;color:#9fe8c8;background:rgba(0,0,0,.45);
+    border:1px solid rgba(0,255,136,.14);border-radius:10px;padding:1rem 1.2rem;overflow-x:auto;line-height:1.55;margin:.6rem 0}
+  code{font-family:'Fira Code',monospace;font-size:.78em;color:var(--cyan);background:rgba(0,212,255,.06);padding:.1em .35em;border-radius:3px}
+  .pill{display:inline-block;font-size:.58rem;text-transform:uppercase;letter-spacing:.12em;padding:.15rem .55rem;border-radius:999px;border:1px solid;margin:.15rem .4rem .15rem 0}
+  .pill.ok{color:var(--ok);border-color:rgba(52,211,153,.4);background:rgba(52,211,153,.08)}
+  .pill.bad{color:var(--bad);border-color:rgba(255,0,170,.4);background:rgba(255,0,170,.08)}
+  .pill.gold{color:var(--primary);border-color:rgba(212,175,55,.4);background:rgba(212,175,55,.08)}
+  .pill.levo{color:var(--levo);border-color:rgba(125,211,252,.45);background:rgba(125,211,252,.08)}
+  .pill.dex{color:var(--dextro);border-color:rgba(253,164,175,.45);background:rgba(253,164,175,.08)}
+  /* clock */
+  .clockwrap{display:grid;grid-template-columns:minmax(300px,460px) 1fr;gap:1.3rem;align-items:start}
+  @media(max-width:820px){.clockwrap{grid-template-columns:1fr}}
+  #clock{width:100%;aspect-ratio:1;display:block}
+  .readout{font-family:'Fira Code',monospace;font-size:.8rem;background:rgba(0,0,0,.45);border:1px solid rgba(255,255,255,.08);
+    border-radius:10px;padding:.8rem 1rem;margin-bottom:.7rem}
+  .readout .tok{color:var(--green);font-size:1rem}
+  .readout .sub{color:#7a8290;font-size:.66rem;margin-top:.3rem}
+  .btn{font-family:'Inter',sans-serif;font-size:.7rem;letter-spacing:.08em;text-transform:uppercase;cursor:pointer;
+    padding:.5rem .9rem;border-radius:8px;border:1px solid rgba(0,255,136,.35);background:rgba(0,255,136,.08);color:#d9ffee;transition:.2s;margin:.25rem .35rem .25rem 0}
+  .btn:hover{background:rgba(0,255,136,.18)}
+  .btn.warn{border-color:rgba(255,0,170,.35);background:rgba(255,0,170,.07);color:#ffc4ea}
+  .btn.warn:hover{background:rgba(255,0,170,.16)}
+  /* handoff strip */
+  .windows{display:grid;grid-template-columns:repeat(12,1fr);gap:6px;margin:.8rem 0}
+  .win{aspect-ratio:1/1.5;border-radius:8px;border:1px solid rgba(255,255,255,.1);display:flex;flex-direction:column;
+    align-items:center;justify-content:center;cursor:pointer;font-family:'Fira Code',monospace;font-size:.62rem;color:#8a93a0;transition:.2s;background:rgba(255,255,255,.02)}
+  .win:hover{border-color:rgba(0,255,136,.4)}
+  .win .d{font-size:.55rem;margin-top:.3rem;color:#4b5563}
+  .win.silent{border-color:rgba(52,211,153,.35)} .win.silent .d{color:var(--ok)}
+  .win.data{background:rgba(255,0,170,.12);border-color:var(--bad)} .win.data .d{color:var(--bad)}
+  .win.tri{box-shadow:0 0 0 1px rgba(212,175,55,.5) inset}
+  /* chiral demo */
+  .hand{display:inline-flex;align-items:center;gap:.4rem;padding:.35rem .7rem;border-radius:8px;border:1px solid;cursor:pointer;
+    font-family:'Fira Code',monospace;font-size:.68rem;margin:.2rem .3rem .2rem 0;transition:.15s;user-select:none}
+  .hand.L{color:var(--levo);border-color:rgba(125,211,252,.4);background:rgba(125,211,252,.05)}
+  .hand.R{color:var(--dextro);border-color:rgba(253,164,175,.4);background:rgba(253,164,175,.05)}
+  .hand.sel{box-shadow:0 0 0 2px currentColor inset}
+  #verdict{font-family:'Fira Code',monospace;font-size:.75rem;padding:.8rem 1rem;border-radius:10px;margin-top:.7rem;
+    background:rgba(0,0,0,.45);border:1px solid rgba(255,255,255,.08);color:#8a93a0}
+  footer{text-align:center;padding:2rem;font-size:.7rem;color:rgba(255,255,255,.25)}
+</style>
+</head>
+<body>
+<div class="starfield"></div>
+
+<header>
+  <a href="index.html" class="home-link">← BioChain Enterprise</a>
+  <div class="eyebrow serif">Timing · Geometric Synchronization · Chiral Authentication</div>
+  <h1 class="serif">THE PUMP CLOCK &amp; THE CHIRAL MESH</h1>
+  <p class="tagline">How the Torsional Twistor Markov Pump times the node system — logical gear-time, π/6 handoff
+  windows, checkpoint replay — and the left/right-handed key discipline that keeps the network decentralized.
+  Every number on this page is reproduced by <span class="mono">pump_clock.py</span> (13/13 checks).</p>
+</header>
+
+<main>
+
+<section>
+  <h2><span class="n">01</span>The gear clock — pump time, live</h2>
+  <div class="glass card">
+    <div class="clockwrap">
+      <canvas id="clock"></canvas>
+      <div>
+        <div class="readout"><div class="tok" id="tok">PUMP.0.0.0.0</div>
+          <div class="sub">cycle · π/6 sector (0-11) · middle gear (0-71) · inner block (0-9) — a pure function of the
+          frame index. No wall clock: the Schumann token carries wall time separately; consensus reads only this.</div></div>
+        <div class="readout" style="font-size:.7rem">
+          <span style="color:var(--green)">outer 720</span> = Biostrata edge (grows every frame) ·
+          <span style="color:var(--cyan)">middle 72</span> = Hypersim mesh (validates every 10) ·
+          <span style="color:var(--primary)">inner 10</span> = SPIRE Core (crystallizes at 7/8-blocks)
+          <div class="sub">The three deployment tiers ARE the three gears — tier handoffs are legal exactly where
+          gear boundaries coincide.</div></div>
+        <button class="btn" onclick="toggleRun()" id="runbtn">⏸ pause</button>
+        <button class="btn" onclick="speed=speed===1?6:1">speed ×1/×6</button>
+        <button class="btn" onclick="frame=359">jump → tick 6 (π)</button>
+        <button class="btn" onclick="frame=719">jump → tick 12 (2π)</button>
+        <p style="font-size:.74rem;margin-top:.8rem;color:#7a8290">Gold flashes = tri-gear windows (ticks 6 &amp; 12) —
+        the only moments all three tiers agree exactly without renormalization. Measured: all 12 π/6 ticks telescope
+        at 0.00e+00 rad for the outer↔middle pair; the inner gear's Prop-3 boundaries
+        <span class="mono">[7,14,22,29,36,43,50,58,65,72]</span> hit π/6 ticks only at middle-36 and middle-72.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <h2><span class="n">02</span>π/6 handoff windows — click a window to load data</h2>
+  <div class="glass card">
+    <p style="font-size:.8rem">Both ends of a handoff derive the <em>expected</em> sector product from the shared codex;
+    at each π/6 tick they compare it to the <em>actual</em>. The live demo below runs the real quaternion math:
+    <strong>silence is exact</strong> — an empty window mismatches by float noise only (~3×10⁻⁸ rad; exactly 0 with
+    the rational kernel), a loaded window screams at ~10⁷× that. Click windows to toggle payloads.</p>
+    <div class="windows" id="windows"></div>
+    <p style="font-size:.74rem;color:#7a8290" id="handoffnote"></p>
+    <table>
+      <tr><th>handoff</th><th>legal at</th><th>why</th></tr>
+      <tr><td>Biostrata → Hypersim (edge→mesh)</td><td><strong>every π/6 tick</strong> (12 per cycle)</td><td>every sector = exactly 6 middle blocks; boundary telescopes exactly</td></tr>
+      <tr><td>Hypersim → SPIRE Core (mesh→core, crystallization)</td><td><strong>ticks 6 &amp; 12 only</strong> (π and 2π)</td><td>the 7/8-block inner gear only lands on π/6 ticks there — or renormalize the inner anchor first (the pump paper's residual absorption)</td></tr>
+      <tr><td>arbitrary frame recall</td><td>any frame</td><td>Pseudogroup law: no jump-ahead exists — recreate from nearest tick + ≤59 replay steps (measured exact); √L-optimal schedule = 27 ckpts/≤26 replay</td></tr>
+    </table>
+  </div>
+</section>
+
+<section>
+  <h2><span class="n">03</span>One clock, three tiers — the 720:1 dial in node terms</h2>
+  <div class="glass card tblwrap">
+    <table>
+      <tr><th>gear / tier</th><th>stores</th><th>ratio</th><th>fidelity (measured)</th><th>role in the node system</th></tr>
+      <tr><td>outer 720 · <strong>Biostrata edge</strong></td><td>full delta chain (exact-rational)</td><td>1×</td><td>lossless — telescoping exactly 0 with the Sparsemax source</td><td>the grower's master record; every claim anchors here</td></tr>
+      <tr><td>middle 72 · <strong>Hypersim mesh</strong></td><td>middle gear + residual</td><td>10×</td><td>RMSE 0.001–0.113 rad structured (0.44 noise) — residual channel makes it exact</td><td>what gossips; spot-checkable per window</td></tr>
+      <tr><td>inner 10 · <strong>SPIRE Core</strong></td><td>inner gear + holonomy</td><td>72×</td><td>lossy interior; holonomy closes to 0 after inner-anchor renorm</td><td>crystallization payload at ticks 6/12</td></tr>
+      <tr><td>centroid · <strong>the crystal</strong></td><td>one quaternion</td><td><strong>720:1</strong></td><td>Helix-A summary only — never the certified object</td><td>the exchange-listed fingerprint; certification always anchors one tier down</td></tr>
+    </table>
+    <p style="font-size:.76rem;color:#7a8290">So "does 720:1 operate correctly for every tier?" — yes, as this dial:
+    each tier is exactly recoverable from the tier below via boundaries that telescope exactly + the
+    predict-then-correct residual. The 720:1 crystal alone certifies nothing; it names what the chain proves.
+    Entropy caveat stands: noise measures 0.44/2.25 rad at middle/inner — crystallization pays only for
+    structured knowledge, and the value formula already prices that.</p>
+  </div>
+</section>
+
+<section>
+  <h2><span class="n">04</span>The chiral authentication key system</h2>
+  <div class="glass card">
+    <p><span class="pill bad">measured vulnerability</span> The commutative XOR holonomy is <strong>blind to chunk
+    reordering</strong> — swapping chunks 2↔5 leaves the XOR word bit-identical (measured). The chiral holonomy —
+    the <em>ordered</em> quaternion product, order-sensitive because quaternions don't commute (forward vs mirror
+    differ by 2.86 rad) — catches the same reorder at Δ 1.77 rad. Both catch content tampering. Chains therefore
+    commit <strong>both hands</strong>: forward product and mirror product (conjugates, reverse order).</p>
+    <table>
+      <tr><th>layer</th><th>mechanism</th><th>what it makes structurally impossible</th></tr>
+      <tr><td>Chiral holonomy</td><td>ordered product ⟲ + mirror product ⟳ committed with every bioseed chain</td><td>reorder / splice / time-reversal attacks invisible to XOR</td></tr>
+      <tr><td>Handedness</td><td>derived from the <em>sealed</em> Cosmological ID (digest parity) — public, deterministic, unpickable after sealing</td><td>choosing your own hand; hands split the network ~50/50</td></tr>
+      <tr><td>Pairing rule</td><td>a claim grown by an L-node may only be attested by R-nodes (and vice versa), ≥2 of them</td><td><strong>self-attestation</strong> and same-hand collusion rings</td></tr>
+      <tr><td>Dual chiral anchors</td><td>the genesis snapshot bakes an L-anchor <em>and</em> an R-anchor (different parties); certificates and crystallizations need both hands; anchors cross-re-sign at tick 12</td><td><strong>single-root capture</strong> — the exact centralization risk of one master-key list</td></tr>
+    </table>
+    <p style="font-size:.8rem;margin-top:.6rem">Try the pairing rule (live — same logic as <code>pump_clock.py §6</code>):
+    pick a grower and toggle attesters/anchors.</p>
+    <div id="chiraldemo"></div>
+    <div id="verdict"></div>
+  </div>
+</section>
+
+<section>
+  <h2><span class="n">05</span>Honest threat table — what chirality does and doesn't buy</h2>
+  <div class="glass card tblwrap">
+    <table>
+      <tr><th>threat</th><th>before</th><th>with the chiral layer</th></tr>
+      <tr><td>Single root mints authority</td><td>one trust-anchor genesis ID = one master key</td><td><span class="pill ok">solved structurally</span> both hands required; capture needs two independent parties compromised</td></tr>
+      <tr><td>Self-dealing (grow + attest your own claim)</td><td>policy only</td><td><span class="pill ok">impossible by type</span> your hand is fixed at sealing; you can never be your own opposite hand</td></tr>
+      <tr><td>Chain reorder / splice</td><td><span class="pill bad">invisible to XOR holonomy</span></td><td><span class="pill ok">caught</span> Δ 1.77 rad measured; mirror commitment doubles the constraint</td></tr>
+      <tr><td>Sybil identity farming</td><td>inherited from cert chain</td><td><span class="pill gold">unchanged — be honest</span> hands don't stop Sybils; grinding IDs for a hand is cheap, but hands carry no authority without certificates, so grinding buys nothing</td></tr>
+      <tr><td>Two-anchor collusion</td><td>n/a (one anchor)</td><td><span class="pill gold">residual risk</span> L+R anchors can still collude — mitigate with anchor rotation at tick 12 and public chronicles; it's 2 parties instead of 1, defense-in-depth not a proof</td></tr>
+      <tr><td>Hand-population imbalance</td><td>n/a</td><td><span class="pill gold">monitor</span> digest parity gives ~50/50 at scale (measured 4L/6R at n=10); quorum thresholds should scale with the live census</td></tr>
+      <tr><td>Quaternion ops as crypto</td><td>—</td><td><span class="pill bad">never</span> chirality is <em>structure</em>, not hardness — ECDSA seals remain the only lock; the chiral layer decides <em>who may sign what</em>, not <em>whether signatures can be forged</em></td></tr>
+    </table>
+  </div>
+</section>
+
+<section>
+  <h2><span class="n">06</span>Reproduce</h2>
+  <div class="glass card">
+<pre>python3 pump_clock.py     # 13/13 — π/6 telescoping, tri-gear table, handoff
+                          # separation 3×10⁷, checkpoint replay, XOR blindness,
+                          # chiral holonomy, pairing rule, dual anchors</pre>
+    <p style="font-size:.8rem">Paper grounding: the <strong>Hyperbolic Sparsemax Pump</strong> (rational, bit-reproducible
+    executable kernel — the consensus clock; its exponential-valve analytic companion is the Torsional Trefoil Markov
+    Pump, Biostrata-only) · the <strong>Pseudogroup Law of Quadrance Dynamics</strong> (no exact jump-ahead; √L structural
+    checkpointing) · the three-gear memory offload measured in
+    <a href="../../Library/Experimental_Systems/Ontological_Codex/index.html">Ontological Codex</a>.
+    Back to the <a href="index.html">Enterprise console</a>.</p>
+  </div>
+</section>
+
+</main>
+<footer>Pump Clock &amp; Chiral Mesh · BioChain Enterprise · © 2026 Owl Academy</footer>
+
+<script>
+// ─── gear clock ──────────────────────────────────────────────────────────────
+const INNER = [7,14,22,29,36,43,50,58,65,72];
+const cvs = document.getElementById('clock'), ctx = cvs.getContext('2d');
+let frame = 0, running = true, speed = 1, flash = 0;
+function toggleRun(){ running = !running; document.getElementById('runbtn').textContent = running ? '⏸ pause' : '▶ run'; }
+function tok(f){
+  const m = Math.floor(f/10)%72;
+  let inner = 9; for(let i=0;i<10;i++){ if(m < INNER[i]){ inner = i; break; } }
+  return `PUMP.${Math.floor(f/720)}.${Math.floor((f%720)/60)}.${m}.${inner}`;
+}
+function drawClock(){
+  const S = cvs.width = cvs.height = cvs.clientWidth * devicePixelRatio;
+  const c = S/2, f = frame % 720;
+  ctx.clearRect(0,0,S,S);
+  // 12 sector wedges
+  for(let k=0;k<12;k++){
+    const a0 = -Math.PI/2 + k*Math.PI/6, tri = (k===5||k===11);
+    ctx.beginPath(); ctx.moveTo(c,c); ctx.arc(c,c,S*0.47,a0,a0+Math.PI/6); ctx.closePath();
+    ctx.fillStyle = tri ? 'rgba(212,175,55,.07)' : (k%2 ? 'rgba(255,255,255,.015)' : 'rgba(255,255,255,.035)');
+    ctx.fill();
+    ctx.fillStyle = tri ? 'rgba(212,175,55,.8)' : 'rgba(255,255,255,.3)';
+    ctx.font = `${S*0.026}px Fira Code`; ctx.textAlign = 'center';
+    const am = a0 + Math.PI/12;
+    ctx.fillText(k+1, c+Math.cos(am)*S*0.443, c+Math.sin(am)*S*0.443+S*0.01);
+  }
+  const ring = (r, n, prog, col, wS, wL) => {
+    ctx.beginPath(); ctx.arc(c,c,r,0,7); ctx.strokeStyle = 'rgba(255,255,255,.08)'; ctx.lineWidth = 1; ctx.stroke();
+    for(let i=0;i<n;i++){ const a = -Math.PI/2 + i*2*Math.PI/n;
+      ctx.beginPath(); ctx.moveTo(c+Math.cos(a)*(r-wS), c+Math.sin(a)*(r-wS)); ctx.lineTo(c+Math.cos(a)*(r+wS), c+Math.sin(a)*(r+wS));
+      ctx.strokeStyle = 'rgba(255,255,255,.12)'; ctx.stroke(); }
+    const a = -Math.PI/2 + prog*2*Math.PI;
+    ctx.beginPath(); ctx.arc(c+Math.cos(a)*r, c+Math.sin(a)*r, wL, 0, 7);
+    ctx.fillStyle = col; ctx.shadowColor = col; ctx.shadowBlur = 12; ctx.fill(); ctx.shadowBlur = 0;
+  };
+  ring(S*0.40, 72, f/720, '#00ff88', S*0.008, S*0.011);           // outer: Biostrata
+  ring(S*0.30, 72, Math.floor(f/10)/72, '#00d4ff', S*0.006, S*0.011); // middle: Hypersim
+  let m = Math.floor(f/10)%72, ib = 0; for(let i=0;i<10;i++){ if(m < INNER[i]){ ib = i; break; } if(m>=INNER[9]) ib=9; }
+  ring(S*0.20, 10, ib/10, '#D4AF37', S*0.006, S*0.012);           // inner: Core
+  // boundary flash
+  if(f % 60 === 0 && running) flash = 1;
+  if(flash > 0){
+    const tri = (f % 360 === 0);
+    ctx.beginPath(); ctx.arc(c,c,S*0.47*flash,0,7);
+    ctx.strokeStyle = tri ? `rgba(212,175,55,${flash})` : `rgba(0,255,136,${flash*0.6})`;
+    ctx.lineWidth = 2; ctx.stroke(); flash -= 0.03;
+  }
+  ctx.fillStyle = '#d9ffee'; ctx.font = `${S*0.05}px Cinzel`; ctx.textAlign = 'center';
+  ctx.fillText('π/6', c, c - S*0.02);
+  ctx.font = `${S*0.024}px Fira Code`; ctx.fillStyle = '#7a8290';
+  ctx.fillText(`frame ${f}`, c, c + S*0.035);
+  document.getElementById('tok').textContent = tok(frame);
+}
+setInterval(() => { if(running) frame = (frame + speed); drawClock(); }, 50);
+addEventListener('resize', drawClock);
+
+// ─── handoff windows (real quaternion math, mirrors pump_clock.py §3) ───────
+const qmul=(a,b)=>[a[0]*b[0]-a[1]*b[1]-a[2]*b[2]-a[3]*b[3], a[0]*b[1]+a[1]*b[0]+a[2]*b[3]-a[3]*b[2],
+                   a[0]*b[2]-a[1]*b[3]+a[2]*b[0]+a[3]*b[1], a[0]*b[3]+a[1]*b[2]-a[2]*b[1]+a[3]*b[0]];
+const qn=a=>{const n=Math.hypot(...a)||1;return a.map(x=>x/n);};
+const qang=(a,b)=>2*Math.acos(Math.min(1,Math.abs(a[0]*b[0]+a[1]*b[1]+a[2]*b[2]+a[3]*b[3])));
+const srot=s=>{const ax=qn([0,Math.sin(s*1.7)+1.2,Math.cos(s*0.9)+0.4,Math.sin(s*0.31)-0.2]);
+  const th=0.012+0.004*Math.sin(s*0.05);return [Math.cos(th/2),Math.sin(th/2)*ax[1],Math.sin(th/2)*ax[2],Math.sin(th/2)*ax[3]];};
+const loaded = new Set();
+function sectorProducts(perturbed){
+  const out=[];
+  for(let k=0;k<12;k++){ let p=[1,0,0,0];
+    for(let i=k*60;i<(k+1)*60;i++){ let d=srot(i);
+      if(perturbed.has(k) && i>=k*60+10 && i<k*60+30) d=qn(qmul(d,[Math.cos(0.02),Math.sin(0.02),0,0]));
+      p=qn(qmul(d,p)); }
+    out.push(p); }
+  return out;
+}
+const EXPECT = sectorProducts(new Set());
+function renderWindows(){
+  const actual = sectorProducts(loaded);
+  const el = document.getElementById('windows'); el.innerHTML='';
+  actual.forEach((p,k)=>{
+    const d = qang(EXPECT[k],p);
+    const w = document.createElement('div');
+    w.className = 'win ' + (d>1e-6 ? 'data' : 'silent') + ((k===5||k===11)?' tri':'');
+    w.innerHTML = `<div>${k+1}</div><div class="d">${d>1e-6?d.toExponential(0):'0'}</div>`;
+    w.onclick = ()=>{ loaded.has(k)?loaded.delete(k):loaded.add(k); renderWindows(); };
+    el.appendChild(w);
+  });
+  document.getElementById('handoffnote').textContent = loaded.size
+    ? `Data present in window(s) ${[...loaded].map(k=>k+1).sort((a,b)=>a-b).join(', ')} — each Δ ≈ 0.8 rad vs idle noise ~3e-8 rad. Only those windows request a residual transfer; the rest hand off nothing, provably.`
+    : 'All windows silent — every boundary delta is exact zero (rational kernel) or float noise. Nothing to hand off, and that fact costs one quaternion comparison per tick.';
+}
+renderWindows();
+
+// ─── chiral pairing demo (mirrors pump_clock.py §6) ──────────────────────────
+const OPS = ['Aldrovanda','Bavol','Ceridwen','Dagny','Edda','Fionn','Grier','Mira','Vex','Okku'];
+// handedness precomputed with the same sha256-parity rule as pump_clock.py
+const HAND = {Aldrovanda:'R',Bavol:'R',Ceridwen:'L',Dagny:'R',Edda:'L',Fionn:'R',Grier:'R',Mira:'L',Vex:'R',Okku:'L'};
+let grower = 'Mira'; const attesters = new Set(['Bavol','Dagny']); const anchors = new Set(['Aldrovanda','Ceridwen']);
+function renderChiral(){
+  const el = document.getElementById('chiraldemo');
+  const row = (title, pick, set, single) => `<div style="margin-top:.5rem"><span style="font-size:.62rem;letter-spacing:.16em;text-transform:uppercase;color:#7a8290">${title}</span><br>`
+    + OPS.map(o=>`<span class="hand ${HAND[o]} ${set.has(o)?'sel':''}" onclick="${pick}('${o}')">${HAND[o]==='L'?'⟲':'⟳'} ${o} · ${HAND[o]}</span>`).join('') + '</div>';
+  el.innerHTML = row('grower (one)', 'pickG', new Set([grower]))
+               + row('attesters (toggle)', 'pickA', attesters)
+               + row('anchors (toggle)', 'pickN', anchors);
+  const opp = HAND[grower]==='L'?'R':'L';
+  const valid = [...attesters].filter(a=>a!==grower && HAND[a]===opp);
+  const self = attesters.has(grower);
+  const anchorHands = new Set([...anchors].map(a=>HAND[a]));
+  let msgs = [];
+  if(self) msgs.push('self-attestation stripped — the grower\'s hand cannot attest its own growth');
+  let ok = true;
+  if(valid.length < 2){ ok=false; msgs.push(`REJECT: needs ≥2 opposite-hand (${opp}) attesters, has ${valid.length}`); }
+  if(anchorHands.size !== 2){ ok=false; msgs.push('REJECT: anchor set is not a chiral pair (needs one ⟲L and one ⟳R)'); }
+  if(ok) msgs.push(`OK: ${HAND[grower]}-grown claim, ${valid.length} ${opp}-attesters, dual chiral anchors — crystallization may proceed at the next tick-6/12 window`);
+  const v = document.getElementById('verdict');
+  v.innerHTML = msgs.map(m=>`<div style="color:${m.startsWith('REJECT')?'#f0a':(m.startsWith('OK')?'#34d399':'#D4AF37')}">${m}</div>`).join('');
+}
+function pickG(o){ grower=o; renderChiral(); }
+function pickA(o){ attesters.has(o)?attesters.delete(o):attesters.add(o); renderChiral(); }
+function pickN(o){ anchors.has(o)?anchors.delete(o):anchors.add(o); renderChiral(); }
+renderChiral();
+</script>
+</body>
+</html>

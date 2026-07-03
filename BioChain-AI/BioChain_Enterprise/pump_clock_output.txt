@@ -1,0 +1,79 @@
+
+──────────────────────────────────────────────────────────────────────────
+PUMP CLOCK — logical time (720-frame cycle · 12 π/6 sectors × 60)
+──────────────────────────────────────────────────────────────────────────
+  frame   0 → PUMP.0.0.0.0
+  frame  60 → PUMP.0.1.6.0
+  frame 360 → PUMP.0.6.36.5
+  frame 437 → PUMP.0.7.43.6
+  frame 719 → PUMP.0.11.71.9
+  [PASS] tick tokens are pure functions of the frame index — no wall clock anywhere — the Schumann token keeps wall-time separately
+
+──────────────────────────────────────────────────────────────────────────
+[1] π/6 sector boundaries: outer↔middle telescoping
+──────────────────────────────────────────────────────────────────────────
+  [PASS] all 12 π/6 ticks telescope exactly — worst 0.0e+00 rad (float; the rational Sparsemax source gives exactly 0)
+
+──────────────────────────────────────────────────────────────────────────
+[2] tri-gear alignment (which ticks all three gears agree on)
+──────────────────────────────────────────────────────────────────────────
+  inner-gear boundaries (middle units): [7, 14, 22, 29, 36, 43, 50, 58, 65, 72]
+    tick  1 · frame  60 : outer✓ middle✓ inner —
+    tick  2 · frame 120 : outer✓ middle✓ inner —
+    tick  3 · frame 180 : outer✓ middle✓ inner —
+    tick  4 · frame 240 : outer✓ middle✓ inner —
+    tick  5 · frame 300 : outer✓ middle✓ inner —
+    tick  6 · frame 360 : outer✓ middle✓ inner ✓
+    tick  7 · frame 420 : outer✓ middle✓ inner —
+    tick  8 · frame 480 : outer✓ middle✓ inner —
+    tick  9 · frame 540 : outer✓ middle✓ inner —
+    tick 10 · frame 600 : outer✓ middle✓ inner —
+    tick 11 · frame 660 : outer✓ middle✓ inner —
+    tick 12 · frame 720 : outer✓ middle✓ inner ✓
+  [PASS] tri-gear sync only at half-cycle and full cycle — edge↔mesh handoffs every π/6 tick; mesh↔core crystallization at ticks 6 & 12
+
+──────────────────────────────────────────────────────────────────────────
+[3] handoff detection: is there data in the window?
+──────────────────────────────────────────────────────────────────────────
+  [PASS] payload isolated to its π/6 window — window 8 · idle noise 3.0e-08 rad · separation 3e+07× — silence is exact
+
+──────────────────────────────────────────────────────────────────────────
+[4] checkpointing (Pseudogroup law: no jump-ahead, replay from ticks)
+──────────────────────────────────────────────────────────────────────────
+  [PASS] arbitrary frame recreated exactly from nearest π/6 checkpoint — frame 437 = tick 7 + 17 replay steps · π/6 schedule: 12 ckpts/≤59 replay; √L-optimal: 27/≤26
+
+──────────────────────────────────────────────────────────────────────────
+[5] the chiral layer — measured, not asserted
+──────────────────────────────────────────────────────────────────────────
+  [PASS] forward and mirror holonomies differ (non-commutativity is real) — Δ 2.86 rad
+  [PASS] XOR holonomy is BLIND to chunk reordering (the vulnerability) — swapped chunks 2↔5 → identical XOR word
+  [PASS] chiral holonomy catches the same reorder — Δ 1.771 rad — ordered product is order-sensitive by construction
+  [PASS] both holonomies catch content tampering
+
+──────────────────────────────────────────────────────────────────────────
+[6] chiral authentication: pairing rule + dual anchors
+──────────────────────────────────────────────────────────────────────────
+  handedness from sealed IDs: 4 L / 6 R (deterministic, public, unpickable)
+  [PASS] honest crystallization: opposite-hand quorum + chiral anchor pair — OK: L-grown, 2 R-attesters, dual chiral anchors
+  [PASS] self-attestation structurally impossible — REJECT: needs ≥2 opposite-hand (R) attesters, has 1
+  [PASS] same-hand collusion quorum rejected — REJECT: needs ≥2 opposite-hand (R) attesters, has 0
+  [PASS] single-handed anchor set rejected (no single-root capture) — REJECT: anchor set is not a chiral pair
+
+──────────────────────────────────────────────────────────────────────────
+Verdict
+──────────────────────────────────────────────────────────────────────────
+  ✓ tick tokens are pure functions of the frame index
+  ✓ all 12 π/6 ticks telescope exactly
+  ✓ tri-gear sync only at half-cycle and full cycle
+  ✓ payload isolated to its π/6 window
+  ✓ arbitrary frame recreated exactly from nearest π/6 checkpoint
+  ✓ forward and mirror holonomies differ (non-commutativity is real)
+  ✓ XOR holonomy is BLIND to chunk reordering (the vulnerability)
+  ✓ chiral holonomy catches the same reorder
+  ✓ both holonomies catch content tampering
+  ✓ honest crystallization: opposite-hand quorum + chiral anchor pair
+  ✓ self-attestation structurally impossible
+  ✓ same-hand collusion quorum rejected
+  ✓ single-handed anchor set rejected (no single-root capture)
+
+  13/13 pump-clock checks passed
