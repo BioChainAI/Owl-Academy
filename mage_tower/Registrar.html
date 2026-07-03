@@ -6,21 +6,21 @@
     <title>Owl Academy | Geometric Registrar — Cosmological ID</title>
 
     <script type="module" src="../scripts/auth-guard.js"></script>
+    <script type="module" src="../scripts/ui/node-network-bg.js" data-accent="#8A2BE2"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
 
     <style>
         :root {
-            --void: #0f0d1f;
+            --void: #05030a;
             --gold: #D4AF37;
             --gold-light: #FFF8DC;
             --cyan: #00d4ff;
             --magenta: #e81cff;
         }
         body {
-            background-color: var(--void); color: #e2e8f0;
+            background: var(--void); color: #e2e8f0;
             font-family: 'Inter', sans-serif;
-            background: radial-gradient(circle at 50% 10%, rgba(138,43,226,0.20), var(--void) 80%);
             min-height: 100vh; margin: 0;
         }
         h1, h2, h3, .mystical { font-family: 'Cinzel', serif; }
@@ -40,14 +40,6 @@
             0%, 100% { filter: drop-shadow(0 0 8px rgba(212,175,55,0.3)); }
             50% { filter: drop-shadow(0 0 20px rgba(212,175,55,0.7)); }
         }
-        .starfield {
-            position: fixed; inset: 0; pointer-events: none; z-index: 0;
-            background-image:
-                radial-gradient(1.5px 1.5px at 30px 50px, var(--gold), transparent),
-                radial-gradient(2px 2px at 90px 120px, #fff, transparent),
-                radial-gradient(1.5px 1.5px at 160px 80px, var(--gold-light), transparent);
-            background-size: 250px 250px; opacity: 0.2;
-        }
         input[type=text], textarea, select {
             background: #0d091a; color: var(--gold-light);
             border: 1px solid rgba(212,175,55,0.2);
@@ -59,7 +51,6 @@
     </style>
 </head>
 <body class="antialiased">
-    <div class="starfield"></div>
 
     <main class="relative z-10 max-w-5xl mx-auto px-4 md:px-8 py-12">
 

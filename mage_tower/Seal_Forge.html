@@ -5,11 +5,11 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Seal Forge — Owl Academy</title>
 <script type="module" src="../scripts/auth-guard.js"></script>
+<script type="module" src="../scripts/ui/node-network-bg.js" data-accent="#8b5cf6"></script>
 <style>
-  :root{--void:#06040f;--gold:#D4AF37;--purple:#8b5cf6;--cyan:#22d3ee;--ok:#34d399;--bad:#f87171;--warn:#fbbf24}
+  :root{--void:#05030a;--gold:#D4AF37;--purple:#8b5cf6;--cyan:#22d3ee;--ok:#34d399;--bad:#f87171;--warn:#fbbf24}
   *{box-sizing:border-box;margin:0;padding:0}
-  body{background:var(--void);color:#e2e8f0;font-family:system-ui,sans-serif;min-height:100vh;line-height:1.55;
-       background:radial-gradient(ellipse at top,rgba(139,92,246,0.10),var(--void) 55%)}
+  body{background:var(--void);color:#e2e8f0;font-family:system-ui,sans-serif;min-height:100vh;line-height:1.55}
   .mono{font-family:ui-monospace,"Fira Code",monospace}
   .secbar{display:flex;align-items:center;justify-content:space-between;gap:1rem;padding:.55rem 1.1rem;background:rgba(8,12,22,.85);
           border-bottom:1px solid rgba(212,175,55,.25);position:sticky;top:0;z-index:30;backdrop-filter:blur(8px)}
@@ -28,7 +28,7 @@
   .back{display:inline-block;margin-top:.8rem;font-size:.62rem;letter-spacing:.2em;text-transform:uppercase;color:rgba(139,92,246,.5);text-decoration:none}
   main{max-width:1000px;margin:1.6rem auto;padding:0 1.1rem;display:grid;grid-template-columns:1fr 1fr;gap:1.2rem}
   @media(max-width:820px){main{grid-template-columns:1fr}}
-  .panel{background:rgba(10,8,20,.6);border:1px solid rgba(139,92,246,.18);border-radius:12px;padding:1.2rem 1.3rem}
+  .panel{background:rgba(10,10,18,.88);backdrop-filter:blur(10px);border:1px solid rgba(139,92,246,.28);border-radius:12px;padding:1.2rem 1.3rem;box-shadow:0 8px 28px -6px rgba(0,0,0,.55)}
   .panel.wide{grid-column:1/-1}
   .label{font-size:.6rem;letter-spacing:.26em;text-transform:uppercase;color:rgba(139,92,246,.65);margin-bottom:.7rem}
   label.f{display:block;font-size:.62rem;letter-spacing:.08em;text-transform:uppercase;color:rgba(255,255,255,.5);margin:.7rem 0 .2rem}
@@ -36,7 +36,7 @@
   textarea{min-height:90px;font-family:ui-monospace,monospace;font-size:.76rem;resize:vertical}
   .rng{display:flex;align-items:center;gap:.6rem}.rng output{font-family:ui-monospace,monospace;color:var(--cyan);font-size:.78rem;min-width:2.4rem}
   .grid2{display:grid;grid-template-columns:1fr 1fr;gap:.6rem}
-  .tome{border:1px solid rgba(139,92,246,.16);border-radius:8px;padding:.6rem .7rem;margin-bottom:.55rem;background:rgba(0,0,0,.25)}
+  .tome{border:1px solid rgba(139,92,246,.24);border-radius:8px;padding:.6rem .7rem;margin-bottom:.55rem;background:rgba(4,4,10,.7)}
   .tome .top{display:flex;justify-content:space-between;align-items:center;gap:.5rem}
   .tome .nm{color:#fff;font-size:.84rem}
   .tome .vec{font-family:ui-monospace,monospace;font-size:.66rem;color:var(--gold);margin-top:.2rem}

@@ -5,11 +5,11 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Unlock Console — Owl Academy</title>
 <script type="module" src="../scripts/auth-guard.js"></script>
+<script type="module" src="../scripts/ui/node-network-bg.js" data-accent="#22d3ee"></script>
 <style>
-  :root{--void:#06040f;--gold:#D4AF37;--purple:#8b5cf6;--cyan:#22d3ee;--ok:#34d399;--bad:#f87171;--warn:#fbbf24}
+  :root{--void:#05030a;--gold:#D4AF37;--purple:#8b5cf6;--cyan:#22d3ee;--ok:#34d399;--bad:#f87171;--warn:#fbbf24}
   *{box-sizing:border-box;margin:0;padding:0}
-  body{background:var(--void);color:#e2e8f0;font-family:system-ui,sans-serif;min-height:100vh;line-height:1.55;
-       background:radial-gradient(ellipse at top,rgba(34,211,238,0.07),var(--void) 55%)}
+  body{background:var(--void);color:#e2e8f0;font-family:system-ui,sans-serif;min-height:100vh;line-height:1.55}
   .mono{font-family:ui-monospace,"Fira Code",monospace}
   .secbar{display:flex;align-items:center;justify-content:space-between;gap:1rem;padding:.55rem 1.1rem;background:rgba(8,12,22,.85);
           border-bottom:1px solid rgba(212,175,55,.25);position:sticky;top:0;z-index:30;backdrop-filter:blur(8px)}
@@ -25,11 +25,11 @@
   h1{font-weight:300;letter-spacing:.12em;color:#fff;margin-top:.4rem;font-size:1.6rem}h1 b{color:var(--cyan)}
   .back{display:inline-block;margin-top:.8rem;font-size:.62rem;letter-spacing:.2em;text-transform:uppercase;color:rgba(139,92,246,.5);text-decoration:none}
   main{max-width:920px;margin:1.4rem auto;padding:0 1.1rem}
-  .panel{background:rgba(10,8,20,.6);border:1px solid rgba(34,211,238,.16);border-radius:12px;padding:1.1rem 1.3rem;margin-bottom:1.2rem}
+  .panel{background:rgba(10,10,18,.88);backdrop-filter:blur(10px);border:1px solid rgba(34,211,238,.26);border-radius:12px;padding:1.1rem 1.3rem;margin-bottom:1.2rem;box-shadow:0 8px 28px -6px rgba(0,0,0,.55)}
   .label{font-size:.6rem;letter-spacing:.26em;text-transform:uppercase;color:rgba(34,211,238,.7);margin-bottom:.7rem}
   select,input,textarea{background:#0c0a18;color:#e2e8f0;border:1px solid rgba(139,92,246,.3);border-radius:6px;padding:.4rem .55rem;font-size:.8rem;font-family:inherit;width:100%}
   label.f{display:block;font-size:.62rem;letter-spacing:.08em;text-transform:uppercase;color:rgba(255,255,255,.5);margin:.6rem 0 .2rem}
-  .req{border:1px solid rgba(139,92,246,.16);border-radius:9px;padding:.8rem .9rem;margin-bottom:.7rem;background:rgba(0,0,0,.25)}
+  .req{border:1px solid rgba(139,92,246,.24);border-radius:9px;padding:.8rem .9rem;margin-bottom:.7rem;background:rgba(4,4,10,.7)}
   .req .t{color:#fff;font-size:.9rem} .req .meta{font-size:.64rem;color:rgba(255,255,255,.4);margin-top:.25rem}
   .req .act{margin-top:.55rem;display:flex;gap:.5rem;align-items:center;flex-wrap:wrap}
   .signbar{display:flex;gap:.6rem;align-items:center;flex-wrap:wrap;margin-bottom:.9rem}
