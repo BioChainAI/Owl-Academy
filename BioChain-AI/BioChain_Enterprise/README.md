@@ -196,7 +196,8 @@ Full visualization: `pump_timing.html` (gear clock, handoff windows, chiral demo
 | `biochain_mesh.py` (+ output) | the 3-tier mesh, FLUX/CRYST, exchange |
 | `pump_clock.py` (+ output) | pump time, π/6 handoff windows, chiral layer |
 | `index.html` | interactive console: kernel grid, live grow demo, token loop |
-| `pump_timing.html` | gear clock, handoff windows, chiral authentication demo |
+| `pump_timing.html` | gear clock, handoff windows, tick detection log |
+| `chiral_mesh.html` | the chiral key system: chain attack lab, handedness derivation, crystallization chamber, attack gallery |
 
 *Lineage: NeuroMesh (MIT, archived 2026) for the transport recipe · Spire Mesh study
 for the validation-node anatomy · Engram Codec / Ontological Codex for the quaternion
