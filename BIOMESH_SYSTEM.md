@@ -21,10 +21,33 @@ transfers are seal-signed records that are never deleted, and every event is chr
 
 | Object | Collection | Mutability | Who creates | Purpose |
 |---|---|---|---|---|
-| **Biochain** | `biochains/{chainId}` | listing fields only; ownership moves via accepted transfer | any signed-in user (grower) | the grown chain: streams + Merkle root + chiral/mirror weave + GROWN/1 certification |
+| **Biochain** | `biochains/{chainId}` | listing fields only; ownership moves via accepted transfer | any signed-in user (grower) | the grown chain: one framed SHD-CCP `stream` + leaf-commitment vector + Merkle root + chiral/mirror weave + GROWN/1 certification |
 | **Transfer** | `biochainTransfers/{id}` | recipient resolves status once | current owner | free, seal-signed BIOMESH-XFER/1; the lineage spine — never deleted |
 | **Rating** | `biochainRatings/{chainId}_{uid}` | rater may revise own | any signed-in user | utility stars + recreated-ok verdict; one per user per chain (doc-id enforced) |
 | **Chronicle** | `chronicles` | append-only | services | audit trail for every grow/list/send/accept/rate |
+
+## Body storage — the SHD-CCP stream (`streamVersion: "shdccp/2"`)
+
+The grown body is **one self-describing SHD-CCP data stream**, not parallel
+per-chunk arrays. Each chunk contributes a frame:
+
+```
+crystal packet (16 hex = one 64-bit SHD-CCP word) │ residual length (4 bytes) │ residual (rank-coded)
+└ form 9 · payload = chunk length · parity bit     └ uint32                     └ variable
+```
+
+concatenated into a single `stream` string. The chunk length lives in each
+packet's `payload` field, so there is no separate `chunkLens` array to keep
+index-aligned, and no array-of-arrays for Firestore to reject. The `crystallize`
+packet is **byte-identical to `BioChain-AI/BioChain_Enterprise/shdccp_kernel.py`**
+(verified: `crystallize(0..59) = 9841D88D8B003CEA` on both the browser and the
+Python reference), so a node and a browser read the same wire format. Only the
+`leafHashes` commitment vector remains a flat array — it must stay independently
+addressable so a validator can spot-check one chunk's leaf against the Merkle
+root without decoding the rest. `verifyIntegrity` recreates the chunks from the
+stream and checks, in order: **per-packet parity → per-chunk leaf → rebuilt
+Merkle root → chiral weave**. A legacy read path still verifies any older
+`streams`/`chunkLens` record.
 
 ## Certification — GROWN/1
 
