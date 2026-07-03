@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Biomesh AI Console — Owl Academy</title>
+<script type="module" src="../scripts/auth-guard.js"></script>
+<style>
+  :root{--void:#06040f;--gold:#D4AF37;--purple:#8b5cf6;--cyan:#22d3ee;--green:#00ff88;--ok:#34d399;--bad:#f87171;--warn:#fbbf24}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--void);color:#e2e8f0;font-family:system-ui,sans-serif;min-height:100vh;line-height:1.55;
+       background:radial-gradient(ellipse at top,rgba(0,255,136,0.06),var(--void) 55%)}
+  .mono{font-family:ui-monospace,"Fira Code",monospace}
+  .secbar{display:flex;align-items:center;justify-content:space-between;gap:1rem;padding:.55rem 1.1rem;background:rgba(8,12,22,.85);
+          border-bottom:1px solid rgba(0,255,136,.25);position:sticky;top:0;z-index:30;backdrop-filter:blur(8px)}
+  .seal{display:flex;align-items:center;gap:.5rem;font-size:.64rem;letter-spacing:.16em;text-transform:uppercase;color:var(--green)}
+  .seal .g{width:20px;height:20px;border:1px solid var(--green);border-radius:50%;display:flex;align-items:center;justify-content:center}
+  .who{font-size:.62rem;color:rgba(255,255,255,.42)}
+  .btn{background:rgba(0,255,136,.12);color:#d9ffee;border:1px solid rgba(0,255,136,.4);border-radius:6px;padding:.4rem .8rem;
+       font-size:.66rem;letter-spacing:.1em;text-transform:uppercase;cursor:pointer;font-family:inherit;transition:.2s}
+  .btn:hover{background:rgba(0,255,136,.24)} .btn[disabled]{opacity:.4;cursor:not-allowed}
+  .btn.sm{padding:.25rem .55rem;font-size:.58rem}
+  .btn.gold{background:rgba(212,175,55,.14);color:var(--gold);border-color:rgba(212,175,55,.45)}
+  .btn.cy{background:rgba(34,211,238,.12);color:var(--cyan);border-color:rgba(34,211,238,.4)}
+  .btn.bad{background:rgba(248,113,113,.1);color:var(--bad);border-color:rgba(248,113,113,.4)}
+  header{text-align:center;padding:1.8rem 1rem .5rem}
+  .kick{font-size:.6rem;letter-spacing:.3em;text-transform:uppercase;color:rgba(0,255,136,.7)}
+  h1{font-weight:300;letter-spacing:.12em;color:#fff;margin-top:.4rem;font-size:1.6rem}h1 b{color:var(--green)}
+  .back{display:inline-block;margin-top:.6rem;font-size:.62rem;letter-spacing:.2em;text-transform:uppercase;color:rgba(139,92,246,.55);text-decoration:none}
+  main{max-width:1080px;margin:1.2rem auto;padding:0 1.1rem}
+  .panel{background:rgba(10,8,20,.6);border:1px solid rgba(0,255,136,.14);border-radius:12px;padding:1.1rem 1.3rem;margin-bottom:1.2rem}
+  .label{font-size:.6rem;letter-spacing:.26em;text-transform:uppercase;color:rgba(0,255,136,.7);margin-bottom:.7rem}
+  select,input,textarea{background:#0c0a18;color:#e2e8f0;border:1px solid rgba(139,92,246,.3);border-radius:6px;padding:.45rem .6rem;font-size:.8rem;font-family:inherit;width:100%}
+  textarea{min-height:90px;font-family:ui-monospace,monospace;font-size:.72rem;resize:vertical}
+  .row{display:flex;gap:.6rem;flex-wrap:wrap;align-items:center;margin:.5rem 0}
+  .row > *{flex:1;min-width:140px} .row .fix{flex:0 0 auto;min-width:0;width:auto}
+  .tabs{display:flex;gap:.4rem;flex-wrap:wrap;margin-bottom:1rem}
+  .tab{padding:.45rem .9rem;border-radius:999px;font-size:.64rem;letter-spacing:.12em;text-transform:uppercase;cursor:pointer;
+       background:rgba(255,255,255,.04);color:#8a93a0;border:1px solid rgba(255,255,255,.1)}
+  .tab.active{background:rgba(0,255,136,.14);color:#d9ffee;border-color:rgba(0,255,136,.4)}
+  .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:.7rem;margin:.6rem 0}
+  .stat{background:rgba(0,0,0,.35);border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:.6rem .8rem}
+  .stat .l{font-size:.54rem;letter-spacing:.14em;text-transform:uppercase;color:#7a8290}
+  .stat .v{font-family:ui-monospace,monospace;font-size:1.05rem;color:#d9ffee;margin-top:.1rem}
+  .chain-card{border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:.8rem 1rem;margin:.6rem 0;background:rgba(0,0,0,.3)}
+  .chain-card h4{color:#fff;font-weight:500;font-size:.9rem}
+  .meta{font-size:.62rem;color:#7a8290;font-family:ui-monospace,monospace;margin:.25rem 0;word-break:break-all}
+  .pill{display:inline-block;font-size:.54rem;letter-spacing:.1em;text-transform:uppercase;padding:.12rem .5rem;border-radius:999px;border:1px solid;margin-right:.35rem}
+  .pill.ok{color:var(--ok);border-color:rgba(52,211,153,.4)} .pill.bad{color:var(--bad);border-color:rgba(248,113,113,.4)}
+  .pill.gold{color:var(--gold);border-color:rgba(212,175,55,.4)} .pill.cy{color:var(--cyan);border-color:rgba(34,211,238,.4)}
+  .scorebar{height:8px;border-radius:4px;background:rgba(255,255,255,.06);overflow:hidden;margin:.35rem 0}
+  .scorebar i{display:block;height:100%;background:linear-gradient(to right,var(--green),var(--gold))}
+  table{width:100%;border-collapse:collapse;font-size:.7rem;margin:.5rem 0}
+  th{font-size:.56rem;letter-spacing:.12em;text-transform:uppercase;color:rgba(0,255,136,.7);text-align:left;padding:.4rem .5rem;border-bottom:1px solid rgba(0,255,136,.25)}
+  td{padding:.4rem .5rem;border-bottom:1px solid rgba(255,255,255,.05);color:#aab3bf;font-family:ui-monospace,monospace;font-size:.64rem}
+  #gate{max-width:520px;margin:4rem auto;text-align:center}
+  #gate .sigil{font-size:2.4rem;margin-bottom:.6rem}
+  .hidden{display:none}
+  #toast{position:fixed;bottom:1.2rem;left:50%;transform:translateX(-50%);background:rgba(8,12,22,.95);border:1px solid rgba(0,255,136,.4);
+         border-radius:8px;padding:.6rem 1.1rem;font-size:.72rem;z-index:50;display:none}
+</style>
+</head>
+<body>
+
+<div class="secbar">
+  <div class="seal"><span class="g">🧬</span> Biomesh AI · Archon Console</div>
+  <div style="display:flex;gap:.6rem;align-items:center">
+    <span class="who mono" id="who">…</span>
+    <button class="btn sm" onclick="globalLogout()">Log out</button>
+  </div>
+</div>
+
+<header>
+  <div class="kick">Biostrata Substrate · Marketplace · Traceability</div>
+  <h1>BIOMESH <b>AI</b> CONTROL PANEL</h1>
+  <a class="back" href="../index.html">← Academy</a>
+</header>
+
+<!-- Archon gate: page content stays hidden until tier resolves to ARCHON -->
+<div id="gate" class="panel">
+  <div class="sigil">♛</div>
+  <div class="label" style="justify-content:center">Resolving tier…</div>
+  <p id="gateMsg" style="font-size:.8rem;color:#8a93a0">The Biomesh Console is an Archon-only monitoring surface.
+  Your Genesis tier is being verified against the registrar.</p>
+</div>
+
+<main id="app" class="hidden">
+
+  <div class="tabs">
+    <div class="tab active" data-t="overview" onclick="showTab('overview')">Overview</div>
+    <div class="tab" data-t="market" onclick="showTab('market')">Marketplace</div>
+    <div class="tab" data-t="grow" onclick="showTab('grow')">Grow</div>
+    <div class="tab" data-t="transfers" onclick="showTab('transfers')">Transfers</div>
+    <div class="tab" data-t="trace" onclick="showTab('trace')">Trace</div>
+  </div>
+
+  <!-- OVERVIEW -->
+  <section id="tab-overview" class="panel">
+    <div class="label">Mesh monitoring</div>
+    <div class="stats">
+      <div class="stat"><div class="l">biochains</div><div class="v" id="stChains">—</div></div>
+      <div class="stat"><div class="l">growers</div><div class="v" id="stGrowers">—</div></div>
+      <div class="stat"><div class="l">listed</div><div class="v" id="stListed">—</div></div>
+      <div class="stat"><div class="l">transfers (free)</div><div class="v" id="stXfers">—</div></div>
+      <div class="stat"><div class="l">avg success</div><div class="v" id="stAvg">—</div></div>
+      <div class="stat"><div class="l">certified ✓</div><div class="v" id="stCert">—</div></div>
+    </div>
+    <div class="label" style="margin-top:.8rem">Recent transfers</div>
+    <table id="recentXfers"><tr><th>chain</th><th>from → to</th><th>status</th><th>seal</th></tr></table>
+    <p style="font-size:.68rem;color:#7a8290">Every chain is certified GROWN/1 by a recallable minor-tome seal; every
+    transfer is a seal-signed BIOMESH-XFER/1 record (price 0 — enforced by rules); nothing is ever deleted. The
+    lineage IS the transfer collection.</p>
+  </section>
+
+  <!-- MARKETPLACE -->
+  <section id="tab-market" class="panel hidden">
+    <div class="label">Marketplace — success-rated biochains</div>
+    <div id="market"></div>
+  </section>
+
+  <!-- GROW -->
+  <section id="tab-grow" class="panel hidden">
+    <div class="label">Grow a biochain in the Biostrata substrate</div>
+    <div class="row">
+      <input id="gTitle" placeholder="Title">
+      <select id="gSeal" class="fix" style="min-width:220px"></select>
+    </div>
+    <textarea id="gText" placeholder="Paste the knowledge to grow (≤ 60,000 bytes)…"></textarea>
+    <div class="row">
+      <button class="btn fix" onclick="doGrow()">⟐ Grow</button>
+      <button class="btn gold fix" id="pubBtn" onclick="doPublish()" disabled>✒ Certify &amp; publish</button>
+      <span class="meta" id="growOut">grow first — value, weave and Merkle commitment appear here</span>
+    </div>
+  </section>
+
+  <!-- TRANSFERS -->
+  <section id="tab-transfers" class="panel hidden">
+    <div class="label">Send a chain (always free)</div>
+    <div class="row">
+      <select id="xChain"></select>
+      <input id="xTo" placeholder="Recipient Firebase UID">
+      <select id="xSeal" class="fix" style="min-width:200px"></select>
+      <button class="btn fix" onclick="doSend()">⇢ Send</button>
+    </div>
+    <div class="label" style="margin-top:1rem">Incoming (pending your acceptance)</div>
+    <div id="incoming"></div>
+  </section>
+
+  <!-- TRACE -->
+  <section id="tab-trace" class="panel hidden">
+    <div class="label">Full trace — certification, hops, integrity</div>
+    <div class="row">
+      <select id="tChain"></select>
+      <button class="btn fix" onclick="doTrace()">∴ Trace</button>
+    </div>
+    <div id="traceOut"></div>
+  </section>
+
+</main>
+
+<div id="toast"></div>
+
+<script type="module">
+import { auth } from "../scripts/firebase/config.js";
+import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-auth.js";
+import { resolveTier } from "../scripts/genesis-registrar.js";
+import { listMinorTomes } from "../scripts/minor-tome.js";
+import * as BM from "../scripts/biomesh.js";
+
+let uid = null, grown = null, chains = [], transfers = [];
+
+const $ = id => document.getElementById(id);
+const toast = m => { const t = $("toast"); t.textContent = m; t.style.display = "block";
+  clearTimeout(t._h); t._h = setTimeout(() => t.style.display = "none", 3500); };
+window.showTab = t => {
+  document.querySelectorAll(".tab").forEach(x => x.classList.toggle("active", x.dataset.t === t));
+  for (const s of ["overview","market","grow","transfers","trace"])
+    $("tab-" + s).classList.toggle("hidden", s !== t);
+};
+
+onAuthStateChanged(auth, async user => {
+  if (!user) return;                       // auth-guard handles redirect
+  uid = user.uid;
+  $("who").textContent = user.email || uid;
+  let tier = "ACOLYTE";
+  try { tier = await resolveTier(uid); } catch (_) {}
+  if (tier !== "ARCHON") {
+    $("gateMsg").innerHTML = "Tier resolved: <b>" + tier + "</b>.<br>The Biomesh Console requires the ♛ <b>ARCHON</b> tier. " +
+      "Ask a root Archon for a certificate in the <a href='Genesis_Forge.html'>Genesis Forge</a>.";
+    return;
+  }
+  $("gate").classList.add("hidden");
+  $("app").classList.remove("hidden");
+  await refresh();
+});
+
+async function refresh() {
+  chains = await BM.listBiochains(200);
+  transfers = await BM.listAllTransfers(300);
+  // overview stats
+  $("stChains").textContent = chains.length;
+  $("stGrowers").textContent = new Set(chains.map(c => c.growerUid)).size;
+  $("stListed").textContent = chains.filter(c => c.status === "listed").length;
+  $("stXfers").textContent = transfers.length;
+  let certOk = 0, scoreSum = 0, scored = 0;
+  const marketEl = $("market"); marketEl.innerHTML = "";
+  for (const c of chains) {
+    const ratings = await BM.listRatings(c.chainId).catch(() => []);
+    const txCount = transfers.filter(t => t.chainId === c.chainId && t.status === "accepted").length;
+    const score = BM.successScore(c, ratings, txCount);
+    scoreSum += score.total; scored++;
+    const cert = await BM.verifyGrown(c).catch(() => ({ valid: false, reason: "verify error" }));
+    if (cert.valid) certOk++;
+    marketEl.appendChild(chainCard(c, score, cert, ratings));
+  }
+  $("stAvg").textContent = scored ? (scoreSum / scored).toFixed(1) : "—";
+  $("stCert").textContent = certOk + "/" + chains.length;
+  // recent transfers table
+  const tbl = $("recentXfers");
+  tbl.innerHTML = "<tr><th>chain</th><th>from → to</th><th>status</th><th>seal</th></tr>";
+  for (const t of transfers.slice(0, 12)) {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `<td>${t.chainId?.slice(0,14)}…</td><td>${(t.fromGenesisId||t.fromUid||"").slice(0,12)} → ${(t.toUid||"").slice(0,12)}</td>
+      <td>${t.status}</td><td>${t.xferSeal?.sealId?.slice(0,12) || "—"}</td>`;
+    tbl.appendChild(tr);
+  }
+  // selectors
+  const opts = chains.map(c => `<option value="${c.chainId}">${c.title} · ${c.chainId.slice(0,14)}…</option>`).join("");
+  $("xChain").innerHTML = opts; $("tChain").innerHTML = opts;
+  const seals = (await listMinorTomes(uid).catch(() => [])).filter(s => s.status === "active");
+  const sopts = seals.length
+    ? seals.map(s => `<option value="${s.sealId}">${s.label} · ${s.sealId.slice(0,12)}…</option>`).join("")
+    : `<option value="">— mint a seal in the Seal Forge first —</option>`;
+  $("gSeal").innerHTML = sopts; $("xSeal").innerHTML = sopts;
+  // incoming
+  const inc = await BM.listIncoming(uid).catch(() => []);
+  $("incoming").innerHTML = inc.length ? "" : "<p class='meta'>No pending transfers.</p>";
+  for (const t of inc) {
+    const d = document.createElement("div"); d.className = "chain-card";
+    d.innerHTML = `<h4>${t.chainId}</h4><div class="meta">from ${t.fromGenesisId} · ${t.sentAt || ""} · price: FREE</div>`;
+    const a = document.createElement("button"); a.className = "btn sm"; a.textContent = "Accept";
+    a.onclick = async () => { try { await BM.acceptBiochain(uid, t.id); toast("Accepted — ownership moved, lineage extended."); refresh(); }
+                              catch (e) { toast(e.message); } };
+    const x = document.createElement("button"); x.className = "btn sm bad"; x.textContent = "Decline"; x.style.marginLeft = ".4rem";
+    x.onclick = async () => { await BM.declineBiochain(uid, t.id); refresh(); };
+    d.appendChild(a); d.appendChild(x); $("incoming").appendChild(d);
+  }
+}
+
+function chainCard(c, score, cert, ratings) {
+  const d = document.createElement("div"); d.className = "chain-card";
+  d.innerHTML =
+    `<h4>${c.title} <span class="pill ${cert.valid ? "ok" : "bad"}">${cert.valid ? "certified grown" : "UNCERTIFIED"}</span>
+       <span class="pill ${c.status === "listed" ? "gold" : "cy"}">${c.status}</span></h4>
+     <div class="meta">grower ${c.growerGenesisId} · owner ${c.ownerGenesisId || c.ownerUid} · ${c.origBytes} B · value ${c.value}</div>
+     <div class="meta">${c.chainId} · weave ${String(c.weaveChiral).slice(0, 34)}…</div>
+     <div class="scorebar"><i style="width:${score.total}%"></i></div>
+     <div class="meta">success ${score.total}/100 — value ${score.parts.value} · integrity ${score.parts.integrity} ·
+       stars ${score.parts.stars} (${score.ratingCount} ratings, ${score.verifiedCount} verified) · adoption ${score.parts.adoption}</div>`;
+  const v = document.createElement("button"); v.className = "btn sm cy"; v.textContent = "Verify & rate";
+  v.onclick = async () => {
+    const integ = await BM.verifyIntegrity(c);
+    const stars = parseInt(prompt(`Integrity: ${integ.ok ? "VERIFIED — " + integ.reasons[0] : "FAILED — " + integ.reasons[0]}\n\nUtility stars 1–5:`, "5"), 10);
+    if (!stars) return;
+    try { await BM.rateBiochain(uid, c.chainId, stars, "", integ.ok); toast("Rated — success score updates on refresh."); refresh(); }
+    catch (e) { toast(e.message); }
+  };
+  d.appendChild(v);
+  if (c.ownerUid === uid) {
+    const l = document.createElement("button"); l.className = "btn sm gold"; l.style.marginLeft = ".4rem";
+    l.textContent = c.status === "listed" ? "Unlist" : "List on market";
+    l.onclick = async () => { await BM.setListing(uid, c.chainId, c.status !== "listed"); refresh(); };
+    d.appendChild(l);
+  }
+  return d;
+}
+
+window.doGrow = async () => {
+  try {
+    grown = await BM.growBiochain($("gText").value);
+    $("growOut").textContent = `${grown.chainId} · ${grown.origBytes} B → ${grown.shippedBytes} B · value ${grown.value} · root ${grown.merkleRoot.slice(0,16)}…`;
+    $("pubBtn").disabled = false;
+    toast("Grown. Now certify & publish with your seal.");
+  } catch (e) { toast(e.message); }
+};
+window.doPublish = async () => {
+  try {
+    const sealId = $("gSeal").value;
+    if (!sealId) return toast("Mint a minor tome in the Seal Forge first.");
+    await BM.publishBiochain(uid, sealId, grown, { title: $("gTitle").value || "Untitled Biochain", listed: true });
+    toast("Published & certified GROWN/1 — live on the marketplace.");
+    grown = null; $("pubBtn").disabled = true; $("gText").value = ""; refresh();
+  } catch (e) { toast(e.message); }
+};
+window.doSend = async () => {
+  try {
+    await BM.sendBiochain(uid, $("xSeal").value, $("xChain").value, $("xTo").value.trim());
+    toast("Transfer created (FREE) — pending recipient acceptance."); refresh();
+  } catch (e) { toast(e.message); }
+};
+window.doTrace = async () => {
+  const out = $("traceOut"); out.innerHTML = "<p class='meta'>tracing…</p>";
+  try {
+    const tr = await BM.traceBiochain($("tChain").value);
+    let html = `<div class="chain-card"><h4>${tr.chain.title}</h4>
+      <div class="meta">GROWN/1: <span class="pill ${tr.grown.valid ? "ok" : "bad"}">${tr.grown.reason}</span>
+        seal ${tr.chain.growerSealId} · tier ${tr.grown.tier || "?"}</div>
+      <div class="meta">integrity: <span class="pill ${tr.integrity.ok ? "ok" : "bad"}">${tr.integrity.reasons[0]}</span></div>
+      <div class="meta">lineage (${(tr.chain.lineage || []).length} events):</div>`;
+    for (const ev of tr.chain.lineage || [])
+      html += `<div class="meta">· ${ev.event} — ${(ev.genesisId || ev.fromGenesisId || "")} ${ev.toGenesisId ? "→ " + ev.toGenesisId : ""} @ ${ev.tick || ""}</div>`;
+    html += `<div class="meta">transfer hops, seal-verified:</div>`;
+    html += tr.hops.length ? "" : `<div class="meta">· none — still with the grower</div>`;
+    for (const h of tr.hops)
+      html += `<div class="meta">· ${h.id} <span class="pill ${h.sealValid ? "ok" : "bad"}">${h.sealValid ? "seal ✓" : h.sealReason}</span>
+        ${h.senderGenesis} → ${h.toUid} · ${h.status} · FREE</div>`;
+    out.innerHTML = html + "</div>";
+  } catch (e) { out.innerHTML = `<p class='meta'>trace failed: ${e.message}</p>`; }
+};
+</script>
+</body>
+</html>

@@ -142,6 +142,60 @@ service cloud.firestore {
       allow delete: if false;
     }
 
+    // ─── Biomesh AI — biochains, free certified transfers, ratings ────
+    // Chains are grown in the Biostrata substrate, certified by the grower's
+    // minor-tome seal (GROWN/1), transferred FREE via seal-signed
+    // BIOMESH-XFER/1 records, and never deleted — the transfer docs ARE the
+    // lineage. Ratings feed the marketplace success score.
+    match /biochains/{chainId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn()
+        && request.resource.data.growerUid == request.auth.uid
+        && request.resource.data.ownerUid == request.auth.uid;
+      allow update: if isSignedIn() && (
+        // current owner manages the listing only — the grown record is frozen
+        (resource.data.ownerUid == request.auth.uid
+          && request.resource.data.diff(resource.data).affectedKeys()
+               .hasOnly(['status','description','updatedAt']))
+        ||
+        // ownership moves ONLY to the caller, ONLY via an accepted transfer
+        // addressed to them for this exact chain
+        (request.resource.data.ownerUid == request.auth.uid
+          && request.resource.data.diff(resource.data).affectedKeys()
+               .hasOnly(['ownerUid','ownerGenesisId','lineage','lastTransferId','updatedAt'])
+          && get(/databases/$(database)/documents/biochainTransfers/$(request.resource.data.lastTransferId)).data.chainId == chainId
+          && get(/databases/$(database)/documents/biochainTransfers/$(request.resource.data.lastTransferId)).data.toUid == request.auth.uid
+          && get(/databases/$(database)/documents/biochainTransfers/$(request.resource.data.lastTransferId)).data.status == "accepted")
+      );
+      allow delete: if false; // chains never vanish — traceability
+    }
+
+    match /biochainTransfers/{txId} {
+      allow read: if isSignedIn();                 // the lineage is public to the school
+      allow create: if isSignedIn()
+        && request.resource.data.fromUid == request.auth.uid
+        && request.resource.data.status == "pending"
+        && request.resource.data.price == 0        // transfers are ALWAYS free
+        && get(/databases/$(database)/documents/biochains/$(request.resource.data.chainId)).data.ownerUid == request.auth.uid;
+      // only the recipient resolves, status fields only
+      allow update: if isSignedIn() && resource.data.toUid == request.auth.uid
+        && resource.data.status == "pending"
+        && request.resource.data.diff(resource.data).affectedKeys()
+             .hasOnly(['status','acceptedAt','updatedAt'])
+        && (request.resource.data.status == "accepted" || request.resource.data.status == "declined");
+      allow delete: if false;                      // lineage is append-only
+    }
+
+    match /biochainRatings/{rid} {
+      allow read: if isSignedIn();
+      // one rating per user per chain — the doc id enforces it
+      allow create: if isSignedIn()
+        && request.resource.data.raterUid == request.auth.uid
+        && rid == request.resource.data.chainId + "_" + request.auth.uid;
+      allow update: if isSignedIn() && resource.data.raterUid == request.auth.uid;
+      allow delete: if false;
+    }
+
     // ─── Chronicle (audit log, server-side reads only) ────────────────
     match /chronicles/{entry} {
       allow create: if isSignedIn();
