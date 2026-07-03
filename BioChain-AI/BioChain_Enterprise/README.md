@@ -21,6 +21,7 @@ live grow→unfold demo, the token loop).
 python3 shdccp_kernel.py     # the 64-bit packet ABI          →  8/8 checks
 python3 codex_engine.py      # codex VM + growth + scoring    → 11/11 checks
 python3 biochain_mesh.py     # the 3-tier economy end to end  → 11/11 checks (~3 s)
+python3 pump_clock.py        # pump timing + chiral layer     → 13/13 checks
 ```
 
 Pure standard library, deterministic, no dependencies. Each module imports the one
@@ -158,6 +159,34 @@ replay with certainty (the honest physics of sampling, printed not hidden) ·
 - **Sybil resistance is inherited from the certificate chain** (Sybils can host and
   meter FLUX at quota-bottom; they cannot crystallize or earn CRYST).
 
+## 4. Pump timing + the chiral layer (`pump_clock.py`)
+
+Logical time is **pump time** — gear counters, never wall clock (the executable
+Sparsemax kernel is rational and bit-reproducible, so it is the only clock consensus
+may read; the analytic Torsional Trefoil pump stays Biostrata-local). Token:
+`PUMP.<cycle>.<sector 0-11>.<middle 0-71>.<inner 0-9>`.
+
+**Measured** (`pump_clock_output.txt`): all 12 π/6 sector boundaries telescope
+exactly (edge↔mesh handoffs every tick); the Prop-3 inner gear aligns only at the
+half- and full-cycle (**mesh↔core crystallization at ticks 6 & 12**); handoff
+detection separates a loaded window from idle noise by ~3×10⁷ ("silence is exact");
+arbitrary frames recreate exactly from the nearest tick + ≤59 replay steps (the
+Pseudogroup law: no jump-ahead exists, so timing = checkpoint + replay).
+
+**The chiral authentication key system** (decentralization hardening, all measured):
+the commutative XOR holonomy is provably **blind to chunk reordering** — the chiral
+holonomy (ordered quaternion product) and its mirror catch the same reorder at
+Δ 1.77 rad, so chains commit both hands. Handedness (L/R) derives from the *sealed*
+Cosmological ID (digest parity — public, deterministic, unpickable after sealing);
+the **pairing rule** requires ≥2 opposite-hand attesters (self-attestation is
+impossible by type); the genesis snapshot bakes **dual chiral anchors** (an L and an
+R party) so single-root capture is structurally impossible. Honest limits: chirality
+is structure, not hardness (ECDSA remains the lock); Sybil resistance is still
+inherited from the cert chain; two-anchor collusion remains a residual 2-party risk
+mitigated by tick-12 anchor rotation and public chronicles.
+
+Full visualization: `pump_timing.html` (gear clock, handoff windows, chiral demo).
+
 ## Files
 
 | file | role |
@@ -165,7 +194,9 @@ replay with certainty (the honest physics of sampling, printed not hidden) ·
 | `shdccp_kernel.py` (+ output) | the 64-bit packet ABI + self-test |
 | `codex_engine.py` (+ output) | codex VM, grow/unfold, scoring, attunement bench |
 | `biochain_mesh.py` (+ output) | the 3-tier mesh, FLUX/CRYST, exchange |
+| `pump_clock.py` (+ output) | pump time, π/6 handoff windows, chiral layer |
 | `index.html` | interactive console: kernel grid, live grow demo, token loop |
+| `pump_timing.html` | gear clock, handoff windows, chiral authentication demo |
 
 *Lineage: NeuroMesh (MIT, archived 2026) for the transport recipe · Spire Mesh study
 for the validation-node anatomy · Engram Codec / Ontological Codex for the quaternion
