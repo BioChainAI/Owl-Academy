@@ -153,10 +153,10 @@ service cloud.firestore {
         && request.resource.data.growerUid == request.auth.uid
         && request.resource.data.ownerUid == request.auth.uid;
       allow update: if isSignedIn() && (
-        // current owner manages the listing only — the grown record is frozen
+        // current owner manages listing + codex pairing only — the grown record is frozen
         (resource.data.ownerUid == request.auth.uid
           && request.resource.data.diff(resource.data).affectedKeys()
-               .hasOnly(['status','description','updatedAt']))
+               .hasOnly(['status','description','pairedCodexHash','pairSeal','updatedAt']))
         ||
         // ownership moves ONLY to the caller, ONLY via an accepted transfer
         // addressed to them for this exact chain
@@ -184,6 +184,15 @@ service cloud.firestore {
              .hasOnly(['status','acceptedAt','updatedAt'])
         && (request.resource.data.status == "accepted" || request.resource.data.status == "declined");
       allow delete: if false;                      // lineage is append-only
+    }
+
+    // Codex files: content-addressed personalization seeds paired to chains.
+    // Immutable once published — pairing lives on the chain doc, not here.
+    match /biomeshCodices/{codexHash} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn()
+        && request.resource.data.creatorUid == request.auth.uid;
+      allow update, delete: if false;
     }
 
     match /biochainRatings/{rid} {

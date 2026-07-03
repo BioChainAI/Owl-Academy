@@ -79,11 +79,88 @@ function crystallize(bytes) {
   word |= (popcountEven(word) << 59n);      // set parity last
   return word.toString(16).toUpperCase().padStart(16, "0");
 }
-/** decode a crystal packet → { chunkLen, parityOk }. */
+/** decode a 64-bit SHD-CCP word → all fields (+ chunkLen alias for stream frames). */
 function unpackPacket(hex) {
   const word = BigInt("0x" + hex);
   const parityBit = (word >> 59n) & 1n;
-  return { chunkLen: Number((word >> 8n) & 0xFFFFn), parityOk: popcountEven(word) === parityBit };
+  const payload16 = Number((word >> 8n) & 0xFFFFn);
+  return {
+    form: Number((word >> 60n) & 0xFn), spin: Number((word >> 56n) & 0x7n),
+    quat32: Number((word >> 24n) & 0xFFFFFFFFn), payload16, chunkLen: payload16,
+    freq: Number((word >> 3n) & 0x1Fn), amp: Number(word & 0x7n),
+    parityOk: popcountEven(word) === parityBit,
+  };
+}
+/** general packer: form/spin/4 signed-byte quat codes/payload16/freq/amp → 16 hex. */
+function packWord(form, spin, quatCodes, payload16, freq, amp) {
+  let q = 0n;
+  for (const c of quatCodes) q = (q << 8n) | BigInt(c & 0xFF);
+  let word = (BigInt(form & 0xF) << 60n) | (BigInt(spin & 0x7) << 56n) | (q << 24n)
+           | (BigInt(payload16 & 0xFFFF) << 8n) | (BigInt(freq & 0x1F) << 3n) | BigInt(amp & 0x7);
+  word |= (popcountEven(word) << 59n);
+  return word.toString(16).toUpperCase().padStart(16, "0");
+}
+
+// ─── token engrams (Engram Mind Eye compatible, bit-identical) ────────────────
+// Verbatim port of the TTMPT engram core in
+// Library/Experimental_Systems/Engram_Mind_Eye.html: Mulberry32 PRNG,
+// per-character panmagic 8×8 grid (seed = seed*31 + charCode), XOR
+// crystallization across a token's characters, LSB-first byte packing (the
+// same packing its chiralKey uses). A biochain's engram packet for a token is
+// therefore bit-identical to crystallize(token) on that page — an engram
+// stream can pre-seed the Mind Eye's Hamming matcher directly.
+function mulberry32(seed) {
+  return function () {
+    seed |= 0; seed = seed + 0x6D2B79F5 | 0;
+    let t = Math.imul(seed ^ seed >>> 15, 1 | seed);
+    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+    return ((t ^ t >>> 14) >>> 0) / 4294967296;
+  };
+}
+function engramCharGrid(ch) {
+  let seed = 0;
+  for (let i = 0; i < ch.length; i++) seed = (seed * 31 + ch.charCodeAt(i)) & 0xffffffff;
+  const rng = mulberry32(seed);
+  return Array.from({ length: 64 }, () => rng() > 0.5 ? 1 : 0);
+}
+/** token → 64-bit XOR-crystallized engram grid (Mind Eye crystallize, verbatim). */
+export function engramGrid(token) {
+  let acc = new Array(64).fill(0);
+  for (const ch of token.toUpperCase()) {
+    if (!/[A-Z]/.test(ch)) continue;
+    acc = acc.map((b, i) => b ^ engramCharGrid(ch)[i]);
+  }
+  return acc;
+}
+const engramGridHex = (grid) => {
+  let hex = "";
+  for (let i = 0; i < 8; i++) {
+    let byte = 0;
+    for (let b = 0; b < 8; b++) byte |= (grid[i * 8 + b] << b);   // LSB-first, as chiralKey packs
+    hex += byte.toString(16).padStart(2, "0");
+  }
+  return hex.toUpperCase();
+};
+/** torsion flow J of an engram grid: (upper − lower triangle sum) / 32. */
+export function engramJ(grid) {
+  let upper = 0, lower = 0;
+  for (let r = 0; r < 8; r++) for (let c = 0; c < 8; c++) {
+    if (c > r) upper += grid[r * 8 + c]; else if (c < r) lower += grid[r * 8 + c];
+  }
+  return (upper - lower) / 32;
+}
+/** tokenize for engrams: word tokens only (the Mind Eye ignores non-letters). */
+export const tokenizeEngrams = (text) => text.match(/[A-Za-z0-9']+/g) || [];
+/** text → one 16-hex engram packet per token, concatenated. */
+export function engramStreamFromText(text) {
+  const tokens = tokenizeEngrams(text);
+  let stream = "", jSum = 0;
+  for (const t of tokens) {
+    const g = engramGrid(t);
+    stream += engramGridHex(g);
+    jSum += engramJ(g);
+  }
+  return { stream, count: tokens.length, meanJ: tokens.length ? +(jSum / tokens.length).toFixed(4) : 0 };
 }
 
 /** Frame parallel packet/residual lists into one self-describing hex stream. */
@@ -142,8 +219,11 @@ export function decodeChunk(hex, len) {
   return out;
 }
 
-/** Grow a biochain from text — pure Biostrata step, no network. */
-export async function growBiochain(text) {
+/** Grow a biochain from text — pure Biostrata step, no network.
+ *  opts.engrams (default true): also crystallize the text as token engrams —
+ *  one Mind-Eye-compatible 64-bit packet per word token, in `engramStream`. */
+export async function growBiochain(text, opts = {}) {
+  const withEngrams = opts.engrams !== false;
   const data = [...new TextEncoder().encode(text)];
   if (!data.length) throw new Error("Nothing to grow.");
   if (data.length > MAX_GROW_BYTES) throw new Error(`Grow input capped at ${MAX_GROW_BYTES} bytes (got ${data.length}).`);
@@ -170,14 +250,38 @@ export async function growBiochain(text) {
   for (const c of [...chunks].reverse()) wm = qn(qmul(qconj(crystalQuat(c)), wm));
   const merkleRoot = root[0] || await SC.sha256Hex("empty");
   const chainId = "BC-" + (await SC.sha256Hex(merkleRoot + "|" + quatHex(wf))).slice(0, 24);
-  // shipped = the stream + the leaf-commitment vector + root/weave overhead
-  const ship = stream.length / 2 + leafHashes.length * 32 + 40;
+  // token engram layer (semantic face of the chain; the stream stays the lossless archive)
+  const eng = withEngrams ? engramStreamFromText(text) : null;
+  // shipped = the stream + engram layer + the leaf-commitment vector + root/weave overhead
+  const ship = stream.length / 2 + (eng ? eng.stream.length / 2 : 0) + leafHashes.length * 32 + 40;
   return {
     chainId, stream, streamVersion: STREAM_VERSION, leafHashes, merkleRoot,
     weaveChiral: quatHex(wf), weaveMirror: quatHex(wm), segCuts, segments: SEGMENTS,
+    ...(eng ? { engramStream: eng.stream, engramCount: eng.count, engramMeanJ: eng.meanJ } : {}),
     origBytes: data.length, shippedBytes: Math.round(ship),
     value: +(data.length / ship).toFixed(4),
   };
+}
+
+/** Frame list for a record — v2 `stream` or legacy `streams`/`chunkLens`. */
+function chainFrames(chain) {
+  if (typeof chain.stream === "string") return parseBiochainStream(chain.stream);
+  if (Array.isArray(chain.streams))                                  // legacy record
+    return chain.streams.map((residual, i) =>
+      ({ residual, chunkLen: chain.chunkLens[i], parityOk: true }));
+  throw new Error("no stream data on record");
+}
+/** Recreate the raw chunk byte-arrays of a chain (throws on decode failure). */
+export function recreateChunks(chain) {
+  return chainFrames(chain).map(f => {
+    if (f.parityOk === false) throw new Error("packet parity failed");
+    return decodeChunk(f.residual, f.chunkLen);
+  });
+}
+/** Recreate the full original text of a chain. */
+export function recreateText(chain) {
+  const bytes = recreateChunks(chain).flat();
+  return new TextDecoder().decode(new Uint8Array(bytes));
 }
 
 /** Recreate + verify a chain record client-side. Returns {ok, reasons}.
@@ -186,15 +290,7 @@ export async function growBiochain(text) {
 export async function verifyIntegrity(chain) {
   const reasons = [];
   try {
-    let frames;
-    if (typeof chain.stream === "string") {
-      frames = parseBiochainStream(chain.stream);
-    } else if (Array.isArray(chain.streams)) {                       // legacy record
-      frames = chain.streams.map((residual, i) =>
-        ({ residual, chunkLen: chain.chunkLens[i], parityOk: true }));
-    } else {
-      return { ok: false, reasons: ["no stream data on record"] };
-    }
+    const frames = chainFrames(chain);
     const out = [];
     for (let i = 0; i < frames.length; i++) {
       if (frames[i].parityOk === false) { reasons.push(`packet ${i} parity failed`); return { ok: false, reasons }; }
@@ -221,11 +317,59 @@ export async function verifyIntegrity(chain) {
     let wf = [1, 0, 0, 0];
     for (const c of out) wf = qn(qmul(crystalQuat(c), wf));
     if (quatHex(wf) !== chain.weaveChiral) { reasons.push("chiral weave mismatch"); return { ok: false, reasons }; }
-    reasons.push(`recreated ${out.reduce((a, c) => a + c.length, 0)} B · parity + leaves + merkle + chiral weave verified`);
+    // token engram layer must reproduce from the recreated text
+    let engNote = "";
+    if (typeof chain.engramStream === "string") {
+      const text = new TextDecoder().decode(new Uint8Array(out.flat()));
+      const eng = engramStreamFromText(text);
+      if (eng.stream !== chain.engramStream) { reasons.push("engram stream mismatch"); return { ok: false, reasons }; }
+      engNote = ` + ${eng.count} token engrams`;
+    }
+    reasons.push(`recreated ${out.reduce((a, c) => a + c.length, 0)} B · parity + leaves + merkle + chiral weave${engNote} verified`);
     return { ok: true, reasons };
   } catch (e) {
     return { ok: false, reasons: ["decode failure: " + e.message] };
   }
+}
+
+// ─── growth epochs (GROWTH/1) — extending a crystallized chain ────────────────
+// A published biochain is immutable (rules freeze it), so "growing it further"
+// mints a NEW epoch: recreate the parent losslessly (proving you hold the real
+// body, not just its hashes), append the new text, regrow. The child is a
+// full, independently verifiable chain whose record carries the parent link;
+// the parent stays frozen and tradable. Content addressing makes growth
+// deterministic: same parent + same added text → same child chainId.
+
+export const growthCommitment = (c) =>
+  ["GROWTH/1", c.parentChainId, c.chainId, c.parentMerkleRoot, c.merkleRoot, String(c.addedBytes)].join("|");
+
+/** Extend a chain with more data → a child-epoch claim (pure, no network). */
+export async function extendBiochain(parentChain, newText, opts = {}) {
+  if (!newText || !newText.length) throw new Error("Nothing to add.");
+  const integ = await verifyIntegrity(parentChain);
+  if (!integ.ok) throw new Error("Parent chain fails integrity: " + integ.reasons[0]);
+  const parentText = recreateText(parentChain);
+  const child = await growBiochain(parentText + newText, opts);
+  return {
+    ...child,
+    parentChainId: parentChain.chainId,
+    parentMerkleRoot: parentChain.merkleRoot,
+    epoch: (parentChain.epoch || 1) + 1,
+    addedBytes: child.origBytes - parentChain.origBytes,
+  };
+}
+
+/** Verify a child epoch's GROWTH/1 seal against the record's own commitment. */
+export async function verifyGrowth(chain) {
+  if (!chain.parentChainId) return { valid: false, reason: "not a growth epoch" };
+  if (!chain.growthSeal) return { valid: false, reason: "no growth certification block" };
+  const base = await verifySealBlock(chain.growthSeal);
+  if (!base.valid) return base;
+  const h = await SC.sha256Hex(growthCommitment(chain));
+  const match = h === chain.growthSeal.contentHash;
+  return { ...base, valid: base.valid && match,
+    reason: match ? `epoch ${chain.epoch} grown from ${chain.parentChainId} by ` + base.genesisId
+                  : "growth commitment does not match certification" };
 }
 
 // ─── certification (GROWN/1) + publication ───────────────────────────────────
@@ -238,6 +382,9 @@ export async function publishBiochain(uid, sealId, chain, meta = {}) {
   const reg = await readRegistrar(uid);
   if (!reg || !reg.cosmologicalId) throw new Error("Forge your Cosmological ID first.");
   const grownSeal = await signWithMinorTome(uid, sealId, grownCommitment(chain));
+  // child epoch: also seal the GROWTH/1 commitment binding parent → child
+  const growthSeal = chain.parentChainId
+    ? await signWithMinorTome(uid, sealId, growthCommitment(chain)) : null;
   const tick = await getTick();
   const rec = {
     ...chain,
@@ -245,16 +392,25 @@ export async function publishBiochain(uid, sealId, chain, meta = {}) {
     description: meta.description || "",
     growerUid: uid, growerGenesisId: reg.cosmologicalId, growerSealId: sealId,
     grownSeal,                                   // the certification block
+    ...(growthSeal ? { growthSeal } : {}),
     ownerUid: uid, ownerGenesisId: reg.cosmologicalId,
-    lineage: [{ event: "grown", uid, genesisId: reg.cosmologicalId, tick: tick.token, at: new Date().toISOString() }],
+    lineage: [{
+      event: chain.parentChainId ? "extended" : "grown",
+      uid, genesisId: reg.cosmologicalId, tick: tick.token, at: new Date().toISOString(),
+      ...(chain.parentChainId ? { parentChainId: chain.parentChainId, epoch: chain.epoch } : {}),
+    }],
     lastTransferId: null,
     status: meta.listed ? "listed" : "grown",
     tickToken: tick.token,
     createdAt: new Date().toISOString(),
   };
   await setDocument(`biochains/${chain.chainId}`, rec);
-  await addToCollection("chronicles", { kind: "biomesh.grown", uid, chainId: chain.chainId,
-    genesisId: reg.cosmologicalId, sealId, merkleRoot: chain.merkleRoot, tickToken: tick.token });
+  await addToCollection("chronicles", {
+    kind: chain.parentChainId ? "biomesh.extended" : "biomesh.grown",
+    uid, chainId: chain.chainId, genesisId: reg.cosmologicalId, sealId,
+    merkleRoot: chain.merkleRoot, tickToken: tick.token,
+    ...(chain.parentChainId ? { parentChainId: chain.parentChainId, epoch: chain.epoch } : {}),
+  });
   return rec;
 }
 
@@ -277,6 +433,106 @@ export const getBiochain = (chainId) => getDocument(`biochains/${chainId}`);
 export async function setListing(uid, chainId, listed) {
   await updateDocument(`biochains/${chainId}`, { status: listed ? "listed" : "grown" });
   await addToCollection("chronicles", { kind: "biomesh.listing", uid, chainId, listed });
+}
+
+// ─── codex files (CODEX/1) + chain pairing (PAIR/1) ──────────────────────────
+// A codex is the personalization seed for hyperbolic AI systems (the Engram
+// Mind Eye family): the chain's learned expectations distilled into a packet
+// program — GEAR header, PRIME entries (context → byte, count), HALT — the
+// same closed instruction set as BioChain_Enterprise/codex_engine.py. Codices
+// are content-addressed (codexHash), immutable, and PAIRED to a biochain by an
+// owner-signed PAIR/1 seal on the chain doc, so chain + codex travel together
+// through every transfer on the biomesh.
+
+/** Distill a codex from text: top-N order-2 context→byte expectations. */
+export async function deriveCodex(text, opts = {}) {
+  const order = 2, chunk = opts.chunk || 720, topN = opts.topN || 120;
+  const data = [...new TextEncoder().encode(text)];
+  if (!data.length) throw new Error("Nothing to distill.");
+  const counts = new Map();
+  let c0 = 0, c1 = 0;
+  for (const b of data) {
+    const k = ((c0 << 16) | (c1 << 8) | b);          // ctx byte-pair + next byte
+    counts.set(k, (counts.get(k) || 0) + 1);
+    c0 = c1; c1 = b;
+  }
+  const top = [...counts.entries()].sort((a, b) => b[1] - a[1] || a[0] - b[0]).slice(0, topN);
+  const packets = [packWord(1, order, [0, 0, 0, 0], chunk, 0, 0)];          // GEAR
+  for (const [k, count] of top) {
+    const ctx16 = (k >> 8) & 0xFFFF, byte = k & 0xFF;
+    packets.push(packWord(2, order, [byte >> 4, byte & 15, Math.min(count, 127), 0], ctx16, 0, 0)); // PRIME
+  }
+  packets.push(packWord(0, 0, [0, 0, 0, 0], 0, 0, 0));                       // HALT
+  const stream = packets.join("");
+  const codexHash = "CX-" + (await SC.sha256Hex(stream)).slice(0, 24);
+  return { codexHash, stream, codexVersion: "codex/1", order, chunk, entryCount: top.length };
+}
+
+/** Parse + validate a bare codex packet stream (parity, opcode discipline). */
+export function parseCodexStream(streamHex) {
+  if (streamHex.length % 16) throw new Error("codex stream not packet-aligned");
+  const words = [];
+  for (let p = 0; p < streamHex.length; p += 16) words.push(unpackPacket(streamHex.slice(p, p + 16)));
+  if (words.some(w => !w.parityOk)) throw new Error("codex packet parity failed");
+  if (!words.length || words[0].form !== 1) throw new Error("codex must open with GEAR");
+  if (words[words.length - 1].form !== 0) throw new Error("codex must end with HALT");
+  const entries = [];
+  for (const w of words.slice(1, -1)) {
+    if (w.form !== 2) throw new Error(`unknown codex opcode FORM ${w.form} — closed instruction set`);
+    const q = w.quat32;
+    entries.push({ ctx16: w.payload16, byte: (((q >>> 24) & 0xFF) << 4) | ((q >>> 16) & 0xFF), count: (q >>> 8) & 0xFF });
+  }
+  return { order: words[0].spin, chunk: words[0].payload16, entries };
+}
+
+export const codexCommitment = (c) =>
+  ["CODEX/1", c.codexHash, String(c.order), String(c.entryCount)].join("|");
+
+/** Publish a codex: seal-sign the commitment, write the immutable record. */
+export async function publishCodex(uid, sealId, codex, meta = {}) {
+  const reg = await readRegistrar(uid);
+  if (!reg || !reg.cosmologicalId) throw new Error("Forge your Cosmological ID first.");
+  parseCodexStream(codex.stream);                                    // ABI gate before write
+  const codexSeal = await signWithMinorTome(uid, sealId, codexCommitment(codex));
+  await setDocument(`biomeshCodices/${codex.codexHash}`, {
+    ...codex,
+    title: meta.title || "Untitled Codex",
+    derivedFromChainId: meta.derivedFromChainId || null,
+    creatorUid: uid, creatorGenesisId: reg.cosmologicalId, creatorSealId: sealId,
+    codexSeal, createdAt: new Date().toISOString(),
+  });
+  await addToCollection("chronicles", { kind: "biomesh.codex", uid, codexHash: codex.codexHash,
+    genesisId: reg.cosmologicalId, entryCount: codex.entryCount });
+  return codex.codexHash;
+}
+
+export const getCodex = (codexHash) => getDocument(`biomeshCodices/${codexHash}`);
+
+export const pairCommitment = (chainId, codexHash) => ["PAIR/1", chainId, codexHash].join("|");
+
+/** Pair a codex to a chain you own — both then travel together on the mesh. */
+export async function pairCodex(uid, sealId, chainId, codexHash) {
+  const chain = await getBiochain(chainId);
+  if (!chain) throw new Error("Unknown biochain.");
+  if (chain.ownerUid !== uid) throw new Error("Only the current owner may pair a codex.");
+  if (!(await getCodex(codexHash))) throw new Error("Unknown codex — publish it first.");
+  const pairSeal = await signWithMinorTome(uid, sealId, pairCommitment(chainId, codexHash));
+  await updateDocument(`biochains/${chainId}`, { pairedCodexHash: codexHash, pairSeal });
+  await addToCollection("chronicles", { kind: "biomesh.paired", uid, chainId, codexHash });
+  return true;
+}
+
+/** Verify a chain's codex pairing seal. */
+export async function verifyPair(chain) {
+  if (!chain.pairedCodexHash) return { valid: false, reason: "no codex paired" };
+  if (!chain.pairSeal) return { valid: false, reason: "pairing has no seal" };
+  const base = await verifySealBlock(chain.pairSeal);
+  if (!base.valid) return base;
+  const h = await SC.sha256Hex(pairCommitment(chain.chainId, chain.pairedCodexHash));
+  const match = h === chain.pairSeal.contentHash;
+  return { ...base, valid: base.valid && match,
+    reason: match ? `codex ${chain.pairedCodexHash} paired by ` + base.genesisId
+                  : "pairing does not match seal" };
 }
 
 // ─── free transfers (BIOMESH-XFER/1) — the lineage spine ─────────────────────

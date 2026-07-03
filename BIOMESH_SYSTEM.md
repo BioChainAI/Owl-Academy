@@ -23,6 +23,7 @@ transfers are seal-signed records that are never deleted, and every event is chr
 |---|---|---|---|---|
 | **Biochain** | `biochains/{chainId}` | listing fields only; ownership moves via accepted transfer | any signed-in user (grower) | the grown chain: one framed SHD-CCP `stream` + leaf-commitment vector + Merkle root + chiral/mirror weave + GROWN/1 certification |
 | **Transfer** | `biochainTransfers/{id}` | recipient resolves status once | current owner | free, seal-signed BIOMESH-XFER/1; the lineage spine — never deleted |
+| **Codex** | `biomeshCodices/{codexHash}` | **immutable** | any signed-in user | content-addressed personalization seed (GEAR/PRIME/HALT packet program), CODEX/1-sealed; paired to chains via PAIR/1 |
 | **Rating** | `biochainRatings/{chainId}_{uid}` | rater may revise own | any signed-in user | utility stars + recreated-ok verdict; one per user per chain (doc-id enforced) |
 | **Chronicle** | `chronicles` | append-only | services | audit trail for every grow/list/send/accept/rate |
 
@@ -48,6 +49,58 @@ root without decoding the rest. `verifyIntegrity` recreates the chunks from the
 stream and checks, in order: **per-packet parity → per-chunk leaf → rebuilt
 Merkle root → chiral weave**. A legacy read path still verifies any older
 `streams`/`chunkLens` record.
+
+## Growing a chain further — GROWTH/1 epochs
+
+Published chains are frozen by the rules, so growth mints a **new epoch**:
+`extendBiochain(parent, newText)` first recreates the parent **losslessly**
+(proving the grower holds the real body, not just its hashes), appends the new
+text, and regrows — producing a child chain with `parentChainId`,
+`parentMerkleRoot`, `epoch`, `addedBytes`. On publish the grower's seal signs a
+second commitment binding parent → child:
+
+```
+GROWTH/1 | parentChainId | childChainId | parentMerkleRoot | childMerkleRoot | addedBytes
+```
+
+Growth is deterministic (same parent + same added text → same child chainId),
+the parent stays frozen and tradable, and `verifyGrowth` checks the epoch seal.
+Anyone may extend a public chain — the GROWTH record and lineage make
+owner-extensions and third-party forks equally traceable, which is the point.
+
+## Token engrams — the Mind Eye face of a chain
+
+Alongside the lossless archive stream, `growBiochain` crystallizes the text as
+**token engrams**: each word token → the TTMPT XOR crystallization from
+`Library/Experimental_Systems/Engram_Mind_Eye.html`, ported **verbatim**
+(Mulberry32 PRNG, per-character panmagic 8×8 grid seeded `seed*31+charCode`,
+XOR accumulation, LSB-first byte packing). A chain's engram packet for a token
+is **bit-identical** to `crystallize(token)` on that page (verified in tests:
+`GEODESIC → 5c896a4801c9c24c` on both), so `engramStream` can pre-seed the Mind
+Eye's Hamming-distance matcher directly — the chain *is* a memory pack for the
+familiar. Fields: `engramStream` (16 hex/token), `engramCount`, `engramMeanJ`
+(mean torsion flow). The engram layer is derived data: `verifyIntegrity`
+recomputes it from the recreated text and rejects any mismatch.
+
+## Codex pairing — CODEX/1 + PAIR/1
+
+A **codex** is the personalization seed for hyperbolic AI systems: the chain's
+learned expectations distilled into a packet program in the same closed
+instruction set as `BioChain-AI/BioChain_Enterprise/codex_engine.py` — one GEAR
+header, top-N **PRIME** entries (order-2 context → byte, count), one HALT.
+`deriveCodex(text)` distills it; `parseCodexStream` is the ABI gate (parity +
+opcode discipline, enforced before any write). Codices are content-addressed
+(`CX-…`), immutable, and sealed:
+
+```
+CODEX/1 | codexHash | order | entryCount        (creator signs on publish)
+PAIR/1  | chainId   | codexHash                 (chain owner signs to pair)
+```
+
+Pairing lives on the chain doc (`pairedCodexHash` + `pairSeal`, owner-updatable
+by rule), so **chain + codex travel together through every transfer** — the
+recipient gets the memory (engrams) and the personality prior (codex) in one
+traceable unit. `verifyPair` checks the pairing seal.
 
 ## Certification — GROWN/1
 
