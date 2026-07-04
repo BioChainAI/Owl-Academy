@@ -294,3 +294,42 @@ export function renderUserSigil({
     </g>
   </svg>`;
 }
+
+// ── Seal sigil ────────────────────────────────────────────────────────────────
+// A user's unique minor-tome seal, rendered as an SHD-CCP visualization in the
+// same familiar language as the Owl Academy sigils. Deterministic: same seal →
+// byte-identical visual on every node, so an identity can be verified by eye.
+// The familiar is keyed off the sealId (each seal is unique, even for one owner);
+// the Hilbert manifold (n,k,t) is folded from the seal vector; recalled/archived
+// seals get a broken-ring overlay so a dead seal reads as dead at a glance.
+
+/** Fold a 16-hex seal vector into a deterministic Hilbert manifold {n,k,t}. */
+export function sealManifoldFromVector(sealVector) {
+  const hex = String(sealVector || '').replace(/[^0-9a-fA-F]/g, '').padEnd(16, '0');
+  const b = i => parseInt(hex.substr(i * 2, 2), 16) || 0;
+  return { n: 3 + (b(0) % 22), k: 1 + (b(1) % 16), t: 2 + (b(2) % 4) };
+}
+
+/**
+ * Render a minor-tome seal as a familiar-style SHD-CCP sigil.
+ * @param {object} seal  — { sealId, sealVector, genesisId?, tier?, status?, params? }
+ * @param {object} [opts] — { size=120 }
+ * @returns {string} SVG element string
+ */
+export function renderSealSigil(seal, opts = {}) {
+  const size = opts.size || 120;
+  const mf = sealManifoldFromVector(seal.sealVector);
+  let svg = renderUserSigil({
+    cosmologicalId: seal.sealId || seal.genesisId || 'seal',   // familiar keyed per-seal
+    manifoldConfig: mf,
+    tier: seal.tier || 'ACOLYTE',
+    size,
+  });
+  // dead-seal overlay — recall/archive reads at a glance
+  if (seal.status && seal.status !== 'active') {
+    svg = svg.replace('</svg>',
+      `<circle cx="50" cy="50" r="47" fill="none" stroke="#f87171" stroke-width="1" stroke-dasharray="2 3" opacity="0.85"/>` +
+      `<line x1="22" y1="78" x2="78" y2="22" stroke="#f87171" stroke-width="1.4" opacity="0.6"/></svg>`);
+  }
+  return svg;
+}

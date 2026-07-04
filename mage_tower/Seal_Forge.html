@@ -126,6 +126,7 @@ import {
   signWithMinorTome, verifySealBlock, verifySealAgainstContent,
   SEAL_LATTICES, MANIFOLDS,
 } from "../scripts/minor-tome.js";
+import { renderSealSigil } from "../scripts/sigil-renderer.js";
 
 const $ = (id) => document.getElementById(id);
 const esc = (s) => String(s).replace(/[&<>]/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;" }[c]));
@@ -158,12 +159,17 @@ async function loadTomes(){
     : `<option value="">— no active minor tomes —</option>`;
   $("tome-list").innerHTML = tomes.length ? tomes.map(t => `
     <div class="tome">
-      <div class="top"><span class="nm">${esc(t.label)}</span><span class="badge ${t.status}">${t.status}</span></div>
-      <div class="vec">⬡ ${t.sealVector} · ${t.sealId.slice(0,16)}…</div>
-      <div class="meta">${esc((t.params&&t.params.lattice)||"E8")} · ${esc((t.params&&t.params.manifold)||"clifford")} · coh ${(t.params&&t.params.coherency)??"–"} · tor ${(t.params&&t.params.torsion)??"–"} · tick ${esc(t.tickToken||"")}</div>
-      <div style="margin-top:.45rem;display:flex;gap:.4rem">
-        <button class="btn sm" data-recall="${t.sealId}" ${t.status!=="active"?"disabled":""}>Recall</button>
-        <button class="btn sm" data-archive="${t.sealId}" ${t.status!=="active"?"disabled":""}>Archive</button>
+      <div style="display:flex;gap:.7rem;align-items:flex-start">
+        <div style="flex:0 0 auto;width:72px;height:72px" title="Unique SHD-CCP seal sigil">${renderSealSigil(t, { size: 72 })}</div>
+        <div style="flex:1;min-width:0">
+          <div class="top"><span class="nm">${esc(t.label)}</span><span class="badge ${t.status}">${t.status}</span></div>
+          <div class="vec">⬡ ${t.sealVector} · ${t.sealId.slice(0,16)}…</div>
+          <div class="meta">${esc((t.params&&t.params.lattice)||"E8")} · ${esc((t.params&&t.params.manifold)||"clifford")} · coh ${(t.params&&t.params.coherency)??"–"} · tor ${(t.params&&t.params.torsion)??"–"} · tick ${esc(t.tickToken||"")}</div>
+          <div style="margin-top:.45rem;display:flex;gap:.4rem">
+            <button class="btn sm" data-recall="${t.sealId}" ${t.status!=="active"?"disabled":""}>Recall</button>
+            <button class="btn sm" data-archive="${t.sealId}" ${t.status!=="active"?"disabled":""}>Archive</button>
+          </div>
+        </div>
       </div>
     </div>`).join("") : `<div class="hint">No minor tomes yet — forge one to start sealing.</div>`;
   $("tome-list").querySelectorAll("[data-recall]").forEach(b => b.onclick = async () => { b.disabled = true; await recallMinorTome(UID, b.dataset.recall); loadTomes(); });

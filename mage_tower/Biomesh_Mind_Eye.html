@@ -74,8 +74,19 @@
 </div>
 
 <main id="app" class="hidden">
-  <!-- ===== left: source + API config ===== -->
+  <!-- ===== left: seal + source + API config ===== -->
   <div>
+    <div class="panel">
+      <div class="label">Operator seal — signs every logged turn</div>
+      <div style="display:flex;gap:.7rem;align-items:center">
+        <div id="sealSigil" style="flex:0 0 auto;width:72px;height:72px" title="Your unique SHD-CCP seal">…</div>
+        <div style="flex:1;min-width:0">
+          <select id="sealSel"><option value="">— no active seal —</option></select>
+          <div class="meta" id="sealMeta" style="margin-top:.35rem">Mint a seal in the Seal Forge.</div>
+        </div>
+      </div>
+    </div>
+
     <div class="panel">
       <div class="label">Data source — the familiar's memory</div>
       <select id="srcMode">
@@ -94,8 +105,14 @@
       <div class="label">Response engine</div>
       <select id="apiMode">
         <option value="none">None — pure engram retrieval (free, local)</option>
+        <option value="bart">BART / BERT (local, in-browser fill-mask)</option>
         <option value="custom">API call — bring your own AI (synthesis)</option>
       </select>
+      <div id="bartCfg" class="hidden meta" style="margin-top:.4rem">
+        <span id="bartStat" class="pill warn">BART idle</span>
+        In-browser masked-language model (Transformers.js). Fills one word into a
+        geometry template — an <b>attested</b> turn (recorded, not reproducible).
+      </div>
       <div id="apiCfg" class="hidden">
         <label class="f">Preset</label>
         <select id="apiPreset">
@@ -120,6 +137,19 @@
       <div class="label">Kernel readout</div>
       <div class="meta" id="kernel">J torsion: —<br>chiral key: —<br>nearest: —<br>engine: pure retrieval</div>
     </div>
+
+    <div class="panel">
+      <div class="label">Audit ledger — chain of thought <span class="pill ok" id="parityPill">0 turns</span></div>
+      <div class="meta" style="margin-bottom:.4rem">Every turn is logged, hash-chained (running parity), and seal-signed. <span style="color:var(--green)">green = reproducible</span> · <span style="color:#d8b4fe">violet = attested</span>.</div>
+      <div id="ledger" style="max-height:180px;overflow-y:auto;font-family:ui-monospace,monospace;font-size:.6rem;line-height:1.7"></div>
+      <div class="meta" id="parityLine" style="margin-top:.4rem">chain parity: <b id="parityHex">0x…</b></div>
+      <div style="display:flex;gap:.4rem;margin-top:.5rem;flex-wrap:wrap">
+        <button class="btn sm" onclick="exportEngram()">↓ Export engram</button>
+        <button class="btn sm am" onclick="crystallizeSession()">⬡ Crystallize → biochain</button>
+        <button class="btn sm" onclick="replaySession()">↺ Verify replay</button>
+      </div>
+      <div class="meta" id="auditMsg" style="margin-top:.4rem"></div>
+    </div>
   </div>
 
   <!-- ===== right: the eye ===== -->
@@ -140,10 +170,58 @@
 import { auth } from "../scripts/firebase/config.js";
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-auth.js";
 import { resolveTier } from "../scripts/genesis-registrar.js";
+import { listMinorTomes, signWithMinorTome } from "../scripts/minor-tome.js";
+import { renderSealSigil } from "../scripts/sigil-renderer.js";
 import * as BM from "../scripts/biomesh.js";
 
 const $ = id => document.getElementById(id);
 let uid = null, seeds = [], sourceLabel = "STRIX concept library", busy = false;
+let activeSeal = null;                    // { sealId, sealVector, ... }
+const sessionLog = [];                    // every logged turn (chain of thought)
+let sessionParity = 0x53484443 >>> 0;     // "SHDC" running hash-chain spine
+
+// ── tamper-evident chaining (same fold/rotl/xor lineage as the Mind Eye) ─────
+const rotl32 = (x, n) => ((x << n) | (x >>> (32 - n))) >>> 0;
+const hex32 = x => (x >>> 0).toString(16).toUpperCase().padStart(8, "0");
+async function sha256hex(s) {
+  const b = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(String(s)));
+  return [...new Uint8Array(b)].map(x => x.toString(16).padStart(2, "0")).join("");
+}
+function fold32Hex(hex) {                  // fold a sha256 hex into 32 bits
+  let acc = 0 >>> 0;
+  for (let i = 0; i < hex.length; i += 8) acc = (acc ^ (parseInt(hex.substr(i, 8), 16) >>> 0)) >>> 0;
+  return acc >>> 0;
+}
+async function logTurn(turn) {
+  const prev = sessionParity;
+  const contentHash = await sha256hex(JSON.stringify({
+    q: turn.query, engine: turn.engine, cls: turn.cls, ctx: turn.context, resp: turn.response,
+  }));
+  const parity = (fold32Hex(contentHash) ^ rotl32(prev, 1)) >>> 0;
+  sessionParity = parity;
+  const sig = activeSeal ? await signWithMinorTome(uid, activeSeal.sealId,
+    "COT/1|" + sessionLog.length + "|" + contentHash + "|" + hex32(parity)).catch(() => null) : null;
+  const entry = {
+    index: sessionLog.length, at: new Date().toISOString(),
+    query: turn.query, queryEngram: turn.queryEngram, engine: turn.engine, cls: turn.cls,
+    context: turn.context, contextRefs: turn.contextRefs || [], response: turn.response,
+    j: turn.j, nearest: turn.nearest, contentHash, prevParity: hex32(prev), parity: hex32(parity),
+    seal: activeSeal ? activeSeal.sealId : null, sig,
+  };
+  sessionLog.push(entry);
+  renderLedger();
+  return entry;
+}
+function renderLedger() {
+  $("parityPill").textContent = sessionLog.length + " turns";
+  $("parityHex").textContent = "0x" + hex32(sessionParity);
+  $("ledger").innerHTML = sessionLog.slice().reverse().map(e => {
+    const col = e.cls === "reproducible" ? "var(--green)" : "#d8b4fe";
+    return `<div style="border-left:2px solid ${col};padding-left:.4rem;margin-bottom:.3rem">
+      #${e.index} <span style="color:${col}">${e.cls}</span> · ${e.engine} · ${e.parity}
+      ${e.sig ? '· ✍' : ''}<br><span style="color:#7a8290">${(e.query||'').slice(0,42)}</span></div>`;
+  }).join("");
+}
 
 // ── STRIX default concept library (the Mind Eye's own, when no seed) ─────────
 const STRIX = {
@@ -179,19 +257,49 @@ $("srcMode").addEventListener("change", () => {
   if (!b) { seeds = []; sourceLabel = "STRIX concept library"; $("seedStat").textContent = "Source: STRIX concept library."; refreshMode(); }
 });
 $("apiMode").addEventListener("change", () => {
-  $("apiCfg").classList.toggle("hidden", $("apiMode").value !== "custom");
+  const m = $("apiMode").value;
+  $("apiCfg").classList.toggle("hidden", m !== "custom");
+  $("bartCfg").classList.toggle("hidden", m !== "bart");
+  if (m === "bart") initBART();
   refreshMode();
 });
 $("apiPreset").addEventListener("change", () => applyPreset($("apiPreset").value));
 $("qin").addEventListener("keydown", e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); transmit(); } });
 
 function refreshMode() {
-  const api = $("apiMode").value === "custom";
-  $("modePill").textContent = api ? "API synthesis" : "retrieval";
-  $("modePill").className = "pill " + (api ? "am" : "ok");
-  const eng = api ? ("API: " + (($("apiUrl").value || "custom").slice(0, 40))) : "pure retrieval";
+  const m = $("apiMode").value;
+  const label = m === "custom" ? "API synthesis" : m === "bart" ? "BART attested" : "retrieval";
+  $("modePill").textContent = label;
+  $("modePill").className = "pill " + (m === "none" ? "ok" : m === "bart" ? "warn" : "am");
+  const eng = m === "custom" ? ("API: " + (($("apiUrl").value || "custom").slice(0, 40)))
+            : m === "bart" ? "BART (local fill-mask)" : "pure retrieval";
   const k = $("kernel").innerHTML.split("engine:")[0];
   $("kernel").innerHTML = k + "engine: " + eng;
+}
+
+// ── BART / BERT (local, in-browser fill-mask — Transformers.js) ──────────────
+let bartPipe = null, bartReady = false, bartLoading = false;
+async function initBART() {
+  if (bartReady || bartLoading) return;
+  bartLoading = true; $("bartStat").textContent = "BART loading…"; $("bartStat").className = "pill warn";
+  try {
+    const { pipeline, env } = await import("https://cdn.jsdelivr.net/npm/@xenova/transformers@2.6.0");
+    env.allowLocalModels = false;
+    bartPipe = await pipeline("fill-mask", "Xenova/bert-base-uncased", { quantized: true });
+    bartReady = true; $("bartStat").textContent = "BART ready"; $("bartStat").className = "pill ok";
+  } catch (e) {
+    $("bartStat").textContent = "BART offline"; $("bartStat").className = "pill";
+  }
+  bartLoading = false;
+}
+async function bartSynthesize(query, context, j) {
+  const anchor = context ? context.split(/\s+/).slice(0, 6).join(" ") : "the manifold";
+  const tmpl = j > 0.05 ? `The geometry of "${anchor}" is [MASK], expanding outward.`
+            : j < -0.05 ? `"${anchor}" collapses inward, folding into a tight [MASK].`
+            : `We rest at a saddle point; "${anchor}" stays [MASK].`;
+  if (!bartReady || !bartPipe) throw new Error("BART not ready");
+  const out = await bartPipe(tmpl, { topk: 1 });
+  return (out[0] && out[0].sequence) ? out[0].sequence : tmpl;
 }
 
 function applyPreset(p) {
@@ -277,24 +385,78 @@ async function transmit() {
     answer = context; src = "STRIX concept resonance";
   }
 
-  // synthesis via API, or pure retrieval
-  if ($("apiMode").value === "custom") {
-    status.querySelector(".src") && (status.querySelector(".src").textContent = "hypersim → your AI");
+  // response engine: pure retrieval (reproducible) | BART | API (both attested)
+  const mode = $("apiMode").value;
+  let engine = seeds.length ? "biochain retrieval" : "STRIX resonance", cls = "reproducible";
+  if (mode === "custom") {
     status.innerHTML = 'your AI synthesizing <span class="dots"></span>';
-    try {
-      answer = await callAPI(text, context);
-      src = "synthesized by your AI over recalled context";
-    } catch (e) {
-      answer = "⚠ API call failed (" + e.message + "). Falling back to raw recall:\n\n" + (context || answer);
-      src = "recall (API unreachable)";
-    }
+    try { answer = await callAPI(text, context); src = "synthesized by your AI over recalled context"; engine = "API"; cls = "attested"; }
+    catch (e) { answer = "⚠ API failed (" + e.message + "). Raw recall:\n\n" + (context || answer); src = "recall (API unreachable)"; }
+  } else if (mode === "bart") {
+    status.innerHTML = 'BART crystallizing <span class="dots"></span>';
+    try { answer = await bartSynthesize(text, context, j); src = "BART fill-mask over recalled anchor"; engine = "BART"; cls = "attested"; }
+    catch (e) { answer = "⚠ BART unavailable (" + e.message + "). Raw recall:\n\n" + (context || answer); src = "recall (BART offline)"; }
   }
   status.remove();
 
-  $("kernel").innerHTML = `J torsion: <b>${j.toFixed(3)}</b><br>chiral key: <b>${engHex(grid)}</b><br>nearest: <b>${nearest}</b><br>engine: ${$("apiMode").value === "custom" ? "API synthesis" : "pure retrieval"}`;
-  const m = addMsg("strix", chipHtml, src);
+  $("kernel").innerHTML = `J torsion: <b>${j.toFixed(3)}</b><br>chiral key: <b>${engHex(grid)}</b><br>nearest: <b>${nearest}</b><br>engine: ${engine}`;
+  // LOG THE TURN — hash-chained + seal-signed (chain of thought)
+  const logged = await logTurn({
+    query: text, queryEngram: engHex(grid), engine, cls, context,
+    contextRefs: seeds.length ? BM.matchSeeds(text, seeds, 3).map(t => t.id) : [Object.keys(STRIX)[0]],
+    response: answer, j: +j.toFixed(4), nearest,
+  }).catch(() => null);
+  const clsPill = `<span class="pill ${cls === "reproducible" ? "ok" : "am"}">${cls}</span>`;
+  const m = addMsg("strix", chipHtml + clsPill + (logged ? ` <span class="chip">turn #${logged.index} · ${logged.parity}${logged.sig ? " ✍" : ""}</span>` : ""), src);
   const body = document.createElement("span"); m.appendChild(body);
   typeWriter(body, answer, () => { busy = false; $("sendBtn").disabled = false; $("qin").focus(); });
+}
+
+// ── export / crystallize / replay ────────────────────────────────────────────
+function exportEngram() {
+  if (!sessionLog.length) return void ($("auditMsg").textContent = "Nothing logged yet.");
+  const engram = {
+    format: "engram-cot/1", exportedAt: new Date().toISOString(),
+    operatorSeal: activeSeal ? { sealId: activeSeal.sealId, sealVector: activeSeal.sealVector, genesisId: activeSeal.genesisId } : null,
+    source: sourceLabel, chainParity: "0x" + hex32(sessionParity), turns: sessionLog,
+  };
+  const blob = new Blob([JSON.stringify(engram, null, 2)], { type: "application/json" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob); a.download = "engram-cot-" + Date.now() + ".json"; a.click();
+  URL.revokeObjectURL(a.href);
+  $("auditMsg").innerHTML = `<span style="color:var(--green)">Exported ${sessionLog.length} turns · parity 0x${hex32(sessionParity)}</span>`;
+}
+async function crystallizeSession() {
+  if (!sessionLog.length) return void ($("auditMsg").textContent = "Nothing to crystallize.");
+  $("auditMsg").textContent = "Crystallizing session transcript into a biochain…";
+  try {
+    const transcript = sessionLog.map(t =>
+      `[turn ${t.index} · ${t.engine} · ${t.cls} · ${t.parity}]\nQ: ${t.query}\nA: ${t.response}`).join("\n\n");
+    const chain = await BM.growBiochain(transcript);
+    if (activeSeal) {
+      await BM.publishBiochain(uid, activeSeal.sealId, chain, { title: "Mind Eye session " + new Date().toISOString().slice(0, 16) });
+      $("auditMsg").innerHTML = `<span style="color:var(--green)">Crystallized + published: ${chain.chainId} · ${chain.engramCount} engrams. Now transferable/replayable on the mesh.</span>`;
+    } else {
+      $("auditMsg").innerHTML = `<span style="color:var(--warn)">Grown ${chain.chainId} (value ${chain.value}) — select a seal to publish it.</span>`;
+    }
+  } catch (e) { $("auditMsg").innerHTML = `<span style="color:var(--bad)">${e.message}</span>`; }
+}
+async function replaySession() {
+  if (!sessionLog.length) return void ($("auditMsg").textContent = "Nothing to replay.");
+  let parity = 0x53484443 >>> 0, reproOk = 0, reproTot = 0, attested = 0, chainOk = true;
+  for (const t of sessionLog) {
+    const h = await sha256hex(JSON.stringify({ q: t.query, engine: t.engine, cls: t.cls, ctx: t.context, resp: t.response }));
+    parity = (fold32Hex(h) ^ rotl32(parity, 1)) >>> 0;
+    if (h !== t.contentHash || hex32(parity) !== t.parity) chainOk = false;   // tamper check
+    if (t.cls === "reproducible") {
+      reproTot++;
+      // re-derive the query engram — the reproducible part must match bit-for-bit
+      if (engHex(BM.engramOf(t.query)) === t.queryEngram) reproOk++;
+    } else attested++;
+  }
+  $("auditMsg").innerHTML =
+    `chain ${chainOk ? '<span style="color:var(--green)">intact ✓</span>' : '<span style="color:var(--bad)">TAMPERED ✗</span>'} · ` +
+    `reproducible ${reproOk}/${reproTot} re-derived ✓ · ${attested} attested (recorded, not re-run)`;
 }
 
 async function callAPI(query, context) {
@@ -328,10 +490,29 @@ onAuthStateChanged(auth, async user => {
     $("chainSel").innerHTML = chains.map(c => `<option value="${c.chainId}">${c.title} · ${c.origBytes} B${c.pairedCodexHash ? " ⚭codex" : ""}</option>`).join("")
       || `<option disabled>— no biochains yet; grow one in the Console —</option>`;
   } catch (_) {}
-  addMsg("strix", "I am STRIX — a familiar woven from engram memory. With no seed I answer from concept resonance; give me a biochain and I recall your own recorded knowledge; attach an AI and it will synthesize over what I recall. What do you want to see?", "familiar online");
+  // operator seals — sign every logged turn; show the unique SHD-CCP sigil
+  try {
+    const tomes = (await listMinorTomes(uid)).filter(t => t.status === "active");
+    $("sealSel").innerHTML = tomes.length
+      ? tomes.map(t => `<option value="${t.sealId}">${t.label} · ${t.sealId.slice(0,12)}…</option>`).join("")
+      : `<option value="">— no active seal (mint one in the Seal Forge) —</option>`;
+    window._seals = tomes;
+    if (tomes.length) { $("sealSel").value = tomes[0].sealId; selectSeal(tomes[0].sealId); }
+  } catch (_) {}
+  addMsg("strix", "I am STRIX — a familiar woven from engram memory. With no seed I answer from concept resonance; give me a biochain and I recall your own recorded knowledge; attach BART or an AI and it synthesizes over what I recall. Every turn is logged, hash-chained, and signed by your seal — an auditable chain of thought. What do you want to see?", "familiar online");
   refreshMode();
 });
-window.transmit = transmit; window.loadSeeds = loadSeeds; window.globalLogout = window.globalLogout || (() => location.href = "../login.html");
+function selectSeal(sealId) {
+  activeSeal = (window._seals || []).find(t => t.sealId === sealId) || null;
+  if (activeSeal) {
+    $("sealSigil").innerHTML = renderSealSigil(activeSeal, { size: 72 });
+    $("sealMeta").innerHTML = `⬡ ${activeSeal.sealVector}<br>signs each turn · recallable`;
+  } else { $("sealSigil").textContent = "◯"; $("sealMeta").textContent = "No active seal — turns log unsigned."; }
+}
+$("sealSel").addEventListener("change", () => selectSeal($("sealSel").value));
+window.transmit = transmit; window.loadSeeds = loadSeeds;
+window.exportEngram = exportEngram; window.crystallizeSession = crystallizeSession; window.replaySession = replaySession;
+window.globalLogout = window.globalLogout || (() => location.href = "../login.html");
 </script>
 </body>
 </html>
