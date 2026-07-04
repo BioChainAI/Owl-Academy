@@ -246,7 +246,8 @@
         }
         function wordToNode(hex, keepRaw) {
             const u = unpackWord(hex);
-            const displayForm = u.form <= 4 ? u.form : (u.form % 5);   // crystal form (9) → a renderable shape
+            // crystals (keepRaw) show as 8D E8; gates keep their opcode form; else geometry as-is
+            const displayForm = keepRaw ? 7 : u.form;
             const node = {
                 quaternion: u.quat32 | 0, formId: displayForm, amplitudeId: u.amp,
                 frequencyId: u.freq, spinClassId: u.spin,
@@ -274,6 +275,17 @@
         let currentChain = [];
         let chainMode = false;
 
+        // ── ENVIRONMENT / FRONTIER / FOLD / ECONOMY state ──────────────────────
+        const frontier = new Set();        // vertex indices where new biochains may attach
+        let frontierMode = false;
+        let frontierGroup = null;
+        let attachedCodex = null;          // CODEX/1 packet-stream string bound to this environment
+        // the cubic expansion grammar: singularity → axes → pivots → faces → edges → cube-cell
+        const EXPANSION_TIERS = [1, 3, 7, 6, 12, 64];
+        const FLUX = { frames: 0, folds: 0, interactions: 0 };   // free meter (simulation cost = time only)
+        const CRYST = { window: false, lastCost: 0 };            // scarce meter (paid at crystallization windows)
+        const foldState = { program: [], ledger: [], maxCells: 1200 };
+
         let moveForward = false, moveBackward = false, moveLeft = false, moveRight = false, moveUp = false, moveDown = false;
         let prevTime = performance.now();
         const velocity = new THREE.Vector3();
@@ -300,14 +312,46 @@
             regenerate: () => regenerateLattice(),
         };
 
-        const SHAPE_DATA = {
-            '-1': { name: 'Null', getGeometry: () => null },
-             0: { name: 'Tetrahedron', getGeometry: () => new THREE.TetrahedronGeometry(0.5) },
-             1: { name: 'Cube', getGeometry: () => new THREE.BoxGeometry(0.7, 0.7, 0.7) },
-             2: { name: 'Octahedron', getGeometry: () => new THREE.OctahedronGeometry(0.6) },
-             3: { name: 'Icosahedron', getGeometry: () => new THREE.IcosahedronGeometry(0.7) },
-             4: { name: 'Dodecahedron', getGeometry: () => new THREE.DodecahedronGeometry(0.7) },
+        // ── FORM nibble = kind + value (top-bit split) ─────────────────────────
+        //   bit 3 (0x8) = 0 → GEOMETRY (form 0..7): 0D point · 5 Platonic solids ·
+        //                                            4D hypercube · 8D E8 lattice
+        //   bit 3 (0x8) = 1 → GATE     (form 8..15): 8 bounded fold opcodes, each a
+        //                                            pseudo-quantum logic gate run per fold
+        //   Exception: a kernel data-crystal (crystallize() → form 9) is flagged by
+        //   node.rawWord, so it is a CRYSTAL regardless of the top bit.
+        const GEOMETRY = {
+            0: { name: '0D Point',        getGeometry: () => new THREE.SphereGeometry(0.18, 8, 6) },
+            1: { name: 'Tetrahedron',     getGeometry: () => new THREE.TetrahedronGeometry(0.5) },
+            2: { name: 'Cube',            getGeometry: () => new THREE.BoxGeometry(0.7, 0.7, 0.7) },
+            3: { name: 'Octahedron',      getGeometry: () => new THREE.OctahedronGeometry(0.6) },
+            4: { name: 'Dodecahedron',    getGeometry: () => new THREE.DodecahedronGeometry(0.7) },
+            5: { name: 'Icosahedron',     getGeometry: () => new THREE.IcosahedronGeometry(0.7) },
+            6: { name: '4D Hypercube',    getGeometry: () => new THREE.BoxGeometry(0.9, 0.9, 0.9) },
+            7: { name: '8D E8 Lattice',   getGeometry: () => new THREE.IcosahedronGeometry(0.85, 1) },
         };
+        const GATES = {
+            8:  { name: 'HALT',   sym: '⊗', desc: 'terminate the fold program' },
+            9:  { name: 'SEED',   sym: '●', desc: 'identity / anchor cell' },
+            10: { name: 'ROT',    sym: '⟳', desc: 'rotate by spin (torsional twist)' },
+            11: { name: 'XFOLD',  sym: '⊕', desc: 'XOR-fold with chain neighbour (annihilation knot)' },
+            12: { name: 'MIRROR', sym: '⇋', desc: 'phase-conjugate reflect (backprop hand)' },
+            13: { name: 'SPLIT',  sym: '⧈', desc: 'expand cell into the next cubic shell' },
+            14: { name: 'MERGE',  sym: '⧉', desc: 'fold the outer shell inward (collapse)' },
+            15: { name: 'LINK',   sym: '⛓', desc: 'entangle: bind to the nearest frontier cell' },
+        };
+        const isGateForm = (f) => (f & 0x8) !== 0;
+        const geomIdOf = (f) => f & 0x7;                          // low 3 bits pick the shape
+        function formLabel(f) { return isGateForm(f) ? `${GATES[f].sym} ${GATES[f].name} (gate)` : `${GEOMETRY[f].name} (geom)`; }
+        function geometryForForm(f) { return (GEOMETRY[f] || GEOMETRY[geomIdOf(f)]).getGeometry(); }
+        // back-compat shim: existing code paths that read SHAPE_DATA[form].name / .getGeometry
+        const SHAPE_DATA = new Proxy({}, {
+            get(_, key) {
+                if (key === '-1') return { name: 'Null', getGeometry: () => null };
+                const f = Number(key); if (Number.isNaN(f)) return undefined;
+                if (isGateForm(f)) return { name: (GATES[f] ? GATES[f].name : 'GATE'), getGeometry: () => geometryForForm(geomIdOf(f)), isGate: true };
+                return { name: (GEOMETRY[f] ? GEOMETRY[f].name : GEOMETRY[geomIdOf(f)].name), getGeometry: () => geometryForForm(f) };
+            },
+        });
 
         function init() {
             scene = new THREE.Scene();
@@ -376,6 +420,7 @@
         // ── LATTICE & NODE MANAGEMENT ──────────────────────────────────────────
         function regenerateLattice() {
             if (typeof pump !== 'undefined') { pump.on = false; pump.started = false; pump.parts = []; if (pump.tess) pump.tess.visible = false; pumpClearLinks(); }
+            if (typeof frontier !== 'undefined') { frontier.clear(); if (frontierGroup) while (frontierGroup.children.length) { const c = frontierGroup.children.pop(); c.geometry.dispose(); c.material.dispose(); } }
             if (particleSystem) scene.remove(particleSystem);
             if (wireframe) scene.remove(wireframe);
             activeNodes.forEach(node => scene.remove(node));
@@ -522,7 +567,8 @@
             const shapeDef = SHAPE_DATA[data.formId]; if (!shapeDef) return;
             const geometry = shapeDef.getGeometry(); if (!geometry) return;
             const nodeGroup = new THREE.Group();
-            const material = new THREE.MeshBasicMaterial({ color: quaternionToColor(data.quaternion), wireframe: data.isWireframe });
+            const gate = isGateForm(data.formId);
+            const material = new THREE.MeshBasicMaterial({ color: gate ? new THREE.Color(0xf5c542) : quaternionToColor(data.quaternion), wireframe: gate || data.isWireframe });
             nodeGroup.add(new THREE.Mesh(geometry, material));
             const p = particleSystem.geometry.attributes.position;
             nodeGroup.position.set(p.getX(index), p.getY(index), p.getZ(index));
@@ -544,8 +590,9 @@
             if (!activeNodes.has(index)) { activateNode(index); return; }
             const nodeGroup = activeNodes.get(index); if (!nodeGroup) return;
             const mesh = nodeGroup.children[0];
-            mesh.material.color = quaternionToColor(data.quaternion);
-            mesh.material.wireframe = data.isWireframe;
+            const gate = isGateForm(data.formId);
+            mesh.material.color = gate ? new THREE.Color(0xf5c542) : quaternionToColor(data.quaternion);
+            mesh.material.wireframe = gate || data.isWireframe;
             const scale = Math.pow(PHI, data.amplitudeId); nodeGroup.scale.set(scale, scale, scale);
             nodeGroup.rotation.y = data.spinClassId * (Math.PI / 4);
             const def = SHAPE_DATA[data.formId]; if (!def) return;
@@ -665,6 +712,7 @@
             if (intersects.length === 0) return;
             const index = intersects[0].index;
 
+            if (frontierMode) { markFrontier(index); return; }
             if (chainMode) { addToChain(index); }
 
             if (shiftPressed) { selectedNodes.has(index) ? selectedNodes.delete(index) : selectedNodes.add(index); }
@@ -706,13 +754,14 @@
         }
         function updatePacketInfoPanel(index) {
             const data = packetData.get(index); if (!data) return;
-            const shapeName = (SHAPE_DATA[data.formId] || SHAPE_DATA[-1]).name;
+            const kind = data.formId === -1 ? 'null' : data.rawWord ? 'crystal' : isGateForm(data.formId) ? 'gate' : 'geometry';
+            const shapeName = data.formId === -1 ? 'Null' : data.rawWord ? '8D E8 crystal' : formLabel(data.formId);
             const word = data.formId === -1 ? '—' : nodeToWord(data);
             const parityTxt = data.formId === -1 ? '—' : (unpackWord(word).parityOk ? '✓ valid' : '✗ broken');
             document.getElementById('pd-index').textContent = index.toLocaleString();
-            document.getElementById('pd-word').textContent = word + (data.rawWord ? ' (data)' : '');
+            document.getElementById('pd-word').textContent = word + (data.rawWord ? ' (data)' : '') + (kind === 'gate' ? ' · ' + GATES[data.formId].desc : '');
             document.getElementById('pd-quat').textContent = `0x${(data.quaternion >>> 0).toString(16).toUpperCase()}`;
-            document.getElementById('pd-form').textContent = `${data.formId} (${shapeName})`;
+            document.getElementById('pd-form').textContent = `${data.formId} · ${shapeName}`;
             document.getElementById('pd-amp').textContent = data.amplitudeId;
             document.getElementById('pd-freq').textContent = data.frequencyId;
             document.getElementById('pd-spin').textContent = data.spinClassId;
@@ -763,7 +812,7 @@
         }
         function collectSeed() {
             const nodes = [];
-            for (const [i, d] of packetData) if (d.formId >= 0) nodes.push({ i, w: nodeToWord(d) });
+            for (const [i, d] of packetData) if (d.formId >= 0) { const n = { i, w: nodeToWord(d) }; if (d.rawWord) n.r = 1; nodes.push(n); }
             nodes.sort((a, b) => a.i - b.i);
             const s = { v: 1, shape: state.latticeShape, params: currentShapeParams(), count: state.particleCount, rngSeed: state.rngSeed, nodes, chains: chains.map(c => c.slice()) };
             s.hash = '0x' + fold32(canonicalSeed(s)).toString(16).padStart(8, '0');
@@ -791,13 +840,14 @@
         }
         function regrow() {
             const s = parseSeedBox(); if (!s) return;
+            if (s.kind === 'ENVIRONMENT/1') { loadEnvironment(s); return; }   // an environment wraps a boundary seed
             const check = collectHashOf(s);
             applySeedParams(s);
             setupGenerationGUI();                 // reflect shape/params in the GUI
             regenerateLattice();                  // deterministic scaffold rebuild
             let placed = 0, missing = 0;
             for (const n of (s.nodes || [])) {
-                if (packetData.has(n.i)) { packetData.set(n.i, wordToNode(n.w, unpackWord(n.w).form > 4)); updateNodeVisuals(n.i); placed++; }
+                if (packetData.has(n.i)) { packetData.set(n.i, wordToNode(n.w, !!n.r)); updateNodeVisuals(n.i); placed++; }
                 else missing++;
             }
             chains.length = 0; (s.chains || []).forEach(c => chains.push(c.slice()));
@@ -873,7 +923,43 @@
         function setupGUI() {
             if (gui) gui.destroy();
             gui = new GUI(); gui.title("Mind's Eye · SHD-CCP");
-            setupGenerationGUI(); setupChainGUI(); setupRawGUI(); setupEnvironmentGUI();
+            setupGenerationGUI(); setupBoundaryGUI(); setupFoldGUI(); setupChainGUI(); setupRawGUI(); setupEconGUI(); setupEnvironmentGUI();
+        }
+        let boundaryFolder, foldFolder, econFolder;
+        function setupBoundaryGUI() {
+            if (boundaryFolder) boundaryFolder.destroy();
+            boundaryFolder = gui.addFolder('Boundary designer');
+            const bs = { preset: 'Small (energy-frugal · 8k)', frontierMode: false,
+                apply: () => applyBoundaryPreset(BOUNDARY_PRESETS[bs.preset]),
+                attachCodex: () => { const t = prompt('Codex source text (distilled into a CODEX/1 prior for this environment):', 'the house remembers where each stream belongs'); if (t) { attachedCodex = buildCodexFromText(t); setStatus(`Codex attached — ${attachedCodex.length / 16} packets (GEAR·PRIME·HALT).`, 'ok'); } },
+                exportEnv: () => downloadEnvironment(), buildEnv: () => envToBox(), loadEnv: () => regrowFromBox() };
+            boundaryFolder.add(bs, 'preset', Object.keys(BOUNDARY_PRESETS)).name('Boundary size');
+            boundaryFolder.add(bs, 'apply').name('◻ Apply starter size');
+            boundaryFolder.add(bs, 'frontierMode').name('Frontier mode (mark growth edge)').onChange(v => { frontierMode = v; if (v) chainMode = false; }).listen();
+            boundaryFolder.add(bs, 'attachCodex').name('Attach codex prior');
+            boundaryFolder.add(bs, 'buildEnv').name('Build ENVIRONMENT → box');
+            boundaryFolder.add(bs, 'exportEnv').name('⬇ Export environment');
+            boundaryFolder.add(bs, 'loadEnv').name('⬆ Load env / seed from box');
+        }
+        function setupFoldGUI() {
+            if (foldFolder) foldFolder.destroy();
+            foldFolder = gui.addFolder('Fold program (gates)');
+            const fs = { expansion: EXPANSION_TIERS.join(' → '), maxCells: foldState.maxCells,
+                run: () => runFoldProgram(),
+                help: () => setStatus('Program vertices with gate forms (⟳ROT ⊕XFOLD ⇋MIRROR ⧈SPLIT ⧉MERGE ⛓LINK ●SEED ⊗HALT); Run executes them in index order over the cubic expansion tiers.', 'warn') };
+            foldFolder.add(fs, 'expansion').name('Expansion tiers').disable();
+            foldFolder.add(fs, 'maxCells', 64, 4000, 64).name('Energy cap (cells)').onChange(v => foldState.maxCells = v);
+            foldFolder.add(fs, 'run').name('▶ Run fold program');
+            foldFolder.add(fs, 'help').name('? gate legend');
+        }
+        function setupEconGUI() {
+            if (econFolder) econFolder.destroy();
+            econFolder = gui.addFolder('Economy · FLUX / CRYST');
+            econFolder.add(FLUX, 'frames').name('FLUX frames (free)').listen().disable();
+            econFolder.add(FLUX, 'folds').name('FLUX folds (free)').listen().disable();
+            econFolder.add(CRYST, 'window').name('CRYST window open').listen().disable();
+            const es = { crystallize: () => crystallizeCommit() };
+            econFolder.add(es, 'crystallize').name('◈ Crystallize (spend CRYST)');
         }
         function setupGenerationGUI() {
             if (generationFolder) generationFolder.destroy();
@@ -949,8 +1035,10 @@
             editorState.amplitudeId = d.amplitudeId; editorState.frequencyId = d.frequencyId;
             editorState.spinClassId = d.spinClassId; editorState.isWireframe = d.isWireframe;
             editorGUI = gui.addFolder(`Node editor (${selectedNodes.size} selected)`);
-            const shapeNames = {}; for (const id in SHAPE_DATA) shapeNames[SHAPE_DATA[id].name] = parseInt(id);
-            editorGUI.add(editorState, 'formId', shapeNames).name('Form').onChange(applyEditorChanges);
+            const shapeNames = {};
+            for (let f = 0; f <= 7; f++) shapeNames[`${GEOMETRY[f].name} (geom)`] = f;
+            for (let f = 8; f <= 15; f++) shapeNames[`${GATES[f].sym} ${GATES[f].name} (gate)`] = f;
+            editorGUI.add(editorState, 'formId', shapeNames).name('Form (geom / gate)').onChange(applyEditorChanges);
             editorGUI.addColor(editorState, 'color').name('Quaternion (color)').onChange(applyEditorChanges);
             editorGUI.add(editorState, 'amplitudeId', 0, 7, 1).name('Amplitude').onChange(applyEditorChanges);
             editorGUI.add(editorState, 'frequencyId', 0, 31, 1).name('Frequency').onChange(applyEditorChanges);
@@ -1142,6 +1230,167 @@
             bind('frameSlider', 'input', el => { pump.on = false; document.getElementById('pumpPlay').textContent = '⏯ Pump'; pumpSimTo(+el.value); });
         }
 
+        // ══════════════════════════════════════════════════════════════════════
+        //  FRONTIER · FOLD PROGRAM (cubic expansion) · ENVIRONMENT/1 · FLUX/CRYST
+        // ══════════════════════════════════════════════════════════════════════
+
+        // ── frontier: where new biochains may attach (the growth boundary) ──────
+        function toggleFrontierMode() { frontierMode = !frontierMode; if (frontierMode) chainMode = false; setStatus(frontierMode ? 'Frontier mode — click vertices to mark the growth boundary.' : 'Frontier mode off.', frontierMode ? 'warn' : ''); }
+        function markFrontier(index) { if (frontier.has(index)) frontier.delete(index); else frontier.add(index); renderFrontier(); }
+        function renderFrontier() {
+            if (!frontierGroup) { frontierGroup = new THREE.Group(); scene.add(frontierGroup); }
+            while (frontierGroup.children.length) { const c = frontierGroup.children.pop(); c.geometry.dispose(); c.material.dispose(); }
+            const geo = new THREE.TorusGeometry(0.9, 0.16, 6, 14);
+            const mat = new THREE.MeshBasicMaterial({ color: 0xffc94a, transparent: true, opacity: 0.85, depthTest: false });
+            for (const i of frontier) { if (!packetData.has(i)) continue; const m = new THREE.Mesh(geo, mat); m.position.copy(nodePos(i)); frontierGroup.add(m); }
+        }
+
+        // ── the cubic expansion grammar + fold-gate execution ───────────────────
+        //  Each gate packet is one fold; the ordered gate packets are the program.
+        //  Bounded (≤ maxCells) + halting (finite program, HALT stops) + deterministic.
+        function foldLog(msg) { foldState.ledger.push(msg); if (foldState.ledger.length > 200) foldState.ledger.shift(); }
+        function freeIndicesNear(i, n) {
+            const out = []; const N = particleSystem.geometry.attributes.position.count;
+            for (let step = 1; step < N && out.length < n; step++) {
+                const a = i + step, b = i - step;
+                if (a < N) { const d = packetData.get(a); if (d && d.formId === -1) out.push(a); }
+                if (out.length >= n) break;
+                if (b >= 0) { const d = packetData.get(b); if (d && d.formId === -1) out.push(b); }
+            }
+            return out;
+        }
+        function programCellFromWord(index, hex) { packetData.set(index, wordToNode(hex, false)); updateNodeVisuals(index); }
+        function runFoldProgram() {
+            const program = [];
+            for (const [i, d] of packetData) if (d.formId >= 0 && isGateForm(d.formId)) program.push(i);
+            program.sort((a, b) => a - b);
+            let live = [];
+            for (const [i, d] of packetData) if (d.formId >= 0 && !isGateForm(d.formId)) live.push(i);
+            live.sort((a, b) => a - b);
+            foldState.ledger = []; FLUX.folds = 0;
+            if (!program.length) { foldLog('No gate packets — a fold program needs at least one gate.'); return { folds: 0, cells: live.length, halted: false }; }
+            if (!live.length && program.length) { live = [program[0]]; }   // seed a cell at the first gate site
+            let tier = 0, halted = false;
+            const tierRatio = () => { const cur = EXPANSION_TIERS[Math.min(tier, EXPANSION_TIERS.length - 1)] || 1; const nxt = EXPANSION_TIERS[Math.min(tier + 1, EXPANSION_TIERS.length - 1)] || cur; return Math.max(1, Math.min(8, Math.round(nxt / cur))); };
+            for (const gi of program) {
+                const g = packetData.get(gi); if (!g) continue;
+                const op = g.formId; FLUX.folds++;
+                if (op === 8) { foldLog(`fold ${FLUX.folds}: ⊗ HALT`); halted = true; break; }
+                else if (op === 9) { foldLog(`fold ${FLUX.folds}: ● SEED (${live.length} cells anchored)`); }
+                else if (op === 10) { for (const i of live) { const d = packetData.get(i); d.spinClassId = (d.spinClassId + 1) & 7; delete d.rawWord; packetData.set(i, d); updateNodeVisuals(i); } foldLog(`fold ${FLUX.folds}: ⟳ ROT (spin+1 on ${live.length} cells)`); }
+                else if (op === 11) { for (let k = 0; k < live.length; k++) { const d = packetData.get(live[k]), e = packetData.get(live[(k + 1) % live.length]); const w = (BigInt('0x' + nodeToWord(d)) ^ (BigInt('0x' + nodeToWord(e)) & 0x00FFFFFFFFFFFF00n)).toString(16).toUpperCase().padStart(16, '0'); programCellFromWord(live[k], w); } foldLog(`fold ${FLUX.folds}: ⊕ XFOLD (annihilation across ${live.length} cells)`); }
+                else if (op === 12) { for (const i of live) { const d = packetData.get(i); const { r, g2, b, a } = { r: 255 - ((d.quaternion >> 24) & 255), g2: 255 - ((d.quaternion >> 16) & 255), b: 255 - ((d.quaternion >> 8) & 255), a: d.quaternion & 255 }; d.quaternion = rgbaToQuaternion(r, g2, b, a); delete d.rawWord; packetData.set(i, d); updateNodeVisuals(i); } foldLog(`fold ${FLUX.folds}: ⇋ MIRROR (phase-conjugate ${live.length} cells)`); }
+                else if (op === 13) {
+                    const ratio = tierRatio(); tier = Math.min(tier + 1, EXPANSION_TIERS.length - 1);
+                    const added = [];
+                    for (const i of live) {
+                        if (live.length + added.length >= foldState.maxCells) { foldLog(`fold ${FLUX.folds}: ⧈ SPLIT hit energy cap (${foldState.maxCells} cells)`); break; }
+                        const kids = freeIndicesNear(i, ratio - 1);
+                        for (const c of kids) { if (live.length + added.length >= foldState.maxCells) break; const pd = packetData.get(i); const child = { ...pd, formId: geomIdOf(pd.formId), amplitudeId: Math.min(7, pd.amplitudeId + 1) }; delete child.rawWord; packetData.set(c, child); updateNodeVisuals(c); chains.push([i, c]); added.push(c); }
+                    }
+                    live = live.concat(added);
+                    foldLog(`fold ${FLUX.folds}: ⧈ SPLIT → tier ${EXPANSION_TIERS[tier]} · +${added.length} cells (${live.length} total)`);
+                }
+                else if (op === 14) {
+                    const byR = live.map(i => ({ i, r: nodePos(i).length() })).sort((a, b) => b.r - a.r);
+                    const cut = byR.slice(0, Math.floor(byR.length / 3)).map(o => o.i);
+                    cut.forEach(i => deactivateNode(i));
+                    live = live.filter(i => !cut.includes(i)); tier = Math.max(0, tier - 1);
+                    foldLog(`fold ${FLUX.folds}: ⧉ MERGE → collapsed ${cut.length} outer cells (tier ${EXPANSION_TIERS[tier]})`);
+                }
+                else if (op === 15) { let linked = 0; const fr = [...frontier]; for (const i of live) { let best = -1, bd = Infinity; const pi = nodePos(i); const pool = fr.length ? fr : live.filter(x => x !== i); for (const f of pool) { if (f === i) continue; const dd = pi.distanceToSquared(nodePos(f)); if (dd < bd) { bd = dd; best = f; } } if (best >= 0) { chains.push([i, best]); linked++; } } foldLog(`fold ${FLUX.folds}: ⛓ LINK (${linked} entanglements to ${fr.length ? 'frontier' : 'peers'})`); }
+            }
+            rebuildChains(); renderFrontier();
+            const cells = live.length;
+            let acc = ''; for (const i of [...packetData.keys()].filter(k => packetData.get(k).formId >= 0).sort((a, b) => a - b)) acc += i + ':' + nodeToWord(packetData.get(i)) + '|';
+            const hash = '0x' + fold32(acc).toString(16).padStart(8, '0');
+            foldLog(`— program ${halted ? 'HALTed' : 'ran to end'}: ${FLUX.folds} folds · ${cells} live cells · tier ${EXPANSION_TIERS[tier]} · hash ${hash}`);
+            setStatus(`Fold program: ${FLUX.folds} folds · ${cells} cells · tier ${EXPANSION_TIERS[tier]} · ${halted ? 'HALTed' : 'complete'} · hash ${hash}`, 'ok');
+            return { folds: FLUX.folds, cells, tier: EXPANSION_TIERS[tier], halted, hash };
+        }
+
+        // ── ENVIRONMENT/1: boundary + codex + pump + frontier as one loadable object ──
+        function buildCodexFromText(text, chunk = 720, topN = 64) {
+            const data = [...new TextEncoder().encode(text)]; if (!data.length) return null;
+            const counts = new Map(); let c0 = 0, c1 = 0;
+            for (const b of data) { const k = ((c0 << 16) | (c1 << 8) | b); counts.set(k, (counts.get(k) || 0) + 1); c0 = c1; c1 = b; }
+            const top = [...counts.entries()].sort((a, b) => b[1] - a[1] || a[0] - b[0]).slice(0, topN);
+            let s = packWord(1, 2, [0, 0, 0, 0], chunk, 0, 0);          // GEAR (order 2)
+            for (const [k, count] of top) { const ctx16 = (k >> 8) & 0xFFFF, byte = k & 0xFF; s += packWord(2, 2, [byte >> 4, byte & 15, Math.min(count, 127), 0], ctx16, 0, 0); }  // PRIME
+            s += packWord(0, 0, [0, 0, 0, 0], 0, 0, 0);                 // HALT
+            return s;
+        }
+        function collectEnvironment() {
+            const boundary = collectSeed();
+            const env = {
+                kind: 'ENVIRONMENT/1', v: 1, boundary,
+                codex: attachedCodex || null,
+                pump: { frames: pump.frames, breath: pump.breath, torsion: pump.torsion, reach: pump.reach, backprop: pump.backprop, expansion: EXPANSION_TIERS.join('-') },
+                frontier: [...frontier].sort((a, b) => a - b),
+            };
+            env.hash = '0x' + fold32(JSON.stringify({ b: boundary.hash, c: env.codex, p: env.pump, f: env.frontier })).toString(16).padStart(8, '0');
+            return env;
+        }
+        function syncPumpControls() {
+            const set = (id, v) => { const el = document.getElementById(id); if (el) el.value = v; };
+            set('pumpFrames', pump.frames); set('pumpBreath', pump.breath); set('pumpTorsion', pump.torsion); set('pumpReach', pump.reach);
+            const bp = document.getElementById('pumpBackprop'); if (bp) bp.checked = pump.backprop;
+        }
+        function loadEnvironment(env) {
+            if (!env || env.kind !== 'ENVIRONMENT/1' || !env.boundary) { setStatus('Not an ENVIRONMENT/1 object.', 'bad'); return; }
+            document.getElementById('seedBox').value = JSON.stringify(env.boundary);
+            regrow();                                                   // regenerate boundary + program packets + chains
+            if (env.pump) { pump.frames = env.pump.frames || 720; pump.breath = env.pump.breath ?? 0.5; pump.torsion = env.pump.torsion ?? 3; pump.reach = env.pump.reach ?? 12; pump.backprop = env.pump.backprop ?? true; syncPumpControls(); }
+            attachedCodex = env.codex || null;
+            frontier.clear(); (env.frontier || []).forEach(i => frontier.add(i)); renderFrontier();
+            setStatus(`Environment loaded — ${env.boundary.nodes.length} boundary packets · ${(env.frontier || []).length} frontier · codex ${env.codex ? 'attached' : 'none'} · hash ${env.hash}`, 'ok');
+        }
+        function envToBox() { document.getElementById('seedBox').value = JSON.stringify(collectEnvironment()); setStatus('Environment built into the seed box — Copy/Download or Regrow-as-env.', 'ok'); }
+        function downloadEnvironment() {
+            const env = collectEnvironment(); const txt = JSON.stringify(env);
+            document.getElementById('seedBox').value = txt;
+            const blob = new Blob([txt], { type: 'application/json' }); const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob); a.download = `mindseye_env_${env.hash.replace('0x', '')}.environment.json`;
+            document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(a.href);
+            setStatus(`Downloaded ${a.download}`, 'ok');
+        }
+        function regrowFromBox() {
+            const raw = document.getElementById('seedBox').value.trim(); if (!raw) { setStatus('Paste an environment or seed first.', 'warn'); return; }
+            let obj; try { obj = JSON.parse(raw); } catch (e) { setStatus('Not valid JSON: ' + e.message, 'bad'); return; }
+            if (obj && obj.kind === 'ENVIRONMENT/1') loadEnvironment(obj); else regrow();
+        }
+        const BOUNDARY_PRESETS = { 'Small (energy-frugal · 8k)': 8000, 'Medium (20k)': 20000, 'Large (40k)': 40000 };
+        function applyBoundaryPreset(n) { state.particleCount = n; if (state.latticeShape === 'Box') { state.boxSize = { x: 70, y: 70, z: 70 }; } regenerateLattice(); setupGenerationGUI(); setStatus(`Boundary preset: ${n.toLocaleString()} vertices. Program a starter area and mark its frontier.`, 'ok'); }
+
+        // ── FLUX (free) / CRYST (scarce, compute-backed) economy ────────────────
+        function crystWindowFor(frame, frames) { const tol = Math.max(1, frames * 0.02); return frame <= tol || Math.abs(frame - frames / 2) <= tol || Math.abs(frame - frames) <= tol; }
+        function updateCrystWindow() { CRYST.window = crystWindowFor(pump.frame, pump.frames); }
+        function crystEstimate() {
+            const packets = [...packetData.values()].filter(d => d.formId >= 0).length;
+            const shipped = packets * 8 + (attachedCodex ? attachedCodex.length / 2 : 0);
+            return Math.max(1, Math.ceil(packets * 1 + pump.interactions * 0.01 + shipped * 0.002 + FLUX.folds));
+        }
+        async function crystallizeCommit() {
+            updateCrystWindow();
+            if (!CRYST.window) { pumpLog(`✗ CRYST refused — outside a crystallization window. Pump to the half (${Math.round(pump.frames / 2)}) or full (${pump.frames}) cycle (tri-gear sync).`, 'sys'); return; }
+            const env = collectEnvironment(); const cost = crystEstimate(); CRYST.lastCost = cost;
+            pumpLog(`◈ CRYST commit — window OK · cost ≈ ${cost} CRYST · env ${env.hash}. FLUX simulation was free.`, 'scal');
+            try {
+                const BM = await import('../scripts/biomesh.js');
+                const { auth } = await import('../scripts/firebase/config.js');
+                const uid = auth?.currentUser?.uid;
+                if (uid) {
+                    const chain = await BM.growBiochain(JSON.stringify(env), {});
+                    const seals = await BM.listMinorTomes?.(uid).catch(() => []);
+                    const sealId = Array.isArray(seals) && seals[0] ? (seals[0].sealId || seals[0].id) : null;
+                    await BM.publishBiochain(uid, sealId, chain, { title: 'Mind\'s Eye environment ' + env.hash, kind: 'mindseye.environment', crystCost: cost });
+                    pumpLog(`◈ crystallized as biochain ${chain.chainId || ''} · ${cost} CRYST issued against compute.`, 'scal');
+                } else {
+                    pumpLog('◈ signed-out: environment ready to crystallize; export it or sign in to spend CRYST on the mesh.', 'sys');
+                }
+            } catch (err) { pumpLog('◈ CRYST commit staged locally (mesh unavailable: ' + (err?.message || err) + ').', 'sys'); }
+        }
+
         // ── RENDER LOOP ──────────────────────────────────────────────────────────
         function animate() {
             requestAnimationFrame(animate);
@@ -1192,13 +1441,13 @@
             }
 
             if (pump.on) {
-                pump.frame += pump.speed;
+                pump.frame += pump.speed; FLUX.frames += pump.speed;    // free meter: simulation costs only time
                 if (pump.frame >= pump.frames) {
                     pump.frame = pump.frames; pumpAccumulate(1, false); pumpRender(1); pump.on = false; pumpFinishCycle();
                 } else {
                     const t = pump.frame / pump.frames; pumpAccumulate(t, false); pumpRender(t);
                 }
-                updatePumpUI();
+                FLUX.interactions = pump.interactions; updateCrystWindow(); updatePumpUI();
             }
 
             prevTime = time;
@@ -1214,7 +1463,12 @@
             buildSeed, regrow, verifySeed, copySeed, downloadSeed, loadFile, publish,
             injectRawData, toggleChainMode, addToChain, finishChain,
             pumpToggle, pumpReset, pumpSpeed, pumpExport, pumpBake, pumpSimTo,
+            toggleFrontierMode, markFrontier, runFoldProgram, collectEnvironment, loadEnvironment,
+            envToBox, downloadEnvironment, regrowFromBox, applyBoundaryPreset, crystallizeCommit,
+            buildCodexFromText, isGateForm, geomIdOf, GATES, GEOMETRY, updateCrystWindow, crystEstimate,
             _state: state, _packetData: packetData, _chains: chains, _rawState: rawState, _pump: pump,
+            _frontier: frontier, _flux: FLUX, _cryst: CRYST, _fold: foldState,
+            set _codex(v) { attachedCodex = v; }, get _codex() { return attachedCodex; },
             crystallize, packWord, unpackWord, nodeToWord, wordToNode, fold32, canonicalSeed, collectSeed,
         };
 
