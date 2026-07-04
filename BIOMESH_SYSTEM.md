@@ -191,6 +191,51 @@ guarantee visually. A bottom-right "?" button opens an in-page walkthrough for
 minting one, with a link out to the full companion guide,
 `Biomesh_Language_Growing_Guide.html`.
 
+## The Mind's Eye — a 3D SHD-CCP lattice forge (`Biomesh_Mind_Eye_3D.html`)
+
+Where Language Growing is the *flat* retrieval surface, the **Mind's Eye** is the
+*spatial* one: a first-person, navigable 3D environment (Three.js, FPS +
+orbit) rendered over a lattice of tens of thousands of null nodes. You fly the
+lattice, click any vertex, and **program it into a real 64-bit SHD-CCP packet** —
+the exact canonical word from the "Body storage" section above
+(`form·parity·spin·quat32·payload16·freq·amp`), byte-identical to
+`crystallize()`/`packWord()` in `scripts/biomesh.js` (the codec is inlined so
+the page is a fully standalone mesh node, with the canonical definition still
+living in `biomesh.js`). Form drives the vertex's shape, the quaternion its
+color, amplitude a `φ^amp` scale, spin a `45°·spin` rotation — a packet you can
+*see*.
+
+**Chaining.** Chain mode links programmed packets into ordered paths that render
+as glowing polylines and stay glued to their packets as the lattice flows. A
+chain is what turns a scatter of vertices into a *lattice system*.
+
+**Raw data → packets.** Any input — UTF-8 text or hex bytes — is chunked into
+8-byte groups, each run through the canonical `crystallize()` (a real form-9
+word with valid parity), and laid along consecutive vertices, optionally
+auto-chained. Data crystallized here is bit-identical to what the Python kernel
+would produce, so "any data becomes SHD-CCP packets" in a portable way.
+
+**The seed.** The whole construction crystallizes into one compact, self-describing
+**seed**: `{ v, shape, params, count, rngSeed, nodes:[{i,w}], chains:[[i,…]],
+hash }`. It stores only what you *created* (programmed packets + chains), keyed
+by vertex index — never the empty scaffold — so it stays tiny. Because Box /
+Toroid / Cylinder generation is deterministic and the two knot shapes use the
+stored `rngSeed`, regenerating `shape+params+count+rngSeed` reproduces the exact
+vertex at every index, so index-keyed packets **regrow bit-for-bit**. A
+`fold32` hash (SHDC-seeded) fingerprints the canonical serialization; **Verify**
+recomputes it and checks every packet's parity, catching any single flipped
+character.
+
+**The shared standard / decentralized nodes.** Three layers make a seed portable:
+the packet is the canonical 64-bit word; the seed is plain hash-stamped JSON
+(Copy / Download `.latticeseed.json` / Load file — regrows offline on any node);
+and **Publish** grows the seed string into a biochain via `growBiochain` +
+`publishBiochain`, certified by the operator's seal, so it becomes tradable and
+traceable like any other biochain — another node fetches it, `recreateText`s the
+seed, and regrows the identical lattice. The build/chain/raw-data/seed/regrow
+core is 100% offline; publishing is the optional bridge onto the mesh. A "?"
+button and info link open the companion guide, `Biomesh_Mind_Eye_3D_Guide.html`.
+
 ## Certification — GROWN/1
 
 On publish, the grower signs the commitment with their **minor-tome seal**
@@ -262,6 +307,8 @@ grow, transfer, and rate); a student-facing marketplace page can reuse
 | `mage_tower/Biomesh_Console.html` | the Archon-only control panel |
 | `mage_tower/Biomesh_Language_Growing.html` | BART/biochain/API language-seed growing surface + auditable chain of thought |
 | `mage_tower/Biomesh_Language_Growing_Guide.html` | companion how-to guide (seals, sources, engines, ledger, burn) |
+| `mage_tower/Biomesh_Mind_Eye_3D.html` | 3D SHD-CCP lattice forge — program vertices, chain packets, crystallize a regrowable seed |
+| `mage_tower/Biomesh_Mind_Eye_3D_Guide.html` | companion how-to guide (navigation, packet, chains, raw data, seed, shared standard) |
 | `firestore.rules` | `biochains` / `biochainTransfers` / `biochainRatings` / `chronicles` blocks |
 | `BioChain-AI/BioChain_Enterprise/` | the measured reference stack this deploys |
 

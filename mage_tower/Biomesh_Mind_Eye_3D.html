@@ -1,0 +1,991 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Biomesh Mind's Eye — 3D Lattice — Owl Academy</title>
+    <style>
+        body { margin: 0; overflow: hidden; background:#04060a; color:#e6f2ff; font-family:'Inter',system-ui,sans-serif; }
+        canvas { display: block; }
+        kbd { background:rgba(255,255,255,.09); border:1px solid rgba(255,255,255,.18); border-radius:4px; padding:0 5px; font-family:'JetBrains Mono',monospace; font-size:11px; }
+        .panel {
+            position:absolute; padding:11px 13px; border-radius:10px;
+            background:rgba(8,14,22,.86); border:1px solid rgba(0,255,136,.28);
+            backdrop-filter:blur(9px); -webkit-backdrop-filter:blur(9px);
+            box-shadow:0 8px 30px -6px rgba(0,0,0,.7);
+        }
+        #info { top:12px; left:12px; max-width:250px; font-size:13px; line-height:1.55; }
+        #info .brand { color:#00ff88; font-weight:700; letter-spacing:.04em; font-family:'Cinzel',serif; }
+        #info .hl { color:#00d4ff; }
+        #info .count { color:#9fb4c8; font-family:'JetBrains Mono',monospace; font-size:11px; }
+        #info a { color:#7fe9c4; }
+        #packet-details {
+            bottom:12px; right:12px; max-width:270px; font-size:12px; display:none;
+            border-color:rgba(0,212,255,.4);
+        }
+        #packet-details h4 { margin:0 0 8px; color:#00d4ff; border-bottom:1px solid rgba(0,212,255,.35); padding-bottom:5px; font-family:'Cinzel',serif; font-weight:600; }
+        #packet-details p { margin:3px 0; display:flex; justify-content:space-between; gap:12px; }
+        #packet-details span { color:#9fb4c8; }
+        #packet-details strong { color:#eaf6ff; font-weight:500; font-family:'JetBrains Mono',monospace; font-size:11px; }
+        #seedPanel { bottom:12px; left:12px; width:340px; font-size:12px; }
+        #seedPanel h4 { margin:0 0 7px; color:#00ff88; font-family:'Cinzel',serif; font-weight:600; font-size:14px; display:flex; align-items:center; gap:7px; }
+        #seedPanel textarea {
+            width:100%; height:74px; resize:vertical; box-sizing:border-box;
+            background:rgba(0,0,0,.5); color:#bfe9d6; border:1px solid rgba(0,255,136,.25);
+            border-radius:6px; font-family:'JetBrains Mono',monospace; font-size:10.5px; padding:6px; margin-bottom:6px;
+        }
+        #seedPanel .row { display:flex; flex-wrap:wrap; gap:5px; margin-bottom:5px; }
+        #seedPanel button {
+            flex:1 1 auto; min-width:62px; cursor:pointer; font-size:11px; padding:5px 8px;
+            background:rgba(0,255,136,.12); color:#d9ffee; border:1px solid rgba(0,255,136,.4);
+            border-radius:6px; font-family:'Inter',sans-serif; transition:background .15s;
+        }
+        #seedPanel button:hover { background:rgba(0,255,136,.24); }
+        #seedPanel button.cyan { background:rgba(0,212,255,.1); color:#d6f6ff; border-color:rgba(0,212,255,.4); }
+        #seedPanel button.cyan:hover { background:rgba(0,212,255,.22); }
+        #seedPanel button.amber { background:rgba(245,166,35,.12); color:#ffe6c2; border-color:rgba(245,166,35,.45); }
+        #seedPanel button.amber:hover { background:rgba(245,166,35,.24); }
+        #seedStatus { font-family:'JetBrains Mono',monospace; font-size:10.5px; color:#9fb4c8; line-height:1.5; min-height:15px; word-break:break-all; }
+        #seedStatus .ok { color:#00ff88; } #seedStatus .bad { color:#f87171; } #seedStatus .warn { color:#f5a623; }
+        #helpBtn {
+            position:absolute; right:14px; bottom:200px; z-index:60; width:40px; height:40px; border-radius:50%;
+            background:rgba(0,255,136,.16); color:#d9ffee; border:1px solid rgba(0,255,136,.5);
+            font-size:1.05rem; font-weight:700; cursor:pointer; box-shadow:0 4px 18px rgba(0,0,0,.5);
+        }
+        #chainBadge { top:12px; left:274px; font-size:11px; display:none; border-color:rgba(245,166,35,.5); }
+        #chainBadge b { color:#f5a623; }
+        .lil-gui { --background-color:#0a1018; --widget-color:#12202c; --focus-color:#00ff88; }
+    </style>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Inter:wght@400;600&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div id="info" class="panel">
+        <div class="brand">🧠 Biomesh · Mind's Eye</div>
+        <div class="count" id="packet-count">Packets: …</div>
+        <em class="hl">Click canvas → FPS mode.</em><br>
+        <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> move · <kbd>Z</kbd>/<kbd>C</kbd> up/down<br>
+        <kbd>Shift</kbd>+click multi-select · <kbd>G</kbd> chain mode<br>
+        <kbd>Space</kbd> flow · <kbd>Esc</kbd> orbit<br>
+        <a href="Biomesh_Mind_Eye_3D_Guide.html" target="_blank">How this works →</a>
+    </div>
+
+    <div id="chainBadge" class="panel"><b>⛓ CHAIN MODE</b> · click vertices to link<br><span id="chainBadgeInfo"></span></div>
+
+    <div id="packet-details" class="panel">
+        <h4>SHD-CCP Packet</h4>
+        <p><span>Node index</span> <strong id="pd-index"></strong></p>
+        <p><span>64-bit word</span> <strong id="pd-word"></strong></p>
+        <p><span>Quaternion (RGBA)</span> <strong id="pd-quat"></strong></p>
+        <p><span>Form</span> <strong id="pd-form"></strong></p>
+        <p><span>Amplitude</span> <strong id="pd-amp"></strong></p>
+        <p><span>Frequency</span> <strong id="pd-freq"></strong></p>
+        <p><span>Spin class</span> <strong id="pd-spin"></strong></p>
+        <p><span>Payload / scale</span> <strong id="pd-scale"></strong></p>
+        <p><span>Parity</span> <strong id="pd-parity"></strong></p>
+    </div>
+
+    <div id="seedPanel" class="panel">
+        <h4>🌱 Lattice Seed</h4>
+        <textarea id="seedBox" spellcheck="false" placeholder="Build a seed from the lattice you've programmed, or paste a seed here and Regrow…"></textarea>
+        <div class="row">
+            <button onclick="window.ME.buildSeed()">Build</button>
+            <button class="cyan" onclick="window.ME.regrow()">Regrow</button>
+            <button onclick="window.ME.verifySeed()">Verify</button>
+        </div>
+        <div class="row">
+            <button onclick="window.ME.copySeed()">Copy</button>
+            <button onclick="window.ME.downloadSeed()">Download</button>
+            <button onclick="window.ME.loadFile()">Load file</button>
+            <button class="amber" onclick="window.ME.publish()">Publish</button>
+        </div>
+        <div id="seedStatus">Program vertices, chain them, then Build a regrowable seed.</div>
+        <input type="file" id="seedFile" accept=".json,.latticeseed,.txt" style="display:none">
+    </div>
+
+    <button id="helpBtn" title="How this works" onclick="window.open('Biomesh_Mind_Eye_3D_Guide.html','_blank')">?</button>
+
+    <canvas id="c"></canvas>
+
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+                "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/",
+                "lil-gui": "https://unpkg.com/lil-gui@0.19.1/dist/lil-gui.esm.js"
+            }
+        }
+    </script>
+
+    <script type="module">
+        import * as THREE from 'three';
+        import { PointerLockControls } from 'three/addons/controls/PointerLockControls.js';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+        import GUI from 'lil-gui';
+
+        // ══════════════════════════════════════════════════════════════════════
+        //  SHD-CCP 64-bit packet codec — byte-identical to scripts/biomesh.js
+        //  (and BioChain_Enterprise/shdccp_kernel.py). Inlined so this page is a
+        //  fully standalone node of the mesh; the canonical definition lives in
+        //  biomesh.js. Field map (MSB..LSB of the 64-bit word):
+        //    63..60 form · 59 parity · 58..56 spin · 55..24 quat32
+        //    · 23..8 payload16 · 7..3 freq · 2..0 amp
+        // ══════════════════════════════════════════════════════════════════════
+        const M64 = (1n << 64n) - 1n;
+        const PAR_MASK = M64 ^ (1n << 59n);
+        function fold64(bytes) {
+            let a = 0x9E3779B97F4A7C15n;
+            for (const b of bytes) a = (((a << 7n) | (a >> 57n)) & M64) ^ ((BigInt(b) * 0x100000001B3n) & M64);
+            return a;
+        }
+        function popcountEven(word) { let b = word & PAR_MASK, c = 0n; while (b) { c ^= (b & 1n); b >>= 1n; } return c; }
+        /** raw bytes → 16-hex crystal packet (form 9, payload = length, real parity). */
+        function crystallize(bytes) {
+            const acc = fold64(bytes);
+            const crystal32 = (acc ^ (acc >> 32n)) & 0xFFFFFFFFn;
+            let csum = 0; for (const b of bytes) csum += b; csum &= 0xFF;
+            let word = (9n << 60n) | (crystal32 << 24n) | (BigInt(bytes.length & 0xFFFF) << 8n)
+                     | (BigInt(csum >> 3) << 3n) | BigInt(csum & 7);
+            word |= (popcountEven(word) << 59n);
+            return word.toString(16).toUpperCase().padStart(16, "0");
+        }
+        /** form/spin/[r,g,b,a]/payload16/freq/amp → 16-hex word with parity. */
+        function packWord(form, spin, quatCodes, payload16, freq, amp) {
+            let q = 0n; for (const c of quatCodes) q = (q << 8n) | BigInt(c & 0xFF);
+            let word = (BigInt(form & 0xF) << 60n) | (BigInt(spin & 0x7) << 56n) | (q << 24n)
+                     | (BigInt(payload16 & 0xFFFF) << 8n) | (BigInt(freq & 0x1F) << 3n) | BigInt(amp & 0x7);
+            word |= (popcountEven(word) << 59n);
+            return word.toString(16).toUpperCase().padStart(16, "0");
+        }
+        function unpackWord(hex) {
+            const word = BigInt("0x" + hex);
+            const parityBit = (word >> 59n) & 1n;
+            const payload16 = Number((word >> 8n) & 0xFFFFn);
+            return {
+                form: Number((word >> 60n) & 0xFn), spin: Number((word >> 56n) & 0x7n),
+                quat32: Number((word >> 24n) & 0xFFFFFFFFn), payload16,
+                freq: Number((word >> 3n) & 0x1Fn), amp: Number(word & 0x7n),
+                parityOk: popcountEven(word) === parityBit,
+            };
+        }
+        /** deterministic 32-bit fold (FNV-style, SHDC-seeded) for seed hashes. */
+        function fold32(str) {
+            let h = 0x53484443 >>> 0;
+            for (let i = 0; i < str.length; i++) h = Math.imul(h ^ str.charCodeAt(i), 0x01000193) >>> 0;
+            return h >>> 0;
+        }
+        // seeded PRNG so knot lattices regrow identically from a stored rngSeed
+        function mulberry32(seed) {
+            return function () {
+                seed |= 0; seed = seed + 0x6D2B79F5 | 0;
+                let t = Math.imul(seed ^ seed >>> 15, 1 | seed);
+                t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+                return ((t ^ t >>> 14) >>> 0) / 4294967296;
+            };
+        }
+
+        // ── packet-data <-> 64-bit word mapping ────────────────────────────────
+        //  payload16: bit15 = wireframe flag, bits14..0 = round(scale*100).
+        function nodeToWord(d) {
+            if (d.rawWord) return d.rawWord;                 // data packets keep their exact crystal word
+            const { r, g, b, a } = quaternionToRgba(d.quaternion);
+            const scaleQ = Math.max(0, Math.min(0x7FFF, Math.round((d.payloadScalingFactor || 0) * 100)));
+            const payload16 = ((d.isWireframe ? 1 : 0) << 15) | scaleQ;
+            return packWord(d.formId & 0xF, d.spinClassId & 0x7, [r, g, b, a], payload16, d.frequencyId & 0x1F, d.amplitudeId & 0x7);
+        }
+        function wordToNode(hex, keepRaw) {
+            const u = unpackWord(hex);
+            const displayForm = u.form <= 4 ? u.form : (u.form % 5);   // crystal form (9) → a renderable shape
+            const node = {
+                quaternion: u.quat32 | 0, formId: displayForm, amplitudeId: u.amp,
+                frequencyId: u.freq, spinClassId: u.spin,
+                payloadScalingFactor: (u.payload16 & 0x7FFF) / 100,
+                reserved: 0, isWireframe: !!((u.payload16 >> 15) & 1), parityOk: u.parityOk,
+            };
+            if (keepRaw) node.rawWord = hex;                 // preserve exact word for data packets
+            return node;
+        }
+
+        // --- GLOBAL VARIABLES ---
+        let scene, camera, renderer, pointerLockControls, orbitControls, gui, selectionHighlight;
+        let particleSystem, wireframe, particleParams, chainGroup;
+        const raycaster = new THREE.Raycaster();
+        const mouse = new THREE.Vector2();
+        const PHI = 1.61803398875;
+
+        const packetData = new Map();
+        const activeNodes = new Map();
+        const selectedNodes = new Set();
+        let shiftPressed = false;
+
+        // chains: array of ordered index-arrays; currentChain being drawn in chain mode
+        const chains = [];
+        let currentChain = [];
+        let chainMode = false;
+
+        let moveForward = false, moveBackward = false, moveLeft = false, moveRight = false, moveUp = false, moveDown = false;
+        let prevTime = performance.now();
+        const velocity = new THREE.Vector3();
+        const direction = new THREE.Vector3();
+
+        let editorGUI, dataStreamFolder, generationFolder, environmentFolder, chainFolder, rawFolder;
+        const editorState = { color: '#00ffcc', formId: 1, amplitudeId: 0, frequencyId: 0, spinClassId: 0, scalingFactor: 0.0, parity: 0, isWireframe: true };
+        const environmentState = { isPlaying: false, nullNodeOpacity: 0.4, nullNodeColor: '#0a4a6a' };
+        const chainState = {
+            chainMode: false,
+            newChain: () => finishChain(true),
+            finishChain: () => finishChain(false),
+            undoLink: () => { if (currentChain.length) { currentChain.pop(); rebuildChains(); updateChainBadge(); } },
+            clearAll: () => { chains.length = 0; currentChain = []; rebuildChains(); updateChainBadge(); setStatus('All chains cleared.'); },
+        };
+        const rawState = { data: 'Hello, Mind\'s Eye. Any data becomes SHD-CCP packets.', mode: 'Text (UTF-8)', startIndex: 0, autoChain: true, inject: () => injectRawData() };
+        const state = {
+            latticeShape: 'Box', particleCount: 40000, rngSeed: 1337,
+            boxSize: { x: 100, y: 100, z: 100 },
+            toroidMajorRadius: 60, toroidTubeRadius: 20,
+            cylinderRadius: 40, cylinderHeight: 150,
+            lissajousScale: 50, lissajousNx: 3, lissajousNy: 5, lissajousNz: 7, lissajousTubeRadius: 10,
+            trefoilScale: 40, trefoilTubeRadius: 15,
+            regenerate: () => regenerateLattice(),
+        };
+
+        const SHAPE_DATA = {
+            '-1': { name: 'Null', getGeometry: () => null },
+             0: { name: 'Tetrahedron', getGeometry: () => new THREE.TetrahedronGeometry(0.5) },
+             1: { name: 'Cube', getGeometry: () => new THREE.BoxGeometry(0.7, 0.7, 0.7) },
+             2: { name: 'Octahedron', getGeometry: () => new THREE.OctahedronGeometry(0.6) },
+             3: { name: 'Icosahedron', getGeometry: () => new THREE.IcosahedronGeometry(0.7) },
+             4: { name: 'Dodecahedron', getGeometry: () => new THREE.DodecahedronGeometry(0.7) },
+        };
+
+        function init() {
+            scene = new THREE.Scene();
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 20000);
+            camera.position.set(0, 10, 120);
+
+            renderer = new THREE.WebGLRenderer({ canvas: document.getElementById('c'), antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(window.devicePixelRatio);
+
+            pointerLockControls = new PointerLockControls(camera, renderer.domElement);
+            scene.add(pointerLockControls.getObject());
+
+            orbitControls = new OrbitControls(camera, renderer.domElement);
+            orbitControls.enableDamping = true; orbitControls.dampingFactor = 0.1;
+            orbitControls.enabled = true; orbitControls.minDistance = 1; orbitControls.maxDistance = 5000;
+            orbitControls.enableZoom = false; orbitControls.panSpeed = 0.5;
+
+            raycaster.params.Points.threshold = 0.5;
+
+            const highlightMat = new THREE.MeshBasicMaterial({ color: 0xffff00, wireframe: true, depthTest: false });
+            selectionHighlight = new THREE.Mesh(new THREE.SphereGeometry(0.4, 16, 8), highlightMat);
+            selectionHighlight.renderOrder = 1; selectionHighlight.visible = false;
+            scene.add(selectionHighlight);
+
+            chainGroup = new THREE.Group();
+            scene.add(chainGroup);
+
+            setupGUI();
+            regenerateLattice();
+            setupEventListeners();
+            animate();
+        }
+
+        function setupEventListeners() {
+            document.getElementById('info').addEventListener('click', (e) => {
+                if (e.target.tagName === 'A') return;
+                pointerLockControls.lock();
+            });
+            pointerLockControls.addEventListener('lock', () => {
+                document.getElementById('info').style.display = 'none';
+                orbitControls.enabled = false;
+            });
+            pointerLockControls.addEventListener('unlock', () => {
+                document.getElementById('info').style.display = 'block';
+                orbitControls.enabled = true;
+                if (selectedNodes.size > 0) {
+                    const last = Array.from(selectedNodes).pop();
+                    const p = particleSystem.geometry.attributes.position;
+                    orbitControls.target.set(p.getX(last), p.getY(last), p.getZ(last));
+                } else {
+                    const dir = new THREE.Vector3(); camera.getWorldDirection(dir);
+                    orbitControls.target.copy(camera.position).add(dir.multiplyScalar(50));
+                }
+                orbitControls.update();
+            });
+            window.addEventListener('resize', onWindowResize, false);
+            renderer.domElement.addEventListener('click', onCanvasClick, false);
+            window.addEventListener('keydown', onKeyDown);
+            window.addEventListener('keyup', onKeyUp);
+            renderer.domElement.addEventListener('wheel', onCanvasWheel, { passive: false });
+            document.getElementById('seedFile').addEventListener('change', onSeedFile);
+        }
+
+        // ── LATTICE & NODE MANAGEMENT ──────────────────────────────────────────
+        function regenerateLattice() {
+            if (particleSystem) scene.remove(particleSystem);
+            if (wireframe) scene.remove(wireframe);
+            activeNodes.forEach(node => scene.remove(node));
+            packetData.clear(); activeNodes.clear(); selectedNodes.clear();
+            chains.length = 0; currentChain = [];
+            updateEditorGUI();
+
+            let positions;
+            switch (state.latticeShape) {
+                case 'Toroid': positions = generateOrderedToroidPositions(state.toroidMajorRadius, state.toroidTubeRadius); break;
+                case 'Cylinder': positions = generateOrderedCylinderPositions(state.cylinderRadius, state.cylinderHeight); break;
+                case 'Lissajous Knot': positions = generateOrderedLissajousPositions(state.particleCount); break;
+                case 'Trefoil Knot': positions = generateOrderedTrefoilPositions(state.particleCount); break;
+                default: positions = generateOrderedBoxPositions(state.boxSize); break;
+            }
+            const n = positions.length / 3;
+            document.getElementById('packet-count').innerText = `Packets: ${n.toLocaleString()}`;
+
+            const geometry = new THREE.BufferGeometry();
+            geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+            const colors = new Float32Array(n * 3);
+            const baseColor = new THREE.Color(environmentState.nullNodeColor);
+            for (let i = 0; i < n; i++) baseColor.toArray(colors, i * 3);
+            geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+
+            const material = new THREE.PointsMaterial({ size: 0.25, transparent: true, opacity: environmentState.nullNodeOpacity, vertexColors: true });
+            particleSystem = new THREE.Points(geometry, material);
+            scene.add(particleSystem);
+            createWireframe();
+
+            for (let i = 0; i < n; i++) packetData.set(i, createDefaultPacketData());
+            rebuildChains();
+
+            if (rawFolder) {
+                const c = rawFolder.controllers.find(c => c.property === 'startIndex');
+                if (c) { c.max(n - 1); if (rawState.startIndex >= n) rawState.startIndex = 0; c.updateDisplay(); }
+            }
+        }
+
+        function getSpacing(volume, count) { return Math.cbrt(volume / count); }
+        function generateOrderedBoxPositions(size) {
+            const spacing = getSpacing(size.x * size.y * size.z, state.particleCount);
+            const positions = [];
+            for (let y = -size.y / 2; y < size.y / 2; y += spacing)
+                for (let z = -size.z / 2; z < size.z / 2; z += spacing)
+                    for (let x = -size.x / 2; x < size.x / 2; x += spacing) positions.push(x, y, z);
+            return new Float32Array(positions);
+        }
+        function generateOrderedToroidPositions(majorRadius, tubeRadius) {
+            const volume = (2 * Math.PI * majorRadius) * (Math.PI * tubeRadius * tubeRadius);
+            const spacing = getSpacing(volume, state.particleCount);
+            const positions = []; const tubeRadiusSq = tubeRadius * tubeRadius; const bb = majorRadius + tubeRadius;
+            for (let y = -tubeRadius; y < tubeRadius; y += spacing)
+                for (let z = -bb; z < bb; z += spacing)
+                    for (let x = -bb; x < bb; x += spacing) {
+                        const d = Math.sqrt(x * x + z * z);
+                        if (d > 0) {
+                            const dx = x - (x / d) * majorRadius, dz = z - (z / d) * majorRadius;
+                            if (dx * dx + dz * dz + y * y < tubeRadiusSq) positions.push(x, y, z);
+                        }
+                    }
+            return new Float32Array(positions);
+        }
+        function generateOrderedCylinderPositions(radius, height) {
+            const spacing = getSpacing(Math.PI * radius * radius * height, state.particleCount);
+            const positions = []; const rSq = radius * radius; const hh = height / 2;
+            for (let y = -hh; y < hh; y += spacing)
+                for (let z = -radius; z < radius; z += spacing)
+                    for (let x = -radius; x < radius; x += spacing) if (x * x + z * z < rSq) positions.push(x, y, z);
+            return new Float32Array(positions);
+        }
+        const lissajousPoint = (t, s, nx, ny, nz) => new THREE.Vector3(s * Math.cos(nx * t), s * Math.sin(ny * t), s * Math.cos(nz * t));
+        const lissajousDerivative = (t, s, nx, ny, nz) => new THREE.Vector3(-s * nx * Math.sin(nx * t), s * ny * Math.cos(ny * t), -s * nz * Math.sin(nz * t));
+        const lissajousSecondDerivative = (t, s, nx, ny, nz) => new THREE.Vector3(-s * nx * nx * Math.cos(nx * t), -s * ny * ny * Math.sin(ny * t), -s * nz * nz * Math.cos(nz * t));
+        const trefoilPoint = (t, s) => new THREE.Vector3(s * (Math.sin(t) + 2 * Math.sin(2 * t)), s * (Math.cos(t) - 2 * Math.cos(2 * t)), s * (-Math.sin(3 * t)));
+        const trefoilDerivative = (t, s) => new THREE.Vector3(s * (Math.cos(t) + 4 * Math.cos(2 * t)), s * (-Math.sin(t) + 4 * Math.sin(2 * t)), s * (-3 * Math.cos(3 * t)));
+        const trefoilSecondDerivative = (t, s) => new THREE.Vector3(s * (-Math.sin(t) - 8 * Math.sin(2 * t)), s * (-Math.cos(t) + 8 * Math.cos(2 * t)), s * (9 * Math.sin(3 * t)));
+        function knotFrame(p, pp, ppp, r, v) {
+            const T = pp.clone().normalize();
+            const N = ppp.clone().projectOnPlane(T).normalize();
+            const B = new THREE.Vector3().crossVectors(T, N);
+            return p.clone().add(N.multiplyScalar(r * Math.cos(v)).add(B.multiplyScalar(r * Math.sin(v))));
+        }
+        function generateOrderedLissajousPositions(count) {
+            const positions = []; particleParams = [];
+            const rng = mulberry32(state.rngSeed);          // deterministic → regrowable
+            const { lissajousScale: s, lissajousNx: nx, lissajousNy: ny, lissajousNz: nz, lissajousTubeRadius: tr } = state;
+            for (let i = 0; i < count; i++) {
+                const u = rng() * 2 * Math.PI, v = rng() * 2 * Math.PI, r = rng() * tr;
+                const fp = knotFrame(lissajousPoint(u, s, nx, ny, nz), lissajousDerivative(u, s, nx, ny, nz), lissajousSecondDerivative(u, s, nx, ny, nz), r, v);
+                positions.push(fp.x, fp.y, fp.z); particleParams.push({ u, v, r });
+            }
+            return new Float32Array(positions);
+        }
+        function generateOrderedTrefoilPositions(count) {
+            const positions = []; particleParams = [];
+            const rng = mulberry32(state.rngSeed);
+            const { trefoilScale: s, trefoilTubeRadius: tr } = state;
+            for (let i = 0; i < count; i++) {
+                const u = rng() * 2 * Math.PI, v = rng() * 2 * Math.PI, r = rng() * tr;
+                const fp = knotFrame(trefoilPoint(u, s), trefoilDerivative(u, s), trefoilSecondDerivative(u, s), r, v);
+                positions.push(fp.x, fp.y, fp.z); particleParams.push({ u, v, r });
+            }
+            return new Float32Array(positions);
+        }
+
+        function createWireframe() {
+            if (wireframe) scene.remove(wireframe);
+            let geom;
+            switch (state.latticeShape) {
+                case 'Toroid': geom = new THREE.TorusGeometry(state.toroidMajorRadius, state.toroidTubeRadius, 16, 100); break;
+                case 'Cylinder': geom = new THREE.CylinderGeometry(state.cylinderRadius, state.cylinderRadius, state.cylinderHeight, 32); break;
+                case 'Lissajous Knot': {
+                    const pts = []; const { lissajousScale: s, lissajousNx: nx, lissajousNy: ny, lissajousNz: nz } = state;
+                    for (let i = 0; i <= 200; i++) pts.push(lissajousPoint((i / 200) * 2 * Math.PI, s, nx, ny, nz));
+                    geom = new THREE.BufferGeometry().setFromPoints(pts); break;
+                }
+                case 'Trefoil Knot': {
+                    const pts = []; const { trefoilScale: s } = state;
+                    for (let i = 0; i <= 200; i++) pts.push(trefoilPoint((i / 200) * 2 * Math.PI, s));
+                    geom = new THREE.BufferGeometry().setFromPoints(pts); break;
+                }
+                default: geom = new THREE.BoxGeometry(state.boxSize.x, state.boxSize.y, state.boxSize.z); break;
+            }
+            if (state.latticeShape === 'Lissajous Knot' || state.latticeShape === 'Trefoil Knot') {
+                wireframe = new THREE.Line(geom, new THREE.LineBasicMaterial({ color: 0x00aaff, transparent: true, opacity: 0.5 }));
+            } else {
+                wireframe = new THREE.Mesh(geom, new THREE.MeshBasicMaterial({ color: 0x00aaff, wireframe: true, transparent: true, opacity: 0.18 }));
+                if (state.latticeShape === 'Toroid') wireframe.rotation.x = Math.PI / 2;
+            }
+            scene.add(wireframe);
+        }
+
+        function setPointVisibility(index, visible) {
+            const colors = particleSystem.geometry.attributes.color;
+            const baseColor = new THREE.Color(environmentState.nullNodeColor);
+            if (visible) colors.setXYZ(index, baseColor.r, baseColor.g, baseColor.b);
+            else colors.setXYZ(index, 0, 0, 0);
+            colors.needsUpdate = true;
+        }
+        function activateNode(index) {
+            const data = packetData.get(index);
+            if (!data || activeNodes.has(index) || data.formId === -1) return;
+            const shapeDef = SHAPE_DATA[data.formId]; if (!shapeDef) return;
+            const geometry = shapeDef.getGeometry(); if (!geometry) return;
+            const nodeGroup = new THREE.Group();
+            const material = new THREE.MeshBasicMaterial({ color: quaternionToColor(data.quaternion), wireframe: data.isWireframe });
+            nodeGroup.add(new THREE.Mesh(geometry, material));
+            const p = particleSystem.geometry.attributes.position;
+            nodeGroup.position.set(p.getX(index), p.getY(index), p.getZ(index));
+            const scale = Math.pow(PHI, data.amplitudeId); nodeGroup.scale.set(scale, scale, scale);
+            nodeGroup.rotation.y = data.spinClassId * (Math.PI / 4);
+            activeNodes.set(index, nodeGroup); scene.add(nodeGroup); setPointVisibility(index, false);
+        }
+        function deactivateNode(index) {
+            if (activeNodes.has(index)) {
+                const node = activeNodes.get(index); scene.remove(node);
+                node.traverse(c => { if (c.geometry) c.geometry.dispose(); if (c.material) c.material.dispose(); });
+                activeNodes.delete(index);
+            }
+            packetData.set(index, createDefaultPacketData()); setPointVisibility(index, true);
+        }
+        function updateNodeVisuals(index) {
+            const data = packetData.get(index);
+            if (!data || data.formId === -1) { deactivateNode(index); return; }
+            if (!activeNodes.has(index)) { activateNode(index); return; }
+            const nodeGroup = activeNodes.get(index); if (!nodeGroup) return;
+            const mesh = nodeGroup.children[0];
+            mesh.material.color = quaternionToColor(data.quaternion);
+            mesh.material.wireframe = data.isWireframe;
+            const scale = Math.pow(PHI, data.amplitudeId); nodeGroup.scale.set(scale, scale, scale);
+            nodeGroup.rotation.y = data.spinClassId * (Math.PI / 4);
+            const def = SHAPE_DATA[data.formId]; if (!def) return;
+            const g = def.getGeometry(); if (!g) { deactivateNode(index); return; }
+            mesh.geometry.dispose(); mesh.geometry = g;
+        }
+
+        function createDefaultPacketData() { return { quaternion: rgbaToQuaternion(100, 150, 255, 242), formId: -1, amplitudeId: 0, reserved: 0, frequencyId: 0, spinClassId: 0, payloadScalingFactor: 0.0, isWireframe: true }; }
+        function rgbaToQuaternion(r, g, b, a) { return (r << 24) | (g << 16) | (b << 8) | a; }
+        function quaternionToRgba(q) { return { r: (q >> 24) & 0xFF, g: (q >> 16) & 0xFF, b: (q >> 8) & 0xFF, a: q & 0xFF }; }
+        function quaternionToColor(q) { const { r, g, b } = quaternionToRgba(q); return new THREE.Color(r / 255, g / 255, b / 255); }
+
+        // ── CHAINING ───────────────────────────────────────────────────────────
+        function programIfNull(index) {
+            const d = packetData.get(index);
+            if (!d || d.formId !== -1) return;
+            const color = new THREE.Color(editorState.color);
+            const { a } = quaternionToRgba(d.quaternion);
+            d.quaternion = rgbaToQuaternion(color.r * 255, color.g * 255, color.b * 255, a);
+            d.formId = parseInt(editorState.formId); d.amplitudeId = editorState.amplitudeId;
+            d.frequencyId = editorState.frequencyId; d.spinClassId = editorState.spinClassId;
+            d.isWireframe = editorState.isWireframe;
+            packetData.set(index, d); updateNodeVisuals(index);
+        }
+        function addToChain(index) {
+            programIfNull(index);                       // chain links are always real packets
+            if (currentChain[currentChain.length - 1] === index) return;
+            currentChain.push(index);
+            rebuildChains(); updateChainBadge();
+        }
+        function finishChain(startNew) {
+            if (currentChain.length >= 2) chains.push(currentChain.slice());
+            currentChain = [];
+            rebuildChains(); updateChainBadge();
+            setStatus(`Chains: ${chains.length}. ${startNew ? 'Started a new chain.' : 'Chain finished.'}`);
+        }
+        function nodePos(index) {
+            const p = particleSystem.geometry.attributes.position;
+            return new THREE.Vector3(p.getX(index), p.getY(index), p.getZ(index));
+        }
+        function chainColor(i) { const h = (fold32('chain' + i) % 360) / 360; return new THREE.Color().setHSL(h, 0.85, 0.6); }
+        function rebuildChains() {
+            while (chainGroup.children.length) {
+                const c = chainGroup.children.pop();
+                if (c.geometry) c.geometry.dispose(); if (c.material) c.material.dispose();
+            }
+            const draw = (idxs, color, opacity) => {
+                if (!particleSystem || idxs.length < 2) return;
+                const pts = idxs.filter(i => packetData.has(i)).map(nodePos);
+                if (pts.length < 2) return;
+                const geom = new THREE.BufferGeometry().setFromPoints(pts);
+                chainGroup.add(new THREE.Line(geom, new THREE.LineBasicMaterial({ color, transparent: true, opacity, depthTest: false })));
+            };
+            chains.forEach((c, i) => draw(c, chainColor(i), 0.9));
+            draw(currentChain, new THREE.Color(0xf5a623), 0.95);
+        }
+        function updateChainLinePositions() {   // during flow, keep lines glued to moving nodes
+            let k = 0;
+            const set = (idxs) => {
+                if (idxs.length < 2) return;
+                const pts = idxs.filter(i => packetData.has(i)).map(nodePos);
+                const line = chainGroup.children[k++]; if (!line || pts.length < 2) return;
+                line.geometry.setFromPoints(pts);
+            };
+            chains.forEach(set); if (currentChain.length >= 2) set(currentChain);
+        }
+        function updateChainBadge() {
+            const badge = document.getElementById('chainBadge');
+            badge.style.display = chainMode ? 'block' : 'none';
+            document.getElementById('chainBadgeInfo').textContent =
+                `current: ${currentChain.length} links · total chains: ${chains.length}`;
+        }
+
+        // ── UI & INTERACTION ───────────────────────────────────────────────────
+        function onKeyDown(event) {
+            if (event.target && (event.target.tagName === 'TEXTAREA' || event.target.tagName === 'INPUT')) return;
+            switch (event.code) {
+                case 'KeyW': moveForward = true; break;
+                case 'KeyA': moveLeft = true; break;
+                case 'KeyS': moveBackward = true; break;
+                case 'KeyD': moveRight = true; break;
+                case 'KeyZ': moveUp = true; break;
+                case 'KeyC': moveDown = true; break;
+                case 'ShiftLeft': shiftPressed = true; break;
+                case 'KeyG': toggleChainMode(); break;
+                case 'Enter': if (chainMode) finishChain(false); break;
+                case 'Space':
+                    environmentState.isPlaying = !environmentState.isPlaying;
+                    if (environmentFolder) environmentFolder.controllers.find(c => c.property === 'isPlaying').updateDisplay();
+                    break;
+            }
+        }
+        function onKeyUp(event) {
+            switch (event.code) {
+                case 'KeyW': moveForward = false; break;
+                case 'KeyA': moveLeft = false; break;
+                case 'KeyS': moveBackward = false; break;
+                case 'KeyD': moveRight = false; break;
+                case 'KeyZ': moveUp = false; break;
+                case 'KeyC': moveDown = false; break;
+                case 'ShiftLeft': shiftPressed = false; break;
+            }
+        }
+        function toggleChainMode() {
+            chainMode = !chainMode; chainState.chainMode = chainMode;
+            if (chainFolder) chainFolder.controllers.find(c => c.property === 'chainMode').updateDisplay();
+            updateChainBadge();
+        }
+        function onCanvasClick(event) {
+            if (pointerLockControls.isLocked) raycaster.setFromCamera({ x: 0, y: 0 }, camera);
+            else {
+                mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+                mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+                raycaster.setFromCamera(mouse, camera);
+            }
+            const intersects = raycaster.intersectObject(particleSystem);
+            if (intersects.length === 0) return;
+            const index = intersects[0].index;
+
+            if (chainMode) { addToChain(index); }
+
+            if (shiftPressed) { selectedNodes.has(index) ? selectedNodes.delete(index) : selectedNodes.add(index); }
+            else {
+                selectedNodes.clear(); selectedNodes.add(index);
+                rawState.startIndex = index;
+                if (rawFolder) rawFolder.controllers.find(c => c.property === 'startIndex').updateDisplay();
+            }
+            if (selectedNodes.size > 0) { updateSelectionHighlight(); updatePacketInfoPanel(Array.from(selectedNodes).pop()); }
+            else selectionHighlight.visible = false;
+            selectedNodes.forEach(idx => updateNodeVisuals(idx));
+            updateEditorGUI();
+        }
+        function onCanvasWheel(event) {
+            if (pointerLockControls.isLocked) return;
+            event.preventDefault();
+            const dir = new THREE.Vector3().subVectors(camera.position, orbitControls.target);
+            const distance = dir.length(); const move = distance * 0.05;
+            if (event.deltaY > 0) { if (distance + move < orbitControls.maxDistance) camera.position.addScaledVector(dir.normalize(), move); }
+            else { if (distance - move > orbitControls.minDistance) camera.position.addScaledVector(dir.normalize(), -move); }
+        }
+        function updateSelectionHighlight() {
+            if (selectedNodes.size === 0) { selectionHighlight.visible = false; return; }
+            const last = Array.from(selectedNodes).pop();
+            const data = packetData.get(last); const p = particleSystem.geometry.attributes.position;
+            selectionHighlight.position.set(p.getX(last), p.getY(last), p.getZ(last));
+            if (data && data.formId !== -1 && SHAPE_DATA[data.formId]) {
+                const g = SHAPE_DATA[data.formId].getGeometry();
+                if (g) {
+                    selectionHighlight.geometry.dispose(); selectionHighlight.geometry = g;
+                    const scale = Math.pow(PHI, data.amplitudeId) * 1.05; selectionHighlight.scale.set(scale, scale, scale);
+                    selectionHighlight.rotation.y = data.spinClassId * (Math.PI / 4);
+                }
+            } else {
+                selectionHighlight.geometry.dispose(); selectionHighlight.geometry = new THREE.SphereGeometry(0.4, 16, 8);
+                selectionHighlight.scale.set(1, 1, 1); selectionHighlight.rotation.y = 0;
+            }
+            selectionHighlight.visible = true;
+        }
+        function updatePacketInfoPanel(index) {
+            const data = packetData.get(index); if (!data) return;
+            const shapeName = (SHAPE_DATA[data.formId] || SHAPE_DATA[-1]).name;
+            const word = data.formId === -1 ? '—' : nodeToWord(data);
+            const parityTxt = data.formId === -1 ? '—' : (unpackWord(word).parityOk ? '✓ valid' : '✗ broken');
+            document.getElementById('pd-index').textContent = index.toLocaleString();
+            document.getElementById('pd-word').textContent = word + (data.rawWord ? ' (data)' : '');
+            document.getElementById('pd-quat').textContent = `0x${(data.quaternion >>> 0).toString(16).toUpperCase()}`;
+            document.getElementById('pd-form').textContent = `${data.formId} (${shapeName})`;
+            document.getElementById('pd-amp').textContent = data.amplitudeId;
+            document.getElementById('pd-freq').textContent = data.frequencyId;
+            document.getElementById('pd-spin').textContent = data.spinClassId;
+            document.getElementById('pd-scale').textContent = data.payloadScalingFactor;
+            document.getElementById('pd-parity').textContent = parityTxt;
+            document.getElementById('packet-details').style.display = 'block';
+        }
+
+        // ── RAW DATA → SHD-CCP PACKETS ──────────────────────────────────────────
+        function parseRawBytes() {
+            if (rawState.mode === 'Hex bytes') {
+                return rawState.data.trim().split(/[\s,]+/).filter(Boolean)
+                    .flatMap(tok => { const t = tok.replace(/^0x/i, ''); const out = []; for (let i = 0; i < t.length; i += 2) out.push(parseInt(t.substr(i, 2), 16) || 0); return out; });
+            }
+            return Array.from(new TextEncoder().encode(rawState.data));
+        }
+        function injectRawData() {
+            const bytes = parseRawBytes();
+            if (!bytes.length) { setStatus('No data to inject.', 'warn'); return; }
+            const chunkSize = 8; let idx = rawState.startIndex; const laid = [];
+            for (let i = 0; i < bytes.length; i += chunkSize) {
+                if (!packetData.has(idx)) break;
+                const chunk = bytes.slice(i, i + chunkSize);
+                const word = crystallize(chunk);         // real form-9 crystal packet
+                packetData.set(idx, wordToNode(word, true));
+                updateNodeVisuals(idx); laid.push(idx); idx++;
+            }
+            if (rawState.autoChain && laid.length >= 2) chains.push(laid);
+            rebuildChains();
+            const bits = laid.length * 64;
+            setStatus(`Injected ${laid.length} packets (${bytes.length} bytes → ${bits} bits) from index ${rawState.startIndex}.${rawState.autoChain && laid.length >= 2 ? ' Auto-chained.' : ''}`, 'ok');
+        }
+
+        // ── SEED: BUILD / REGROW / VERIFY / IO ─────────────────────────────────
+        function currentShapeParams() {
+            switch (state.latticeShape) {
+                case 'Toroid': return { toroidMajorRadius: state.toroidMajorRadius, toroidTubeRadius: state.toroidTubeRadius };
+                case 'Cylinder': return { cylinderRadius: state.cylinderRadius, cylinderHeight: state.cylinderHeight };
+                case 'Lissajous Knot': return { lissajousScale: state.lissajousScale, lissajousNx: state.lissajousNx, lissajousNy: state.lissajousNy, lissajousNz: state.lissajousNz, lissajousTubeRadius: state.lissajousTubeRadius };
+                case 'Trefoil Knot': return { trefoilScale: state.trefoilScale, trefoilTubeRadius: state.trefoilTubeRadius };
+                default: return { boxSize: { ...state.boxSize } };
+            }
+        }
+        function canonicalSeed(s) {
+            const nodes = s.nodes.slice().sort((a, b) => a.i - b.i).map(n => `${n.i}:${n.w}`).join('|');
+            const ch = s.chains.map(c => c.join(',')).join(';');
+            return `LATTICE-SEED/1|${s.shape}|${JSON.stringify(s.params)}|${s.count}|${s.rngSeed}|${nodes}|${ch}`;
+        }
+        function collectSeed() {
+            const nodes = [];
+            for (const [i, d] of packetData) if (d.formId >= 0) nodes.push({ i, w: nodeToWord(d) });
+            nodes.sort((a, b) => a.i - b.i);
+            const s = { v: 1, shape: state.latticeShape, params: currentShapeParams(), count: state.particleCount, rngSeed: state.rngSeed, nodes, chains: chains.map(c => c.slice()) };
+            s.hash = '0x' + fold32(canonicalSeed(s)).toString(16).padStart(8, '0');
+            return s;
+        }
+        function buildSeed() {
+            const s = collectSeed();
+            document.getElementById('seedBox').value = JSON.stringify(s);
+            const meanChain = s.chains.length ? (s.chains.reduce((a, c) => a + c.length, 0) / s.chains.length).toFixed(1) : 0;
+            setStatus(`Seed built — ${s.nodes.length} packets · ${s.chains.length} chains (mean ${meanChain} links) · hash ${s.hash}. ${s.nodes.length * 64} bits regrow the whole structure.`, 'ok');
+            return s;
+        }
+        function parseSeedBox() {
+            const raw = document.getElementById('seedBox').value.trim();
+            if (!raw) { setStatus('Paste or build a seed first.', 'warn'); return null; }
+            try { return JSON.parse(raw); } catch (e) { setStatus('Seed is not valid JSON: ' + e.message, 'bad'); return null; }
+        }
+        function applySeedParams(s) {
+            state.latticeShape = s.shape; state.particleCount = s.count; state.rngSeed = s.rngSeed;
+            const p = s.params || {};
+            if (p.boxSize) state.boxSize = { ...p.boxSize };
+            Object.assign(state, ['toroidMajorRadius', 'toroidTubeRadius', 'cylinderRadius', 'cylinderHeight',
+                'lissajousScale', 'lissajousNx', 'lissajousNy', 'lissajousNz', 'lissajousTubeRadius', 'trefoilScale', 'trefoilTubeRadius']
+                .reduce((o, k) => (k in p ? (o[k] = p[k], o) : o), {}));
+        }
+        function regrow() {
+            const s = parseSeedBox(); if (!s) return;
+            const check = collectHashOf(s);
+            applySeedParams(s);
+            setupGenerationGUI();                 // reflect shape/params in the GUI
+            regenerateLattice();                  // deterministic scaffold rebuild
+            let placed = 0, missing = 0;
+            for (const n of (s.nodes || [])) {
+                if (packetData.has(n.i)) { packetData.set(n.i, wordToNode(n.w, unpackWord(n.w).form > 4)); updateNodeVisuals(n.i); placed++; }
+                else missing++;
+            }
+            chains.length = 0; (s.chains || []).forEach(c => chains.push(c.slice()));
+            currentChain = []; rebuildChains();
+            const hashTxt = s.hash ? (check === s.hash ? `hash ${s.hash} ✓` : `hash MISMATCH (${check} ≠ ${s.hash})`) : '';
+            setStatus(`Regrew ${placed} packets · ${chains.length} chains${missing ? ` · ${missing} out-of-range (count changed?)` : ''}. ${hashTxt}`,
+                (s.hash && check !== s.hash) ? 'warn' : 'ok');
+        }
+        function collectHashOf(s) {
+            const clone = { v: s.v, shape: s.shape, params: s.params, count: s.count, rngSeed: s.rngSeed, nodes: s.nodes || [], chains: s.chains || [] };
+            return '0x' + fold32(canonicalSeed(clone)).toString(16).padStart(8, '0');
+        }
+        function verifySeed() {
+            const s = parseSeedBox(); if (!s) return;
+            const recomputed = collectHashOf(s);
+            const hashOk = s.hash ? recomputed === s.hash : null;
+            let parityBad = 0, dataPk = 0;
+            for (const n of (s.nodes || [])) { const u = unpackWord(n.w); if (!u.parityOk) parityBad++; if (u.form > 4) dataPk++; }
+            const parts = [
+                `${(s.nodes || []).length} packets`, `${(s.chains || []).length} chains`, `${dataPk} data-crystals`,
+                hashOk === null ? 'no hash stored' : (hashOk ? `hash ✓ (${s.hash})` : `hash ✗ (${recomputed} ≠ ${s.hash})`),
+                parityBad ? `${parityBad} broken-parity words` : 'all parities ✓',
+            ];
+            setStatus('Verify — ' + parts.join(' · '), (hashOk === false || parityBad) ? 'bad' : 'ok');
+        }
+        function copySeed() {
+            const v = document.getElementById('seedBox').value.trim() || JSON.stringify(collectSeed());
+            document.getElementById('seedBox').value = v;
+            navigator.clipboard?.writeText(v).then(() => setStatus('Seed copied to clipboard.', 'ok'),
+                () => setStatus('Clipboard blocked — select the text box and copy manually.', 'warn'));
+        }
+        function downloadSeed() {
+            const s = collectSeed(); const txt = JSON.stringify(s, null, 0);
+            document.getElementById('seedBox').value = txt;
+            const blob = new Blob([txt], { type: 'application/json' });
+            const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+            a.download = `mindseye_${s.hash.replace('0x', '')}.latticeseed.json`;
+            document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(a.href);
+            setStatus(`Downloaded ${a.download}`, 'ok');
+        }
+        function loadFile() { document.getElementById('seedFile').click(); }
+        function onSeedFile(e) {
+            const f = e.target.files[0]; if (!f) return;
+            const r = new FileReader();
+            r.onload = () => { document.getElementById('seedBox').value = r.result; setStatus(`Loaded ${f.name}. Click Regrow to rebuild.`, 'ok'); };
+            r.readAsText(f); e.target.value = '';
+        }
+        async function publish() {
+            const s = parseSeedBox() || collectSeed();
+            document.getElementById('seedBox').value = JSON.stringify(s);
+            setStatus('Publishing seed to the mesh…', 'warn');
+            try {
+                const BM = await import('../scripts/biomesh.js');
+                const { auth } = await import('../scripts/firebase/config.js');
+                const uid = auth?.currentUser?.uid;
+                if (!uid) { setStatus('Sign in to publish. Seed is still exportable as a file/clipboard — that is the portable decentralized artifact.', 'warn'); return; }
+                const seedString = JSON.stringify(s);
+                const chain = await BM.growBiochain(seedString, {});
+                const seals = await BM.listMinorTomes?.(uid).catch(() => []);
+                const sealId = Array.isArray(seals) && seals[0] ? (seals[0].sealId || seals[0].id) : null;
+                await BM.publishBiochain(uid, sealId, chain, { title: 'Mind\'s Eye lattice ' + s.hash, kind: 'mindseye.lattice_seed' });
+                setStatus(`Published as biochain ${chain.chainId || ''} — decentralized nodes can fetch it and Regrow the identical lattice. hash ${s.hash}`, 'ok');
+            } catch (err) {
+                setStatus('Publish unavailable here (' + (err?.message || err) + '). The Download/Copy seed IS the portable standard — any node imports and regrows it offline.', 'warn');
+            }
+        }
+        function setStatus(msg, cls) {
+            const el = document.getElementById('seedStatus');
+            el.innerHTML = cls ? `<span class="${cls}">${msg}</span>` : msg;
+        }
+
+        // ── GUI ─────────────────────────────────────────────────────────────────
+        function setupGUI() {
+            if (gui) gui.destroy();
+            gui = new GUI(); gui.title("Mind's Eye · SHD-CCP");
+            setupGenerationGUI(); setupChainGUI(); setupRawGUI(); setupEnvironmentGUI();
+        }
+        function setupGenerationGUI() {
+            if (generationFolder) generationFolder.destroy();
+            generationFolder = gui.addFolder('Lattice');
+            const shapeCtrl = generationFolder.add(state, 'latticeShape', ['Box', 'Toroid', 'Cylinder', 'Lissajous Knot', 'Trefoil Knot']).name('Shape');
+            const boxF = generationFolder.addFolder('Box');
+            boxF.add(state.boxSize, 'x', 10, 500, 1).name('Width'); boxF.add(state.boxSize, 'y', 10, 500, 1).name('Height'); boxF.add(state.boxSize, 'z', 10, 500, 1).name('Depth');
+            const torF = generationFolder.addFolder('Toroid');
+            torF.add(state, 'toroidMajorRadius', 10, 250, 1).name('Major R'); torF.add(state, 'toroidTubeRadius', 1, 100, 1).name('Tube R');
+            const cylF = generationFolder.addFolder('Cylinder');
+            cylF.add(state, 'cylinderRadius', 10, 250, 1).name('Radius'); cylF.add(state, 'cylinderHeight', 10, 500, 1).name('Height');
+            const lisF = generationFolder.addFolder('Lissajous');
+            lisF.add(state, 'lissajousScale', 10, 100, 1).name('Scale'); lisF.add(state, 'lissajousNx', 1, 10, 1).name('Nx'); lisF.add(state, 'lissajousNy', 1, 10, 1).name('Ny'); lisF.add(state, 'lissajousNz', 1, 10, 1).name('Nz'); lisF.add(state, 'lissajousTubeRadius', 1, 20, 1).name('Tube R');
+            const treF = generationFolder.addFolder('Trefoil');
+            treF.add(state, 'trefoilScale', 10, 100, 1).name('Scale'); treF.add(state, 'trefoilTubeRadius', 1, 20, 1).name('Tube R');
+            const upd = (shape) => {
+                boxF.domElement.style.display = shape === 'Box' ? '' : 'none';
+                torF.domElement.style.display = shape === 'Toroid' ? '' : 'none';
+                cylF.domElement.style.display = shape === 'Cylinder' ? '' : 'none';
+                lisF.domElement.style.display = shape === 'Lissajous Knot' ? '' : 'none';
+                treF.domElement.style.display = shape === 'Trefoil Knot' ? '' : 'none';
+            };
+            shapeCtrl.onChange(upd); upd(state.latticeShape);
+            generationFolder.add(state, 'particleCount', 1000, 120000, 1000).name('Packet count');
+            generationFolder.add(state, 'rngSeed', 1, 999999, 1).name('RNG seed (knots)');
+            generationFolder.add(state, 'regenerate').name('⟳ Generate lattice');
+            generationFolder.open();
+        }
+        function setupChainGUI() {
+            if (chainFolder) chainFolder.destroy();
+            chainFolder = gui.addFolder('Chain');
+            chainFolder.add(chainState, 'chainMode').name('Chain mode (G)').onChange(v => { chainMode = v; updateChainBadge(); });
+            chainFolder.add(chainState, 'finishChain').name('Finish chain (Enter)');
+            chainFolder.add(chainState, 'newChain').name('Start new chain');
+            chainFolder.add(chainState, 'undoLink').name('Undo last link');
+            chainFolder.add(chainState, 'clearAll').name('Clear all chains');
+            chainFolder.open();
+        }
+        function setupRawGUI() {
+            if (rawFolder) rawFolder.destroy();
+            rawFolder = gui.addFolder('Raw data → packets');
+            rawFolder.add(rawState, 'data').name('Data');
+            rawFolder.add(rawState, 'mode', ['Text (UTF-8)', 'Hex bytes']).name('Interpret as');
+            const n = particleSystem ? particleSystem.geometry.attributes.position.count - 1 : 99999;
+            rawFolder.add(rawState, 'startIndex', 0, n, 1).name('Start index').listen();
+            rawFolder.add(rawState, 'autoChain').name('Auto-chain');
+            rawFolder.add(rawState, 'inject').name('⇢ Crystallize & place');
+            rawFolder.open();
+        }
+        function setupEnvironmentGUI() {
+            if (environmentFolder) environmentFolder.destroy();
+            environmentFolder = gui.addFolder('Environment');
+            environmentFolder.add(environmentState, 'isPlaying').name('Flow (Space)').listen();
+            environmentFolder.add(environmentState, 'nullNodeOpacity', 0, 1, 0.01).name('Null opacity').onChange(v => { if (particleSystem) particleSystem.material.opacity = v; });
+            environmentFolder.addColor(environmentState, 'nullNodeColor').name('Null color').onChange(v => {
+                if (!particleSystem) return;
+                const colors = particleSystem.geometry.attributes.color; const bc = new THREE.Color(v);
+                for (let i = 0; i < colors.count; i++) if (!activeNodes.has(i)) colors.setXYZ(i, bc.r, bc.g, bc.b);
+                colors.needsUpdate = true;
+            });
+        }
+        function updateEditorGUI() {
+            if (editorGUI) { editorGUI.destroy(); editorGUI = null; }
+            if (selectedNodes.size === 0) {
+                document.getElementById('packet-details').style.display = 'none';
+                if (selectionHighlight) selectionHighlight.visible = false; return;
+            }
+            const first = selectedNodes.values().next().value;
+            const d = packetData.get(first); if (!d) return;
+            const { r, g, b } = quaternionToRgba(d.quaternion);
+            editorState.color = new THREE.Color(r / 255, g / 255, b / 255).getStyle();
+            editorState.formId = d.formId === -1 ? 1 : d.formId;
+            editorState.amplitudeId = d.amplitudeId; editorState.frequencyId = d.frequencyId;
+            editorState.spinClassId = d.spinClassId; editorState.isWireframe = d.isWireframe;
+            editorGUI = gui.addFolder(`Node editor (${selectedNodes.size} selected)`);
+            const shapeNames = {}; for (const id in SHAPE_DATA) shapeNames[SHAPE_DATA[id].name] = parseInt(id);
+            editorGUI.add(editorState, 'formId', shapeNames).name('Form').onChange(applyEditorChanges);
+            editorGUI.addColor(editorState, 'color').name('Quaternion (color)').onChange(applyEditorChanges);
+            editorGUI.add(editorState, 'amplitudeId', 0, 7, 1).name('Amplitude').onChange(applyEditorChanges);
+            editorGUI.add(editorState, 'frequencyId', 0, 31, 1).name('Frequency').onChange(applyEditorChanges);
+            editorGUI.add(editorState, 'spinClassId', 0, 7, 1).name('Spin class').onChange(applyEditorChanges);
+            editorGUI.add(editorState, 'isWireframe').name('Wireframe').onChange(applyEditorChanges);
+            editorGUI.open();
+        }
+        function applyEditorChanges() {
+            selectedNodes.forEach(index => {
+                const d = packetData.get(index); if (!d) return;
+                const color = new THREE.Color(editorState.color);
+                const { a } = quaternionToRgba(d.quaternion);
+                d.quaternion = rgbaToQuaternion(color.r * 255, color.g * 255, color.b * 255, a);
+                d.formId = parseInt(editorState.formId); d.amplitudeId = editorState.amplitudeId;
+                d.frequencyId = editorState.frequencyId; d.spinClassId = editorState.spinClassId;
+                d.isWireframe = editorState.isWireframe;
+                delete d.rawWord;                    // editing turns a data-crystal into a designed packet
+                packetData.set(index, d); updateNodeVisuals(index);
+            });
+            if (selectedNodes.size > 0) { updateSelectionHighlight(); updatePacketInfoPanel(Array.from(selectedNodes).pop()); }
+            rebuildChains();
+        }
+
+        // ── RENDER LOOP ──────────────────────────────────────────────────────────
+        function animate() {
+            requestAnimationFrame(animate);
+            const time = performance.now(); const delta = (time - prevTime) / 1000;
+            if (pointerLockControls.isLocked) {
+                velocity.x -= velocity.x * 10.0 * delta; velocity.y -= velocity.y * 10.0 * delta; velocity.z -= velocity.z * 10.0 * delta;
+                direction.z = Number(moveForward) - Number(moveBackward); direction.x = Number(moveRight) - Number(moveLeft); direction.normalize();
+                if (moveForward || moveBackward) velocity.z -= direction.z * 400.0 * delta;
+                if (moveLeft || moveRight) velocity.x -= direction.x * 400.0 * delta;
+                if (moveUp || moveDown) velocity.y -= (Number(moveDown) - Number(moveUp)) * 400.0 * delta;
+                pointerLockControls.moveRight(-velocity.x * delta); pointerLockControls.moveForward(-velocity.z * delta);
+                pointerLockControls.getObject().position.y -= velocity.y * delta;
+            } else orbitControls.update();
+
+            if (environmentState.isPlaying && particleSystem) {
+                const positions = particleSystem.geometry.attributes.position;
+                if (state.latticeShape === 'Toroid') {
+                    const a = 0.5 * delta, cos = Math.cos(a), sin = Math.sin(a);
+                    for (let i = 0; i < positions.count; i++) {
+                        const x = positions.getX(i), z = positions.getZ(i);
+                        const nx = x * cos - z * sin, nz = x * sin + z * cos;
+                        positions.setX(i, nx); positions.setZ(i, nz);
+                        if (activeNodes.has(i)) { const nd = activeNodes.get(i); nd.position.set(nx, nd.position.y, nz); nd.rotation.y += a; }
+                        if (selectedNodes.has(i)) { selectionHighlight.position.set(nx, selectionHighlight.position.y, nz); selectionHighlight.rotation.y += a; }
+                    }
+                } else if (state.latticeShape === 'Lissajous Knot' || state.latticeShape === 'Trefoil Knot') {
+                    const flow = 0.2, isL = state.latticeShape === 'Lissajous Knot';
+                    const { lissajousScale: ls, lissajousNx: nx, lissajousNy: ny, lissajousNz: nz, trefoilScale: ts } = state;
+                    for (let i = 0; i < positions.count; i++) {
+                        const pr = particleParams[i]; pr.u += flow * delta; if (pr.u > 2 * Math.PI) pr.u -= 2 * Math.PI;
+                        const fp = isL
+                            ? knotFrame(lissajousPoint(pr.u, ls, nx, ny, nz), lissajousDerivative(pr.u, ls, nx, ny, nz), lissajousSecondDerivative(pr.u, ls, nx, ny, nz), pr.r, pr.v)
+                            : knotFrame(trefoilPoint(pr.u, ts), trefoilDerivative(pr.u, ts), trefoilSecondDerivative(pr.u, ts), pr.r, pr.v);
+                        positions.setXYZ(i, fp.x, fp.y, fp.z);
+                        if (activeNodes.has(i)) activeNodes.get(i).position.copy(fp);
+                        if (selectedNodes.has(i)) selectionHighlight.position.copy(fp);
+                    }
+                } else {
+                    const flow = 10.0; const bounds = state.latticeShape === 'Cylinder' ? state.cylinderHeight : state.boxSize.y; const hb = bounds / 2;
+                    for (let i = 0; i < positions.count; i++) {
+                        let y = positions.getY(i) + flow * delta; if (y > hb) y = -hb; positions.setY(i, y);
+                        if (activeNodes.has(i)) activeNodes.get(i).position.y = y;
+                        if (selectedNodes.has(i)) selectionHighlight.position.y = y;
+                    }
+                }
+                positions.needsUpdate = true;
+                if (chainGroup.children.length) updateChainLinePositions();
+            }
+            prevTime = time;
+            renderer.render(scene, camera);
+        }
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight; camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+
+        // expose the seed/panel API for the HTML buttons + headless testing
+        window.ME = {
+            buildSeed, regrow, verifySeed, copySeed, downloadSeed, loadFile, publish,
+            injectRawData, toggleChainMode, addToChain, finishChain,
+            _state: state, _packetData: packetData, _chains: chains, _rawState: rawState,
+            crystallize, packWord, unpackWord, nodeToWord, wordToNode, fold32, canonicalSeed, collectSeed,
+        };
+
+        init();
+    </script>
+</body>
+</html>
