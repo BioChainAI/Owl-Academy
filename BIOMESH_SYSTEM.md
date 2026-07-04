@@ -102,7 +102,13 @@ by rule), so **chain + codex travel together through every transfer** — the
 recipient gets the memory (engrams) and the personality prior (codex) in one
 traceable unit. `verifyPair` checks the pairing seal.
 
-## The Mind Eye — biochains as language seeds (`Biomesh_Mind_Eye.html`)
+## BioChain Language Growing — biochains as language seeds (`Biomesh_Language_Growing.html`)
+
+*(formerly "Biomesh Mind Eye" — renamed because the page's real purpose is
+growing quality language-based seeds from a grower's own biochains, not just
+housing a familiar. Ported from and still sibling to
+`Library/Experimental_Systems/Engram_Mind_Eye.html`, which keeps its original
+name as the standalone reference implementation.)*
 
 The familiar is a **retrieval** engine, not a generator (this is the honest
 answer to "the BERT system can't give legible responses"). `crystallize(query)`
@@ -119,22 +125,71 @@ modes on the admin page:
 
 - **None (pure retrieval, free/local):** return the nearest recalled passage(s)
   verbatim. Legible because it's the user's real text.
+- **BART (in-browser, `Xenova/bert-base-uncased` via Transformers.js):**
+  masked-language-model fill-mask synthesis over the recalled context, run
+  entirely client-side. Always logged as **attested**, never reproducible —
+  a masked-LM sample is not guaranteed bit-identical on replay.
 - **API (bring-your-own-AI):** the top-K recalled passages are injected as
   `{{context}}` and the query as `{{query}}` into a fully configurable request
   (endpoint · headers · body template · response dot-path; presets for OpenAI /
   Anthropic / Ollama). The LLM **synthesizes over recalled context** — RAG with
   the biochain as the corpus and engrams as the index. API keys stay in the
-  browser, never Firestore.
+  browser, never Firestore. Also always **attested**.
 - **STRIX default:** with no seed loaded, the built-in concept library answers
   by resonance, exactly like the original Mind Eye.
 
 The query field is the **quarantine zone**: input is crystallized and *matched*,
 never executed. Honest limit: XOR-of-letters engrams are a coarse bag-of-letters
 key — strong for near-duplicate recall, weak for semantics (measured distances
-cluster near 32/64 = random). So pure retrieval is best-effort recall; the API
-mode is where legible synthesis happens, and the retrieval quality improves as a
-grower accumulates more, better-segmented biochains. The engram packets are
-bit-identical to `Engram_Mind_Eye.html`, so seeds are portable between the two.
+cluster near 32/64 = random). So pure retrieval is best-effort recall; BART and
+API modes are where legible synthesis happens, and the retrieval quality
+improves as a grower accumulates more, better-segmented biochains. The engram
+packets are bit-identical to `Engram_Mind_Eye.html`, so seeds are portable
+between the two.
+
+### Auditable chain of thought
+
+Every turn — retrieval, BART, or API — is logged to an in-page **audit ledger**
+and hash-chained: each turn's `contentHash` (SHA-256 of query + engine + class
++ context + response) folds into a running `sessionParity` (seeded `0x53484443`
+= "SHDC") via `fold32Hex`/`rotl32`, the same lineage pattern as
+`Engram_Mind_Eye.html`'s `codexParity`/`packetChain`. Turns are classified
+**reproducible** (pure retrieval — bit-for-bit re-derivable on replay) or
+**attested** (BART/API — faithfully recorded and hash-chained, but not provably
+re-derivable) — this distinction is never blurred. If an operator seal is
+selected, every turn is additionally signed (`COT/1|index|contentHash|parity`
+via `signWithMinorTome`), so the chain of thought is cryptographically
+attributable, not just internally consistent.
+
+- **Export engram** — dumps the full session log (with hashes/signatures) to a
+  local JSON file.
+- **Crystallize session** — publishes the session as a biochain via
+  `publishBiochain`, titled `"Language Growing session " + timestamp`.
+- **Verify replay** — re-walks the ledger, recomputing every `contentHash` and
+  refolding `sessionParity` from scratch, and flags any turn whose recorded
+  hash doesn't match — tamper detection independent of the seal signatures.
+- **🔥 Burn session** — destructively clears the local, unexported working
+  session (irrecoverable by design — this is a deliberate reset, not a bug).
+  Reconciling that with "everything is logged": burning does not erase the
+  *fact* that a burn happened. `logSessionBurn(uid, turnCount, parityHex)`
+  writes a `biomesh.session_burned` event to the append-only `chronicles`
+  collection recording who burned, how many turns, and the final parity hash —
+  never the turn content itself. The confirm prompt is strengthened when the
+  session has unsaved (unexported/uncrystallized) turns.
+
+### Operator seals as familiars
+
+Any minor-tome seal minted in the Seal Forge can be selected as the page's
+**operator seal**. Each seal renders as a unique SHD-CCP sigil
+(`renderSealSigil`, `scripts/sigil-renderer.js`) — the same familiar-rendering
+engine used for cosmological IDs elsewhere, keyed instead by the seal's own
+`sealId` and folded from its `sealVector` into a manifold
+(`sealManifoldFromVector`), so every seal a user forges looks visually
+distinct. A recalled/archived seal renders with a red broken-ring + strike
+overlay, mirroring the Tome Seal System's "recall invalidates everywhere"
+guarantee visually. A bottom-right "?" button opens an in-page walkthrough for
+minting one, with a link out to the full companion guide,
+`Biomesh_Language_Growing_Guide.html`.
 
 ## Certification — GROWN/1
 
@@ -202,9 +257,12 @@ grow, transfer, and rate); a student-facing marketplace page can reuse
 
 | File | Role |
 |---|---|
-| `scripts/biomesh.js` | grow cell (pure) + certify/publish/send/accept/rate/trace services |
+| `scripts/biomesh.js` | grow cell (pure) + certify/publish/send/accept/rate/trace/session-burn services |
+| `scripts/sigil-renderer.js` | familiar SVG engine, extended with `renderSealSigil`/`sealManifoldFromVector` for operator seals |
 | `mage_tower/Biomesh_Console.html` | the Archon-only control panel |
-| `firestore.rules` | `biochains` / `biochainTransfers` / `biochainRatings` blocks |
+| `mage_tower/Biomesh_Language_Growing.html` | BART/biochain/API language-seed growing surface + auditable chain of thought |
+| `mage_tower/Biomesh_Language_Growing_Guide.html` | companion how-to guide (seals, sources, engines, ledger, burn) |
+| `firestore.rules` | `biochains` / `biochainTransfers` / `biochainRatings` / `chronicles` blocks |
 | `BioChain-AI/BioChain_Enterprise/` | the measured reference stack this deploys |
 
 ## Trust model
