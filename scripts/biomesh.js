@@ -163,6 +163,57 @@ export function engramStreamFromText(text) {
   return { stream, count: tokens.length, meanJ: tokens.length ? +(jSum / tokens.length).toFixed(4) : 0 };
 }
 
+// ─── language seeds — turning a biochain into a retrieval corpus ──────────────
+// The Mind Eye is a RETRIEVAL engine, not a generator: crystallize(query) →
+// Hamming-nearest concept → that concept's text. Its "legibility" is the
+// pre-written response, keyed geometrically. A biochain already holds the real
+// recorded text (lossless stream) AND its engram index — so it converts into a
+// concept library directly: each passage becomes { key engram, text }. Match a
+// query engram against these keys and you retrieve real recorded language,
+// legible by construction. This is how a hyperbolic engram AI "speaks" before
+// it has learned to generate: it recalls, it doesn't invent.
+
+/** Hamming distance between two 64-bit engram grids (0..64). */
+export function hammingGrids(a, b) {
+  let d = 0; for (let i = 0; i < 64; i++) if (a[i] !== b[i]) d++; return d;
+}
+/** Engram for arbitrary text (XOR-crystallization over all its letters) — the
+ *  exact key the Mind Eye's crystallize(text) produces. */
+export const engramOf = (text) => engramGrid(text);
+
+/** Split recreated biochain text into retrieval passages (sentence-ish, capped). */
+export function passagesOf(text, maxLen = 320) {
+  const out = [];
+  for (const raw of (text || "").split(/(?<=[.!?])\s+|\n{2,}/)) {
+    let p = raw.trim();
+    if (!p) continue;
+    while (p.length > maxLen) { out.push(p.slice(0, maxLen).trim()); p = p.slice(maxLen).trim(); }
+    if (p) out.push(p);
+  }
+  return out;
+}
+
+/** Convert a biochain into language seeds: [{ key(16 hex), grid, text, j }].
+ *  These are the concept library a familiar retrieves from. */
+export function biochainToSeeds(chain, opts = {}) {
+  const passages = passagesOf(recreateText(chain), opts.maxLen || 320);
+  return passages.map((text, i) => {
+    const grid = engramGrid(text);
+    return { id: (chain.chainId || "seed") + "#" + i, key: engramGridHex(grid), grid,
+             text, j: +engramJ(grid).toFixed(4) };
+  });
+}
+
+/** Match a query against a seed library → ranked nearest passages.
+ *  distance 0..64; similarity = 1 - d/64. */
+export function matchSeeds(queryText, seeds, topK = 3) {
+  const q = engramGrid(queryText);
+  return seeds
+    .map(s => ({ ...s, dist: hammingGrids(q, s.grid), sim: +(1 - hammingGrids(q, s.grid) / 64).toFixed(3) }))
+    .sort((a, b) => a.dist - b.dist)
+    .slice(0, topK);
+}
+
 /** Frame parallel packet/residual lists into one self-describing hex stream. */
 function frameStream(packetsHex, residualsHex) {
   let s = "";
