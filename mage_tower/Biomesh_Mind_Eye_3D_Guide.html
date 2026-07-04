@@ -83,6 +83,9 @@
                     <a href="#seed-anatomy" class="block text-slate-400 hover:text-cyan-300 py-1 text-xs transition pl-3 border-l border-white/10">Seed anatomy</a>
                     <a href="#regrow" class="block text-slate-400 hover:text-cyan-300 py-1 text-xs transition pl-3 border-l border-white/10">Regrow & verify</a>
                     <a href="#decentralized" class="block text-slate-400 hover:text-cyan-300 py-1 text-xs transition">The shared standard</a>
+                    <a href="#pump" class="block text-slate-400 hover:text-cyan-300 py-1 text-xs transition">The synchronization pump</a>
+                    <a href="#pump-mech" class="block text-slate-400 hover:text-cyan-300 py-1 text-xs transition pl-3 border-l border-white/10">How the breath works</a>
+                    <a href="#pump-use" class="block text-slate-400 hover:text-cyan-300 py-1 text-xs transition pl-3 border-l border-white/10">Running a cycle</a>
                     <a href="#workflow" class="block text-slate-400 hover:text-cyan-300 py-1 text-xs transition">Full workflow</a>
                     <a href="#reference" class="block text-slate-400 hover:text-cyan-300 py-1 text-xs transition">Controls reference</a>
                 </nav>
@@ -313,18 +316,71 @@ place  at index, index+1, …  + auto-chain</code></pre>
 
             <hr class="divider">
 
+            <!-- PUMP -->
+            <section id="pump">
+                <div class="section-label" style="background:rgba(168,85,247,.12);border:1px solid rgba(168,85,247,.4);color:#c084fc;">08 — Pump</div>
+                <h2 class="text-3xl mystical mb-6" style="background:linear-gradient(135deg,#7c3aed,#c084fc,#e9d5ff);-webkit-background-clip:text;background-clip:text;color:transparent;">The Synchronization Pump</h2>
+                <p class="text-slate-300 leading-relaxed mb-4">
+                    A static lattice is a snapshot. The <strong style="color:#c084fc;">synchronization pump</strong> makes it
+                    <em>breathe</em> — a torsional, Markov, one-way "zero-point pump" (ported from Department V's
+                    <code class="mono" style="color:#c084fc;">Loom_Weave</code>) that drives the whole substrate through a
+                    720-frame cycle (or any length you set) so that <strong>every SHD-CCP packet interacts with every other</strong>.
+                    Out of those interactions a scalar field grows, which you can bake back into the packets themselves.
+                </p>
+                <div class="grid md:grid-cols-3 gap-4 mb-6">
+                    <div class="glass p-5" style="border-color:rgba(168,85,247,.3);"><div class="text-3xl mb-3">🫁</div><h3 class="mystical text-base mb-2" style="color:#c084fc;">Breath</h3><p class="text-xs text-slate-400 leading-relaxed">The substrate inhales and exhales from the zero-point center once per cycle, unfolding a 4×4×4 tessellation.</p></div>
+                    <div class="glass p-5" style="border-color:rgba(168,85,247,.3);"><div class="text-3xl mb-3">🌀</div><h3 class="mystical text-base mb-2" style="color:#c084fc;">Torsional pump</h3><p class="text-xs text-slate-400 leading-relaxed">A one-way Markov charge pulse travels inside→out through radial shells; inner shells spin faster — a torsional twist.</p></div>
+                    <div class="glass p-5" style="border-color:rgba(168,85,247,.3);"><div class="text-3xl mb-3">📈</div><h3 class="mystical text-base mb-2" style="color:#c084fc;">Scalar field</h3><p class="text-xs text-slate-400 leading-relaxed">Pairwise packet couplings (the matrix field) accumulate; implied-quadrance backprop returns them inward as a scalar field.</p></div>
+                </div>
+
+                <h3 id="pump-mech" class="text-xl mystical mb-4" style="color:#d8b4fe;">How the Breath Works</h3>
+                <p class="text-slate-300 leading-relaxed mb-4">
+                    Each frame has a cycle-time <code class="mono" style="color:#c084fc;">t = frame / frames</code>. Five things happen, in order:
+                </p>
+                <div class="space-y-3 mb-4">
+                    <div class="flex items-start gap-3"><div class="step-num" style="background:rgba(168,85,247,.14);border:1px solid rgba(168,85,247,.5);color:#c084fc;">1</div><div><p class="text-sm text-slate-200 font-semibold">Breath</p><p class="text-xs text-slate-500"><code class="mono">breath = 1 + sin(π·t)·amp</code> pushes every packet radially out from the zero-point center and back — one inhale/exhale per cycle. The tessellation shell scales with it.</p></div></div>
+                    <div class="flex items-start gap-3"><div class="step-num" style="background:rgba(168,85,247,.14);border:1px solid rgba(168,85,247,.5);color:#c084fc;">2</div><div><p class="text-sm text-slate-200 font-semibold">Torsional one-way Markov pump</p><p class="text-xs text-slate-500">Charge is injected at the innermost packet and flows strictly outward, shell by shell — irreversible, Markov. Inner shells also rotate faster, twisting the substrate.</p></div></div>
+                    <div class="flex items-start gap-3"><div class="step-num" style="background:rgba(168,85,247,.14);border:1px solid rgba(168,85,247,.5);color:#c084fc;">3</div><div><p class="text-sm text-slate-200 font-semibold">Interaction (the matrix field)</p><p class="text-xs text-slate-500">Any two packets whose breathing positions fall within <em>reach</em> couple: <code class="mono">coupling = charge × affinity / (1 + Q)</code>, where <code class="mono">Q</code> is the quadrance (squared distance) and <em>affinity</em> is <code class="mono">1 − hamming(word_a, word_b)/64</code> — near, charged, and alike packets interact most. Each coupling adds to both packets' scalar.</p></div></div>
+                    <div class="flex items-start gap-3"><div class="step-num" style="background:rgba(168,85,247,.14);border:1px solid rgba(168,85,247,.5);color:#c084fc;">4</div><div><p class="text-sm text-slate-200 font-semibold">Implied-quadrance backprop</p><p class="text-xs text-slate-500">The phase-conjugate return: each shell's scalar flows back inward, quadrance-weighted (<code class="mono">/(1+Q)</code>), so the field concentrates toward the zero point — matrix field → scalar field.</p></div></div>
+                    <div class="flex items-start gap-3"><div class="step-num" style="background:rgba(168,85,247,.14);border:1px solid rgba(168,85,247,.5);color:#c084fc;">5</div><div><p class="text-sm text-slate-200 font-semibold">Render</p><p class="text-xs text-slate-500">Packets recolor by their scalar value, interaction links draw between coupled pairs, and chains follow the breathing packets.</p></div></div>
+                </div>
+                <div class="callout" style="border-color:#c084fc;background:rgba(168,85,247,.06);"><p class="text-xs font-semibold mb-1" style="color:#d8b4fe;">Deterministic → auditable</p><p class="text-xs text-slate-400">The whole cycle is a pure function of the packets and the pump parameters, so the same setup always yields the same interaction count and scalar field. At cycle end the pump prints a <code class="mono" style="color:#c084fc;">cycleHash</code> (a fold32 fingerprint of the scalar field + parameters) — the breath is replayable and verifiable, exactly like a seed.</p></div>
+
+                <h3 id="pump-use" class="text-xl mystical mb-4 mt-8" style="color:#d8b4fe;">Running a Cycle</h3>
+                <div class="glass overflow-hidden mb-4" style="border-color:rgba(168,85,247,.3);">
+                    <table>
+                        <thead><tr><th>Control</th><th>What it does</th></tr></thead>
+                        <tbody>
+                            <tr><td class="mono" style="color:#c084fc;">⏯ Pump / slider</td><td class="text-xs">Play/pause the cycle, or scrub to any frame (the state is re-derived deterministically from frame 0).</td></tr>
+                            <tr><td class="mono" style="color:#c084fc;">frames</td><td class="text-xs">Cycle length — 720 by default, any value 12–4320.</td></tr>
+                            <tr><td class="mono" style="color:#c084fc;">breath</td><td class="text-xs">Amplitude of the radial inhale/exhale.</td></tr>
+                            <tr><td class="mono" style="color:#c084fc;">torsion</td><td class="text-xs">Strength of the shell-depth-scaled twist.</td></tr>
+                            <tr><td class="mono" style="color:#c084fc;">reach</td><td class="text-xs">Interaction radius — how close packets must breathe to couple.</td></tr>
+                            <tr><td class="mono" style="color:#c084fc;">backprop</td><td class="text-xs">Toggles the implied-quadrance return pass.</td></tr>
+                            <tr><td class="mono" style="color:#c084fc;">Reset cycle</td><td class="text-xs">Re-arms with the current packets and clears the ledger.</td></tr>
+                            <tr><td class="mono" style="color:#c084fc;">Export interaction ledger</td><td class="text-xs">Downloads the per-packet scalar field + cycle hash as JSON.</td></tr>
+                            <tr><td class="mono" style="color:#c084fc;">Bake scalar → packets</td><td class="text-xs">Writes the normalized scalar into each packet's payload — so what the substrate <em>learned</em> from the breath becomes part of the packet word and is captured by the seed.</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="callout callout-cyan"><p class="text-xs text-cyan-200 font-semibold mb-1">The breath teaches the lattice</p><p class="text-xs text-slate-400">Baking closes the loop: run a cycle, let every packet interact, then bake the resulting scalar field back into the packets. Build a seed and the learned field travels with it — another node regrows a lattice that already carries what this one learned from breathing.</p></div>
+            </section>
+
+            <hr class="divider">
+
             <!-- WORKFLOW -->
             <section id="workflow">
-                <div class="section-label sl-cyan mb-4">08 — Workflow</div>
+                <div class="section-label sl-cyan mb-4">09 — Workflow</div>
                 <h2 class="text-3xl mystical cyan-grad mb-6">Full Workflow</h2>
                 <div class="space-y-3">
                     <div class="flex items-start gap-3"><div class="step-num step-cyan">1</div><div><p class="text-sm text-slate-200 font-semibold">Pick a lattice shape</p><p class="text-xs text-slate-500">Choose Box / Toroid / Cylinder / knot, set size and packet count, and Generate.</p></div></div>
                     <div class="flex items-start gap-3"><div class="step-num step-cyan">2</div><div><p class="text-sm text-slate-200 font-semibold">Program vertices</p><p class="text-xs text-slate-500">Fly in, click vertices, set their packet fields in the Node editor.</p></div></div>
                     <div class="flex items-start gap-3"><div class="step-num step-cyan">3</div><div><p class="text-sm text-slate-200 font-semibold">Optionally crystallize raw data</p><p class="text-xs text-slate-500">Paste text or hex and place it as a chained run of crystal packets.</p></div></div>
                     <div class="flex items-start gap-3"><div class="step-num step-cyan">4</div><div><p class="text-sm text-slate-200 font-semibold">Chain your packets</p><p class="text-xs text-slate-500">Press <kbd>G</kbd> and click through the packets to link them into paths.</p></div></div>
-                    <div class="flex items-start gap-3"><div class="step-num step-cyan">5</div><div><p class="text-sm text-slate-200 font-semibold">Build the seed &amp; verify</p><p class="text-xs text-slate-500">Click Build, then Verify to confirm the hash and all parities.</p></div></div>
-                    <div class="flex items-start gap-3"><div class="step-num step-cyan">6</div><div><p class="text-sm text-slate-200 font-semibold">Download or Publish</p><p class="text-xs text-slate-500">Save the <code class="mono">.latticeseed.json</code> to share offline, or Publish it onto the mesh as a biochain.</p></div></div>
-                    <div class="flex items-start gap-3"><div class="step-num step-cyan">7</div><div><p class="text-sm text-slate-200 font-semibold">Regrow anywhere</p><p class="text-xs text-slate-500">On any node, paste or load the seed and click Regrow — the identical lattice system reappears.</p></div></div>
+                    <div class="flex items-start gap-3"><div class="step-num" style="background:rgba(168,85,247,.14);border:1px solid rgba(168,85,247,.5);color:#c084fc;">5</div><div><p class="text-sm text-slate-200 font-semibold">Pump the breath &amp; bake</p><p class="text-xs text-slate-500">Hit ⏯ Pump to run the synchronization cycle so every packet interacts, then <em>Bake scalar → packets</em> to record what the lattice learned.</p></div></div>
+                    <div class="flex items-start gap-3"><div class="step-num step-cyan">6</div><div><p class="text-sm text-slate-200 font-semibold">Build the seed &amp; verify</p><p class="text-xs text-slate-500">Click Build, then Verify to confirm the hash and all parities.</p></div></div>
+                    <div class="flex items-start gap-3"><div class="step-num step-cyan">7</div><div><p class="text-sm text-slate-200 font-semibold">Download or Publish</p><p class="text-xs text-slate-500">Save the <code class="mono">.latticeseed.json</code> to share offline, or Publish it onto the mesh as a biochain.</p></div></div>
+                    <div class="flex items-start gap-3"><div class="step-num step-cyan">8</div><div><p class="text-sm text-slate-200 font-semibold">Regrow anywhere</p><p class="text-xs text-slate-500">On any node, paste or load the seed and click Regrow — the identical lattice system reappears.</p></div></div>
                 </div>
             </section>
 
@@ -332,7 +388,7 @@ place  at index, index+1, …  + auto-chain</code></pre>
 
             <!-- REFERENCE -->
             <section id="reference">
-                <div class="section-label sl-cyan mb-4">09 — Reference</div>
+                <div class="section-label sl-cyan mb-4">10 — Reference</div>
                 <h2 class="text-3xl mystical cyan-grad mb-6">Controls Reference</h2>
                 <div class="glass panel-cyan overflow-hidden">
                     <table>
@@ -348,6 +404,8 @@ place  at index, index+1, …  + auto-chain</code></pre>
                             <tr><td><kbd>Space</kbd></td><td class="text-xs">Play / pause lattice flow</td></tr>
                             <tr><td><kbd>Esc</kbd></td><td class="text-xs">Return to orbit mode</td></tr>
                             <tr><td><kbd>scroll</kbd></td><td class="text-xs">Zoom (orbit mode)</td></tr>
+                            <tr><td class="mono" style="color:#c084fc;">⏯ Pump</td><td class="text-xs">Play/pause the synchronization breath cycle</td></tr>
+                            <tr><td class="mono" style="color:#c084fc;">frame slider</td><td class="text-xs">Scrub to any frame of the cycle (deterministically re-derived)</td></tr>
                         </tbody>
                     </table>
                 </div>
