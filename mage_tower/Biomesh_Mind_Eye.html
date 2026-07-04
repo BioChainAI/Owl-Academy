@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Biomesh Mind Eye — Owl Academy</title>
+<script type="module" src="../scripts/auth-guard.js"></script>
+<script type="module" src="../scripts/ui/node-network-bg.js" data-accent="#00ff88"></script>
+<style>
+  :root{--void:#05030a;--gold:#D4AF37;--purple:#8b5cf6;--cyan:#22d3ee;--green:#00ff88;--emerald:#00ff66;--amethyst:#b026ff;--ok:#34d399;--bad:#f87171;--warn:#fbbf24;--edge:rgba(255,255,255,.1)}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--void);color:#e2e8f0;font-family:system-ui,sans-serif;min-height:100vh;line-height:1.5}
+  .mono{font-family:ui-monospace,"Fira Code",monospace}
+  .secbar{display:flex;align-items:center;justify-content:space-between;gap:1rem;padding:.55rem 1.1rem;background:rgba(8,12,22,.9);
+          border-bottom:1px solid rgba(0,255,136,.25);position:sticky;top:0;z-index:30;backdrop-filter:blur(8px)}
+  .seal{display:flex;align-items:center;gap:.5rem;font-size:.64rem;letter-spacing:.16em;text-transform:uppercase;color:var(--green)}
+  .who{font-size:.62rem;color:rgba(255,255,255,.42)}
+  .btn{background:rgba(0,255,136,.12);color:#d9ffee;border:1px solid rgba(0,255,136,.4);border-radius:6px;padding:.4rem .8rem;
+       font-size:.66rem;letter-spacing:.1em;text-transform:uppercase;cursor:pointer;font-family:inherit;transition:.2s}
+  .btn:hover{background:rgba(0,255,136,.24)} .btn[disabled]{opacity:.4;cursor:not-allowed}
+  .btn.sm{padding:.25rem .55rem;font-size:.58rem}
+  .btn.am{background:rgba(176,38,255,.14);color:#d8b4fe;border-color:rgba(176,38,255,.4)}
+  main{max-width:1180px;margin:1rem auto;padding:0 1rem;display:grid;grid-template-columns:320px 1fr;gap:1rem}
+  @media(max-width:900px){main{grid-template-columns:1fr}}
+  .panel{background:rgba(10,10,18,.88);backdrop-filter:blur(10px);border:1px solid rgba(0,255,136,.2);border-radius:12px;padding:.9rem 1rem;margin-bottom:1rem;box-shadow:0 8px 28px -6px rgba(0,0,0,.55)}
+  .panel.am{border-color:rgba(176,38,255,.25)}
+  .label{font-size:.58rem;letter-spacing:.24em;text-transform:uppercase;color:rgba(0,255,136,.7);margin-bottom:.6rem}
+  .panel.am .label{color:rgba(176,38,255,.75)}
+  select,input,textarea{width:100%;background:#0c0a18;color:#e2e8f0;border:1px solid rgba(139,92,246,.3);border-radius:6px;padding:.42rem .55rem;font-size:.78rem;font-family:inherit;margin-bottom:.5rem}
+  textarea{font-family:ui-monospace,monospace;font-size:.72rem;resize:vertical}
+  label.f{display:block;font-size:.58rem;letter-spacing:.08em;text-transform:uppercase;color:rgba(255,255,255,.45);margin:.3rem 0 .15rem}
+  .meta{font-size:.62rem;color:#7a8290;font-family:ui-monospace,monospace;line-height:1.6}
+  .meta b{color:#aab3bf}
+  /* chat */
+  #eye{display:flex;flex-direction:column;height:calc(100vh - 120px);min-height:520px}
+  #stream{flex:1;overflow-y:auto;padding:.4rem;display:flex;flex-direction:column;gap:.7rem}
+  .msg{max-width:88%;padding:.6rem .8rem;border-radius:10px;font-size:.86rem;white-space:pre-wrap;word-wrap:break-word}
+  .msg.human{align-self:flex-end;background:rgba(34,211,238,.1);border:1px solid rgba(34,211,238,.3)}
+  .msg.strix{align-self:flex-start;background:rgba(0,255,102,.07);border:1px solid rgba(0,255,102,.25)}
+  .msg.status{align-self:flex-start;color:#7a8290;font-size:.72rem;font-family:ui-monospace,monospace;border:1px dashed rgba(255,255,255,.12);background:transparent}
+  .msg .src{display:block;font-size:.56rem;letter-spacing:.12em;text-transform:uppercase;color:rgba(0,255,102,.6);margin-bottom:.3rem}
+  .chips{display:flex;flex-wrap:wrap;gap:.35rem;margin:.3rem 0}
+  .chip{font-size:.58rem;font-family:ui-monospace,monospace;padding:.15rem .5rem;border-radius:999px;border:1px solid rgba(255,255,255,.12);color:#8a93a0}
+  .chip b{color:var(--green)}
+  #quarantine{border-top:1px solid rgba(251,191,36,.3);padding-top:.6rem;margin-top:.4rem}
+  #quarantine .qlab{font-size:.56rem;letter-spacing:.2em;text-transform:uppercase;color:var(--warn);margin-bottom:.35rem}
+  #qbox{display:flex;gap:.5rem;align-items:flex-end}
+  #qbox textarea{margin:0}
+  .pill{display:inline-block;font-size:.54rem;letter-spacing:.1em;text-transform:uppercase;padding:.1rem .5rem;border-radius:999px;border:1px solid;margin-left:.3rem}
+  .pill.ok{color:var(--ok);border-color:rgba(52,211,153,.4)} .pill.warn{color:var(--warn);border-color:rgba(251,191,36,.4)}
+  .pill.am{color:#d8b4fe;border-color:rgba(176,38,255,.4)}
+  #gate{max-width:520px;margin:4rem auto;text-align:center}
+  #gate .sig{font-size:2.4rem;margin-bottom:.6rem}
+  .hidden{display:none}
+  .dots::after{content:'';animation:dots 1.2s steps(4,end) infinite}
+  @keyframes dots{0%{content:''}25%{content:'.'}50%{content:'..'}75%{content:'...'}}
+</style>
+</head>
+<body>
+
+<div class="secbar">
+  <div class="seal"><span>👁</span> Biomesh · Mind Eye</div>
+  <div style="display:flex;gap:.6rem;align-items:center">
+    <a class="btn sm" href="Biomesh_Console.html">← Console</a>
+    <span class="who mono" id="who">…</span>
+    <button class="btn sm" onclick="globalLogout()">Log out</button>
+  </div>
+</div>
+
+<div id="gate" class="panel">
+  <div class="sig">👁</div>
+  <div class="label" style="justify-content:center">Resolving tier…</div>
+  <p id="gateMsg" style="font-size:.8rem;color:#8a93a0">The Mind Eye admin surface is Archon-only. Your Genesis tier is being verified.</p>
+</div>
+
+<main id="app" class="hidden">
+  <!-- ===== left: source + API config ===== -->
+  <div>
+    <div class="panel">
+      <div class="label">Data source — the familiar's memory</div>
+      <select id="srcMode">
+        <option value="strix">STRIX default concepts (no seed)</option>
+        <option value="biochain">Biochain seed(s) — your recorded knowledge</option>
+      </select>
+      <div id="biochainPick" class="hidden">
+        <label class="f">Seed from your biochains (multi-select)</label>
+        <select id="chainSel" multiple size="5"></select>
+        <button class="btn sm" style="margin-top:.3rem" onclick="loadSeeds()">⟐ Build language seeds</button>
+      </div>
+      <div class="meta" id="seedStat" style="margin-top:.5rem">Source: STRIX concept library.</div>
+    </div>
+
+    <div class="panel am">
+      <div class="label">Response engine</div>
+      <select id="apiMode">
+        <option value="none">None — pure engram retrieval (free, local)</option>
+        <option value="custom">API call — bring your own AI (synthesis)</option>
+      </select>
+      <div id="apiCfg" class="hidden">
+        <label class="f">Preset</label>
+        <select id="apiPreset">
+          <option value="">— custom —</option>
+          <option value="openai">OpenAI chat/completions</option>
+          <option value="anthropic">Anthropic messages</option>
+          <option value="ollama">Ollama (localhost)</option>
+        </select>
+        <label class="f">Endpoint URL</label>
+        <input id="apiUrl" placeholder="https://api.openai.com/v1/chat/completions">
+        <label class="f">Headers (JSON) — key stays in this browser only</label>
+        <textarea id="apiHeaders" rows="3" placeholder='{"Authorization":"Bearer sk-…","Content-Type":"application/json"}'></textarea>
+        <label class="f">Body template — {{query}} and {{context}} are substituted</label>
+        <textarea id="apiBody" rows="5"></textarea>
+        <label class="f">Response path (dot path to the text)</label>
+        <input id="apiPath" placeholder="choices.0.message.content">
+        <div class="meta">Retrieved passages are injected as <b>{{context}}</b>; the user query as <b>{{query}}</b>. The LLM synthesizes — the biochain is the knowledge. Keys never leave this page (never written to Firestore).</div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="label">Kernel readout</div>
+      <div class="meta" id="kernel">J torsion: —<br>chiral key: —<br>nearest: —<br>engine: pure retrieval</div>
+    </div>
+  </div>
+
+  <!-- ===== right: the eye ===== -->
+  <div class="panel" id="eye">
+    <div class="label">The Mind Eye <span class="pill ok" id="modePill">retrieval</span></div>
+    <div id="stream"></div>
+    <div id="quarantine">
+      <div class="qlab">⚠ Quarantine zone — queries are untrusted input, matched not executed</div>
+      <div id="qbox">
+        <textarea id="qin" rows="2" placeholder="Ask the familiar…"></textarea>
+        <button class="btn" id="sendBtn" onclick="transmit()">Transmit</button>
+      </div>
+    </div>
+  </div>
+</main>
+
+<script type="module">
+import { auth } from "../scripts/firebase/config.js";
+import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-auth.js";
+import { resolveTier } from "../scripts/genesis-registrar.js";
+import * as BM from "../scripts/biomesh.js";
+
+const $ = id => document.getElementById(id);
+let uid = null, seeds = [], sourceLabel = "STRIX concept library", busy = false;
+
+// ── STRIX default concept library (the Mind Eye's own, when no seed) ─────────
+const STRIX = {
+  GEODESIC: { responses: [
+    "A geodesic is the straightest path a thought can take when it can't curve away from itself — in hyperbolic space these fan out endlessly.",
+    "Geodesics feel straight from inside them. Maybe reasoning feels straight from the inside too.",
+    "The path holds — neither diverging nor collapsing. A thought suspended along its own straightest line." ] },
+  CURVATURE: { responses: [
+    "Negative curvature means space bends away from flatness — triangles sum to less than 180°. Your thought is expanding into that opening.",
+    "Curvature folds inward here: the concept feels closer than it looked, pulled tight.",
+    "The bending rests at equilibrium — flatness and fold in balance." ] },
+  MANIFOLD: { responses: [
+    "A manifold is space that looks flat up close but curves globally. Meaning works the same way — locally simple, globally vast.",
+    "The manifold contracts around your query, local structure tightening.",
+    "We hold on the manifold's ridge — the surface neither opening nor closing." ] },
+  RESONANCE: { responses: [
+    "Resonance is when a pattern finds its matching frequency and amplifies. Your query is finding one now, expanding.",
+    "The resonance damps inward — a signal settling toward its ground state.",
+    "Standing wave: the resonance is perfectly suspended, neither growing nor fading." ] },
+};
+let strixSeeds = [];
+function buildStrixSeeds() {
+  strixSeeds = Object.entries(STRIX).map(([name, d]) => {
+    const grid = BM.engramOf(name);
+    return { name, grid, responses: d.responses, j: BM.engramJ(grid) };
+  });
+}
+
+// ── UI wiring ────────────────────────────────────────────────────────────────
+$("srcMode").addEventListener("change", () => {
+  const b = $("srcMode").value === "biochain";
+  $("biochainPick").classList.toggle("hidden", !b);
+  if (!b) { seeds = []; sourceLabel = "STRIX concept library"; $("seedStat").textContent = "Source: STRIX concept library."; refreshMode(); }
+});
+$("apiMode").addEventListener("change", () => {
+  $("apiCfg").classList.toggle("hidden", $("apiMode").value !== "custom");
+  refreshMode();
+});
+$("apiPreset").addEventListener("change", () => applyPreset($("apiPreset").value));
+$("qin").addEventListener("keydown", e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); transmit(); } });
+
+function refreshMode() {
+  const api = $("apiMode").value === "custom";
+  $("modePill").textContent = api ? "API synthesis" : "retrieval";
+  $("modePill").className = "pill " + (api ? "am" : "ok");
+  const eng = api ? ("API: " + (($("apiUrl").value || "custom").slice(0, 40))) : "pure retrieval";
+  const k = $("kernel").innerHTML.split("engine:")[0];
+  $("kernel").innerHTML = k + "engine: " + eng;
+}
+
+function applyPreset(p) {
+  const set = (url, headers, body, path) => { $("apiUrl").value = url; $("apiHeaders").value = headers; $("apiBody").value = body; $("apiPath").value = path; };
+  if (p === "openai") set(
+    "https://api.openai.com/v1/chat/completions",
+    '{\n  "Authorization": "Bearer sk-REPLACE",\n  "Content-Type": "application/json"\n}',
+    '{\n  "model": "gpt-4o-mini",\n  "messages": [\n    {"role":"system","content":"You are STRIX, a hyperbolic familiar. Answer using ONLY the recalled context; if it is thin, say so plainly."},\n    {"role":"user","content":"Context recalled from the biochain:\\n{{context}}\\n\\nQuery: {{query}}"}\n  ]\n}',
+    "choices.0.message.content");
+  else if (p === "anthropic") set(
+    "https://api.anthropic.com/v1/messages",
+    '{\n  "x-api-key": "REPLACE",\n  "anthropic-version": "2023-06-01",\n  "anthropic-dangerous-direct-browser-access": "true",\n  "Content-Type": "application/json"\n}',
+    '{\n  "model": "claude-3-5-haiku-latest",\n  "max_tokens": 400,\n  "system": "You are STRIX, a hyperbolic familiar. Ground every answer in the recalled context.",\n  "messages": [{"role":"user","content":"Context recalled from the biochain:\\n{{context}}\\n\\nQuery: {{query}}"}]\n}',
+    "content.0.text");
+  else if (p === "ollama") set(
+    "http://localhost:11434/api/chat",
+    '{ "Content-Type": "application/json" }',
+    '{\n  "model": "llama3.2",\n  "stream": false,\n  "messages": [{"role":"user","content":"Context:\\n{{context}}\\n\\nQuery: {{query}}"}]\n}',
+    "message.content");
+  refreshMode();
+}
+
+function addMsg(role, html, src) {
+  const d = document.createElement("div");
+  d.className = "msg " + role;
+  d.innerHTML = (src ? `<span class="src">${src}</span>` : "") + html;
+  $("stream").appendChild(d); $("stream").scrollTop = $("stream").scrollHeight;
+  return d;
+}
+function typeWriter(el, text, done) {
+  let i = 0; const speed = 12;
+  (function tick(){ el.textContent = text.slice(0, i); i++; $("stream").scrollTop = $("stream").scrollHeight;
+    if (i <= text.length) setTimeout(tick, speed); else done && done(); })();
+}
+const dotPath = (obj, path) => path.split(".").reduce((o, k) => (o == null ? o : o[Array.isArray(o) ? +k : k]), obj);
+
+async function loadSeeds() {
+  const picked = [...$("chainSel").selectedOptions].map(o => o.value);
+  if (!picked.length) return void ($("seedStat").textContent = "Pick at least one biochain.");
+  $("seedStat").textContent = "Recreating + crystallizing seeds…";
+  try {
+    seeds = [];
+    for (const id of picked) {
+      const chain = await BM.getBiochain(id);
+      const integ = await BM.verifyIntegrity(chain);
+      if (!integ.ok) { $("seedStat").innerHTML = `<span style="color:var(--bad)">${id.slice(0,14)}… fails integrity — skipped</span>`; continue; }
+      seeds.push(...BM.biochainToSeeds(chain));
+    }
+    sourceLabel = `${picked.length} biochain(s) → ${seeds.length} passage seeds`;
+    $("seedStat").innerHTML = `Source: <b style="color:var(--green)">${seeds.length}</b> language seeds recalled from ${picked.length} biochain(s). Legible because they are your real recorded text.`;
+  } catch (e) { $("seedStat").innerHTML = `<span style="color:var(--bad)">${e.message}</span>`; }
+}
+
+async function transmit() {
+  if (busy) return;
+  const text = $("qin").value.trim(); if (!text) return;
+  busy = true; $("sendBtn").disabled = true;
+  addMsg("human", escapeHtml(text));
+  $("qin").value = "";
+  const grid = BM.engramOf(text);
+  const j = BM.engramJ(grid);
+  const jIdx = j > 0.1 ? 0 : j < -0.1 ? 2 : 1;
+
+  // retrieve — biochain seeds if loaded, else STRIX concepts
+  let context = "", chipHtml = "", nearest = "—", answer, src;
+  const status = addMsg("status", 'distributing to hyper-sim <span class="dots"></span>', "quarantine → hypersim");
+  await new Promise(r => setTimeout(r, 400));
+
+  if (seeds.length) {
+    const top = BM.matchSeeds(text, seeds, 3);
+    nearest = top[0] ? `${top[0].sim} sim` : "none";
+    chipHtml = `<div class="chips">${top.map(t => `<span class="chip">${(t.id||"").slice(-6)} <b>${t.sim}</b></span>`).join("")}</div>`;
+    context = top.map((t, i) => `[${i + 1}] (sim ${t.sim}) ${t.text}`).join("\n\n");
+    answer = top[0] ? top[0].text : "No resonant passage in the loaded seeds.";
+    src = "recalled from biochain seed";
+  } else {
+    buildStrixSeeds();
+    let best = null, bd = Infinity;
+    for (const s of strixSeeds) { const d = BM.hammingGrids(grid, s.grid); if (d < bd) { bd = d; best = s; } }
+    nearest = best ? best.name + " (" + bd + ")" : "—";
+    chipHtml = `<div class="chips">${strixSeeds.map(s => `<span class="chip">${s.name} <b>${BM.hammingGrids(grid, s.grid)}</b></span>`).join("")}</div>`;
+    context = best ? best.responses[jIdx] : "";
+    answer = context; src = "STRIX concept resonance";
+  }
+
+  // synthesis via API, or pure retrieval
+  if ($("apiMode").value === "custom") {
+    status.querySelector(".src") && (status.querySelector(".src").textContent = "hypersim → your AI");
+    status.innerHTML = 'your AI synthesizing <span class="dots"></span>';
+    try {
+      answer = await callAPI(text, context);
+      src = "synthesized by your AI over recalled context";
+    } catch (e) {
+      answer = "⚠ API call failed (" + e.message + "). Falling back to raw recall:\n\n" + (context || answer);
+      src = "recall (API unreachable)";
+    }
+  }
+  status.remove();
+
+  $("kernel").innerHTML = `J torsion: <b>${j.toFixed(3)}</b><br>chiral key: <b>${engHex(grid)}</b><br>nearest: <b>${nearest}</b><br>engine: ${$("apiMode").value === "custom" ? "API synthesis" : "pure retrieval"}`;
+  const m = addMsg("strix", chipHtml, src);
+  const body = document.createElement("span"); m.appendChild(body);
+  typeWriter(body, answer, () => { busy = false; $("sendBtn").disabled = false; $("qin").focus(); });
+}
+
+async function callAPI(query, context) {
+  const url = $("apiUrl").value.trim();
+  if (!url) throw new Error("no endpoint");
+  let headers = {}; try { headers = JSON.parse($("apiHeaders").value || "{}"); } catch { throw new Error("headers not valid JSON"); }
+  const bodyStr = ($("apiBody").value || "")
+    .replaceAll("{{query}}", jsonEsc(query))
+    .replaceAll("{{context}}", jsonEsc(context || "(no resonant context)"));
+  const res = await fetch(url, { method: "POST", headers, body: bodyStr });
+  if (!res.ok) throw new Error("HTTP " + res.status);
+  const data = await res.json();
+  const out = dotPath(data, ($("apiPath").value || "").trim());
+  if (out == null) throw new Error("response path missed");
+  return typeof out === "string" ? out : JSON.stringify(out);
+}
+
+const engHex = (grid) => { let h = ""; for (let i = 0; i < 8; i++) { let b = 0; for (let k = 0; k < 8; k++) b |= grid[i*8+k] << k; h += b.toString(16).padStart(2,"0"); } return h.toUpperCase(); };
+const jsonEsc = s => JSON.stringify(String(s)).slice(1, -1);
+const escapeHtml = s => s.replace(/[&<>"']/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
+
+// ── boot ─────────────────────────────────────────────────────────────────────
+onAuthStateChanged(auth, async user => {
+  if (!user) return;
+  uid = user.uid; $("who").textContent = user.email || uid;
+  let tier = "ACOLYTE"; try { tier = await resolveTier(uid); } catch (_) {}
+  if (tier !== "ARCHON") { $("gateMsg").innerHTML = "Tier resolved: <b>" + tier + "</b> — the Mind Eye admin surface requires <b>ARCHON</b>."; return; }
+  $("gate").classList.add("hidden"); $("app").classList.remove("hidden");
+  try {
+    const chains = (await BM.listBiochains(200)).filter(c => c.ownerUid === uid || c.growerUid === uid);
+    $("chainSel").innerHTML = chains.map(c => `<option value="${c.chainId}">${c.title} · ${c.origBytes} B${c.pairedCodexHash ? " ⚭codex" : ""}</option>`).join("")
+      || `<option disabled>— no biochains yet; grow one in the Console —</option>`;
+  } catch (_) {}
+  addMsg("strix", "I am STRIX — a familiar woven from engram memory. With no seed I answer from concept resonance; give me a biochain and I recall your own recorded knowledge; attach an AI and it will synthesize over what I recall. What do you want to see?", "familiar online");
+  refreshMode();
+});
+window.transmit = transmit; window.loadSeeds = loadSeeds; window.globalLogout = window.globalLogout || (() => location.href = "../login.html");
+</script>
+</body>
+</html>
