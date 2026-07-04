@@ -1,0 +1,674 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Owl Academy | BioChain Language Growing Guide</title>
+
+    <script type="module" src="../scripts/ui/node-network-bg.js" data-accent="#00ff88"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --green: #00ff88;
+            --cyan: #00d4ff;
+            --amber: #f5a623;
+            --red: #f87171;
+            --bg: #05030a;
+        }
+        * { box-sizing: border-box; }
+        body {
+            background: var(--bg);
+            color: #e2e8f0;
+            font-family: 'Inter', sans-serif;
+            margin: 0;
+            min-height: 100vh;
+        }
+        h1,h2,h3,h4,.mystical { font-family:'Cinzel',serif; }
+        .mono { font-family:'JetBrains Mono',monospace; }
+
+        .glass {
+            background: rgba(8,12,22,0.82);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(255,255,255,0.112);
+            border-radius: 1rem;
+            box-shadow: 0 8px 32px -4px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.04);
+        }
+        .panel-green  { border-color: rgba(0,255,136,0.25); }
+        .panel-cyan   { border-color: rgba(0,212,255,0.25); }
+        .panel-amber  { border-color: rgba(245,166,35,0.28); }
+        .panel-red    { border-color: rgba(248,113,113,0.3); }
+
+        .green-grad { background: linear-gradient(135deg,#00a85c,#00ff88,#d6ffe9); -webkit-background-clip:text; background-clip:text; color:transparent; }
+        .cyan-grad  { background: linear-gradient(135deg,#007a99,#00d4ff); -webkit-background-clip:text; background-clip:text; color:transparent; }
+        .amber-grad { background: linear-gradient(135deg,#a06c10,#f5a623,#ffe3b0); -webkit-background-clip:text; background-clip:text; color:transparent; }
+
+        .section-label {
+            display: inline-flex; align-items: center; gap: 0.5rem;
+            padding: 0.2rem 0.75rem; border-radius: 9999px;
+            font-size: 10px; letter-spacing: 0.2em; text-transform: uppercase;
+            font-family: 'JetBrains Mono', monospace;
+        }
+        .sl-green { background: rgba(0,255,136,0.12); border:1px solid rgba(0,255,136,0.35); color:#00ff88; }
+        .sl-cyan  { background: rgba(0,212,255,0.10); border:1px solid rgba(0,212,255,0.3); color:#00d4ff; }
+        .sl-amber { background: rgba(245,166,35,0.10); border:1px solid rgba(245,166,35,0.35); color:#f5a623; }
+        .sl-red   { background: rgba(248,113,113,0.10); border:1px solid rgba(248,113,113,0.35); color:#f87171; }
+
+        .badge-repro   { border:1px solid rgba(0,255,136,0.45); background:rgba(0,255,136,0.08); color:#00ff88; padding:0.15rem 0.6rem; border-radius:9999px; font-size:11px; font-family:'JetBrains Mono',monospace; }
+        .badge-attest  { border:1px solid rgba(245,166,35,0.5); background:rgba(245,166,35,0.09); color:#f5a623; padding:0.15rem 0.6rem; border-radius:9999px; font-size:11px; font-family:'JetBrains Mono',monospace; }
+
+        .step-num {
+            width: 2rem; height: 2rem; border-radius:50%;
+            display: flex; align-items:center; justify-content:center;
+            font-size: 12px; font-family:'JetBrains Mono',monospace; font-weight:700;
+            flex-shrink: 0;
+        }
+        .step-green { background:rgba(0,255,136,0.14); border:1px solid rgba(0,255,136,0.5); color:#00ff88; }
+        .step-cyan  { background:rgba(0,212,255,0.12); border:1px solid rgba(0,212,255,0.4); color:#00d4ff; }
+        .step-amber { background:rgba(245,166,35,0.13); border:1px solid rgba(245,166,35,0.5); color:#f5a623; }
+
+        pre {
+            background: rgba(0,0,0,0.5); border:1px solid rgba(255,255,255,0.08);
+            border-radius:0.5rem; padding:1rem; overflow-x:auto;
+            font-size:12px; line-height:1.7; color:#a8b8c8;
+        }
+        code { font-family:'JetBrains Mono',monospace; }
+        .hl { color:#00ff88; }
+        .hl-c { color:#00d4ff; }
+        .hl-a { color:#f5a623; }
+        .hl-g { color:#00ff64; }
+
+        table { width:100%; border-collapse:collapse; font-size:13px; }
+        th { text-align:left; padding:0.5rem 0.75rem; font-size:10px; text-transform:uppercase; letter-spacing:0.15em; color:#64748b; font-family:'JetBrains Mono',monospace; border-bottom:1px solid rgba(255,255,255,0.08); }
+        td { padding:0.6rem 0.75rem; border-bottom:1px solid rgba(255,255,255,0.05); color:#cbd5e1; vertical-align:top; }
+        tr:last-child td { border-bottom:none; }
+        tr:hover td { background:rgba(255,255,255,0.02); }
+
+        .nav-link {
+            padding:0.4rem 1rem; border-radius:0.5rem;
+            font-size:11px; font-family:'JetBrains Mono',monospace;
+            text-transform:uppercase; letter-spacing:0.1em;
+            color:#94a3b8; border:1px solid transparent;
+            text-decoration:none; transition:all 0.2s;
+            display:inline-block;
+        }
+        .nav-link:hover { border-color:rgba(0,255,136,0.3); color:#00ff88; background:rgba(0,255,136,0.06); }
+
+        .callout {
+            border-left:3px solid; border-radius:0 0.5rem 0.5rem 0;
+            padding:0.75rem 1rem; font-size:13px;
+        }
+        .callout-green  { border-color:#00ff88; background:rgba(0,255,136,0.06); }
+        .callout-cyan   { border-color:#00d4ff; background:rgba(0,212,255,0.05); }
+        .callout-amber  { border-color:#f5a623; background:rgba(245,166,35,0.06); }
+        .callout-red    { border-color:#ff5f5f; background:rgba(255,80,80,0.05); }
+
+        @media(min-width:1280px){ .toc-sticky { position:sticky; top:2rem; } }
+        .divider { border:none; border-top:1px solid rgba(255,255,255,0.07); margin:3rem 0; }
+    </style>
+</head>
+<body class="antialiased">
+
+<div class="max-w-7xl mx-auto px-4 md:px-8 py-12">
+
+    <div class="text-center mb-14">
+        <div class="section-label sl-green mx-auto mb-4">🌱 BioChain · Language Growing</div>
+        <h1 class="text-4xl md:text-6xl font-bold mystical green-grad mb-4">The Language Growing Guide</h1>
+        <p class="text-slate-400 max-w-2xl mx-auto">
+            How to grow, seal, and audit language seeds from your own biochains — an auditable
+            hyperbolic AI surface where every turn is logged, hash-chained, and signed.
+        </p>
+        <div class="flex flex-wrap justify-center gap-3 mt-6">
+            <a href="Biomesh_Language_Growing.html" class="nav-link">🌱 Open Language Growing →</a>
+            <a href="Seal_Forge.html"               class="nav-link">Seal Forge</a>
+            <a href="Biomesh_Console.html"          class="nav-link">Archon Console</a>
+            <a href="../Learning-Hub.html"          class="nav-link">← Learning Hub</a>
+        </div>
+    </div>
+
+    <div class="xl:grid xl:grid-cols-[260px_1fr] gap-10">
+
+        <aside class="hidden xl:block">
+            <div class="toc-sticky glass panel-green p-5 text-sm">
+                <p class="mono text-[10px] text-green-500 uppercase tracking-widest mb-4">Contents</p>
+                <nav class="space-y-1">
+                    <a href="#overview"    class="block text-slate-400 hover:text-green-300 py-1 text-xs transition">Overview</a>
+                    <a href="#seals"       class="block text-slate-400 hover:text-green-300 py-1 text-xs transition">Operator Seals</a>
+                    <a href="#seal-steps"  class="block text-slate-400 hover:text-green-300 py-1 text-xs transition pl-3 border-l border-white/10">Minting a Seal</a>
+                    <a href="#seal-recall" class="block text-slate-400 hover:text-green-300 py-1 text-xs transition pl-3 border-l border-white/10">Recall as a Kill Switch</a>
+                    <a href="#sources"     class="block text-slate-400 hover:text-green-300 py-1 text-xs transition">Data Sources</a>
+                    <a href="#engines"     class="block text-slate-400 hover:text-green-300 py-1 text-xs transition">Response Engines</a>
+                    <a href="#honesty"     class="block text-slate-400 hover:text-green-300 py-1 text-xs transition pl-3 border-l border-white/10">Reproducible vs Attested</a>
+                    <a href="#quarantine"  class="block text-slate-400 hover:text-green-300 py-1 text-xs transition">The Quarantine Zone</a>
+                    <a href="#ledger"      class="block text-slate-400 hover:text-green-300 py-1 text-xs transition">The Audit Ledger</a>
+                    <a href="#exports"     class="block text-slate-400 hover:text-green-300 py-1 text-xs transition pl-3 border-l border-white/10">Export · Crystallize · Replay</a>
+                    <a href="#burn"        class="block text-slate-400 hover:text-green-300 py-1 text-xs transition">Burning a Session</a>
+                    <a href="#workflow"    class="block text-slate-400 hover:text-green-300 py-1 text-xs transition">Full Workflow</a>
+                    <a href="#errors"      class="block text-slate-400 hover:text-green-300 py-1 text-xs transition">Common Errors</a>
+                </nav>
+            </div>
+        </aside>
+
+        <main class="space-y-16 min-w-0">
+
+            <!-- OVERVIEW -->
+            <section id="overview">
+                <div class="section-label sl-green mb-4">01 — Overview</div>
+                <h2 class="text-3xl mystical green-grad mb-6">What Is Language Growing?</h2>
+
+                <p class="text-slate-300 leading-relaxed mb-4">
+                    <strong class="text-slate-100">BioChain Language Growing</strong> (formerly "Biomesh Mind Eye")
+                    is the page where a grower turns their own recorded biochains into a
+                    <strong class="text-green-300">retrieval familiar</strong> — a memory that recalls the grower's
+                    own real, previously-written language instead of generating text a model hasn't learned to speak.
+                    It is built on the same order-2 rank coder and SHD-CCP packet architecture as the rest of the
+                    Biomesh system, and shares its engram-crystallization code, character-for-character, with
+                    <code class="mono text-green-300">Library/Experimental_Systems/Engram_Mind_Eye.html</code>.
+                </p>
+                <p class="text-slate-300 leading-relaxed mb-6">
+                    The page exists to answer one honest question head-on: <em>if the underlying model can't
+                    reliably generate legible language, how do you get useful responses out of it?</em> The answer
+                    here is retrieval, not generation — recall the grower's own passages by Hamming-nearest engram
+                    match — with two optional, clearly-labeled escape hatches (BART, or a bring-your-own external
+                    API) for when synthesis over the recalled context is actually wanted. Every single turn, on
+                    every engine, is logged to a tamper-evident ledger, so the entire session is a replayable,
+                    auditable chain of thought.
+                </p>
+
+                <div class="grid md:grid-cols-3 gap-4">
+                    <div class="glass panel-green p-5">
+                        <div class="text-3xl mb-3">🔏</div>
+                        <h3 class="mystical text-base text-green-300 mb-2">Seal</h3>
+                        <p class="text-xs text-slate-400 leading-relaxed">
+                            Every turn can be signed by an operator's minor-tome seal, rendered as a unique
+                            SHD-CCP familiar sigil — cryptographic authorship, not just an internal log entry.
+                        </p>
+                    </div>
+                    <div class="glass panel-cyan p-5">
+                        <div class="text-3xl mb-3">🌱</div>
+                        <h3 class="mystical text-base text-cyan-300 mb-2">Grow</h3>
+                        <p class="text-xs text-slate-400 leading-relaxed">
+                            Your biochains are split into passages and crystallized into engram keys — the
+                            corpus the familiar retrieves from is language you actually wrote.
+                        </p>
+                    </div>
+                    <div class="glass panel-amber p-5">
+                        <div class="text-3xl mb-3">📜</div>
+                        <h3 class="mystical text-base text-amber-300 mb-2">Audit</h3>
+                        <p class="text-xs text-slate-400 leading-relaxed">
+                            Every turn is hashed, folded into a running parity, optionally signed, and
+                            replayable — a full chain of thought that can be exported, crystallized, or verified.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="callout callout-green mt-6">
+                    <p class="text-xs text-green-200 font-semibold mb-1">Archon-only surface</p>
+                    <p class="text-xs text-slate-400">
+                        Language Growing is gated the same way as the Genesis Forge and the Biomesh Console — the
+                        page resolves your tier client-side via <code class="mono text-green-300">resolveTier()</code>
+                        and only renders for <span class="mono">ARCHON</span>, with Firestore rules as the write
+                        backstop. Everyone can still grow, transfer, and rate biochains elsewhere in the Biomesh —
+                        this particular language-seed surface is Archon-scoped.
+                    </p>
+                </div>
+            </section>
+
+            <hr class="divider">
+
+            <!-- SEALS -->
+            <section id="seals">
+                <div class="section-label sl-green mb-4">02 — Seals</div>
+                <h2 class="text-3xl mystical green-grad mb-6">Operator Seals</h2>
+
+                <p class="text-slate-300 leading-relaxed mb-6">
+                    An <strong class="text-green-300">operator seal</strong> is a minor-tome ECDSA P-256 keypair
+                    (see <code class="mono text-green-300">scripts/minor-tome.js</code>) that you select at the top
+                    of the Language Growing page. Once selected, every turn you generate is signed with a
+                    <code class="mono text-green-300">COT/1|index|contentHash|parity</code> payload — Chain-Of-Thought,
+                    version 1 — so the log isn't just internally consistent, it's attributable to a specific,
+                    publicly verifiable identity.
+                </p>
+
+                <p class="text-slate-300 leading-relaxed mb-6">
+                    Each seal renders as its own unique <strong class="text-green-300">SHD-CCP sigil</strong> —
+                    the same familiar-rendering engine used for cosmological IDs elsewhere in the Academy
+                    (<code class="mono text-green-300">renderUserSigil</code>), but folded from the seal's own
+                    <code class="mono text-green-300">sealVector</code> hex into a manifold
+                    (<code class="mono text-green-300">sealManifoldFromVector</code> → n/k/t lattice parameters).
+                    Mint two seals and you get two visually distinct familiars — deterministic, so the same seal
+                    always renders the same sigil, but unique per seal.
+                </p>
+
+                <pre class="mb-6"><code><span class="text-slate-500">// scripts/sigil-renderer.js</span>
+<span class="hl">sealManifoldFromVector</span>(sealVector)  <span class="text-slate-500">// sealVector hex → { n, k, t }</span>
+<span class="hl">renderSealSigil</span>(seal, { size })     <span class="text-slate-500">// seal → SVG, keyed by sealId</span></code></pre>
+
+                <!-- Minting steps -->
+                <h3 id="seal-steps" class="text-xl mystical text-green-200 mb-4 mt-8">Minting a Seal</h3>
+                <p class="text-slate-400 text-sm mb-4">
+                    This is the same walkthrough behind the "?" help button on the Language Growing page itself:
+                </p>
+
+                <div class="space-y-3 mb-6">
+                    <div class="flex items-start gap-3">
+                        <div class="step-num step-green">1</div>
+                        <div>
+                            <p class="text-sm text-slate-200 font-semibold">Open the Seal Forge</p>
+                            <p class="text-xs text-slate-500">Visit <a href="Seal_Forge.html" target="_blank" class="text-green-300 underline">Seal_Forge.html</a> in a new tab — you don't need to leave your growing session to do this.</p>
+                        </div>
+                    </div>
+                    <div class="flex items-start gap-3">
+                        <div class="step-num step-green">2</div>
+                        <div>
+                            <p class="text-sm text-slate-200 font-semibold">Adjust the lattice, if you want</p>
+                            <p class="text-xs text-slate-500">Manifold, coherency, and torsion controls affect the sigil's geometry and the seal's derivation inputs. The defaults are fine for a first seal.</p>
+                        </div>
+                    </div>
+                    <div class="flex items-start gap-3">
+                        <div class="step-num step-green">3</div>
+                        <div>
+                            <p class="text-sm text-slate-200 font-semibold">Click <span class="mono text-green-300">Forge minor tome</span></p>
+                            <p class="text-xs text-slate-500">This samples the current Schumann tick as entropy and mints an ECDSA P-256 keypair. The private key never leaves your browser — only the public seal record is written to your Firestore <code class="mono">seals/</code> document.</p>
+                        </div>
+                    </div>
+                    <div class="flex items-start gap-3">
+                        <div class="step-num step-green">4</div>
+                        <div>
+                            <p class="text-sm text-slate-200 font-semibold">Return to Language Growing</p>
+                            <p class="text-xs text-slate-500">Your new seal appears in the Operator Seal selector automatically. Reload the page if it doesn't show up right away.</p>
+                        </div>
+                    </div>
+                    <div class="flex items-start gap-3">
+                        <div class="step-num step-green">5</div>
+                        <div>
+                            <p class="text-sm text-slate-200 font-semibold">Select it</p>
+                            <p class="text-xs text-slate-500">Its sigil renders immediately next to the selector, and every turn from that point on is signed <code class="mono text-green-300">COT/1</code> under that seal.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Recall -->
+                <h3 id="seal-recall" class="text-xl mystical text-green-200 mb-4">Recall as a Kill Switch</h3>
+                <p class="text-slate-300 leading-relaxed mb-4">
+                    Seals can be <strong class="text-red-300">recalled</strong> from the Seal Forge. A recalled seal
+                    renders with a red broken-ring-and-strike overlay everywhere its sigil appears, and
+                    instantly invalidates every signature it ever produced — including signatures already baked
+                    into an exported engram file or a crystallized biochain. This mirrors the Tome Seal System's
+                    "send out, then recall validity" model: you can revoke trust in a compromised or retired
+                    identity without needing to track down and delete every artifact it ever signed.
+                </p>
+
+                <div class="callout callout-red">
+                    <p class="text-xs text-red-300 font-semibold mb-1">⚠ Recall is global and permanent</p>
+                    <p class="text-xs text-slate-400">
+                        Recalling a seal is not scoped to one session or one biochain — it invalidates that seal's
+                        authority everywhere, for good. Only recall a seal you actually intend to retire.
+                    </p>
+                </div>
+            </section>
+
+            <hr class="divider">
+
+            <!-- SOURCES -->
+            <section id="sources">
+                <div class="section-label sl-cyan mb-4">03 — Sources</div>
+                <h2 class="text-3xl mystical cyan-grad mb-6">Data Sources</h2>
+
+                <p class="text-slate-300 leading-relaxed mb-6">
+                    The left panel's <strong class="text-cyan-300">data source</strong> selector controls what the
+                    familiar can recall from. There are two modes:
+                </p>
+
+                <div class="glass panel-cyan overflow-hidden mb-6">
+                    <table>
+                        <thead><tr><th>Source</th><th>Corpus</th><th>When to use it</th></tr></thead>
+                        <tbody>
+                            <tr>
+                                <td class="mono text-cyan-300">STRIX default</td>
+                                <td class="text-xs">Built-in, fixed concept library with hand-written responses</td>
+                                <td class="text-xs text-slate-400">No biochain loaded yet, or you want the familiar's original hard-coded persona</td>
+                            </tr>
+                            <tr>
+                                <td class="mono text-cyan-300">Biochain seed</td>
+                                <td class="text-xs">Your own recreated biochain, split into passages by <code class="mono text-cyan-300">biochainToSeeds()</code></td>
+                                <td class="text-xs text-slate-400">You want the familiar to recall <em>your</em> real writing, not a fixed script</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <p class="text-slate-300 leading-relaxed mb-4">
+                    Loading a biochain seed recreates the chain losslessly (proving you actually hold the body,
+                    not just its hashes), splits the text into passages, and crystallizes each passage into an
+                    engram key with <code class="mono text-cyan-300">engramOf</code>/<code class="mono text-cyan-300">engramGrid</code> —
+                    the identical XOR crystallization used in <code class="mono text-cyan-300">Engram_Mind_Eye.html</code>.
+                    A query you type is crystallized the same way, then matched to the nearest passage by
+                    <strong class="text-cyan-300">Hamming distance</strong> (<code class="mono text-cyan-300">matchSeeds()</code>).
+                </p>
+
+                <div class="callout callout-cyan">
+                    <p class="text-xs text-cyan-200 font-semibold mb-1">Honest limit</p>
+                    <p class="text-xs text-slate-400">
+                        XOR-of-letters engrams are a coarse bag-of-letters key — strong for near-duplicate recall,
+                        weak for semantic similarity (measured Hamming distances cluster near 32/64, i.e. close to
+                        random, for genuinely different meanings). Pure retrieval is best-effort recall; it gets
+                        better as you accumulate more, better-segmented biochains, not from tuning a model.
+                    </p>
+                </div>
+            </section>
+
+            <hr class="divider">
+
+            <!-- ENGINES -->
+            <section id="engines">
+                <div class="section-label sl-amber mb-4">04 — Engines</div>
+                <h2 class="text-3xl mystical amber-grad mb-6">Response Engines</h2>
+
+                <p class="text-slate-300 leading-relaxed mb-6">
+                    Once a query is matched to recalled passages, the <strong class="text-amber-300">engine</strong>
+                    setting decides what happens next:
+                </p>
+
+                <div class="space-y-4 mb-8">
+                    <div class="glass panel-green p-5">
+                        <div class="flex items-center gap-2 mb-2">
+                            <h4 class="text-sm text-green-300 mono uppercase tracking-widest">None — pure retrieval</h4>
+                            <span class="badge-repro">reproducible</span>
+                        </div>
+                        <p class="text-xs text-slate-400 leading-relaxed">
+                            Returns the nearest recalled passage(s) verbatim. Free, fully local, no network call.
+                            Legible by construction — it's real text a human wrote. Because retrieval is a pure
+                            function of the query and the loaded seeds, re-running the same query against the same
+                            corpus always yields the same result: bit-for-bit re-derivable on replay.
+                        </p>
+                    </div>
+                    <div class="glass panel-amber p-5">
+                        <div class="flex items-center gap-2 mb-2">
+                            <h4 class="text-sm text-amber-300 mono uppercase tracking-widest">BART — in-browser synthesis</h4>
+                            <span class="badge-attest">attested</span>
+                        </div>
+                        <p class="text-xs text-slate-400 leading-relaxed">
+                            Loads <code class="mono text-amber-300">Xenova/bert-base-uncased</code> (quantized) via
+                            Transformers.js from a CDN and runs masked-language-model fill-mask synthesis over the
+                            recalled context, entirely client-side — no API key, no server. Because a masked-LM
+                            sample is not guaranteed to be identical every time, it is always logged as
+                            <strong>attested</strong>, never reproducible: the turn is faithfully recorded and
+                            hash-chained, but not provably re-derivable byte-for-byte.
+                        </p>
+                    </div>
+                    <div class="glass panel-cyan p-5">
+                        <div class="flex items-center gap-2 mb-2">
+                            <h4 class="text-sm text-cyan-300 mono uppercase tracking-widest">API — bring your own AI</h4>
+                            <span class="badge-attest">attested</span>
+                        </div>
+                        <p class="text-xs text-slate-400 leading-relaxed">
+                            The top-K recalled passages are injected as <code class="mono text-cyan-300">{{context}}</code>
+                            and your query as <code class="mono text-cyan-300">{{query}}</code> into a fully
+                            configurable HTTP request — endpoint, headers, body template, and a response
+                            dot-path to extract the answer, with presets for OpenAI, Anthropic, and Ollama. This is
+                            retrieval-augmented generation with your biochain as the corpus. Your API key stays in
+                            the browser and is <strong>never</strong> written to Firestore. Also always logged as
+                            <strong>attested</strong>.
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Honesty framework -->
+                <h3 id="honesty" class="text-xl mystical text-amber-200 mb-4">Reproducible vs. Attested</h3>
+                <p class="text-slate-300 leading-relaxed mb-4">
+                    This is the honesty framework the whole page is built around, and it's never blurred: a
+                    <span class="badge-repro">reproducible</span> turn can be bit-for-bit re-derived by replaying
+                    the same query against the same corpus — the ledger's <strong>Verify replay</strong> action
+                    actually recomputes it and checks the hash. An <span class="badge-attest">attested</span> turn
+                    (BART or API) is faithfully recorded and hash-chained — you can prove exactly what was asked,
+                    what context was supplied, and what came back, and that the record hasn't been tampered with —
+                    but you cannot prove the model would say the same thing twice. Every turn in the ledger is
+                    tagged with which kind it is, so a reviewer auditing the chain of thought always knows which
+                    guarantee applies to which step.
+                </p>
+            </section>
+
+            <hr class="divider">
+
+            <!-- QUARANTINE -->
+            <section id="quarantine">
+                <div class="section-label sl-red mb-4">05 — Quarantine</div>
+                <h2 class="text-3xl mystical mb-6" style="background:linear-gradient(135deg,#c0392b,#f87171,#ffd6d6);-webkit-background-clip:text;background-clip:text;color:transparent;">The Quarantine Zone</h2>
+
+                <p class="text-slate-300 leading-relaxed mb-6">
+                    The query input field is explicitly treated as a <strong class="text-red-300">quarantine
+                    zone</strong>: whatever you type is crystallized and used to <em>match</em> against recalled
+                    passages — it is never executed, evaluated, or interpolated into code. On the API engine, your
+                    query only ever reaches the template substitution as an inert string
+                    (<code class="mono text-red-300">{{query}}</code>), the same discipline the rest of the Biomesh
+                    system applies to any user-supplied text. This keeps the page safe to point at biochains you
+                    didn't write yourself, and keeps the honesty framework intact — the model doesn't get to act on
+                    your input, only respond to it.
+                </p>
+            </section>
+
+            <hr class="divider">
+
+            <!-- LEDGER -->
+            <section id="ledger">
+                <div class="section-label sl-green mb-4">06 — Ledger</div>
+                <h2 class="text-3xl mystical green-grad mb-6">The Audit Ledger</h2>
+
+                <p class="text-slate-300 leading-relaxed mb-4">
+                    Every turn — on any engine — is appended to the in-page <strong class="text-green-300">audit
+                    ledger</strong> and hash-chained into a running <code class="mono text-green-300">sessionParity</code>,
+                    seeded to <code class="mono text-green-300">0x53484443</code> ("SHDC"):
+                </p>
+
+                <pre class="mb-4"><code><span class="hl">contentHash</span> = SHA-256(query + engine + class + context + response)
+<span class="hl">sessionParity</span> = fold32Hex(contentHash) XOR rotl32(sessionParity, 1)</code></pre>
+
+                <p class="text-slate-300 leading-relaxed mb-4">
+                    This is the identical fold/rotate/XOR lineage pattern as
+                    <code class="mono text-green-300">Engram_Mind_Eye.html</code>'s
+                    <code class="mono text-green-300">codexParity</code>/<code class="mono text-green-300">packetChain</code> —
+                    a change to any turn, anywhere in the session, changes every parity value computed after it.
+                    If an operator seal is selected, each turn is additionally signed:
+                </p>
+
+                <pre class="mb-6"><code>COT/1 | index | contentHash | parity     <span class="text-slate-500">← signed with signWithMinorTome()</span></code></pre>
+
+                <p class="text-slate-300 leading-relaxed mb-4">
+                    So the ledger gives you two independent layers of tamper evidence: the hash chain (detects any
+                    edit to the log itself) and the seal signature (attributes each turn to a specific, publicly
+                    verifiable identity). Both are checked separately by <strong>Verify replay</strong>.
+                </p>
+
+                <!-- Export/crystallize/replay -->
+                <h3 id="exports" class="text-xl mystical text-green-200 mb-4 mt-8">Export · Crystallize · Replay</h3>
+
+                <div class="grid md:grid-cols-3 gap-4">
+                    <div class="glass p-5">
+                        <h4 class="text-sm text-green-300 mono uppercase tracking-widest mb-2">Export engram</h4>
+                        <p class="text-xs text-slate-400 leading-relaxed">Downloads the full session log — every turn, hash, and signature — as a local JSON file. Nothing leaves your machine.</p>
+                    </div>
+                    <div class="glass p-5">
+                        <h4 class="text-sm text-cyan-300 mono uppercase tracking-widest mb-2">Crystallize session</h4>
+                        <p class="text-xs text-slate-400 leading-relaxed">Publishes the session as a biochain via <code class="mono text-cyan-300">publishBiochain</code>, titled <code class="mono text-cyan-300">"Language Growing session " + timestamp</code> — turns the chain of thought itself into a tradable, certified artifact.</p>
+                    </div>
+                    <div class="glass p-5">
+                        <h4 class="text-sm text-amber-300 mono uppercase tracking-widest mb-2">Verify replay</h4>
+                        <p class="text-xs text-slate-400 leading-relaxed">Re-walks the ledger from turn 1, recomputing every <code class="mono text-amber-300">contentHash</code> and refolding <code class="mono text-amber-300">sessionParity</code> from scratch. Any turn whose recorded hash doesn't match what's recomputed is flagged — independent of the seal signatures.</p>
+                    </div>
+                </div>
+            </section>
+
+            <hr class="divider">
+
+            <!-- BURN -->
+            <section id="burn">
+                <div class="section-label sl-red mb-4">07 — Burn</div>
+                <h2 class="text-3xl mystical mb-6" style="background:linear-gradient(135deg,#c0392b,#f87171,#ffd6d6);-webkit-background-clip:text;background-clip:text;color:transparent;">Burning a Session</h2>
+
+                <p class="text-slate-300 leading-relaxed mb-6">
+                    <strong class="text-red-300">🔥 Burn session</strong> destructively clears the current, local,
+                    unexported working session — its content is not recoverable afterward. This is a deliberate
+                    reset for when you want a clean growing session, not an accident-recovery feature.
+                </p>
+
+                <p class="text-slate-300 leading-relaxed mb-6">
+                    Burning content sounds like it's at odds with "everything must be logged" — it isn't, because
+                    burning does not erase the <em>fact</em> that a burn happened. <code class="mono text-red-300">logSessionBurn(uid,
+                    turnCount, parityHex)</code> writes a <code class="mono text-red-300">biomesh.session_burned</code>
+                    event to the append-only <code class="mono text-red-300">chronicles</code> collection, recording
+                    who burned, how many turns were destroyed, and the session's final parity hash —
+                    <strong>never the turn content itself</strong>. So the system stays auditable at the "a burn
+                    happened, by whom, how much was destroyed" level, while still giving you a genuine way to
+                    discard content you don't want kept.
+                </p>
+
+                <div class="glass panel-red p-5 mb-4">
+                    <h4 class="text-sm text-red-300 mono uppercase tracking-widest mb-2">The confirm prompt is context-aware</h4>
+                    <p class="text-xs text-slate-400 leading-relaxed">
+                        If your session has already been exported or crystallized, the confirm dialog simply
+                        confirms the burn (a saved copy exists elsewhere). If there are unsaved turns, the warning
+                        is explicit: <em>"This session has N UNSAVED turn(s). Burning now destroys them
+                        permanently — export or crystallize first if you want to keep them."</em>
+                    </p>
+                </div>
+
+                <div class="callout callout-red">
+                    <p class="text-xs text-red-300 font-semibold mb-1">There is no undo</p>
+                    <p class="text-xs text-slate-400">
+                        Once burned, the local session log, its ledger view, and its parity chain are all reset to
+                        empty. If you didn't export or crystallize first, that content is gone — only the meta-fact
+                        of the burn survives, in <code class="mono text-red-300">chronicles</code>.
+                    </p>
+                </div>
+            </section>
+
+            <hr class="divider">
+
+            <!-- WORKFLOW -->
+            <section id="workflow">
+                <div class="section-label sl-green mb-4">08 — Workflow</div>
+                <h2 class="text-3xl mystical green-grad mb-6">Full Workflow</h2>
+
+                <h3 class="text-xl mystical text-slate-200 mb-4">Path A — Growing your first language seed</h3>
+                <div class="space-y-3 mb-8">
+                    <div class="flex items-start gap-3">
+                        <div class="step-num step-green">1</div>
+                        <div>
+                            <p class="text-sm text-slate-200 font-semibold">Grow and publish a biochain</p>
+                            <p class="text-xs text-slate-500">Use the Biomesh Console's Grow tab to grow a chain from real text you've written, then certify and publish it.</p>
+                        </div>
+                    </div>
+                    <div class="flex items-start gap-3">
+                        <div class="step-num step-green">2</div>
+                        <div>
+                            <p class="text-sm text-slate-200 font-semibold">Open Language Growing and load it as a seed</p>
+                            <p class="text-xs text-slate-500">Select "Biochain seed" as the data source and pick your published chain. It recreates losslessly and splits into passages.</p>
+                        </div>
+                    </div>
+                    <div class="flex items-start gap-3">
+                        <div class="step-num step-green">3</div>
+                        <div>
+                            <p class="text-sm text-slate-200 font-semibold">Mint and select an operator seal</p>
+                            <p class="text-xs text-slate-500">Follow Path B (or the "?" button) if you don't have one yet — this signs every turn from here on.</p>
+                        </div>
+                    </div>
+                    <div class="flex items-start gap-3">
+                        <div class="step-num step-green">4</div>
+                        <div>
+                            <p class="text-sm text-slate-200 font-semibold">Query, review, iterate</p>
+                            <p class="text-xs text-slate-500">Type a query, review the recalled passage(s), switch engines if you want synthesis instead of raw retrieval. Watch the ledger grow.</p>
+                        </div>
+                    </div>
+                    <div class="flex items-start gap-3">
+                        <div class="step-num step-green">5</div>
+                        <div>
+                            <p class="text-sm text-slate-200 font-semibold">Export, crystallize, or burn</p>
+                            <p class="text-xs text-slate-500">When you're done, export the engram, crystallize the session as a new biochain, or burn it if it was just exploratory.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <h3 class="text-xl mystical text-slate-200 mb-4">Path B — Minting your first seal</h3>
+                <div class="space-y-3">
+                    <div class="flex items-start gap-3">
+                        <div class="step-num step-cyan">1</div>
+                        <div><p class="text-sm text-slate-200 font-semibold">Open the Seal Forge and click "Forge minor tome"</p></div>
+                    </div>
+                    <div class="flex items-start gap-3">
+                        <div class="step-num step-cyan">2</div>
+                        <div><p class="text-sm text-slate-200 font-semibold">Return to Language Growing and pick it from the selector</p></div>
+                    </div>
+                    <div class="flex items-start gap-3">
+                        <div class="step-num step-cyan">3</div>
+                        <div><p class="text-sm text-slate-200 font-semibold">Confirm its sigil renders, then continue growing — turns now sign as COT/1</p></div>
+                    </div>
+                </div>
+            </section>
+
+            <hr class="divider">
+
+            <!-- ERRORS -->
+            <section id="errors">
+                <div class="section-label sl-green mb-4">09 — Errors</div>
+                <h2 class="text-3xl mystical green-grad mb-6">Common Errors</h2>
+
+                <div class="glass panel-green overflow-hidden">
+                    <table>
+                        <thead><tr><th>Symptom</th><th>Cause</th><th>Fix</th></tr></thead>
+                        <tbody>
+                            <tr>
+                                <td class="mono text-red-300 text-xs">BioChain Language Growing requires ARCHON</td>
+                                <td class="text-xs">Your Genesis tier isn't ARCHON</td>
+                                <td class="text-xs text-green-300">Obtain an Archon certificate via the Genesis Forge (see the Mage Tower Guide)</td>
+                            </tr>
+                            <tr>
+                                <td class="mono text-red-300 text-xs">No operator seal selected, turns unsigned</td>
+                                <td class="text-xs">Haven't minted or selected a seal yet</td>
+                                <td class="text-xs text-green-300">Follow "How to create an operator seal" via the ? button, or Path B above</td>
+                            </tr>
+                            <tr>
+                                <td class="mono text-red-300 text-xs">Nearest match is weak / irrelevant</td>
+                                <td class="text-xs">XOR engrams are a coarse bag-of-letters key — expected for semantically different but letter-similar text</td>
+                                <td class="text-xs text-green-300">Load more, better-segmented biochains, or switch to BART/API for synthesis over the recalled context</td>
+                            </tr>
+                            <tr>
+                                <td class="mono text-red-300 text-xs">BART fails to load</td>
+                                <td class="text-xs">Transformers.js CDN fetch blocked or slow first-load (model weights are several MB)</td>
+                                <td class="text-xs text-green-300">Check network access to the CDN; retry — the quantized model is cached after first load</td>
+                            </tr>
+                            <tr>
+                                <td class="mono text-red-300 text-xs">API call fails silently or 401s</td>
+                                <td class="text-xs">Missing/invalid API key, or endpoint/header/body template misconfigured</td>
+                                <td class="text-xs text-green-300">Re-check the preset for your provider (OpenAI/Anthropic/Ollama) and confirm the key is entered in the API config panel</td>
+                            </tr>
+                            <tr>
+                                <td class="mono text-red-300 text-xs">Verify replay flags a mismatch</td>
+                                <td class="text-xs">Ledger content was edited outside the app, or a bug in a custom engine integration</td>
+                                <td class="text-xs text-green-300">Treat the flagged turn(s) as untrusted; re-export from a known-good state</td>
+                            </tr>
+                            <tr>
+                                <td class="mono text-red-300 text-xs">Burned a session with unsaved turns</td>
+                                <td class="text-xs">Confirmed the stronger burn warning without exporting/crystallizing first</td>
+                                <td class="text-xs text-green-300">Unrecoverable by design — only the burn event (turn count + parity) remains in chronicles</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <div class="pt-8 border-t border-white/08 flex flex-wrap gap-3 justify-center">
+                <a href="Biomesh_Language_Growing.html" class="nav-link">🌱 Open Language Growing →</a>
+                <a href="Seal_Forge.html"               class="nav-link">⬡ Seal Forge</a>
+                <a href="Biomesh_Console.html"          class="nav-link">♛ Archon Console</a>
+                <a href="Tower_Guide.html"               class="nav-link">◈ Mage Tower Guide</a>
+                <a href="../Learning-Hub.html"          class="nav-link">← Learning Hub</a>
+            </div>
+
+        </main>
+    </div>
+</div>
+
+</body>
+</html>

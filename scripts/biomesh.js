@@ -640,6 +640,16 @@ export const listTransfersForChain = (chainId) =>
 export const listAllTransfers = (max = 200) =>
   queryCollection("biochainTransfers", [orderBy("createdAt", "desc"), limit(max)]);
 
+/** Record that a Language Growing session was burned (destroyed, unexported).
+ *  Logs ONLY the fact + turn count + last parity — never the content — so a
+ *  burn is itself an auditable system event even though the session it
+ *  destroys is deliberately unrecoverable. */
+export async function logSessionBurn(uid, turnCount, parityHex) {
+  await addToCollection("chronicles", {
+    kind: "biomesh.session_burned", uid, turnCount, parityHex, at: new Date().toISOString(),
+  });
+}
+
 /** Full trace: certification + every hop's seal, verified. */
 export async function traceBiochain(chainId) {
   const chain = await getBiochain(chainId);

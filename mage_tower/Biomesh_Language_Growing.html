@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Biomesh Mind Eye — Owl Academy</title>
+<title>BioChain Language Growing — Owl Academy</title>
 <script type="module" src="../scripts/auth-guard.js"></script>
 <script type="module" src="../scripts/ui/node-network-bg.js" data-accent="#00ff88"></script>
 <style>
@@ -20,6 +20,8 @@
   .btn:hover{background:rgba(0,255,136,.24)} .btn[disabled]{opacity:.4;cursor:not-allowed}
   .btn.sm{padding:.25rem .55rem;font-size:.58rem}
   .btn.am{background:rgba(176,38,255,.14);color:#d8b4fe;border-color:rgba(176,38,255,.4)}
+  .btn.burn{background:rgba(248,113,113,.12);color:#fca5a5;border-color:rgba(248,113,113,.4)}
+  .btn.burn:hover{background:rgba(248,113,113,.22)}
   main{max-width:1180px;margin:1rem auto;padding:0 1rem;display:grid;grid-template-columns:320px 1fr;gap:1rem}
   @media(max-width:900px){main{grid-template-columns:1fr}}
   .panel{background:rgba(10,10,18,.88);backdrop-filter:blur(10px);border:1px solid rgba(0,255,136,.2);border-radius:12px;padding:.9rem 1rem;margin-bottom:1rem;box-shadow:0 8px 28px -6px rgba(0,0,0,.55)}
@@ -54,12 +56,27 @@
   .hidden{display:none}
   .dots::after{content:'';animation:dots 1.2s steps(4,end) infinite}
   @keyframes dots{0%{content:''}25%{content:'.'}50%{content:'..'}75%{content:'...'}}
+  /* help button + modal */
+  #helpBtn{position:fixed;right:1.2rem;bottom:1.2rem;z-index:60;width:42px;height:42px;border-radius:50%;
+    background:rgba(0,255,136,.16);color:#d9ffee;border:1px solid rgba(0,255,136,.5);font-size:1.1rem;font-weight:700;
+    cursor:pointer;box-shadow:0 4px 18px rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center}
+  #helpBtn:hover{background:rgba(0,255,136,.3)}
+  #helpModal{position:fixed;inset:0;z-index:70;background:rgba(2,1,5,.78);backdrop-filter:blur(3px);display:none;align-items:center;justify-content:center;padding:1.2rem}
+  #helpModal.show{display:flex}
+  #helpCard{max-width:560px;width:100%;max-height:85vh;overflow-y:auto;background:rgba(10,10,18,.97);border:1px solid rgba(0,255,136,.3);
+    border-radius:14px;padding:1.4rem 1.5rem;box-shadow:0 20px 60px rgba(0,0,0,.6)}
+  #helpCard h2{font-size:1rem;color:#d9ffee;margin-bottom:.7rem}
+  #helpCard ol{margin:.4rem 0 .9rem 1.2rem;font-size:.82rem;color:#c3cad3}
+  #helpCard ol li{margin-bottom:.55rem;line-height:1.5}
+  #helpCard p{font-size:.78rem;color:#9aa5b1;margin-bottom:.7rem;line-height:1.55}
+  #helpCard .close{float:right;cursor:pointer;color:#7a8290;font-size:1rem}
+  #helpCard code{background:rgba(0,255,136,.08);color:var(--green);padding:.05rem .35rem;border-radius:4px;font-size:.76rem}
 </style>
 </head>
 <body>
 
 <div class="secbar">
-  <div class="seal"><span>👁</span> Biomesh · Mind Eye</div>
+  <div class="seal"><span>🌱</span> BioChain · Language Growing</div>
   <div style="display:flex;gap:.6rem;align-items:center">
     <a class="btn sm" href="Biomesh_Console.html">← Console</a>
     <span class="who mono" id="who">…</span>
@@ -68,9 +85,9 @@
 </div>
 
 <div id="gate" class="panel">
-  <div class="sig">👁</div>
+  <div class="sig">🌱</div>
   <div class="label" style="justify-content:center">Resolving tier…</div>
-  <p id="gateMsg" style="font-size:.8rem;color:#8a93a0">The Mind Eye admin surface is Archon-only. Your Genesis tier is being verified.</p>
+  <p id="gateMsg" style="font-size:.8rem;color:#8a93a0">BioChain Language Growing is an Archon-only surface. Your Genesis tier is being verified.</p>
 </div>
 
 <main id="app" class="hidden">
@@ -88,7 +105,7 @@
     </div>
 
     <div class="panel">
-      <div class="label">Data source — the familiar's memory</div>
+      <div class="label">Data source — the growing corpus</div>
       <select id="srcMode">
         <option value="strix">STRIX default concepts (no seed)</option>
         <option value="biochain">Biochain seed(s) — your recorded knowledge</option>
@@ -147,14 +164,15 @@
         <button class="btn sm" onclick="exportEngram()">↓ Export engram</button>
         <button class="btn sm am" onclick="crystallizeSession()">⬡ Crystallize → biochain</button>
         <button class="btn sm" onclick="replaySession()">↺ Verify replay</button>
+        <button class="btn sm burn" onclick="burnSession()">🔥 Burn session</button>
       </div>
       <div class="meta" id="auditMsg" style="margin-top:.4rem"></div>
     </div>
   </div>
 
-  <!-- ===== right: the eye ===== -->
+  <!-- ===== right: the growing session ===== -->
   <div class="panel" id="eye">
-    <div class="label">The Mind Eye <span class="pill ok" id="modePill">retrieval</span></div>
+    <div class="label">Growing Session <span class="pill ok" id="modePill">retrieval</span></div>
     <div id="stream"></div>
     <div id="quarantine">
       <div class="qlab">⚠ Quarantine zone — queries are untrusted input, matched not executed</div>
@@ -165,6 +183,35 @@
     </div>
   </div>
 </main>
+
+<!-- ===== ? help button + modal ===== -->
+<button id="helpBtn" title="How do I create an operator seal?" onclick="document.getElementById('helpModal').classList.add('show')">?</button>
+<div id="helpModal">
+  <div id="helpCard">
+    <span class="close" onclick="document.getElementById('helpModal').classList.remove('show')">✕</span>
+    <h2>🔑 How to create an operator seal</h2>
+    <p>Your seal is the identity that signs every logged turn on this page — a recallable
+       ECDSA key visualized as a unique SHD-CCP sigil, the same familiar-glyph language as
+       the Owl Academy sigils. No seal, no signature: turns still log and hash-chain, but
+       nobody can prove <em>you</em> made them.</p>
+    <ol>
+      <li>Open the <a href="Seal_Forge.html" target="_blank">Seal Forge</a> (new tab).</li>
+      <li>Optionally adjust the lattice (E8/R8/R24), manifold, coherency, and torsion sliders —
+        defaults are fine for a first seal.</li>
+      <li>Click <code>Forge minor tome</code>. This samples the live Schumann tick and mints a
+        fresh ECDSA P-256 keypair — the private key never leaves your browser's Firestore doc.</li>
+      <li>Return to this tab. Your new seal appears in the <b>Operator seal</b> selector at the
+        top-left automatically (reload the page if it doesn't).</li>
+      <li>Pick it from the dropdown — its unique sigil renders immediately, and every turn you
+        transmit from now on is signed <code>COT/1</code> with that seal.</li>
+    </ol>
+    <p><b>Recalling a seal</b> (in the Seal Forge) instantly invalidates every signature it
+       ever made, everywhere — including past turns in an exported engram. That's the
+       intended "kill switch": if a seal is compromised, recall it and every prior signature
+       stops verifying.</p>
+    <p>Full walkthrough of every control on this page: <a href="Biomesh_Language_Growing_Guide.html" target="_blank"><b>open the companion guide →</b></a></p>
+  </div>
+</div>
 
 <script type="module">
 import { auth } from "../scripts/firebase/config.js";
@@ -177,10 +224,11 @@ import * as BM from "../scripts/biomesh.js";
 const $ = id => document.getElementById(id);
 let uid = null, seeds = [], sourceLabel = "STRIX concept library", busy = false;
 let activeSeal = null;                    // { sealId, sealVector, ... }
-const sessionLog = [];                    // every logged turn (chain of thought)
+let sessionLog = [];                      // every logged turn (chain of thought)
 let sessionParity = 0x53484443 >>> 0;     // "SHDC" running hash-chain spine
+let sessionSaved = false;                 // true once exported or crystallized (burn-guard)
 
-// ── tamper-evident chaining (same fold/rotl/xor lineage as the Mind Eye) ─────
+// ── tamper-evident chaining (same fold/rotl/xor lineage as Engram_Mind_Eye.html) ─
 const rotl32 = (x, n) => ((x << n) | (x >>> (32 - n))) >>> 0;
 const hex32 = x => (x >>> 0).toString(16).toUpperCase().padStart(8, "0");
 async function sha256hex(s) {
@@ -199,6 +247,7 @@ async function logTurn(turn) {
   }));
   const parity = (fold32Hex(contentHash) ^ rotl32(prev, 1)) >>> 0;
   sessionParity = parity;
+  sessionSaved = false;                    // new unsaved work exists again
   const sig = activeSeal ? await signWithMinorTome(uid, activeSeal.sealId,
     "COT/1|" + sessionLog.length + "|" + contentHash + "|" + hex32(parity)).catch(() => null) : null;
   const entry = {
@@ -223,7 +272,7 @@ function renderLedger() {
   }).join("");
 }
 
-// ── STRIX default concept library (the Mind Eye's own, when no seed) ─────────
+// ── STRIX default concept library (ported from Engram_Mind_Eye.html) ────────
 const STRIX = {
   GEODESIC: { responses: [
     "A geodesic is the straightest path a thought can take when it can't curve away from itself — in hyperbolic space these fan out endlessly.",
@@ -412,7 +461,7 @@ async function transmit() {
   typeWriter(body, answer, () => { busy = false; $("sendBtn").disabled = false; $("qin").focus(); });
 }
 
-// ── export / crystallize / replay ────────────────────────────────────────────
+// ── export / crystallize / replay / burn ─────────────────────────────────────
 function exportEngram() {
   if (!sessionLog.length) return void ($("auditMsg").textContent = "Nothing logged yet.");
   const engram = {
@@ -424,6 +473,7 @@ function exportEngram() {
   const a = document.createElement("a");
   a.href = URL.createObjectURL(blob); a.download = "engram-cot-" + Date.now() + ".json"; a.click();
   URL.revokeObjectURL(a.href);
+  sessionSaved = true;
   $("auditMsg").innerHTML = `<span style="color:var(--green)">Exported ${sessionLog.length} turns · parity 0x${hex32(sessionParity)}</span>`;
 }
 async function crystallizeSession() {
@@ -434,7 +484,8 @@ async function crystallizeSession() {
       `[turn ${t.index} · ${t.engine} · ${t.cls} · ${t.parity}]\nQ: ${t.query}\nA: ${t.response}`).join("\n\n");
     const chain = await BM.growBiochain(transcript);
     if (activeSeal) {
-      await BM.publishBiochain(uid, activeSeal.sealId, chain, { title: "Mind Eye session " + new Date().toISOString().slice(0, 16) });
+      await BM.publishBiochain(uid, activeSeal.sealId, chain, { title: "Language Growing session " + new Date().toISOString().slice(0, 16) });
+      sessionSaved = true;
       $("auditMsg").innerHTML = `<span style="color:var(--green)">Crystallized + published: ${chain.chainId} · ${chain.engramCount} engrams. Now transferable/replayable on the mesh.</span>`;
     } else {
       $("auditMsg").innerHTML = `<span style="color:var(--warn)">Grown ${chain.chainId} (value ${chain.value}) — select a seal to publish it.</span>`;
@@ -457,6 +508,26 @@ async function replaySession() {
   $("auditMsg").innerHTML =
     `chain ${chainOk ? '<span style="color:var(--green)">intact ✓</span>' : '<span style="color:var(--bad)">TAMPERED ✗</span>'} · ` +
     `reproducible ${reproOk}/${reproTot} re-derived ✓ · ${attested} attested (recorded, not re-run)`;
+}
+/** Burn the current session: destroys the local unexported working log.
+ *  Does NOT touch anything already crystallized/published — those are
+ *  immutable chains on the mesh already. The burn EVENT itself (turn count +
+ *  last parity, never content) is logged to chronicles, so the system stays
+ *  auditable even though the burned content is deliberately unrecoverable. */
+async function burnSession() {
+  if (!sessionLog.length) { $("auditMsg").textContent = "Nothing to burn — session is already empty."; return; }
+  const warn = sessionSaved
+    ? `Burn this session's ${sessionLog.length} turns from memory? (Already exported/crystallized copies are unaffected.)`
+    : `⚠ This session has ${sessionLog.length} UNSAVED turn(s). Burning now destroys them permanently — export or crystallize first if you want to keep them.\n\nBurn anyway?`;
+  if (!confirm(warn)) return;
+  const turnCount = sessionLog.length, parityHex = "0x" + hex32(sessionParity);
+  await BM.logSessionBurn(uid, turnCount, parityHex).catch(() => {});
+  sessionLog = []; sessionParity = 0x53484443 >>> 0; sessionSaved = false;
+  renderLedger();
+  $("stream").innerHTML = "";
+  $("kernel").innerHTML = "J torsion: —<br>chiral key: —<br>nearest: —<br>engine: pure retrieval";
+  addMsg("strix", "Session burned. The working memory is gone — this is a fresh growing session. (The burn itself was logged: " + turnCount + " turns, last parity " + parityHex + ".)", "session reset");
+  $("auditMsg").innerHTML = `<span style="color:#fca5a5">Burned ${turnCount} turns · event logged (content not recoverable)</span>`;
 }
 
 async function callAPI(query, context) {
@@ -483,7 +554,7 @@ onAuthStateChanged(auth, async user => {
   if (!user) return;
   uid = user.uid; $("who").textContent = user.email || uid;
   let tier = "ACOLYTE"; try { tier = await resolveTier(uid); } catch (_) {}
-  if (tier !== "ARCHON") { $("gateMsg").innerHTML = "Tier resolved: <b>" + tier + "</b> — the Mind Eye admin surface requires <b>ARCHON</b>."; return; }
+  if (tier !== "ARCHON") { $("gateMsg").innerHTML = "Tier resolved: <b>" + tier + "</b> — BioChain Language Growing requires <b>ARCHON</b>."; return; }
   $("gate").classList.add("hidden"); $("app").classList.remove("hidden");
   try {
     const chains = (await BM.listBiochains(200)).filter(c => c.ownerUid === uid || c.growerUid === uid);
@@ -499,7 +570,7 @@ onAuthStateChanged(auth, async user => {
     window._seals = tomes;
     if (tomes.length) { $("sealSel").value = tomes[0].sealId; selectSeal(tomes[0].sealId); }
   } catch (_) {}
-  addMsg("strix", "I am STRIX — a familiar woven from engram memory. With no seed I answer from concept resonance; give me a biochain and I recall your own recorded knowledge; attach BART or an AI and it synthesizes over what I recall. Every turn is logged, hash-chained, and signed by your seal — an auditable chain of thought. What do you want to see?", "familiar online");
+  addMsg("strix", "I am STRIX — a familiar that grows quality language seeds from engram memory. With no seed I answer from concept resonance; give me a biochain and I recall your own recorded knowledge; attach BART or an AI and it synthesizes over what I recall. Every turn is logged, hash-chained, and signed by your seal — an auditable chain of thought. What do you want to grow?", "familiar online");
   refreshMode();
 });
 function selectSeal(sealId) {
@@ -511,7 +582,8 @@ function selectSeal(sealId) {
 }
 $("sealSel").addEventListener("change", () => selectSeal($("sealSel").value));
 window.transmit = transmit; window.loadSeeds = loadSeeds;
-window.exportEngram = exportEngram; window.crystallizeSession = crystallizeSession; window.replaySession = replaySession;
+window.exportEngram = exportEngram; window.crystallizeSession = crystallizeSession;
+window.replaySession = replaySession; window.burnSession = burnSession;
 window.globalLogout = window.globalLogout || (() => location.href = "../login.html");
 </script>
 </body>
