@@ -271,6 +271,44 @@ learned field. Playback is play/pause + deterministic frame scrubbing; the
 interaction ledger is exportable. It layers on top of the standalone core (no
 backend), reusing the same packets, chains, and 64-bit word codec.
 
+### Codex environments — the FORM split, fold gates, and FLUX/CRYST
+
+The Mind's Eye also supports **codex environments**: small, pre-built starter
+areas loaded as the default substrate instead of a blank 40k box, so biochains
+grow into something structured (the "house" whose rooms give incoming data
+streams a place to belong).
+
+- **FORM split (top bit).** The 4-bit form nibble is split by bit 3: clear →
+  **geometry** (`0` 0D point · `1‑5` the five Platonic solids · `6` 4D hypercube
+  · `7` 8D E8 lattice); set → **gate** (`8` HALT · `9` SEED · `10` ROT · `11`
+  XFOLD · `12` MIRROR · `13` SPLIT · `14` MERGE · `15` LINK). Eight of each, no
+  new field. A kernel data-crystal (`crystallize()` → form 9) is disambiguated
+  from the SEED gate by a raw-word flag (persisted in the seed as `r:1`), so all
+  eight gate slots stay usable and gate/geometry/crystal kinds survive a seed
+  round-trip.
+- **Fold programs = pseudo-quantum logic gates.** The ordered gate packets form a
+  **fold program** run over the cubic expansion grammar `1 → 3 → 7 → 6 → 12 → 64`
+  (singularity → axes → pivots → faces → edges → cube-cell, the inverse of the
+  pump's collapse). SPLIT advances a tier and spawns children on the next shell
+  (bounded by an energy cap); MERGE collapses the outer shell; ROT/XFOLD/MIRROR
+  transform and LINK entangles the live cells to the frontier; HALT stops. The
+  gate set is closed, bounded, and halting (no jumps), so a fold program always
+  terminates with bounded energy — the same safety posture as the codex ABI it
+  extends. `runFoldProgram()` is deterministic and emits a hash.
+- **`ENVIRONMENT/1`.** One loadable object bundling `{ boundary (a LATTICE-SEED),
+  codex (a CODEX/1 GEAR·PRIME·HALT prior), pump params, frontier (growth-edge
+  vertex indices), hash }`. The **Boundary designer** authors it (energy-frugal
+  size presets, frontier-marking mode, codex attach, build/export); loading it
+  rebuilds the boundary, restores the frontier + pump params, and re-binds the
+  codex — deterministic (wreck-and-reload reproduces the hash).
+- **FLUX / CRYST.** Simulation runs on **FLUX** — the free, infinite meter (breathe,
+  fold, iterate; cost is only time, all offline). **CRYST** — the scarce,
+  compute-backed credit — is spent only to crystallize a good codex+biochain
+  environment up the tiers, and the crystallize action is **gated to the pump's
+  crystallization windows** (start / half / full cycle — the tri-gear sync points
+  from `pump_clock.py`); outside a window it is refused. When signed in it grows
+  the environment into a certified biochain via `publishBiochain`.
+
 ## Certification — GROWN/1
 
 On publish, the grower signs the commitment with their **minor-tome seal**
