@@ -236,6 +236,41 @@ seed, and regrows the identical lattice. The build/chain/raw-data/seed/regrow
 core is 100% offline; publishing is the optional bridge onto the mesh. A "?"
 button and info link open the companion guide, `Biomesh_Mind_Eye_3D_Guide.html`.
 
+### The synchronization pump — a torsional Markov "breath"
+
+The Mind's Eye also carries a **synchronization pump** ported from Department V's
+`Loom_Weave.html`: a torsional, Markov, one-way "zero-point pump" that drives the
+whole substrate through a 720-frame cycle (or any length 12–4320) so **every
+programmed SHD-CCP packet interacts with every other**. Each frame at cycle-time
+`t = frame/frames`:
+
+1. **Breath** — `breath = 1 + sin(π·t)·amp` pushes every packet radially out from
+   the zero-point center and back (one inhale/exhale per cycle); a 4×4×4
+   tessellation shell unfolds with it.
+2. **Torsional one-way Markov pump** — charge is injected at the innermost packet
+   and flows strictly outward, shell by shell (irreversible); inner shells rotate
+   faster, twisting the substrate.
+3. **Interaction (matrix field)** — any two packets within `reach` couple:
+   `coupling = charge × affinity / (1 + Q)`, where `Q` is the quadrance (squared
+   distance) and affinity is `1 − hamming(word_a, word_b)/64` over the two 64-bit
+   SHD-CCP words. Each coupling adds to both packets' scalar.
+4. **Implied-quadrance backprop** — the phase-conjugate return: each shell's scalar
+   flows back inward, quadrance-weighted, concentrating toward the zero point
+   (matrix field → scalar field).
+5. **Render** — packets recolor by scalar, interaction links draw between coupled
+   pairs, chains follow the breathing packets.
+
+The cycle is a pure function of the packets + parameters (breath, torsion, reach,
+backprop, frames), so it is deterministic: the same setup yields the same
+interaction count and scalar field, and the pump emits a `cycleHash` (fold32 of
+the scalar field + params) — replayable and verifiable like a seed. **Bake scalar
+→ packets** writes the normalized scalar field into each packet's payload, so what
+the substrate *learned* from breathing becomes part of the packet word and is
+captured by the seed — a regrown lattice on another node already carries the
+learned field. Playback is play/pause + deterministic frame scrubbing; the
+interaction ledger is exportable. It layers on top of the standalone core (no
+backend), reusing the same packets, chains, and 64-bit word codec.
+
 ## Certification — GROWN/1
 
 On publish, the grower signs the commitment with their **minor-tome seal**
@@ -307,7 +342,7 @@ grow, transfer, and rate); a student-facing marketplace page can reuse
 | `mage_tower/Biomesh_Console.html` | the Archon-only control panel |
 | `mage_tower/Biomesh_Language_Growing.html` | BART/biochain/API language-seed growing surface + auditable chain of thought |
 | `mage_tower/Biomesh_Language_Growing_Guide.html` | companion how-to guide (seals, sources, engines, ledger, burn) |
-| `mage_tower/Biomesh_Mind_Eye_3D.html` | 3D SHD-CCP lattice forge — program vertices, chain packets, crystallize a regrowable seed |
+| `mage_tower/Biomesh_Mind_Eye_3D.html` | 3D SHD-CCP lattice forge — program vertices, chain packets, crystallize a regrowable seed, and run the torsional Markov "breath" synchronization pump |
 | `mage_tower/Biomesh_Mind_Eye_3D_Guide.html` | companion how-to guide (navigation, packet, chains, raw data, seed, shared standard) |
 | `firestore.rules` | `biochains` / `biochainTransfers` / `biochainRatings` / `chronicles` blocks |
 | `BioChain-AI/BioChain_Enterprise/` | the measured reference stack this deploys |

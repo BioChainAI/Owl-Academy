@@ -55,6 +55,31 @@
         #chainBadge { top:12px; left:274px; font-size:11px; display:none; border-color:rgba(245,166,35,.5); }
         #chainBadge b { color:#f5a623; }
         .lil-gui { --background-color:#0a1018; --widget-color:#12202c; --focus-color:#00ff88; }
+
+        /* Synchronization pump — breath playback engine */
+        #pumpPanel { bottom:12px; left:50%; transform:translateX(-50%); width:520px; max-width:calc(100vw - 380px); font-size:12px; border-color:rgba(168,85,247,.4); }
+        #pumpPanel h4 { margin:0 0 8px; color:#c084fc; font-family:'Cinzel',serif; font-weight:600; font-size:14px; display:flex; align-items:center; justify-content:space-between; }
+        #pumpPanel .subttl { color:#8b93a7; font-weight:400; font-size:10px; font-family:'JetBrains Mono',monospace; }
+        #pumpRow { display:flex; align-items:center; gap:8px; margin-bottom:7px; }
+        #pumpRow button { cursor:pointer; font-size:12px; padding:6px 10px; background:rgba(168,85,247,.16); color:#eadcff; border:1px solid rgba(168,85,247,.45); border-radius:7px; font-family:'Inter',sans-serif; transition:background .15s; }
+        #pumpRow button:hover { background:rgba(168,85,247,.3); }
+        #pumpRow button.play { flex:1; font-weight:700; letter-spacing:.05em; }
+        #frameSlider { flex:1; -webkit-appearance:none; height:4px; border-radius:2px; background:#2a2340; outline:none; }
+        #frameSlider::-webkit-slider-thumb { -webkit-appearance:none; width:14px; height:14px; border-radius:50%; background:#c084fc; cursor:pointer; box-shadow:0 0 8px rgba(192,132,252,.8); }
+        #frameReadout { font-family:'JetBrains Mono',monospace; font-size:11px; color:#eadcff; background:rgba(168,85,247,.18); padding:3px 7px; border-radius:5px; white-space:nowrap; }
+        #breathBar { height:3px; background:linear-gradient(90deg,#a855f7,#2dd4bf); border-radius:2px; margin:2px 0 8px; transition:width .05s linear; width:0%; }
+        #pumpCtl { display:flex; flex-wrap:wrap; gap:6px 12px; align-items:center; font-family:'JetBrains Mono',monospace; font-size:10px; color:#9fb4c8; margin-bottom:7px; }
+        #pumpCtl label { display:flex; align-items:center; gap:5px; cursor:pointer; }
+        #pumpCtl input[type=number] { width:52px; background:rgba(0,0,0,.5); color:#eadcff; border:1px solid rgba(168,85,247,.35); border-radius:4px; font-family:'JetBrains Mono',monospace; font-size:10px; padding:2px 4px; }
+        #pumpCtl input[type=range] { width:72px; accent-color:#c084fc; }
+        #pumpCtl .speed { cursor:pointer; padding:2px 6px; border-radius:4px; border:1px solid rgba(45,212,191,.4); color:#7fe9c4; background:rgba(45,212,191,.08); }
+        #pumpCtl .speed.on { background:rgba(45,212,191,.3); color:#fff; }
+        #pumpLedger { height:70px; overflow-y:auto; background:rgba(0,0,0,.55); border:1px solid rgba(168,85,247,.25); border-radius:6px; padding:5px 7px; font-family:'JetBrains Mono',monospace; font-size:9.5px; color:#9fb4c8; line-height:1.55; }
+        #pumpLedger .spark { color:#fde047; } #pumpLedger .scal { color:#2dd4bf; } #pumpLedger .sys { color:#c084fc; }
+        #pumpLedger::-webkit-scrollbar { width:5px; } #pumpLedger::-webkit-scrollbar-thumb { background:rgba(168,85,247,.5); border-radius:3px; }
+        #pumpMini { display:flex; gap:6px; margin-top:6px; }
+        #pumpMini button { flex:1; cursor:pointer; font-size:10px; padding:4px; background:rgba(45,212,191,.1); color:#7fe9c4; border:1px solid rgba(45,212,191,.4); border-radius:5px; }
+        #pumpMini button:hover { background:rgba(45,212,191,.22); }
     </style>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Inter:wght@400;600&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
@@ -101,6 +126,32 @@
         </div>
         <div id="seedStatus">Program vertices, chain them, then Build a regrowable seed.</div>
         <input type="file" id="seedFile" accept=".json,.latticeseed,.txt" style="display:none">
+    </div>
+
+    <div id="pumpPanel" class="panel">
+        <h4>🫁 Synchronization Pump <span class="subttl">torsional Markov · zero-point breath</span></h4>
+        <div id="pumpRow">
+            <button id="pumpPlay" class="play" onclick="window.ME.pumpToggle()">⏯ Pump</button>
+            <input type="range" id="frameSlider" min="0" max="720" value="0" step="1">
+            <span id="frameReadout">0 / 720</span>
+        </div>
+        <div id="breathBar"></div>
+        <div id="pumpCtl">
+            <label>frames <input type="number" id="pumpFrames" value="720" min="12" max="4320" step="12"></label>
+            <label>breath <input type="range" id="pumpBreath" min="0" max="1.2" step="0.05" value="0.5"></label>
+            <label>torsion <input type="range" id="pumpTorsion" min="0" max="6" step="0.5" value="3"></label>
+            <label>reach <input type="range" id="pumpReach" min="2" max="30" step="1" value="12"></label>
+            <label><input type="checkbox" id="pumpBackprop" checked> backprop</label>
+            <span class="speed on" data-s="1" onclick="window.ME.pumpSpeed(1,this)">1×</span>
+            <span class="speed" data-s="0.25" onclick="window.ME.pumpSpeed(0.25,this)">0.25×</span>
+            <span class="speed" data-s="4" onclick="window.ME.pumpSpeed(4,this)">4×</span>
+        </div>
+        <div id="pumpLedger"><div class="sys">Pump idle. Program packets, then ▶ to breathe the substrate — packets interact across the cycle.</div></div>
+        <div id="pumpMini">
+            <button onclick="window.ME.pumpReset()">Reset cycle</button>
+            <button onclick="window.ME.pumpExport()">Export interaction ledger</button>
+            <button onclick="window.ME.pumpBake()">Bake scalar → packets</button>
+        </div>
     </div>
 
     <button id="helpBtn" title="How this works" onclick="window.open('Biomesh_Mind_Eye_3D_Guide.html','_blank')">?</button>
@@ -319,10 +370,12 @@
             window.addEventListener('keyup', onKeyUp);
             renderer.domElement.addEventListener('wheel', onCanvasWheel, { passive: false });
             document.getElementById('seedFile').addEventListener('change', onSeedFile);
+            pumpInit();
         }
 
         // ── LATTICE & NODE MANAGEMENT ──────────────────────────────────────────
         function regenerateLattice() {
+            if (typeof pump !== 'undefined') { pump.on = false; pump.started = false; pump.parts = []; if (pump.tess) pump.tess.visible = false; pumpClearLinks(); }
             if (particleSystem) scene.remove(particleSystem);
             if (wireframe) scene.remove(wireframe);
             activeNodes.forEach(node => scene.remove(node));
@@ -921,6 +974,174 @@
             rebuildChains();
         }
 
+        // ══════════════════════════════════════════════════════════════════════
+        //  SYNCHRONIZATION PUMP — torsional Markov one-way "breath" (Loom_Weave port)
+        //  Every programmed SHD-CCP packet is a participant. Over a cycle of `frames`
+        //  the substrate breathes out from the zero-point center — breath = 1+sin(pi t)*amp —
+        //  while a one-way Markov charge pulse pumps inside→out through radial shells with a
+        //  torsional twist (inner shells spin faster). When two packets' breathing positions
+        //  fall within `reach`, they INTERACT: coupling = charge × field-affinity / (1+quadrance),
+        //  accumulating a scalar field on each packet (the matrix field → scalar field). A
+        //  phase-conjugate backprop pass returns quadrance-weighted gradients inward to the
+        //  zero point, growing the central scalar. Deterministic → same packets+params give
+        //  the same cycle hash, so a run is auditable/replayable like everything else here.
+        // ══════════════════════════════════════════════════════════════════════
+        const pump = {
+            on: false, started: false, frame: 0, frames: 720, speed: 1,
+            breath: 0.5, torsion: 3, reach: 12, backprop: true, maxR: 1,
+            parts: [], charge: null, scalar: null, frameLinks: [],
+            maxScalar: 0, interactions: 0, cycleHash: '',
+            ledgerEl: null, linkGroup: null, tess: null,
+            _a: new THREE.Vector3(),
+        };
+        function hammingWords(a, b) { let x = BigInt('0x' + a) ^ BigInt('0x' + b), d = 0; while (x) { d += Number(x & 1n); x >>= 1n; } return d; }
+        function pumpLog(html, cls) {
+            const box = pump.ledgerEl; if (!box) return;
+            const d = document.createElement('div'); d.innerHTML = cls ? `<span class="${cls}">${html}</span>` : html;
+            box.appendChild(d); while (box.children.length > 60) box.removeChild(box.firstChild); box.scrollTop = box.scrollHeight;
+        }
+        function pumpEnsureGroups() {
+            if (!pump.linkGroup) { pump.linkGroup = new THREE.Group(); scene.add(pump.linkGroup); }
+            if (!pump.tess) {
+                const g = new THREE.Group();
+                const edges = new THREE.EdgesGeometry(new THREE.BoxGeometry(1, 1, 1));
+                for (let s = 1; s <= 4; s++) {                     // 4×4×4 nested tessellation shells
+                    const c = new THREE.LineSegments(edges, new THREE.LineBasicMaterial({ color: 0x2dd4bf, transparent: true, opacity: 0.22 }));
+                    c.scale.setScalar(s / 4); g.add(c);
+                }
+                g.visible = false; scene.add(g); pump.tess = g;
+            }
+        }
+        function pumpClearLinks() { if (!pump.linkGroup) return; while (pump.linkGroup.children.length) { const c = pump.linkGroup.children.pop(); c.geometry.dispose(); c.material.dispose(); } }
+        function pumpCapture() {
+            pump.parts = [];
+            for (const [i, d] of packetData) if (d.formId >= 0) { const p = nodePos(i); pump.parts.push({ i, base: p.clone(), r: p.length(), pos: new THREE.Vector3(), word: nodeToWord(d) }); }
+            pump.parts.sort((a, b) => a.r - b.r);                  // inner → outer shells
+            pump.maxR = pump.parts.length ? (pump.parts[pump.parts.length - 1].r || 1) : 1;
+            const n = pump.parts.length;
+            pump.charge = new Float32Array(n); pump.scalar = new Float32Array(n);
+            pump.maxScalar = 0; pump.interactions = 0; pump.cycleHash = ''; pump.frameLinks = [];
+            return n;
+        }
+        function pumpPos(part, t, out) {
+            const breath = 1 + Math.sin(Math.PI * t) * pump.breath;   // one inhale/exhale per cycle
+            out.copy(part.base).multiplyScalar(breath);
+            const shellF = 1 - Math.min(1, part.r / (pump.maxR || 1)); // 1 inner … 0 outer
+            const ang = t * Math.PI * 2 * pump.torsion * (0.25 + shellF);
+            const x = out.x, z = out.z, c = Math.cos(ang), s = Math.sin(ang);
+            out.x = x * c - z * s; out.z = x * s + z * c;
+            return out;
+        }
+        function pumpAccumulate(t, quiet) {
+            const n = pump.parts.length; if (!n) return; const di = pump.parts;
+            // 1) one-way Markov charge pump: inject at zero-point (innermost), flow outward, irreversible
+            pump.charge[0] += Math.max(0, Math.sin(Math.PI * t)) * 0.5;
+            for (let k = n - 1; k > 0; k--) { const flow = pump.charge[k - 1] * 0.35; pump.charge[k] += flow; pump.charge[k - 1] -= flow; }
+            for (let k = 0; k < n; k++) pump.charge[k] *= 0.985;
+            // 2) breathing positions
+            for (let k = 0; k < n; k++) pumpPos(di[k], t, di[k].pos);
+            // 3) interactions → scalar field (matrix field of pairwise couplings)
+            if (!quiet) pump.frameLinks = [];
+            const reach2 = pump.reach * pump.reach;
+            for (let a = 0; a < n; a++) for (let b = a + 1; b < n; b++) {
+                const Q = di[a].pos.distanceToSquared(di[b].pos); if (Q > reach2) continue;   // quadrance
+                const aff = 1 - hammingWords(di[a].word, di[b].word) / 64;                     // field affinity
+                const flow = (pump.charge[a] + pump.charge[b]) * aff / (1 + Q); if (flow < 1e-4) continue;
+                pump.scalar[a] += flow; pump.scalar[b] += flow; pump.interactions++;
+                if (!quiet) {
+                    pump.frameLinks.push([a, b, flow, aff]);
+                    if (pump.interactions % 40 === 0) pumpLog(`[F-${String(Math.round(pump.frame)).padStart(3, '0')}] pkt ${di[a].i} ⚡ pkt ${di[b].i} · Q=${Q.toFixed(1)} aff=${aff.toFixed(2)}`, 'spark');
+                }
+            }
+            // 4) implied-quadrance backprop: outer scalar returns inward to the zero point
+            if (pump.backprop) for (let k = n - 1; k > 0; k--) { const Q = di[k - 1].pos.distanceToSquared(di[k].pos); pump.scalar[k - 1] += pump.scalar[k] * 0.04 / (1 + Q); }
+            for (let k = 0; k < n; k++) if (pump.scalar[k] > pump.maxScalar) pump.maxScalar = pump.scalar[k];
+        }
+        function pumpChainUpdate() {
+            let k = 0;
+            const set = (idxs) => { if (idxs.length < 2) return; const pts = idxs.filter(i => activeNodes.has(i)).map(i => activeNodes.get(i).position.clone()); const line = chainGroup.children[k++]; if (!line || pts.length < 2) return; line.geometry.setFromPoints(pts); };
+            chains.forEach(set); if (currentChain.length >= 2) set(currentChain);
+        }
+        function pumpRender(t) {
+            const n = pump.parts.length; if (!n) return; const di = pump.parts;
+            for (let k = 0; k < n; k++) {
+                const nd = activeNodes.get(di[k].i); if (!nd) continue;
+                nd.position.copy(di[k].pos);
+                const m = nd.children[0]; if (m && m.material) { const s = pump.maxScalar > 0 ? pump.scalar[k] / pump.maxScalar : 0; m.material.color.setHSL(0.75 - s * 0.45, 0.85, 0.45 + s * 0.28); }
+            }
+            pumpClearLinks();
+            for (const [a, b, flow, aff] of (pump.frameLinks || [])) {
+                const geo = new THREE.BufferGeometry().setFromPoints([di[a].pos, di[b].pos]);
+                const col = new THREE.Color().setHSL(0.5 - aff * 0.5, 0.9, 0.6);
+                pump.linkGroup.add(new THREE.Line(geo, new THREE.LineBasicMaterial({ color: col, transparent: true, opacity: Math.min(0.9, flow * 5), depthTest: false })));
+            }
+            pumpChainUpdate();
+            if (pump.tess) { pump.tess.visible = true; pump.tess.scale.setScalar(90 * (1 + Math.sin(Math.PI * t) * pump.breath)); pump.tess.rotation.y = t * Math.PI * 2 * 0.1; }
+        }
+        function pumpRestore() {
+            for (const [i, nd] of activeNodes) { nd.position.copy(nodePos(i)); const d = packetData.get(i); const m = nd.children[0]; if (m && m.material && d) m.material.color = quaternionToColor(d.quaternion); }
+            pumpClearLinks(); if (pump.tess) pump.tess.visible = false; rebuildChains();
+        }
+        function updatePumpUI() {
+            const fs = document.getElementById('frameSlider'); if (fs) { fs.max = pump.frames; fs.value = Math.round(pump.frame); }
+            const ro = document.getElementById('frameReadout'); if (ro) ro.textContent = `${Math.round(pump.frame)} / ${pump.frames}`;
+            const t = pump.frames ? pump.frame / pump.frames : 0;
+            const bb = document.getElementById('breathBar'); if (bb) bb.style.width = (Math.sin(Math.PI * t) * 100).toFixed(0) + '%';
+        }
+        function pumpReset() {
+            pump.on = false; pump.frame = 0; pumpEnsureGroups(); pumpCapture(); pump.started = true; pumpRestore();
+            if (pump.ledgerEl) pump.ledgerEl.innerHTML = '';
+            pumpLog(`Cycle armed — ${pump.parts.length} packets over ${pump.frames} frames.`, 'sys');
+            document.getElementById('pumpPlay').textContent = '⏯ Pump'; updatePumpUI();
+        }
+        function pumpToggle() {
+            if (!pump.on) {
+                if (!pump.started || !pump.parts.length || pump.frame >= pump.frames) pumpReset();
+                if (!pump.parts.length) { pumpLog('No programmed packets to pump — program some vertices first.', 'sys'); return; }
+                pump.on = true; document.getElementById('pumpPlay').textContent = '⏸ Pause';
+            } else { pump.on = false; document.getElementById('pumpPlay').textContent = '⏯ Pump'; }
+        }
+        function pumpSpeed(s, el) { pump.speed = s; document.querySelectorAll('#pumpCtl .speed').forEach(e => e.classList.remove('on')); if (el) el.classList.add('on'); }
+        function pumpSimTo(target) {
+            pumpEnsureGroups(); if (!pump.parts.length) pumpCapture();
+            pump.charge.fill(0); pump.scalar.fill(0); pump.interactions = 0; pump.maxScalar = 0;
+            const F = Math.max(0, Math.min(pump.frames, Math.round(target)));
+            for (let f = 1; f <= F; f++) { pump.frame = f; pumpAccumulate(f / pump.frames, true); }
+            pump.frame = F; if (F > 0) pumpAccumulate(F / pump.frames, false); pumpRender(F / pump.frames); updatePumpUI();
+        }
+        function pumpFinishCycle() {
+            let acc = '';
+            for (let k = 0; k < pump.parts.length; k++) acc += pump.parts[k].i + ':' + pump.scalar[k].toFixed(3) + '|';
+            acc += `#${pump.interactions}@${pump.frames}b${pump.breath}t${pump.torsion}r${pump.reach}${pump.backprop ? 'B' : ''}`;
+            pump.cycleHash = '0x' + fold32(acc).toString(16).padStart(8, '0');
+            document.getElementById('pumpPlay').textContent = '⏯ Pump';
+            pumpLog(`cycle complete · ${pump.interactions} interactions · max scalar ${pump.maxScalar.toFixed(2)} · hash ${pump.cycleHash}`, 'scal');
+        }
+        function pumpBake() {
+            if (!pump.parts.length || pump.maxScalar <= 0) { pumpLog('Run a cycle first — nothing to bake.', 'sys'); return; }
+            let baked = 0;
+            for (let k = 0; k < pump.parts.length; k++) { const d = packetData.get(pump.parts[k].i); if (!d) continue; const s = pump.scalar[k] / pump.maxScalar; d.payloadScalingFactor = +(s * 327).toFixed(2); delete d.rawWord; packetData.set(pump.parts[k].i, d); baked++; }
+            pumpLog(`baked scalar field into ${baked} packets' payload — now captured by the seed.`, 'scal');
+            if (selectedNodes.size) updatePacketInfoPanel(Array.from(selectedNodes).pop());
+        }
+        function pumpExport() {
+            const out = { v: 1, frames: pump.frames, breath: pump.breath, torsion: pump.torsion, reach: pump.reach, backprop: pump.backprop, interactions: pump.interactions, maxScalar: +pump.maxScalar.toFixed(4), cycleHash: pump.cycleHash, parts: pump.parts.map((p, k) => ({ i: p.i, scalar: +pump.scalar[k].toFixed(4) })) };
+            const blob = new Blob([JSON.stringify(out, null, 0)], { type: 'application/json' });
+            const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `mindseye_pump_${(pump.cycleHash || '0x0').replace('0x', '')}.json`;
+            document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(a.href);
+            pumpLog(`exported interaction ledger (${pump.parts.length} packets).`, 'sys');
+        }
+        function pumpInit() {
+            pump.ledgerEl = document.getElementById('pumpLedger'); pumpEnsureGroups();
+            const bind = (id, ev, fn) => { const el = document.getElementById(id); if (el) el.addEventListener(ev, () => fn(el)); };
+            bind('pumpFrames', 'change', el => { pump.frames = Math.max(12, Math.min(4320, parseInt(el.value) || 720)); if (!pump.on) pumpReset(); });
+            bind('pumpBreath', 'input', el => pump.breath = parseFloat(el.value));
+            bind('pumpTorsion', 'input', el => pump.torsion = parseFloat(el.value));
+            bind('pumpReach', 'input', el => pump.reach = parseFloat(el.value));
+            bind('pumpBackprop', 'change', el => pump.backprop = el.checked);
+            bind('frameSlider', 'input', el => { pump.on = false; document.getElementById('pumpPlay').textContent = '⏯ Pump'; pumpSimTo(+el.value); });
+        }
+
         // ── RENDER LOOP ──────────────────────────────────────────────────────────
         function animate() {
             requestAnimationFrame(animate);
@@ -935,7 +1156,7 @@
                 pointerLockControls.getObject().position.y -= velocity.y * delta;
             } else orbitControls.update();
 
-            if (environmentState.isPlaying && particleSystem) {
+            if (!pump.on && environmentState.isPlaying && particleSystem) {
                 const positions = particleSystem.geometry.attributes.position;
                 if (state.latticeShape === 'Toroid') {
                     const a = 0.5 * delta, cos = Math.cos(a), sin = Math.sin(a);
@@ -969,6 +1190,17 @@
                 positions.needsUpdate = true;
                 if (chainGroup.children.length) updateChainLinePositions();
             }
+
+            if (pump.on) {
+                pump.frame += pump.speed;
+                if (pump.frame >= pump.frames) {
+                    pump.frame = pump.frames; pumpAccumulate(1, false); pumpRender(1); pump.on = false; pumpFinishCycle();
+                } else {
+                    const t = pump.frame / pump.frames; pumpAccumulate(t, false); pumpRender(t);
+                }
+                updatePumpUI();
+            }
+
             prevTime = time;
             renderer.render(scene, camera);
         }
@@ -981,7 +1213,8 @@
         window.ME = {
             buildSeed, regrow, verifySeed, copySeed, downloadSeed, loadFile, publish,
             injectRawData, toggleChainMode, addToChain, finishChain,
-            _state: state, _packetData: packetData, _chains: chains, _rawState: rawState,
+            pumpToggle, pumpReset, pumpSpeed, pumpExport, pumpBake, pumpSimTo,
+            _state: state, _packetData: packetData, _chains: chains, _rawState: rawState, _pump: pump,
             crystallize, packWord, unpackWord, nodeToWord, wordToNode, fold32, canonicalSeed, collectSeed,
         };
 
