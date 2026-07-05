@@ -87,6 +87,7 @@
                     <a href="#pump-mech" class="block text-slate-400 hover:text-cyan-300 py-1 text-xs transition pl-3 border-l border-white/10">How the breath works</a>
                     <a href="#pump-use" class="block text-slate-400 hover:text-cyan-300 py-1 text-xs transition pl-3 border-l border-white/10">Running a cycle</a>
                     <a href="#env" class="block text-slate-400 hover:text-cyan-300 py-1 text-xs transition">Codex environments</a>
+                    <a href="#env-seed" class="block text-slate-400 hover:text-cyan-300 py-1 text-xs transition pl-3 border-l border-white/10">The 64-cell seed</a>
                     <a href="#env-form" class="block text-slate-400 hover:text-cyan-300 py-1 text-xs transition pl-3 border-l border-white/10">The FORM split &amp; gates</a>
                     <a href="#env-fold" class="block text-slate-400 hover:text-cyan-300 py-1 text-xs transition pl-3 border-l border-white/10">Fold programs &amp; expansion</a>
                     <a href="#env-object" class="block text-slate-400 hover:text-cyan-300 py-1 text-xs transition pl-3 border-l border-white/10">ENVIRONMENT/1 &amp; the designer</a>
@@ -104,11 +105,14 @@
                 <div class="section-label sl-cyan mb-4">01 — Overview</div>
                 <h2 class="text-3xl mystical cyan-grad mb-6">What Is the Mind's Eye?</h2>
                 <p class="text-slate-300 leading-relaxed mb-4">
-                    The <strong class="text-slate-100">Mind's Eye</strong> is a first-person 3D environment rendered
-                    over a lattice of tens of thousands of <em>null nodes</em> — empty vertices waiting to be
-                    programmed. Fly through the lattice, click any vertex, and program it into a real
-                    <strong class="text-cyan-300">SHD-CCP packet</strong>: a 64-bit word carrying a form, a color
-                    quaternion, amplitude, frequency, spin, and a parity bit. Link programmed packets into
+                    The <strong class="text-slate-100">Mind's Eye</strong> is a first-person 3D environment. It opens on
+                    the smallest possible manifold: a <strong class="text-green-300">64-cell seed</strong> — one 64-bit
+                    SHD-CCP word unfolded into a 4×4×4 cube where <em>every one of the 64 vertices is a packet</em>
+                    (energy-frugal by design; you grow larger only when you need to). Fly through it, click any vertex,
+                    and program it into a real <strong class="text-cyan-300">SHD-CCP packet</strong>: a 64-bit word
+                    carrying a form, a color quaternion, amplitude, frequency, spin, and a parity bit. You can also
+                    switch to larger blank lattices (Box, Toroid, knots) of many thousands of null vertices when a build
+                    calls for it. Link programmed packets into
                     <strong class="text-amber-300">chains</strong> that thread through 3D space, and when you're done,
                     crystallize the whole construction into one compact, tamper-evident
                     <strong class="text-green-300">seed</strong> that regrows it exactly.
@@ -386,6 +390,27 @@ place  at index, index+1, …  + auto-chain</code></pre>
                     where they belong.
                 </p>
 
+                <h3 id="env-seed" class="text-xl mystical text-green-200 mb-4 mt-8">The 64-Cell Seed (the default manifold)</h3>
+                <p class="text-slate-300 leading-relaxed mb-4">
+                    The Mind's Eye opens on a <strong class="text-green-300">64-cell seed</strong>: one 64-bit SHD-CCP
+                    word unfolded into a 4×4×4 cube. Vertex index <code class="mono text-green-300">i = z·16 + y·4 + x</code>
+                    maps to <strong>bit i of the seed word</strong> — a set bit makes that vertex an active Platonic
+                    solid, a clear bit a dim 0D point, and either way it is a full, parity-valid SHD-CCP packet. So a
+                    single 64-bit seed is the whole starting manifold: the tiniest, most energy-frugal substrate there
+                    is, and the first tessellation you actually see.
+                </p>
+                <p class="text-slate-300 leading-relaxed mb-4">
+                    From there it grows <strong class="text-green-300">fractally</strong>. <em>Fractal step +</em> raises
+                    the level: level L is a <code class="mono text-green-300">4ᴸ</code>-per-axis grid where a vertex is
+                    active only where the seed's pattern is set at <em>every</em> 4× scale (a self-similar, Cantor-style
+                    intersection). If 33 of the 64 seed bits are set, level 2 has 33² = 1089 active cells inside a
+                    16×16×16 grid — the same pattern nested inside itself, with the rest left as free room for chains and
+                    folds. The 4×4×4 base gives four fractal steps to unfold from one seed before you build into larger
+                    systems. Change the seed word (or 🎲 vary it) and the entire manifold — at every level — re-derives
+                    deterministically.
+                </p>
+                <div class="callout callout-green mb-4"><p class="text-xs text-green-200 font-semibold mb-1">Why start at 64 bits</p><p class="text-xs text-slate-400">Nobody's Mind's Eye should be a giant blank box burning energy. One seed word → 64 packets is enough to see the first tessellation and to carry a complete, shareable idea; you only tessellate up (or switch to a larger blank lattice) when a build genuinely needs the room. A full 64-cell has no spare vertices, so an in-place SPLIT reports "saturated — tessellate up" rather than silently doing nothing.</p></div>
+
                 <h3 id="env-form" class="text-xl mystical text-green-200 mb-4 mt-8">The FORM Split &amp; Gates</h3>
                 <p class="text-slate-300 leading-relaxed mb-4">
                     The 4‑bit FORM field is split by its <strong class="text-green-300">top bit</strong>: clear → a
@@ -506,6 +531,8 @@ place  at index, index+1, …  + auto-chain</code></pre>
                             <tr><td><kbd>scroll</kbd></td><td class="text-xs">Zoom (orbit mode)</td></tr>
                             <tr><td class="mono" style="color:#c084fc;">⏯ Pump</td><td class="text-xs">Play/pause the synchronization breath cycle</td></tr>
                             <tr><td class="mono" style="color:#c084fc;">frame slider</td><td class="text-xs">Scrub to any frame of the cycle (deterministically re-derived)</td></tr>
+                            <tr><td class="mono" style="color:#00ff88;">Seed word / 🎲</td><td class="text-xs">Re-derive the 64-cell from a 64-bit word (deterministic)</td></tr>
+                            <tr><td class="mono" style="color:#00ff88;">Fractal step ± </td><td class="text-xs">Tessellate the seed to the next self-similar level / collapse back</td></tr>
                             <tr><td class="mono" style="color:#00ff88;">Frontier mode</td><td class="text-xs">Click vertices to mark the growth boundary (gold rings)</td></tr>
                             <tr><td class="mono" style="color:#00ff88;">Run fold program</td><td class="text-xs">Execute the gate packets over the cubic expansion grammar</td></tr>
                             <tr><td class="mono" style="color:#c084fc;">◈ Crystallize</td><td class="text-xs">Spend CRYST to commit — only inside a crystallization window</td></tr>

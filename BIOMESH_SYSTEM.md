@@ -278,6 +278,20 @@ areas loaded as the default substrate instead of a blank 40k box, so biochains
 grow into something structured (the "house" whose rooms give incoming data
 streams a place to belong).
 
+- **The 64-cell seed (the default manifold).** The page opens on the smallest
+  possible substrate: one 64-bit SHD-CCP word unfolded into a 4×4×4 cube where
+  vertex `i = z·16 + y·4 + x` maps to bit `i` of the seed (set → active Platonic
+  solid, clear → 0D point), and every one of the 64 vertices is a full,
+  parity-valid packet. It grows **fractally**: level `L` is a `4^L`-per-axis grid
+  where a vertex is active only where the seed's pattern is set at every 4× scale
+  (self-similar, Cantor-style — 33 set bits → 33² = 1089 active cells at level 2),
+  with the rest left as free room; the 4×4×4 base gives four fractal steps to
+  unfold from one seed. Re-seeding (or 🎲) re-derives the whole manifold
+  deterministically; `fractalLevel` and `seedWord` travel in the seed/environment.
+  This is the energy-frugal default — nobody's Mind's Eye is a giant blank box;
+  you tessellate up or switch to a larger blank lattice only when a build needs
+  the room.
+
 - **FORM split (top bit).** The 4-bit form nibble is split by bit 3: clear →
   **geometry** (`0` 0D point · `1‑5` the five Platonic solids · `6` 4D hypercube
   · `7` 8D E8 lattice); set → **gate** (`8` HALT · `9` SEED · `10` ROT · `11`

@@ -87,8 +87,8 @@
 <body>
     <div id="info" class="panel">
         <div class="brand">🧠 Biomesh · Mind's Eye</div>
-        <div class="count" id="packet-count">Packets: …</div>
-        <em class="hl">Click canvas → FPS mode.</em><br>
+        <div class="count" id="packet-count">Seed: 64-cell …</div>
+        <em class="hl">One 64-bit seed → 4×4×4 cube · click canvas → FPS.</em><br>
         <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> move · <kbd>Z</kbd>/<kbd>C</kbd> up/down<br>
         <kbd>Shift</kbd>+click multi-select · <kbd>G</kbd> chain mode<br>
         <kbd>Space</kbd> flow · <kbd>Esc</kbd> orbit<br>
@@ -303,7 +303,8 @@
         };
         const rawState = { data: 'Hello, Mind\'s Eye. Any data becomes SHD-CCP packets.', mode: 'Text (UTF-8)', startIndex: 0, autoChain: true, inject: () => injectRawData() };
         const state = {
-            latticeShape: 'Box', particleCount: 40000, rngSeed: 1337,
+            latticeShape: '64-Cell', particleCount: 40000, rngSeed: 1337,
+            seedWord: '3C7A5A0FE1966C99', cubeScale: 12, fractalLevel: 1,   // one 64-bit seed → 4×4×4 = 64 SHD-CCP packets
             boxSize: { x: 100, y: 100, z: 100 },
             toroidMajorRadius: 60, toroidTubeRadius: 20,
             cylinderRadius: 40, cylinderHeight: 150,
@@ -311,6 +312,7 @@
             trefoilScale: 40, trefoilTubeRadius: 15,
             regenerate: () => regenerateLattice(),
         };
+        const SEED64_COORDS = [-1.5, -0.5, 0.5, 1.5];    // 4 divisions per axis → 4×4×4
 
         // ── FORM nibble = kind + value (top-bit split) ─────────────────────────
         //   bit 3 (0x8) = 0 → GEOMETRY (form 0..7): 0D point · 5 Platonic solids ·
@@ -356,7 +358,7 @@
         function init() {
             scene = new THREE.Scene();
             camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 20000);
-            camera.position.set(0, 10, 120);
+            camera.position.set(0, 14, 64);          // framed for the default 64-cell seed
 
             renderer = new THREE.WebGLRenderer({ canvas: document.getElementById('c'), antialias: true });
             renderer.setSize(window.innerWidth, window.innerHeight);
@@ -430,6 +432,7 @@
 
             let positions;
             switch (state.latticeShape) {
+                case '64-Cell': positions = generate64CellPositions(); break;
                 case 'Toroid': positions = generateOrderedToroidPositions(state.toroidMajorRadius, state.toroidTubeRadius); break;
                 case 'Cylinder': positions = generateOrderedCylinderPositions(state.cylinderRadius, state.cylinderHeight); break;
                 case 'Lissajous Knot': positions = generateOrderedLissajousPositions(state.particleCount); break;
@@ -437,7 +440,8 @@
                 default: positions = generateOrderedBoxPositions(state.boxSize); break;
             }
             const n = positions.length / 3;
-            document.getElementById('packet-count').innerText = `Packets: ${n.toLocaleString()}`;
+            document.getElementById('packet-count').innerText = state.latticeShape === '64-Cell'
+                ? `Seed → ${state.fractalLevel === 1 ? '64-cell (64 packets)' : `fractal L${state.fractalLevel} · ${n.toLocaleString()} verts`}` : `Packets: ${n.toLocaleString()}`;
 
             const geometry = new THREE.BufferGeometry();
             geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
@@ -452,12 +456,83 @@
             createWireframe();
 
             for (let i = 0; i < n; i++) packetData.set(i, createDefaultPacketData());
+            if (state.latticeShape === '64-Cell') seed64Cell();     // every vertex becomes a packet from the seed word
             rebuildChains();
 
             if (rawFolder) {
                 const c = rawFolder.controllers.find(c => c.property === 'startIndex');
                 if (c) { c.max(n - 1); if (rawState.startIndex >= n) rawState.startIndex = 0; c.updateDisplay(); }
             }
+        }
+
+        // ── the 64-cell seed manifold: one 64-bit SHD-CCP word → a 4×4×4 cube ──
+        //  index i = z*16 + y*4 + x (0..63), stable so bit i of the seed ↔ vertex i.
+        //  Fractal levels: level L has N = 4^L vertices per axis; a vertex is active
+        //  only where the seed's 64-bit pattern is set at EVERY 4× scale (self-similar,
+        //  Menger/Cantor-style), so "4 fractal steps" unfold from one seed word.
+        function fractalN() { return Math.pow(4, state.fractalLevel); }
+        function seedBitSet(seedBig, cell) { return Number((seedBig >> BigInt(cell)) & 1n) === 1; }
+        function fractalActive(ix, iy, iz, seedBig) {
+            for (let d = 0; d < state.fractalLevel; d++) {
+                const p = Math.pow(4, d);
+                const dx = Math.floor(ix / p) % 4, dy = Math.floor(iy / p) % 4, dz = Math.floor(iz / p) % 4;
+                if (!seedBitSet(seedBig, dz * 16 + dy * 4 + dx)) return false;
+            }
+            return true;
+        }
+        function generate64CellPositions() {
+            const s = state.cubeScale, N = fractalN(), out = [];
+            const span = 3 * s;                       // level-1 span (SEED64_COORDS: -1.5..1.5 × scale)
+            for (let z = 0; z < N; z++) for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) {
+                const c = (i) => N === 4 ? SEED64_COORDS[i] * s : (i / (N - 1) - 0.5) * span * 2;
+                out.push(c(x), c(y), c(z));
+            }
+            return new Float32Array(out);             // N^3 vertices (64 at level 1)
+        }
+        // deterministic per-vertex packet derived from the seed word + position.
+        // bit i of the seed activates vertex i (a Platonic solid); a clear bit is a
+        // 0D point — either way every vertex is a real, parity-valid SHD-CCP packet.
+        function vertexFromSeed(seedHex, i) {
+            const seed = BigInt('0x' + (seedHex || '0').replace(/[^0-9a-fA-F]/g, '').padStart(16, '0').slice(0, 16));
+            const bit = Number((seed >> BigInt(i)) & 1n);
+            const rot = ((seed << BigInt(i % 64)) | (seed >> BigInt((64 - i % 64) % 64))) & ((1n << 64n) - 1n);
+            const b = (k) => Number((rot >> BigInt(k * 8)) & 0xFFn);
+            const form = bit ? (1 + (i % 5)) : 0;                  // active → Platonic solid, clear → 0D point
+            const spin = i % 8, freq = b(1) % 32, amp = bit ? (b(2) % 5) : 0;
+            const r = b(3), g = b(4), bl = b(5), a = 255;
+            const word = packWord(form, spin, [r, g, bl, a], (b(6) << 8) | b(7), freq, amp);
+            const node = wordToNode(word, false);
+            node.isWireframe = !bit;                                // clear bits render as dim wire points
+            return node;
+        }
+        function seed64Cell() {
+            const seedBig = BigInt('0x' + (state.seedWord || '0').replace(/[^0-9a-fA-F]/g, '').padStart(16, '0').slice(0, 16));
+            const N = fractalN();
+            if (N === 4) {                            // level 1: every vertex is a packet (active geom or 0D point)
+                for (let i = 0; i < 64; i++) { if (packetData.has(i)) { packetData.set(i, vertexFromSeed(state.seedWord, i)); updateNodeVisuals(i); } }
+                return;
+            }
+            for (let z = 0, i = 0; z < N; z++) for (let y = 0; y < N; y++) for (let x = 0; x < N; x++, i++) {
+                if (!packetData.has(i)) continue;
+                if (fractalActive(x, y, z, seedBig)) { packetData.set(i, vertexFromSeed(state.seedWord, (z % 4) * 16 + (y % 4) * 4 + (x % 4))); updateNodeVisuals(i); }
+                // inactive vertices stay null (free room for further folds)
+            }
+        }
+        function activeCount() { let n = 0; for (const d of packetData.values()) if (d.formId >= 1 && d.formId <= 7) n++; return n; }
+        function reseed64Cell(hex) {
+            if (hex != null) state.seedWord = String(hex).replace(/[^0-9a-fA-F]/g, '').padStart(16, '0').slice(0, 16).toUpperCase();
+            if (state.latticeShape !== '64-Cell') { state.latticeShape = '64-Cell'; regenerateLattice(); setupGenerationGUI(); }
+            else regenerateLattice();
+            const set = Array.from({ length: 64 }, (_, i) => Number((BigInt('0x' + state.seedWord) >> BigInt(i)) & 1n)).reduce((a, b) => a + b, 0);
+            setStatus(`64-cell seeded from 0x${state.seedWord} — ${set}/64 seed bits · ${activeCount()} active vertices at level ${state.fractalLevel}.`, 'ok');
+        }
+        function tessellate(delta) {
+            const next = Math.max(1, Math.min(3, state.fractalLevel + delta));   // cap level 3 (64³ vertices)
+            if (next === state.fractalLevel) { setStatus(delta > 0 ? 'Already at max fractal level (3).' : 'Already at the base 64-cell (level 1).', 'warn'); return; }
+            state.fractalLevel = next; if (state.latticeShape !== '64-Cell') state.latticeShape = '64-Cell';
+            regenerateLattice(); setupGenerationGUI();
+            const N = fractalN();
+            setStatus(`Fractal step → level ${state.fractalLevel} · ${N}×${N}×${N} = ${(N * N * N).toLocaleString()} vertices · ${activeCount()} active (self-similar from seed 0x${state.seedWord}).`, 'ok');
         }
 
         function getSpacing(volume, count) { return Math.cbrt(volume / count); }
@@ -529,6 +604,25 @@
 
         function createWireframe() {
             if (wireframe) scene.remove(wireframe);
+            if (state.latticeShape === '64-Cell') {                 // 4×4×4 tessellation grid (base cell)
+                const s = state.cubeScale, grp = new THREE.Group();
+                const mat = new THREE.LineBasicMaterial({ color: 0x00d4ff, transparent: true, opacity: 0.22 });
+                const pts = [];
+                const lo = SEED64_COORDS[0] * s, hi = SEED64_COORDS[3] * s;
+                for (const a of SEED64_COORDS) for (const b of SEED64_COORDS) {
+                    const A = a * s, B = b * s;
+                    pts.push(lo, A, B, hi, A, B);   // lines along X
+                    pts.push(A, lo, B, A, hi, B);   // along Y
+                    pts.push(A, B, lo, A, B, hi);   // along Z
+                }
+                const g = new THREE.BufferGeometry().setAttribute('position', new THREE.Float32BufferAttribute(pts, 3));
+                grp.add(new THREE.LineSegments(g, mat));
+                if (state.fractalLevel > 1) {       // outer bounding cube marks the tessellated span
+                    const span = 3 * s, box = new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.BoxGeometry(span * 2, span * 2, span * 2)), new THREE.LineBasicMaterial({ color: 0x00d4ff, transparent: true, opacity: 0.12 }));
+                    grp.add(box);
+                }
+                wireframe = grp; scene.add(wireframe); return;
+            }
             let geom;
             switch (state.latticeShape) {
                 case 'Toroid': geom = new THREE.TorusGeometry(state.toroidMajorRadius, state.toroidTubeRadius, 16, 100); break;
@@ -798,6 +892,7 @@
         // ── SEED: BUILD / REGROW / VERIFY / IO ─────────────────────────────────
         function currentShapeParams() {
             switch (state.latticeShape) {
+                case '64-Cell': return { seedWord: state.seedWord, cubeScale: state.cubeScale, fractalLevel: state.fractalLevel };
                 case 'Toroid': return { toroidMajorRadius: state.toroidMajorRadius, toroidTubeRadius: state.toroidTubeRadius };
                 case 'Cylinder': return { cylinderRadius: state.cylinderRadius, cylinderHeight: state.cylinderHeight };
                 case 'Lissajous Knot': return { lissajousScale: state.lissajousScale, lissajousNx: state.lissajousNx, lissajousNy: state.lissajousNy, lissajousNz: state.lissajousNz, lissajousTubeRadius: state.lissajousTubeRadius };
@@ -834,7 +929,7 @@
             state.latticeShape = s.shape; state.particleCount = s.count; state.rngSeed = s.rngSeed;
             const p = s.params || {};
             if (p.boxSize) state.boxSize = { ...p.boxSize };
-            Object.assign(state, ['toroidMajorRadius', 'toroidTubeRadius', 'cylinderRadius', 'cylinderHeight',
+            Object.assign(state, ['seedWord', 'cubeScale', 'fractalLevel', 'toroidMajorRadius', 'toroidTubeRadius', 'cylinderRadius', 'cylinderHeight',
                 'lissajousScale', 'lissajousNx', 'lissajousNy', 'lissajousNz', 'lissajousTubeRadius', 'trefoilScale', 'trefoilTubeRadius']
                 .reduce((o, k) => (k in p ? (o[k] = p[k], o) : o), {}));
         }
@@ -929,7 +1024,7 @@
         function setupBoundaryGUI() {
             if (boundaryFolder) boundaryFolder.destroy();
             boundaryFolder = gui.addFolder('Boundary designer');
-            const bs = { preset: 'Small (energy-frugal · 8k)', frontierMode: false,
+            const bs = { preset: 'Seed (64-cell · 64 packets)', frontierMode: false,
                 apply: () => applyBoundaryPreset(BOUNDARY_PRESETS[bs.preset]),
                 attachCodex: () => { const t = prompt('Codex source text (distilled into a CODEX/1 prior for this environment):', 'the house remembers where each stream belongs'); if (t) { attachedCodex = buildCodexFromText(t); setStatus(`Codex attached — ${attachedCodex.length / 16} packets (GEAR·PRIME·HALT).`, 'ok'); } },
                 exportEnv: () => downloadEnvironment(), buildEnv: () => envToBox(), loadEnv: () => regrowFromBox() };
@@ -964,7 +1059,14 @@
         function setupGenerationGUI() {
             if (generationFolder) generationFolder.destroy();
             generationFolder = gui.addFolder('Lattice');
-            const shapeCtrl = generationFolder.add(state, 'latticeShape', ['Box', 'Toroid', 'Cylinder', 'Lissajous Knot', 'Trefoil Knot']).name('Shape');
+            const shapeCtrl = generationFolder.add(state, 'latticeShape', ['64-Cell', 'Box', 'Toroid', 'Cylinder', 'Lissajous Knot', 'Trefoil Knot']).name('Shape');
+            const seedF = generationFolder.addFolder('64-Cell seed');
+            seedF.add(state, 'seedWord').name('Seed word (16 hex)').onFinishChange(v => reseed64Cell(v));
+            seedF.add(state, 'cubeScale', 4, 30, 1).name('Cube scale').onChange(() => { if (state.latticeShape === '64-Cell') regenerateLattice(); });
+            seedF.add({ reseed: () => reseed64Cell(state.seedWord) }, 'reseed').name('↻ Re-seed 64-cell');
+            seedF.add({ random: () => { let h = ''; for (let k = 0; k < 16; k++) h += '0123456789ABCDEF'[Math.floor(Math.random() * 16)]; reseed64Cell(h); } }, 'random').name('🎲 Vary seed');
+            seedF.add({ up: () => tessellate(1) }, 'up').name('⧈ Fractal step + (tessellate)');
+            seedF.add({ dn: () => tessellate(-1) }, 'dn').name('⧉ Fractal step − (collapse)');
             const boxF = generationFolder.addFolder('Box');
             boxF.add(state.boxSize, 'x', 10, 500, 1).name('Width'); boxF.add(state.boxSize, 'y', 10, 500, 1).name('Height'); boxF.add(state.boxSize, 'z', 10, 500, 1).name('Depth');
             const torF = generationFolder.addFolder('Toroid');
@@ -975,15 +1077,17 @@
             lisF.add(state, 'lissajousScale', 10, 100, 1).name('Scale'); lisF.add(state, 'lissajousNx', 1, 10, 1).name('Nx'); lisF.add(state, 'lissajousNy', 1, 10, 1).name('Ny'); lisF.add(state, 'lissajousNz', 1, 10, 1).name('Nz'); lisF.add(state, 'lissajousTubeRadius', 1, 20, 1).name('Tube R');
             const treF = generationFolder.addFolder('Trefoil');
             treF.add(state, 'trefoilScale', 10, 100, 1).name('Scale'); treF.add(state, 'trefoilTubeRadius', 1, 20, 1).name('Tube R');
+            const countCtrl = generationFolder.add(state, 'particleCount', 1000, 120000, 1000).name('Packet count');
             const upd = (shape) => {
+                seedF.domElement.style.display = shape === '64-Cell' ? '' : 'none';
                 boxF.domElement.style.display = shape === 'Box' ? '' : 'none';
                 torF.domElement.style.display = shape === 'Toroid' ? '' : 'none';
                 cylF.domElement.style.display = shape === 'Cylinder' ? '' : 'none';
                 lisF.domElement.style.display = shape === 'Lissajous Knot' ? '' : 'none';
                 treF.domElement.style.display = shape === 'Trefoil Knot' ? '' : 'none';
+                countCtrl.domElement.style.display = shape === '64-Cell' ? 'none' : '';
             };
             shapeCtrl.onChange(upd); upd(state.latticeShape);
-            generationFolder.add(state, 'particleCount', 1000, 120000, 1000).name('Packet count');
             generationFolder.add(state, 'rngSeed', 1, 999999, 1).name('RNG seed (knots)');
             generationFolder.add(state, 'regenerate').name('⟳ Generate lattice');
             generationFolder.open();
@@ -1289,7 +1393,8 @@
                         for (const c of kids) { if (live.length + added.length >= foldState.maxCells) break; const pd = packetData.get(i); const child = { ...pd, formId: geomIdOf(pd.formId), amplitudeId: Math.min(7, pd.amplitudeId + 1) }; delete child.rawWord; packetData.set(c, child); updateNodeVisuals(c); chains.push([i, c]); added.push(c); }
                     }
                     live = live.concat(added);
-                    foldLog(`fold ${FLUX.folds}: ⧈ SPLIT → tier ${EXPANSION_TIERS[tier]} · +${added.length} cells (${live.length} total)`);
+                    if (added.length === 0) foldLog(`fold ${FLUX.folds}: ⧈ SPLIT — manifold saturated (no free vertices). Tessellate ↑ to a larger substrate to expand further.`);
+                    else foldLog(`fold ${FLUX.folds}: ⧈ SPLIT → tier ${EXPANSION_TIERS[tier]} · +${added.length} cells (${live.length} total)`);
                 }
                 else if (op === 14) {
                     const byR = live.map(i => ({ i, r: nodePos(i).length() })).sort((a, b) => b.r - a.r);
@@ -1359,8 +1464,12 @@
             let obj; try { obj = JSON.parse(raw); } catch (e) { setStatus('Not valid JSON: ' + e.message, 'bad'); return; }
             if (obj && obj.kind === 'ENVIRONMENT/1') loadEnvironment(obj); else regrow();
         }
-        const BOUNDARY_PRESETS = { 'Small (energy-frugal · 8k)': 8000, 'Medium (20k)': 20000, 'Large (40k)': 40000 };
-        function applyBoundaryPreset(n) { state.particleCount = n; if (state.latticeShape === 'Box') { state.boxSize = { x: 70, y: 70, z: 70 }; } regenerateLattice(); setupGenerationGUI(); setStatus(`Boundary preset: ${n.toLocaleString()} vertices. Program a starter area and mark its frontier.`, 'ok'); }
+        const BOUNDARY_PRESETS = { 'Seed (64-cell · 64 packets)': 64, 'Small (8k)': 8000, 'Medium (20k)': 20000, 'Large (40k)': 40000 };
+        function applyBoundaryPreset(n) {
+            if (n === 64) { state.latticeShape = '64-Cell'; regenerateLattice(); setupGenerationGUI(); setStatus('Boundary: one 64-bit seed → 4×4×4 cell (64 SHD-CCP packets). The frugal default — run the fold program to tessellate.', 'ok'); return; }
+            state.latticeShape = 'Box'; state.particleCount = n; state.boxSize = { x: 70, y: 70, z: 70 };
+            regenerateLattice(); setupGenerationGUI(); setStatus(`Boundary preset: ${n.toLocaleString()} vertices. Program a starter area and mark its frontier.`, 'ok');
+        }
 
         // ── FLUX (free) / CRYST (scarce, compute-backed) economy ────────────────
         function crystWindowFor(frame, frames) { const tol = Math.max(1, frames * 0.02); return frame <= tol || Math.abs(frame - frames / 2) <= tol || Math.abs(frame - frames) <= tol; }
@@ -1465,6 +1574,7 @@
             pumpToggle, pumpReset, pumpSpeed, pumpExport, pumpBake, pumpSimTo,
             toggleFrontierMode, markFrontier, runFoldProgram, collectEnvironment, loadEnvironment,
             envToBox, downloadEnvironment, regrowFromBox, applyBoundaryPreset, crystallizeCommit,
+            seed64Cell, reseed64Cell, vertexFromSeed, tessellate, fractalActive,
             buildCodexFromText, isGateForm, geomIdOf, GATES, GEOMETRY, updateCrystWindow, crystEstimate,
             _state: state, _packetData: packetData, _chains: chains, _rawState: rawState, _pump: pump,
             _frontier: frontier, _flux: FLUX, _cryst: CRYST, _fold: foldState,
