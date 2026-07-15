@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BioChain AI: Fluid Logic Manifold</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js"></script>
+    <style>
+        body { margin: 0; overflow: hidden; background-color: #020617; color: #e2e8f0; font-family: 'Segoe UI', monospace; }
+        
+        #app-grid {
+            display: grid;
+            grid-template-columns: 1fr 400px;
+            height: 100vh;
+            width: 100vw;
+        }
+
+        .main-view { position: relative; background: radial-gradient(circle at center, #0f172a 0%, #020617 100%); overflow: hidden; }
+        #three-container { width: 100%; height: 100%; position: absolute; top: 0; left: 0; z-index: 1; outline: none; }
+        
+        .sidebar {
+            background: rgba(15, 23, 42, 0.90);
+            border-left: 1px solid #1e293b;
+            display: flex; flex-direction: column;
+            z-index: 10; backdrop-filter: blur(12px);
+            overflow-y: auto;
+            box-shadow: -10px 0 30px rgba(0,0,0,0.5);
+        }
+
+        .section-header {
+            padding: 15px 20px; border-bottom: 1px solid #1e293b;
+            font-size: 0.8rem; font-weight: bold; color: #38bdf8;
+            text-transform: uppercase; letter-spacing: 2px;
+            background: rgba(2, 6, 23, 0.5);
+        }
+
+        .zone-card {
+            border-left: 3px solid transparent;
+            padding: 15px 20px;
+            border-bottom: 1px solid #1e293b;
+            transition: all 0.3s;
+        }
+        .zone-card.active {
+            background: rgba(56, 189, 248, 0.05);
+            border-left-color: #38bdf8;
+        }
+        
+        .zone-title { font-weight: bold; font-size: 0.9rem; margin-bottom: 4px; display: flex; justify-content: space-between;}
+        .zone-desc { font-size: 0.75rem; color: #94a3b8; line-height: 1.5; }
+        
+        .badge { font-size: 0.6rem; padding: 2px 6px; border-radius: 4px; font-weight: bold; letter-spacing: 1px;}
+        .badge-haskell { background: #334155; color: #cbd5e1; }
+        .badge-color { background: #1e3a8a; color: #93c5fd; }
+
+        .hud-overlay {
+            position: absolute; top: 20px; left: 20px; z-index: 10;
+            background: rgba(2, 6, 23, 0.8); border: 1px solid #1e293b;
+            padding: 15px; border-radius: 8px; backdrop-filter: blur(8px);
+        }
+        
+        .legend-dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; margin-right: 8px; }
+        
+        /* Particle Metrics */
+        .metric-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 20px; border-bottom: 1px solid #1e293b; }
+        .metric-box { background: #020617; border: 1px solid #1e293b; padding: 10px; border-radius: 6px; text-align: center; }
+        .metric-val { font-size: 1.5rem; font-weight: bold; color: #f59e0b; font-family: monospace; }
+        .metric-label { font-size: 0.6rem; color: #64748b; text-transform: uppercase; letter-spacing: 1px; }
+
+        /* Speed Control */
+        .slider-container { padding: 15px 20px; border-bottom: 1px solid #1e293b; }
+        input[type=range] { -webkit-appearance: none; width: 100%; background: transparent; margin-top: 10px; }
+        input[type=range]::-webkit-slider-runnable-track { width: 100%; height: 4px; background: #334155; border-radius: 2px; }
+        input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; height: 16px; width: 16px; border-radius: 50%; background: #38bdf8; cursor: pointer; margin-top: -6px; }
+
+    </style>
+</head>
+<body>
+
+<div id="app-grid">
+    <!-- MAIN VIEW -->
+    <div class="main-view">
+        <div id="three-container"></div>
+        
+        <div class="hud-overlay">
+            <div class="text-xs font-bold text-slate-300 uppercase border-b border-slate-700 pb-2 mb-3">TQF Fluid Data Streams</div>
+            <div class="text-xs text-slate-400 mb-2"><div class="legend-dot bg-[#f43f5e]"></div> Stream α (Alpha)</div>
+            <div class="text-xs text-slate-400 mb-2"><div class="legend-dot bg-[#10b981]"></div> Stream β (Beta)</div>
+            <div class="text-xs text-slate-400 mb-2"><div class="legend-dot bg-[#3b82f6]"></div> Stream γ (Gamma)</div>
+            <div class="mt-3 text-[10px] text-slate-500 max-w-[200px] leading-relaxed">
+                Each stream carries 2 tiers (Inner/Outer) of 6 data tracks, flowing downwards through time.
+            </div>
+        </div>
+    </div>
+
+    <!-- RIGHT SIDEBAR: LOGIC ARCHITECTURE -->
+    <div class="sidebar">
+        <div class="p-6 border-b border-slate-800">
+            <h1 class="text-xl font-bold tracking-tight text-white mb-1"><i class="fa-solid fa-water text-cyan-400 mr-2"></i>BIOCHAIN AI</h1>
+            <p class="text-[10px] text-slate-400 uppercase tracking-widest">Fluid Logic Manifold</p>
+        </div>
+
+        <div class="metric-grid">
+            <div class="metric-box">
+                <div class="metric-val" id="val-flow">1.0x</div>
+                <div class="metric-label">Flow Rate</div>
+            </div>
+            <div class="metric-box">
+                <div class="metric-val text-cyan-400">36</div>
+                <div class="metric-label">Active Tensor Tracks</div>
+            </div>
+        </div>
+
+        <div class="slider-container">
+            <div class="flex justify-between items-center mb-1">
+                <span class="text-[10px] font-bold text-slate-400 uppercase">Temporal Velocity</span>
+            </div>
+            <input type="range" id="speed-slider" min="0.1" max="3.0" value="1.0" step="0.1">
+        </div>
+
+        <div class="section-header">4-Part Manifold Architecture</div>
+        
+        <div class="zone-card" id="zone-1">
+            <div class="zone-title text-slate-300">
+                <span>1. Isomorphic Injection</span>
+                <span class="badge badge-haskell">Eq / Show</span>
+            </div>
+            <div class="zone-desc mt-2">
+                Streams are instantiated. Inner (Core) and Outer (Context) tiers are tightly bound. Linear, decoupled flow.
+            </div>
+        </div>
+
+        <div class="zone-card" id="zone-2">
+            <div class="zone-title text-slate-300">
+                <span>2. Projective Expansion</span>
+                <span class="badge badge-haskell text-emerald-300">Functor</span>
+            </div>
+            <div class="zone-desc mt-2">
+                Hoberman kinematics activate. The Outer Tier (6 points) flares outward, opening the logical context for transversal mapping.
+            </div>
+        </div>
+
+        <div class="zone-card" id="zone-3">
+            <div class="zone-title text-slate-300">
+                <span>3. Harmonic Parity</span>
+                <span class="badge badge-haskell text-amber-300">Applicative</span>
+            </div>
+            <div class="zone-desc mt-2">
+                Maximum expansion. Outer nodes of the 3 streams intersect (TQF Triangles). Transversal entanglement and state-sharing occur.
+            </div>
+        </div>
+
+        <div class="zone-card" id="zone-4">
+            <div class="zone-title text-slate-300">
+                <span>4. Monadic Collapse</span>
+                <span class="badge badge-haskell text-purple-300">Monad</span>
+            </div>
+            <div class="zone-desc mt-2">
+                Clifford-Strassen supercollapse. The entangled streams undergo asymmetric torsional pumping, weaving into a single dense cord.
+            </div>
+        </div>
+        
+        <div class="p-6 mt-auto border-t border-slate-800">
+            <p class="text-[10px] text-slate-500 text-center">
+                One-way Markov Torsional Pump<br>Entropy reduction via geometric constriction.
+            </p>
+        </div>
+    </div>
+</div>
+
+<script>
+    // --- SCENE SETUP ---
+    const container = document.getElementById('three-container');
+    const scene = new THREE.Scene();
+    scene.fog = new THREE.FogExp2(0x020617, 0.015);
+    
+    let aspect = container.clientWidth / container.clientHeight;
+    const camera = new THREE.PerspectiveCamera(50, aspect, 0.1, 500);
+    // Position camera to look at the "waterfall"
+    camera.position.set(0, 5, 45);
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+    renderer.setSize(container.clientWidth, container.clientHeight);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2)); // optimize performance
+    container.appendChild(renderer.domElement);
+
+    const controls = new THREE.OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.05;
+    controls.autoRotate = true; 
+    controls.autoRotateSpeed = 0.5;
+    controls.target.set(0, -10, 0); 
+
+    // --- MATHEMATICAL KINEMATICS FOR THE MANIFOLD ---
+    
+    const Y_TOP = 20;
+    const Y_BOTTOM = -40;
+    const TOTAL_STEPS = 100;
+    
+    // We define 4 Zones along the Y axis
+    // Zone 1: Y in [20, 10] -> Isomorphic (Straight, small)
+    // Zone 2: Y in [10, 0]  -> Projective (Expanding)
+    // Zone 3: Y in [0, -10] -> Harmonic (Wide, touching, orbiting)
+    // Zone 4: Y in [-10, -40] -> Monadic (Collapsing into center)
+
+    // Base Hoberman linkage length
+    const L = 2.5; 
+
+    // Function to calculate stream parameters at a given Y
+    function getManifoldParams(y) {
+        let R_sys = 0;   // Distance of the stream's center from the world origin
+        let Rout = 0;    // Outer tier radius
+        let Rin = 0;     // Inner tier radius
+        let twist = 0;   // Torsional twist
+        
+        if (y > 10) {
+            // Zone 1: Isomorphic Injection
+            R_sys = 8;
+            Rout = 1.5;
+            twist = 0;
+        } 
+        else if (y > 0) {
+            // Zone 2: Projective Expansion
+            // Smoothly interpolate Y from 10 to 0 (t goes 0 to 1)
+            let t = (10 - y) / 10;
+            // Easing function (smoothstep)
+            let ease = t * t * (3 - 2 * t);
+            
+            R_sys = 8 - (ease * 1.5); // Move slightly inward
+            Rout = 1.5 + (ease * 3.3); // Expand to 4.8
+            twist = ease * Math.PI / 4;
+        }
+        else if (y > -10) {
+            // Zone 3: Harmonic Parity
+            let t = (0 - y) / 10;
+            
+            R_sys = 6.5; 
+            Rout = 4.8; // Max expansion
+            // Torsional pumping begins (spinning)
+            twist = Math.PI/4 + (t * Math.PI);
+        }
+        else {
+            // Zone 4: Monadic Collapse
+            // Y from -10 to -40 (t goes 0 to 1)
+            let t = (-10 - y) / 30;
+            let ease = 1 - Math.pow(1 - t, 3); // ease out cubic
+            
+            R_sys = 6.5 * (1 - ease); // Collapse to 0
+            Rout = 4.8 * (1 - ease) + 0.5; // Collapse to small core
+            twist = Math.PI/4 + Math.PI + (ease * Math.PI * 4); // Intense spin
+        }
+        
+        // Rigid linkage math (protecting sqrt)
+        const v = 12 * L*L - 3 * Rout*Rout;
+        Rin = (Rout - Math.sqrt(v > 0 ? v : 0)) / 2;
+        
+        // If system is totally collapsed, force Rin to be 0 or small
+        if (isNaN(Rin) || Rin < 0) Rin = Rout * 0.5;
+
+        return { R_sys, Rout, Rin, twist };
+    }
+
+    // Generate Spline Paths
+    // 3 Streams. Each has 6 outer paths, 6 inner paths. Total 36 paths.
+    const streamPaths = []; // Array of Arrays of Vector3
+    const streamColors = [0xf43f5e, 0x10b981, 0x3b82f6]; // Red, Green, Blue
+    
+    // Initialize empty path arrays
+    for(let s=0; s<3; s++) {
+        for(let track=0; track<12; track++) {
+            streamPaths.push({
+                points: [],
+                streamIdx: s,
+                isOuter: track < 6,
+                color: streamColors[s]
+            });
+        }
+    }
+
+    // Populate paths from Y_TOP to Y_BOTTOM
+    for (let step=0; step<=TOTAL_STEPS; step++) {
+        let fraction = step / TOTAL_STEPS;
+        let y = Y_TOP - fraction * (Y_TOP - Y_BOTTOM);
+        
+        let params = getManifoldParams(y);
+        
+        for (let s=0; s<3; s++) {
+            // Angle of the stream center around the world origin
+            let streamAngle = (s * (Math.PI * 2 / 3)) + (params.twist * 0.5); // Global orbit
+            
+            let centerX = params.R_sys * Math.cos(streamAngle);
+            let centerZ = params.R_sys * Math.sin(streamAngle);
+
+            // Generate the 12 points for this stream at this Y slice
+            for (let i=0; i<6; i++) {
+                let localAngle = (i * 60 * Math.PI/180) + params.twist;
+                
+                // Outer Tier
+                let outX = centerX + params.Rout * Math.cos(localAngle);
+                let outZ = centerZ + params.Rout * Math.sin(localAngle);
+                
+                // Inner Tier (phase shifted slightly like Hoberman)
+                let inAngle = localAngle + (30 * Math.PI/180);
+                let inX = centerX + params.Rin * Math.cos(inAngle);
+                let inZ = centerZ + params.Rin * Math.sin(inAngle);
+                
+                // Find correct path array
+                let pathIdxOuter = (s * 12) + i;
+                let pathIdxInner = (s * 12) + 6 + i;
+                
+                streamPaths[pathIdxOuter].points.push(new THREE.Vector3(outX, y, outZ));
+                streamPaths[pathIdxInner].points.push(new THREE.Vector3(inX, y, inZ));
+            }
+        }
+    }
+
+    // --- VISUAL RENDERING ---
+    
+    const flowGroup = new THREE.Group();
+    scene.add(flowGroup);
+
+    // 1. Draw Tubes for the tracks
+    const curves = [];
+    streamPaths.forEach((pathData) => {
+        const curve = new THREE.CatmullRomCurve3(pathData.points);
+        curves.push(curve);
+        
+        // Faint tube geometry
+        const tubeGeo = new THREE.TubeGeometry(curve, TOTAL_STEPS, pathData.isOuter ? 0.08 : 0.04, 3, false);
+        const tubeMat = new THREE.MeshBasicMaterial({ 
+            color: pathData.color, 
+            transparent: true, 
+            opacity: pathData.isOuter ? 0.15 : 0.08,
+            wireframe: true
+        });
+        const tube = new THREE.Mesh(tubeGeo, tubeMat);
+        flowGroup.add(tube);
+    });
+
+    // 2. Particle System (Glowing data packets flowing down)
+    const particleCount = 1000;
+    const particlesGeo = new THREE.BufferGeometry();
+    const particlePositions = new Float32Array(particleCount * 3);
+    const particleColors = new Float32Array(particleCount * 3);
+    const particleData = []; // Store metadata for animation
+
+    for(let i=0; i<particleCount; i++) {
+        // Assign particle to a random curve
+        let curveIdx = Math.floor(Math.random() * curves.length);
+        let pathMeta = streamPaths[curveIdx];
+        
+        // Random starting position along the curve (0 to 1)
+        let t = Math.random();
+        
+        let cColor = new THREE.Color(pathMeta.color);
+        // Make inner ones slightly white/brighter
+        if(!pathMeta.isOuter) cColor.lerp(new THREE.Color(0xffffff), 0.5);
+
+        particleColors[i*3] = cColor.r;
+        particleColors[i*3+1] = cColor.g;
+        particleColors[i*3+2] = cColor.b;
+
+        particleData.push({
+            curveIdx: curveIdx,
+            t: t,
+            speed: (Math.random() * 0.005) + 0.002 // Base speed
+        });
+    }
+
+    particlesGeo.setAttribute('position', new THREE.BufferAttribute(particlePositions, 3));
+    particlesGeo.setAttribute('color', new THREE.BufferAttribute(particleColors, 3));
+
+    const particlesMat = new THREE.PointsMaterial({
+        size: 0.4,
+        vertexColors: true,
+        transparent: true,
+        opacity: 0.8,
+        blending: THREE.AdditiveBlending
+    });
+
+    const particleSystem = new THREE.Points(particlesGeo, particlesMat);
+    flowGroup.add(particleSystem);
+
+    // --- HORIZONTAL SLICE MARKERS (The 4 Zones) ---
+    function addZoneMarker(y, color, radius) {
+        const geo = new THREE.RingGeometry(radius-0.1, radius, 64);
+        const mat = new THREE.MeshBasicMaterial({ color: color, transparent: true, opacity: 0.2, side: THREE.DoubleSide });
+        const mesh = new THREE.Mesh(geo, mat);
+        mesh.rotation.x = Math.PI / 2;
+        mesh.position.y = y;
+        flowGroup.add(mesh);
+        
+        // Add subtle grid plane
+        const gridHelper = new THREE.GridHelper(radius*2, 20, color, color);
+        gridHelper.material.opacity = 0.05;
+        gridHelper.material.transparent = true;
+        gridHelper.position.y = y;
+        flowGroup.add(gridHelper);
+    }
+    
+    addZoneMarker(10, 0x64748b, 12);  // End of Isomorphic
+    addZoneMarker(0, 0x34d399, 15);   // End of Projective
+    addZoneMarker(-10, 0xfbbf24, 15); // End of Harmonic
+    addZoneMarker(-40, 0xc084fc, 8);  // End of Monadic
+
+    // --- INTERACTION & ANIMATION ---
+    
+    let flowMultiplier = 1.0;
+    const speedSlider = document.getElementById('speed-slider');
+    const valFlow = document.getElementById('val-flow');
+
+    speedSlider.addEventListener('input', (e) => {
+        flowMultiplier = parseFloat(e.target.value);
+        valFlow.innerText = flowMultiplier.toFixed(1) + "x";
+    });
+
+    // Handle Window Resize
+    window.addEventListener('resize', () => {
+        camera.aspect = container.clientWidth / container.clientHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(container.clientWidth, container.clientHeight);
+    });
+
+    // UI Zone Highlighting based on camera look angle or general time
+    function updateUI() {
+        // Calculate average particle Y to highlight zones
+        // For simplicity, we just use a cycle based on Date.now() to demo
+        let timeCycle = (Date.now() % 10000) / 10000; // 0 to 1 over 10s
+        let currentY = Y_TOP - (timeCycle * (Y_TOP - Y_BOTTOM));
+        
+        document.querySelectorAll('.zone-card').forEach(c => c.classList.remove('active'));
+        
+        if (currentY > 10) document.getElementById('zone-1').classList.add('active');
+        else if (currentY > 0) document.getElementById('zone-2').classList.add('active');
+        else if (currentY > -10) document.getElementById('zone-3').classList.add('active');
+        else document.getElementById('zone-4').classList.add('active');
+    }
+
+    const clock = new THREE.Clock();
+
+    function animate() {
+        requestAnimationFrame(animate);
+        controls.update();
+
+        // Update Particle Flow
+        const positions = particleSystem.geometry.attributes.position.array;
+        
+        for(let i=0; i<particleCount; i++) {
+            let pData = particleData[i];
+            
+            // Move particle along its curve
+            pData.t += pData.speed * flowMultiplier;
+            if (pData.t > 1.0) pData.t = 0.0; // Loop back to top
+            
+            // Get 3D point from curve
+            const curve = curves[pData.curveIdx];
+            const pt = curve.getPointAt(pData.t);
+            
+            positions[i*3] = pt.x;
+            positions[i*3+1] = pt.y;
+            positions[i*3+2] = pt.z;
+        }
+        
+        particleSystem.geometry.attributes.position.needsUpdate = true;
+        
+        updateUI();
+
+        renderer.render(scene, camera);
+    }
+
+    // Boot
+    animate();
+
+</script>
+</body>
+</html>
