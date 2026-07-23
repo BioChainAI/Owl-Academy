@@ -1,0 +1,844 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Antikythera Manifold | Cosmological Core</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <script>
+        window.MathJax = {
+            tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']], processEscapes: true }
+        };
+    </script>
+    <script type="text/javascript" id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { serif: ['Cinzel', 'serif'], mono: ['JetBrains Mono', 'monospace'] },
+                    colors: { bronze: '#b87333', gold: '#ffd700', copper: '#c15638', void: '#0a0806', panel: 'rgba(15, 12, 10, 0.85)', panelBorder: 'rgba(184, 115, 51, 0.3)' }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body { background-color: #020617; color: #e2e8f0; overflow: hidden; margin: 0; padding: 0; user-select: none; font-family: 'JetBrains Mono', monospace; }
+        
+        #app-layout { display: flex; flex-direction: column; height: 100vh; width: 100vw; background: radial-gradient(circle at center, #0a0806 0%, #000000 100%); }
+        .glass-panel { background: rgba(15, 12, 10, 0.85); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); }
+        .bronze-text { background: linear-gradient(to bottom, #fcd34d, #b87333); -webkit-background-clip: text; -webkit-text-fill-color: transparent; text-shadow: 0 0 15px rgba(184, 115, 51, 0.3); }
+
+        #top-panel { border-bottom: 1px solid rgba(184, 115, 51, 0.3); display: flex; z-index: 50; box-shadow: 0 10px 30px rgba(0,0,0,0.8); flex-shrink: 0; transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); height: 140px; }
+        #top-panel.collapsed { height: 0 !important; border-bottom: none; overflow: hidden; opacity: 0; }
+
+        #middle-section { display: flex; flex-grow: 1; overflow: hidden; position: relative; }
+
+        #left-panel { min-height:0; width: 440px; border-right: 1px solid rgba(184, 115, 51, 0.3); display: flex; flex-direction: column; z-index: 10; padding: 1.5rem; overflow-y: auto; box-shadow: 10px 0 30px rgba(0,0,0,0.5); transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
+        #left-panel.collapsed { width: 0 !important; padding: 0 !important; border-right: none; overflow: hidden; opacity: 0; }
+
+        #right-panel { min-height:0; width: 380px; border-left: 1px solid rgba(184, 115, 51, 0.3); display: flex; flex-direction: column; z-index: 10; padding: 1.5rem; overflow-y: auto; box-shadow: -10px 0 30px rgba(0,0,0,0.5); transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
+        #right-panel.collapsed { width: 0 !important; padding: 0 !important; border-left: none; overflow: hidden; opacity: 0; }
+
+        .main-view { position: relative; flex-grow: 1; z-index: 0; outline: none; }
+        .section-header { padding-bottom: 8px; border-bottom: 1px solid rgba(184, 115, 51, 0.3); font-size: 0.75rem; font-weight: bold; color: #b87333; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 1rem; font-family: 'Cinzel', serif; }
+
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: rgba(0,0,0,0.5); }
+        ::-webkit-scrollbar-thumb { background: #b87333; border-radius: 3px; }
+
+        input[type=range] { -webkit-appearance: none; width: 100%; background: transparent; }
+        input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; height: 16px; width: 16px; border-radius: 50%; background: #b87333; cursor: pointer; margin-top: -6px; box-shadow: 0 0 10px #b87333; }
+        input[type=range]::-webkit-slider-runnable-track { width: 100%; height: 4px; cursor: pointer; background: rgba(184, 115, 51, 0.3); border-radius: 2px; }
+        
+        input[type="color"] { -webkit-appearance: none; border: none; width: 32px; height: 32px; border-radius: 4px; cursor: pointer; padding: 0; background: transparent; }
+        input[type="color"]::-webkit-color-swatch-wrapper { padding: 0; }
+        input[type="color"]::-webkit-color-swatch { border: 1px solid rgba(184, 115, 51, 0.5); border-radius: 4px; }
+
+        .toggle-btn { position: absolute; background: rgba(15, 12, 10, 0.85); border: 1px solid rgba(184, 115, 51, 0.5); color: #b87333; width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; z-index: 20; transition: all 0.2s; backdrop-filter: blur(4px); }
+        .toggle-btn:hover { background: #b87333; color: #000; box-shadow: 0 0 15px #b87333; }
+        
+        #btn-toggle-top { top: 10px; left: 50%; transform: translateX(-50%); }
+        #btn-toggle-left { top: 50%; left: 10px; transform: translateY(-50%); }
+        #btn-toggle-right { top: 50%; right: 10px; transform: translateY(-50%); }
+
+        .playback-btn { background: rgba(184, 115, 51, 0.1); border: 1px solid rgba(184, 115, 51, 0.4); color: #b87333; transition: all 0.2s; }
+        .playback-btn:hover { background: rgba(184, 115, 51, 0.3); color: #ffd700; box-shadow: 0 0 10px rgba(184, 115, 51, 0.5); }
+        .playback-btn.active { background: rgba(184, 115, 51, 0.8); color: #ffd700; box-shadow: inset 0 0 10px rgba(0,0,0,0.5); }
+        
+        .mode-tab { flex: 1; text-align: center; padding: 8px; font-size: 10px; text-transform: uppercase; letter-spacing: 1px; cursor: pointer; border-bottom: 2px solid transparent; color: #94a3b8; transition: all 0.3s; }
+        .mode-tab.active { color: #ffd700; border-bottom: 2px solid #b87333; font-weight: bold; background: rgba(184, 115, 51, 0.1); }
+    </style>
+</head>
+<body>
+    <div id="app-layout">
+        
+        <!-- TOP PANEL -->
+        <div id="top-panel" class="glass-panel w-full flex flex-col p-4 justify-center relative">
+            <button id="close-top-btn" class="absolute top-2 right-4 text-bronze hover:text-gold"><i class="fas fa-times"></i></button>
+            <div class="max-w-6xl mx-auto w-full flex items-center gap-8">
+                
+                <div class="flex-shrink-0 bg-void/50 p-3 rounded-lg border border-bronze/20">
+                    <div class="text-[10px] font-bold text-gold uppercase tracking-widest mb-2 text-center">60-Year Cosmological Sequencer</div>
+                    <div class="flex gap-2 justify-center">
+                        <button id="pb-rev" class="playback-btn w-10 h-10 rounded flex items-center justify-center"><i class="fas fa-backward-step"></i></button>
+                        <button id="pb-play-rev" class="playback-btn w-10 h-10 rounded flex items-center justify-center"><i class="fas fa-play fa-flip-horizontal"></i></button>
+                        <button id="pb-pause" class="playback-btn active w-10 h-10 rounded flex items-center justify-center"><i class="fas fa-pause"></i></button>
+                        <button id="pb-play-fwd" class="playback-btn w-10 h-10 rounded flex items-center justify-center"><i class="fas fa-play"></i></button>
+                        <button id="pb-fwd" class="playback-btn w-10 h-10 rounded flex items-center justify-center"><i class="fas fa-forward-step"></i></button>
+                    </div>
+                </div>
+
+                <div class="flex-grow flex flex-col justify-center">
+                    <div class="flex justify-between items-center mb-2">
+                        <span class="text-xs font-bold text-bronze uppercase tracking-widest">Master Planetary Timeline</span>
+                        <div class="flex gap-4">
+                            <span class="text-xs text-slate-400">Solar Yrs: <span id="ui-years" class="font-mono text-gold">0.00</span></span>
+                            <span class="text-xs text-slate-400">Phase Ticks: <span id="ui-frame" class="font-mono text-emerald-400">0</span>/6000</span>
+                        </div>
+                    </div>
+                    <input type="range" id="frame-slider" min="0" max="6000" step="1" value="0" class="w-full">
+                    <div class="flex justify-between text-[10px] text-bronze/50 mt-1 font-mono">
+                        <span>Year 1</span>
+                        <span>Year 30 (Saturn Return)</span>
+                        <span>Year 60</span>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <div id="middle-section">
+            
+            <!-- LEFT PANEL -->
+            <div id="left-panel" class="glass-panel">
+                <div class="flex justify-between items-center mb-4">
+                    <div class="section-header mb-0 border-none">Architecture Context</div>
+                    <button id="close-left-btn" class="text-bronze hover:text-gold"><i class="fas fa-times"></i></button>
+                </div>
+                
+                <h1 class="font-serif text-2xl font-black bronze-text tracking-widest mb-4">COSMOLOGICAL CORE</h1>
+                
+                <!-- Mode Switcher -->
+                <div class="flex w-full bg-void/50 rounded overflow-hidden border border-bronze/20 mb-4">
+                    <div id="tab-hybrid" class="mode-tab active">Planetary Mechanics</div>
+                    <div id="tab-harmonic" class="mode-tab">Harmonic Toroids</div>
+                </div>
+
+                <!-- Content: Planetary Mechanics -->
+                <div id="content-hybrid" class="flex flex-col">
+                    <h2 class="text-xs text-bronze/70 tracking-[0.2em] uppercase mb-4">Coaxial Planetary Stack</h2>
+                    <p class="text-[11px] text-slate-400 leading-relaxed mb-4">
+                        The front dial of the actual Antikythera mechanism modeled the known solar system using complex epicyclic gear trains. To visualize this traversing the toroids, we have instantiated a stack of <strong>Coaxial Planetary Gears</strong> on the central Z-axis.
+                    </p>
+
+                    <div class="section-header mt-2">Sidereal Pointers</div>
+                    <div class="text-[10px] text-slate-300 space-y-3 mb-4 bg-void/50 p-3 border border-bronze/20 rounded">
+                        <p>Each planet is driven mathematically by the pure time extracted from the <span class="text-gold">T0 Toroid (1 rotation = 1 Solar Year)</span>. Their accurate sidereal orbital periods seamlessly sweep across the outer Zodiac ring.</p>
+                        <ul class="font-mono text-[10px] space-y-1 ml-2">
+                            <li><span style="color:#eaddcf;">■</span> Saturn (29.46 yr)</li>
+                            <li><span style="color:#c88b3a;">■</span> Jupiter (11.86 yr)</li>
+                            <li><span style="color:#c1440e;">■</span> Mars (1.88 yr)</li>
+                            <li><span class="text-gold">■</span> Sun (1.00 yr)</li>
+                            <li><span style="color:#e6b800;">■</span> Venus (0.61 yr)</li>
+                            <li><span style="color:#a8a8a8;">■</span> Mercury (0.24 yr)</li>
+                        </ul>
+                    </div>
+
+                    <div class="section-header mt-2">True Metonic Mechanics</div>
+                    <div class="text-[10px] text-slate-300 space-y-3 mb-6 bg-void/50 p-3 border border-bronze/20 rounded">
+                        <p>At the center sits the flawless representation of the physical 4-gear <strong>Epicyclic Translator</strong> used by the Greeks to chart the Moon:</p>
+                        <div class="font-mono text-center text-emerald-400 bg-black/40 py-2 rounded border border-emerald-400/20">
+                            (47/19) &times; (55/11) = 235/19
+                        </div>
+                        <p class="text-[9px] text-bronze/70">Gear A (Sun, 47t) drives B (19t). B shares a shaft with C (55t). C drives the lunar output D (11t). This equates exactly 235 lunar months to 19 solar years without decimal approximation.</p>
+                    </div>
+                </div>
+
+                <!-- Content: Pure Harmonic -->
+                <div id="content-harmonic" class="hidden flex flex-col">
+                    <h2 class="text-xs text-bronze/70 tracking-[0.2em] uppercase mb-4">6-Channel Toroidal Manifold</h2>
+                    <p class="text-[11px] text-slate-400 leading-relaxed mb-4">
+                        The planetary gears above are physically driven by the manifold network. By tuning the T2 winding ratio to $W=12$, the system forms a mathematically perfect D-Major octave triad base fundamental frequency of <strong>432 Hz</strong>.
+                    </p>
+
+                    <div class="section-header">Harmonic Resonators</div>
+                    <div id="harmonics-table" class="space-y-2 flex-grow overflow-y-auto pr-2 pb-4" style="min-height:0;">
+                        <!-- Populated by JS -->
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- CENTER CANVAS -->
+            <div id="webgl-container" class="main-view" tabindex="0">
+                <button id="btn-toggle-top" class="toggle-btn hidden" title="Toggle Controls"><i class="fas fa-chevron-down"></i></button>
+                <button id="btn-toggle-left" class="toggle-btn hidden" title="Toggle Explainers"><i class="fas fa-chevron-right"></i></button>
+                <button id="btn-toggle-right" class="toggle-btn hidden" title="Toggle Configuration"><i class="fas fa-chevron-left"></i></button>
+            </div>
+            
+            <!-- RIGHT PANEL -->
+            <div id="right-panel" class="glass-panel">
+                <div class="flex justify-between items-center mb-4">
+                    <div class="section-header mb-0 border-none">Visual Configuration</div>
+                    <button id="close-right-btn" class="text-bronze hover:text-gold"><i class="fas fa-times"></i></button>
+                </div>
+
+                <!-- Display Toggles -->
+                <div class="mb-6">
+                    <label class="text-[10px] font-bold text-gold uppercase tracking-widest block mb-2">Display Modules</label>
+                    <div class="flex justify-between items-center mb-2 bg-void/50 p-2 rounded border border-bronze/20">
+                        <label class="text-xs text-slate-400"><i class="fas fa-globe text-blue-400 mr-1"></i> Planetary System</label>
+                        <input type="checkbox" id="vis-planets-toggle" checked class="w-4 h-4 accent-bronze bg-slate-700 rounded cursor-pointer">
+                    </div>
+                    <div class="flex justify-between items-center mb-2 bg-void/50 p-2 rounded border border-bronze/20">
+                        <label class="text-xs text-slate-400"><i class="fas fa-cogs text-gold mr-1"></i> Metonic Mechanism</label>
+                        <input type="checkbox" id="vis-center-toggle" checked class="w-4 h-4 accent-bronze bg-slate-700 rounded cursor-pointer">
+                    </div>
+                    <div class="flex justify-between items-center mb-2 bg-void/50 p-2 rounded border border-bronze/20">
+                        <label class="text-xs text-slate-400"><i class="fas fa-ring text-bronze mr-1"></i> Toroid Array</label>
+                        <input type="checkbox" id="vis-toroid-toggle" checked class="w-4 h-4 accent-bronze bg-slate-700 rounded cursor-pointer">
+                    </div>
+                    <div class="flex justify-between items-center bg-void/50 p-2 rounded border border-bronze/20">
+                        <label class="text-xs text-slate-400"><i class="fas fa-project-diagram text-cyan-500 mr-1"></i> Data Bridges</label>
+                        <input type="checkbox" id="vis-bridge-toggle" checked class="w-4 h-4 accent-bronze bg-slate-700 rounded cursor-pointer">
+                    </div>
+                </div>
+
+                <!-- Manifold Config -->
+                <div class="mb-4">
+                    <label class="text-[10px] font-bold text-gold uppercase tracking-widest block mb-2">Manifold Setup</label>
+                    <div class="grid grid-cols-5 gap-1 mb-3" id="tier-selector-container">
+                        <!-- Populated by JS -->
+                    </div>
+                    
+                    <div class="bg-void/50 p-3 rounded border border-bronze/20 mb-3">
+                        <div class="flex justify-between items-center mb-3">
+                            <label class="text-[10px] text-slate-400">Stator Color</label>
+                            <input type="color" id="vis-stator-color" value="#8c5b2a">
+                        </div>
+                        <div class="mb-3">
+                            <div class="flex justify-between text-[10px] text-slate-400 mb-1">
+                                <label>Opacity</label>
+                                <span id="val-stator-opacity">0.6</span>
+                            </div>
+                            <input type="range" id="vis-stator-opacity" min="0" max="1" step="0.05" value="0.6">
+                        </div>
+                    </div>
+
+                    <div class="bg-void/50 p-3 rounded border border-bronze/20">
+                        <div class="flex justify-between items-center mb-3">
+                            <label class="text-[10px] text-slate-400">Forward Helix</label>
+                            <input type="color" id="vis-fwd-color" value="#ffd700">
+                        </div>
+                        <div class="flex justify-between items-center mb-3">
+                            <label class="text-[10px] text-slate-400">Inverse Helix</label>
+                            <input type="color" id="vis-inv-color" value="#c15638">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Gear Config -->
+                <div class="bg-void/50 p-3 rounded border border-bronze/20 mb-4">
+                    <h3 class="text-xs font-bold text-slate-300 uppercase tracking-wider mb-3"><i class="fas fa-cogs text-bronze mr-1"></i> Classical Gear Mat</h3>
+                    
+                    <div class="flex justify-between items-center mb-3">
+                        <label class="text-xs text-slate-400">Bronze Alloy Color</label>
+                        <input type="color" id="vis-gear-color" value="#b87333">
+                    </div>
+                    
+                    <div>
+                        <div class="flex justify-between text-xs text-slate-400 mb-1">
+                            <label>Corrosion/Roughness</label>
+                            <span id="val-gear-rough">0.4</span>
+                        </div>
+                        <input type="range" id="vis-gear-rough" min="0" max="1" step="0.05" value="0.4">
+                    </div>
+                </div>
+
+                <!-- Planetary Config -->
+                <div class="bg-void/50 p-3 rounded border border-bronze/20">
+                    <h3 class="text-xs font-bold text-slate-300 uppercase tracking-wider mb-3"><i class="fas fa-globe text-blue-400 mr-1"></i> Planetary Scale</h3>
+                    
+                    <div class="mb-3">
+                        <div class="flex justify-between text-xs text-slate-400 mb-1">
+                            <label>Pole Extension</label>
+                            <span id="val-pole-ext">1.0x</span>
+                        </div>
+                        <input type="range" id="vis-pole-ext" min="0.5" max="2.0" step="0.1" value="1.0">
+                    </div>
+                    
+                    <div>
+                        <div class="flex justify-between text-xs text-slate-400 mb-1">
+                            <label>Planet & Moon Size</label>
+                            <span id="val-planet-size">1.0x</span>
+                        </div>
+                        <input type="range" id="vis-planet-size" min="0.2" max="3.0" step="0.1" value="1.0">
+                    </div>
+                </div>
+
+            </div>
+
+        </div>
+    </div>
+
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+                "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+            }
+        }
+    </script>
+
+    <script type="module">
+        import * as THREE from 'three';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+        // UI Interactions Setup
+        const topPanel = document.getElementById('top-panel');
+        const leftPanel = document.getElementById('left-panel');
+        const rightPanel = document.getElementById('right-panel');
+        
+        document.getElementById('close-top-btn').addEventListener('click', () => { topPanel.classList.add('collapsed'); document.getElementById('btn-toggle-top').classList.remove('hidden'); });
+        document.getElementById('close-left-btn').addEventListener('click', () => { leftPanel.classList.add('collapsed'); document.getElementById('btn-toggle-left').classList.remove('hidden'); });
+        document.getElementById('close-right-btn').addEventListener('click', () => { rightPanel.classList.add('collapsed'); document.getElementById('btn-toggle-right').classList.remove('hidden'); });
+
+        document.getElementById('btn-toggle-top').addEventListener('click', (e) => { topPanel.classList.remove('collapsed'); e.target.closest('button').classList.add('hidden'); });
+        document.getElementById('btn-toggle-left').addEventListener('click', (e) => { leftPanel.classList.remove('collapsed'); e.target.closest('button').classList.add('hidden'); });
+        document.getElementById('btn-toggle-right').addEventListener('click', (e) => { rightPanel.classList.remove('collapsed'); e.target.closest('button').classList.add('hidden'); });
+
+        // Mode Switching
+        const tabHarmonic = document.getElementById('tab-harmonic');
+        const tabHybrid = document.getElementById('tab-hybrid');
+        const contentHarmonic = document.getElementById('content-harmonic');
+        const contentHybrid = document.getElementById('content-hybrid');
+
+        tabHarmonic.addEventListener('click', () => {
+            tabHarmonic.classList.add('active'); tabHybrid.classList.remove('active');
+            contentHarmonic.classList.remove('hidden'); contentHybrid.classList.add('hidden');
+        });
+        tabHybrid.addEventListener('click', () => {
+            tabHybrid.classList.add('active'); tabHarmonic.classList.remove('active');
+            contentHybrid.classList.remove('hidden'); contentHarmonic.classList.add('hidden');
+        });
+
+        const container = document.getElementById('webgl-container');
+        const scene = new THREE.Scene();
+        
+        const camera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 1, 2500);
+        camera.position.set(0, -80, 70);
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        renderer.setSize(container.clientWidth, container.clientHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        container.appendChild(renderer.domElement);
+
+        const controls = new OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.05;
+        controls.minDistance = 5;
+        controls.maxDistance = 1000;
+        controls.zoomSpeed = 0.8;
+
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.4);
+        scene.add(ambientLight);
+        
+        const mainLight = new THREE.DirectionalLight(0xffdfa0, 1.5);
+        mainLight.position.set(100, 200, 50);
+        scene.add(mainLight);
+
+        const fillLight = new THREE.DirectionalLight(0x4080ff, 0.8);
+        fillLight.position.set(-100, -50, -50);
+        scene.add(fillLight);
+
+        // Scene Groups
+        const toroidSystemGroup = new THREE.Group();
+        const antikytheraCenterGroup = new THREE.Group();
+        const planetaryGroup = new THREE.Group();
+        const metonicGroup = new THREE.Group();
+        
+        scene.add(toroidSystemGroup);
+        scene.add(antikytheraCenterGroup);
+        antikytheraCenterGroup.add(planetaryGroup);
+        antikytheraCenterGroup.add(metonicGroup);
+
+        const TOROID_CONFIG = [
+            { id: 'T4', name: 'Manifold 4', ratio: 8,  major: 42, minor: 2.5, color: '#8c5b2a', fwdColor: '#ffd700', invColor: '#c15638', emits: false, tubeRadius: 0.4, opacity: 0.5, glow: 0 },
+            { id: 'T3', name: 'Manifold 3', ratio: 10, major: 34, minor: 2.2, color: '#cd7f32', fwdColor: '#ffd700', invColor: '#c15638', emits: false, tubeRadius: 0.4, opacity: 0.5, glow: 0 },
+            { id: 'T2', name: 'Manifold 2', ratio: 12, major: 26, minor: 1.9, color: '#b87333', fwdColor: '#ffd700', invColor: '#c15638', emits: false, tubeRadius: 0.4, opacity: 0.5, glow: 0 },
+            { id: 'T1', name: 'Manifold 1', ratio: 14, major: 18, minor: 1.6, color: '#a66329', fwdColor: '#ffd700', invColor: '#c15638', emits: false, tubeRadius: 0.4, opacity: 0.5, glow: 0 },
+            { id: 'T0', name: 'Manifold 0', ratio: 16, major: 10, minor: 1.3, color: '#ffd700', fwdColor: '#ffffff', invColor: '#43b3ae', emits: true,  tubeRadius: 0.4, opacity: 0.8, glow: 0.5 }
+        ];
+
+        class TorusHelixCurve extends THREE.Curve {
+            constructor(major, minor, turns, phaseOffset, isInverse) {
+                super();
+                this.major = major; this.minor = minor; this.turns = turns;
+                this.phaseOffset = phaseOffset; this.isInverse = isInverse;
+            }
+            getPoint(t, optionalTarget = new THREE.Vector3()) {
+                const u = t * Math.PI * 2;
+                const v = (this.isInverse ? -1 : 1) * u * this.turns + this.phaseOffset;
+                const x = (this.major + this.minor * Math.cos(v)) * Math.cos(u);
+                const y = (this.major + this.minor * Math.cos(v)) * Math.sin(u);
+                const z = this.minor * Math.sin(v);
+                return optionalTarget.set(x, y, z);
+            }
+        }
+
+        let systemTiers = [];
+
+        function buildTier(config, index) {
+            const group = new THREE.Group();
+            
+            const statorGeo = new THREE.TorusGeometry(config.major, config.minor, 32, 128);
+            const statorMat = new THREE.MeshPhysicalMaterial({
+                color: new THREE.Color(config.color), transparent: true, opacity: config.opacity, 
+                roughness: 0.3, metalness: 0.8, emissive: new THREE.Color(config.color), emissiveIntensity: config.glow
+            });
+            const stator = new THREE.Mesh(statorGeo, statorMat);
+            group.add(stator);
+
+            const rotorGroup = new THREE.Group();
+            const channels = [];
+            for(let i=0; i<6; i++) {
+                const isInverse = i >= 3;
+                const phaseOffset = (i % 3) * (Math.PI * 2 / 3);
+                const curve = new TorusHelixCurve(config.major, config.minor, config.ratio, phaseOffset, isInverse);
+                const tubeGeo = new THREE.TubeGeometry(curve, 256, config.tubeRadius, 8, true);
+                const colorCode = isInverse ? config.invColor : config.fwdColor;
+                const tubeMat = new THREE.MeshStandardMaterial({ color: new THREE.Color(colorCode), roughness: 0.2, metalness: 1.0, emissive: new THREE.Color(colorCode), emissiveIntensity: 0.4 });
+                const tube = new THREE.Mesh(tubeGeo, tubeMat);
+                channels.push({ mesh: tube, isInverse });
+                rotorGroup.add(tube);
+            }
+            group.add(rotorGroup);
+
+            // Epicyclic Bridge points
+            const diffGroup = new THREE.Group();
+            const diffGears = [];
+            const coreGeo = new THREE.SphereGeometry(config.minor * 0.4, 16, 16);
+            const coreMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+
+            for(let i=0; i<4; i++) {
+                const dGroup = new THREE.Group();
+                const spinnerGroup = new THREE.Group();
+                
+                // Add simple visual spheres so we safely use spinnerGroup as our coordinate parent
+                const coreMesh = new THREE.Mesh(coreGeo, coreMat);
+                spinnerGroup.add(coreMesh); 
+                dGroup.add(spinnerGroup);
+                
+                const baseAngle = (i / 4) * Math.PI * 2;
+                dGroup.position.set(Math.cos(baseAngle) * config.major, Math.sin(baseAngle) * config.major, 0);
+                dGroup.rotation.z = baseAngle;
+                
+                diffGroup.add(dGroup);
+                diffGears.push({ group: dGroup, spinnerGroup: spinnerGroup, baseAngle: baseAngle });
+            }
+            group.add(diffGroup);
+            group.rotation.x = Math.PI / 2; // Lay flat
+            
+            return { group, stator, rotorGroup, channels, diffGroup, diffGears, config, index };
+        }
+
+        TOROID_CONFIG.forEach((config, idx) => {
+            const tierData = buildTier(config, idx);
+            systemTiers.push(tierData);
+            toroidSystemGroup.add(tierData.group);
+        });
+
+        function buildGearGeometry(radius, teeth) {
+            const shape = new THREE.Shape();
+            const innerRadius = radius * 0.85;
+            const holeRadius = radius * 0.2;
+            
+            for (let i = 0; i < teeth * 2; i++) {
+                const angle = (i / (teeth * 2)) * Math.PI * 2;
+                const r = i % 2 === 0 ? radius : innerRadius;
+                if (i === 0) shape.moveTo(Math.cos(angle) * r, Math.sin(angle) * r);
+                else shape.lineTo(Math.cos(angle) * r, Math.sin(angle) * r);
+            }
+            
+            const holePath = new THREE.Path();
+            holePath.absarc(0, 0, holeRadius, 0, Math.PI * 2, false);
+            shape.holes.push(holePath);
+
+            return new THREE.ExtrudeGeometry(shape, { depth: 0.2, bevelEnabled: true, bevelSegments: 2, steps: 1, bevelSize: 0.05, bevelThickness: 0.05 });
+        }
+
+        const gearMaterial = new THREE.MeshStandardMaterial({ color: new THREE.Color('#b87333'), metalness: 0.9, roughness: 0.4 });
+
+        // 1. Fixed Zodiac Ring (Shared by Planets and Metonic)
+        const zodiacRing = new THREE.Mesh(new THREE.RingGeometry(11.2, 12.0, 64), new THREE.MeshStandardMaterial({ color: 0x8c5b2a, metalness: 0.6, roughness: 0.8, side: THREE.DoubleSide }));
+        zodiacRing.rotation.x = Math.PI / 2;
+        antikytheraCenterGroup.add(zodiacRing); 
+        for(let i=0; i<12; i++) {
+            const marker = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.4, 0.1), new THREE.MeshBasicMaterial({color: 0xffd700}));
+            const angle = (i/12) * Math.PI * 2;
+            marker.position.set(Math.cos(angle) * 11.6, 0.2, Math.sin(angle) * 11.6);
+            marker.rotation.y = -angle;
+            antikytheraCenterGroup.add(marker);
+        }
+
+        // ==========================================
+        // TRUE METONIC TRAIN (47t -> 19t -> 55t -> 11t)
+        // ==========================================
+        
+        // Gear A (Sun Input, 47 teeth). Radius = 4.7
+        const gearA = new THREE.Mesh(buildGearGeometry(4.7, 47), gearMaterial);
+        gearA.rotation.x = Math.PI / 2;
+        gearA.position.y = 0.0;
+        metonicGroup.add(gearA);
+
+        // Metonic Transfer Shaft (Offset exactly by Radius A + Radius B = 4.7 + 1.9 = 6.6)
+        const transferShaft = new THREE.Group();
+        transferShaft.position.set(6.6, 0.3, 0); 
+        metonicGroup.add(transferShaft);
+
+        // Gear B (19 teeth) - Input from Sun Gear
+        const gearB = new THREE.Mesh(buildGearGeometry(1.9, 19), gearMaterial);
+        gearB.rotation.x = Math.PI / 2;
+        transferShaft.add(gearB);
+
+        // Gear C (55 teeth) - Output to Moon Gear, shares shaft with B
+        const gearC = new THREE.Mesh(buildGearGeometry(5.5, 55), gearMaterial);
+        gearC.rotation.x = Math.PI / 2;
+        gearC.position.y = 0.3; // Stacked above B
+        transferShaft.add(gearC);
+
+        // Gear D (Moon Output, 11 teeth) - Meshes with C, returns exactly to center axis!
+        const gearD = new THREE.Mesh(buildGearGeometry(1.1, 11), gearMaterial);
+        gearD.rotation.x = Math.PI / 2;
+        gearD.position.y = 0.6; // Meshes with stacked C
+        metonicGroup.add(gearD);
+
+        // Lunar Pointer and Phase Sphere
+        const moonPointerGeo = new THREE.BoxGeometry(0.15, 11.0, 0.15); moonPointerGeo.translate(0, 5.5, 0);
+        const moonPointer = new THREE.Mesh(moonPointerGeo, new THREE.MeshStandardMaterial({color: 0xffffff, metalness: 0.8}));
+        moonPointer.position.z = 0.6; 
+        gearD.add(moonPointer);
+
+        const moonPhaseGroup = new THREE.Group();
+        moonPhaseGroup.position.set(0, 11.0, 0);
+        const hemiTop = new THREE.Mesh(new THREE.SphereGeometry(0.5, 32, 16, 0, Math.PI*2, 0, Math.PI/2), new THREE.MeshStandardMaterial({color: 0xffffff, roughness: 0.9}));
+        const hemiBot = new THREE.Mesh(new THREE.SphereGeometry(0.5, 32, 16, 0, Math.PI*2, Math.PI/2, Math.PI/2), new THREE.MeshStandardMaterial({color: 0x111111, roughness: 0.9}));
+        moonPhaseGroup.add(hemiTop); moonPhaseGroup.add(hemiBot);
+        hemiTop.rotation.x = Math.PI/2; hemiBot.rotation.x = Math.PI/2;
+        moonPointer.add(moonPhaseGroup);
+
+
+        // Sidereal speeds relative to Earth year
+        const PLANETS = [
+            { id: 'saturn', name: 'Saturn', color: 0xeaddcf, speed: 1 / 29.447, pointerLength: 10.8, gearRadius: 1.4, teeth: 24, yOffset: -0.5,
+              moons: [{ name: 'Titan', color: 0xd9b340, distance: 0.7, speed: 365.25 / 15.945, radius: 0.08 }] 
+            },
+            { id: 'jupiter', name: 'Jupiter', color: 0xc88b3a, speed: 1 / 11.862, pointerLength: 10.0, gearRadius: 1.7, teeth: 30, yOffset: -1.0,
+              moons: [
+                  { name: 'Io', color: 0xffff99, distance: 0.45, speed: 365.25 / 1.769, radius: 0.05 },
+                  { name: 'Europa', color: 0xeeeeee, distance: 0.6, speed: 365.25 / 3.551, radius: 0.04 },
+                  { name: 'Ganymede', color: 0xaaaaaa, distance: 0.8, speed: 365.25 / 7.155, radius: 0.06 },
+                  { name: 'Callisto', color: 0x888888, distance: 1.0, speed: 365.25 / 16.689, radius: 0.05 }
+              ]
+            },
+            { id: 'mars', name: 'Mars', color: 0xc1440e, speed: 1 / 1.881, pointerLength: 9.2, gearRadius: 2.0, teeth: 36, yOffset: -1.5,
+              moons: [
+                  { name: 'Phobos', color: 0x999999, distance: 0.4, speed: 365.25 / 0.3189, radius: 0.03 },
+                  { name: 'Deimos', color: 0x777777, distance: 0.55, speed: 365.25 / 1.262, radius: 0.02 }
+              ]
+            },
+            // Sun is special, we map it onto Gear A which is at y=0.0
+            { id: 'sun', name: 'Sun', color: 0xffd700, speed: 1.0, pointerLength: 8.4, isSun: true },
+            { id: 'venus', name: 'Venus', color: 0xe6b800, speed: 1 / 0.615, pointerLength: 7.6, gearRadius: 2.6, teeth: 48, yOffset: -2.0 },
+            { id: 'mercury', name: 'Mercury', color: 0xa8a8a8, speed: 1 / 0.241, pointerLength: 6.8, gearRadius: 2.9, teeth: 54, yOffset: -2.5 }
+        ];
+
+        const planetMeshes = [];
+
+        PLANETS.forEach(p => {
+            let activeGear;
+            let activeArm;
+            let activeSphereGroup = new THREE.Group();
+            let moonObjs = [];
+
+            if(p.isSun) {
+                // Attach Sun pointer to the primary Metonic Gear A
+                activeGear = gearA;
+                
+                const armGeo = new THREE.BoxGeometry(0.1, p.pointerLength, 0.1); 
+                armGeo.translate(0, p.pointerLength/2, 0);
+                activeArm = new THREE.Mesh(armGeo, new THREE.MeshStandardMaterial({color: p.color, metalness: 0.7}));
+                activeArm.position.z = 0.2; 
+                activeGear.add(activeArm);
+
+                activeSphereGroup.position.y = p.pointerLength;
+                activeArm.add(activeSphereGroup);
+
+                const sphere = new THREE.Mesh(new THREE.SphereGeometry(0.4, 24, 24), new THREE.MeshStandardMaterial({color: p.color, roughness: 0.3, emissive: p.color, emissiveIntensity: 0.2}));
+                activeSphereGroup.add(sphere);
+                
+                planetMeshes.push({ data: p, gearObj: activeGear, armMesh: activeArm, sphereGroup: activeSphereGroup, moons: [] });
+            } else {
+                // Stack normal planets underneath
+                activeGear = new THREE.Mesh(buildGearGeometry(p.gearRadius, p.teeth), gearMaterial);
+                activeGear.rotation.x = Math.PI / 2;
+                activeGear.position.y = p.yOffset; 
+                planetaryGroup.add(activeGear);
+
+                const armGeo = new THREE.BoxGeometry(0.1, p.pointerLength, 0.1); 
+                armGeo.translate(0, p.pointerLength/2, 0);
+                activeArm = new THREE.Mesh(armGeo, new THREE.MeshStandardMaterial({color: p.color, metalness: 0.7}));
+                activeArm.position.z = -p.yOffset + 0.2; // Bring arm UP through the center axis so they don't clip
+                activeGear.add(activeArm);
+
+                activeSphereGroup.position.y = p.pointerLength;
+                activeArm.add(activeSphereGroup);
+
+                const sphere = new THREE.Mesh(new THREE.SphereGeometry(0.3, 24, 24), new THREE.MeshStandardMaterial({color: p.color, roughness: 0.5}));
+                activeSphereGroup.add(sphere);
+                
+                // Add Planetary Rings for Saturn
+                if (p.id === 'saturn') {
+                    const ringGeo = new THREE.RingGeometry(0.45, 0.75, 64);
+                    const ringMat = new THREE.MeshStandardMaterial({color: 0xddccaa, side: THREE.DoubleSide, transparent: true, opacity: 0.7, roughness: 0.8});
+                    const ring = new THREE.Mesh(ringGeo, ringMat);
+                    ring.rotation.x = Math.PI / 2.5; // Visual tilt
+                    activeSphereGroup.add(ring);
+                }
+
+                // Inject accurately calculated lunar bodies
+                if (p.moons) {
+                    p.moons.forEach(m => {
+                        const moonOrbit = new THREE.Group();
+                        activeSphereGroup.add(moonOrbit);
+                        
+                        const moonMesh = new THREE.Mesh(new THREE.SphereGeometry(m.radius, 16, 16), new THREE.MeshStandardMaterial({color: m.color, roughness: 0.7}));
+                        moonMesh.position.set(m.distance, 0, 0); 
+                        moonOrbit.add(moonMesh);
+                        
+                        // Add faint orbit trail
+                        const trailGeo = new THREE.RingGeometry(m.distance - 0.01, m.distance + 0.01, 64);
+                        const trailMat = new THREE.MeshBasicMaterial({color: 0xffffff, transparent: true, opacity: 0.1, side: THREE.DoubleSide});
+                        const trail = new THREE.Mesh(trailGeo, trailMat);
+                        // The RingGeometry defaults to XY plane. Our arm moves along local Y, and rotates around local Z.
+                        // This means the local XY plane is the plane of the zodiac. Perfect.
+                        activeSphereGroup.add(trail);
+
+                        moonObjs.push({ orbitGroup: moonOrbit, speed: m.speed, mesh: moonMesh });
+                    });
+                }
+                
+                planetMeshes.push({ data: p, gearObj: activeGear, armMesh: activeArm, sphereGroup: activeSphereGroup, moons: moonObjs });
+            }
+        });
+
+        // Safe Additive Data Lines (No Array Indicies!)
+        const transferLines = new THREE.LineSegments(new THREE.BufferGeometry(), new THREE.LineBasicMaterial({ color: 0x43b3ae, transparent: true, opacity: 0.8, blending: THREE.AdditiveBlending }));
+        scene.add(transferLines);
+
+        const harmonicsTable = document.getElementById('harmonics-table');
+        const tierSelectorContainer = document.getElementById('tier-selector-container');
+        let activeTierEditIndex = 0;
+
+        systemTiers.forEach((tier, index) => {
+            const el = document.createElement('div');
+            el.className = 'bg-void/30 p-2 rounded border border-bronze/10';
+            el.innerHTML = `
+                <div class="flex justify-between text-[11px] mb-1">
+                    <span class="font-bold text-gold">${tier.config.id} (${tier.config.ratio}W)</span>
+                    <span class="font-mono text-emerald-400">Resonance</span>
+                </div>
+                <div class="w-full bg-black/50 h-1.5 rounded overflow-hidden"><div class="bg-bronze h-full" style="width: ${(tier.config.ratio / 16) * 100}%"></div></div>
+            `;
+            harmonicsTable.appendChild(el);
+
+            const btn = document.createElement('button');
+            btn.className = `tier-select-btn text-xs py-1 rounded transition-colors ${index === 0 ? 'bg-bronze/30 border border-bronze text-gold active' : 'bg-void border border-bronze/30 text-bronze'}`;
+            btn.innerText = tier.config.id;
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.tier-select-btn').forEach(b => { b.classList.remove('bg-bronze/30', 'border-bronze', 'text-gold', 'active'); b.classList.add('bg-void', 'border-bronze/30', 'text-bronze'); });
+                btn.classList.add('bg-bronze/30', 'border-bronze', 'text-gold', 'active'); btn.classList.remove('bg-void', 'border-bronze/30', 'text-bronze');
+                activeTierEditIndex = index;
+                updateEditorUIFromTier();
+            });
+            tierSelectorContainer.appendChild(btn);
+        });
+
+        const colorStator = document.getElementById('vis-stator-color');
+        const opStator = document.getElementById('vis-stator-opacity');
+        const colorFwd = document.getElementById('vis-fwd-color');
+        const colorInv = document.getElementById('vis-inv-color');
+
+        function updateEditorUIFromTier() {
+            const t = systemTiers[activeTierEditIndex].config;
+            colorStator.value = t.color;
+            opStator.value = t.opacity; document.getElementById('val-stator-opacity').innerText = t.opacity.toFixed(2);
+            colorFwd.value = t.fwdColor; colorInv.value = t.invColor;
+        }
+        updateEditorUIFromTier();
+
+        colorStator.addEventListener('input', (e) => { const val = e.target.value; systemTiers[activeTierEditIndex].config.color = val; systemTiers[activeTierEditIndex].stator.material.color.set(val); if(systemTiers[activeTierEditIndex].config.glow > 0) systemTiers[activeTierEditIndex].stator.material.emissive.set(val); });
+        opStator.addEventListener('input', (e) => { const val = parseFloat(e.target.value); systemTiers[activeTierEditIndex].config.opacity = val; systemTiers[activeTierEditIndex].stator.material.opacity = val; document.getElementById('val-stator-opacity').innerText = val.toFixed(2); });
+        colorFwd.addEventListener('input', (e) => { const val = e.target.value; systemTiers[activeTierEditIndex].config.fwdColor = val; systemTiers[activeTierEditIndex].channels.forEach(ch => { if(!ch.isInverse) { ch.mesh.material.color.set(val); ch.mesh.material.emissive.set(val); } }); });
+        colorInv.addEventListener('input', (e) => { const val = e.target.value; systemTiers[activeTierEditIndex].config.invColor = val; systemTiers[activeTierEditIndex].channels.forEach(ch => { if(ch.isInverse) { ch.mesh.material.color.set(val); ch.mesh.material.emissive.set(val); } }); });
+
+        document.getElementById('vis-planets-toggle').addEventListener('change', e => planetaryGroup.visible = e.target.checked);
+        document.getElementById('vis-center-toggle').addEventListener('change', e => metonicGroup.visible = e.target.checked);
+        document.getElementById('vis-toroid-toggle').addEventListener('change', e => toroidSystemGroup.visible = e.target.checked);
+        document.getElementById('vis-bridge-toggle').addEventListener('change', e => transferLines.visible = e.target.checked);
+        document.getElementById('vis-gear-color').addEventListener('input', e => gearMaterial.color.set(e.target.value));
+        document.getElementById('vis-gear-rough').addEventListener('input', e => { gearMaterial.roughness = parseFloat(e.target.value); document.getElementById('val-gear-rough').innerText = e.target.value; });
+
+        // Dynamic Scale Listeners
+        document.getElementById('vis-pole-ext').addEventListener('input', (e) => {
+            const val = parseFloat(e.target.value);
+            document.getElementById('val-pole-ext').innerText = val.toFixed(1) + 'x';
+            planetMeshes.forEach(p => {
+                p.armMesh.scale.y = val;
+                p.sphereGroup.position.y = p.data.pointerLength * val;
+            });
+        });
+
+        document.getElementById('vis-planet-size').addEventListener('input', (e) => {
+            const val = parseFloat(e.target.value);
+            document.getElementById('val-planet-size').innerText = val.toFixed(1) + 'x';
+            planetMeshes.forEach(p => {
+                // Scaling the parent group automatically scales the planet, rings, moons, and orbit distances simultaneously.
+                p.sphereGroup.scale.set(val, val, val); 
+            });
+        });
+
+        const TOTAL_FRAMES = 6000; // 60 years representation
+        let currentFrame = 0;
+        let playbackState = 'paused';
+        let playSpeed = 2.0;
+
+        const frameSlider = document.getElementById('frame-slider');
+        const uiFrame = document.getElementById('ui-frame');
+        const uiYears = document.getElementById('ui-years');
+
+        const updateTransportUI = () => {
+            document.querySelectorAll('.playback-btn').forEach(btn => btn.classList.remove('active'));
+            if(playbackState === 'play-fwd') document.getElementById('pb-play-fwd').classList.add('active');
+            else if(playbackState === 'play-rev') document.getElementById('pb-play-rev').classList.add('active');
+            else document.getElementById('pb-pause').classList.add('active');
+        };
+
+        document.getElementById('pb-play-fwd').addEventListener('click', () => { playbackState = 'play-fwd'; updateTransportUI(); });
+        document.getElementById('pb-play-rev').addEventListener('click', () => { playbackState = 'play-rev'; updateTransportUI(); });
+        document.getElementById('pb-pause').addEventListener('click', () => { playbackState = 'paused'; updateTransportUI(); });
+        document.getElementById('pb-fwd').addEventListener('click', () => { currentFrame = Math.min(TOTAL_FRAMES, currentFrame + 1); updateTimeline(); playbackState = 'paused'; updateTransportUI(); });
+        document.getElementById('pb-rev').addEventListener('click', () => { currentFrame = Math.max(0, currentFrame - 1); updateTimeline(); playbackState = 'paused'; updateTransportUI(); });
+
+        frameSlider.addEventListener('input', (e) => { currentFrame = parseFloat(e.target.value); updateTimeline(); playbackState = 'paused'; updateTransportUI(); });
+
+        function updateTimeline() {
+            if(currentFrame >= TOTAL_FRAMES) currentFrame = 0;
+            if(currentFrame < 0) currentFrame = TOTAL_FRAMES;
+            frameSlider.value = currentFrame;
+            uiFrame.innerText = Math.floor(currentFrame);
+            uiYears.innerText = (currentFrame / 100).toFixed(2);
+        }
+
+        // Replace window resize listener with robust ResizeObserver for Panel Support
+        const resizeObserver = new ResizeObserver(() => {
+            window.requestAnimationFrame(() => {
+                if (!camera || !renderer || !container.clientWidth || !container.clientHeight) return;
+                camera.aspect = container.clientWidth / container.clientHeight; 
+                camera.updateProjectionMatrix(); 
+                renderer.setSize(container.clientWidth, container.clientHeight); 
+            });
+        });
+        resizeObserver.observe(container);
+
+        function animate() {
+            requestAnimationFrame(animate);
+
+            if(playbackState === 'play-fwd') { currentFrame += playSpeed; updateTimeline(); } 
+            else if (playbackState === 'play-rev') { currentFrame -= playSpeed; updateTimeline(); }
+
+            // 100 frames = 1 Solar Year
+            const solarYears = currentFrame / 100;
+            const solarAngle = -solarYears * Math.PI * 2;
+            const t0Phase = -solarAngle; 
+            
+            // 1. Toroid Rotations
+            systemTiers.forEach(tier => {
+                const relativePhase = t0Phase * (16 / tier.config.ratio);
+                tier.rotorGroup.rotation.z = -relativePhase; 
+                const orbitDir = tier.index % 2 === 0 ? 1 : -1;
+                const orbitSpeed = relativePhase * orbitDir * 0.5;
+                tier.diffGears.forEach(diff => {
+                    const currentAngle = diff.baseAngle + orbitSpeed;
+                    diff.group.position.set(Math.cos(currentAngle) * tier.config.major, Math.sin(currentAngle) * tier.config.major, 0);
+                    diff.group.rotation.z = currentAngle;
+                    diff.spinnerGroup.rotation.x = relativePhase * tier.config.ratio;
+                });
+            });
+
+            // 2. Exact Metonic Lunar Math: (47/19) * (55/11) = 235/19
+            gearA.rotation.z = solarAngle;
+            
+            const transferAngle = solarAngle * -(47 / 19);
+            gearB.rotation.z = transferAngle;
+            gearC.rotation.z = transferAngle; // Shared shaft
+            
+            const lunarAngle = transferAngle * -(55 / 11);
+            gearD.rotation.z = lunarAngle;
+
+            // Phase Sphere (Difference between Moon and Sun positions)
+            const phaseAngle = lunarAngle - solarAngle;
+            moonPhaseGroup.rotation.y = -phaseAngle;
+
+            // 3. Stacked Planetary Sidereal Motion & Moons
+            planetMeshes.forEach(planet => {
+                // Apply the unique sidereal speed mathematically mapped to the solar years
+                planet.gearObj.rotation.z = solarAngle * planet.data.speed;
+                
+                // Spin the planetary moons accurately based on their real orbital periods
+                if (planet.moons && planet.moons.length > 0) {
+                    planet.moons.forEach(moon => {
+                        moon.orbitGroup.rotation.z = solarYears * moon.speed * Math.PI * 2;
+                    });
+                }
+            });
+
+            // 4. Safely Draw Data Transfer Lines using getWorldPosition directly on the parent
+            const linePositions = [];
+            const t0 = systemTiers[systemTiers.length - 1];
+            
+            for(let i=0; i<systemTiers.length - 1; i++) {
+                const tierA = systemTiers[i]; const tierB = systemTiers[i+1];
+                for(let g=0; g<4; g++) {
+                    const posA = new THREE.Vector3(); const posB = new THREE.Vector3();
+                    // BUG FIX: Directly query the parent group, removing brittle index requirements
+                    tierA.diffGears[g].spinnerGroup.getWorldPosition(posA); 
+                    tierB.diffGears[g].spinnerGroup.getWorldPosition(posB);
+                    linePositions.push(posA.x, posA.y, posA.z, posB.x, posB.y, posB.z);
+                }
+            }
+
+            // Connect T0 Toroid exactly to Central Sun Gear (Gear A) Rim
+            for(let g=0; g<4; g++) {
+                const posA = new THREE.Vector3();
+                t0.diffGears[g].spinnerGroup.getWorldPosition(posA);
+                const targetAngle = solarAngle + (g * Math.PI/2);
+                const posB = new THREE.Vector3(Math.cos(targetAngle)*4.7, 0, Math.sin(targetAngle)*4.7);
+                linePositions.push(posA.x, posA.y, posA.z, posB.x, posB.y, posB.z);
+            }
+            transferLines.geometry.setAttribute('position', new THREE.Float32BufferAttribute(linePositions, 3));
+
+            controls.update();
+            renderer.render(scene, camera);
+        }
+
+        animate();
+    </script>
+</body>
+</html>
