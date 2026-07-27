@@ -1,0 +1,1541 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Geometric Engine of Time: Toroidal Orbital Calculator</title>
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Three.js and OrbitControls -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+
+    <!-- FontAwesome Icons -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js"></script>
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;600;700&family=Inter:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: #030712;
+            color: #f3f4f6;
+            font-family: 'Inter', sans-serif;
+            user-select: none;
+        }
+
+        .font-mono-code {
+            font-family: 'Fira Code', monospace;
+        }
+
+        #canvas-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: 1;
+        }
+
+        /* Fixed Glassmorphism Panel Styling */
+        .glass-panel {
+            background: rgba(15, 23, 42, 0.88);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(56, 189, 248, 0.25);
+            border-radius: 12px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.7);
+            z-index: 10;
+            max-height: calc(100vh - 5rem);
+            overflow-y: auto;
+            overflow-x: hidden;
+            transition: border-color 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .glass-panel:hover {
+            border-color: rgba(56, 189, 248, 0.5);
+            box-shadow: 0 20px 50px rgba(14, 165, 233, 0.2);
+        }
+
+        .panel-header {
+            padding: 10px 14px;
+            background: rgba(3, 7, 18, 0.75);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            font-size: 0.72rem;
+            font-weight: 700;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            cursor: grab;
+            position: sticky;
+            top: 0;
+            z-index: 12;
+        }
+
+        .panel-header:active {
+            cursor: grabbing;
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 5px;
+            height: 5px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(3, 7, 18, 0.5);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #0284c7;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #38bdf8;
+        }
+
+        /* Custom Inputs & Sliders */
+        input[type="range"] {
+            accent-color: #38bdf8;
+        }
+
+        /* Tab Buttons */
+        .tab-btn {
+            padding: 6px 10px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            border-radius: 6px;
+            transition: all 0.2s ease;
+            background: rgba(30, 41, 59, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: #94a3b8;
+        }
+        .tab-btn:hover {
+            color: #38bdf8;
+            border-color: rgba(56, 189, 248, 0.4);
+        }
+        .tab-btn.active {
+            background: rgba(14, 165, 233, 0.2);
+            border-color: #38bdf8;
+            color: #38bdf8;
+            box-shadow: 0 0 12px rgba(56, 189, 248, 0.3);
+        }
+
+        /* Glow effects */
+        .glow-cyan { text-shadow: 0 0 10px rgba(56, 189, 248, 0.7); }
+        .glow-amber { text-shadow: 0 0 10px rgba(245, 158, 11, 0.7); }
+        .glow-emerald { text-shadow: 0 0 10px rgba(16, 185, 129, 0.7); }
+        .glow-rose { text-shadow: 0 0 10px rgba(244, 63, 94, 0.7); }
+
+        /* Node Ring Visualizer */
+        .node-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #1e293b;
+            border: 1px solid #475569;
+            transition: all 0.2s ease;
+        }
+        .node-dot.active {
+            background: #38bdf8;
+            border-color: #f0f9ff;
+            box-shadow: 0 0 12px #38bdf8;
+            transform: scale(1.3);
+        }
+        .node-dot.closure {
+            background: #10b981;
+            border-color: #a7f3d0;
+            box-shadow: 0 0 15px #10b981;
+        }
+
+        /* Modal Overlay */
+        #doc-modal {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(3, 7, 18, 0.92);
+            backdrop-filter: blur(20px);
+            z-index: 100;
+            overflow-y: auto;
+        }
+
+        /* Canvas for TQF */
+        #tqf-canvas {
+            background: #020617;
+            border-radius: 8px;
+            border: 1px solid rgba(56, 189, 248, 0.2);
+            cursor: crosshair;
+            touch-action: none;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Top Header Bar -->
+    <header class="fixed top-0 left-0 w-full z-30 px-4 py-2 bg-slate-950/80 backdrop-blur-md border-b border-slate-800/80 flex flex-wrap items-center justify-between gap-2">
+        <div class="flex items-center gap-3">
+            <div class="w-8 h-8 rounded-lg bg-gradient-to-tr from-cyan-600 to-amber-500 flex items-center justify-center text-slate-950 font-black text-lg shadow-lg shadow-cyan-500/20">
+                <i class="fa-solid fa-atom"></i>
+            </div>
+            <div>
+                <h1 class="font-extrabold text-sm tracking-wider text-slate-100 uppercase flex items-center gap-2">
+                    <span>The Geometric Engine of Time</span>
+                    <span class="text-[9px] px-1.5 py-0.5 rounded bg-cyan-950 border border-cyan-500/30 text-cyan-400 font-mono-code">v2.4 Harmonic Sync</span>
+                </h1>
+                <p class="text-[10px] text-cyan-400 font-mono-code flex items-center gap-2">
+                    <span>6-Channel, 5-Tier Toroidal Calculator</span>
+                    <span class="text-slate-600">|</span>
+                    <span class="text-amber-400" id="header-w-sum">W<sub>Σ</sub> = 60 Wraps</span>
+                </p>
+            </div>
+        </div>
+
+        <!-- Telemetry Status Indicators -->
+        <div class="flex items-center gap-2 text-[11px] font-mono-code flex-wrap">
+            <div class="px-2.5 py-1 rounded-md bg-slate-900 border border-slate-800 flex items-center gap-1.5">
+                <span class="text-slate-400">Target T<sub>3</sub>:</span>
+                <span id="telemetry-t3-freq" class="text-cyan-400 font-bold glow-cyan">60.00 Hz</span>
+            </div>
+            <div class="px-2.5 py-1 rounded-md bg-slate-900 border border-slate-800 flex items-center gap-1.5">
+                <span class="text-slate-400">System Avg f<sub>geo</sub>:</span>
+                <span id="telemetry-avg-freq" class="text-amber-400 font-bold glow-amber">72.00 Hz</span>
+            </div>
+            <!-- ADDED: Scalar Field Telemetry -->
+            <div class="px-2.5 py-1 rounded-md bg-slate-900 border border-slate-800 flex items-center gap-1.5">
+                <span class="text-slate-400">Scalar Field (φ):</span>
+                <span id="telemetry-scalar" class="text-rose-400 font-bold glow-rose">0.0000</span>
+            </div>
+            <div class="px-2.5 py-1 rounded-md bg-slate-900 border border-slate-800 flex items-center gap-1.5">
+                <span class="text-slate-400">Parity Residual:</span>
+                <span id="parity-badge" class="text-emerald-400 font-bold glow-emerald">0.500 (2-State)</span>
+            </div>
+            <div id="closure-badge" class="px-2.5 py-1 rounded-md bg-emerald-950/60 border border-emerald-500/40 text-emerald-400 flex items-center gap-1.5 animate-pulse">
+                <i class="fa-solid fa-circle-check"></i>
+                <span class="font-bold">30-Node Zero Remainder</span>
+            </div>
+        </div>
+
+        <!-- Action Controls -->
+        <div class="flex items-center gap-2">
+            <button id="btn-audio" onclick="toggleAudio()" class="px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-700 text-slate-300 hover:text-cyan-400 text-xs font-semibold flex items-center gap-1.5 transition">
+                <i class="fa-solid fa-volume-xmark" id="audio-icon"></i>
+                <span id="audio-label">Harmonic Synth</span>
+            </button>
+            <button onclick="openDocModal()" class="px-3 py-1.5 rounded-lg bg-cyan-600/20 hover:bg-cyan-600/30 border border-cyan-500/50 text-cyan-300 text-xs font-semibold flex items-center gap-1.5 transition">
+                <i class="fa-solid fa-book-open"></i>
+                <span>Math Spec</span>
+            </button>
+        </div>
+    </header>
+
+    <!-- 3D Three.js Viewport -->
+    <div id="canvas-container"></div>
+
+    <!-- PANEL 1: Top-Left - 30-Node Parity Closure Real-Time Monitor -->
+    <div class="glass-panel fixed top-16 left-4 w-80 max-w-[calc(100vw-2rem)] flex flex-col" id="panel-closure">
+        <div class="panel-header">
+            <span class="text-cyan-400 flex items-center gap-2">
+                <i class="fa-solid fa-arrows-spin"></i>
+                30-Node Parity Closure Proofer
+            </span>
+            <i class="fa-solid fa-grip-dots-vertical text-slate-500"></i>
+        </div>
+        <div class="p-3.5 space-y-3 text-xs">
+            <!-- Node Progress Ring / Grid -->
+            <div class="bg-slate-950/80 p-2.5 rounded-lg border border-slate-800">
+                <div class="flex justify-between items-center text-[10px] text-slate-400 mb-1.5 font-mono-code">
+                    <span>PRODUCT SPACE (6 Ch × 5 Tiers)</span>
+                    <span id="node-counter-text" class="text-cyan-400 font-bold">Node 0 / 30</span>
+                </div>
+                <!-- 30 Node Dots -->
+                <div id="node-grid" class="grid grid-cols-10 gap-1.5 justify-items-center my-1">
+                    <!-- Javascript populates 30 dots -->
+                </div>
+                <div class="flex justify-between items-center text-[10px] text-slate-400 mt-2 pt-2 border-t border-slate-800/80 font-mono-code">
+                    <span>Traversal Window: <strong id="traversal-window-text" class="text-slate-200">0.500 s</strong></span>
+                    <span>T3 Frequency: <strong id="t3-disp-text" class="text-cyan-400">60 Hz</strong></span>
+                </div>
+            </div>
+
+            <!-- Real-time Cesium Atomic Counter -->
+            <div class="grid grid-cols-2 gap-2 font-mono-code">
+                <div class="bg-slate-950/60 p-2 rounded-lg border border-slate-800">
+                    <div class="text-[9px] text-slate-400 uppercase">Accumulated Cs Ticks</div>
+                    <div id="cs-tick-display" class="text-amber-400 font-bold text-xs mt-0.5 truncate">0</div>
+                </div>
+                <div class="bg-slate-950/60 p-2 rounded-lg border border-slate-800">
+                    <div class="text-[9px] text-slate-400 uppercase">Target (0.5s Closure)</div>
+                    <div class="text-emerald-400 font-bold text-xs mt-0.5">4,596,315,885</div>
+                </div>
+            </div>
+
+            <!-- Parity State Indicator -->
+            <div class="bg-slate-950/60 p-2.5 rounded-lg border border-slate-800 flex items-center justify-between font-mono-code">
+                <div>
+                    <div class="text-[10px] text-slate-400">Parity State φ<sub>p</sub> = 0.5p (mod 1)</div>
+                    <div id="parity-state-text" class="text-xs font-bold text-cyan-300 mt-0.5">EVEN PULSE (φ = 0.0)</div>
+                </div>
+                <div id="parity-orb" class="w-6 h-6 rounded-full bg-cyan-500 shadow-lg shadow-cyan-500/50 transition-all duration-200 flex items-center justify-center text-[9px] font-bold text-slate-950">
+                    0.0
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- PANEL 2: Bottom-Left - Interactive Time & Topological Pulse Calculator -->
+    <div class="glass-panel fixed bottom-4 left-4 w-96 max-w-[calc(100vw-2rem)] flex flex-col" id="panel-calc">
+        <div class="panel-header">
+            <span class="text-amber-400 flex items-center gap-2">
+                <i class="fa-solid fa-calculator"></i>
+                Time & Pulse Conversion Engine
+            </span>
+            <i class="fa-solid fa-grip-dots-vertical text-slate-500"></i>
+        </div>
+        <div class="p-3.5 space-y-3 text-xs">
+            <!-- Mode Selector Tabs -->
+            <div class="flex gap-1.5">
+                <button class="tab-btn active flex-1" onclick="switchCalcMode('seconds')" id="tab-sec">SI Seconds</button>
+                <button class="tab-btn flex-1" onclick="switchCalcMode('pulses')" id="tab-pulses">Topological Pulses</button>
+                <button class="tab-btn flex-1" onclick="switchCalcMode('greatyears')" id="tab-gy">Great Years</button>
+            </div>
+
+            <!-- Input Box -->
+            <div class="bg-slate-950/80 p-2.5 rounded-lg border border-slate-800">
+                <div class="flex justify-between items-center text-[10px] text-slate-400 mb-1">
+                    <label id="input-label" for="calc-input" class="font-semibold uppercase text-slate-300">Enter Duration (Seconds):</label>
+                    <span class="text-cyan-400 font-mono-code">Scale Homomorphism</span>
+                </div>
+                <input type="number" id="calc-input" value="1.0" step="0.1" class="w-full bg-slate-900 border border-slate-700 rounded-md px-2.5 py-1.5 text-sm font-mono-code text-cyan-300 focus:outline-none focus:border-cyan-500 transition">
+            </div>
+
+            <!-- Real-time Mathematical Breakdown Table -->
+            <div class="bg-slate-950/60 p-2.5 rounded-lg border border-slate-800 space-y-1.5 font-mono-code text-[11px]">
+                <div class="flex justify-between py-0.5 border-b border-slate-800">
+                    <span class="text-slate-400">Topological Pulses (p):</span>
+                    <span id="res-pulses" class="text-slate-100 font-bold">60.00</span>
+                </div>
+                <div class="flex justify-between py-0.5 border-b border-slate-800">
+                    <span class="text-slate-400">Helical Cycles (W<sub>Σ</sub>):</span>
+                    <span id="res-cycles" class="text-cyan-400 font-bold">1.00 Cycles</span>
+                </div>
+                <div class="flex justify-between py-0.5 border-b border-slate-800">
+                    <span class="text-slate-400">Cesium-133 Transitions:</span>
+                    <span id="res-cs" class="text-amber-400 font-bold">9,192,631,770</span>
+                </div>
+                <div class="flex justify-between py-0.5 border-b border-slate-800">
+                    <span class="text-slate-400">Cycles per Pulse (N<sub>pulse</sub>):</span>
+                    <span id="res-npulse" class="text-emerald-400 font-bold">153,210,529.5</span>
+                </div>
+                <div class="flex justify-between py-0.5">
+                    <span class="text-slate-400">Platonic Great Year Fraction:</span>
+                    <span id="res-gy" class="text-purple-400 font-bold">0.002315 GY</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- PANEL 3: Top-Right - Manifold & Harmonic Frequency Engine -->
+    <div class="glass-panel fixed top-16 right-4 w-96 max-w-[calc(100vw-2rem)] flex flex-col" id="panel-manifold">
+        <div class="panel-header">
+            <span class="text-emerald-400 flex items-center gap-2">
+                <i class="fa-solid fa-layer-group"></i>
+                Manifold & Harmonic Frequency Engine
+            </span>
+            <i class="fa-solid fa-grip-dots-vertical text-slate-500"></i>
+        </div>
+        <div class="p-3.5 space-y-3.5 text-xs">
+            <!-- Simulation Playback Controls -->
+            <div class="flex items-center gap-2 bg-slate-950/80 p-2 rounded-lg border border-slate-800">
+                <button id="btn-pause" onclick="togglePlay()" class="px-3 py-1.5 rounded-md bg-cyan-600 hover:bg-cyan-500 text-slate-950 font-bold text-xs flex-1 flex items-center justify-center gap-1.5 transition">
+                    <i class="fa-solid fa-pause" id="play-icon"></i>
+                    <span id="play-text">Pause Engine</span>
+                </button>
+                <div class="flex-1 flex flex-col gap-0.5">
+                    <div class="flex justify-between text-[9px] text-slate-400 font-mono-code">
+                        <span>Speed Multiplier</span>
+                        <span id="speed-label" class="text-cyan-400">1.0x</span>
+                    </div>
+                    <input type="range" id="speed-slider" min="0.1" max="3.0" step="0.1" value="1.0" oninput="updateSpeed(this.value)" class="w-full">
+                </div>
+            </div>
+
+            <!-- Central T3 Target Harmonic Controller -->
+            <div class="bg-gradient-to-br from-slate-950 via-slate-900 to-cyan-950/40 p-3 rounded-xl border border-cyan-500/40 space-y-2">
+                <div class="flex justify-between items-center">
+                    <div class="flex items-center gap-1.5">
+                        <i class="fa-solid fa-bullseye text-amber-400"></i>
+                        <span class="font-bold text-amber-300 text-[11px] uppercase tracking-wide">T<sub>3</sub> Central Target Frequency</span>
+                    </div>
+                    <span id="t3-freq-display" class="font-mono-code font-bold text-cyan-400 text-xs">60.0 Hz</span>
+                </div>
+                <div class="flex items-center gap-2">
+                    <input type="range" id="t3-target-slider" min="10" max="240" step="0.5" value="60" oninput="onT3TargetChange(this.value)" class="flex-1">
+                    <input type="number" id="t3-target-num" value="60.0" step="0.5" oninput="onT3TargetChange(this.value)" class="w-16 bg-slate-950 border border-cyan-500/50 rounded px-1.5 py-0.5 text-center font-mono-code text-cyan-300 font-bold text-xs">
+                </div>
+
+                <div class="flex justify-between items-center pt-1 text-[10px]">
+                    <label class="flex items-center gap-1.5 cursor-pointer text-slate-300">
+                        <input type="checkbox" id="chk-auto-harmonic" checked onchange="toggleAutoHarmonic(this.checked)" class="accent-cyan-500">
+                        <span class="font-semibold text-emerald-400">Auto-Harmonic Shift (T<sub>3</sub> Anchor)</span>
+                    </label>
+                    <span class="text-slate-500 font-mono-code">Ratio W<sub>n</sub>/W<sub>3</sub></span>
+                </div>
+            </div>
+
+            <!-- Per-Tier Frequency Tuning Table -->
+            <div class="space-y-1.5">
+                <div class="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex justify-between">
+                    <span>Individual Manifold Tuning (T<sub>0</sub> - T<sub>4</sub>)</span>
+                    <span class="text-cyan-400 font-mono-code">f<sub>n</sub> (Hz)</span>
+                </div>
+
+                <div id="tier-tuning-list" class="space-y-1 font-mono-code">
+                    <!-- JavaScript populates tier frequency input rows -->
+                </div>
+            </div>
+
+            <!-- Tier Visibility Toggles -->
+            <div>
+                <div class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1 flex justify-between">
+                    <span>5-Tier Visibility (T<sub>0</sub> - T<sub>4</sub>)</span>
+                    <span class="text-cyan-400">W<sub>n</sub> = 16 - 2n</span>
+                </div>
+                <div class="grid grid-cols-5 gap-1" id="tier-toggle-grid">
+                    <!-- T0 to T4 toggles -->
+                </div>
+            </div>
+
+            <!-- 6 Channel Braid Filters -->
+            <div>
+                <div class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1 flex justify-between">
+                    <span>6-Channel Dual-Helix (C<sub>3</sub> × C<sub>2</sub>)</span>
+                    <span class="text-amber-400">Triadic + Chiral</span>
+                </div>
+                <div class="grid grid-cols-3 gap-1.5 font-mono-code text-[10px]">
+                    <label class="flex items-center gap-1.5 bg-slate-900/80 p-1.5 rounded border border-slate-800 cursor-pointer hover:border-slate-700">
+                        <input type="checkbox" id="chk-fwd" checked onchange="updateChannelVis()" class="accent-cyan-500">
+                        <span class="text-cyan-400 font-bold">Fwd (+1)</span>
+                    </label>
+                    <label class="flex items-center gap-1.5 bg-slate-900/80 p-1.5 rounded border border-slate-800 cursor-pointer hover:border-slate-700">
+                        <input type="checkbox" id="chk-inv" checked onchange="updateChannelVis()" class="accent-amber-500">
+                        <span class="text-amber-400 font-bold">Inv (-1)</span>
+                    </label>
+                    <!-- ADDED: Phase Conjugate Orthogonals Toggle -->
+                    <label class="flex items-center gap-1.5 bg-slate-900/80 p-1.5 rounded border border-slate-800 cursor-pointer hover:border-slate-700">
+                        <input type="checkbox" id="chk-scalar" checked onchange="updateChannelVis()" class="accent-rose-500">
+                        <span class="text-rose-400 font-bold">Scalar (φ)</span>
+                    </label>
+                </div>
+            </div>
+
+            <!-- Camera View Presets -->
+            <div class="pt-1 border-t border-slate-800 flex gap-1.5">
+                <button onclick="setCameraView('perspective')" class="tab-btn flex-1 text-[10px]">Macro View</button>
+                <button onclick="setCameraView('core')" class="tab-btn flex-1 text-[10px]">Core T<sub>0</sub></button>
+                <button onclick="setCameraView('top')" class="tab-btn flex-1 text-[10px]">Orthogonal Z</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- PANEL 4: Bottom-Right - TQF Archimedean Area-Stability Engine -->
+    <div class="glass-panel fixed bottom-4 right-4 w-96 max-w-[calc(100vw-2rem)] flex flex-col" id="panel-tqf">
+        <div class="panel-header">
+            <span class="text-rose-400 flex items-center gap-2">
+                <i class="fa-solid fa-shapes"></i>
+                TQF Archimedean Area Invariants
+            </span>
+            <i class="fa-solid fa-grip-dots-vertical text-slate-500"></i>
+        </div>
+        <div class="p-3 flex gap-3 text-xs">
+            <!-- 2D Interactive Canvas -->
+            <div class="flex-shrink-0">
+                <canvas id="tqf-canvas" width="130" height="130"></canvas>
+                <div class="text-[9px] text-center text-slate-500 mt-1 font-mono-code">Drag C<sub>3</sub> Anchors</div>
+            </div>
+
+            <!-- Quadrance & Area Readouts -->
+            <div class="flex-1 space-y-1.5 font-mono-code text-[10px]">
+                <div class="text-[9px] font-bold text-slate-400 uppercase">Heron Quadrance Formulas</div>
+                <div class="bg-slate-950/80 p-1.5 rounded border border-slate-800 space-y-1">
+                    <div class="flex justify-between">
+                        <span class="text-slate-400">Q<sub>1</sub> (||p<sub>A</sub>-p<sub>B</sub>||<sup>2</sup>):</span>
+                        <span id="tqf-q1" class="text-cyan-400 font-bold">0.00</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-slate-400">Q<sub>2</sub> (||p<sub>B</sub>-p<sub>C</sub>||<sup>2</sup>):</span>
+                        <span id="tqf-q2" class="text-cyan-400 font-bold">0.00</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-slate-400">Q<sub>3</sub> (||p<sub>C</sub>-p<sub>A</sub>||<sup>2</sup>):</span>
+                        <span id="tqf-q3" class="text-cyan-400 font-bold">0.00</span>
+                    </div>
+                </div>
+
+                <div class="bg-slate-950/80 p-1.5 rounded border border-slate-800 space-y-1">
+                    <div class="flex justify-between">
+                        <span class="text-slate-400">Remainder A<sub>R</sub>:</span>
+                        <span id="tqf-ar" class="text-amber-400 font-bold">0.00</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-slate-400">Triangle Area A:</span>
+                        <span id="tqf-area" class="text-emerald-400 font-bold">0.00</span>
+                    </div>
+                </div>
+
+                <div id="tqf-status" class="text-[9px] font-bold text-center py-1 rounded bg-emerald-950/60 border border-emerald-500/40 text-emerald-400">
+                    A<sub>R</sub> = 16A<sup>2</sup> (STABLE EUCLIDEAN)
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MATHEMATICAL ARCHITECTURE SPEC MODAL -->
+    <div id="doc-modal">
+        <div class="max-w-4xl mx-auto my-10 p-6 glass-panel relative text-slate-200 space-y-6">
+            <!-- Close Button -->
+            <button onclick="closeDocModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white text-xl">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+
+            <!-- Title -->
+            <div class="border-b border-slate-800 pb-4">
+                <div class="text-xs text-cyan-400 font-mono-code uppercase font-bold tracking-widest mb-1">Mathematical Architecture Formalization</div>
+                <h2 class="text-2xl font-extrabold text-white">The Geometric Engine of Time: 6-Channel, 5-Tier Toroidal Calculator</h2>
+            </div>
+
+            <!-- Section 1 -->
+            <div class="space-y-2">
+                <h3 class="text-lg font-bold text-amber-400 flex items-center gap-2">
+                    <i class="fa-solid fa-torus"></i>
+                    1. The Intrinsic Topological Clock & Target T<sub>3</sub> Harmonics
+                </h3>
+                <p class="text-xs text-slate-300 leading-relaxed">
+                    Rather than relying on fixed external framerates, the temporal metric <span class="font-mono-code text-cyan-300">τ</span> is derived directly from the spatial winding density of a 5-tier nested toroidal manifold centered on target manifold <span class="font-mono-code text-amber-300">T<sub>3</sub></span> ($W_3 = 10$). The winding numbers $W_n$ across tiers $T_0$ through $T_4$ are:
+                </p>
+                <div class="p-3 bg-slate-950 rounded-lg border border-slate-800 font-mono-code text-xs text-center text-cyan-300">
+                    W<sub>n</sub> = 16 - 2n &nbsp;&nbsp;(for n = 0..4) &nbsp;&Rightarrow;&nbsp; W<sub>Σ</sub> = 16 + 14 + 12 + 10 + 8 = 60 Wraps
+                </div>
+                <p class="text-xs text-slate-300 leading-relaxed">
+                    When <span class="font-mono-code text-amber-400">T<sub>3</sub></span> is tuned to target frequency $f_{T3}$, all connected tiers lock to exact harmonic ratios defined by $f_n = f_{T3} \cdot (W_n / W_3)$.
+                </p>
+            </div>
+
+            <!-- Section 2 -->
+            <div class="space-y-2">
+                <h3 class="text-lg font-bold text-cyan-400 flex items-center gap-2">
+                    <i class="fa-solid fa-ruler-combined"></i>
+                    2. Quadratic Major Radius & Linear Minor Radius Laws
+                </h3>
+                <p class="text-xs text-slate-300 leading-relaxed">
+                    To maintain spatial proportional mapping, the major radii expand quadratically while minor tube radii expand linearly:
+                </p>
+                <div class="grid grid-cols-2 gap-3 font-mono-code text-xs">
+                    <div class="p-3 bg-slate-950 rounded-lg border border-slate-800">
+                        <div class="text-amber-400 font-bold mb-1">Quadratic Major Radius Law:</div>
+                        <div>R<sub>n</sub> = 5n<sup>2</sup> + 15n + 15</div>
+                        <div class="text-[10px] text-slate-500 mt-1">Sequence: 15, 35, 65, 105, 155</div>
+                    </div>
+                    <div class="p-3 bg-slate-950 rounded-lg border border-slate-800">
+                        <div class="text-cyan-400 font-bold mb-1">Linear Minor Radius Law:</div>
+                        <div>r<sub>n</sub> = 2n + 4</div>
+                        <div class="text-[10px] text-slate-500 mt-1">Sequence: 4, 6, 8, 10, 12</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Section 3 -->
+            <div class="space-y-2">
+                <h3 class="text-lg font-bold text-emerald-400 flex items-center gap-2">
+                    <i class="fa-solid fa-circle-check"></i>
+                    3. The 30-Node Geometric Parity Closure Theorem
+                </h3>
+                <p class="text-xs text-slate-300 leading-relaxed">
+                    Bounding the Cesium-133 hyperfine transition frequency (<span class="font-mono-code text-amber-300">ν<sub>Cs</sub> = 9,192,631,770 Hz</span>) by the reference register yields:
+                </p>
+                <div class="p-3 bg-slate-950 rounded-lg border border-slate-800 font-mono-code text-xs text-center text-emerald-300">
+                    N<sub>pulse</sub> = 9,192,631,770 / f<sub>T3</sub> = 153,210,529.5 cycles/pulse
+                </div>
+                <p class="text-xs text-slate-300 leading-relaxed">
+                    The fractional residual <span class="font-mono-code text-amber-400">{N<sub>pulse</sub>} = 0.5</span> generates a 2-pulse alternating temporal parity state <span class="font-mono-code text-cyan-300">φ<sub>p</sub> = 0.5p (mod 1)</span>. The 30-node product space (6 channels × 5 tiers) closes completely over $T = 30 / f_{T3}$ seconds with zero remainder.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Core Mathematical Architecture Constants
+        const NU_CS = 9192631770;                 // Cesium-133 Hyperfine Transition (Hz)
+        const TOTAL_NODES = 30;                   // 6 Channels x 5 Tiers = 30 Nodes
+
+        // 5-Tier Specification Data with Target T3 Anchor (W3 = 10)
+        const TIERS_SPEC = [
+            { id: 0, W: 16, R: 15,  r: 4,  color: 0x38bdf8, hex: '#38bdf8', rotAxis: 'Z', freq: 96.0 },
+            { id: 1, W: 14, R: 35,  r: 6,  color: 0xa855f7, hex: '#a855f7', rotAxis: 'X', freq: 84.0 },
+            { id: 2, W: 12, R: 65,  r: 8,  color: 0x10b981, hex: '#10b981', rotAxis: 'Z', freq: 72.0 },
+            { id: 3, W: 10, R: 105, r: 10, color: 0xf59e0b, hex: '#f59e0b', rotAxis: 'X', freq: 60.0 }, // Target Anchor
+            { id: 4, W: 8,  R: 155, r: 12, color: 0xf43f5e, hex: '#f43f5e', rotAxis: 'Z', freq: 48.0 }
+        ];
+
+        // Global Application State
+        const state = {
+            isPlaying: true,
+            simTime: 0,
+            simSpeed: 1.0,
+            pulseCount: 0,
+            activeNode: 0,
+            targetT3Freq: 60.0,
+            autoHarmonicSync: true,
+            audioEnabled: false,
+            calcMode: 'seconds',
+            tierVisibility: [true, true, true, true, true],
+            showForward: true,
+            showInverse: true,
+            showScalar: true,
+            tqfAnchors: [
+                { x: 65, y: 25 },   // pA
+                { x: 105, y: 95 },  // pB
+                { x: 25, y: 95 }    // pC
+            ]
+        };
+
+        // Three.js Scene Setup & Master Alignment Group
+        let scene, camera, renderer, controls;
+        let mainManifoldGroup; // Single synchronized parent for Tori, Tubes, and Particles
+        let toriGroup, helixGroup, particleSystemsGroup;
+        let particleChannels = []; // Array of specific channel particles for alignment
+        let synthAudioCtx = null, synthOscillators = [];
+        let orthoLines = null; // Phase Conjugate Orthogonals
+        let scalarCore = null; // Central Scalar Resonance Field
+
+        function init3D() {
+            const container = document.getElementById('canvas-container');
+
+            scene = new THREE.Scene();
+            scene.fog = new THREE.FogExp2(0x030712, 0.0018);
+
+            camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 2000);
+            camera.position.set(220, 180, 280);
+
+            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: 'high-performance' });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            renderer.toneMapping = THREE.ACESFilmicToneMapping;
+            renderer.toneMappingExposure = 1.2;
+            container.appendChild(renderer.domElement);
+
+            controls = new THREE.OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true;
+            controls.dampingFactor = 0.05;
+            controls.maxDistance = 800;
+            controls.minDistance = 20;
+
+            // Ambient & Point Lighting
+            const ambientLight = new THREE.AmbientLight(0x0f172a, 1.8);
+            scene.add(ambientLight);
+
+            const coreLight = new THREE.PointLight(0x38bdf8, 3.5, 350);
+            coreLight.position.set(0, 0, 0);
+            scene.add(coreLight);
+
+            const outerLight = new THREE.PointLight(0xf59e0b, 2.5, 500);
+            outerLight.position.set(120, 180, 120);
+            scene.add(outerLight);
+
+            // Master Synchronized Container Group (Fixes Offset Drift)
+            mainManifoldGroup = new THREE.Group();
+            scene.add(mainManifoldGroup);
+
+            toriGroup = new THREE.Group();
+            helixGroup = new THREE.Group();
+            particleSystemsGroup = new THREE.Group();
+
+            mainManifoldGroup.add(toriGroup);
+            mainManifoldGroup.add(helixGroup);
+            mainManifoldGroup.add(particleSystemsGroup);
+
+            buildManifoldTori();
+            buildDualHelixChannels();
+            buildAlignedSquareParticleFields();
+            buildScalarField(); // Build the 6th layer
+        }
+
+        // ADDED: Constructs the Orthogonal Tracking lines and central Scalar Core
+        function buildScalarField() {
+            const lineGeo = new THREE.BufferGeometry();
+            // 5 tiers * 6 channels * 16 particles = 480 total tracking nodes
+            const maxParticles = 480;
+            const linePositions = new Float32Array(maxParticles * 2 * 3);
+            const lineColors = new Float32Array(maxParticles * 2 * 3);
+
+            lineGeo.setAttribute('position', new THREE.BufferAttribute(linePositions, 3));
+            lineGeo.setAttribute('color', new THREE.BufferAttribute(lineColors, 3));
+
+            const lineMat = new THREE.LineBasicMaterial({
+                vertexColors: true,
+                transparent: true,
+                opacity: 0.35,
+                blending: THREE.AdditiveBlending,
+                depthWrite: false
+            });
+
+            orthoLines = new THREE.LineSegments(lineGeo, lineMat);
+            mainManifoldGroup.add(orthoLines);
+
+            const coreGeo = new THREE.SphereGeometry(3.5, 32, 32);
+            const coreMat = new THREE.MeshPhysicalMaterial({
+                color: 0xffffff,
+                emissive: 0xffffff,
+                emissiveIntensity: 1.0,
+                transparent: true,
+                opacity: 0.95,
+                clearcoat: 1.0
+            });
+            scalarCore = new THREE.Mesh(coreGeo, coreMat);
+            mainManifoldGroup.add(scalarCore);
+        }
+
+        function buildManifoldTori() {
+            toriGroup.clear();
+
+            TIERS_SPEC.forEach(tier => {
+                const geo = new THREE.TorusGeometry(tier.R, tier.r, 28, 90);
+
+                const mat = new THREE.MeshPhysicalMaterial({
+                    color: tier.color,
+                    emissive: tier.color,
+                    emissiveIntensity: 0.15,
+                    roughness: 0.2,
+                    metalness: 0.8,
+                    transparent: true,
+                    opacity: 0.35,
+                    clearcoat: 1.0,
+                    clearcoatRoughness: 0.1
+                });
+
+                const mesh = new THREE.Mesh(geo, mat);
+
+                // Wireframe overlay
+                const wireGeo = new THREE.TorusGeometry(tier.R, tier.r, 12, 45);
+                const wireMat = new THREE.MeshBasicMaterial({
+                    color: tier.color,
+                    wireframe: true,
+                    transparent: true,
+                    opacity: 0.2
+                });
+                const wireMesh = new THREE.Mesh(wireGeo, wireMat);
+                mesh.add(wireMesh);
+
+                // Apply Orthogonal Embedding Rotations
+                if (tier.rotAxis === 'X') {
+                    mesh.rotation.x = Math.PI / 2;
+                }
+
+                mesh.userData = { tierId: tier.id };
+                toriGroup.add(mesh);
+            });
+        }
+
+        function buildDualHelixChannels() {
+            helixGroup.clear();
+
+            TIERS_SPEC.forEach(tier => {
+                const W = tier.W;
+                const R = tier.R;
+                const r = tier.r;
+
+                const triadicPhases = [0, (2 * Math.PI) / 3, (4 * Math.PI) / 3];
+                const chiralities = [1, -1];
+
+                triadicPhases.forEach((phase, pIdx) => {
+                    chiralities.forEach((chiral) => {
+                        const points = [];
+                        const segments = 220;
+
+                        for (let i = 0; i <= segments; i++) {
+                            const theta = (i / segments) * Math.PI * 2;
+                            const phi = W * theta * chiral + phase;
+
+                            const x = (R + r * Math.cos(phi)) * Math.cos(theta);
+                            const y = (R + r * Math.cos(phi)) * Math.sin(theta);
+                            const z = r * Math.sin(phi);
+
+                            points.push(new THREE.Vector3(x, y, z));
+                        }
+
+                        const curve = new THREE.CatmullRomCurve3(points, true);
+                        const tubeGeo = new THREE.TubeGeometry(curve, 160, 0.45, 6, true);
+
+                        const isFwd = chiral === 1;
+                        const mat = new THREE.MeshBasicMaterial({
+                            color: isFwd ? 0x38bdf8 : 0xf59e0b,
+                            transparent: true,
+                            opacity: 0.65
+                        });
+
+                        const tubeMesh = new THREE.Mesh(tubeGeo, mat);
+
+                        if (tier.rotAxis === 'X') {
+                            tubeMesh.rotation.x = Math.PI / 2;
+                        }
+
+                        tubeMesh.userData = {
+                            tierId: tier.id,
+                            chiral: chiral,
+                            triadicIndex: pIdx
+                        };
+
+                        helixGroup.add(tubeMesh);
+                    });
+                });
+            });
+        }
+
+        // Particle Canvas Texture Generator for Sharp Square Particles
+        function createSquareParticleTexture() {
+            const canvas = document.createElement('canvas');
+            canvas.width = 32;
+            canvas.height = 32;
+            const ctx = canvas.getContext('2d');
+
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(4, 4, 24, 24);
+
+            ctx.strokeStyle = '#38bdf8';
+            ctx.lineWidth = 3;
+            ctx.strokeRect(2, 2, 28, 28);
+
+            const texture = new THREE.CanvasTexture(canvas);
+            texture.needsUpdate = true;
+            return texture;
+        }
+
+        function buildAlignedSquareParticleFields() {
+            particleSystemsGroup.clear();
+            particleChannels = [];
+
+            const particleTexture = createSquareParticleTexture();
+
+            TIERS_SPEC.forEach(tier => {
+                const W = tier.W;
+                const R = tier.R;
+                const r = tier.r;
+
+                const triadicPhases = [0, (2 * Math.PI) / 3, (4 * Math.PI) / 3];
+                const chiralities = [1, -1];
+                const particlesPerChannel = 16;
+
+                triadicPhases.forEach((phase, pIdx) => {
+                    chiralities.forEach((chiral) => {
+                        const count = particlesPerChannel;
+                        const geo = new THREE.BufferGeometry();
+                        const positions = new Float32Array(count * 3);
+                        const colors = new Float32Array(count * 3);
+
+                        const isFwd = chiral === 1;
+                        const c = new THREE.Color(isFwd ? tier.color : 0xf59e0b);
+
+                        const offsetArray = [];
+
+                        for (let i = 0; i < count; i++) {
+                            const u = i / count; // Normalized position along 0..1
+                            offsetArray.push(u);
+
+                            positions[i * 3] = 0;
+                            positions[i * 3 + 1] = 0;
+                            positions[i * 3 + 2] = 0;
+
+                            colors[i * 3] = c.r;
+                            colors[i * 3 + 1] = c.g;
+                            colors[i * 3 + 2] = c.b;
+                        }
+
+                        geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+                        geo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+
+                        const mat = new THREE.PointsMaterial({
+                            size: 4.5,
+                            map: particleTexture,
+                            transparent: true,
+                            opacity: 0.95,
+                            vertexColors: true,
+                            blending: THREE.AdditiveBlending,
+                            depthWrite: false
+                        });
+
+                        const pSystem = new THREE.Points(geo, mat);
+
+                        if (tier.rotAxis === 'X') {
+                            pSystem.rotation.x = Math.PI / 2;
+                        }
+
+                        pSystem.userData = {
+                            tierId: tier.id,
+                            chiral: chiral,
+                            triadicIndex: pIdx
+                        };
+
+                        particleSystemsGroup.add(pSystem);
+
+                        particleChannels.push({
+                            pSystem: pSystem,
+                            tierId: tier.id,
+                            W: W,
+                            R: R,
+                            r: r,
+                            chiral: chiral,
+                            phase: phase,
+                            offsets: offsetArray,
+                            count: count,
+                            rotAxis: tier.rotAxis
+                        });
+                    });
+                });
+            });
+        }
+
+        function initUI() {
+            // Build Tier Toggle Grid
+            const tierGrid = document.getElementById('tier-toggle-grid');
+            tierGrid.innerHTML = '';
+
+            TIERS_SPEC.forEach(tier => {
+                const btn = document.createElement('button');
+                btn.className = `p-1 rounded text-[10px] font-mono-code font-bold border transition text-center`;
+                btn.style.borderColor = tier.hex;
+                btn.style.backgroundColor = `${tier.hex}22`;
+                btn.style.color = tier.hex;
+                btn.innerHTML = `T<sub>${tier.id}</sub> (${tier.W})`;
+                btn.onclick = () => toggleTier(tier.id, btn);
+                tierGrid.appendChild(btn);
+            });
+
+            // Build Tier Tuning Rows
+            renderTierTuningRows();
+
+            // Build 30-Node Grid Dots
+            const nodeGrid = document.getElementById('node-grid');
+            nodeGrid.innerHTML = '';
+            for (let i = 0; i < TOTAL_NODES; i++) {
+                const dot = document.createElement('div');
+                dot.className = 'node-dot';
+                dot.id = `node-dot-${i}`;
+                dot.title = `Node ${i} (Tier ${Math.floor(i / 6)}, Channel ${i % 6})`;
+                nodeGrid.appendChild(dot);
+            }
+
+            // Draggable panels initialization (Fixed, bounded drag)
+            ['panel-closure', 'panel-calc', 'panel-manifold', 'panel-tqf'].forEach(makePanelDraggable);
+
+            // Calculator Input Event Listener
+            document.getElementById('calc-input').addEventListener('input', runCalculations);
+            updateHarmonicFrequenciesFromT3(state.targetT3Freq);
+            runCalculations();
+            initTQFCanvas();
+        }
+
+        function renderTierTuningRows() {
+            const list = document.getElementById('tier-tuning-list');
+            list.innerHTML = '';
+
+            TIERS_SPEC.forEach(tier => {
+                const ratioStr = `(W<sub>${tier.id}</sub>/W<sub>3</sub> = ${(tier.W / 10).toFixed(2)})`;
+                const isTarget = tier.id === 3;
+
+                const row = document.createElement('div');
+                row.className = `flex items-center justify-between p-1.5 rounded-md bg-slate-950/80 border ${isTarget ? 'border-amber-500/50 bg-amber-950/20' : 'border-slate-800'}`;
+
+                row.innerHTML = `
+                    <div class="flex items-center gap-2">
+                        <span class="w-2.5 h-2.5 rounded-full" style="background-color: ${tier.hex}"></span>
+                        <span class="font-bold text-[11px] ${isTarget ? 'text-amber-300' : 'text-slate-200'}">T<sub>${tier.id}</sub> (W=${tier.W})</span>
+                        <span class="text-[9px] text-slate-500">${ratioStr}</span>
+                    </div>
+                    <div class="flex items-center gap-1.5">
+                        <input type="number" id="freq-input-${tier.id}" value="${tier.freq.toFixed(1)}" step="0.5" 
+                            onchange="onTierFreqInputChange(${tier.id}, this.value)"
+                            class="w-16 bg-slate-900 border border-slate-700 rounded px-1.5 py-0.5 text-right text-xs font-mono-code text-cyan-300 focus:outline-none focus:border-cyan-500">
+                        <span class="text-[10px] text-slate-400">Hz</span>
+                    </div>
+                `;
+                list.appendChild(row);
+            });
+        }
+
+        function onT3TargetChange(val) {
+            const num = Math.max(1.0, parseFloat(val) || 60.0);
+            state.targetT3Freq = num;
+
+            document.getElementById('t3-target-slider').value = num;
+            document.getElementById('t3-target-num').value = num.toFixed(1);
+            document.getElementById('t3-freq-display').innerText = `${num.toFixed(1)} Hz`;
+            document.getElementById('telemetry-t3-freq').innerText = `${num.toFixed(1)} Hz`;
+            document.getElementById('t3-disp-text').innerText = `${num.toFixed(0)} Hz`;
+
+            if (state.autoHarmonicSync) {
+                updateHarmonicFrequenciesFromT3(num);
+            } else {
+                TIERS_SPEC[3].freq = num;
+                document.getElementById(`freq-input-3`).value = num.toFixed(1);
+                updateSystemTelemetry();
+            }
+        }
+
+        function updateHarmonicFrequenciesFromT3(t3Freq) {
+            TIERS_SPEC.forEach(tier => {
+                // Harmonic ratio relative to T3 (W3 = 10)
+                const ratio = tier.W / 10.0;
+                tier.freq = t3Freq * ratio;
+
+                const inputEl = document.getElementById(`freq-input-${tier.id}`);
+                if (inputEl) inputEl.value = tier.freq.toFixed(1);
+            });
+
+            updateSystemTelemetry();
+            if (state.audioEnabled) updateHarmonicSynthFrequencies();
+        }
+
+        function onTierFreqInputChange(tierId, val) {
+            const num = Math.max(0.1, parseFloat(val) || 10.0);
+            TIERS_SPEC[tierId].freq = num;
+
+            if (tierId === 3) {
+                onT3TargetChange(num);
+            } else if (state.autoHarmonicSync) {
+                // If auto-harmonic sync is enabled and user changed T_n, re-anchor T3!
+                const ratio = TIERS_SPEC[tierId].W / 10.0;
+                const newT3 = num / ratio;
+                onT3TargetChange(newT3);
+            } else {
+                updateSystemTelemetry();
+                if (state.audioEnabled) updateHarmonicSynthFrequencies();
+            }
+        }
+
+        function toggleAutoHarmonic(enabled) {
+            state.autoHarmonicSync = enabled;
+            if (enabled) {
+                updateHarmonicFrequenciesFromT3(state.targetT3Freq);
+            }
+        }
+
+        function updateSystemTelemetry() {
+            // Calculate System Average Geo Frequency
+            const sumFreq = TIERS_SPEC.reduce((acc, t) => acc + t.freq, 0);
+            const avgFreq = sumFreq / TIERS_SPEC.length;
+
+            document.getElementById('telemetry-avg-freq').innerText = `${avgFreq.toFixed(1)} Hz`;
+
+            // Traversal window over 30 nodes (0.5s when f_T3 = 60Hz)
+            const traversalSec = 30.0 / state.targetT3Freq;
+            document.getElementById('traversal-window-text').innerText = `${traversalSec.toFixed(3)} s`;
+
+            runCalculations();
+        }
+
+        function toggleTier(tierId, btn) {
+            state.tierVisibility[tierId] = !state.tierVisibility[tierId];
+            const isVis = state.tierVisibility[tierId];
+
+            btn.style.opacity = isVis ? '1.0' : '0.3';
+
+            toriGroup.children.forEach(mesh => {
+                if (mesh.userData.tierId === tierId) mesh.visible = isVis;
+            });
+            helixGroup.children.forEach(mesh => {
+                if (mesh.userData.tierId === tierId) {
+                    const chVis = mesh.userData.chiral === 1 ? state.showForward : state.showInverse;
+                    mesh.visible = isVis && chVis;
+                }
+            });
+            particleSystemsGroup.children.forEach(pSys => {
+                if (pSys.userData.tierId === tierId) {
+                    const chVis = pSys.userData.chiral === 1 ? state.showForward : state.showInverse;
+                    pSys.visible = isVis && chVis;
+                }
+            });
+        }
+
+        function updateChannelVis() {
+            state.showForward = document.getElementById('chk-fwd').checked;
+            state.showInverse = document.getElementById('chk-inv').checked;
+            state.showScalar = document.getElementById('chk-scalar').checked;
+
+            if (orthoLines) orthoLines.visible = state.showScalar;
+            if (scalarCore) scalarCore.visible = state.showScalar;
+
+            helixGroup.children.forEach(mesh => {
+                const tierVis = state.tierVisibility[mesh.userData.tierId];
+                const chVis = mesh.userData.chiral === 1 ? state.showForward : state.showInverse;
+                mesh.visible = tierVis && chVis;
+            });
+
+            particleSystemsGroup.children.forEach(pSys => {
+                const tierVis = state.tierVisibility[pSys.userData.tierId];
+                const chVis = pSys.userData.chiral === 1 ? state.showForward : state.showInverse;
+                pSys.visible = tierVis && chVis;
+            });
+        }
+
+        function switchCalcMode(mode) {
+            state.calcMode = mode;
+            ['sec', 'pulses', 'gy'].forEach(m => document.getElementById(`tab-${m}`).classList.remove('active'));
+
+            const inputLabel = document.getElementById('input-label');
+            const inputEl = document.getElementById('calc-input');
+
+            if (mode === 'seconds') {
+                document.getElementById('tab-sec').classList.add('active');
+                inputLabel.innerText = 'Enter Duration (SI Seconds):';
+                inputEl.value = '1.0';
+            } else if (mode === 'pulses') {
+                document.getElementById('tab-pulses').classList.add('active');
+                inputLabel.innerText = 'Enter Topological Pulses (p):';
+                inputEl.value = '60.0';
+            } else if (mode === 'greatyears') {
+                document.getElementById('tab-gy').classList.add('active');
+                inputLabel.innerText = 'Enter Platonic Great Years:';
+                inputEl.value = '1.0';
+            }
+            runCalculations();
+        }
+
+        function runCalculations() {
+            const val = parseFloat(document.getElementById('calc-input').value) || 0;
+            const refFreq = state.targetT3Freq;
+            let seconds = 0, pulses = 0, greatYears = 0;
+
+            if (state.calcMode === 'seconds') {
+                seconds = val;
+                pulses = seconds * refFreq;
+                greatYears = pulses / 25920;
+            } else if (state.calcMode === 'pulses') {
+                pulses = val;
+                seconds = pulses / refFreq;
+                greatYears = pulses / 25920;
+            } else if (state.calcMode === 'greatyears') {
+                greatYears = val;
+                pulses = greatYears * 25920;
+                seconds = pulses / refFreq;
+            }
+
+            const cycles = pulses / 60;
+            const csTransitions = seconds * NU_CS;
+            const npulse = NU_CS / refFreq;
+
+            document.getElementById('res-pulses').innerText = pulses.toLocaleString(undefined, { maximumFractionDigits: 2 });
+            document.getElementById('res-cycles').innerText = `${cycles.toFixed(3)} W_Σ Cycles`;
+            document.getElementById('res-cs').innerText = csTransitions.toLocaleString(undefined, { maximumFractionDigits: 0 });
+            document.getElementById('res-npulse').innerText = npulse.toLocaleString(undefined, { maximumFractionDigits: 1 });
+            document.getElementById('res-gy').innerText = `${greatYears.toFixed(6)} GY`;
+        }
+
+        function initTQFCanvas() {
+            const canvas = document.getElementById('tqf-canvas');
+            const ctx = canvas.getContext('2d');
+            let draggingIdx = -1;
+
+            function renderTQF() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+                // Draw Grid
+                ctx.strokeStyle = 'rgba(56, 189, 248, 0.12)';
+                ctx.lineWidth = 1;
+                for (let x = 0; x < canvas.width; x += 15) {
+                    ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, canvas.height); ctx.stroke();
+                }
+                for (let y = 0; y < canvas.height; y += 15) {
+                    ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(canvas.width, y); ctx.stroke();
+                }
+
+                const [pA, pB, pC] = state.tqfAnchors;
+
+                // Draw Triangle
+                ctx.beginPath();
+                ctx.moveTo(pA.x, pA.y);
+                ctx.lineTo(pB.x, pB.y);
+                ctx.lineTo(pC.x, pC.y);
+                ctx.closePath();
+                ctx.fillStyle = 'rgba(244, 63, 94, 0.18)';
+                ctx.fill();
+                ctx.strokeStyle = '#f43f5e';
+                ctx.lineWidth = 1.5;
+                ctx.stroke();
+
+                // Calculate Quadrances Q1, Q2, Q3
+                const Q1 = Math.pow(pA.x - pB.x, 2) + Math.pow(pA.y - pB.y, 2);
+                const Q2 = Math.pow(pB.x - pC.x, 2) + Math.pow(pB.y - pC.y, 2);
+                const Q3 = Math.pow(pC.x - pA.x, 2) + Math.pow(pC.y - pA.y, 2);
+
+                const sumQ = Q1 + Q2 + Q3;
+                const sumQ2 = Q1 * Q1 + Q2 * Q2 + Q3 * Q3;
+                const AR = Math.pow(sumQ, 2) - 2 * sumQ2;
+                const Area = Math.sqrt(Math.max(0, AR)) / 4.0;
+
+                document.getElementById('tqf-q1').innerText = Q1.toFixed(0);
+                document.getElementById('tqf-q2').innerText = Q2.toFixed(0);
+                document.getElementById('tqf-q3').innerText = Q3.toFixed(0);
+                document.getElementById('tqf-ar').innerText = AR.toFixed(0);
+                document.getElementById('tqf-area').innerText = Area.toFixed(1);
+
+                const statusEl = document.getElementById('tqf-status');
+                if (AR > 10) {
+                    statusEl.className = 'text-[9px] font-bold text-center py-1 rounded bg-emerald-950/60 border border-emerald-500/40 text-emerald-400';
+                    statusEl.innerText = 'A_R = 16A² (STABLE EUCLIDEAN)';
+                } else {
+                    statusEl.className = 'text-[9px] font-bold text-center py-1 rounded bg-rose-950/60 border border-rose-500/40 text-rose-400 animate-pulse';
+                    statusEl.innerText = 'DEGENERATE / COLLINEAR ANCHORS';
+                }
+
+                // Draw Anchor Points
+                const labels = ['pA', 'pB', 'pC'];
+                state.tqfAnchors.forEach((p, idx) => {
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, 5, 0, Math.PI * 2);
+                    ctx.fillStyle = idx === 0 ? '#38bdf8' : idx === 1 ? '#f59e0b' : '#10b981';
+                    ctx.fill();
+                    ctx.strokeStyle = '#ffffff';
+                    ctx.stroke();
+
+                    ctx.fillStyle = '#94a3b8';
+                    ctx.font = '9px Fira Code';
+                    ctx.fillText(labels[idx], p.x + 7, p.y + 3);
+                });
+            }
+
+            function onPointerDown(e) {
+                const rect = canvas.getBoundingClientRect();
+                const mx = (e.touches ? e.touches[0].clientX : e.clientX) - rect.left;
+                const my = (e.touches ? e.touches[0].clientY : e.clientY) - rect.top;
+
+                state.tqfAnchors.forEach((p, idx) => {
+                    const dist = Math.hypot(p.x - mx, p.y - my);
+                    if (dist < 12) draggingIdx = idx;
+                });
+            }
+
+            function onPointerMove(e) {
+                if (draggingIdx !== -1) {
+                    const rect = canvas.getBoundingClientRect();
+                    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+                    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+
+                    state.tqfAnchors[draggingIdx].x = Math.max(5, Math.min(canvas.width - 5, clientX - rect.left));
+                    state.tqfAnchors[draggingIdx].y = Math.max(5, Math.min(canvas.height - 5, clientY - rect.top));
+                    renderTQF();
+                }
+            }
+
+            function onPointerUp() {
+                draggingIdx = -1;
+            }
+
+            canvas.addEventListener('mousedown', onPointerDown);
+            window.addEventListener('mousemove', onPointerMove);
+            window.addEventListener('mouseup', onPointerUp);
+
+            canvas.addEventListener('touchstart', onPointerDown, { passive: true });
+            window.addEventListener('touchmove', onPointerMove, { passive: true });
+            window.addEventListener('touchend', onPointerUp);
+
+            renderTQF();
+        }
+
+        // Fixed Bounded Panel Dragging Logic (Prevents Infinite Expansion)
+        function makePanelDraggable(panelId) {
+            const panel = document.getElementById(panelId);
+            if (!panel) return;
+            const header = panel.querySelector('.panel-header');
+            if (!header) return;
+
+            let isDragging = false, startX, startY, initX, initY;
+
+            header.addEventListener('mousedown', e => {
+                if (e.target.tagName === 'BUTTON' || e.target.tagName === 'INPUT' || e.target.tagName === 'I') return;
+
+                isDragging = true;
+                startX = e.clientX;
+                startY = e.clientY;
+
+                const rect = panel.getBoundingClientRect();
+                initX = rect.left;
+                initY = rect.top;
+
+                // Lock width and switch to absolute top/left coordinates
+                panel.style.width = rect.width + 'px';
+                panel.style.left = initX + 'px';
+                panel.style.top = initY + 'px';
+                panel.style.right = 'auto';
+                panel.style.bottom = 'auto';
+                panel.style.margin = '0';
+
+                e.preventDefault();
+            });
+
+            window.addEventListener('mousemove', e => {
+                if (!isDragging) return;
+                const dx = e.clientX - startX;
+                const dy = e.clientY - startY;
+
+                const newLeft = Math.max(10, Math.min(window.innerWidth - panel.offsetWidth - 10, initX + dx));
+                const newTop = Math.max(10, Math.min(window.innerHeight - panel.offsetHeight - 10, initY + dy));
+
+                panel.style.left = newLeft + 'px';
+                panel.style.top = newTop + 'px';
+            });
+
+            window.addEventListener('mouseup', () => isDragging = false);
+        }
+
+        function toggleAudio() {
+            state.audioEnabled = !state.audioEnabled;
+            const btn = document.getElementById('btn-audio');
+            const icon = document.getElementById('audio-icon');
+            const label = document.getElementById('audio-label');
+
+            if (state.audioEnabled) {
+                if (!synthAudioCtx) {
+                    synthAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                }
+                if (synthAudioCtx.state === 'suspended') {
+                    synthAudioCtx.resume();
+                }
+                icon.className = 'fa-solid fa-volume-high text-cyan-400';
+                label.innerText = 'Synth Active';
+                btn.classList.add('border-cyan-500');
+                startHarmonicSynth();
+            } else {
+                icon.className = 'fa-solid fa-volume-xmark';
+                label.innerText = 'Harmonic Synth';
+                btn.classList.remove('border-cyan-500');
+                stopHarmonicSynth();
+            }
+        }
+
+        function startHarmonicSynth() {
+            stopHarmonicSynth();
+            if (!synthAudioCtx) return;
+
+            TIERS_SPEC.forEach(tier => {
+                const osc = synthAudioCtx.createOscillator();
+                const gain = synthAudioCtx.createGain();
+
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(tier.freq * 2.5, synthAudioCtx.currentTime);
+
+                gain.gain.setValueAtTime(0.015, synthAudioCtx.currentTime);
+
+                osc.connect(gain);
+                gain.connect(synthAudioCtx.destination);
+                osc.start();
+
+                synthOscillators.push({ id: tier.id, osc, gain });
+            });
+        }
+
+        function updateHarmonicSynthFrequencies() {
+            if (!synthAudioCtx) return;
+            synthOscillators.forEach(item => {
+                const tier = TIERS_SPEC.find(t => t.id === item.id);
+                if (tier) {
+                    item.osc.frequency.setTargetAtTime(tier.freq * 2.5, synthAudioCtx.currentTime, 0.05);
+                }
+            });
+        }
+
+        function stopHarmonicSynth() {
+            synthOscillators.forEach(o => {
+                try { o.osc.stop(); } catch(e){}
+            });
+            synthOscillators = [];
+        }
+
+        const clock = new THREE.Clock();
+
+        function animate() {
+            requestAnimationFrame(animate);
+
+            const delta = clock.getDelta();
+
+            if (state.isPlaying) {
+                state.simTime += delta * state.simSpeed;
+
+                // Pulse & Node calculations based on target T3 frequency
+                state.pulseCount = Math.floor(state.simTime * state.targetT3Freq);
+                state.activeNode = state.pulseCount % TOTAL_NODES;
+
+                const parityVal = (0.5 * state.pulseCount) % 1.0;
+
+                // Update 30-Node Grid Dots
+                for (let i = 0; i < TOTAL_NODES; i++) {
+                    const dot = document.getElementById(`node-dot-${i}`);
+                    if (dot) {
+                        if (i === state.activeNode) {
+                            dot.className = i === 29 ? 'node-dot closure' : 'node-dot active';
+                        } else {
+                            dot.className = 'node-dot';
+                        }
+                    }
+                }
+
+                // Update Telemetry Displays
+                document.getElementById('node-counter-text').innerText = `Node ${state.activeNode + 1} / 30`;
+
+                const closureCsTarget = NU_CS * (30.0 / state.targetT3Freq);
+                const cycleProgress = (state.pulseCount % TOTAL_NODES) / TOTAL_NODES;
+                const accumulatedCs = Math.floor(cycleProgress * closureCsTarget);
+                document.getElementById('cs-tick-display').innerText = accumulatedCs.toLocaleString();
+
+                // Parity Badge
+                const parityText = document.getElementById('parity-state-text');
+                const parityOrb = document.getElementById('parity-orb');
+                if (parityVal === 0) {
+                    parityText.innerText = 'EVEN PULSE (φ = 0.0)';
+                    parityOrb.innerText = '0.0';
+                    parityOrb.className = 'w-6 h-6 rounded-full bg-cyan-400 shadow-lg shadow-cyan-400/50 flex items-center justify-center text-[9px] font-bold text-slate-950 transition-all';
+                } else {
+                    parityText.innerText = 'ODD PULSE (φ = 0.5)';
+                    parityOrb.innerText = '0.5';
+                    parityOrb.className = 'w-6 h-6 rounded-full bg-amber-400 shadow-lg shadow-amber-400/50 flex items-center justify-center text-[9px] font-bold text-slate-950 transition-all';
+                }
+
+                // Precision Aligned Square Particle Motion & Phase Conjugate Field Generation
+                let globalPhi = 0;
+                let orthoIdx = 0;
+                const orthoPositions = orthoLines ? orthoLines.geometry.attributes.position.array : null;
+                const orthoColors = orthoLines ? orthoLines.geometry.attributes.color.array : null;
+
+                particleChannels.forEach(ch => {
+                    const tier = TIERS_SPEC.find(t => t.id === ch.tierId);
+                    const tierFreq = tier ? tier.freq : 60.0;
+                    const waveTime = state.simTime * (tierFreq / 15.0);
+
+                    // Phase Conjugate Summation (Standing Wave Interference)
+                    globalPhi += Math.cos(waveTime * ch.chiral + ch.phase);
+
+                    const positions = ch.pSystem.geometry.attributes.position.array;
+
+                    for (let i = 0; i < ch.count; i++) {
+                        const uBase = ch.offsets[i];
+                        const theta = (uBase * Math.PI * 2) + waveTime;
+                        const phi = ch.W * theta * ch.chiral + ch.phase;
+
+                        let px = (ch.R + ch.r * Math.cos(phi)) * Math.cos(theta);
+                        let py = (ch.R + ch.r * Math.cos(phi)) * Math.sin(theta);
+                        let pz = ch.r * Math.sin(phi);
+
+                        positions[i * 3] = px;
+                        positions[i * 3 + 1] = py;
+                        positions[i * 3 + 2] = pz;
+
+                        // Tie the 6th layer Phase Conjugate Orthogonals from Core to Particle
+                        if (state.showScalar && orthoPositions) {
+                            let rx = px, ry = py, rz = pz;
+                            if (ch.rotAxis === 'X') {
+                                // Apply Torus X-rotation equivalent to the point map
+                                rx = px;
+                                ry = -pz;
+                                rz = py;
+                            }
+
+                            // Origin Node Point
+                            orthoPositions[orthoIdx * 6] = 0;
+                            orthoPositions[orthoIdx * 6 + 1] = 0;
+                            orthoPositions[orthoIdx * 6 + 2] = 0;
+
+                            // Radiate out to mapping coordinates
+                            orthoPositions[orthoIdx * 6 + 3] = rx;
+                            orthoPositions[orthoIdx * 6 + 4] = ry;
+                            orthoPositions[orthoIdx * 6 + 5] = rz;
+
+                            // Color gradient: Center white -> Outer Tier color
+                            const c = new THREE.Color(ch.chiral === 1 ? tier.color : 0xf59e0b);
+                            orthoColors[orthoIdx * 6] = 1; orthoColors[orthoIdx * 6 + 1] = 1; orthoColors[orthoIdx * 6 + 2] = 1;
+                            orthoColors[orthoIdx * 6 + 3] = c.r; orthoColors[orthoIdx * 6 + 4] = c.g; orthoColors[orthoIdx * 6 + 5] = c.b;
+
+                            orthoIdx++;
+                        }
+                    }
+                    ch.pSystem.geometry.attributes.position.needsUpdate = true;
+                });
+                
+                // Finalize Global Scalar Field (φ) Visualizations
+                if (state.showScalar && orthoLines) {
+                    orthoLines.geometry.attributes.position.needsUpdate = true;
+                    orthoLines.geometry.attributes.color.needsUpdate = true;
+                    
+                    const normalizedPhi = Math.abs(globalPhi) / 30.0;
+                    const teleScalar = document.getElementById('telemetry-scalar');
+                    if (teleScalar) teleScalar.innerText = normalizedPhi.toFixed(4);
+
+                    if (scalarCore) {
+                        const scaleFactor = 0.8 + (normalizedPhi * 3.5);
+                        scalarCore.scale.set(scaleFactor, scaleFactor, scaleFactor);
+                        scalarCore.material.emissiveIntensity = 0.5 + (normalizedPhi * 5.0);
+                    }
+                }
+
+                // Synchronized rotation of the entire main manifold
+                if (mainManifoldGroup) {
+                    mainManifoldGroup.rotation.y = state.simTime * 0.05;
+                }
+            }
+
+            controls.update();
+            renderer.render(scene, camera);
+        }
+
+        function togglePlay() {
+            state.isPlaying = !state.isPlaying;
+            document.getElementById('play-text').innerText = state.isPlaying ? 'Pause Engine' : 'Resume Engine';
+            document.getElementById('play-icon').className = state.isPlaying ? 'fa-solid fa-pause' : 'fa-solid fa-play';
+        }
+
+        function updateSpeed(val) {
+            state.simSpeed = parseFloat(val);
+            document.getElementById('speed-label').innerText = `${state.simSpeed.toFixed(1)}x`;
+        }
+
+        function setCameraView(preset) {
+            if (preset === 'perspective') {
+                camera.position.set(220, 180, 280);
+            } else if (preset === 'core') {
+                camera.position.set(35, 25, 45);
+            } else if (preset === 'top') {
+                camera.position.set(0, 350, 0);
+            }
+            controls.target.set(0, 0, 0);
+        }
+
+        function openDocModal() {
+            document.getElementById('doc-modal').style.display = 'block';
+        }
+
+        function closeDocModal() {
+            document.getElementById('doc-modal').style.display = 'none';
+        }
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        // Initialize Everything on Window Load
+        window.onload = function() {
+            init3D();
+            initUI();
+            animate();
+        };
+    </script>
+</body>
+</html>
