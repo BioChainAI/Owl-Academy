@@ -1,0 +1,696 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bifilar Quaternion Plenum & Chladni MOG</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js"></script>
+    <style>
+        body { margin: 0; overflow: hidden; background-color: #020617; color: #e2e8f0; font-family: 'Inter', monospace; user-select: none; }
+        #glcanvas { position: absolute; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 1; }
+        
+        .glass-panel {
+            position: absolute; background: rgba(10, 15, 25, 0.85); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 8px; box-shadow: 0 10px 30px rgba(0,0,0,0.8); z-index: 10;
+            display: flex; flex-direction: column; overflow: hidden; width: 340px;
+        }
+        
+        .drag-header { padding: 10px 15px; background: rgba(2, 6, 23, 0.7); border-bottom: 1px solid #1e293b; font-size: 0.75rem; font-weight: bold; color: #38bdf8; text-transform: uppercase; letter-spacing: 2px; display: flex; justify-content: space-between; align-items: center; cursor: grab;}
+        .drag-header:active { cursor: grabbing; }
+        .panel-content { padding: 15px; display: flex; flex-direction: column; gap: 10px; max-height: 500px; overflow-y: auto; }
+        
+        .btn { background: rgba(15, 23, 42, 0.8); border: 1px solid #334155; color: #fff; padding: 8px 12px; border-radius: 4px; cursor: pointer; font-size: 0.7rem; font-weight: bold; text-transform: uppercase; transition: all 0.2s; display: flex; align-items: center; justify-content: center; gap: 8px; }
+        .btn:hover:not(:disabled) { background: #1e293b; border-color: #38bdf8; color: #38bdf8; }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; border-color: #334155 !important; color: #64748b !important; }
+        .btn.active { background: rgba(56, 189, 248, 0.15); border-color: #38bdf8; color: #38bdf8; box-shadow: 0 0 15px rgba(56, 189, 248, 0.3); }
+        .btn.synth { color: #facc15; border-color: rgba(250, 204, 21, 0.5); }
+        .btn.synth:hover:not(:disabled) { border-color: #facc15; background: rgba(250, 204, 21, 0.15); }
+        .btn.synth.active { background: rgba(250, 204, 21, 0.2); border-color: #facc15; color: #facc15; box-shadow: 0 0 15px rgba(250, 204, 21, 0.4); }
+        
+        .data-readout { background: #020617; border: 1px solid #1e293b; padding: 6px; border-radius: 4px; font-size: 0.7rem; text-align: center; font-weight: bold; letter-spacing: 1px; font-family: 'Courier New', monospace; }
+        
+        input[type=range] { -webkit-appearance: none; width: 100%; background: transparent; }
+        input[type=range]::-webkit-slider-runnable-track { width: 100%; height: 4px; background: #1e293b; border-radius: 2px; }
+        input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; height: 12px; width: 12px; border-radius: 50%; background: #38bdf8; cursor: pointer; margin-top: -4px; box-shadow: 0 0 10px rgba(56, 189, 248, 0.5); }
+        
+        #freq-y::-webkit-slider-thumb { background: #10b981; box-shadow: 0 0 10px rgba(16, 185, 129, 0.5); }
+        #freq-z::-webkit-slider-thumb { background: #d946ef; box-shadow: 0 0 10px rgba(217, 70, 239, 0.5); }
+        #freq-x::-webkit-slider-thumb { background: #f59e0b; box-shadow: 0 0 10px rgba(245, 158, 11, 0.5); }
+        
+        #input-panel { top: 20px; left: 20px; }
+        #mog-panel { top: 20px; right: 20px; width: 380px; }
+        #telemetry-panel { top: 400px; right: 20px; width: 380px;}
+        #topology-panel { top: 380px; left: 20px; width: 340px; }
+        
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 2px; }
+
+        /* MOG Styles */
+        .mog-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 4px; background: #020617; padding: 8px; border-radius: 6px; border: 1px solid #1e293b; }
+        .mog-cell { aspect-ratio: 1; border: 1px solid #334155; border-radius: 4px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 0.6rem; font-weight: bold; color: #64748b; transition: all 0.2s; background: rgba(15, 23, 42, 0.5); }
+        .mog-cell:hover { border-color: #38bdf8; color: #38bdf8; background: rgba(56, 189, 248, 0.1); }
+        .mog-cell.selected-manual { background: rgba(250, 204, 21, 0.2); border-color: #facc15; color: #facc15; box-shadow: 0 0 10px rgba(250, 204, 21, 0.4); }
+        .mog-cell.selected-auto { background: rgba(56, 189, 248, 0.3); border-color: #38bdf8; color: #fff; box-shadow: 0 0 15px rgba(56, 189, 248, 0.6); animation: pulse 1s infinite alternate; }
+
+        @keyframes pulse { 0% { transform: scale(1); box-shadow: 0 0 10px rgba(56, 189, 248, 0.4); } 100% { transform: scale(1.05); box-shadow: 0 0 20px rgba(56, 189, 248, 0.8); } }
+
+        /* Atlas Overlay */
+        #atlas-overlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(2, 6, 23, 0.95); backdrop-filter: blur(20px); z-index: 100; display: none; flex-direction: column; padding: 2rem; overflow-y: auto; }
+        .atlas-header { text-align: center; margin-bottom: 2rem; }
+        .atlas-header h1 { color: #facc15; font-size: 2rem; font-weight: 800; letter-spacing: 2px; text-transform: uppercase; margin: 0; }
+        .atlas-header p { color: #94a3b8; font-size: 0.8rem; margin-top: 0.5rem; }
+        .atlas-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1.5rem; max-width: 1400px; margin: 0 auto; }
+        .atlas-plate-card { background: #0f172a; border: 1px solid #334155; border-radius: 8px; padding: 10px; cursor: pointer; transition: all 0.2s; }
+        .atlas-plate-card:hover { border-color: #38bdf8; transform: translateY(-2px); box-shadow: 0 5px 15px rgba(56, 189, 248, 0.2); }
+        .atlas-plate-card.active { border-color: #facc15; box-shadow: 0 0 20px rgba(250, 204, 21, 0.4); }
+        .plate-label { text-align: center; color: #e2e8f0; font-family: monospace; font-size: 0.75rem; font-weight: bold; margin-bottom: 8px; border-bottom: 1px solid #1e293b; padding-bottom: 4px; }
+        .plate-canvas { width: 100%; aspect-ratio: 4/3; background: #000; border-radius: 4px; }
+        
+        #btn-open-atlas { display: none; width: 100%; margin-top: 10px; background: linear-gradient(135deg, #ca8a04, #eab308); color: black; }
+        #btn-open-atlas:hover { background: linear-gradient(135deg, #eab308, #fef08a); }
+        .close-atlas { position: absolute; top: 20px; right: 20px; font-size: 1.5rem; color: #94a3b8; cursor: pointer; }
+        .close-atlas:hover { color: #fff; }
+    </style>
+</head>
+<body>
+
+    <div id="atlas-overlay">
+        <i class="fa-solid fa-xmark close-atlas" onclick="document.getElementById('atlas-overlay').style.display='none'"></i>
+        <div class="atlas-header">
+            <h1>The Chladni Miracle Octad Atlas</h1>
+            <p>Apply 35 tetrad splits as paired binary standing-wave fields to the 3,200-coil Plenum.</p>
+        </div>
+        <div class="atlas-grid" id="atlas-grid-container"></div>
+    </div>
+
+    <!-- 1. BIFILAR PUMP CONTROLS -->
+    <div class="glass-panel" id="input-panel">
+        <div class="drag-header"><span>1. Bifilar Cymatic Pump</span><i class="fa-solid fa-satellite-dish"></i></div>
+        <div class="panel-content">
+            <div class="text-[10px] text-slate-400 text-justify mb-2">
+                Generate 3D spatial interference patterns via a central Bifilar Double Toroid.
+            </div>
+            
+            <button class="btn synth active" id="btn-toggle-pump" onclick="togglePump()"><i class="fa-solid fa-wave-square"></i> Disengage Pump</button>
+            
+            <div class="mt-2 space-y-3 p-3 bg-slate-900 rounded border border-slate-700">
+                <div>
+                    <div class="flex justify-between text-[10px] font-bold text-emerald-400 mb-1"><span>$F_y$ (Latitudinal Cymatics)</span> <span id="val-fy">2.0</span></div>
+                    <input type="range" id="freq-y" min="0.1" max="5.0" step="0.1" value="2.0">
+                </div>
+                <div>
+                    <div class="flex justify-between text-[10px] font-bold text-fuchsia-400 mb-1"><span>$F_z$ (Polar Cymatics)</span> <span id="val-fz">1.5</span></div>
+                    <input type="range" id="freq-z" min="0.1" max="5.0" step="0.1" value="1.5">
+                </div>
+                <div>
+                    <div class="flex justify-between text-[10px] font-bold text-amber-400 mb-1"><span>$F_x$ (Depth Cymatics)</span> <span id="val-fx">3.0</span></div>
+                    <input type="range" id="freq-x" min="0.1" max="5.0" step="0.1" value="3.0">
+                </div>
+                <div>
+                    <div class="flex justify-between text-[10px] font-bold text-sky-400 mb-1"><span>Global Amplitude</span> <span id="val-amp">1.0</span></div>
+                    <input type="range" id="synth-amp" min="0.0" max="3.0" step="0.1" value="1.0">
+                </div>
+            </div>
+            
+            <label class="flex items-center gap-2 text-[10px] text-slate-400 cursor-pointer mt-2 pt-2 border-t border-slate-700">
+                <input type="checkbox" id="toggle-source-move" checked> Enable Lissajous Source Translation
+            </label>
+        </div>
+    </div>
+
+    <!-- 2. MOG PANEL -->
+    <div class="glass-panel" id="mog-panel">
+        <div class="drag-header"><span class="text-facc15">2. Miracle Octad Generator</span><i class="fa-solid fa-microchip text-facc15"></i></div>
+        <div class="panel-content">
+            <div class="text-[10px] text-slate-400 mb-2 text-justify">
+                Select 5 inputs in the Mathieu group array to force a toroidal collapse and generate $\pi/6$ Solitons.
+            </div>
+            
+            <div class="mog-grid" id="mog-array"></div>
+            
+            <div class="flex justify-between items-center mt-2">
+                <div class="text-[10px] font-bold text-slate-300">STATUS: <span id="mog-status" class="text-amber-400">AWAITING (0/5)</span></div>
+                <button class="btn" onclick="resetMOG()"><i class="fa-solid fa-rotate-right"></i> RESET</button>
+            </div>
+            <button class="btn" id="btn-open-atlas" onclick="openAtlas()"><i class="fa-solid fa-book-atlas"></i> OPEN TETRAD ATLAS</button>
+        </div>
+    </div>
+
+    <!-- 3. TOPOLOGY -->
+    <div class="glass-panel" id="topology-panel">
+        <div class="drag-header"><span>3. Matrix Topology</span><i class="fa-solid fa-shapes"></i></div>
+        <div class="panel-content">
+            <div class="flex flex-col gap-2">
+                <button class="btn topo-btn active" id="btn-linear" onclick="setTopology('linear')">Linear Hyperbolic Array (Best for Atlas)</button>
+                <button class="btn topo-btn" id="btn-toroid" onclick="setTopology('toroid')">Toroidal Double-Cover</button>
+                <button class="btn topo-btn" id="btn-braid" onclick="setTopology('braid')" disabled>Octad Braided Toroid (Locked)</button>
+            </div>
+            <div class="mt-2 border-t border-slate-700 pt-2">
+                <label class="flex items-center gap-2 text-[10px] text-cyan-400 cursor-pointer">
+                    <input type="checkbox" id="toggle-conjugate" checked> Show Conjugate Wave Field
+                </label>
+            </div>
+        </div>
+    </div>
+
+    <!-- 4. TELEMETRY -->
+    <div class="glass-panel" id="telemetry-panel">
+        <div class="drag-header"><span>4. Quaternion Telemetry</span><i class="fa-solid fa-crosshairs"></i></div>
+        <div class="panel-content">
+            <div class="grid grid-cols-4 gap-2 mb-2">
+                <div class="text-center"><div class="text-[9px] text-sky-400 font-bold mb-1">W (Phase)</div><div class="data-readout text-sky-400" id="val-w">0.00</div></div>
+                <div class="text-center"><div class="text-[9px] text-emerald-400 font-bold mb-1">Y (Vec j)</div><div class="data-readout text-emerald-400" id="val-y-rad">0.00</div></div>
+                <div class="text-center"><div class="text-[9px] text-fuchsia-400 font-bold mb-1">Z (Vec k)</div><div class="data-readout text-fuchsia-400" id="val-z-rad">0.00</div></div>
+                <div class="text-center"><div class="text-[9px] text-amber-400 font-bold mb-1">X (Vec i)</div><div class="data-readout text-amber-400" id="val-x-rad">0.00</div></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- LEGEND -->
+    <div class="absolute bottom-5 left-5 text-[10px] text-slate-300 bg-slate-900/80 px-4 py-3 rounded border border-slate-700 backdrop-blur z-20 pointer-events-none">
+        <div class="font-bold text-white mb-2 tracking-wider">CHLADNI CYMATIC LEGEND</div>
+        <div class="mb-1"><span class="legend-dot bg-rose-600"></span> Crimson: Primary Acoustic Displacement</div>
+        <div class="mb-1"><span class="legend-dot bg-cyan-400"></span> Cyan: Conjugate Field (Left-Handed)</div>
+        <div class="mb-1"><span class="legend-dot bg-facc15 shadow-[0_0_5px_#facc15]"></span> Gold: $\pi/6$ Soliton (Over-Unity Output)</div>
+        <div><span class="legend-dot bg-white shadow-[0_0_5px_#ffffff]"></span> Bright White: Chladni Nodal Lines</div>
+    </div>
+
+    <div id="glcanvas"></div>
+
+    <script>
+        // --- UI DRAG LOGIC ---
+        function makeDraggable(panelId) {
+            const panel = document.getElementById(panelId);
+            if(!panel) return;
+            const header = panel.querySelector('.drag-header');
+            if(!header) return;
+            let isDragging = false, startX, startY, initX, initY;
+            header.addEventListener('mousedown', e => {
+                if(e.target.tagName === 'BUTTON' || e.target.tagName === 'INPUT') return;
+                isDragging = true; startX = e.clientX; startY = e.clientY;
+                initX = panel.offsetLeft; initY = panel.offsetTop;
+                panel.style.left = initX + 'px'; panel.style.top = initY + 'px';
+            });
+            window.addEventListener('mousemove', e => {
+                if(!isDragging) return;
+                panel.style.left = (initX + (e.clientX - startX)) + 'px'; panel.style.top = (initY + (e.clientY - startY)) + 'px';
+            });
+            window.addEventListener('mouseup', () => isDragging = false);
+        }
+        ['input-panel', 'mog-panel', 'topology-panel', 'telemetry-panel'].forEach(makeDraggable);
+
+        // --- STATE ---
+        const state = {
+            isPumpActive: true,
+            freqY: 2.0, freqZ: 1.5, freqX: 3.0, synthAmp: 1.0,
+            octadLocked: false,
+            activeTetradParams: { fx: 1.0, fy: 1.0, phase: 0.0 },
+            simTime: 0
+        };
+
+        const UI = {
+            btnPump: document.getElementById('btn-toggle-pump'),
+            valW: document.getElementById('val-w'), valY: document.getElementById('val-y-rad'),
+            valZ: document.getElementById('val-z-rad'), valX: document.getElementById('val-x-rad'),
+            mogStatus: document.getElementById('mog-status'),
+            chkConj: document.getElementById('toggle-conjugate'),
+            chkMove: document.getElementById('toggle-source-move')
+        };
+
+        // --- STREAMING_CHUNK: Setting up Bifilar Synth UI ---
+        window.togglePump = function() {
+            state.isPumpActive = !state.isPumpActive;
+            if(state.isPumpActive) {
+                UI.btnPump.innerHTML = '<i class="fa-solid fa-wave-square"></i> Disengage Pump';
+                UI.btnPump.classList.add('active');
+            } else {
+                UI.btnPump.innerHTML = '<i class="fa-solid fa-power-off"></i> Engage Pump';
+                UI.btnPump.classList.remove('active');
+            }
+        };
+
+        ['y', 'z', 'x'].forEach(axis => {
+            document.getElementById(`freq-${axis}`).addEventListener('input', (e) => {
+                const val = parseFloat(e.target.value);
+                state[`freq${axis.toUpperCase()}`] = val;
+                document.getElementById(`val-f${axis}`).innerText = val.toFixed(1);
+            });
+        });
+        document.getElementById('synth-amp').addEventListener('input', (e) => {
+            state.synthAmp = parseFloat(e.target.value);
+            document.getElementById('val-amp').innerText = state.synthAmp.toFixed(1);
+        });
+
+        // --- STREAMING_CHUNK: Setting up MOG & Atlas Logic ---
+        const MOG_TOTAL = 24; const MOG_TARGET = 5;
+        let selectedZones = new Set(); let derivedZones = new Set();
+        
+        function initMOG() {
+            const grid = document.getElementById('mog-array');
+            grid.innerHTML = '';
+            for(let i=0; i<MOG_TOTAL; i++) {
+                const cell = document.createElement('div');
+                cell.className = 'mog-cell';
+                cell.innerText = i.toString(16).toUpperCase();
+                cell.id = `mog-cell-${i}`;
+                cell.onclick = () => handleMOGClick(i);
+                grid.appendChild(cell);
+            }
+        }
+
+        function handleMOGClick(index) {
+            if (state.octadLocked) return;
+            if (selectedZones.has(index)) {
+                selectedZones.delete(index);
+                document.getElementById(`mog-cell-${index}`).classList.remove('selected-manual');
+            } else {
+                if (selectedZones.size < MOG_TARGET) {
+                    selectedZones.add(index);
+                    document.getElementById(`mog-cell-${index}`).classList.add('selected-manual');
+                }
+            }
+            if (selectedZones.size < MOG_TARGET) {
+                UI.mogStatus.innerText = `AWAITING (${selectedZones.size}/${MOG_TARGET})`;
+                UI.mogStatus.className = 'text-amber-400';
+            } else if (selectedZones.size === MOG_TARGET && !state.octadLocked) {
+                lockOctad();
+            }
+        }
+
+        function lockOctad() {
+            state.octadLocked = true;
+            UI.mogStatus.innerText = "CALCULATING...";
+            UI.mogStatus.className = 'text-cyan-400 animate-pulse';
+            
+            setTimeout(() => {
+                derivedZones.clear();
+                let available = [];
+                for(let i=0; i<MOG_TOTAL; i++) if(!selectedZones.has(i)) available.push(i);
+                available.sort(() => 0.5 - Math.random());
+                for(let i=0; i<3; i++) {
+                    derivedZones.add(available[i]);
+                    document.getElementById(`mog-cell-${available[i]}`).classList.add('selected-auto');
+                }
+                
+                UI.mogStatus.innerText = "OCTAD LOCKED";
+                UI.mogStatus.className = 'text-facc15 font-bold';
+                
+                document.getElementById('btn-open-atlas').style.display = 'block';
+                document.getElementById('btn-braid').disabled = false;
+                setTopology('linear'); // Best for Atlas
+            }, 600);
+        }
+
+        window.resetMOG = function() {
+            selectedZones.clear(); derivedZones.clear();
+            state.octadLocked = false;
+            state.activeTetradParams = { fx: 1.0, fy: 1.0, phase: 0.0 };
+            
+            for(let i=0; i<MOG_TOTAL; i++) {
+                document.getElementById(`mog-cell-${i}`).classList.remove('selected-manual', 'selected-auto');
+            }
+            
+            UI.mogStatus.innerText = "AWAITING (0/5)";
+            UI.mogStatus.className = 'text-amber-400';
+            document.getElementById('btn-braid').disabled = true;
+            document.getElementById('btn-open-atlas').style.display = 'none';
+            setTopology('linear');
+        };
+
+        function generateTetradSplits() {
+            const splits = []; let count = 0;
+            for(let i=1; i<=7; i++) {
+                for(let j=i+1; j<=8; j++) {
+                    for(let k=j+1; k<=8; k++) {
+                        if(count >= 35) break;
+                        splits.push({ label: `12${i}${j} | ${k}...`, fx: (i % 3) + 1, fy: (j % 3) + 1, id: count });
+                        count++;
+                    }
+                }
+            }
+            while(splits.length < 35) splits.push({ label: `SPLIT-${splits.length}`, fx: 2, fy: 2, id: splits.length });
+            return splits;
+        }
+
+        const atlasSplits = generateTetradSplits();
+
+        window.openAtlas = function() {
+            document.getElementById('atlas-overlay').style.display = 'flex';
+            const container = document.getElementById('atlas-grid-container');
+            if(container.children.length === 0) {
+                atlasSplits.forEach((split, index) => {
+                    const card = document.createElement('div');
+                    card.className = 'atlas-plate-card'; card.id = `plate-card-${index}`;
+                    const label = document.createElement('div');
+                    label.className = 'plate-label'; label.innerText = `PLATE ${index+1}`;
+                    const canvas = document.createElement('canvas');
+                    canvas.className = 'plate-canvas'; canvas.width = 160; canvas.height = 120;
+                    card.appendChild(label); card.appendChild(canvas);
+                    container.appendChild(card);
+                    
+                    const ctx = canvas.getContext('2d');
+                    ctx.fillStyle = '#0f172a'; ctx.fillRect(0, 0, 160, 120);
+                    ctx.strokeStyle = 'rgba(255, 255, 255, 0.9)'; ctx.lineWidth = 2;
+                    ctx.shadowColor = '#38bdf8'; ctx.shadowBlur = 8;
+                    
+                    const xSteps = split.fx;
+                    for(let i=1; i<=xSteps; i++) {
+                        if (i === xSteps && xSteps > 1) continue;
+                        const xPos = (160 / (xSteps + 1)) * i;
+                        ctx.beginPath(); ctx.moveTo(xPos, 0); ctx.lineTo(xPos, 120); ctx.stroke();
+                    }
+                    const ySteps = split.fy;
+                    for(let i=1; i<=ySteps; i++) {
+                        if (i === ySteps && ySteps > 1) continue;
+                        const yPos = (120 / (ySteps + 1)) * i;
+                        ctx.beginPath(); ctx.moveTo(0, yPos); ctx.lineTo(160, yPos); ctx.stroke();
+                    }
+                    
+                    card.onclick = () => {
+                        document.querySelectorAll('.atlas-plate-card').forEach(c => c.classList.remove('active'));
+                        card.classList.add('active');
+                        state.activeTetradParams = split;
+                        setTimeout(() => document.getElementById('atlas-overlay').style.display = 'none', 300);
+                    };
+                });
+            }
+        };
+
+        // --- STREAMING_CHUNK: Setting up 3D Scene and Coils ---
+        const container = document.getElementById('glcanvas');
+        const scene = new THREE.Scene();
+        scene.fog = new THREE.FogExp2(0x020617, 0.003);
+        const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 2000);
+        camera.position.set(0, 300, 500);
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        container.appendChild(renderer.domElement);
+
+        const controls = new THREE.OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true; controls.dampingFactor = 0.05;
+
+        // Bifilar Singularity
+        const bifilarGroup = new THREE.Group();
+        const coreGeo = new THREE.OctahedronGeometry(4, 0);
+        const coreMat = new THREE.MeshBasicMaterial({color: 0xffffff, wireframe: true});
+        const coreMesh = new THREE.Mesh(coreGeo, coreMat);
+        bifilarGroup.add(coreMesh);
+
+        const torGeo = new THREE.TorusGeometry(12, 1, 16, 64);
+        const torMat1 = new THREE.MeshStandardMaterial({color: 0x38bdf8, emissive: 0x0ea5e9, wireframe: true, transparent: true, opacity: 0.8});
+        const torMat2 = new THREE.MeshStandardMaterial({color: 0xf43f5e, emissive: 0xe11d48, wireframe: true, transparent: true, opacity: 0.8});
+        const bifilar1 = new THREE.Mesh(torGeo, torMat1);
+        const bifilar2 = new THREE.Mesh(torGeo, torMat2);
+        bifilar2.rotation.x = Math.PI / 2;
+        bifilarGroup.add(bifilar1); bifilarGroup.add(bifilar2);
+        scene.add(bifilarGroup);
+        
+        const cl = new THREE.PointLight(0xfacc15, 2, 300);
+        bifilarGroup.add(cl);
+
+        // Tetrahedron Observer
+        const micGeo = new THREE.TetrahedronGeometry(18, 0);
+        const micMat = new THREE.MeshStandardMaterial({ color: 0x991b1b, roughness: 0.3, metalness: 0.8, wireframe: true });
+        const micMesh = new THREE.Mesh(micGeo, micMat);
+        scene.add(micMesh);
+
+        // 3200 Coil Matrix
+        const COIL_COUNT = 3200;
+        const PTS_PER_COIL = 60;
+        const baseCoilGeo = new THREE.BufferGeometry();
+        const coilPosArr = new Float32Array(PTS_PER_COIL * 3);
+        
+        for(let i=0; i<PTS_PER_COIL; i++) {
+            const t = i / (PTS_PER_COIL - 1);
+            const y = (t - 0.5) * 100; 
+            const angle = t * Math.PI * 2 * 10; 
+            const r = 2.5; 
+            coilPosArr[i*3] = r * Math.cos(angle);
+            coilPosArr[i*3+1] = y;
+            coilPosArr[i*3+2] = r * Math.sin(angle);
+        }
+        baseCoilGeo.setAttribute('position', new THREE.BufferAttribute(coilPosArr, 3));
+        const instCoilGeo = new THREE.InstancedBufferGeometry().copy(baseCoilGeo);
+        instCoilGeo.instanceCount = COIL_COUNT;
+
+        const offsetArr = new Float32Array(COIL_COUNT * 3);
+        const targetOffsetArr = new Float32Array(COIL_COUNT * 3);
+        
+        window.setTopology = function(type) {
+            document.querySelectorAll('.topo-btn').forEach(b => b.classList.remove('active'));
+            const activeBtn = document.getElementById('btn-' + type);
+            if (activeBtn) activeBtn.classList.add('active');
+            
+            let cIdx = 0;
+            if (type === 'linear') {
+                const chamberWidth = 800, chamberDepth = 600, cols = 80, rows = 40;
+                for(let x=0; x<cols; x++) {
+                    for(let z=0; z<rows; z++) {
+                        if(cIdx >= COIL_COUNT) break;
+                        targetOffsetArr[cIdx*3] = (x / (cols-1) - 0.5) * chamberWidth;
+                        targetOffsetArr[cIdx*3+1] = 0;
+                        targetOffsetArr[cIdx*3+2] = (z / (rows-1) - 0.5) * chamberDepth;
+                        cIdx++;
+                    }
+                }
+            } else if (type === 'toroid') {
+                const R = 250, r = 80;
+                for(let i=0; i<COIL_COUNT; i++) {
+                    const u = (i % 80) / 80 * Math.PI * 2;
+                    const v = Math.floor(i / 80) / 40 * Math.PI * 2;
+                    targetOffsetArr[i*3] = (R + r * Math.cos(v)) * Math.cos(u);
+                    targetOffsetArr[i*3+1] = r * Math.sin(v);
+                    targetOffsetArr[i*3+2] = (R + r * Math.cos(v)) * Math.sin(u);
+                }
+            } else if (type === 'braid') {
+                const R = 250, r = 60;
+                for(let i=0; i<COIL_COUNT; i++) {
+                    const u = (i % 80) / 80 * Math.PI * 2;
+                    const v = Math.floor(i / 80) / 40 * Math.PI * 2;
+                    const braid = Math.sin(u * 8) * 40; 
+                    targetOffsetArr[i*3] = (R + (r+braid) * Math.cos(v)) * Math.cos(u);
+                    targetOffsetArr[i*3+1] = (r+braid) * Math.sin(v);
+                    targetOffsetArr[i*3+2] = (R + (r+braid) * Math.cos(v)) * Math.sin(u);
+                }
+            }
+        };
+
+        setTopology('linear');
+        for(let i=0; i<COIL_COUNT*3; i++) offsetArr[i] = targetOffsetArr[i];
+        instCoilGeo.setAttribute('coilOffset', new THREE.InstancedBufferAttribute(offsetArr, 3));
+
+        // --- STREAMING_CHUNK: Setting up Shaders ---
+        const coilUniforms = {
+            u_time: { value: 0.0 },
+            u_sourcePos: { value: new THREE.Vector3(0,0,0) },
+            u_amp: { value: 1.0 },
+            u_octadLocked: { value: 0.0 },
+            u_tetradFx: { value: 1.0 },
+            u_tetradFy: { value: 1.0 },
+            u_fx: { value: 3.0 },
+            u_fy: { value: 2.0 },
+            u_fz: { value: 1.5 }
+        };
+
+        const commonShaderHeader = `
+            attribute vec3 coilOffset;
+            uniform float u_time;
+            uniform vec3 u_sourcePos;
+            uniform float u_amp;
+            uniform float u_octadLocked;
+            uniform float u_tetradFx;
+            uniform float u_tetradFy;
+            uniform float u_fx;
+            uniform float u_fy;
+            uniform float u_fz;
+            varying vec3 vColor;
+        `;
+
+        const primaryCoilShader = `
+            ${commonShaderHeader}
+            void main() {
+                vec3 globalPos = position + coilOffset;
+                float distToSource = distance(globalPos, u_sourcePos);
+                vec3 wakeDir = normalize(globalPos - u_sourcePos);
+                float influence = smoothstep(250.0, 0.0, distToSource);
+                
+                // Bifilar Cymatic Interference (3-part frequency)
+                float rX = sin(distToSource * u_fx * 0.05 - u_time * 5.0);
+                float rY = sin(distToSource * u_fy * 0.05 - u_time * 6.0);
+                float rZ = sin(distToSource * u_fz * 0.05 - u_time * 4.0);
+                
+                // Base Primary wave combining the 3 frequencies
+                float ripple = (rX + rY + rZ) * 0.33 * (u_amp + u_octadLocked*0.5) * 30.0;
+                
+                // Apply Chladni Atlas Mask
+                float atlasNodalMask = 1.0;
+                if (u_octadLocked > 0.5) {
+                    float maskX = sin(coilOffset.x * 0.01 * u_tetradFx);
+                    float maskZ = sin(coilOffset.z * 0.01 * u_tetradFy);
+                    atlasNodalMask = abs(maskX * maskZ); 
+                    ripple *= (0.1 + atlasNodalMask); // Flatten vibration at nodes
+                }
+                
+                vec3 displacedPos = globalPos + (wakeDir * influence * ripple);
+                gl_Position = projectionMatrix * modelViewMatrix * vec4(displacedPos, 1.0);
+                
+                vec3 restingColor = vec3(0.3, 0.4, 0.5); 
+                vec3 activeColor = vec3(0.9, 0.1, 0.3); 
+                vec3 finalColor = mix(restingColor, activeColor, influence * u_amp);
+                
+                // Soliton Calculation
+                float conjRipple = (sin(distToSource*u_fx*0.05 - u_time*5.0 + 2.094) + sin(distToSource*u_fy*0.05 - u_time*6.0 + 2.094) + sin(distToSource*u_fz*0.05 - u_time*4.0 + 2.094)) * 0.33 * (u_amp + u_octadLocked*0.5) * 30.0 * (0.1 + atlasNodalMask);
+                float diff = abs(ripple - conjRipple);
+                float constructive = smoothstep(15.0, 0.0, diff) * influence * u_octadLocked;
+                
+                if (u_octadLocked > 0.5 && atlasNodalMask < 0.15) {
+                    finalColor = mix(finalColor, vec3(1.0, 1.0, 1.0), 0.9); // Bright Nodal Lines
+                } else {
+                    finalColor = mix(finalColor, vec3(1.0, 0.9, 0.1), constructive * 1.5); // Gold Solitons
+                }
+                
+                vColor = finalColor;
+            }
+        `;
+
+        const conjugateCoilShader = `
+            ${commonShaderHeader}
+            void main() {
+                vec3 localPos = vec3(position.x, position.y, -position.z);
+                vec3 globalPos = localPos + coilOffset;
+                float distToSource = distance(globalPos, u_sourcePos);
+                vec3 wakeDir = -normalize(globalPos - u_sourcePos);
+                float influence = smoothstep(250.0, 0.0, distToSource);
+                
+                float atlasNodalMask = 1.0;
+                if (u_octadLocked > 0.5) {
+                    float maskX = sin(coilOffset.x * 0.01 * u_tetradFx);
+                    float maskZ = sin(coilOffset.z * 0.01 * u_tetradFy);
+                    atlasNodalMask = abs(maskX * maskZ);
+                }
+                
+                float ripple = (sin(distToSource*u_fx*0.05 - u_time*5.0 + 2.094) + sin(distToSource*u_fy*0.05 - u_time*6.0 + 2.094) + sin(distToSource*u_fz*0.05 - u_time*4.0 + 2.094)) * 0.33 * (u_amp + u_octadLocked*0.5) * 30.0 * (0.1 + atlasNodalMask);
+                
+                vec3 displacedPos = globalPos + (wakeDir * influence * ripple);
+                gl_Position = projectionMatrix * modelViewMatrix * vec4(displacedPos, 1.0);
+                
+                vec3 restingColor = vec3(0.2, 0.3, 0.4);
+                vec3 activeColor = vec3(0.1, 0.8, 0.9);
+                vec3 finalColor = mix(restingColor, activeColor, influence * u_amp);
+                
+                float primRipple = (sin(distToSource*u_fx*0.05 - u_time*5.0) + sin(distToSource*u_fy*0.05 - u_time*6.0) + sin(distToSource*u_fz*0.05 - u_time*4.0)) * 0.33 * (u_amp + u_octadLocked*0.5) * 30.0 * (0.1 + atlasNodalMask);
+                float diff = abs(ripple - primRipple);
+                float constructive = smoothstep(15.0, 0.0, diff) * influence * u_octadLocked;
+                
+                if (u_octadLocked > 0.5 && atlasNodalMask < 0.15) {
+                    finalColor = mix(finalColor, vec3(1.0, 1.0, 1.0), 0.4); 
+                } else {
+                    finalColor = mix(finalColor, vec3(1.0, 0.9, 0.1), constructive * 0.5);
+                }
+                
+                vColor = finalColor;
+            }
+        `;
+
+        const fragShader = `
+            varying vec3 vColor;
+            void main() { gl_FragColor = vec4(vColor, 0.6); }
+        `;
+
+        const coilMat = new THREE.ShaderMaterial({ vertexShader: primaryCoilShader, fragmentShader: fragShader, uniforms: coilUniforms, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false });
+        const invCoilMat = new THREE.ShaderMaterial({ vertexShader: conjugateCoilShader, fragmentShader: fragShader, uniforms: coilUniforms, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false });
+
+        const coilMesh = new THREE.Line(instCoilGeo, coilMat);
+        scene.add(coilMesh);
+        const invCoilMesh = new THREE.Line(instCoilGeo, invCoilMat);
+        scene.add(invCoilMesh);
+
+        // --- STREAMING_CHUNK: Animation Loop ---
+        initMOG();
+        const clock = new THREE.Clock();
+
+        function animate() {
+            requestAnimationFrame(animate);
+            controls.update();
+            const dt = clock.getDelta();
+            state.simTime += dt;
+
+            // Update Topology offsets
+            const currentOffsets = instCoilGeo.attributes.coilOffset.array;
+            let needsMorphUpdate = false;
+            for(let i=0; i<COIL_COUNT * 3; i++) {
+                const diff = targetOffsetArr[i] - currentOffsets[i];
+                if (Math.abs(diff) > 0.5) {
+                    currentOffsets[i] += diff * 0.05;
+                    needsMorphUpdate = true;
+                }
+            }
+            if (needsMorphUpdate) instCoilGeo.attributes.coilOffset.needsUpdate = true;
+
+            // Move Bifilar Singularity
+            if (UI.chkMove.checked) {
+                const sweepTime = state.simTime * 0.5;
+                const srcX = Math.sin(sweepTime) * 150;
+                const srcY = Math.sin(sweepTime * 2.3) * 50;
+                const srcZ = Math.cos(sweepTime * 1.7) * 100;
+                bifilarGroup.position.set(srcX, srcY, srcZ);
+            } else {
+                bifilarGroup.position.lerp(new THREE.Vector3(0,0,0), 0.1);
+            }
+
+            // Animate Bifilar based on frequencies
+            if (state.isPumpActive) {
+                bifilar1.rotation.y = state.simTime * state.freqX;
+                bifilar1.rotation.z = state.simTime * state.freqZ;
+                bifilar2.rotation.y = state.simTime * state.freqY;
+                bifilar2.rotation.z = -state.simTime * state.freqX;
+                
+                // Telemetry
+                UI.valW.innerText = (state.synthAmp * (state.octadLocked ? 2.5 : 1.0)).toFixed(3);
+                UI.valX.innerText = (Math.sin(state.simTime * state.freqX) * state.synthAmp).toFixed(3);
+                UI.valY.innerText = (Math.sin(state.simTime * state.freqY) * state.synthAmp).toFixed(3);
+                UI.valZ.innerText = (Math.sin(state.simTime * state.freqZ) * state.synthAmp).toFixed(3);
+                
+                coreMesh.scale.setScalar(1.0 + state.synthAmp * 0.5);
+                cl.intensity = 2.0 + state.synthAmp * 5.0;
+            } else {
+                UI.valW.innerText = "0.00"; UI.valX.innerText = "0.00"; UI.valY.innerText = "0.00"; UI.valZ.innerText = "0.00";
+            }
+
+            // Update Mic Observer
+            micMesh.lookAt(bifilarGroup.position);
+            micMesh.rotation.z += state.octadLocked ? 0.1 : 0.02;
+
+            // Update Shader Uniforms
+            coilUniforms.u_time.value = state.simTime;
+            coilUniforms.u_sourcePos.value.copy(bifilarGroup.position);
+            coilUniforms.u_amp.value = state.isPumpActive ? state.synthAmp : 0.0;
+            coilUniforms.u_octadLocked.value = state.octadLocked ? 1.0 : 0.0;
+            coilUniforms.u_tetradFx.value = state.activeTetradParams.fx;
+            coilUniforms.u_tetradFy.value = state.activeTetradParams.fy;
+            coilUniforms.u_fx.value = state.freqX;
+            coilUniforms.u_fy.value = state.freqY;
+            coilUniforms.u_fz.value = state.freqZ;
+            
+            invCoilMesh.visible = UI.chkConj.checked;
+
+            scene.rotation.y = Math.sin(state.simTime * 0.1) * 0.05;
+
+            renderer.render(scene, camera);
+        }
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        animate();
+    </script>
+</body>
+</html>
