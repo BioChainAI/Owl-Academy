@@ -1,0 +1,557 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chladni 3D Spectrum Analyzer: Coherency & Torsion</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js"></script>
+    <style>
+        body { margin: 0; overflow: hidden; background-color: #020617; color: #e2e8f0; font-family: 'Inter', monospace; user-select: none; }
+        #glcanvas { position: absolute; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 1; }
+        
+        .glass-panel {
+            position: absolute; background: rgba(10, 15, 25, 0.85); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 8px; box-shadow: 0 10px 30px rgba(0,0,0,0.8); z-index: 10;
+            display: flex; flex-direction: column; overflow: hidden; width: 340px;
+        }
+        
+        .drag-header { padding: 10px 15px; background: rgba(2, 6, 23, 0.7); border-bottom: 1px solid #1e293b; font-size: 0.75rem; font-weight: bold; color: #38bdf8; text-transform: uppercase; letter-spacing: 2px; display: flex; justify-content: space-between; align-items: center; cursor: grab;}
+        .drag-header:active { cursor: grabbing; }
+        .panel-content { padding: 15px; display: flex; flex-direction: column; gap: 10px; max-height: 500px; overflow-y: auto; }
+        
+        .btn { background: rgba(15, 23, 42, 0.8); border: 1px solid #334155; color: #fff; padding: 8px 12px; border-radius: 4px; cursor: pointer; font-size: 0.7rem; font-weight: bold; text-transform: uppercase; transition: all 0.2s; display: flex; align-items: center; justify-content: center; gap: 8px; }
+        .btn:hover:not(:disabled) { background: #1e293b; border-color: #38bdf8; color: #38bdf8; }
+        .btn.active { background: rgba(56, 189, 248, 0.15); border-color: #38bdf8; color: #38bdf8; box-shadow: 0 0 15px rgba(56, 189, 248, 0.3); }
+        .btn.src-a { color: #22d3ee; border-color: rgba(34, 211, 238, 0.5); }
+        .btn.src-a.active { background: rgba(34, 211, 238, 0.2); border-color: #22d3ee; box-shadow: 0 0 15px rgba(34, 211, 238, 0.4); }
+        .btn.src-b { color: #f43f5e; border-color: rgba(244, 63, 94, 0.5); }
+        .btn.src-b.active { background: rgba(244, 63, 94, 0.2); border-color: #f43f5e; box-shadow: 0 0 15px rgba(244, 63, 94, 0.4); }
+        
+        .data-readout { background: #020617; border: 1px solid #1e293b; padding: 6px; border-radius: 4px; font-size: 0.7rem; text-align: center; font-weight: bold; letter-spacing: 1px; font-family: 'Courier New', monospace; }
+        
+        input[type=range] { -webkit-appearance: none; width: 100%; background: transparent; }
+        input[type=range]::-webkit-slider-runnable-track { width: 100%; height: 4px; background: #1e293b; border-radius: 2px; }
+        input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; height: 12px; width: 12px; border-radius: 50%; background: #38bdf8; cursor: pointer; margin-top: -4px; }
+        
+        .slider-a::-webkit-slider-thumb { background: #22d3ee; box-shadow: 0 0 10px rgba(34, 211, 238, 0.5); }
+        .slider-b::-webkit-slider-thumb { background: #f43f5e; box-shadow: 0 0 10px rgba(244, 63, 94, 0.5); }
+
+        #source-panel { top: 20px; left: 20px; width: 360px; }
+        #spatial-panel { top: 430px; left: 20px; width: 360px; }
+        #tensor-panel { top: 20px; right: 20px; width: 400px; }
+        
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 2px; }
+
+        /* Tensor Matrix Styles */
+        .tensor-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; background: #020617; padding: 8px; border-radius: 6px; border: 1px solid #1e293b; }
+        .tensor-cell { aspect-ratio: 16/9; border: 1px solid #334155; border-radius: 4px; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 0.65rem; font-family: 'Courier New', monospace; font-weight: bold; transition: all 0.1s; background: rgba(15, 23, 42, 0.5); }
+        .tensor-cell .lbl { font-size: 0.5rem; color: #64748b; margin-bottom: 2px; }
+        .tensor-cell .val { color: #facc15; }
+    </style>
+</head>
+<body>
+
+    <!-- 1. MULTI-SOURCE CONTROL -->
+    <div class="glass-panel" id="source-panel">
+        <div class="drag-header"><span>1. Orthogonal Source Array</span><i class="fa-solid fa-wave-square"></i></div>
+        <div class="panel-content">
+            <div class="text-[10px] text-slate-400 text-justify mb-2">
+                Add or remove interfering point sources. Each source broadcasts orthogonal frequencies (X, Y, Z, Amp).
+            </div>
+            
+            <div id="sources-container" class="space-y-2">
+                <!-- Injected via JS -->
+            </div>
+            
+            <button class="btn mt-2" id="btn-add-source" onclick="addSource()"><i class="fa-solid fa-plus"></i> ADD SOURCE</button>
+        </div>
+    </div>
+
+    <!-- 2. SPATIAL ARRANGEMENT -->
+    <div class="glass-panel" id="spatial-panel">
+        <div class="drag-header"><span>2. Spatial Arrangement</span><i class="fa-solid fa-arrows-to-circle"></i></div>
+        <div class="panel-content">
+            <div class="text-[10px] text-slate-400 mb-2">Configure interaction distances to measure topological interference coherency.</div>
+            <div class="flex flex-col gap-2">
+                <button class="btn active spatial-btn" id="btn-sp-fixed" onclick="setSpatial('fixed')">Fixed Cartesian Grid</button>
+                <button class="btn spatial-btn" id="btn-sp-golden" onclick="setSpatial('golden')">Triangulated Golden Ratio ($\phi$) Scaling</button>
+                <button class="btn spatial-btn" id="btn-sp-chaotic" onclick="setSpatial('chaotic')">Non-Fixed Orbital Patterns</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 3. TENSOR OFFLOAD -->
+    <div class="glass-panel" id="tensor-panel">
+        <div class="drag-header"><span class="text-facc15">3. 16-Channel Orthogonal Offload</span><i class="fa-solid fa-microchip text-facc15"></i></div>
+        <div class="panel-content">
+            <div class="text-[10px] text-slate-400 mb-2 text-justify">
+                Parallel invisible channels extracting <strong>Quaternion Torsion</strong> and <strong>Coherency Tension</strong> from the interference field. Nodes display zero-displacement (Chladni standing waves).
+            </div>
+            
+            <div class="text-[9px] text-center text-slate-500 mb-1 tracking-widest uppercase">Torsion / Tension Tensor Matrix</div>
+            <div class="tensor-grid" id="tensor-matrix">
+                <!-- Injected via JS -->
+            </div>
+            
+            <div class="mt-3 border-t border-slate-700 pt-2 flex justify-between items-center text-[10px]">
+                <span class="text-slate-400">Total System Coherency:</span>
+                <span class="font-bold text-emerald-400" id="val-coherency">0.00%</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- LEGEND -->
+    <div class="absolute bottom-5 left-5 text-[10px] text-slate-300 bg-slate-900/80 px-4 py-3 rounded border border-slate-700 backdrop-blur z-20 pointer-events-none">
+        <div class="font-bold text-white mb-2 tracking-wider">CHLADNI INTERFERENCE LEGEND</div>
+        <div class="mb-1"><span class="legend-dot bg-cyan-400"></span> Cyan: Source Alpha Dominance</div>
+        <div class="mb-1"><span class="legend-dot bg-rose-500"></span> Crimson: Source Beta Dominance</div>
+        <div class="mb-1"><span class="legend-dot bg-facc15 shadow-[0_0_5px_#facc15]"></span> Gold Lines: Absolute Coherency (Chladni Nodes)</div>
+        <div><span class="legend-dot bg-purple-500"></span> Twisted Coils: High Orthogonal Torsion</div>
+    </div>
+
+    <div id="glcanvas"></div>
+
+    <script>
+        // --- STREAMING_CHUNK: Setup UI Dragging & Matrix Initialization ---
+        function makeDraggable(panelId) {
+            const panel = document.getElementById(panelId);
+            if(!panel) return;
+            const header = panel.querySelector('.drag-header');
+            if(!header) return;
+            let isDragging = false, startX, startY, initX, initY;
+            header.addEventListener('mousedown', e => {
+                if(e.target.tagName === 'BUTTON' || e.target.tagName === 'INPUT') return;
+                isDragging = true; startX = e.clientX; startY = e.clientY;
+                initX = panel.offsetLeft; initY = panel.offsetTop;
+                panel.style.left = initX + 'px'; panel.style.top = initY + 'px';
+            });
+            window.addEventListener('mousemove', e => {
+                if(!isDragging) return;
+                panel.style.left = (initX + (e.clientX - startX)) + 'px'; panel.style.top = (initY + (e.clientY - startY)) + 'px';
+            });
+            window.addEventListener('mouseup', () => isDragging = false);
+        }
+        ['source-panel', 'spatial-panel', 'tensor-panel'].forEach(makeDraggable);
+
+        // Initialize 16-Channel Tensor Matrix
+        const tensorCells = [];
+        const tensorGrid = document.getElementById('tensor-matrix');
+        const labels = ['W_aa', 'X_ab', 'Y_ba', 'Z_bb', 'T_xx', 'T_xy', 'T_xz', 'T_xw', 'C_yy', 'C_yx', 'C_yz', 'C_yw', 'K_zz', 'K_zx', 'K_zy', 'K_zw'];
+        
+        for(let i=0; i<16; i++) {
+            const cell = document.createElement('div');
+            cell.className = 'tensor-cell';
+            const lbl = document.createElement('div'); lbl.className = 'lbl'; lbl.innerText = labels[i];
+            const val = document.createElement('div'); val.className = 'val'; val.innerText = '0.000';
+            cell.appendChild(lbl); cell.appendChild(val);
+            tensorGrid.appendChild(cell);
+            tensorCells.push({ el: val, target: 0, current: 0 });
+        }
+
+        // --- STREAMING_CHUNK: State & Dynamic Source Logic ---
+        const MAX_SOURCES = 4;
+        const sourceConfigs = [
+            { name: 'ALPHA', theme: 'cyan', hex1: 0x22d3ee, hex2: 0x0ea5e9, vec: new THREE.Vector3(0.13, 0.82, 0.93) },
+            { name: 'BETA', theme: 'rose', hex1: 0xf43f5e, hex2: 0xe11d48, vec: new THREE.Vector3(0.95, 0.24, 0.36) },
+            { name: 'GAMMA', theme: 'emerald', hex1: 0x10b981, hex2: 0x059669, vec: new THREE.Vector3(0.06, 0.72, 0.50) },
+            { name: 'DELTA', theme: 'amber', hex1: 0xf59e0b, hex2: 0xd97706, vec: new THREE.Vector3(0.96, 0.62, 0.04) }
+        ];
+
+        const state = {
+            sources: [],
+            arrangement: 'fixed',
+            simTime: 0
+        };
+
+        const sourcesContainer = document.getElementById('sources-container');
+        const btnAddSource = document.getElementById('btn-add-source');
+
+        function renderSourcesUI() {
+            sourcesContainer.innerHTML = '';
+            state.sources.forEach((src, idx) => {
+                const conf = sourceConfigs[idx];
+                const html = `
+                <div class="p-3 bg-${conf.theme}-950/20 rounded border border-${conf.theme}-900/50 relative">
+                    <div class="text-[10px] font-bold text-${conf.theme}-400 mb-2 flex justify-between items-center">
+                        <span><i class="fa-solid fa-satellite-dish"></i> SOURCE ${conf.name}</span>
+                        <div class="flex items-center gap-3">
+                            <label class="flex items-center gap-1 cursor-pointer text-slate-300">
+                                <input type="checkbox" data-src-id="${idx}" class="src-toggle accent-${conf.theme}-400" ${src.active ? 'checked' : ''}> ACTIVE
+                            </label>
+                            ${state.sources.length > 1 ? `<button class="text-slate-500 hover:text-red-400" onclick="removeSource(${idx})"><i class="fa-solid fa-xmark"></i></button>` : ''}
+                        </div>
+                    </div>
+                    <div class="space-y-2">
+                        <div class="flex justify-between text-[9px] text-slate-300"><span>Latitudinal (Y)</span> <span id="val-${idx}-y">${src.fy.toFixed(1)}</span></div>
+                        <input type="range" data-src-id="${idx}" data-axis="y" class="src-slider w-full accent-${conf.theme}-400" min="0.1" max="5.0" step="0.1" value="${src.fy}">
+                        <div class="flex justify-between text-[9px] text-slate-300"><span>Polar (Z)</span> <span id="val-${idx}-z">${src.fz.toFixed(1)}</span></div>
+                        <input type="range" data-src-id="${idx}" data-axis="z" class="src-slider w-full accent-${conf.theme}-400" min="0.1" max="5.0" step="0.1" value="${src.fz}">
+                        <div class="flex justify-between text-[9px] text-slate-300"><span>Depth (X)</span> <span id="val-${idx}-x">${src.fx.toFixed(1)}</span></div>
+                        <input type="range" data-src-id="${idx}" data-axis="x" class="src-slider w-full accent-${conf.theme}-400" min="0.1" max="5.0" step="0.1" value="${src.fx}">
+                        <div class="flex justify-between text-[9px] text-${conf.theme}-200 mt-1"><span>Amplitude</span> <span id="val-${idx}-amp">${src.amp.toFixed(1)}</span></div>
+                        <input type="range" data-src-id="${idx}" data-axis="amp" class="src-slider w-full accent-${conf.theme}-400" min="0.0" max="3.0" step="0.1" value="${src.amp}">
+                    </div>
+                </div>`;
+                sourcesContainer.insertAdjacentHTML('beforeend', html);
+            });
+            btnAddSource.disabled = state.sources.length >= MAX_SOURCES;
+            btnAddSource.style.opacity = state.sources.length >= MAX_SOURCES ? '0.5' : '1.0';
+        }
+
+        sourcesContainer.addEventListener('input', e => {
+            if(e.target.classList.contains('src-slider')) {
+                const id = parseInt(e.target.dataset.srcId);
+                const axis = e.target.dataset.axis;
+                const val = parseFloat(e.target.value);
+                if(axis === 'amp') state.sources[id].amp = val;
+                else state.sources[id][`f${axis}`] = val;
+                document.getElementById(`val-${id}-${axis}`).innerText = val.toFixed(1);
+            }
+        });
+
+        sourcesContainer.addEventListener('change', e => {
+            if(e.target.classList.contains('src-toggle')) {
+                const id = parseInt(e.target.dataset.srcId);
+                state.sources[id].active = e.target.checked;
+            }
+        });
+
+        // --- STREAMING_CHUNK: 3D Scene Initialization ---
+        const container = document.getElementById('glcanvas');
+        const scene = new THREE.Scene();
+        scene.fog = new THREE.FogExp2(0x020617, 0.002); 
+        
+        const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 2000);
+        camera.position.set(0, 300, 600);
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        container.appendChild(renderer.domElement);
+
+        const controls = new THREE.OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true; controls.dampingFactor = 0.05;
+
+        function createBifilarSource(color1, color2) {
+            const group = new THREE.Group();
+            const core = new THREE.Mesh(new THREE.OctahedronGeometry(4, 0), new THREE.MeshBasicMaterial({color: 0xffffff, wireframe: true}));
+            group.add(core);
+
+            const torGeo = new THREE.TorusGeometry(12, 1, 16, 64);
+            const tor1 = new THREE.Mesh(torGeo, new THREE.MeshStandardMaterial({color: color1, emissive: color1, wireframe: true, transparent: true, opacity: 0.8}));
+            const tor2 = new THREE.Mesh(torGeo, new THREE.MeshStandardMaterial({color: color2, emissive: color2, wireframe: true, transparent: true, opacity: 0.8}));
+            tor2.rotation.x = Math.PI / 2;
+            group.add(tor1); group.add(tor2);
+            
+            const light = new THREE.PointLight(color1, 2, 400);
+            group.add(light);
+            return { group, tor1, tor2, core, light };
+        }
+
+        window.addSource = function() {
+            if(state.sources.length >= MAX_SOURCES) return;
+            const idx = state.sources.length;
+            const conf = sourceConfigs[idx];
+            const meshes = createBifilarSource(conf.hex1, conf.hex2);
+            scene.add(meshes.group);
+            
+            state.sources.push({
+                active: true,
+                fx: 3.0 - (idx*0.2), fy: 2.0 + (idx*0.1), fz: 1.5 + (idx*0.3), amp: 1.0,
+                meshes: meshes,
+                colorVec: conf.vec
+            });
+            renderSourcesUI();
+        };
+
+        window.removeSource = function(idx) {
+            if(state.sources.length <= 1) return;
+            const src = state.sources[idx];
+            scene.remove(src.meshes.group);
+            src.meshes.group.traverse(child => { if(child.geometry) child.geometry.dispose(); if(child.material) child.material.dispose(); });
+            state.sources.splice(idx, 1);
+            renderSourcesUI();
+        };
+
+        // Init initial 2 sources
+        addSource(); addSource();
+
+        // --- STREAMING_CHUNK: Linear Hyperbolic Array (3200 Coils) ---
+        const COIL_COUNT = 3200;
+        const PTS_PER_COIL = 60;
+        const baseCoilGeo = new THREE.BufferGeometry();
+        const coilPosArr = new Float32Array(PTS_PER_COIL * 3);
+        
+        for(let i=0; i<PTS_PER_COIL; i++) {
+            const t = i / (PTS_PER_COIL - 1);
+            const y = (t - 0.5) * 80; 
+            const angle = t * Math.PI * 2 * 10; 
+            const r = 2.0; 
+            coilPosArr[i*3] = r * Math.cos(angle);
+            coilPosArr[i*3+1] = y;
+            coilPosArr[i*3+2] = r * Math.sin(angle);
+        }
+        baseCoilGeo.setAttribute('position', new THREE.BufferAttribute(coilPosArr, 3));
+        const instCoilGeo = new THREE.InstancedBufferGeometry().copy(baseCoilGeo);
+        instCoilGeo.instanceCount = COIL_COUNT;
+
+        const offsetArr = new Float32Array(COIL_COUNT * 3);
+        let cIdx = 0;
+        const chamberWidth = 800, chamberDepth = 600, cols = 80, rows = 40;
+        for(let x=0; x<cols; x++) {
+            for(let z=0; z<rows; z++) {
+                if(cIdx >= COIL_COUNT) break;
+                offsetArr[cIdx*3] = (x / (cols-1) - 0.5) * chamberWidth;
+                offsetArr[cIdx*3+1] = 0;
+                offsetArr[cIdx*3+2] = (z / (rows-1) - 0.5) * chamberDepth;
+                cIdx++;
+            }
+        }
+        instCoilGeo.setAttribute('coilOffset', new THREE.InstancedBufferAttribute(offsetArr, 3));
+
+        // --- STREAMING_CHUNK: Dynamic Multi-Source Shader ---
+        const coilUniforms = {
+            u_time: { value: 0.0 },
+            u_numSources: { value: 0 },
+            u_pos: { value: Array(MAX_SOURCES).fill(null).map(() => new THREE.Vector3()) },
+            u_active: { value: Array(MAX_SOURCES).fill(0.0) },
+            u_freq: { value: Array(MAX_SOURCES).fill(null).map(() => new THREE.Vector3()) },
+            u_amp: { value: Array(MAX_SOURCES).fill(0.0) },
+            u_color: { value: Array(MAX_SOURCES).fill(null).map(() => new THREE.Vector3()) }
+        };
+
+        const coilVertShader = `
+            #define MAX_SOURCES 4
+            attribute vec3 coilOffset;
+            
+            uniform float u_time;
+            uniform int u_numSources;
+            uniform vec3 u_pos[MAX_SOURCES];
+            uniform float u_active[MAX_SOURCES];
+            uniform vec3 u_freq[MAX_SOURCES];
+            uniform float u_amp[MAX_SOURCES];
+            uniform vec3 u_color[MAX_SOURCES];
+            
+            varying vec3 vColor;
+            varying float vCoherency;
+
+            void main() {
+                vec3 globalPos = position + coilOffset;
+                
+                float w[MAX_SOURCES];
+                float inf[MAX_SOURCES];
+                vec3 dir[MAX_SOURCES];
+                
+                vec3 totalDisp = vec3(0.0);
+                float totalInf = 0.0;
+                vec3 colorSum = vec3(0.0);
+                float weightSum = 0.0;
+                
+                // 1. Individual Source Contributions
+                for(int i=0; i<MAX_SOURCES; i++) {
+                    if(i >= u_numSources) break;
+                    
+                    // Always calculate distance to prevent divergence issues, but multiply outcome by active flag
+                    float d = distance(globalPos, u_pos[i]);
+                    dir[i] = normalize(globalPos - u_pos[i]);
+                    inf[i] = smoothstep(400.0, 0.0, d) * u_active[i];
+                    
+                    vec3 f = u_freq[i];
+                    w[i] = (sin(d*f.x*0.05 - u_time*5.0) + sin(d*f.y*0.05 - u_time*6.0) + sin(d*f.z*0.05 - u_time*4.0)) * 0.33 * u_amp[i];
+                    
+                    totalDisp += dir[i] * (w[i] * inf[i] * 40.0);
+                    totalInf += inf[i];
+                    
+                    float colorWeight = inf[i] * (abs(w[i]) + 0.5);
+                    colorSum += u_color[i] * colorWeight;
+                    weightSum += colorWeight;
+                }
+                
+                // 2. Interaction (Tension & Torsion) between active pairs
+                float tension = 0.0;
+                vec3 torsionVec = vec3(0.0);
+                float pairCount = 0.0;
+                
+                for(int i=0; i<MAX_SOURCES; i++) {
+                    if(i >= u_numSources) break;
+                    if(u_active[i] < 0.5) continue;
+                    for(int j=i+1; j<MAX_SOURCES; j++) {
+                        if(j >= u_numSources) break;
+                        if(u_active[j] < 0.5) continue;
+                        
+                        tension += abs((w[i] * inf[i]) - (w[j] * inf[j]));
+                        torsionVec += cross(dir[i], dir[j]) * (tension * 20.0 * inf[i] * inf[j]);
+                        pairCount += 1.0;
+                    }
+                }
+                
+                float coherency = 0.0;
+                if(pairCount > 0.0) {
+                    tension /= pairCount;
+                    torsionVec /= pairCount;
+                    // Coherency occurs where multiple fields overlap but tension cancels out
+                    coherency = smoothstep(0.15, 0.0, tension) * min(1.0, totalInf / 2.0);
+                }
+                vCoherency = coherency;
+                
+                vec3 finalPos = globalPos + totalDisp + torsionVec;
+                
+                // Chladni Nodes suppress physical displacement
+                finalPos = mix(finalPos, globalPos, coherency);
+                gl_Position = projectionMatrix * modelViewMatrix * vec4(finalPos, 1.0);
+                
+                // Dynamic Coloring Blend based on dominant fields
+                vec3 mixedColor = vec3(0.2, 0.25, 0.3);
+                if(weightSum > 0.0) {
+                    mixedColor = colorSum / weightSum;
+                }
+                
+                // Add purple hue for high orthogonal torsion
+                float torsionMag = length(torsionVec) * tension;
+                mixedColor = mix(mixedColor, vec3(0.6, 0.1, 0.8), clamp(torsionMag * 1.5, 0.0, 1.0));
+                
+                // Bright Gold for Chladni Nodes
+                vColor = mix(mixedColor, vec3(1.0, 0.9, 0.1), coherency * 1.5);
+            }
+        `;
+
+        const coilFragShader = `
+            varying vec3 vColor;
+            varying float vCoherency;
+            void main() { 
+                float alpha = mix(0.4, 1.0, vCoherency); 
+                gl_FragColor = vec4(vColor, alpha); 
+            }
+        `;
+
+        const coilMat = new THREE.ShaderMaterial({ 
+            vertexShader: coilVertShader, fragmentShader: coilFragShader, 
+            uniforms: coilUniforms, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false 
+        });
+
+        const coilMesh = new THREE.Line(instCoilGeo, coilMat);
+        scene.add(coilMesh);
+
+        // --- STREAMING_CHUNK: Spatial Arrangement Logic ---
+        window.setSpatial = function(type) {
+            document.querySelectorAll('.spatial-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById('btn-sp-' + type).classList.add('active');
+            state.arrangement = type;
+        };
+
+        function updateSourcePositions(t) {
+            const n = state.sources.length;
+            if(n === 0) return;
+
+            state.sources.forEach((src, i) => {
+                let target = new THREE.Vector3();
+                
+                if (state.arrangement === 'fixed') {
+                    if (n === 1) target.set(0, 0, 0);
+                    else target.set((i / (n-1) - 0.5) * 300, 0, 0);
+                } 
+                else if (state.arrangement === 'golden') {
+                    const phi = 1.6180339887;
+                    const baseDist = 150;
+                    const angle = i * (Math.PI * 2 / n); // Equal angular distribution
+                    const dist = baseDist * Math.pow(phi, (i%2 === 0 ? 1 : -1)); // Alternating phi radii
+                    if(n === 1) target.set(0,0,0);
+                    else target.set(Math.cos(angle)*dist, 0, Math.sin(angle)*dist);
+                } 
+                else if (state.arrangement === 'chaotic') {
+                    const p1 = i+1; const p2 = (i+2)*0.8; const p3 = (i+3)*1.2;
+                    target.set(Math.sin(t*0.5*p1)*200, Math.cos(t*0.3*p2)*50, Math.sin(t*0.7*p3)*100);
+                }
+                
+                src.meshes.group.position.lerp(target, 0.05);
+            });
+        }
+
+        // --- STREAMING_CHUNK: Main Animation & Tensor Offload ---
+        const clock = new THREE.Clock();
+
+        function animate() {
+            requestAnimationFrame(animate);
+            controls.update();
+            const dt = clock.getDelta();
+            state.simTime += dt;
+
+            updateSourcePositions(state.simTime);
+
+            let activeCount = 0;
+            let avgCoherency = 0;
+
+            // Update individual source animations and collect uniforms
+            state.sources.forEach((src, i) => {
+                if (src.active) {
+                    activeCount++;
+                    src.meshes.tor1.rotation.y = state.simTime * src.fx; src.meshes.tor1.rotation.z = state.simTime * src.fz;
+                    src.meshes.tor2.rotation.y = state.simTime * src.fy; src.meshes.tor2.rotation.z = -state.simTime * src.fx;
+                    src.meshes.core.scale.setScalar(1.0 + src.amp * 0.5);
+                    src.meshes.light.intensity = src.amp * 2.0;
+                } else { 
+                    src.meshes.light.intensity = 0; 
+                }
+
+                coilUniforms.u_pos.value[i].copy(src.meshes.group.position);
+                coilUniforms.u_active.value[i] = src.active ? 1.0 : 0.0;
+                coilUniforms.u_freq.value[i].set(src.fx, src.fy, src.fz);
+                coilUniforms.u_amp.value[i] = src.amp;
+                coilUniforms.u_color.value[i].copy(src.colorVec);
+            });
+            
+            coilUniforms.u_numSources.value = state.sources.length;
+            coilUniforms.u_time.value = state.simTime;
+
+            // Tensor Offload Simulation (Global Topology)
+            if(activeCount >= 2) {
+                // Sum frequency differentials for active sources to gauge coherency strain
+                let fDiff = 0, ampSum = 0;
+                for(let i=0; i<state.sources.length; i++) {
+                    if(!state.sources[i].active) continue;
+                    ampSum += state.sources[i].amp;
+                    for(let j=i+1; j<state.sources.length; j++) {
+                        if(!state.sources[j].active) continue;
+                        fDiff += Math.abs(state.sources[i].fx - state.sources[j].fx) + 
+                                 Math.abs(state.sources[i].fy - state.sources[j].fy) + 
+                                 Math.abs(state.sources[i].fz - state.sources[j].fz);
+                    }
+                }
+                
+                avgCoherency = Math.max(0, 100 - (fDiff * 15 / activeCount));
+                
+                for(let i=0; i<16; i++) {
+                    const row = Math.floor(i/4); const col = i%4;
+                    const val = Math.sin(state.simTime * (row+1) + (fDiff*col)) * Math.cos(state.simTime * (col+1) + (fDiff*row)) * ampSum;
+                    tensorCells[i].target = val;
+                }
+            } else {
+                for(let i=0; i<16; i++) tensorCells[i].target = 0;
+            }
+
+            for(let i=0; i<16; i++) {
+                tensorCells[i].current += (tensorCells[i].target - tensorCells[i].current) * 0.1;
+                tensorCells[i].el.innerText = tensorCells[i].current.toFixed(3);
+                tensorCells[i].el.style.color = tensorCells[i].current >= 0 ? '#34d399' : '#f43f5e';
+            }
+            
+            document.getElementById('val-coherency').innerText = avgCoherency.toFixed(1) + '%';
+            
+            scene.rotation.y = Math.sin(state.simTime * 0.05) * 0.05;
+            renderer.render(scene, camera);
+        }
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        animate();
+    </script>
+</body>
+</html>
