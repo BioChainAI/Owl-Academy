@@ -323,6 +323,55 @@ streams a place to belong).
   from `pump_clock.py`); outside a window it is refused. When signed in it grows
   the environment into a certified biochain via `publishBiochain`.
 
+## The Celestial Library — a walkable geometric engine + intrinsic clock (`Celestial_Library.html`)
+
+Where the Mind's Eye is a lattice you fly through to *program* packets, the
+**Celestial Library** is the same SHD-CCP substrate rendered as a place you
+*walk* — a first-person Three.js environment (WASD/QE move, drag to look,
+optional gravity) built around two standalone pieces meant to be reused
+elsewhere in the Academy:
+
+- **The geometric engine (`compileManifold`).** A pure function of a 64-bit
+  **Protocol packet** — `codexId` (bits 0–15, structural form: Stator /
+  Torsional Markov Pump / Soliton Collapse-Hyperbolic), `scale` (16–31),
+  `torsion` (32–47), `topologyState` (48–63) — that procedurally lays out the
+  voxel manifold: a quadratic-major-radius toroidal stator plus a
+  torsion-driven trefoil rotor, exactly the `SHD_CCP_Packet` shape used by
+  `shdccp_kernel.py`. Turning the Protocol window's dials and hitting
+  **Synthesize Manifold** recompiles the world live from a new packet, the
+  same "parameters in, deterministic geometry out" contract the Mind's Eye
+  and the Python kernel both hold to.
+- **The intrinsic clock (Chronology window).** A local **Topological Pulse**
+  (0–60) and **Spinor Cycle** (0–720) pair, advanced by a signed, scrubbable
+  `timeScale` — the same `720 / (720⁄12 = 60 frames per π/6 sector)`
+  telescoping structure `pump_clock.py` uses for its gear counters, run here
+  as the page's own wall clock rather than a consensus tick. Every π/6-aligned
+  pulse fires a **resonance handshake**: the player's local 64-voxel lattice
+  (one instanced cube per bit of its own SHD-CCP word) clones itself into a
+  fading "ghost," the same telescoping-sync-point idea `pump_clock.py`
+  documents as `[1]`. A **Zero Point Sync** toggle switches the player
+  lattice between locked-to-the-global-pulse and a desynced, independently
+  drifting phase — a visible, walkable version of "pump time vs. local time."
+
+Both pieces are self-contained (no backend, no shared state with the other
+Biomesh tools yet) — this page is the **localized inner library**: a place to
+prototype and see the geometric engine and intrinsic clock run before wiring
+them into anything else. The natural next integrations, not yet built:
+
+- **BioChain-AI.** Swap the Protocol window's manual sliders for a real
+  `SHD_CCP_Packet` read from `BioChain-AI/BioChain_Enterprise/shdccp_kernel.py`
+  / `scripts/biomesh.js`, and drive the Chronology window's pulse/spinor pair
+  from an actual `pump_clock.py` tick instead of local `Date.now()` time, so
+  the room a player walks reflects the mesh's real packets and the mesh's real
+  clock rather than a standalone simulation of both.
+- **Familiars (the hyperbolic system).** The player's floating crystal and
+  64-voxel lattice are placeholders for the user's own **familiar** —
+  deterministically derived from their `cosmologicalId` via the same
+  `xmur3 + sfc32` chain as `Familiar_Protocol.md`, "geometric entities
+  projected from the SPIRE hyperbolic manifold." Once wired, Zero Point Sync
+  becomes a literal toggle between a scholar's familiar tracking the shared
+  mesh pulse and it drifting free in its own hyperbolic phase.
+
 ## Certification — GROWN/1
 
 On publish, the grower signs the commitment with their **minor-tome seal**
@@ -396,6 +445,7 @@ grow, transfer, and rate); a student-facing marketplace page can reuse
 | `mage_tower/Biomesh_Language_Growing_Guide.html` | companion how-to guide (seals, sources, engines, ledger, burn) |
 | `mage_tower/Biomesh_Mind_Eye_3D.html` | 3D SHD-CCP lattice forge — program vertices, chain packets, crystallize a regrowable seed, and run the torsional Markov "breath" synchronization pump |
 | `mage_tower/Biomesh_Mind_Eye_3D_Guide.html` | companion how-to guide (navigation, packet, chains, raw data, seed, shared standard) |
+| `mage_tower/Celestial_Library.html` | walkable 3D geometric engine (`compileManifold`, protocol-packet driven) + intrinsic clock (π/6-gear Chronology window) — standalone today, staged for BioChain-AI + Familiar integration |
 | `firestore.rules` | `biochains` / `biochainTransfers` / `biochainRatings` / `chronicles` blocks |
 | `BioChain-AI/BioChain_Enterprise/` | the measured reference stack this deploys |
 

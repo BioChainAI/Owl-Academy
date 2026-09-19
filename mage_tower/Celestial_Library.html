@@ -1,0 +1,1680 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Owl Academy - Celestial Library</title>
+    <!-- Tailwind CSS for UI overlay styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Three.js for 3D rendering -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background-color: #050510; /* Deep starry night background fallback */
+            font-family: 'Georgia', serif; /* A classic serif font for an academy feel */
+        }
+
+        #canvas-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1; /* Below the UI */
+        }
+
+        #ui-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 10; /* Above the 3D canvas */
+            pointer-events: none; /* Let clicks pass through to the canvas where needed */
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        /* Make specific UI elements clickable */
+        .interactive-ui {
+            pointer-events: auto;
+        }
+
+        /* Custom scrollbar for library catalog if needed later */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(0,0,0,0.2); 
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(212, 175, 55, 0.5); 
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(212, 175, 55, 0.8); 
+        }
+
+        /* Magical glowing text effect */
+        .glow-text {
+            text-shadow: 0 0 10px rgba(255, 215, 0, 0.6), 0 0 20px rgba(255, 140, 0, 0.4);
+        }
+        
+        .elvish-border {
+            border: 2px solid transparent;
+            border-image: linear-gradient(to bottom, #d4af37, #8b4513) 1;
+            background: rgba(20, 15, 10, 0.7);
+            backdrop-filter: blur(5px);
+        }
+
+        .drag-handle {
+            cursor: grab;
+            user-select: none;
+        }
+
+        #protocol-window {
+            width: 320px;
+        }
+        
+        .protocol-slider {
+            -webkit-appearance: none;
+            width: 100%;
+            height: 4px;
+            background: #4b5563;
+            outline: none;
+            border-radius: 2px;
+            margin-top: 10px;
+            margin-bottom: 15px;
+        }
+        .protocol-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: #d4af37;
+            cursor: pointer;
+            box-shadow: 0 0 10px rgba(212, 175, 55, 0.8);
+        }
+    </style>
+</head>
+<body>
+    <div id="canvas-container"></div>
+    <div id="ui-layer">
+        <main class="flex-grow flex items-center justify-end interactive-ui w-full max-w-7xl mx-auto pointer-events-none relative">
+            
+            <div id="protocol-window" class="draggable-window absolute top-1/4 left-8 elvish-border rounded-xl bg-black bg-opacity-80 hidden flex-col shadow-2xl z-50 pointer-events-auto">
+                <div class="drag-handle bg-blue-900 bg-opacity-40 p-2 rounded-t-xl border-b border-blue-700 flex justify-between items-center">
+                    <span class="text-blue-400 font-bold text-xs uppercase tracking-widest">Universal Level Protocol</span>
+                    <div class="flex items-center space-x-2">
+                        <button class="collapse-toggle text-blue-400 hover:text-white transition-colors focus:outline-none">▼</button>
+                        <span class="text-blue-500">⠿</span>
+                    </div>
+                </div>
+                <div class="p-4 panel-content">
+                    <h3 class="text-lg text-blue-300 mb-2 glow-text border-b border-blue-800 pb-1 font-mono text-sm">64-Bit SHD-CCP Seed</h3>
+                    
+                    <div class="mt-4">
+                        <label class="text-gray-400 text-xs font-bold uppercase">Codex ID [Bits 0-15]</label>
+                        <select id="proto-codex" class="w-full mt-1 bg-gray-900 text-yellow-500 border border-gray-700 rounded p-1 text-xs outline-none">
+                            <option value="0">0x00: Standard Torus (Stator)</option>
+                            <option value="1">0x01: Torsional Markov Pump</option>
+                            <option value="2">0x02: Soliton Collapse (Hyperbolic)</option>
+                        </select>
+                    </div>
+
+                    <div class="mt-4">
+                        <label class="text-gray-400 text-xs font-bold uppercase flex justify-between">
+                            <span>Scale Factor [Bits 16-31]</span>
+                            <span id="proto-scale-val" class="text-yellow-400">1.0x</span>
+                        </label>
+                        <input type="range" id="proto-scale" class="protocol-slider" min="0.5" max="2.5" step="0.1" value="1.0">
+                    </div>
+
+                    <div class="mt-2">
+                        <label class="text-gray-400 text-xs font-bold uppercase flex justify-between">
+                            <span>Torsion/Quaternion [Bits 32-47]</span>
+                            <span id="proto-torsion-val" class="text-yellow-400">1.0π</span>
+                        </label>
+                        <input type="range" id="proto-torsion" class="protocol-slider" min="0.1" max="4.0" step="0.1" value="1.0">
+                    </div>
+
+                    <div class="mt-2 mb-4">
+                        <label class="text-gray-400 text-xs font-bold uppercase flex justify-between">
+                            <span>Topology State [Bits 48-63]</span>
+                            <span id="proto-topology-val" class="text-yellow-400">Active</span>
+                        </label>
+                        <input type="range" id="proto-topology" class="protocol-slider" min="0" max="1" step="1" value="1">
+                    </div>
+
+                    <button id="btn-compile-level" class="w-full py-2 bg-gradient-to-r from-blue-800 to-blue-900 text-blue-100 rounded hover:from-blue-700 hover:to-blue-800 transition-all font-semibold uppercase tracking-wide border border-blue-500 text-xs">
+                        Synthesize Manifold
+                    </button>
+                    <p class="text-[9px] text-gray-500 mt-2 text-center">Applies discrete 64-bit structural parameters to generate interoperable environment bounds.</p>
+                </div>
+            </div>
+
+            <div id="welcome-box" class="draggable-window absolute top-1/4 right-8 elvish-border rounded-xl max-w-sm bg-black bg-opacity-60 flex flex-col shadow-2xl z-50 pointer-events-auto">
+                <div class="drag-handle bg-yellow-900 bg-opacity-40 p-2 rounded-t-xl border-b border-yellow-700 flex justify-between items-center">
+                    <span class="text-yellow-500 font-bold text-xs uppercase tracking-widest">Codex Interface</span>
+                    <div class="flex items-center space-x-2">
+                        <button class="collapse-toggle text-yellow-500 hover:text-white transition-colors focus:outline-none">▼</button>
+                        <span class="text-yellow-600">⠿</span>
+                    </div>
+                </div>
+                <div class="p-6 panel-content">
+                    <h3 class="text-2xl text-yellow-400 mb-3 glow-text border-b border-yellow-700 pb-2">Welcome, Scholar</h3>
+                    <p class="text-gray-300 text-sm leading-relaxed mb-4">
+                        Use W, S to move. A, D to turn. Q, E to strafe. Explore the procedurally generated SHD-CCP Library.
+                    </p>
+                    <p class="text-green-400 text-sm font-mono mb-4 border border-green-800 bg-black p-2 rounded">
+                        [SYSTEM] SHD-CCP Engine Active.<br>
+                        Press 'X' to insert Codex Key and toggle library compression.
+                    </p>
+                    <button id="start-exploring-btn" class="w-full py-2 bg-gradient-to-r from-yellow-700 to-yellow-900 text-yellow-100 rounded hover:from-yellow-600 hover:to-yellow-800 transition-all font-semibold uppercase tracking-wide border border-yellow-500">
+                        Begin Exploration
+                    </button>
+                </div>
+            </div>
+
+            <!-- HUD for Engine -->
+            <div id="shd-ccp-hud" class="draggable-window absolute top-24 left-8 elvish-border rounded-xl bg-black bg-opacity-70 font-mono text-xs flex flex-col shadow-2xl z-50 pointer-events-auto">
+                <div class="drag-handle bg-gray-900 bg-opacity-50 p-2 rounded-t-xl border-b border-gray-700 flex justify-between items-center">
+                    <span class="text-gray-400 font-bold text-[10px] uppercase tracking-widest">Telemetry</span>
+                    <div class="flex items-center space-x-2">
+                        <button class="collapse-toggle text-gray-400 hover:text-white transition-colors focus:outline-none">▼</button>
+                        <span class="text-gray-500">⠿</span>
+                    </div>
+                </div>
+                <div class="p-4 panel-content">
+                    <h4 class="text-orange-400 mb-2 border-b border-orange-800 glow-text">SHD-CCP Resonance</h4>
+                    <div class="text-gray-300 leading-relaxed">
+                        <div>Topological Pulse: <span id="telemetry-pulse" class="text-yellow-300 font-bold">0</span> / 60</div>
+                        <div>Spinor Cycle: <span id="telemetry-spinor" class="text-yellow-300 font-bold">0</span> / 720</div>
+                        <div>Codex State: <span id="telemetry-codex" class="text-blue-300 font-bold">COMPRESSED</span></div>
+                        <div>π/6 Resonance: <span id="telemetry-resonance" class="text-purple-300 font-bold">OFF</span></div>
+                        <div>Handshakes: <span id="telemetry-handshakes" class="text-green-300 font-bold">0</span></div>
+                    </div>
+                    <div class="mt-3 pt-2 border-t border-gray-700">
+                        <label class="flex items-center justify-between cursor-pointer" title="Locks local player 64-voxel lattice to the global Spinor Phase">
+                            <span class="font-bold uppercase text-green-300 tracking-wider">Zero Point Sync</span>
+                            <input type="checkbox" id="toggle-sync" class="h-4 w-4 text-green-600 rounded focus:ring-green-500 bg-gray-800 border-gray-600" checked>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <div id="chrono-window" class="draggable-window absolute top-1/4 left-1/3 elvish-border rounded-xl bg-black bg-opacity-80 hidden flex-col shadow-2xl z-50 pointer-events-auto w-72 text-xs">
+                <div class="drag-handle bg-red-900 bg-opacity-40 p-2 rounded-t-xl border-b border-red-700 flex justify-between items-center">
+                    <span class="text-red-400 font-bold uppercase tracking-widest text-[10px]">Chronology Control</span>
+                    <div class="flex items-center space-x-2">
+                        <button class="collapse-toggle text-red-400 hover:text-white transition-colors focus:outline-none">▼</button>
+                        <span class="text-red-500">⠿</span>
+                    </div>
+                </div>
+                <div class="p-4 flex flex-col gap-4 text-gray-300 panel-content">
+                    <div class="flex justify-between items-center border-b border-red-800 pb-2">
+                        <span class="font-bold uppercase text-red-300">Engine State</span>
+                        <button id="btn-play-pause" class="bg-gray-800 border border-red-600 hover:bg-gray-700 text-red-400 font-bold px-3 py-1 rounded shadow-md">PAUSE</button>
+                    </div>
+                    
+                    <div>
+                        <label class="text-gray-400 font-bold uppercase flex justify-between mb-1">
+                            <span>Time Scale (Flow)</span>
+                            <span id="chrono-scale-val" class="text-yellow-400">1.0x</span>
+                        </label>
+                        <input type="range" id="chrono-scale" class="w-full" min="-5.0" max="5.0" step="0.1" value="1.0">
+                    </div>
+
+                    <div>
+                        <label class="text-gray-400 font-bold uppercase flex justify-between mb-1">
+                            <span>Top Pulse (0-60)</span>
+                            <span id="chrono-pulse-val" class="text-yellow-400">0</span>
+                        </label>
+                        <input type="range" id="chrono-pulse" class="w-full" min="0" max="60" step="0.1" value="0">
+                    </div>
+
+                    <div>
+                        <label class="text-gray-400 font-bold uppercase flex justify-between mb-1">
+                            <span>Spinor (0-720)</span>
+                            <span id="chrono-spinor-val" class="text-yellow-400">0</span>
+                        </label>
+                        <input type="range" id="chrono-spinor" class="w-full" min="0" max="720" step="0.1" value="0">
+                    </div>
+                    
+                    <div class="border-t border-red-900 pt-3">
+                        <label class="text-gray-400 font-bold uppercase flex justify-between mb-1" title="Spatial Unfolding Progress of the Lattice">
+                            <span class="text-orange-300">Manifold (Unfold)</span>
+                            <span id="chrono-manifold-val" class="text-orange-400">0.00</span>
+                        </label>
+                        <input type="range" id="chrono-manifold" class="w-full" min="0.0" max="1.0" step="0.01" value="0">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Player Settings Window -->
+            <div id="player-settings-box" class="draggable-window absolute top-1/4 left-1/2 transform -translate-x-1/2 elvish-border rounded-xl bg-black bg-opacity-80 hidden flex-col shadow-2xl z-50 pointer-events-auto w-80 text-xs">
+                <div class="drag-handle bg-purple-900 bg-opacity-40 p-2 rounded-t-xl border-b border-purple-700 flex justify-between items-center">
+                    <span class="text-purple-400 font-bold uppercase tracking-widest text-[10px]">Player Settings</span>
+                    <div class="flex items-center space-x-2">
+                        <button class="collapse-toggle text-purple-400 hover:text-white transition-colors focus:outline-none">▼</button>
+                        <span class="text-purple-500">⠿</span>
+                    </div>
+                </div>
+                <div class="p-4 flex flex-col gap-3 text-gray-300 panel-content">
+                    <div class="flex justify-between items-center border-b border-purple-800 pb-2">
+                        <span class="font-bold uppercase text-purple-300">Physics Engine</span>
+                    </div>
+                    <label class="flex items-center justify-between cursor-pointer" title="Toggle Gravity Protocol">
+                        <span class="font-bold uppercase text-gray-400">Enable Gravity</span>
+                        <input type="checkbox" id="toggle-gravity" class="h-4 w-4 text-purple-600 rounded focus:ring-purple-500 bg-gray-800 border-gray-600">
+                    </label>
+
+                    <div class="flex justify-between items-center border-b border-purple-800 pb-2 mt-2">
+                        <span class="font-bold uppercase text-purple-300">Key Bindings</span>
+                    </div>
+                    <div class="grid grid-cols-2 gap-2">
+                        <div class="flex justify-between items-center"><span class="text-gray-400">Forward</span><button id="btn-bind-forward" class="bg-gray-800 border border-purple-900 rounded px-2 py-1 text-purple-300 min-w-[50px]">W</button></div>
+                        <div class="flex justify-between items-center"><span class="text-gray-400">Backward</span><button id="btn-bind-backward" class="bg-gray-800 border border-purple-900 rounded px-2 py-1 text-purple-300 min-w-[50px]">S</button></div>
+                        <div class="flex justify-between items-center"><span class="text-gray-400">Turn L</span><button id="btn-bind-turnLeft" class="bg-gray-800 border border-purple-900 rounded px-2 py-1 text-purple-300 min-w-[50px]">A</button></div>
+                        <div class="flex justify-between items-center"><span class="text-gray-400">Turn R</span><button id="btn-bind-turnRight" class="bg-gray-800 border border-purple-900 rounded px-2 py-1 text-purple-300 min-w-[50px]">D</button></div>
+                        <div class="flex justify-between items-center"><span class="text-gray-400">Strafe L</span><button id="btn-bind-strafeLeft" class="bg-gray-800 border border-purple-900 rounded px-2 py-1 text-purple-300 min-w-[50px]">Q</button></div>
+                        <div class="flex justify-between items-center"><span class="text-gray-400">Strafe R</span><button id="btn-bind-strafeRight" class="bg-gray-800 border border-purple-900 rounded px-2 py-1 text-purple-300 min-w-[50px]">E</button></div>
+                        <div class="flex justify-between items-center"><span class="text-gray-400">Jump</span><button id="btn-bind-jump" class="bg-gray-800 border border-purple-900 rounded px-2 py-1 text-purple-300 min-w-[50px]">Space</button></div>
+                        <div class="flex justify-between items-center"><span class="text-gray-400">Fly Up</span><button id="btn-bind-moveUp" class="bg-gray-800 border border-purple-900 rounded px-2 py-1 text-purple-300 min-w-[50px]">C</button></div>
+                        <div class="flex justify-between items-center"><span class="text-gray-400">Fly Down</span><button id="btn-bind-moveDown" class="bg-gray-800 border border-purple-900 rounded px-2 py-1 text-purple-300 min-w-[50px]">Z</button></div>
+                    </div>
+                    <p class="text-[9px] text-gray-500 text-center mt-2">Click to rebind keys. Z/C relative flight available in Zero-G.</p>
+                </div>
+            </div>
+
+        </main>
+
+        <!-- Footer -->
+        <footer class="interactive-ui flex flex-col md:flex-row justify-between items-center text-yellow-600 text-sm mt-8 elvish-border p-4 rounded-t-xl bg-black bg-opacity-50 pointer-events-auto">
+            <div class="flex flex-wrap items-center gap-2 md:space-x-4">
+                <a href="Biomesh_Console.html" class="text-[10px] uppercase tracking-widest text-yellow-600/70 hover:text-yellow-300 transition-colors pr-2 md:pr-4 border-r border-gray-700">&larr; Mage Tower</a>
+                <p class="hidden md:block">&copy; Era of the Owl.</p>
+
+                <div class="flex space-x-2 border-r border-gray-700 pr-2 md:pr-4">
+                    <button id="btn-toggle-protocol" class="text-blue-400 hover:text-white bg-gray-900 border border-blue-900 px-3 py-1 rounded text-xs transition-colors uppercase font-bold tracking-wider shadow-md" title="Toggle Protocol Window">Proto</button>
+                    <button id="btn-toggle-codex" class="text-yellow-400 hover:text-white bg-gray-900 border border-yellow-900 px-3 py-1 rounded text-xs transition-colors uppercase font-bold tracking-wider shadow-md" title="Toggle Codex Window">Codex</button>
+                    <button id="btn-toggle-telemetry" class="text-orange-400 hover:text-white bg-gray-900 border border-orange-900 px-3 py-1 rounded text-xs transition-colors uppercase font-bold tracking-wider shadow-md" title="Toggle Telemetry Window">Telem</button>
+                    <button id="btn-toggle-chrono" class="text-red-400 hover:text-white bg-gray-900 border border-red-900 px-3 py-1 rounded text-xs transition-colors uppercase font-bold tracking-wider shadow-md" title="Toggle Chronology Window">Chrono</button>
+                    <button id="btn-open-settings" class="text-purple-400 hover:text-white bg-gray-900 border border-purple-900 px-3 py-1 rounded text-xs transition-colors uppercase font-bold tracking-wider shadow-md flex items-center" title="Player Settings">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.533 1.533 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.533 1.533 0 01.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z" clip-rule="evenodd" />
+                        </svg>
+                        Settings
+                    </button>
+                </div>
+
+                <label class="flex items-center cursor-pointer text-xs" title="Toggle Gravity Protocol">
+                    <span class="mr-2 uppercase text-purple-300 font-bold">Grav</span>
+                    <input type="checkbox" id="footer-toggle-gravity" class="h-4 w-4 text-purple-600 rounded focus:ring-purple-500 bg-gray-800 border-gray-600">
+                </label>
+            </div>
+            <div class="flex space-x-4 mt-2 md:mt-0">
+                <span class="flex items-center"><span class="w-2 h-2 rounded-full bg-green-500 mr-2 animate-pulse"></span> Magic Network Stable</span>
+                <span>WASD/QE to move | Drag to look</span>
+            </div>
+        </footer>
+    </div>
+
+    <script>
+        // Use a self-executing function to avoid global namespace pollution where possible
+        (function() {
+            // --- Configuration & Constants ---
+            const COLORS = {
+                sky: 0x87ceeb,
+                duskSky: 0xffa07a,
+                nightSky: 0x0a0a2a,
+                autumnRed: 0xcc3300,
+                autumnOrange: 0xff6600,
+                autumnYellow: 0xffcc00,
+                stone: 0xd3d3d3,
+                gold: 0xd4af37,
+                wood: 0x8b4513,
+                grass: 0x556b2f,
+                magicGlow: 0xffd700
+            };
+
+            // --- Three.js Setup ---
+            let scene, camera, renderer;
+            let orreryGroup, planets = [], rings = [], leaves = [];
+            let collidableMeshList = [];
+            
+            // --- Player/Avatar Setup ---
+            let player;
+            let playerVelocity = new THREE.Vector3();
+            let playerDirection = new THREE.Vector3();
+            let isJumping = false;
+            let canJump = true;
+            const clock = new THREE.Clock();
+            
+            // --- Chronology State ---
+        let isTimePlaying = true;
+        let accumulatedTime = 0;
+        let timeScale = 1.0;
+        let topologicalPulseFloat = 0;
+        let spinorCycleFloat = 0;
+        let globalLocalSync = true;
+        let playerLatticeMesh;
+        let handshakeCount = 0;
+        let lastHandshakePulse = -1;
+        let handshakeGhosts = [];
+
+        let voxelMesh;
+            let voxelData = [];
+            const MAX_VOXELS = 10000;
+            let codexExpanded = false;
+            let codexProgress = 0.0;
+            let topologicalPulse = 0; // W_Sigma = 60
+            let spinorCycle = 0; // 720:1 Loop
+            let frameCounter = 0;
+            const PI_6 = Math.PI / 6;
+
+            // --- Sensory Lattice Variables ---
+            let sensoryLattice;
+            const GRID_SIZE = 12; // 12x12x12 grid volume around player
+            const GRID_SPACING = 5; // Distance between Ems
+            let isDraggingCanvas = false;
+            let previousCanvasMousePos = { x: 0, y: 0 };
+
+            // --- Player Settings Variables ---
+            let gravityEnabled = false;
+            let keyBindings = {
+                forward: 'KeyW',
+                backward: 'KeyS',
+                turnLeft: 'KeyA',
+                turnRight: 'KeyD',
+                strafeLeft: 'KeyQ',
+                strafeRight: 'KeyE',
+                jump: 'Space',
+                moveUp: 'KeyC',
+                moveDown: 'KeyZ'
+            };
+            let waitingForKey = null; // Used for rebinding
+
+            // --- Controls State ---
+            let moveForward = false;
+            let moveBackward = false;
+            let moveLeft = false;
+            let moveRight = false;
+            let moveUp = false;
+            let moveDown = false;
+            let isDragging = false;
+            let previousMousePosition = { x: 0, y: 0 };
+            
+            // Mouse look variables
+            let pitch = 0;
+            let yaw = 0;
+            const PI_2 = Math.PI / 2;
+            
+            const PLAYER_HEIGHT = 4;
+            const PLAYER_SPEED = 20.0;
+            const TURN_SPEED = 1.5; // Added turn speed
+            const PLAYER_JUMP_SPEED = 15.0;
+            const GRAVITY = 30.0;
+
+            function makeDraggable(elmnt, handle) {
+                if (!elmnt) return;
+                let pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
+                
+                if (handle) {
+                    handle.onmousedown = dragMouseDown;
+                } else {
+                    elmnt.onmousedown = dragMouseDown;
+                }
+
+                function dragMouseDown(e) {
+                    e = e || window.event;
+                    // Only drag if it's a left click
+                    if (e.button !== 0) return; 
+                    // Prevent dragging if clicking a collapse button
+                    if (e.target.closest('.collapse-toggle')) return;
+                    e.preventDefault();
+
+                    // Normalize positioning to pure top/left on first drag to prevent 
+                    // resize squishing (right anchors) and jumping (transform anchors).
+                    if (!elmnt.dataset.dragNormalized) {
+                        const rect = elmnt.getBoundingClientRect();
+                        const parentRect = elmnt.offsetParent.getBoundingClientRect();
+                        
+                        // Set explicit pixel positions relative to the parent container
+                        elmnt.style.left = (rect.left - parentRect.left) + "px";
+                        elmnt.style.top = (rect.top - parentRect.top) + "px";
+                        
+                        // Clear any interfering responsive layout properties
+                        elmnt.style.right = 'auto';
+                        elmnt.style.bottom = 'auto';
+                        elmnt.style.transform = 'none';
+                        
+                        // Mark as normalized so we don't recalculate on every subsequent drag
+                        elmnt.dataset.dragNormalized = "true";
+                    }
+
+                    pos3 = e.clientX;
+                    pos4 = e.clientY;
+                    document.onmouseup = closeDragElement;
+                    document.onmousemove = elementDrag;
+                }
+
+                function elementDrag(e) {
+                    e = e || window.event;
+                    e.preventDefault();
+                    pos1 = pos3 - e.clientX;
+                    pos2 = pos4 - e.clientY;
+                    pos3 = e.clientX;
+                    pos4 = e.clientY;
+                    elmnt.style.top = (elmnt.offsetTop - pos2) + "px";
+                    elmnt.style.left = (elmnt.offsetLeft - pos1) + "px";
+                }
+
+                function closeDragElement() {
+                    document.onmouseup = null;
+                    document.onmousemove = null;
+                }
+            }
+
+            function init() {
+                const container = document.getElementById('canvas-container');
+
+                // Scene
+                scene = new THREE.Scene();
+                // Create a gradient-like skybox/background using a large sphere
+                createSkyDome();
+                scene.fog = new THREE.FogExp2(0xffcf80, 0.005); // Warm, autumnal fog
+
+                // Camera
+                camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 1, 2000);
+                camera.position.set(0, 30, 100);
+                camera.lookAt(0, 15, 0);
+
+                // Renderer
+                renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+                renderer.setPixelRatio(window.devicePixelRatio);
+                renderer.setSize(window.innerWidth, window.innerHeight);
+                // Adjust tone mapping for a more cinematic look
+                renderer.toneMapping = THREE.ACESFilmicToneMapping;
+                renderer.toneMappingExposure = 1.0;
+                renderer.shadowMap.enabled = true;
+                renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+                container.appendChild(renderer.domElement);
+
+                // Lights
+                setupLights();
+
+                // Build the Environment
+                buildEnvironment();
+                
+                // Build Procedural Sensory Lattice (Ems)
+                buildSensoryLattice();
+                
+                // Initialize Player/Avatar
+                setupPlayer();
+
+                // Event Listeners for Controls
+                setupControls();
+                window.addEventListener('resize', onWindowResize, false);
+                
+                const welcomeBox = document.getElementById('welcome-box');
+                if (welcomeBox) makeDraggable(welcomeBox, welcomeBox.querySelector('.drag-handle'));
+                
+                const hud = document.getElementById('shd-ccp-hud');
+                if (hud) makeDraggable(hud, hud.querySelector('.drag-handle'));
+                
+                const settingsBox = document.getElementById('player-settings-box');
+                if (settingsBox) makeDraggable(settingsBox, settingsBox.querySelector('.drag-handle'));
+                
+                const protoWindow = document.getElementById('protocol-window');
+                if (protoWindow) makeDraggable(protoWindow, protoWindow.querySelector('.drag-handle'));
+
+                // Setup Panel Collapse Functionality
+                document.querySelectorAll('.collapse-toggle').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        const content = e.target.closest('.draggable-window').querySelector('.panel-content');
+                        if (content) {
+                            content.classList.toggle('hidden');
+                            e.target.innerText = content.classList.contains('hidden') ? '◀' : '▼';
+                        }
+                    });
+                });
+
+                // Setup UI Panel Toggles on Footer
+                const setupPanelToggle = (btnId, panelId) => {
+                    const btn = document.getElementById(btnId);
+                    const panel = document.getElementById(panelId);
+                    if(btn && panel) {
+                        btn.addEventListener('click', () => {
+                            panel.style.display = ''; // Clear inline styles if any
+                            if(panel.classList.contains('hidden')) {
+                                panel.classList.remove('hidden');
+                                panel.classList.add('flex');
+                            } else {
+                                panel.classList.add('hidden');
+                                panel.classList.remove('flex', 'md:flex');
+                            }
+                        });
+                    }
+                };
+
+                setupPanelToggle('btn-toggle-protocol', 'protocol-window');
+                setupPanelToggle('btn-toggle-codex', 'welcome-box');
+                setupPanelToggle('btn-toggle-telemetry', 'shd-ccp-hud');
+
+                // Add basic touch support for camera panning (placeholder for now, focus on desktop FP)
+                document.addEventListener('touchstart', (e) => {
+                    touchStartX = e.touches[0].clientX;
+                    touchStartY = e.touches[0].clientY;
+                    isDragging = true;
+                    previousMousePosition = { x: touchStartX, y: touchStartY };
+                }, {passive: true});
+                
+                document.addEventListener('touchend', () => {
+                    isDragging = false;
+                });
+                
+                document.addEventListener('touchmove', (e) => {
+                    if (isDragging && e.touches.length === 1) {
+                        const touchX = e.touches[0].clientX;
+                        const touchY = e.touches[0].clientY;
+                        
+                        const deltaMove = {
+                            x: touchX - previousMousePosition.x,
+                            y: touchY - previousMousePosition.y
+                        };
+
+                        yaw -= deltaMove.x * 0.005;
+                        pitch -= deltaMove.y * 0.005;
+                        pitch = Math.max(-PI_2 + 0.1, Math.min(PI_2 - 0.1, pitch));
+
+                        updateCameraRotation();
+
+                        previousMousePosition = { x: touchX, y: touchY };
+                    }
+                }, {passive: true});
+
+                // Start Exploring Button Logic
+                const startBtn = document.getElementById('start-exploring-btn');
+                if (startBtn) {
+                    startBtn.addEventListener('click', () => {
+                        const wb = document.getElementById('welcome-box');
+                        wb.style.display = '';
+                        wb.classList.add('hidden');
+                        wb.classList.remove('flex', 'md:flex');
+                    });
+                }
+
+                // Remove loading screen
+                setTimeout(() => {
+                    const loader = document.getElementById('loading-screen');
+                    if(loader) {
+                        loader.style.opacity = '0';
+                        setTimeout(() => loader.remove(), 1000);
+                    }
+                }, 1500); // Artificial delay to ensure shaders compile
+
+                // Start loop
+                animate();
+            }
+
+            function setupPlayer() {
+            // The player is a group containing the camera and a visual avatar (optional, since it's first person, 
+            // but we add a simple body that follows the camera position but not pitch, so others could see it in multiplayer)
+            player = new THREE.Group();
+            player.position.set(0, PLAYER_HEIGHT, 60); // Start slightly away from center
+            scene.add(player);
+
+            // Add a simple visible body for the avatar (a floating scholar robe shape)
+            const bodyGeo = new THREE.CylinderGeometry(0.5, 1, 3, 8);
+            const bodyMat = new THREE.MeshStandardMaterial({ color: 0x3a1c42, roughness: 0.9 });
+            const body = new THREE.Mesh(bodyGeo, bodyMat);
+            body.position.y = -1.5; // Offset so camera is at "head" height
+            body.castShadow = true;
+            player.add(body);
+            
+            // Add a glowing floating crystal above head to denote a magic user
+            const crystalGeo = new THREE.OctahedronGeometry(0.3);
+            const crystalMat = new THREE.MeshStandardMaterial({ 
+                color: 0xffa500, 
+                emissive: 0xffa500,
+                emissiveIntensity: 0.5,
+                roughness: 0.2,
+                metalness: 0.8
+            });
+            const crystal = new THREE.Mesh(crystalGeo, crystalMat);
+            crystal.position.y = 1;
+            player.add(crystal);
+            
+            // Store crystal for animation
+            player.userData.crystal = crystal;
+
+            // Add camera to player
+            camera.position.set(0, 0, 0); // Local to player
+            player.add(camera);
+            
+            // Initial look direction
+            updateCameraRotation();
+            
+            // Create the Local 64-Voxel SHD-CCP Lattice assigned to the player
+            // Represents the 16 parallel channels * 4 compression phases (64 bit packet)
+            const localVoxelGeo = new THREE.BoxGeometry(0.3, 0.3, 0.3);
+            const localVoxelMat = new THREE.MeshStandardMaterial({
+                color: 0x00ffff, 
+                emissive: 0x0055aa, 
+                emissiveIntensity: 0.8,
+                wireframe: true,
+                transparent: true,
+                opacity: 0.8
+            });
+            
+            playerLatticeMesh = new THREE.InstancedMesh(localVoxelGeo, localVoxelMat, 64);
+            playerLatticeMesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+            scene.add(playerLatticeMesh);
+        }
+
+            function setupControls() {
+                // Keyboard inputs
+                document.addEventListener('keydown', (event) => {
+                    // Prevent default scrolling for Space/Arrows if we are not rebinding
+                    if (!waitingForKey && ['Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(event.code)) {
+                        if(event.target.tagName !== "INPUT") event.preventDefault();
+                    }
+
+                    if (waitingForKey) {
+                        event.preventDefault();
+                        keyBindings[waitingForKey] = event.code;
+                        document.getElementById(`btn-bind-${waitingForKey}`).innerText = event.code;
+                        document.getElementById(`btn-bind-${waitingForKey}`).classList.remove('bg-red-800', 'animate-pulse');
+                        waitingForKey = null;
+                        return;
+                    }
+
+                    switch (event.code) {
+                        case keyBindings.forward:
+                        case 'ArrowUp':
+                            moveForward = true;
+                            break;
+                        case keyBindings.turnLeft:
+                        case 'ArrowLeft':
+                            // Handled in animate loop via window.activeKeys
+                            break;
+                        case keyBindings.strafeLeft:
+                            moveLeft = true;
+                            break;
+                        case keyBindings.backward:
+                        case 'ArrowDown':
+                            moveBackward = true;
+                            break;
+                        case keyBindings.turnRight:
+                        case 'ArrowRight':
+                            // Handled in animate loop via window.activeKeys
+                            break;
+                        case keyBindings.strafeRight:
+                            moveRight = true;
+                            break;
+                        case keyBindings.moveUp:
+                            moveUp = true;
+                            break;
+                        case keyBindings.moveDown:
+                            moveDown = true;
+                            break;
+                        case 'KeyX':
+                            codexExpanded = !codexExpanded;
+                            break;
+                        case keyBindings.jump:
+                            if (gravityEnabled) {
+                                if (canJump === true) playerVelocity.y += PLAYER_JUMP_SPEED;
+                                canJump = false;
+                                isJumping = true;
+                            } else {
+                                moveUp = true;
+                            }
+                            break;
+                    }
+                });
+
+                document.addEventListener('keyup', (event) => {
+                    switch (event.code) {
+                        case keyBindings.forward:
+                        case 'ArrowUp':
+                            moveForward = false;
+                            break;
+                        case keyBindings.strafeLeft:
+                            moveLeft = false;
+                            break;
+                        case keyBindings.backward:
+                        case 'ArrowDown':
+                            moveBackward = false;
+                            break;
+                        case keyBindings.strafeRight:
+                            moveRight = false;
+                            break;
+                        case keyBindings.moveUp:
+                            moveUp = false;
+                            break;
+                        case keyBindings.moveDown:
+                            moveDown = false;
+                            break;
+                        case keyBindings.jump:
+                            moveUp = false;
+                            break;
+                    }
+                });
+                
+                // Store active turn keys for continuous turning in animate loop
+                let keys = {};
+                document.addEventListener('keydown', (e) => { keys[e.code] = true; });
+                document.addEventListener('keyup', (e) => { keys[e.code] = false; });
+                
+                // Expose keys to global scope for the animate loop to read turning
+                window.activeKeys = keys;
+
+                // Mouse look inputs (Drag to look)
+                document.addEventListener('mousedown', (e) => {
+                    // Only trigger if clicking on the background/canvas, not UI elements
+                    if (e.target.tagName.toLowerCase() === 'canvas' || e.target.id === 'ui-layer') {
+                        isDraggingCanvas = true;
+                        previousCanvasMousePos = { x: e.clientX, y: e.clientY };
+                    }
+                });
+
+                document.addEventListener('mouseup', () => {
+                    isDraggingCanvas = false;
+                });
+
+                document.addEventListener('mousemove', (e) => {
+                    if (isDraggingCanvas) {
+                        const deltaX = e.clientX - previousCanvasMousePos.x;
+                        const deltaY = e.clientY - previousCanvasMousePos.y;
+                        
+                        yaw -= deltaX * 0.005; // Adjust sensitivity here
+                        pitch -= deltaY * 0.005;
+                        
+                        // Clamp vertical pitch to avoid flipping over
+                        pitch = Math.max(-PI_2 + 0.1, Math.min(PI_2 - 0.1, pitch));
+                        
+                        updateCameraRotation();
+                        previousCanvasMousePos = { x: e.clientX, y: e.clientY };
+                    }
+                });
+            }
+            
+            function updateCameraRotation() {
+                // Player body rotates left/right
+                player.rotation.y = yaw;
+                // Camera rotates up/down
+                camera.rotation.x = pitch;
+            }
+
+            function createSkyDome() {
+                const vertexShader = `
+                    varying vec3 vWorldPosition;
+                    void main() {
+                        vec4 worldPosition = modelMatrix * vec4( position, 1.0 );
+                        vWorldPosition = worldPosition.xyz;
+                        gl_Position = projectionMatrix * modelViewMatrix * vec4( position, 1.0 );
+                    }
+                `;
+                const fragmentShader = `
+                    uniform vec3 topColor;
+                    uniform vec3 bottomColor;
+                    uniform float offset;
+                    uniform float exponent;
+                    varying vec3 vWorldPosition;
+                    void main() {
+                        float h = normalize( vWorldPosition + offset ).y;
+                        gl_FragColor = vec4( mix( bottomColor, topColor, max( pow( max( h , 0.0), exponent ), 0.0 ) ), 1.0 );
+                    }
+                `;
+                const uniforms = {
+                    "topColor": { value: new THREE.Color(0x3a1c42) }, // Purplish twilight top
+                    "bottomColor": { value: new THREE.Color(0xffcf80) }, // Warm sunset bottom
+                    "offset": { value: 33 },
+                    "exponent": { value: 0.6 }
+                };
+                const skyGeo = new THREE.SphereGeometry(1000, 32, 15);
+                const skyMat = new THREE.ShaderMaterial({
+                    uniforms: uniforms,
+                    vertexShader: vertexShader,
+                    fragmentShader: fragmentShader,
+                    side: THREE.BackSide
+                });
+                const sky = new THREE.Mesh(skyGeo, skyMat);
+                scene.add(sky);
+            }
+
+            function setupLights() {
+                // Hemisphere light for soft ambient outdoor light
+                const hemiLight = new THREE.HemisphereLight(0xffeeb1, 0x080820, 0.6);
+                scene.add(hemiLight);
+
+                // Directional light casting long autumn shadows (like late afternoon)
+                const dirLight = new THREE.DirectionalLight(0xffaa55, 1.5);
+                dirLight.position.set(-50, 50, 50);
+                dirLight.castShadow = true;
+                dirLight.shadow.camera.top = 100;
+                dirLight.shadow.camera.bottom = -100;
+                dirLight.shadow.camera.left = -100;
+                dirLight.shadow.camera.right = 100;
+                dirLight.shadow.mapSize.width = 2048;
+                dirLight.shadow.mapSize.height = 2048;
+                scene.add(dirLight);
+
+                // Add a magical glow point light near the center
+                const magicLight = new THREE.PointLight(COLORS.magicGlow, 1, 100);
+                magicLight.position.set(0, 35, 0);
+                scene.add(magicLight);
+            }
+
+            function buildEnvironment() {
+                // Directional Obelisks (N, E, S, W)
+                const obeliskGeo = new THREE.CylinderGeometry(1, 2, 20, 4);
+                const directions = [
+                    { x: 0, z: -76, color: 0x4444ff, label: 'North (Information)' },
+                    { x: 76, z: 0, color: 0x44ff44, label: 'East (Creation)' },
+                    { x: 0, z: 76, color: 0xff4444, label: 'South (Entropy)' },
+                    { x: -76, z: 0, color: 0xffff44, label: 'West (Memory)' }
+                ];
+
+                directions.forEach(dir => {
+                    const obMat = new THREE.MeshStandardMaterial({ color: 0x2a2a35, roughness: 0.8, metalness: 0.2 });
+                    const obelisk = new THREE.Mesh(obeliskGeo, obMat);
+                    obelisk.position.set(dir.x, 10, dir.z);
+                    obelisk.rotation.y = Math.PI / 4; // Rotate to look like a diamond pillar
+                    obelisk.castShadow = true;
+                    obelisk.receiveShadow = true;
+                    
+                    // Crystal on top
+                    const crystalGeo = new THREE.OctahedronGeometry(1.5);
+                    const crystalMat = new THREE.MeshStandardMaterial({ color: dir.color, emissive: dir.color, emissiveIntensity: 0.8 });
+                    const crystal = new THREE.Mesh(crystalGeo, crystalMat);
+                    crystal.position.y = 12;
+                    obelisk.add(crystal);
+
+                    const light = new THREE.PointLight(dir.color, 1, 30);
+                    light.position.y = 12;
+                    obelisk.add(light);
+                    
+                    scene.add(obelisk);
+                    collidableMeshList.push(obelisk);
+                });
+
+                // The entire world is made up of generated grown shd-ccp seeds like minecraft blocks
+                const voxelGeo = new THREE.BoxGeometry(2, 2, 2);
+                const voxelMat = new THREE.MeshStandardMaterial({ 
+                    color: 0xffffff, 
+                    roughness: 0.6,
+                    metalness: 0.2
+                });
+
+                voxelMesh = new THREE.InstancedMesh(voxelGeo, voxelMat, MAX_VOXELS);
+                voxelMesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+                voxelMesh.castShadow = true;
+                voxelMesh.receiveShadow = true;
+                scene.add(voxelMesh);
+
+                // Collision bounds for the singularity center
+                const colGeo = new THREE.CylinderGeometry(5, 5, 20, 8);
+                const colMesh = new THREE.Mesh(colGeo, new THREE.MeshBasicMaterial({visible: false}));
+                colMesh.position.y = 10;
+                scene.add(colMesh);
+                collidableMeshList.push(colMesh);
+                
+                // Perform initial generation using default Genesis Packet
+                compileManifold(CurrentProtocolPacket);
+            }
+
+            // --- 64-Bit SHD-CCP Universal Standard Protocol ---
+            class SHD_CCP_Packet {
+                constructor(codexId, scale, torsion, topologyState) {
+                    this.codexId = parseInt(codexId);           // Bits 0-15: Structural Base
+                    this.scale = parseFloat(scale);             // Bits 16-31: Quadratic Major Radius Multiplier
+                    this.torsion = parseFloat(torsion);         // Bits 32-47: Quaternion Phase / Twist Rate
+                    this.topologyState = parseInt(topologyState); // Bits 48-63: Soliton Collapse / Resonance state
+                }
+            }
+
+            let CurrentProtocolPacket = new SHD_CCP_Packet(0, 1.0, 1.0, 1);
+
+            function setupProtocolUI() {
+                const codexInput = document.getElementById('proto-codex');
+                const scaleInput = document.getElementById('proto-scale');
+                const torsionInput = document.getElementById('proto-torsion');
+                const topologyInput = document.getElementById('proto-topology');
+                
+                const scaleVal = document.getElementById('proto-scale-val');
+                const torsionVal = document.getElementById('proto-torsion-val');
+                const topologyVal = document.getElementById('proto-topology-val');
+                
+                scaleInput.addEventListener('input', (e) => scaleVal.innerText = e.target.value + 'x');
+                torsionInput.addEventListener('input', (e) => torsionVal.innerText = e.target.value + 'π');
+                topologyInput.addEventListener('input', (e) => topologyVal.innerText = e.target.value == "1" ? "Active" : "Collapsed");
+
+                document.getElementById('btn-compile-level').addEventListener('click', () => {
+                    // Update global standard packet
+                    CurrentProtocolPacket = new SHD_CCP_Packet(
+                        codexInput.value,
+                        scaleInput.value,
+                        torsionInput.value,
+                        topologyInput.value
+                    );
+                    
+                    // Force the world to re-compile strictly based on the new standard
+                    compileManifold(CurrentProtocolPacket);
+                    
+                    // Trigger Codex Expansion animation automatically on rebuild
+                    codexExpanded = true; 
+                });
+            }
+
+            function setupPlayerSettingsUI() {
+                const gravToggle = document.getElementById('toggle-gravity');
+                const footerGravToggle = document.getElementById('footer-toggle-gravity');
+                const settingsBox = document.getElementById('player-settings-box');
+                const btnOpenSettings = document.getElementById('btn-open-settings');
+
+                // Toggle Settings Window
+                if (btnOpenSettings && settingsBox) {
+                    btnOpenSettings.addEventListener('click', () => {
+                        settingsBox.style.display = '';
+                        if(settingsBox.classList.contains('hidden')) {
+                            settingsBox.classList.remove('hidden');
+                            settingsBox.classList.add('flex');
+                        } else {
+                            settingsBox.classList.add('hidden');
+                            settingsBox.classList.remove('flex', 'md:flex');
+                        }
+                    });
+                }
+
+                // Synchronize gravity toggles and state
+                function updateGravity(isChecked) {
+                    gravityEnabled = isChecked;
+                    if (gravToggle) gravToggle.checked = isChecked;
+                    if (footerGravToggle) footerGravToggle.checked = isChecked;
+                    
+                    // Reset jump state when toggled so they can fly/fall gracefully
+                    if(!gravityEnabled) {
+                        canJump = true; 
+                        isJumping = false;
+                    }
+                }
+
+                if (gravToggle) gravToggle.addEventListener('change', (e) => updateGravity(e.target.checked));
+                if (footerGravToggle) footerGravToggle.addEventListener('change', (e) => updateGravity(e.target.checked));
+
+                const bindKeys = Object.keys(keyBindings);
+                bindKeys.forEach(action => {
+                    const btn = document.getElementById(`btn-bind-${action}`);
+                    if(btn) {
+                        btn.innerText = keyBindings[action];
+                        btn.addEventListener('click', () => {
+                            if(waitingForKey) {
+                                document.getElementById(`btn-bind-${waitingForKey}`).classList.remove('bg-red-800', 'animate-pulse');
+                                document.getElementById(`btn-bind-${waitingForKey}`).innerText = keyBindings[waitingForKey];
+                            }
+                            waitingForKey = action;
+                            btn.innerText = "PRESS KEY";
+                            btn.classList.add('bg-red-800', 'animate-pulse');
+                        });
+                    }
+                });
+            }
+
+            function setupChronologyUI() {
+                const chronoWindow = document.getElementById('chrono-window');
+                const btnToggleChrono = document.getElementById('btn-toggle-chrono');
+                
+                if (chronoWindow) makeDraggable(chronoWindow, chronoWindow.querySelector('.drag-handle'));
+
+                if (btnToggleChrono && chronoWindow) {
+                    btnToggleChrono.addEventListener('click', () => {
+                        chronoWindow.style.display = '';
+                        if(chronoWindow.classList.contains('hidden')) {
+                            chronoWindow.classList.remove('hidden');
+                            chronoWindow.classList.add('flex');
+                        } else {
+                            chronoWindow.classList.add('hidden');
+                            chronoWindow.classList.remove('flex', 'md:flex');
+                        }
+                    });
+                }
+
+                const btnPlayPause = document.getElementById('btn-play-pause');
+                const scaleSlider = document.getElementById('chrono-scale');
+                const pulseSlider = document.getElementById('chrono-pulse');
+                const spinorSlider = document.getElementById('chrono-spinor');
+                
+                const scaleVal = document.getElementById('chrono-scale-val');
+                const pulseVal = document.getElementById('chrono-pulse-val');
+                const spinorVal = document.getElementById('chrono-spinor-val');
+
+                if (btnPlayPause) {
+                    btnPlayPause.addEventListener('click', () => {
+                        isTimePlaying = !isTimePlaying;
+                        btnPlayPause.innerText = isTimePlaying ? "PAUSE" : "PLAY";
+                        btnPlayPause.className = isTimePlaying 
+                            ? "bg-gray-800 border border-red-600 hover:bg-gray-700 text-red-400 font-bold px-3 py-1 rounded shadow-md"
+                            : "bg-red-800 border border-red-500 hover:bg-red-700 text-white font-bold px-3 py-1 rounded shadow-md animate-pulse";
+                    });
+                }
+
+                if (scaleSlider) {
+                    scaleSlider.addEventListener('input', (e) => {
+                        timeScale = parseFloat(e.target.value);
+                        if (scaleVal) scaleVal.innerText = timeScale.toFixed(1) + 'x';
+                    });
+                }
+
+                const handleManualScrub = (e, targetVarName, valElement) => {
+                    isTimePlaying = false;
+                    if (btnPlayPause) {
+                        btnPlayPause.innerText = "PLAY";
+                        btnPlayPause.className = "bg-red-800 border border-red-500 hover:bg-red-700 text-white font-bold px-3 py-1 rounded shadow-md animate-pulse";
+                    }
+                    const val = parseFloat(e.target.value);
+                    if (targetVarName === 'pulse') topologicalPulseFloat = val;
+                    if (targetVarName === 'spinor') spinorCycleFloat = val;
+                    if (valElement) valElement.innerText = val.toFixed(1);
+                };
+
+                if (pulseSlider) pulseSlider.addEventListener('input', (e) => handleManualScrub(e, 'pulse', pulseVal));
+                if (spinorSlider) spinorSlider.addEventListener('input', (e) => handleManualScrub(e, 'spinor', spinorVal));
+
+            const manifoldSlider = document.getElementById('chrono-manifold');
+            const manifoldVal = document.getElementById('chrono-manifold-val');
+            
+            if (manifoldSlider) {
+                manifoldSlider.addEventListener('input', (e) => {
+                    // Manual scrubbing halts automatic time progression
+                    isTimePlaying = false;
+                    if (btnPlayPause) {
+                        btnPlayPause.innerText = "PLAY";
+                        btnPlayPause.className = "bg-red-800 border border-red-500 hover:bg-red-700 text-white font-bold px-3 py-1 rounded shadow-md animate-pulse";
+                    }
+                    
+                    const val = parseFloat(e.target.value);
+                    codexProgress = val; // Directly manipulate the manifold unfolding state
+                    if (manifoldVal) manifoldVal.innerText = val.toFixed(2);
+                });
+            }
+
+            // Sync Toggle Binding
+            const syncToggle = document.getElementById('toggle-sync');
+            if (syncToggle) {
+                syncToggle.addEventListener('change', (e) => {
+                    globalLocalSync = e.target.checked;
+                });
+            }
+        }
+
+            function compileManifold(packet) {
+                voxelData = [];
+                let voxelIndex = 0;
+                const dummy = new THREE.Object3D();
+                
+                // 1. The Stator: Orthogonal Toroidal Manifold (Governed by Codex ID and Scale)
+                if (packet.codexId === 0 || packet.codexId === 1) {
+                    for (let n = 0; n < 5; n++) {
+                        // Protocol Integration: Scale Factor applies directly to Quadratic Major Radius Law
+                        const R_n = (5 * Math.pow(n, 2) + 15 * n + 15) * packet.scale; 
+                        const r_n = (2 * n + 4) * packet.scale;
+                        
+                        const segments = Math.floor(R_n * 1.5);
+                        for (let i = 0; i < segments; i++) {
+                            if (voxelIndex >= MAX_VOXELS - 2000) break;
+                            
+                            const theta = (i / segments) * Math.PI * 2;
+                            const ringSegments = 6 + n * 2;
+                            
+                            for (let j = 0; j < ringSegments; j++) {
+                                if (voxelIndex >= MAX_VOXELS - 2000) break;
+                                
+                                const phi = (j / ringSegments) * Math.PI * 2;
+                                
+                                let x = (R_n + r_n * Math.cos(phi)) * Math.cos(theta);
+                                let y = r_n * Math.sin(phi) - 5; 
+                                let z = (R_n + r_n * Math.cos(phi)) * Math.sin(theta);
+                                
+                                // Alternating Orthogonal Embedding
+                                if (n % 2 === 0) {
+                                    const temp = y; y = z; z = temp;
+                                }
+                                
+                                dummy.position.set(x, y, z);
+                                dummy.rotation.set(0, theta, phi);
+                                dummy.updateMatrix();
+                                
+                                // Protocol Integration: Topology state alters color resonance
+                                let hue = packet.topologyState === 1 ? 0.1 + (n * 0.02) : 0.6 + (n * 0.05); // Gold/Fire vs Cyan/Void
+                                const colorHsl = new THREE.Color().setHSL(hue, 0.8, 0.4 + Math.random() * 0.2);
+                                
+                                voxelData.push({
+                                    targetPos: dummy.position.clone(),
+                                    targetRot: dummy.quaternion.clone(),
+                                    targetScale: new THREE.Vector3(1, 1, 1).multiplyScalar(packet.scale),
+                                    seedPos: new THREE.Vector3(0, 15, 0),
+                                    seedRot: new THREE.Quaternion().identity(),
+                                    seedScale: new THREE.Vector3(0.01, 0.01, 0.01),
+                                    color: colorHsl
+                                });
+                                
+                                voxelMesh.setColorAt(voxelIndex, colorHsl);
+                                voxelMesh.setMatrixAt(voxelIndex, dummy.matrix);
+                                voxelIndex++;
+                            }
+                        }
+                    }
+                }
+
+                // 2. The Rotor / Data Streams (Governed by Codex ID and Torsion)
+                if (packet.codexId === 0 || packet.codexId === 2) {
+                    const trefoilSegments = MAX_VOXELS - voxelIndex; 
+                    for (let t = 0; t < trefoilSegments; t++) {
+                        const timeParam = (t / trefoilSegments) * Math.PI * 2;
+                        const scale = 25 * packet.scale;
+                        
+                        // Protocol Integration: Quaternion Orientation dictates Local Torsion
+                        const twist = packet.torsion;
+                        const tx = (Math.sin(timeParam) + 2 * Math.sin(2 * timeParam * twist)) * scale;
+                        const ty = (Math.cos(timeParam) - 2 * Math.cos(2 * timeParam * twist)) * scale + 40;
+                        const tz = (-Math.sin(3 * timeParam)) * scale;
+                        
+                        dummy.position.set(tx, ty, tz);
+                        dummy.lookAt(0, 40, 0); 
+                        dummy.updateMatrix();
+                        
+                        // Soliton Collapse coloring
+                        const glowColor = packet.topologyState === 1 ? new THREE.Color(COLORS.sky) : new THREE.Color(0xff44ff);
+                        
+                        voxelData.push({
+                            targetPos: dummy.position.clone(),
+                            targetRot: dummy.quaternion.clone(),
+                            targetScale: new THREE.Vector3(0.5, 0.5, 3.0),
+                            seedPos: new THREE.Vector3(0, 15, 0),
+                            seedRot: new THREE.Quaternion().identity(),
+                            seedScale: new THREE.Vector3(0.01, 0.01, 0.01),
+                            color: glowColor
+                        });
+                        
+                        voxelMesh.setColorAt(voxelIndex, glowColor);
+                        voxelMesh.setMatrixAt(voxelIndex, dummy.matrix);
+                        voxelIndex++;
+                    }
+                }
+                
+                voxelMesh.count = voxelIndex;
+                voxelMesh.instanceMatrix.needsUpdate = true;
+                if (voxelMesh.instanceColor) voxelMesh.instanceColor.needsUpdate = true;
+            }
+
+            function buildSensoryLattice() {
+                const latticeGroup = new THREE.Group();
+                
+                const pointsGeo = new THREE.BufferGeometry();
+                const points = [];
+                const colors = [];
+                const linesGeo = new THREE.BufferGeometry();
+                const linePoints = [];
+
+                const halfGrid = Math.floor(GRID_SIZE / 2);
+                
+                // Procedurally generate discrete 'Ems' and their relational edges
+                for(let x = -halfGrid; x <= halfGrid; x++) {
+                    for(let y = -halfGrid; y <= halfGrid; y++) {
+                        for(let z = -halfGrid; z <= halfGrid; z++) {
+                            const px = x * GRID_SPACING;
+                            const py = y * GRID_SPACING;
+                            const pz = z * GRID_SPACING;
+                            
+                            points.push(px, py, pz);
+                            
+                            // Calculate fade-out distance from center of the local projection
+                            const dist = Math.sqrt(px*px + py*py + pz*pz);
+                            const maxDist = halfGrid * GRID_SPACING;
+                            // Clamp alpha so it fades completely at edges
+                            const alpha = Math.max(0, 1.0 - (dist / maxDist));
+                            
+                            // Golden/Cyan magical energy mix
+                            colors.push(0.0, 0.8, 1.0, alpha);
+
+                            // Draw relational edges (only forward, up, right to avoid duplicates)
+                            if (x < halfGrid) linePoints.push(px, py, pz, px + GRID_SPACING, py, pz);
+                            if (y < halfGrid) linePoints.push(px, py, pz, px, py + GRID_SPACING, pz);
+                            if (z < halfGrid) linePoints.push(px, py, pz, px, py, pz + GRID_SPACING);
+                        }
+                    }
+                }
+
+                pointsGeo.setAttribute('position', new THREE.Float32BufferAttribute(points, 3));
+                pointsGeo.setAttribute('color', new THREE.Float32BufferAttribute(colors, 4));
+                linesGeo.setAttribute('position', new THREE.Float32BufferAttribute(linePoints, 3));
+
+                // Material for the discrete nodes
+                const pointMat = new THREE.PointsMaterial({ 
+                    size: 0.4, 
+                    vertexColors: true, 
+                    transparent: true, 
+                    depthWrite: false,
+                    blending: THREE.AdditiveBlending
+                });
+                
+                // Material for the relational edges
+                const lineMat = new THREE.LineBasicMaterial({ 
+                    color: 0x00aaff, 
+                    transparent: true, 
+                    opacity: 0.1, 
+                    depthWrite: false,
+                    blending: THREE.AdditiveBlending 
+                });
+
+                const pointsMesh = new THREE.Points(pointsGeo, pointMat);
+                const linesMesh = new THREE.LineSegments(linesGeo, lineMat);
+                
+                latticeGroup.add(pointsMesh);
+                latticeGroup.add(linesMesh);
+                
+                sensoryLattice = latticeGroup;
+                scene.add(sensoryLattice);
+            }
+
+            function updateSensoryLattice() {
+            if(!sensoryLattice || !player) return;
+
+            // O(1) Procedural Origin Snapping
+            // Snaps the grid manifold to the nearest discrete integer interval based on player position.
+            // This creates the illusion of moving through an infinite field without infinite memory overhead.
+            const snappedX = Math.round(player.position.x / GRID_SPACING) * GRID_SPACING;
+            const snappedY = Math.round(player.position.y / GRID_SPACING) * GRID_SPACING;
+            const snappedZ = Math.round(player.position.z / GRID_SPACING) * GRID_SPACING;
+
+            sensoryLattice.position.set(snappedX, snappedY, snappedZ);
+            
+            // Tie lattice energy directly to the SHD-CCP Topological Pulse
+            const pulse = (Math.sin(topologicalPulse * PI_6) + 1) / 2; // Normalized 0 to 1
+            sensoryLattice.children[1].material.opacity = 0.02 + (pulse * 0.15); // Relational edges pulse
+        }
+
+        function updatePlayerLocalLattice(time) {
+            if (!playerLatticeMesh || !player) return;
+
+            const dummy = new THREE.Object3D();
+            
+            // Mathematical entaglement with global ledger vs isolated local time
+            const phaseOffset = globalLocalSync ? (spinorCycle / 720) * Math.PI * 4 : time * 2;
+            const pulseResonance = globalLocalSync ? (Math.sin(topologicalPulse * PI_6) + 1) / 2 : 1.0;
+
+            // 64-bit Packet mapping onto a Trefoil Knot
+            for (let i = 0; i < 64; i++) {
+                // Procedural generation of the 16 fibers / 4 phases
+                const t = (i / 64) * Math.PI * 2 + phaseOffset;
+                
+                // Scale dynamically tied to resonance
+                const scale = 2.5 + (pulseResonance * 0.5);
+
+                // Parametric Trefoil Equations
+                const tx = (Math.sin(t) + 2 * Math.sin(2 * t)) * scale;
+                const ty = (Math.cos(t) - 2 * Math.cos(2 * t)) * scale;
+                const tz = (-Math.sin(3 * t)) * scale;
+
+                dummy.position.set(tx, ty, tz);
+                
+                // Orient towards flow direction for the lattice cubes
+                const nextT = t + 0.1;
+                const ntx = (Math.sin(nextT) + 2 * Math.sin(2 * nextT)) * scale;
+                const nty = (Math.cos(nextT) - 2 * Math.cos(2 * nextT)) * scale;
+                const ntz = (-Math.sin(3 * nextT)) * scale;
+                dummy.lookAt(ntx, nty, ntz);
+
+                // Add slight chaotic scatter if desynced
+                if (!globalLocalSync) {
+                    dummy.position.x += Math.sin(time * 5 + i) * 0.2;
+                    dummy.position.y += Math.cos(time * 4 + i) * 0.2;
+                    dummy.position.z += Math.sin(time * 6 + i) * 0.2;
+                }
+
+                dummy.updateMatrix();
+                playerLatticeMesh.setMatrixAt(i, dummy.matrix);
+            }
+            
+            // Track the player's position perfectly
+            playerLatticeMesh.position.copy(player.position);
+            
+            // Adjust colors based on Sync State
+            if (globalLocalSync) {
+                playerLatticeMesh.material.color.setHex(0x00ffff); // Synced Cyan
+                playerLatticeMesh.material.emissive.setHex(0x0055aa);
+            } else {
+                playerLatticeMesh.material.color.setHex(0xffaa00); // Desynced Warning Orange
+                playerLatticeMesh.material.emissive.setHex(0xaa3300);
+            }
+            
+            playerLatticeMesh.instanceMatrix.needsUpdate = true;
+            playerLatticeMesh.material.needsUpdate = true;
+        }
+
+        function updateSHD_CCP() {
+                const transitionSpeed = 0.015;
+                if (codexExpanded && codexProgress < 1.0) {
+                    codexProgress = Math.min(1.0, codexProgress + transitionSpeed);
+                } else if (!codexExpanded && codexProgress > 0.0) {
+                    codexProgress = Math.max(0.0, codexProgress - transitionSpeed);
+                }
+                
+                // Ease-out back function for spatial jump-ahead expansion
+                const easeOutBack = (x) => {
+                    const c1 = 1.70158;
+                    const c3 = c1 + 1;
+                    return 1 + c3 * Math.pow(x - 1, 3) + c1 * Math.pow(x - 1, 2);
+                };
+                
+                const p = easeOutBack(codexProgress);
+                const dummy = new THREE.Object3D();
+                
+                // 720-degree Spinor Cycle rotation (Quaternionic Delta Encoding)
+                const cycleAngle = (spinorCycle / 720) * Math.PI * 4; 
+                const globalRot = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), cycleAngle);
+
+                for (let i = 0; i < voxelMesh.count; i++) {
+                    const data = voxelData[i];
+                    
+                    // Spatial unfolding
+                    dummy.position.lerpVectors(data.seedPos, data.targetPos, p);
+                    
+                    // Prevent scale inversion during animation bounce
+                    const currentScale = Math.max(0.01, p);
+                    dummy.scale.lerpVectors(data.seedScale, data.targetScale, currentScale);
+                    
+                    // Apply target rotation, then global spinor, then local Pi/6 resonance wobble
+                    dummy.quaternion.slerpQuaternions(data.seedRot, data.targetRot, p);
+                    
+                    if (codexProgress > 0) {
+                        const localWobble = new THREE.Quaternion().setFromAxisAngle(
+                            new THREE.Vector3(1, 0, 0), 
+                            Math.sin(topologicalPulse * PI_6 + i * 0.05) * 0.05 * p
+                        );
+                        dummy.quaternion.multiply(localWobble);
+                        dummy.quaternion.premultiply(globalRot);
+                    }
+
+                    dummy.updateMatrix();
+                    voxelMesh.setMatrixAt(i, dummy.matrix);
+                }
+                voxelMesh.instanceMatrix.needsUpdate = true;
+            }
+
+            function executeResonanceHandshake() {
+                handshakeCount++;
+                
+                if (!playerLatticeMesh || !player) return;
+                
+                // Clone the player's 64-voxel lattice geometry and matrix state
+                const ghostMesh = new THREE.InstancedMesh(playerLatticeMesh.geometry, playerLatticeMesh.material.clone(), 64);
+                
+                // Copy the exact matrix array
+                const matrixArray = playerLatticeMesh.instanceMatrix.array;
+                ghostMesh.instanceMatrix = new THREE.InstancedBufferAttribute(new Float32Array(matrixArray), 16);
+                
+                // Set the world position
+                ghostMesh.position.copy(playerLatticeMesh.position);
+                
+                // Golden Ghost Material
+                ghostMesh.material.color.setHex(0xffd700); 
+                ghostMesh.material.emissive.setHex(0xff8c00);
+                ghostMesh.material.transparent = true;
+                ghostMesh.material.opacity = 0.8;
+                ghostMesh.material.depthWrite = false;
+                
+                scene.add(ghostMesh);
+                
+                handshakeGhosts.push({
+                    mesh: ghostMesh,
+                    life: 1.0 // Fade life
+                });
+            }
+
+            function checkCollision(position, direction, distance) {
+                // Simple raycast collision check
+                const raycaster = new THREE.Raycaster(position, direction, 0, distance);
+                const intersects = raycaster.intersectObjects(collidableMeshList);
+                return intersects.length > 0;
+            }
+
+            function onWindowResize() {
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+            }
+
+            function animate() {
+                requestAnimationFrame(animate);
+                
+                const time = Date.now() * 0.001;
+                const delta = clock.getDelta();
+
+                if (isTimePlaying) {
+                    // Update fractional counters to support independent speeds and reverse scale
+                    topologicalPulseFloat = (topologicalPulseFloat + (delta * timeScale * 60));
+                    spinorCycleFloat = (spinorCycleFloat + (delta * timeScale * 20)); // Base pacing for Spinor loop
+                    
+                    // modulo logic handling negative time scale
+                    const getMod = (val, max) => ((Math.floor(val) % max) + max) % max;
+                    
+                    topologicalPulse = getMod(topologicalPulseFloat, 60);
+                    spinorCycle = getMod(spinorCycleFloat, 720);
+                }
+                
+                // Keep sliders strictly synchronized with the current mathematical state
+                const chronoPulse = document.getElementById('chrono-pulse');
+                const chronoSpinor = document.getElementById('chrono-spinor');
+                const chronoManifold = document.getElementById('chrono-manifold');
+                
+                if (chronoPulse) { chronoPulse.value = topologicalPulse; document.getElementById('chrono-pulse-val').innerText = topologicalPulse; }
+            if (chronoSpinor) { chronoSpinor.value = spinorCycle; document.getElementById('chrono-spinor-val').innerText = spinorCycle; }
+            if (chronoManifold && isTimePlaying) { 
+                chronoManifold.value = codexProgress; 
+                document.getElementById('chrono-manifold-val').innerText = codexProgress.toFixed(2); 
+            }
+            
+            // Update HUD Telemetry
+                const pulseEl = document.getElementById('telemetry-pulse');
+                const spinorEl = document.getElementById('telemetry-spinor');
+                const codexEl = document.getElementById('telemetry-codex');
+                const resonanceEl = document.getElementById('telemetry-resonance');
+                
+                if(pulseEl) pulseEl.innerText = topologicalPulse;
+                if(spinorEl) spinorEl.innerText = spinorCycle;
+                if(codexEl) {
+                    if (codexProgress === 0) codexEl.innerText = "COMPRESSED (Seed)";
+                    else if (codexProgress === 1) codexEl.innerText = "EXPANDED (Manifold)";
+                    else codexEl.innerText = codexExpanded ? "UNFOLDING..." : "FOLDING...";
+                }
+                if(resonanceEl) {
+                    const currentPulseInt = Math.floor(topologicalPulse);
+                    const isResonant = (currentPulseInt % 10 === 0); // Pi/6 Alignment
+                    
+                    resonanceEl.innerText = isResonant ? "ALIGNED" : "SEARCHING...";
+                    resonanceEl.className = isResonant ? "text-green-400 font-bold" : "text-purple-300 font-bold";
+                    
+                    // --- THE PI/6 RESONANCE HANDSHAKE ---
+                    if (isResonant && currentPulseInt !== lastHandshakePulse) {
+                        lastHandshakePulse = currentPulseInt;
+                        executeResonanceHandshake();
+                    }
+                }
+                
+                const handshakeEl = document.getElementById('telemetry-handshakes');
+                if (handshakeEl) handshakeEl.innerText = handshakeCount;
+
+                // Update SHD-CCP Geometry
+            updateSHD_CCP();
+            
+            // Update Procedural Wireframe Substrate
+            updateSensoryLattice();
+            
+            // Update 64-Voxel Player Lattice (Decoupled Homomorphism)
+            updatePlayerLocalLattice(time, delta);
+            
+            // Update Handshake Data Ghosts (Fading the offloaded memory back into the manifold)
+            for (let i = handshakeGhosts.length - 1; i >= 0; i--) {
+                let ghost = handshakeGhosts[i];
+                ghost.life -= delta * 0.5; // Fade over 2 seconds
+                
+                if (ghost.life <= 0) {
+                    scene.remove(ghost.mesh);
+                    ghost.mesh.geometry.dispose();
+                    ghost.mesh.material.dispose();
+                    handshakeGhosts.splice(i, 1);
+                } else {
+                    ghost.mesh.material.opacity = ghost.life * 0.8;
+                    const expand = 1.0 + (1.0 - ghost.life) * 0.5;
+                    ghost.mesh.scale.setScalar(expand); // Expand slightly as it fades into the ether
+                }
+            }
+
+            // 1. Player Movement & Physics
+            if (player) {
+                    
+                    // Handle Turning
+                    if (window.activeKeys && (window.activeKeys[keyBindings.turnLeft] || window.activeKeys['ArrowLeft'])) {
+                        yaw += TURN_SPEED * delta;
+                        updateCameraRotation();
+                    }
+                    if (window.activeKeys && (window.activeKeys[keyBindings.turnRight] || window.activeKeys['ArrowRight'])) {
+                        yaw -= TURN_SPEED * delta;
+                        updateCameraRotation();
+                    }
+
+                    playerVelocity.x -= playerVelocity.x * 10.0 * delta;
+                    playerVelocity.z -= playerVelocity.z * 10.0 * delta;
+                    
+                    if (gravityEnabled) {
+                        playerVelocity.y -= GRAVITY * delta; 
+                    } else {
+                        // Apply friction to Y axis when flying (zero-g mode)
+                        playerVelocity.y -= playerVelocity.y * 10.0 * delta;
+                    }
+
+                    playerDirection.z = Number( moveForward ) - Number( moveBackward );
+                    playerDirection.x = Number( moveRight ) - Number( moveLeft );
+                    playerDirection.normalize(); // this ensures consistent movements in all directions
+
+                    if ( moveForward || moveBackward ) playerVelocity.z -= playerDirection.z * PLAYER_SPEED * delta;
+                    if ( moveLeft || moveRight ) playerVelocity.x -= playerDirection.x * PLAYER_SPEED * delta;
+
+                    // Camera-relative vertical thrust (Only active when gravity is disabled)
+                    if (!gravityEnabled) {
+                        let upDir = Number(moveUp) - Number(moveDown);
+                        if (upDir !== 0) {
+                            // Calculate the camera's UP vector within the player's local space (incorporating pitch)
+                            const localCamUp = new THREE.Vector3(0, 1, 0).applyEuler(new THREE.Euler(camera.rotation.x, 0, 0, 'XYZ'));
+                            
+                            // Add camera-relative vertical thrust to the player's local horizontal and global vertical velocity
+                            playerVelocity.x += localCamUp.x * upDir * PLAYER_SPEED * delta;
+                            playerVelocity.y += localCamUp.y * upDir * PLAYER_SPEED * delta;
+                            playerVelocity.z += localCamUp.z * upDir * PLAYER_SPEED * delta;
+                        }
+                    }
+
+                    // Calculate proposed new position
+                    // We need to move relative to the player's rotation
+                    
+                    // Create a matrix representing the player's current y-rotation
+                    const rotationMatrix = new THREE.Matrix4();
+                    rotationMatrix.makeRotationY(player.rotation.y);
+                    
+                    // Create a vector for the velocity and apply the rotation
+                    const velocityVector = new THREE.Vector3(playerVelocity.x, 0, playerVelocity.z).applyMatrix4(rotationMatrix);
+                    
+                    // Define collision distance buffer
+                    const collisionBuffer = 1.5;
+
+                    // Check X movement collision
+                    if(velocityVector.x !== 0) {
+                        const dirX = new THREE.Vector3(Math.sign(velocityVector.x), 0, 0);
+                        const pPos = player.position.clone();
+                        pPos.y -= 1; // Check at waist height
+                        if (!checkCollision(pPos, dirX, collisionBuffer)) {
+                            player.position.x += velocityVector.x * delta * 10;
+                        } else {
+                            playerVelocity.x = 0;
+                        }
+                    }
+
+                    // Check Z movement collision
+                    if(velocityVector.z !== 0) {
+                        const dirZ = new THREE.Vector3(0, 0, Math.sign(velocityVector.z));
+                        const pPos = player.position.clone();
+                        pPos.y -= 1;
+                        if (!checkCollision(pPos, dirZ, collisionBuffer)) {
+                            player.position.z += velocityVector.z * delta * 10;
+                        } else {
+                            playerVelocity.z = 0;
+                        }
+                    }
+
+                    // Simple terrain height mapping (assuming flat terrain near center, rolling hills outside)
+                    // Calculate terrain height at player's x/z
+                    const distFromCenter = Math.sqrt(player.position.x*player.position.x + player.position.z*player.position.z);
+                    let groundHeight = 0;
+                    if (distFromCenter > 80) {
+                        // Apply same noise function used in terrain generation but drop down outside the platform
+                        groundHeight = Math.sin(player.position.x/20) * 2 + Math.cos(player.position.z/20) * 2 - 5;
+                    } else {
+                        // Completely flat and stable on the Academy platform
+                        groundHeight = 0;
+                    }
+                    
+                    player.position.y += playerVelocity.y * delta; // apply gravity/jump
+
+                    if (gravityEnabled) {
+                        if ( player.position.y < (groundHeight + PLAYER_HEIGHT) ) {
+                            playerVelocity.y = 0;
+                            player.position.y = groundHeight + PLAYER_HEIGHT;
+                            canJump = true;
+                            isJumping = false;
+                        }
+                    } else {
+                        // Keep player from falling below the bounds of the terrain in zero-G
+                        if ( player.position.y < (groundHeight + PLAYER_HEIGHT) ) {
+                            playerVelocity.y = 0;
+                            player.position.y = groundHeight + PLAYER_HEIGHT;
+                        }
+                        // Allow infinite jumping/flying up in zero G by resetting jump
+                        canJump = true; 
+                    }
+                    
+                    // Keep player within bounds (rough bounds)
+                    player.position.x = Math.max(-140, Math.min(140, player.position.x));
+                    player.position.z = Math.max(-140, Math.min(140, player.position.z));
+                    
+                    // Animate player crystal
+                    if(player.userData.crystal) {
+                        player.userData.crystal.position.y = 1 + Math.sin(time * 3) * 0.2;
+                        player.userData.crystal.rotation.y += 0.02;
+                    }
+                }
+
+                renderer.render(scene, camera);
+            }
+
+            // Ensure scripts run after DOM is ready
+            document.addEventListener("DOMContentLoaded", () => {
+                init();
+                setupPlayerSettingsUI();
+                setupProtocolUI();
+                setupChronologyUI();
+            });
+
+        })();
+    </script>
+</body>
+</html>
