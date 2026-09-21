@@ -3,7 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Owl Academy - Celestial Library</title>
+    <title>Owl Academy - Celestial Library (Scholar)</title>
+    <!-- Auth Guard: hides the page until Firebase resolves, redirects to login.html if signed out -->
+    <script type="module" src="../scripts/auth-guard.js"></script>
     <!-- Tailwind CSS for UI overlay styling -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Three.js for 3D rendering -->
@@ -294,6 +296,36 @@
                 </div>
             </div>
 
+            <!-- Scholar Account Window (Google OAuth identity) -->
+            <div id="scholar-account-box" class="draggable-window absolute top-1/4 right-8 elvish-border rounded-xl bg-black bg-opacity-80 hidden flex-col shadow-2xl z-50 pointer-events-auto w-72 text-xs" style="border-image: linear-gradient(to bottom, #10b981, #065f46) 1;">
+                <div class="drag-handle bg-emerald-900 bg-opacity-40 p-2 rounded-t-xl border-b border-emerald-700 flex justify-between items-center">
+                    <span class="text-emerald-400 font-bold uppercase tracking-widest text-[10px]">Scholar Account</span>
+                    <div class="flex items-center space-x-2">
+                        <button class="collapse-toggle text-emerald-400 hover:text-white transition-colors focus:outline-none">▼</button>
+                        <span class="text-emerald-500">⠿</span>
+                    </div>
+                </div>
+                <div class="p-4 flex flex-col gap-3 text-gray-300 panel-content">
+                    <div class="flex items-center gap-3 border-b border-emerald-800 pb-3">
+                        <img id="scholar-avatar" src="" alt="" class="w-12 h-12 rounded-full border-2 border-emerald-600 object-cover hidden">
+                        <div class="w-12 h-12 rounded-full border-2 border-emerald-600 bg-emerald-950 flex items-center justify-center text-emerald-400 font-bold text-lg" id="scholar-avatar-fallback">?</div>
+                        <div class="min-w-0">
+                            <div id="scholar-name" class="text-emerald-200 font-bold truncate">Resolving…</div>
+                            <div id="scholar-email" class="text-gray-500 text-[10px] truncate"></div>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="text-gray-400 font-bold uppercase text-[9px]">Cosmological ID</label>
+                        <div id="scholar-cosmo-id" class="font-mono text-emerald-300 text-[10px] break-all mt-0.5">—</div>
+                        <a id="scholar-cosmo-link" href="Registrar.html" class="text-[9px] text-emerald-500 hover:text-emerald-300 underline hidden">Forge one in the Registrar →</a>
+                    </div>
+                    <button id="btn-scholar-signout" class="w-full py-2 bg-gradient-to-r from-emerald-800 to-emerald-900 text-emerald-100 rounded hover:from-emerald-700 hover:to-emerald-800 transition-all font-semibold uppercase tracking-wide border border-emerald-500 text-xs">
+                        Sign Out
+                    </button>
+                    <p class="text-[9px] text-gray-500 text-center">This identity is staged to bind your Familiar (Codex) to the lattice you see here.</p>
+                </div>
+            </div>
+
         </main>
 
         <!-- Footer -->
@@ -313,22 +345,19 @@
                         </svg>
                         Settings
                     </button>
+                    <button id="btn-toggle-scholar" class="text-emerald-400 hover:text-white bg-gray-900 border border-emerald-900 px-3 py-1 rounded text-xs transition-colors uppercase font-bold tracking-wider shadow-md" title="Toggle Scholar Account Window">Scholar</button>
                 </div>
 
                 <label class="flex items-center cursor-pointer text-xs" title="Toggle Gravity Protocol">
                     <span class="mr-2 uppercase text-purple-300 font-bold">Grav</span>
                     <input type="checkbox" id="footer-toggle-gravity" class="h-4 w-4 text-purple-600 rounded focus:ring-purple-500 bg-gray-800 border-gray-600">
                 </label>
+
+                <span id="footer-scholar-badge" class="text-[10px] text-emerald-400/80 font-mono truncate max-w-[140px]"></span>
             </div>
-            <div class="flex items-center space-x-4 mt-2 md:mt-0">
+            <div class="flex space-x-4 mt-2 md:mt-0">
                 <span class="flex items-center"><span class="w-2 h-2 rounded-full bg-green-500 mr-2 animate-pulse"></span> Magic Network Stable</span>
                 <span>WASD/QE to move | Drag to look</span>
-                <a href="../login.html?redirect=%2Fmage_tower%2FCelestial_Library_Scholar.html" class="flex items-center text-emerald-400 hover:text-white bg-gray-900 border border-emerald-900 px-3 py-1 rounded text-xs transition-colors uppercase font-bold tracking-wider shadow-md" title="Sign in with Google for your Scholar control panel">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 mr-1" viewBox="0 0 20 20" fill="currentColor">
-                        <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd" />
-                    </svg>
-                    Login
-                </a>
             </div>
         </footer>
     </div>
@@ -538,7 +567,10 @@
                 
                 const settingsBox = document.getElementById('player-settings-box');
                 if (settingsBox) makeDraggable(settingsBox, settingsBox.querySelector('.drag-handle'));
-                
+
+                const scholarBox = document.getElementById('scholar-account-box');
+                if (scholarBox) makeDraggable(scholarBox, scholarBox.querySelector('.drag-handle'));
+
                 const protoWindow = document.getElementById('protocol-window');
                 if (protoWindow) makeDraggable(protoWindow, protoWindow.querySelector('.drag-handle'));
 
@@ -574,6 +606,7 @@
                 setupPanelToggle('btn-toggle-protocol', 'protocol-window');
                 setupPanelToggle('btn-toggle-codex', 'welcome-box');
                 setupPanelToggle('btn-toggle-telemetry', 'shd-ccp-hud');
+                setupPanelToggle('btn-toggle-scholar', 'scholar-account-box');
 
                 // Add basic touch support for camera panning (placeholder for now, focus on desktop FP)
                 document.addEventListener('touchstart', (e) => {
@@ -1681,6 +1714,67 @@
             });
 
         })();
+    </script>
+
+    <!-- Scholar Account: binds the Scholar Account window + footer badge to the signed-in Google identity -->
+    <script type="module">
+        import { auth } from "../scripts/firebase/config.js";
+        import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-auth.js";
+        import { readRegistrar } from "../scripts/spire-registrar.js";
+
+        onAuthStateChanged(auth, async (user) => {
+            if (!user) return; // auth-guard.js already redirects to login.html in this case
+
+            const nameEl = document.getElementById('scholar-name');
+            const emailEl = document.getElementById('scholar-email');
+            const avatarEl = document.getElementById('scholar-avatar');
+            const avatarFallbackEl = document.getElementById('scholar-avatar-fallback');
+            const badgeEl = document.getElementById('footer-scholar-badge');
+
+            const displayName = user.displayName || user.email || 'Scholar';
+            if (nameEl) nameEl.innerText = displayName;
+            if (emailEl) emailEl.innerText = user.email || '';
+            if (badgeEl) badgeEl.innerText = `⬡ ${displayName}`;
+
+            if (user.photoURL && avatarEl) {
+                avatarEl.src = user.photoURL;
+                avatarEl.classList.remove('hidden');
+                if (avatarFallbackEl) avatarFallbackEl.classList.add('hidden');
+            } else if (avatarFallbackEl) {
+                avatarFallbackEl.innerText = displayName.charAt(0).toUpperCase();
+            }
+
+            // Show the panel by default once identity resolves — this page exists to show it.
+            const scholarBox = document.getElementById('scholar-account-box');
+            if (scholarBox && scholarBox.classList.contains('hidden')) {
+                scholarBox.classList.remove('hidden');
+                scholarBox.classList.add('flex');
+            }
+
+            // Surface a sealed Cosmological ID if this scholar already has one (Registrar.html),
+            // staging the eventual Familiar binding noted in BIOMESH_SYSTEM.md.
+            const cosmoIdEl = document.getElementById('scholar-cosmo-id');
+            const cosmoLinkEl = document.getElementById('scholar-cosmo-link');
+            try {
+                const registrar = await readRegistrar(user.uid);
+                if (registrar && registrar.sealed && cosmoIdEl) {
+                    cosmoIdEl.innerText = registrar.cosmologicalId;
+                } else if (cosmoIdEl && cosmoLinkEl) {
+                    cosmoIdEl.innerText = 'Not yet forged';
+                    cosmoLinkEl.classList.remove('hidden');
+                }
+            } catch (err) {
+                console.error('[Celestial Library] registrar lookup failed:', err);
+                if (cosmoIdEl) cosmoIdEl.innerText = 'Unavailable';
+            }
+        });
+
+        const signOutBtn = document.getElementById('btn-scholar-signout');
+        if (signOutBtn) {
+            signOutBtn.addEventListener('click', () => {
+                if (typeof window.globalLogout === 'function') window.globalLogout();
+            });
+        }
     </script>
 </body>
 </html>
