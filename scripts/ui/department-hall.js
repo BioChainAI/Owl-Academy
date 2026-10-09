@@ -20,6 +20,7 @@ import { renderTomeSVG } from "../tome-procgen.js";
 export const DEPARTMENTS = {
   I:    { roman: "I",    name: "Sacred Geometry & Topology", sub: "Foundations",          color: "#D4AF37", count: 9,  featured: [
           { href: "Sacred_Geometry/Platonic_Solids/index.html", label: "Lesson 1 — Platonic Solids & Symmetric Tessellations", tag: "Lesson 1 · Active Tome" },
+          { href: "Sacred_Geometry/Noble_Polyhedra/index.html", label: "Lesson 2 — Polyhedral Symmetry & Noble Polyhedra",     tag: "Lesson 2 · Active Tome" },
           { href: "Sacred_Geometry/SG_Main.html",               label: "Sacred Geometry — Main Hall" },
         ] },
   II:   { roman: "II",   name: "Cryptography & Sigils",      sub: "Geometric Theory",      color: "#a855f7", count: 9,  featured: { href: "Cryptography/Cryptography_main.html",      label: "Cryptography — Main" } },

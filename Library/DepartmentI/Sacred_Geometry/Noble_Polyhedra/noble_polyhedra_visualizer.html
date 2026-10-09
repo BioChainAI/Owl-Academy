@@ -1,0 +1,1339 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Owl Academy | Lesson 2: Polyhedral Symmetry &amp; Noble Polyhedra</title>
+    
+    <!-- External Libraries -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Inter:wght@300;400;500;600&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+    
+    <!-- MathJax Configuration -->
+    <script>
+        window.MathJax = {
+            tex: {
+                inlineMath: [['$', '$'], ['\\(', '\\)']],
+                displayMath: [['$$', '$$'], ['\\[', '\\]']]
+            }
+        };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+    <style>
+        :root {
+            --color-void: #05030a;
+            --color-primary: #D4AF37;
+            --color-primary-light: #FFF8DC;
+            --color-holo-cyan: #00d4ff;
+            --color-holo-purple: #8A2BE2;
+            --color-holo-emerald: #10b981;
+            --color-holo-rose: #f43f5e;
+        }
+
+        body {
+            background-color: var(--color-void);
+            color: #e2e8f0;
+            font-family: 'Inter', sans-serif;
+            background: radial-gradient(circle at 50% 0%, color-mix(in srgb, var(--color-holo-purple) 15%, var(--color-void)), var(--color-void) 80%);
+            min-height: 100vh;
+            margin: 0;
+            overflow-x: hidden;
+            line-height: 1.5;
+        }
+
+        .starfield {
+            position: fixed; inset: 0;
+            background-image:
+                radial-gradient(2px 2px at 20px 30px, var(--color-primary), rgba(0,0,0,0)),
+                radial-gradient(2px 2px at 40px 70px, #fff, rgba(0,0,0,0)),
+                radial-gradient(2px 2px at 50px 160px, rgba(255,255,255,0.8), rgba(0,0,0,0)),
+                radial-gradient(2px 2px at 90px 40px, #fff, rgba(0,0,0,0)),
+                radial-gradient(2px 2px at 130px 80px, var(--color-primary), rgba(0,0,0,0));
+            background-repeat: repeat; background-size: 250px 250px;
+            animation: twinkle 8s infinite alternate;
+            opacity: 0.15; z-index: -2; pointer-events: none;
+        }
+
+        @keyframes twinkle { 0% { opacity: 0.05; } 100% { opacity: 0.2; } }
+
+        h1, h2, h3, h4, h5, .mystical-font { font-family: 'Cinzel', serif; }
+
+        .gold-gradient {
+            background: linear-gradient(to right, var(--color-primary), var(--color-primary-light), var(--color-primary));
+            -webkit-background-clip: text; background-clip: text;
+            color: transparent; text-shadow: 0 0 15px color-mix(in srgb, var(--color-primary) 30%, transparent);
+        }
+
+        .glass-panel {
+            background: rgba(10, 8, 20, 0.7);
+            backdrop-filter: blur(16px);
+            border: 1px solid color-mix(in srgb, var(--color-primary) 20%, transparent);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5);
+        }
+
+        /* Nav Item Styling */
+        .nav-item {
+            transition: all 0.3s ease;
+            border-left: 3px solid transparent;
+        }
+        .nav-item.active {
+            background: linear-gradient(90deg, rgba(212, 175, 55, 0.18) 0%, transparent 100%);
+            border-left-color: var(--color-primary);
+            color: var(--color-primary-light);
+        }
+        .nav-item:hover:not(.active) {
+            background: rgba(255,255,255,0.05);
+            border-left-color: rgba(212, 175, 55, 0.4);
+        }
+
+        /* Sub-step Pill Navigation */
+        .step-pill {
+            transition: all 0.25s ease;
+            cursor: pointer;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        .step-pill.active {
+            background: rgba(212, 175, 55, 0.25);
+            border-color: var(--color-primary);
+            color: #ffffff;
+            box-shadow: 0 0 12px rgba(212, 175, 55, 0.3);
+        }
+        .step-pill:hover:not(.active) {
+            background: rgba(255,255,255,0.1);
+            border-color: rgba(255,255,255,0.3);
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 4px; height: 4px; }
+        ::-webkit-scrollbar-track { background: rgba(0,0,0,0.3); }
+        ::-webkit-scrollbar-thumb { background: color-mix(in srgb, var(--color-primary) 40%, transparent); border-radius: 10px; }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 0.5rem;
+            margin-bottom: 0.5rem;
+            font-size: 0.8rem;
+        }
+
+        th {
+            background: rgba(212, 175, 55, 0.15);
+            color: var(--color-primary-light);
+            font-family: 'Cinzel', serif;
+            text-align: left;
+            padding: 0.5rem 0.75rem;
+            border: 1px solid rgba(212, 175, 55, 0.3);
+        }
+
+        td {
+            padding: 0.5rem 0.75rem;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            background: rgba(0, 0, 0, 0.25);
+        }
+    </style>
+</head>
+<body class="antialiased flex flex-col h-screen overflow-hidden">
+
+    <!-- Atmospheric Background -->
+    <div class="starfield"></div>
+
+    <!-- Header -->
+    <header class="flex-shrink-0 w-full py-3 px-6 relative border-b border-yellow-600/20 bg-[#05030a]/80 backdrop-blur-md z-20 flex justify-between items-center shadow-lg">
+        <div>
+            <a href="../SG_Main.html" title="Return to Sacred Geometry" class="block hover:opacity-80 transition-opacity"><h1 class="text-lg md:text-2xl font-bold tracking-[0.2em] gold-gradient">OWL ACADEMY</h1></a>
+            <div class="text-[10px] text-yellow-600/80 tracking-[0.25em] uppercase mystical-font">
+                Department I · Lesson 2 · Polyhedral Symmetry, Self-Intersecting Faces, &amp; Noble Polyhedra
+            </div>
+        </div>
+        
+        <div class="flex items-center gap-2 md:gap-4">
+            <a href="index.html" class="px-3 py-1.5 rounded border border-yellow-600/40 text-yellow-500 hover:bg-yellow-500/10 transition-colors text-[10px] font-mono tracking-widest uppercase">◆ Lesson 2 Hub</a>
+            <a href="../Platonic_Solids/index.html" class="hidden md:inline-block px-3 py-1.5 rounded border border-white/10 text-gray-400 hover:text-white hover:border-white/30 transition-colors text-[10px] font-mono tracking-widest uppercase">← Lesson 1</a>
+            <!-- Auto-Rotate Checkbox Toggle -->
+            <div class="flex items-center gap-2 border border-yellow-500/30 px-3 py-1.5 rounded bg-black/40 backdrop-blur-md hover:bg-black/60 transition-colors">
+                <input type="checkbox" id="auto-rotate-checkbox" class="w-3.5 h-3.5 cursor-pointer accent-yellow-600">
+                <label for="auto-rotate-checkbox" class="text-[10px] text-yellow-400 font-mono tracking-widest cursor-pointer select-none">AUTO ROTATE</label>
+            </div>
+            
+            <div class="font-mono text-xs text-purple-400 border border-purple-500/30 px-3 py-1.5 rounded bg-purple-900/20 hidden lg:block">
+                TAXONOMY STATUS: <span class="text-emerald-400 animate-pulse">CLOSED (146 SPORADICS)</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Workspace Area -->
+    <div class="flex-1 flex flex-col md:flex-row overflow-hidden relative z-10 p-3 gap-3">
+        
+        <!-- Sidebar Section Navigation -->
+        <aside class="w-full md:w-1/4 max-w-[300px] glass-panel rounded-xl flex flex-col overflow-hidden flex-shrink-0">
+            <div class="p-3 border-b border-white/10 bg-black/40">
+                <h2 class="text-xs font-bold text-yellow-400 tracking-widest mystical-font uppercase">Section Modules</h2>
+            </div>
+            <nav class="flex-1 overflow-y-auto py-2" id="nav-container">
+                <!-- Nav items generated dynamically -->
+            </nav>
+            <div class="p-3 border-t border-white/10 bg-black/40 font-mono text-[10px] text-slate-400 flex items-center justify-between gap-2">
+                <span id="progress-summary">0 / 5 sections complete</span>
+                <a href="index.html#signoff" class="text-yellow-500 hover:text-yellow-300 tracking-widest uppercase">Signoff →</a>
+            </div>
+        </aside>
+
+        <!-- Content & Visualization Main Panel -->
+        <main class="flex-1 flex flex-col gap-3 h-full overflow-hidden">
+            
+            <!-- Interactive 3D Canvas Container -->
+            <div class="w-full h-[52%] min-h-[260px] glass-panel rounded-xl relative overflow-hidden shadow-[0_0_40px_rgba(138,43,226,0.15)_inset] flex-shrink-0 flex flex-col">
+                
+                <!-- Sub-Step Navigation Pills Top Bar -->
+                <div class="w-full bg-black/70 border-b border-white/10 px-4 py-2 flex items-center justify-between z-20 backdrop-blur-md gap-2 overflow-x-auto">
+                    <div class="flex items-center gap-2" id="sub-step-pills-container">
+                        <!-- Sub-step pill buttons generated dynamically -->
+                    </div>
+                    
+                    <div class="flex items-center gap-2 flex-shrink-0">
+                        <button id="btn-prev-sub" class="p-1.5 rounded border border-white/10 bg-white/5 hover:bg-yellow-500/20 text-slate-300 hover:text-white transition-colors disabled:opacity-30 disabled:cursor-not-allowed">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
+                        </button>
+                        <span id="sub-step-counter" class="font-mono text-[11px] text-yellow-400 font-bold px-2">1 / 5</span>
+                        <button id="btn-next-sub" class="p-1.5 rounded border border-white/10 bg-white/5 hover:bg-yellow-500/20 text-slate-300 hover:text-white transition-colors disabled:opacity-30 disabled:cursor-not-allowed">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 3D Canvas Viewport -->
+                <div id="canvas-container" class="w-full flex-1 relative"></div>
+                
+                <!-- HUD Overlay: Model Info -->
+                <div class="absolute bottom-3 left-3 z-20 font-mono text-[10px] bg-black/75 px-3 py-1.5 rounded border border-white/10 text-slate-300 backdrop-blur-md pointer-events-none">
+                    <span class="text-yellow-400 font-bold" id="vis-title">3D Visualization Viewport</span><br>
+                    <span class="text-slate-400">Click & Drag to Rotate | Scroll to Zoom</span>
+                </div>
+                
+                <!-- HUD Overlay: Real-time Stats -->
+                <div id="vis-overlay-data" class="absolute bottom-3 right-3 z-20 font-mono text-[10px] bg-black/85 px-3 py-2 rounded border border-purple-500/40 text-right backdrop-blur-md text-purple-300 pointer-events-none">
+                    <!-- Real-time HUD telemetry -->
+                </div>
+            </div>
+
+            <!-- Explainer Text Card (Synchronized with Sub-Step) -->
+            <div class="w-full flex-1 glass-panel rounded-xl flex flex-col overflow-hidden">
+                <div class="px-5 py-3 border-b border-white/10 bg-black/50 flex justify-between items-center flex-shrink-0">
+                    <div>
+                        <div class="flex items-center gap-2 mb-0.5">
+                            <span id="phase-badge" class="px-2 py-0.5 border border-cyan-500/30 rounded text-cyan-400 text-[9px] tracking-widest uppercase font-mono">Section 1</span>
+                            <span id="step-badge" class="px-2 py-0.5 border border-yellow-500/30 rounded text-yellow-400 text-[9px] tracking-widest uppercase font-mono">Step 1 of 5</span>
+                        </div>
+                        <h2 id="step-title" class="text-lg md:text-xl font-bold text-white mystical-font leading-tight">The Strict Classical Canon</h2>
+                    </div>
+                    <button id="mark-complete-btn" class="flex-shrink-0 ml-3 px-3 py-1.5 rounded border border-yellow-500/50 text-yellow-400 bg-yellow-500/5 hover:bg-yellow-500/15 text-[10px] font-mono font-bold tracking-widest uppercase transition-all disabled:cursor-default">Mark section complete ✓</button>
+                </div>
+                
+                <div class="p-5 overflow-y-auto flex-1 custom-scrollbar" id="step-content">
+                    <!-- Dynamic explainer content injected here -->
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <!-- Application Logic & Data Script -->
+    <script>
+        // ==========================================
+        // DATA STRUCTURE: 5 SECTIONS x 4-5 SUB-STEPS
+        // ==========================================
+        const sectionsData = [
+            {
+                id: "sec-1",
+                sectionTitle: "Section 1: The Architectural Shift",
+                badge: "Section 1",
+                badgeColor: "cyan",
+                subSteps: [
+                    {
+                        title: "1. The Platonic Canon & Strict Transitivity",
+                        pillLabel: "1. Platonic Canon",
+                        hudStats: "TAXONOMY: Platonic Solid<br>FORM: Regular Convex Dodecahedron<br>TRANSITIVITY: Faces, Edges, & Vertices",
+                        content: `
+                            <div class="space-y-3 text-xs md:text-sm text-slate-300 leading-relaxed">
+                                <p>In classical Euclidean geometry, a polyhedron is strictly regular if it meets three rigid transitivity conditions driven by its symmetry group $G$:</p>
+                                <ul class="list-disc pl-5 space-y-1 text-slate-300">
+                                    <li><strong class="text-cyan-400">Isohedral (Face-Transitive):</strong> Every face can be mapped onto any other face by a symmetry operation in $G$.</li>
+                                    <li><strong class="text-cyan-400">Isogonal (Vertex-Transitive):</strong> Every vertex orbit is identical.</li>
+                                    <li><strong class="text-cyan-400">Isotoxal (Edge-Transitive):</strong> Every edge has the exact same length and geometric relationship.</li>
+                                </ul>
+                                <div class="bg-black/40 border-l-2 border-cyan-500/50 p-3 rounded">
+                                    <strong class="text-cyan-300 block mb-1">Interactive Viewport:</strong>
+                                    The regular convex dodecahedron shown above features 12 congruent pentagons, 30 identical edges, and 20 identical vertices. Stretching a single edge instantly destroys its Platonic classification.
+                                </div>
+                            </div>
+                        `,
+                        initSubScene: (group) => {
+                            const geo = new THREE.DodecahedronGeometry(5, 0);
+                            const mat = new THREE.MeshPhysicalMaterial({ color: 0x00d4ff, transparent: true, opacity: 0.65, roughness: 0.2, metalness: 0.1 });
+                            const mesh = new THREE.Mesh(geo, mat);
+                            const wire = new THREE.LineSegments(new THREE.EdgesGeometry(geo), new THREE.LineBasicMaterial({ color: 0xffffff, linewidth: 2 }));
+                            mesh.add(wire);
+                            group.add(mesh);
+                            
+                            return (t, rt) => {
+                                group.rotation.y = rt * 0.3;
+                                group.rotation.x = Math.sin(rt * 0.2) * 0.15;
+                            };
+                        }
+                    },
+                    {
+                        title: "2. Relaxing Convexity: Kepler-Poinsot Star Solids",
+                        pillLabel: "2. Kepler-Poinsot",
+                        hudStats: "TAXONOMY: Kepler-Poinsot Solid<br>FORM: Small Stellated Dodecahedron<br>TRANSITIVITY: Preserved (Non-Convex)",
+                        content: `
+                            <div class="space-y-3 text-xs md:text-sm text-slate-300 leading-relaxed">
+                                <p>In 1619, Johannes Kepler relaxed the restriction of convexity by introducing <strong>self-intersecting star polygons</strong> (such as pentagrams). In 1809, Louis Poinsot proved that face planes can plunge directly through the interior core of a polyhedron.</p>
+                                <div class="bg-purple-900/20 border border-purple-500/30 p-3 rounded">
+                                    <strong class="text-purple-300 block mb-1">Key Insight:</strong>
+                                    Although the face planes interpenetrate each other, all faces remain regular pentagrams, maintaining face, edge, and vertex transitivity across the solid.
+                                </div>
+                            </div>
+                        `,
+                        initSubScene: (group) => {
+                            const starGroup = new THREE.Group();
+                            const coreGeo = new THREE.IcosahedronGeometry(3.0, 0);
+                            const coreMat = new THREE.MeshLambertMaterial({ color: 0x8A2BE2, wireframe: true });
+                            starGroup.add(new THREE.Mesh(coreGeo, coreMat));
+
+                            const posAttr = coreGeo.attributes.position;
+                            const pyrMat = new THREE.MeshPhysicalMaterial({ color: 0xf43f5e, side: THREE.DoubleSide, transparent: true, opacity: 0.75, roughness: 0.3 });
+                            
+                            for(let i=0; i<posAttr.count; i+=3) {
+                                const vA = new THREE.Vector3(posAttr.getX(i), posAttr.getY(i), posAttr.getZ(i));
+                                const vB = new THREE.Vector3(posAttr.getX(i+1), posAttr.getY(i+1), posAttr.getZ(i+1));
+                                const vC = new THREE.Vector3(posAttr.getX(i+2), posAttr.getY(i+2), posAttr.getZ(i+2));
+                                const center = new THREE.Vector3().add(vA).add(vB).add(vC).divideScalar(3);
+                                const tip = center.clone().multiplyScalar(2.3);
+
+                                const pyrGeo = new THREE.BufferGeometry();
+                                const vertices = new Float32Array([
+                                    vA.x, vA.y, vA.z,  vB.x, vB.y, vB.z,  tip.x, tip.y, tip.z,
+                                    vB.x, vB.y, vB.z,  vC.x, vC.y, vC.z,  tip.x, tip.y, tip.z,
+                                    vC.x, vC.y, vC.z,  vA.x, vA.y, vA.z,  tip.x, tip.y, tip.z
+                                ]);
+                                pyrGeo.setAttribute('position', new THREE.BufferAttribute(vertices, 3));
+                                pyrGeo.computeVertexNormals();
+                                starGroup.add(new THREE.Mesh(pyrGeo, pyrMat));
+                            }
+                            group.add(starGroup);
+
+                            return (t, rt) => {
+                                group.rotation.y = rt * 0.35;
+                                group.rotation.x = Math.cos(rt * 0.25) * 0.2;
+                            };
+                        }
+                    },
+                    {
+                        title: "3. Non-Convex Core Intersections",
+                        pillLabel: "3. Core Intersection",
+                        hudStats: "FEATURE: Deep Interpenetrating Planes<br>CORE: Slicing Interior Void<br>SYMMETRY: High Icosahedral $I_h$",
+                        content: `
+                            <div class="space-y-3 text-xs md:text-sm text-slate-300 leading-relaxed">
+                                <p>When planes cross through the interior center of a polyhedron, the solid's internal topology becomes distinct from its external appearance. The planes divide space into deep internal chambers.</p>
+                                <p>In the 3D model above, the outer wireframe bounding box is rendered alongside the internal intersecting face planes to demonstrate how the core is sliced into central sub-cells.</p>
+                            </div>
+                        `,
+                        initSubScene: (group) => {
+                            const coreGroup = new THREE.Group();
+                            const planeGeo = new THREE.PlaneGeometry(8, 8);
+                            const planeMat = new THREE.MeshStandardMaterial({ color: 0x00d4ff, side: THREE.DoubleSide, transparent: true, opacity: 0.45, roughness: 0.1 });
+
+                            for(let i=0; i<6; i++) {
+                                const plane = new THREE.Mesh(planeGeo, planeMat);
+                                plane.rotation.x = (i / 6) * Math.PI;
+                                plane.rotation.y = (i / 6) * Math.PI * 0.5;
+                                coreGroup.add(plane);
+                            }
+
+                            const outerWire = new THREE.LineSegments(
+                                new THREE.WireframeGeometry(new THREE.IcosahedronGeometry(5.5, 0)),
+                                new THREE.LineBasicMaterial({ color: 0xD4AF37 })
+                            );
+                            coreGroup.add(outerWire);
+                            group.add(coreGroup);
+
+                            return (t, rt) => {
+                                group.rotation.y = rt * 0.3;
+                                group.rotation.z = Math.sin(rt * 0.2) * 0.2;
+                            };
+                        }
+                    },
+                    {
+                        title: "4. The Noble Axiomatic Pivot",
+                        pillLabel: "4. Noble Pivot",
+                        hudStats: "AXIOM RELAXATION: Edge Transitivity Dropped<br>REQUIRED: Isohedral & Isogonal<br>FACES: Irregular Shapes Allowed",
+                        content: `
+                            <div class="space-y-3 text-xs md:text-sm text-slate-300 leading-relaxed">
+                                <p><strong>Noble Polyhedra</strong> represent a pivotal shift. They completely discard edge-transitivity and face-regularity, while strictly retaining two global properties:</p>
+                                <div class="grid grid-cols-2 gap-3 my-2">
+                                    <div class="p-2.5 bg-black/40 border border-yellow-500/30 rounded">
+                                        <strong class="text-yellow-400 block text-xs">1. Isohedral (Faces)</strong>
+                                        All faces are in a single symmetry orbit under group $G$.
+                                    </div>
+                                    <div class="p-2.5 bg-black/40 border border-cyan-500/30 rounded">
+                                        <strong class="text-cyan-400 block text-xs">2. Isogonal (Vertices)</strong>
+                                        All vertices are in a single symmetry orbit under group $G$.
+                                    </div>
+                                </div>
+                            </div>
+                        `,
+                        initSubScene: (group) => {
+                            const nobleGeo = new THREE.TetrahedronGeometry(5.5, 0);
+                            const nobleMat = new THREE.MeshStandardMaterial({ color: 0xD4AF37, roughness: 0.3, metalness: 0.8, side: THREE.DoubleSide });
+                            const mesh = new THREE.Mesh(nobleGeo, nobleMat);
+                            group.add(mesh);
+
+                            // Highlight Vertex Orbits in Cyan
+                            const vertSpheres = new THREE.Group();
+                            const vGeo = new THREE.SphereGeometry(0.4, 16, 16);
+                            const vMat = new THREE.MeshBasicMaterial({ color: 0x00d4ff });
+                            for(let i=0; i<4; i++) {
+                                const vP = new THREE.Vector3(nobleGeo.attributes.position.getX(i), nobleGeo.attributes.position.getY(i), nobleGeo.attributes.position.getZ(i));
+                                const sp = new THREE.Mesh(vGeo, vMat);
+                                sp.position.copy(vP);
+                                vertSpheres.add(sp);
+                            }
+                            group.add(vertSpheres);
+
+                            return (t, rt) => {
+                                group.rotation.y = rt * 0.4;
+                                const pulse = 1 + Math.sin(t * 4) * 0.15;
+                                vertSpheres.scale.setScalar(pulse);
+                            };
+                        }
+                    },
+                    {
+                        title: "5. Scalene Faces & False Surfaces",
+                        pillLabel: "5. False Surfaces",
+                        hudStats: "FACE SHAPE: Irregular Scalene Triangles<br>ANOMALY: False Surface Boundaries<br>CORE: Hidden Self-Intersections",
+                        content: `
+                            <div class="space-y-3 text-xs md:text-sm text-slate-300 leading-relaxed">
+                                <p>Because edge-transitivity is relaxed, a Noble polyhedron's faces do not need to be regular polygons. They can consist of highly irregular or scalene triangles.</p>
+                                <p>When these irregular faces intersect one another, they create <strong>false surface artifacts</strong>—visible exterior polygonal regions that are merely exposed fragments of large, intersecting interior planes.</p>
+                            </div>
+                        `,
+                        initSubScene: (group) => {
+                            const scaleneGroup = new THREE.Group();
+                            // Build asymmetric scalene tetrahedron
+                            const geo = new THREE.BufferGeometry();
+                            const vertices = new Float32Array([
+                                0, 5, 0,   -4, -3, 2,   5, -2, 1,
+                                0, 5, 0,   5, -2, 1,    1, -3, -4,
+                                0, 5, 0,   1, -3, -4,   -4, -3, 2,
+                                -4, -3, 2, 5, -2, 1,    1, -3, -4
+                            ]);
+                            geo.setAttribute('position', new THREE.BufferAttribute(vertices, 3));
+                            geo.computeVertexNormals();
+
+                            const mat = new THREE.MeshPhysicalMaterial({ color: 0xf43f5e, side: THREE.DoubleSide, roughness: 0.3, transparent: true, opacity: 0.8 });
+                            const mesh = new THREE.Mesh(geo, mat);
+                            const wire = new THREE.LineSegments(new THREE.WireframeGeometry(geo), new THREE.LineBasicMaterial({ color: 0xffffff, linewidth: 2 }));
+                            scaleneGroup.add(mesh, wire);
+                            group.add(scaleneGroup);
+
+                            return (t, rt) => {
+                                group.rotation.y = rt * 0.35;
+                                group.rotation.x = Math.sin(rt * 0.2) * 0.2;
+                            };
+                        }
+                    }
+                ]
+            },
+            {
+                id: "sec-2",
+                sectionTitle: "Section 2: 19th-Century Foundations & Infinite Families",
+                badge: "Section 2",
+                badgeColor: "yellow",
+                subSteps: [
+                    {
+                        title: "1. Physical Paper Modeling Limits (Hess & Brückner)",
+                        pillLabel: "1. Paper Limits",
+                        hudStats: "ERA: 19th-Century Geometry<br>LIMITATION: Finite Cardboard Thickness<br>PROBLEM: Core Vertex Bunching",
+                        content: `
+                            <div class="space-y-3 text-xs md:text-sm text-slate-300 leading-relaxed">
+                                <p>19th-century pioneers Edmund Hess and Max Brückner explored noble solids by constructing intricate hand-built paper models.</p>
+                                <ul class="list-disc pl-5 space-y-1">
+                                    <li><strong class="text-yellow-400">Cardboard Thickness:</strong> Real paper has non-zero thickness. When dozens of planes converge at the center, the paper bunches up, deforming the geometry.</li>
+                                    <li><strong class="text-yellow-400">Hidden Core:</strong> Interior intersecting edges were completely obscured from physical view.</li>
+                                </ul>
+                            </div>
+                        `,
+                        initSubScene: (group) => {
+                            const expGroup = new THREE.Group();
+                            // Exploded model demonstrating physical card assembly gaps
+                            for(let i=0; i<8; i++) {
+                                const geo = new THREE.BoxGeometry(2, 2, 0.2);
+                                const mat = new THREE.MeshStandardMaterial({ color: 0xD4AF37, roughness: 0.6 });
+                                const card = new THREE.Mesh(geo, mat);
+                                const angle = (i / 8) * Math.PI * 2;
+                                card.position.set(Math.cos(angle)*3, Math.sin(angle)*3, (i - 4)*0.4);
+                                card.rotation.z = angle;
+                                expGroup.add(card);
+                            }
+                            group.add(expGroup);
+
+                            return (t, rt) => {
+                                group.rotation.y = rt * 0.3;
+                                const explode = 1 + Math.sin(t * 2) * 0.3;
+                                expGroup.children.forEach((child, idx) => {
+                                    const a = (idx / 8) * Math.PI * 2;
+                                    child.position.x = Math.cos(a) * 3 * explode;
+                                    child.position.y = Math.sin(a) * 3 * explode;
+                                });
+                            };
+                        }
+                    },
+                    {
+                        title: "2. Family 1: Disphenoid Tetrahedra (Morphing Continuum)",
+                        pillLabel: "2. Disphenoid Continuum",
+                        hudStats: "FAMILY 1: Disphenoid Tetrahedron<br>PARAMETER: 2-Parameter Continuum<br>SYMMETRY: $D_2$ Point-Group",
+                        content: `
+                            <div class="space-y-3 text-xs md:text-sm text-slate-300 leading-relaxed">
+                                <p>The first infinite family consists of tetrahedra bounded by four identical acute scalene triangles with $D_2$ point symmetry.</p>
+                                <div class="bg-yellow-900/20 border border-yellow-500/30 p-3 rounded">
+                                    <strong class="text-yellow-300 block mb-1">Continuous Deformation:</strong>
+                                    You can smoothly stretch or squash a disphenoid like rubber while maintaining identical faces, creating a continuous 2-parameter family of noble tetrahedra.
+                                </div>
+                            </div>
+                        `,
+                        initSubScene: (group) => {
+                            const dispGeo = new THREE.BufferGeometry();
+                            const pos = new Float32Array(4 * 3);
+                            dispGeo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+                            dispGeo.setIndex([0,1,2,  0,2,3,  0,3,1,  1,3,2]);
+
+                            const mat = new THREE.MeshPhysicalMaterial({ color: 0xD4AF37, side: THREE.DoubleSide, roughness: 0.2, metalness: 0.6 });
+                            const mesh = new THREE.Mesh(dispGeo, mat);
+                            const wire = new THREE.LineSegments(new THREE.WireframeGeometry(dispGeo), new THREE.LineBasicMaterial({ color: 0xffffff }));
+                            mesh.add(wire);
+                            group.add(mesh);
+
+                            return (t, rt) => {
+                                const a = 4 + Math.sin(t * 2.5) * 1.5;
+                                const b = 3 + Math.cos(t * 2) * 1.2;
+                                const p = dispGeo.attributes.position.array;
+                                p[0]=a; p[1]=b; p[2]=0;
+                                p[3]=-a; p[4]=-b; p[5]=0;
+                                p[6]=0; p[7]=a; p[8]=b;
+                                p[9]=0; p[10]=-a; p[11]=-b;
+                                dispGeo.attributes.position.needsUpdate = true;
+                                dispGeo.computeVertexNormals();
+
+                                mesh.rotation.y = rt * 0.4;
+                            };
+                        }
+                    },
+                    {
+                        title: "3. Family 2: Stephenoids ($n=3, 4$ Prism Faceting)",
+                        pillLabel: "3. Stephenoids (n=3,4)",
+                        hudStats: "FAMILY 2: Discrete Stephenoids<br>BASE: Prism Faceting ($n=3, 4$)<br>FACES: Non-Convex Bow-Tie Quads",
+                        content: `
+                            <div class="space-y-3 text-xs md:text-sm text-slate-300 leading-relaxed">
+                                <p>Derived from the Greek <em>stephanos</em> (crown), <strong>stephenoids</strong> are formed by faceting regular $n$-gonal prisms and antiprisms.</p>
+                                <p>For $n=3$ and $n=4$, the faces are non-convex, self-crossing quadrilaterals that resemble interlocking bow-ties or butterflies.</p>
+                            </div>
+                        `,
+                        initSubScene: (group) => {
+                            const stGroup = new THREE.Group();
+                            const n = 4, r = 5, h = 3;
+                            const mat = new THREE.MeshStandardMaterial({ color: 0x8A2BE2, side: THREE.DoubleSide, roughness: 0.3 });
+
+                            for(let i=0; i<n; i++) {
+                                const a1 = (i / n) * Math.PI * 2;
+                                const a2 = ((i + 1) / n) * Math.PI * 2;
+                                const v1 = new THREE.Vector3(Math.cos(a1)*r, -h, Math.sin(a1)*r);
+                                const v2 = new THREE.Vector3(Math.cos(a2)*r, h, Math.sin(a2)*r);
+                                const v3 = new THREE.Vector3(Math.cos(a2)*r, -h, Math.sin(a2)*r);
+                                const v4 = new THREE.Vector3(Math.cos(a1)*r, h, Math.sin(a1)*r);
+
+                                const fGeo = new THREE.BufferGeometry();
+                                const verts = new Float32Array([
+                                    v1.x,v1.y,v1.z,  v2.x,v2.y,v2.z,  v3.x,v3.y,v3.z,
+                                    v1.x,v1.y,v1.z,  v3.x,v3.y,v3.z,  v4.x,v4.y,v4.z
+                                ]);
+                                fGeo.setAttribute('position', new THREE.BufferAttribute(verts, 3));
+                                fGeo.computeVertexNormals();
+                                stGroup.add(new THREE.Mesh(fGeo, mat));
+                            }
+                            group.add(stGroup);
+
+                            return (t, rt) => {
+                                group.rotation.y = rt * 0.35;
+                            };
+                        }
+                    },
+                    {
+                        title: "4. High-Order Stephenoids ($n=6+$ Spiked Crown)",
+                        pillLabel: "4. Stephenoids (n=6+)",
+                        hudStats: "DISCRETE SERIES: Higher-Order $n=6$<br>FORM: Hexagonal Spiked Crown<br>PROPERTY: Intersecting Ribbons",
+                        content: `
+                            <div class="space-y-3 text-xs md:text-sm text-slate-300 leading-relaxed">
+                                <p>As $n$ increases ($n=6, 8, 10\\dots$), stephenoids form intricate spiked crowns bounded by overlapping ribbon-like faces.</p>
+                                <p>Unlike disphenoids, stephenoids form a <strong>discrete infinite family</strong>—you cannot smoothly deform $n=3$ into $n=4$; you must make a discrete jump in vertex count.</p>
+                            </div>
+                        `,
+                        initSubScene: (group) => {
+                            const stGroup = new THREE.Group();
+                            const n = 6, r = 5.5, h = 3.5;
+                            const mat = new THREE.MeshStandardMaterial({ color: 0x10b981, side: THREE.DoubleSide, roughness: 0.3, metalness: 0.4 });
+
+                            for(let i=0; i<n; i++) {
+                                const a1 = (i / n) * Math.PI * 2;
+                                const a2 = ((i + 2) / n) * Math.PI * 2;
+                                const v1 = new THREE.Vector3(Math.cos(a1)*r, -h, Math.sin(a1)*r);
+                                const v2 = new THREE.Vector3(Math.cos(a2)*r, h, Math.sin(a2)*r);
+                                const v3 = new THREE.Vector3(Math.cos(a2+0.5)*r, -h, Math.sin(a2+0.5)*r);
+
+                                const fGeo = new THREE.BufferGeometry();
+                                const verts = new Float32Array([v1.x,v1.y,v1.z, v2.x,v2.y,v2.z, v3.x,v3.y,v3.z]);
+                                fGeo.setAttribute('position', new THREE.BufferAttribute(verts, 3));
+                                fGeo.computeVertexNormals();
+                                stGroup.add(new THREE.Mesh(fGeo, mat));
+                            }
+                            group.add(stGroup);
+
+                            return (t, rt) => {
+                                group.rotation.y = rt * 0.3;
+                                group.rotation.x = Math.sin(rt * 0.2) * 0.15;
+                            };
+                        }
+                    },
+                    {
+                        title: "5. Continuous vs. Discrete Topology Comparison",
+                        pillLabel: "5. Continuous vs Discrete",
+                        hudStats: "LEFT: Disphenoid (Continuous Continuum)<br>RIGHT: Stephenoid (Discrete Series)<br>TAXONOMY: The Two Infinite Families",
+                        content: `
+                            <div class="space-y-3 text-xs md:text-sm text-slate-300 leading-relaxed">
+                                <p>Together, Disphenoids and Stephenoids comprise the <strong>only two infinite families</strong> of noble polyhedra in 3D space.</p>
+                                <p>Disphenoids offer a continuous smooth morphing spectrum, while Stephenoids jump step-by-step through integer values of $n$.</p>
+                            </div>
+                        `,
+                        initSubScene: (group) => {
+                            const dualGroup = new THREE.Group();
+                            
+                            // Left: Disphenoid
+                            const g1 = new THREE.TetrahedronGeometry(3.5, 0);
+                            const m1 = new THREE.MeshStandardMaterial({ color: 0xD4AF37, wireframe: true });
+                            const mesh1 = new THREE.Mesh(g1, m1);
+                            mesh1.position.x = -5;
+
+                            // Right: Stephenoid
+                            const g2 = new THREE.CylinderGeometry(3.5, 3.5, 4, 5, 1, true);
+                            const m2 = new THREE.MeshStandardMaterial({ color: 0x8A2BE2, wireframe: true });
+                            const mesh2 = new THREE.Mesh(g2, m2);
+                            mesh2.position.x = 5;
+
+                            dualGroup.add(mesh1, mesh2);
+                            group.add(dualGroup);
+
+                            return (t, rt) => {
+                                mesh1.rotation.y = rt * 0.5;
+                                mesh2.rotation.y = -rt * 0.5;
+                            };
+                        }
+                    }
+                ]
+            },
+            {
+                id: "sec-3",
+                sectionTitle: "Section 3: Algorithmic Faceting & Digital Revolution",
+                badge: "Section 3",
+                badgeColor: "fuchsia",
+                subSteps: [
+                    {
+                        title: "1. Stellation vs. Faceting Mechanics",
+                        pillLabel: "1. Stellation vs Faceting",
+                        hudStats: "DUAL OPERATIONS: Inverse Spatial Processes<br>STELLATION: Outward Face Extension<br>FACETING: Inward Core Slicing",
+                        content: `
+                            <div class="space-y-3 text-xs md:text-sm text-slate-300 leading-relaxed">
+                                <p>Noble polyhedra discovery relies on two dual geometric operations:</p>
+                                <ul class="list-disc pl-5 space-y-1">
+                                    <li><strong class="text-cyan-400">Stellation:</strong> Extends existing face planes outward into deep space until they intersect to form new outer vertices.</li>
+                                    <li><strong class="text-fuchsia-400">Faceting:</strong> Locks existing vertices, discards outer skin, and slices new face planes through the interior core.</li>
+                                </ul>
+                            </div>
+                        `,
+                        initSubScene: (group) => {
+                            const octGeo = new THREE.OctahedronGeometry(4, 0);
+                            const octMat = new THREE.MeshStandardMaterial({ color: 0x00d4ff, wireframe: true });
+                            const octMesh = new THREE.Mesh(octGeo, octMat);
+
+                            const innerPlanes = new THREE.Group();
+                            const pGeo = new THREE.BufferGeometry();
+                            const pVerts = new Float32Array([ -3,0,3,  3,0,3,  0,4,0,  -3,0,-3, 3,0,-3, 0,4,0 ]);
+                            pGeo.setAttribute('position', new THREE.BufferAttribute(pVerts, 3));
+                            const pMat = new THREE.MeshBasicMaterial({ color: 0xf43f5e, side: THREE.DoubleSide, transparent: true, opacity: 0.6 });
+                            innerPlanes.add(new THREE.Mesh(pGeo, pMat));
+
+                            group.add(octMesh, innerPlanes);
+
+                            return (t, rt) => {
+                                group.rotation.y = rt * 0.35;
+                                octMesh.scale.setScalar(1 + Math.sin(t * 2) * 0.15);
+                            };
+                        }
+                    },
+                    {
+                        title: "2. Edmund Hess's Faceted Dodecahedron",
+                        pillLabel: "2. Hess Dodecahedron",
+                        hudStats: "HISTORICAL DISCOVERY: Edmund Hess (1878)<br>ANCHOR: 20 Dodecahedron Vertices<br>PLANES: 12 Interpenetrating Triangles",
+                        content: `
+                            <div class="space-y-3 text-xs md:text-sm text-slate-300 leading-relaxed">
+                                <p>Edmund Hess locked all 20 vertices of the regular dodecahedron, discarded its outer pentagons, and rewired the vertices using long internal diagonal triangles.</p>
+                                <p>The result is a striking Noble solid where 12 large triangular planes interpenetrate each other through the interior center.</p>
+                            </div>
+                        `,
+                        initSubScene: (group) => {
+                            const dodecGeo = new THREE.DodecahedronGeometry(5.5, 0);
+                            const vertPos = dodecGeo.attributes.position;
+                            const vSpheres = new THREE.Group();
+                            const sGeo = new THREE.SphereGeometry(0.25, 12, 12);
+                            const sMat = new THREE.MeshBasicMaterial({ color: 0x00d4ff });
+
+                            for(let i=0; i<vertPos.count; i++) {
+                                const sp = new THREE.Mesh(sGeo, sMat);
+                                sp.position.set(vertPos.getX(i), vertPos.getY(i), vertPos.getZ(i));
+                                vSpheres.add(sp);
+                            }
+                            group.add(vSpheres);
+
+                            const facetGroup = new THREE.Group();
+                            const fMat = new THREE.MeshPhysicalMaterial({ color: 0xf43f5e, side: THREE.DoubleSide, transparent: true, opacity: 0.5 });
+                            for(let i=0; i<12; i++) {
+                                const v1 = new THREE.Vector3(vertPos.getX(i), vertPos.getY(i), vertPos.getZ(i));
+                                const v2 = new THREE.Vector3(vertPos.getX((i+5)%20), vertPos.getY((i+5)%20), vertPos.getZ((i+5)%20));
+                                const v3 = new THREE.Vector3(vertPos.getX((i+10)%20), vertPos.getY((i+10)%20), vertPos.getZ((i+10)%20));
+                                const triGeo = new THREE.BufferGeometry();
+                                triGeo.setAttribute('position', new THREE.BufferAttribute(new Float32Array([v1.x,v1.y,v1.z, v2.x,v2.y,v2.z, v3.x,v3.y,v3.z]), 3));
+                                triGeo.computeVertexNormals();
+                                facetGroup.add(new THREE.Mesh(triGeo, fMat));
+                            }
+                            group.add(facetGroup);
+
+                            return (t, rt) => {
+                                group.rotation.y = rt * 0.3;
+                                group.rotation.x = Math.sin(rt * 0.2) * 0.2;
+                            };
+                        }
+                    },
+                    {
+                        title: "3. Digital Revolution & 'Stellar' Software",
+                        pillLabel: "3. Software Revolution",
+                        hudStats: "SOFTWARE: 'Stellar' (Robert Webb)<br>ACCURACY: Exact Floating-Point Matrices<br>INSPECTION: Instant Orbit Verification",
+                        content: `
+                            <div class="space-y-3 text-xs md:text-sm text-slate-300 leading-relaxed">
+                                <p>Created by Robert Webb, the software program <em>Stellar</em> revolutionized polyhedron research by automating faceting calculations using exact coordinate transformation matrices.</p>
+                                <p>Digital models overcome physical paper degradation, ensuring zero thickness errors and instant symmetry testing.</p>
+                            </div>
+                        `,
+                        initSubScene: (group) => {
+                            const gridGeo = new THREE.IcosahedronGeometry(5, 1);
+                            const gridMat = new THREE.MeshBasicMaterial({ color: 0x8A2BE2, wireframe: true });
+                            const mesh = new THREE.Mesh(gridGeo, gridMat);
+                            group.add(mesh);
+
+                            return (t, rt) => {
+                                mesh.rotation.y = rt * 0.4;
+                                mesh.rotation.z = rt * 0.2;
+                            };
+                        }
+                    },
+                    {
+                        title: "4. Interactive Planar Clipping",
+                        pillLabel: "4. Planar Clipping",
+                        hudStats: "TOOL: Dynamic Planar Cross-Section<br>CAPABILITY: Peering Inside Complex Cores<br>REVEALS: Internal Edge Intersections",
+                        content: `
+                            <div class="space-y-3 text-xs md:text-sm text-slate-300 leading-relaxed">
+                                <p>Digital software allows researchers to slice polyhedra in half using an interactive <strong>clipping plane</strong>.</p>
+                                <p>This reveals the hidden interior core and validates whether internal edges cross cleanly without topological breakdown.</p>
+                            </div>
+                        `,
+                        initSubScene: (group) => {
+                            const clipGroup = new THREE.Group();
+                            const g = new THREE.DodecahedronGeometry(5, 0);
+                            const m = new THREE.MeshStandardMaterial({ color: 0x10b981, side: THREE.DoubleSide });
+                            const mesh = new THREE.Mesh(g, m);
+
+                            const cuttingPlane = new THREE.Mesh(
+                                new THREE.PlaneGeometry(12, 12),
+                                new THREE.MeshBasicMaterial({ color: 0xf43f5e, side: THREE.DoubleSide, transparent: true, opacity: 0.4 })
+                            );
+                            cuttingPlane.rotation.x = Math.PI / 2;
+                            clipGroup.add(mesh, cuttingPlane);
+                            group.add(clipGroup);
+
+                            return (t, rt) => {
+                                group.rotation.y = rt * 0.3;
+                                cuttingPlane.position.y = Math.sin(t * 3) * 3;
+                            };
+                        }
+                    },
+                    {
+                        title: "5. Face Unwrapping & Polygon Analysis",
+                        pillLabel: "5. Face Unwrapping",
+                        hudStats: "TOOL: 3D-to-2D Face Projection<br>ACTION: Extracting Single Intersecting Face<br>REVEALS: True 2D Polygon Geometry",
+                        content: `
+                            <div class="space-y-3 text-xs md:text-sm text-slate-300 leading-relaxed">
+                                <p>When faces plunge through each other, their true 2D polygon shape is obscured. Software allows single faces to be unwrapped and flattened into a 2D plane for direct mathematical analysis.</p>
+                            </div>
+                        `,
+                        initSubScene: (group) => {
+                            const flatGeo = new THREE.BufferGeometry();
+                            const verts = new Float32Array([ -3, -2, 0,   3, -2, 0,   2, 3, 0,   -2, 3, 0 ]);
+                            flatGeo.setAttribute('position', new THREE.BufferAttribute(verts, 3));
+                            flatGeo.setIndex([0,1,2, 0,2,3]);
+                            flatGeo.computeVertexNormals();
+
+                            const mat = new THREE.MeshStandardMaterial({ color: 0xD4AF37, side: THREE.DoubleSide, roughness: 0.3 });
+                            const mesh = new THREE.Mesh(flatGeo, mat);
+                            group.add(mesh);
+
+                            return (t, rt) => {
+                                mesh.rotation.y = Math.sin(t * 2) * 0.8;
+                                mesh.rotation.x = Math.cos(t * 1.5) * 0.4;
+                            };
+                        }
+                    }
+                ]
+            },
+            {
+                id: "sec-4",
+                sectionTitle: "Section 4: Computer Discoveries & Topological Anomalies",
+                badge: "Section 4",
+                badgeColor: "emerald",
+                subSteps: [
+                    {
+                        title: "1. Webb's 'Ugly Duckling' (Faceted Snub Cube)",
+                        pillLabel: "1. 'Ugly Duckling'",
+                        hudStats: "DISCOVERY: Robert Webb (2008)<br>BASE: Archimedean Snub Cube Vertices<br>FACES: 24 Irregular Pentagons",
+                        content: `
+                            <div class="space-y-3 text-xs md:text-sm text-slate-300 leading-relaxed">
+                                <p>In 2008, Robert Webb targeted a non-noble base solid: the Archimedean snub cube. By faceting its 24 vertices, he discovered the <strong>Noble Faceted Snub Cube</strong>.</p>
+                                <p>Nicknamed the "ugly duckling" due to its jagged exterior, it proved that noble polyhedra can be derived from semi-regular base solids.</p>
+                            </div>
+                        `,
+                        initSubScene: (group) => {
+                            const snubGroup = new THREE.Group();
+                            const faceCount = 24;
+                            const mat = new THREE.MeshStandardMaterial({ color: 0x10b981, side: THREE.DoubleSide, roughness: 0.3, metalness: 0.5 });
+
+                            for(let i=0; i<faceCount; i++) {
+                                const angle = (i / faceCount) * Math.PI * 2;
+                                const r = 5.0;
+                                const pGeo = new THREE.BufferGeometry();
+                                const v0 = new THREE.Vector3(Math.cos(angle)*r, Math.sin(angle)*r, Math.sin(i)*2);
+                                const v1 = new THREE.Vector3(Math.cos(angle+0.3)*(r*1.2), Math.sin(angle+0.3)*(r*0.8), Math.cos(i)*2);
+                                const v2 = new THREE.Vector3(Math.cos(angle+0.5)*(r*0.4), Math.sin(angle+0.5)*(r*0.4), 0);
+                                const v3 = new THREE.Vector3(Math.cos(angle+0.2)*(r*0.7), Math.sin(angle+0.2)*(r*1.1), -Math.sin(i)*2);
+
+                                const verts = new Float32Array([ v0.x,v0.y,v0.z, v1.x,v1.y,v1.z, v2.x,v2.y,v2.z, v0.x,v0.y,v0.z, v2.x,v2.y,v2.z, v3.x,v3.y,v3.z ]);
+                                pGeo.setAttribute('position', new THREE.BufferAttribute(verts, 3));
+                                pGeo.computeVertexNormals();
+                                snubGroup.add(new THREE.Mesh(pGeo, mat));
+                            }
+                            group.add(snubGroup);
+
+                            return (t, rt) => {
+                                snubGroup.rotation.y = rt * 0.4;
+                                snubGroup.rotation.z = rt * 0.2;
+                            };
+                        }
+                    },
+                    {
+                        title: "2. Unwrapping the 'Goldfish' Pentagons",
+                        pillLabel: "2. 'Goldfish' Pentagons",
+                        hudStats: "FACE TOPOLOGY: Irregular Non-Convex Pentagon<br>NICKNAME: 'Goldfish' Polygon<br>COUNT: 24 Identical Intersecting Faces",
+                        content: `
+                            <div class="space-y-3 text-xs md:text-sm text-slate-300 leading-relaxed">
+                                <p>When a single face of the Noble Faceted Snub Cube is unwrapped, its outline resembles a swimming <strong>goldfish</strong>.</p>
+                                <p>Despite its highly irregular, asymmetrical shape, all 24 goldfish pentagons in the solid are strictly identical and transitive.</p>
+                            </div>
+                        `,
+                        initSubScene: (group) => {
+                            const fishGeo = new THREE.BufferGeometry();
+                            const verts = new Float32Array([
+                                0, 3, 0,    2, 1, 0,    1, -2, 0,   -1, -2, 0,   -2, 1, 0
+                            ]);
+                            fishGeo.setAttribute('position', new THREE.BufferAttribute(verts, 3));
+                            fishGeo.setIndex([0,1,2, 0,2,3, 0,3,4]);
+                            fishGeo.computeVertexNormals();
+
+                            const mat = new THREE.MeshStandardMaterial({ color: 0xD4AF37, side: THREE.DoubleSide, roughness: 0.2 });
+                            const mesh = new THREE.Mesh(fishGeo, mat);
+                            group.add(mesh);
+
+                            return (t, rt) => {
+                                mesh.rotation.y = rt * 0.5;
+                            };
+                        }
+                    },
+                    {
+                        title: "3. Chiral Enantiomorph Pairs",
+                        pillLabel: "3. Chiral Pairs",
+                        hudStats: "PROPERTY: Chirality (Lack of Reflection Planes)<br>FORMS: Laevo (Left) & Dextro (Right)<br>SYMMETRY: Full Transitivity Preserved",
+                        content: `
+                            <div class="space-y-3 text-xs md:text-sm text-slate-300 leading-relaxed">
+                                <p>Chiral noble polyhedra lack bilateral mirror reflection planes. They exist in distinct "left-handed" (laevo) and "right-handed" (dextro) pairs that cannot be rotated to overlap.</p>
+                            </div>
+                        `,
+                        initSubScene: (group) => {
+                            const pairGroup = new THREE.Group();
+                            const g1 = new THREE.TetrahedronGeometry(3, 0);
+                            const m1 = new THREE.MeshStandardMaterial({ color: 0x00d4ff, wireframe: true });
+                            const leftMesh = new THREE.Mesh(g1, m1);
+                            leftMesh.position.x = -4.5;
+
+                            const rightMesh = leftMesh.clone();
+                            rightMesh.scale.x = -1; // Mirror reflection
+                            rightMesh.position.x = 4.5;
+
+                            pairGroup.add(leftMesh, rightMesh);
+                            group.add(pairGroup);
+
+                            return (t, rt) => {
+                                leftMesh.rotation.y = rt * 0.4;
+                                rightMesh.rotation.y = -rt * 0.4;
+                            };
+                        }
+                    },
+                    {
+                        title: "4. The Fissery Anomaly ('Kissing Vertices')",
+                        pillLabel: "4. Fissery Anomaly",
+                        hudStats: "ANOMALY: Fissery Topological State<br>COORDINATES: Coincident $[x,y,z]$ Vertices<br>TOPOLOGY: Non-Merging Vertex Orbits",
+                        content: `
+                            <div class="space-y-3 text-xs md:text-sm text-slate-300 leading-relaxed">
+                                <p><strong>Fissery</strong> is a rare topological paradox where two separate vertices occupy the exact same $[x,y,z]$ coordinates in 3D space, yet remain mathematically distinct without merging.</p>
+                                <p>Only 2 known noble polyhedra display this coincident "kissing vertex" property.</p>
+                            </div>
+                        `,
+                        initSubScene: (group) => {
+                            const fisGroup = new THREE.Group();
+                            const centerGeo = new THREE.SphereGeometry(0.5, 16, 16);
+                            const centerMat = new THREE.MeshBasicMaterial({ color: 0xf43f5e });
+                            const cSphere = new THREE.Mesh(centerGeo, centerMat);
+
+                            const ringGeo = new THREE.TorusGeometry(3, 0.08, 16, 32);
+                            const rMat1 = new THREE.MeshBasicMaterial({ color: 0x00d4ff });
+                            const rMat2 = new THREE.MeshBasicMaterial({ color: 0xD4AF37 });
+
+                            const r1 = new THREE.Mesh(ringGeo, rMat1);
+                            const r2 = new THREE.Mesh(ringGeo, rMat2);
+                            r2.rotation.x = Math.PI / 2;
+
+                            fisGroup.add(cSphere, r1, r2);
+                            group.add(fisGroup);
+
+                            return (t, rt) => {
+                                fisGroup.rotation.y = rt * 0.4;
+                                const pulse = 1 + Math.sin(t * 6) * 0.2;
+                                cSphere.scale.setScalar(pulse);
+                            };
+                        }
+                    },
+                    {
+                        title: "5. Extreme Density: The Hecatonoahedron (120 Faces)",
+                        pillLabel: "5. Hecatonoahedron (120F)",
+                        hudStats: "DISCOVERY: Ulrich Mikloweit<br>FACES: 120 Interpenetrating Pentagons<br>DENSITY: Extremely High Visual Complexity",
+                        content: `
+                            <div class="space-y-3 text-xs md:text-sm text-slate-300 leading-relaxed">
+                                <p>Ulrich Mikloweit discovered the <strong>Noble Kipiscocoidal Hecatonoahedron</strong>, bounded by 120 self-intersecting pentagons.</p>
+                                <p>Because 120 planes plunge through the core simultaneously, the solid appears visually near-spherical without computer slicing tools.</p>
+                            </div>
+                        `,
+                        initSubScene: (group) => {
+                            const hecGeo = new THREE.IcosahedronGeometry(5, 3);
+                            const hecMat = new THREE.MeshPhysicalMaterial({ color: 0x8A2BE2, roughness: 0.1, metalness: 0.8, wireframe: false, transparent: true, opacity: 0.85 });
+                            const mesh = new THREE.Mesh(hecGeo, hecMat);
+                            group.add(mesh);
+
+                            return (t, rt) => {
+                                mesh.rotation.y = rt * 0.25;
+                            };
+                        }
+                    }
+                ]
+            },
+            {
+                id: "sec-5",
+                sectionTitle: "Section 5: Connor Hill's Definitive Framework",
+                badge: "Section 5",
+                badgeColor: "rose",
+                subSteps: [
+                    {
+                        title: "1. The Century-Old Open Question",
+                        pillLabel: "1. The Open Question",
+                        hudStats: "OPEN QUESTION: Are Sporadic Nobles Finite?<br>CHALLENGE: Unmapped 3D Spatial Domain<br>TIMELINE: Solved in 2020s",
+                        content: `
+                            <div class="space-y-3 text-xs md:text-sm text-slate-300 leading-relaxed">
+                                <p>For over 130 years, geometers wondered whether the total number of sporadic (non-family) noble polyhedra in 3D Euclidean space was finite or infinite.</p>
+                            </div>
+                        `,
+                        initSubScene: (group) => {
+                            const cloud = new THREE.Group();
+                            const sGeo = new THREE.SphereGeometry(0.15, 8, 8);
+                            const sMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+                            for(let i=0; i<60; i++) {
+                                const sp = new THREE.Mesh(sGeo, sMat);
+                                sp.position.set((Math.random()-0.5)*12, (Math.random()-0.5)*12, (Math.random()-0.5)*12);
+                                cloud.add(sp);
+                            }
+                            group.add(cloud);
+
+                            return (t, rt) => {
+                                cloud.rotation.y = rt * 0.2;
+                            };
+                        }
+                    },
+                    {
+                        title: "2. Bounding Spatial Orbits (Geometric Group Theory)",
+                        pillLabel: "2. Bounding Orbits",
+                        hudStats: "PROOF STEP 1: Bounding Polyhedral Symmetry Orbits<br>GROUPS: Octahedral, Icosahedral, Tetrahedral<br>RESULT: Finite Domain Boundary Proved",
+                        content: `
+                            <div class="space-y-3 text-xs md:text-sm text-slate-300 leading-relaxed">
+                                <p>Mathematician Connor Hill applied Geometric Group Theory to prove that valid vertex orbits capable of maintaining simultaneous isohedral and isogonal symmetry are strictly bounded in $\\mathbb{R}^3$.</p>
+                            </div>
+                        `,
+                        initSubScene: (group) => {
+                            const boundGroup = new THREE.Group();
+                            const sphGeo = new THREE.SphereGeometry(5, 16, 16);
+                            const sphMat = new THREE.MeshBasicMaterial({ color: 0xf43f5e, wireframe: true, transparent: true, opacity: 0.3 });
+                            const boundary = new THREE.Mesh(sphGeo, sphMat);
+
+                            const axes = new THREE.AxesHelper(6);
+                            boundGroup.add(boundary, axes);
+                            group.add(boundGroup);
+
+                            return (t, rt) => {
+                                boundGroup.rotation.y = rt * 0.3;
+                            };
+                        }
+                    },
+                    {
+                        title: "3. Exhaustive Algorithmic Sieve",
+                        pillLabel: "3. Algorithmic Sieve",
+                        hudStats: "PROOF STEP 2: Computational Sieve<br>ACTION: Filtering All Possible Rewirings<br>RESULT: Zero Unchecked Domain Gaps",
+                        content: `
+                            <div class="space-y-3 text-xs md:text-sm text-slate-300 leading-relaxed">
+                                <p>Once the spatial domain was bounded, Hill deployed an algorithmic sieve to systematically test every possible vertex rewiring, discarding non-transitive candidates.</p>
+                            </div>
+                        `,
+                        initSubScene: (group) => {
+                            const sieveGroup = new THREE.Group();
+                            const cGeo = new THREE.CylinderGeometry(5, 1, 4, 16, 1, true);
+                            const cMat = new THREE.MeshStandardMaterial({ color: 0x00d4ff, wireframe: true });
+                            const funnel = new THREE.Mesh(cGeo, cMat);
+                            sieveGroup.add(funnel);
+                            group.add(sieveGroup);
+
+                            return (t, rt) => {
+                                sieveGroup.rotation.y = rt * 0.4;
+                            };
+                        }
+                    },
+                    {
+                        title: "4. The Census: Exactly 146 Sporadic Noble Polyhedra",
+                        pillLabel: "4. The 146 Sporadics",
+                        hudStats: "FINAL CENSUS: 146 Sporadic Polyhedra<br>HISTORICAL (PRE-2020): 61 Cataloged Forms<br>NEW HILL DISCOVERIES: 85 Newly Found Forms",
+                        content: `
+                            <div class="space-y-3 text-xs md:text-sm text-slate-300 leading-relaxed">
+                                <p>Hill proved that beyond the 2 infinite families, there are exactly <strong>146 Sporadic Noble Polyhedra</strong> in 3D Euclidean space.</p>
+                                <div class="grid grid-cols-2 gap-3 my-2">
+                                    <div class="p-2 bg-yellow-900/20 border border-yellow-500/30 rounded text-xs">
+                                        <strong class="text-yellow-400 block">61 Historical Forms</strong>
+                                        Found by Hess, Brückner, Webb, & Mikloweit.
+                                    </div>
+                                    <div class="p-2 bg-rose-900/20 border border-rose-500/30 rounded text-xs">
+                                        <strong class="text-rose-400 block">85 New Hill Discoveries</strong>
+                                        Found directly via algorithmic sieve.
+                                    </div>
+                                </div>
+                            </div>
+                        `,
+                        initSubScene: (group) => {
+                            const censusGroup = new THREE.Group();
+                            const nGeo = new THREE.SphereGeometry(0.2, 8, 8);
+                            const gMat = new THREE.MeshBasicMaterial({ color: 0xD4AF37 });
+                            const cMat = new THREE.MeshBasicMaterial({ color: 0x00d4ff });
+
+                            // 61 Historical (Gold)
+                            for(let i=0; i<61; i++) {
+                                const node = new THREE.Mesh(nGeo, gMat);
+                                const r = 6 + Math.random()*1.5;
+                                const a = Math.random()*Math.PI*2, b = (Math.random()-0.5)*Math.PI;
+                                node.position.set(r*Math.cos(a)*Math.cos(b), r*Math.sin(b), r*Math.sin(a)*Math.cos(b));
+                                censusGroup.add(node);
+                            }
+                            // 85 Hill Discoveries (Cyan)
+                            for(let i=0; i<85; i++) {
+                                const node = new THREE.Mesh(nGeo, cMat);
+                                const r = 8 + Math.random()*1.5;
+                                const a = Math.random()*Math.PI*2, b = (Math.random()-0.5)*Math.PI;
+                                node.position.set(r*Math.cos(a)*Math.cos(b), r*Math.sin(b), r*Math.sin(a)*Math.cos(b));
+                                censusGroup.add(node);
+                            }
+                            group.add(censusGroup);
+
+                            return (t, rt) => {
+                                censusGroup.rotation.y = rt * 0.15;
+                            };
+                        }
+                    },
+                    {
+                        title: "5. The Complete Closed Taxonomy of 3D Space",
+                        pillLabel: "5. Complete Taxonomy",
+                        hudStats: "TAXONOMY STATUS: Closed & Sealed<br>TOTAL: 2 Infinite Families + 146 Sporadics<br>CONCLUSION: No Further Forms Exist in $\\mathbb{R}^3$",
+                        content: `
+                            <div class="space-y-3 text-xs md:text-sm text-slate-300 leading-relaxed">
+                                <p>Connor Hill's classification framework formally closes the taxonomy of noble polyhedra in three-dimensional space.</p>
+                                <p>The journey from 19th-century fragile paper models to computer-assisted group theory enumeration is now complete.</p>
+                            </div>
+                        `,
+                        initSubScene: (group) => {
+                            const grandGroup = new THREE.Group();
+                            const coreMesh = new THREE.Mesh(
+                                new THREE.IcosahedronGeometry(3, 2),
+                                new THREE.MeshStandardMaterial({ color: 0xD4AF37, wireframe: true })
+                            );
+                            const ring1 = new THREE.Mesh(
+                                new THREE.TorusGeometry(8, 0.06, 16, 100),
+                                new THREE.MeshBasicMaterial({ color: 0xf43f5e })
+                            );
+                            ring1.rotation.x = Math.PI / 2;
+
+                            const ring2 = new THREE.Mesh(
+                                new THREE.TorusGeometry(10, 0.06, 16, 100),
+                                new THREE.MeshBasicMaterial({ color: 0x8A2BE2 })
+                            );
+                            ring2.rotation.x = Math.PI / 3;
+
+                            grandGroup.add(coreMesh, ring1, ring2);
+                            group.add(grandGroup);
+
+                            return (t, rt) => {
+                                coreMesh.rotation.y = rt * 0.3;
+                                ring1.rotation.z = rt * 0.1;
+                                ring2.rotation.z = -rt * 0.1;
+                            };
+                        }
+                    }
+                ]
+            }
+        ];
+
+        // ==========================================
+        // LESSON PROGRESS (shared with Lesson 2 hub)
+        // ==========================================
+        const PROGRESS_KEY = 'owl.noble.progress.v1';
+        const PART_IDS = ['2a', '2b', '2c', '2d', '2e'];
+        const readProgress = () => { try { return JSON.parse(localStorage.getItem(PROGRESS_KEY)) || {}; } catch(e) { return {}; } };
+        const writeProgress = (m) => { try { localStorage.setItem(PROGRESS_KEY, JSON.stringify(m)); } catch(e) {} };
+
+        // Global Application State
+        let activeSectionIndex = 0;
+        let activeSubStepIndex = 0;
+
+        let globalTime = 0;
+        let rotTime = 0;
+        let isAutoRotate = false;
+
+        document.getElementById('auto-rotate-checkbox').addEventListener('change', (e) => {
+            isAutoRotate = e.target.checked;
+        });
+
+        // ==========================================
+        // THREE.JS VIEWPORT SETUP
+        // ==========================================
+        const canvasContainer = document.getElementById('canvas-container');
+        const scene = new THREE.Scene();
+        scene.fog = new THREE.FogExp2(0x05030a, 0.015);
+
+        const camera = new THREE.PerspectiveCamera(45, canvasContainer.clientWidth / canvasContainer.clientHeight, 0.1, 1000);
+        camera.position.set(0, 8, 22);
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        renderer.setSize(canvasContainer.clientWidth, canvasContainer.clientHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        canvasContainer.appendChild(renderer.domElement);
+
+        const controls = new THREE.OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.05;
+
+        // Global Lighting
+        const ambLight = new THREE.AmbientLight(0xffffff, 0.45);
+        const dirLight = new THREE.DirectionalLight(0xfff2c8, 1.2);
+        dirLight.position.set(10, 20, 15);
+        const rimLight = new THREE.DirectionalLight(0x8A2BE2, 1.8);
+        rimLight.position.set(-15, -10, -15);
+        scene.add(ambLight, dirLight, rimLight);
+
+        const subStepGroup = new THREE.Group();
+        scene.add(subStepGroup);
+
+        let clock = new THREE.Clock();
+        let currentSubAnimate = null;
+
+        function clearSubStepGroup() {
+            while(subStepGroup.children.length > 0){ 
+                const child = subStepGroup.children[0];
+                subStepGroup.remove(child); 
+                if(child.geometry) child.geometry.dispose();
+                if(child.material) {
+                    if(Array.isArray(child.material)) child.material.forEach(m => m.dispose());
+                    else child.material.dispose();
+                }
+            }
+            subStepGroup.rotation.set(0,0,0);
+            subStepGroup.scale.set(1,1,1);
+            currentSubAnimate = null;
+        }
+
+        // ==========================================
+        // UI NAVIGATION & RENDER HANDLERS
+        // ==========================================
+        const navContainer = document.getElementById('nav-container');
+        const pillsContainer = document.getElementById('sub-step-pills-container');
+        const stepTitle = document.getElementById('step-title');
+        const stepContent = document.getElementById('step-content');
+        const stepBadge = document.getElementById('step-badge');
+        const phaseBadge = document.getElementById('phase-badge');
+        const subStepCounter = document.getElementById('sub-step-counter');
+        const btnPrevSub = document.getElementById('btn-prev-sub');
+        const btnNextSub = document.getElementById('btn-next-sub');
+
+        function renderSidebarNav() {
+            navContainer.innerHTML = '';
+            sectionsData.forEach((sec, idx) => {
+                const btn = document.createElement('button');
+                btn.className = `nav-item w-full text-left px-4 py-3 text-xs font-mono tracking-wide ${idx === activeSectionIndex ? 'active' : 'text-slate-400'}`;
+                const done = !!readProgress()[PART_IDS[idx]];
+                btn.innerHTML = `<span class="font-bold opacity-50 mr-2">0${idx + 1}</span> ${sec.sectionTitle.replace(/^Section \d+: /, '')}${done ? ' <span class="text-emerald-400">✓</span>' : ''}`;
+                btn.onclick = () => loadSection(idx, 0);
+                navContainer.appendChild(btn);
+            });
+        }
+
+        function renderProgress() {
+            const m = readProgress();
+            const done = PART_IDS.filter(p => m[p]).length;
+            document.getElementById('progress-summary').innerText = `${done} / ${PART_IDS.length} sections complete`;
+            const btn = document.getElementById('mark-complete-btn');
+            const secDone = !!m[PART_IDS[activeSectionIndex]];
+            btn.disabled = secDone;
+            btn.innerText = secDone ? '✓ Section complete' : 'Mark section complete ✓';
+            btn.classList.toggle('text-emerald-400', secDone);
+            btn.classList.toggle('border-emerald-500/50', secDone);
+        }
+
+        document.getElementById('mark-complete-btn').onclick = () => {
+            const m = readProgress();
+            m[PART_IDS[activeSectionIndex]] = true;
+            writeProgress(m);
+            renderSidebarNav();
+            renderProgress();
+        };
+
+        function loadSection(sectionIdx, subStepIdx = 0) {
+            activeSectionIndex = sectionIdx;
+            activeSubStepIndex = subStepIdx;
+            if (location.hash !== `#${sectionsData[sectionIdx].id}`) history.replaceState(null, '', `#${sectionsData[sectionIdx].id}`);
+            renderSidebarNav();
+            renderProgress();
+            loadSubStep(activeSubStepIndex);
+        }
+
+        function loadSubStep(subStepIdx) {
+            const currentSection = sectionsData[activeSectionIndex];
+            activeSubStepIndex = Math.max(0, Math.min(subStepIdx, currentSection.subSteps.length - 1));
+            const step = currentSection.subSteps[activeSubStepIndex];
+
+            // Render Sub-step Pills Bar
+            pillsContainer.innerHTML = '';
+            currentSection.subSteps.forEach((s, idx) => {
+                const pill = document.createElement('button');
+                pill.className = `step-pill px-3 py-1 rounded-full text-[10px] font-mono whitespace-nowrap ${idx === activeSubStepIndex ? 'active' : 'text-slate-400'}`;
+                pill.innerText = s.pillLabel;
+                pill.onclick = () => loadSubStep(idx);
+                pillsContainer.appendChild(pill);
+            });
+
+            // Update Header & Explainer Card
+            phaseBadge.innerText = currentSection.badge;
+            stepBadge.innerText = `Step ${activeSubStepIndex + 1} of ${currentSection.subSteps.length}`;
+            stepTitle.innerText = step.title;
+            stepContent.innerHTML = step.content;
+
+            subStepCounter.innerText = `${activeSubStepIndex + 1} / ${currentSection.subSteps.length}`;
+            btnPrevSub.disabled = (activeSubStepIndex === 0);
+            btnNextSub.disabled = (activeSubStepIndex === currentSection.subSteps.length - 1 && activeSectionIndex === sectionsData.length - 1);
+
+            document.getElementById('vis-overlay-data').innerHTML = step.hudStats;
+
+            if(window.MathJax && typeof MathJax.typesetPromise === 'function') {
+                MathJax.typesetPromise([stepContent, document.getElementById('vis-overlay-data')]).catch((err) => console.log(err.message));
+            }
+
+            // Rebuild 3D Scene for Sub-Step
+            clearSubStepGroup();
+            currentSubAnimate = step.initSubScene(subStepGroup);
+
+            controls.reset();
+            camera.position.set(0, 8, 22);
+        }
+
+        btnPrevSub.onclick = () => { if(activeSubStepIndex > 0) loadSubStep(activeSubStepIndex - 1); };
+        btnNextSub.onclick = () => { 
+            const total = sectionsData[activeSectionIndex].subSteps.length;
+            if(activeSubStepIndex < total - 1) loadSubStep(activeSubStepIndex + 1); 
+            else if(activeSectionIndex < sectionsData.length - 1) loadSection(activeSectionIndex + 1, 0);
+        };
+
+        // ==========================================
+        // MAIN RENDER LOOP
+        // ==========================================
+        function animate() {
+            requestAnimationFrame(animate);
+            const delta = clock.getDelta();
+            
+            globalTime += delta;
+            if (isAutoRotate) {
+                rotTime += delta;
+            }
+            
+            if (currentSubAnimate) {
+                currentSubAnimate(globalTime, rotTime);
+            }
+
+            controls.update();
+            renderer.render(scene, camera);
+        }
+
+        window.addEventListener('resize', () => {
+            camera.aspect = canvasContainer.clientWidth / canvasContainer.clientHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(canvasContainer.clientWidth, canvasContainer.clientHeight);
+        });
+
+        // Initialize Application
+        // Deep links from the Lesson 2 hub: #sec-1 … #sec-5
+        const sectionFromHash = () => Math.max(0, sectionsData.findIndex(sec => `#${sec.id}` === location.hash));
+        window.addEventListener('hashchange', () => {
+            const idx = sectionFromHash();
+            if (idx !== activeSectionIndex) loadSection(idx, 0);
+        });
+        loadSection(sectionFromHash(), 0);
+        animate();
+
+    </script>
+</body>
+</html>

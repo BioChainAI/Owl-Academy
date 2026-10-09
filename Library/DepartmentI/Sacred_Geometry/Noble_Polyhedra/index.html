@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Owl Academy | Lesson 1: Platonic Solids &amp; Symmetric Tessellations</title>
+    <title>Owl Academy | Lesson 2: Polyhedral Symmetry &amp; Noble Polyhedra</title>
 
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Inter:wght@300;400;500;600&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
@@ -73,9 +73,9 @@
                 </svg>
             </div>
             <div class="text-center flex-grow pt-2 md:pt-4 z-20">
-                <p class="text-[9px] md:text-[11px] tracking-[0.3em] uppercase mb-2 text-yellow-500 font-mono">Department I • Lesson 1 • Curriculum</p>
-                <h1 class="text-lg md:text-2xl font-bold tracking-[0.12em] mystical-font text-white drop-shadow-md">PLATONIC SOLIDS</h1>
-                <h2 class="text-base md:text-xl font-bold gold-gradient tracking-[0.2em] mt-1">&amp; Symmetric Tessellations</h2>
+                <p class="text-[9px] md:text-[11px] tracking-[0.3em] uppercase mb-2 text-yellow-500 font-mono">Department I • Lesson 2 • Curriculum</p>
+                <h1 class="text-lg md:text-2xl font-bold tracking-[0.12em] mystical-font text-white drop-shadow-md">NOBLE POLYHEDRA</h1>
+                <h2 class="text-base md:text-xl font-bold gold-gradient tracking-[0.2em] mt-1">Polyhedral Symmetry &amp; Self-Intersecting Faces</h2>
             </div>
             <a href="../SG_Main.html" title="Return to Sacred Geometry" class="w-16 h-16 md:w-24 md:h-24 flex-shrink-0 cursor-pointer hover:scale-105 transition-transform duration-300">
                 <svg viewBox="0 0 200 200" class="w-full h-full spin-slow pulse-glow">
@@ -94,14 +94,15 @@
                 <div class="absolute top-0 right-0 w-64 h-64 bg-yellow-500/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3"></div>
                 <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 items-center">
                     <div class="lg:col-span-2">
-                        <span class="text-[10px] font-mono uppercase tracking-[0.3em] text-yellow-500 flex items-center gap-2 mb-3"><span class="w-8 h-px bg-yellow-500 block"></span> The Foundational Lesson</span>
-                        <h2 class="text-2xl md:text-3xl text-white font-bold mystical-font mb-4">Five perfect solids. One law of space.</h2>
+                        <span class="text-[10px] font-mono uppercase tracking-[0.3em] text-yellow-500 flex items-center gap-2 mb-3"><span class="w-8 h-px bg-yellow-500 block"></span> The Second Lesson · Beyond the Five</span>
+                        <h2 class="text-2xl md:text-3xl text-white font-bold mystical-font mb-4">Relax one law. Find a whole new kingdom.</h2>
                         <p class="text-gray-300 font-light leading-relaxed text-sm md:text-base mb-4">
-                            There are exactly <strong class="text-white">five</strong> perfectly regular solids in the universe — no more, no fewer — and the reason is not aesthetic but <em>mathematical necessity</em>. This lesson builds that truth from the ground up: from a single dot, to the counting rule that forbids a sixth solid, to how these forms resonate, tile space, and are encoded inside the S.P.I.R.E. Engine.
+                            Lesson 1 proved there are exactly <strong class="text-white">five</strong> Platonic solids. This lesson asks what happens when we loosen the rules: let faces pass through one another, let them become irregular — but keep every face and every vertex <em>identical under symmetry</em>. The result is the <strong class="text-white">noble polyhedra</strong>: two infinite families and, as of the 2020s, a closed census of 146 sporadic forms.
                         </p>
                         <p class="text-gray-400 font-light text-sm leading-relaxed">
-                            Six sub-lessons, each in two parts — an interactive <strong class="text-yellow-500/90">lesson</strong> and an <strong class="text-yellow-500/90">expanded-theory</strong> deep dive written for absolute beginners. Finish all twelve parts to earn the lesson's single Tome.
+                            Five sections, each with five interactive 3D steps — from the Kepler-Poinsot star solids through Hess's paper models and Webb's software discoveries to Connor Hill's complete classification. Finish all five sections to earn the lesson's single Tome.
                         </p>
+                        <div id="prereq" class="mt-5"></div>
                     </div>
                     <!-- Progress ring -->
                     <div class="flex flex-col items-center justify-center">
@@ -111,8 +112,8 @@
                                 <circle id="ring" cx="60" cy="60" r="52" fill="none" stroke="var(--color-primary)" stroke-width="8" stroke-linecap="round" stroke-dasharray="326.7" stroke-dashoffset="326.7" style="transition:stroke-dashoffset .6s ease; filter:drop-shadow(0 0 6px rgba(212,175,55,0.6));"/>
                             </svg>
                             <div class="absolute inset-0 flex flex-col items-center justify-center">
-                                <div id="ring-count" class="text-3xl font-bold mono text-white">0<span class="text-gray-500 text-lg">/12</span></div>
-                                <div class="text-[9px] uppercase tracking-widest text-gray-500 font-mono mt-1">Parts complete</div>
+                                <div id="ring-count" class="text-3xl font-bold mono text-white">0<span class="text-gray-500 text-lg">/5</span></div>
+                                <div class="text-[9px] uppercase tracking-widest text-gray-500 font-mono mt-1">Sections complete</div>
                             </div>
                         </div>
                         <button onclick="resetProgress()" class="mt-3 text-[9px] uppercase mono text-gray-600 hover:text-gray-400 underline decoration-gray-700 underline-offset-4">Reset progress</button>
@@ -122,7 +123,7 @@
 
             <!-- Sub-lesson cards -->
             <div>
-                <h3 class="text-xl text-white font-bold mystical-font tracking-wide mb-6 text-center">The Six Sub-Lessons</h3>
+                <h3 class="text-xl text-white font-bold mystical-font tracking-wide mb-6 text-center">The Five Sections</h3>
                 <div id="cards" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5"></div>
             </div>
 
@@ -130,66 +131,66 @@
             <section id="signoff" class="glass-panel p-8 md:p-10 relative overflow-hidden border-yellow-600/40">
                 <div class="absolute top-0 right-0 w-64 h-64 bg-yellow-500/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3"></div>
                 <div class="flex items-center gap-3 mb-2">
-                    <span class="text-[10px] font-mono uppercase tracking-[0.3em] text-yellow-500">Department I · Immutable Canon · dept-I/i-08</span>
+                    <span class="text-[10px] font-mono uppercase tracking-[0.3em] text-yellow-500">Department I · Immutable Canon · dept-I/i-09</span>
                 </div>
                 <h2 class="text-2xl md:text-3xl text-white font-bold mystical-font mb-3">Tome Signoff</h2>
                 <p class="text-sm text-gray-300 font-light mb-6 max-w-3xl">
-                    One Tome is awarded for the whole of Lesson 1 — <strong class="text-white">Platonic Solids &amp; Symmetric Tessellations</strong>. Complete all twelve parts, then claim completion with your personal seal. An Instructor or Archon validates the claim in a genuine <strong class="text-yellow-500/90">2-of-2 signoff</strong>, and the Tome is added to your Codex.
+                    One Tome is awarded for the whole of Lesson 2 — <strong class="text-white">Polyhedral Symmetry &amp; Noble Polyhedra</strong>. Complete all five sections, then claim completion with your personal seal. An Instructor or Archon validates the claim in a genuine <strong class="text-yellow-500/90">2-of-2 signoff</strong>, and the Tome is added to your Codex.
                 </p>
                 <div id="signoff-progress" class="mb-6"></div>
                 <div id="signoff-actions" class="flex flex-col sm:flex-row flex-wrap gap-3"></div>
             </section>
 
-            <!-- Next lesson -->
-            <a href="../Noble_Polyhedra/index.html" class="block glass-panel p-6 md:p-8 border-purple-500/40 hover:border-purple-400/70 transition-all group">
-                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                    <div>
-                        <span class="text-[10px] font-mono uppercase tracking-[0.3em] text-purple-400">Next · Lesson 2 · dept-I/i-09</span>
-                        <h2 class="text-xl md:text-2xl text-white font-bold mystical-font mt-1 group-hover:text-purple-300 transition-colors">Polyhedral Symmetry &amp; Noble Polyhedra</h2>
-                        <p class="text-sm text-gray-400 font-light mt-1">Beyond the five: relax the Platonic rules and discover the noble polyhedra.</p>
-                    </div>
-                    <span class="text-purple-300 text-xs font-bold tracking-widest uppercase mono whitespace-nowrap">Continue →</span>
-                </div>
-            </a>
-
         </main>
 
         <footer class="w-full border-t border-yellow-600/30 bg-black/60 backdrop-blur-md py-6 text-center mt-auto flex-shrink-0 z-20 relative">
-            <p class="text-[10px] text-yellow-700 uppercase tracking-[0.3em] font-mono">Department I • Owl Academy • Lesson 1</p>
+            <p class="text-[10px] text-yellow-700 uppercase tracking-[0.3em] font-mono">Department I • Owl Academy • Lesson 2</p>
         </footer>
     </div>
 
     <script>
         // ===== Lesson definition =====
+        const VIS = 'noble_polyhedra_visualizer.html';
         const SUBS = [
-            { code:'1A', accent:'#00d4ff', title:'Geometric Primitives',    desc:'From a dot to a solid — vertices, edges, faces and the R³ coordinate stage.', main:'1a_geometric_primitives.html', exp:'1a_expanded_theory.html', pm:'1a', px:'1a-x' },
-            { code:'1B', accent:'#8A2BE2', title:'Topological Invariants',   desc:'Euler’s χ = V − E + F = 2 — the counting rule that forbids a sixth Platonic solid.', main:'1b_topological_invariants.html', exp:'1b_expanded_theory.html', pm:'1b', px:'1b-x' },
-            { code:'1C', accent:'#33ff99', title:'Harmonic Resonance',       desc:'Symmetry groups and vibrational modes — why each solid rings with its own spectrum.', main:'1c_harmonic_resonance.html', exp:'1c_expanded_theory.html', pm:'1c', px:'1c-x' },
-            { code:'1D', accent:'#ff3366', title:'The Tiling Problem in 3D',  desc:'Which solids fill space with no gaps? The cube alone — and the tet–oct honeycomb.', main:'1d_tiling_problem.html', exp:'1d_expanded_theory.html', pm:'1d', px:'1d-x' },
-            { code:'1E', accent:'#f59e0b', title:'Engine Implementation',    desc:'How the Engine stores a solid — indexed buffers, half-edges, and χ as a checksum.', main:'1e_engine_implementation.html', exp:'1e_expanded_theory.html', pm:'1e', px:'1e-x' },
-            { code:'1F', accent:'#D4AF37', title:'Practical Application Lab', desc:'The capstone — certify a solid end-to-end and submit for Tome signoff.', main:'1f_application_lab.html', exp:'1f_expanded_theory.html', pm:'1f', px:'1f-x' },
+            { code:'2A', accent:'#00d4ff', title:'The Architectural Shift',            desc:'From the strict Platonic canon to Kepler-Poinsot stars, core intersections and the noble pivot.', sec:1, pm:'2a' },
+            { code:'2B', accent:'#D4AF37', title:'19th-Century Foundations',           desc:'Hess & Brückner’s paper models and the two infinite families — disphenoids and stephenoids.', sec:2, pm:'2b' },
+            { code:'2C', accent:'#e879f9', title:'Algorithmic Faceting',               desc:'Stellation vs. faceting, Hess’s faceted dodecahedron, and the digital revolution of Stellar.', sec:3, pm:'2c' },
+            { code:'2D', accent:'#10b981', title:'Computer Discoveries & Anomalies',   desc:'Webb’s “ugly duckling”, goldfish pentagons, chiral pairs, fissery and the 120-faced giant.', sec:4, pm:'2d' },
+            { code:'2E', accent:'#f43f5e', title:'Hill’s Definitive Framework',        desc:'Bounding the orbits, the algorithmic sieve, and the closed census of 146 sporadics.', sec:5, pm:'2e' },
         ];
-        const PARTS = ['1a','1a-x','1b','1b-x','1c','1c-x','1d','1d-x','1e','1e-x','1f','1f-x'];
-        const KEY = 'owl.platonic.progress.v1';
+        const PARTS = SUBS.map(s => s.pm);
+        const TOTAL = PARTS.length;
+        const KEY = 'owl.noble.progress.v1';
+        const PREV_KEY = 'owl.platonic.progress.v1', PREV_TOTAL = 12;
         const MAGE = '../../../../mage_tower/';
-        const rd = () => { try { return JSON.parse(localStorage.getItem(KEY)) || {}; } catch(e){ return {}; } };
+        const rdKey = (k) => { try { return JSON.parse(localStorage.getItem(k)) || {}; } catch(e){ return {}; } };
+        const rd = () => rdKey(KEY);
 
         function pip(done, label){ return `<span class="pip ${done?'done':''}" title="${label}: ${done?'complete':'incomplete'}"></span>`; }
+
+        function renderPrereq(){
+            const done = Object.values(rdKey(PREV_KEY)).filter(Boolean).length;
+            const ok = done >= PREV_TOTAL;
+            document.getElementById('prereq').innerHTML = `<a href="../Platonic_Solids/index.html" class="inline-flex items-center gap-3 px-4 py-2 rounded-lg border text-xs mono transition-all ${ok ? 'border-green-500/40 text-green-400 hover:bg-green-500/10' : 'border-yellow-600/40 text-yellow-500 hover:bg-yellow-500/10'}">
+                <span>${ok ? '✓' : '◆'}</span>
+                <span>Prerequisite · Lesson 1 — Platonic Solids &amp; Symmetric Tessellations</span>
+                <span class="text-gray-500">${Math.min(done, PREV_TOTAL)}/${PREV_TOTAL}</span>
+            </a>`;
+        }
 
         function renderCards(){
             const m = rd();
             document.getElementById('cards').innerHTML = SUBS.map(s => {
-                const dm = !!m[s.pm], dx = !!m[s.px];
+                const dm = !!m[s.pm];
                 return `<div class="lesson-card p-6 flex flex-col" style="--card-accent:${s.accent}">
                     <div class="flex items-center justify-between mb-3">
                         <span class="text-3xl font-bold mono" style="color:${s.accent}">${s.code}</span>
-                        <div class="flex items-center gap-1.5">${pip(dm,'Lesson')} ${pip(dx,'Deep Dive')}</div>
+                        <div class="flex items-center gap-1.5">${pip(dm,'Section')}</div>
                     </div>
                     <h4 class="text-white font-bold mystical-font text-lg mb-1">${s.title}</h4>
                     <p class="text-[12px] text-gray-400 font-light flex-grow mb-4">${s.desc}</p>
                     <div class="flex gap-2 mt-auto">
-                        <a href="${s.main}" class="flex-1 text-center py-2 rounded text-[10px] font-bold uppercase tracking-widest mono border transition-all" style="border-color:color-mix(in srgb,${s.accent} 45%,transparent);color:${s.accent};background:color-mix(in srgb,${s.accent} 6%,transparent)">Lesson</a>
-                        <a href="${s.exp}" class="flex-1 text-center py-2 rounded text-[10px] font-bold uppercase tracking-widest mono border border-white/15 text-gray-300 hover:border-white/40 hover:text-white transition-all">Deep Dive</a>
+                        <a href="${VIS}#sec-${s.sec}" class="flex-1 text-center py-2 rounded text-[10px] font-bold uppercase tracking-widest mono border transition-all" style="border-color:color-mix(in srgb,${s.accent} 45%,transparent);color:${s.accent};background:color-mix(in srgb,${s.accent} 6%,transparent)">${dm ? 'Revisit' : 'Enter'} · 5 Steps</a>
                     </div>
                 </div>`;
             }).join('');
@@ -200,27 +201,26 @@
             const done = PARTS.filter(p => m[p]).length;
             const C = 2 * Math.PI * 52;
             document.getElementById('ring').setAttribute('stroke-dasharray', C.toFixed(1));
-            document.getElementById('ring').style.strokeDashoffset = (C * (1 - done/12)).toFixed(1);
-            document.getElementById('ring').setAttribute('stroke', done>=12 ? '#33ff99' : 'var(--color-primary)');
-            document.getElementById('ring-count').innerHTML = `${done}<span class="text-gray-500 text-lg">/12</span>`;
+            document.getElementById('ring').style.strokeDashoffset = (C * (1 - done/TOTAL)).toFixed(1);
+            document.getElementById('ring').setAttribute('stroke', done>=TOTAL ? '#33ff99' : 'var(--color-primary)');
+            document.getElementById('ring-count').innerHTML = `${done}<span class="text-gray-500 text-lg">/${TOTAL}</span>`;
 
-            // signoff progress pips (12)
             const sp = document.getElementById('signoff-progress');
-            const pipRow = PARTS.map((p,i) => `<span class="pip ${m[p]?'done':''}" title="${p}"></span>`).join(' ');
-            sp.innerHTML = `<div class="flex items-center gap-2 flex-wrap"><span class="text-xs mono text-gray-400 mr-2">${done} / 12 complete</span>${pipRow}</div>`;
+            const pipRow = PARTS.map(p => `<span class="pip ${m[p]?'done':''}" title="${p.toUpperCase()}"></span>`).join(' ');
+            sp.innerHTML = `<div class="flex items-center gap-2 flex-wrap"><span class="text-xs mono text-gray-400 mr-2">${done} / ${TOTAL} complete</span>${pipRow}</div>`;
 
             const act = document.getElementById('signoff-actions');
-            if (done >= 12){
+            if (done >= TOTAL){
                 act.innerHTML = `
-                    <div class="w-full mb-2 text-sm text-green-400 font-mono">✓ All twelve parts complete — the signoff is unlocked. Follow the three steps:</div>
+                    <div class="w-full mb-2 text-sm text-green-400 font-mono">✓ All five sections complete — the signoff is unlocked. Follow the three steps:</div>
                     <a href="${MAGE}Seal_Forge.html" class="px-5 py-3 rounded-lg border border-yellow-600/50 text-yellow-400 hover:bg-yellow-500/10 transition-all text-xs font-bold tracking-widest uppercase mono">1 · Forge your seal</a>
                     <a href="${MAGE}Major_Tome.html" class="px-5 py-3 rounded-lg border border-yellow-600/50 text-yellow-400 hover:bg-yellow-500/10 transition-all text-xs font-bold tracking-widest uppercase mono">2 · Claim completion</a>
                     <a href="${MAGE}Unlock_Console.html" class="px-5 py-3 rounded-lg border border-white/15 text-gray-300 hover:border-white/40 hover:text-white transition-all text-xs font-bold tracking-widest uppercase mono">3 · Instructor validates</a>
-                    <p class="w-full text-[11px] text-gray-500 font-mono mt-2">Forge a Minor Tome seal → in the Major Tome Library claim completion of “Platonic Solids &amp; Symmetric Tessellations” → an Instructor or Archon combines seals (2-of-2) in the Unlock Console.</p>`;
+                    <p class="w-full text-[11px] text-gray-500 font-mono mt-2">Forge a Minor Tome seal → in the Major Tome Library claim completion of “Polyhedral Symmetry &amp; Noble Polyhedra” → an Instructor or Archon combines seals (2-of-2) in the Unlock Console.</p>`;
             } else {
-                const remaining = SUBS.flatMap(s => [[s.pm, `${s.code} Lesson`],[s.px, `${s.code} Deep Dive`]]).filter(([p]) => !m[p]).map(([,l]) => l);
+                const remaining = SUBS.filter(s => !m[s.pm]).map(s => `${s.code} ${s.title}`);
                 act.innerHTML = `<div class="w-full px-5 py-4 rounded-lg border border-white/10 bg-black/30 text-sm text-gray-400 font-mono">
-                    🔒 Finish all twelve parts to unlock the Tome signoff.
+                    🔒 Finish all five sections to unlock the Tome signoff.
                     <div class="text-[11px] text-gray-500 mt-2">Remaining: ${remaining.join(' · ')}</div>
                 </div>`;
             }
@@ -228,7 +228,7 @@
 
         function resetProgress(){ if(confirm('Clear saved progress for this lesson on this browser?')){ localStorage.removeItem(KEY); renderCards(); renderProgress(); } }
 
-        document.addEventListener('DOMContentLoaded', () => { renderCards(); renderProgress(); });
+        document.addEventListener('DOMContentLoaded', () => { renderPrereq(); renderCards(); renderProgress(); });
     </script>
 </body>
 </html>
