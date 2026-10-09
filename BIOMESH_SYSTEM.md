@@ -372,6 +372,18 @@ them into anything else. The natural next integrations, not yet built:
   becomes a literal toggle between a scholar's familiar tracking the shared
   mesh pulse and it drifting free in its own hyperbolic phase.
 
+**The Scholar variant (`Celestial_Library_Scholar.html`).** A first, small step
+toward the Familiars integration above: the public page's footer carries a
+**Login** button (`../login.html?redirect=…`) to an otherwise-identical room
+gated by `scripts/auth-guard.js`, adding one more window — **Scholar
+Account** — bound to the signed-in Google identity (`onAuthStateChanged`):
+avatar, display name, email, a **Sign Out** button, and, if the scholar has
+already sealed one, their **Cosmological ID** (via `readRegistrar` from
+`scripts/spire-registrar.js`) with a link to the Registrar if not. It does not
+yet drive the familiar itself — that still needs `sigil-renderer.js`'s
+familiar geometry swapped in for the placeholder crystal/lattice — but it is
+the identity the rest of that wiring reads from.
+
 ## Certification — GROWN/1
 
 On publish, the grower signs the commitment with their **minor-tome seal**
@@ -446,6 +458,7 @@ grow, transfer, and rate); a student-facing marketplace page can reuse
 | `mage_tower/Biomesh_Mind_Eye_3D.html` | 3D SHD-CCP lattice forge — program vertices, chain packets, crystallize a regrowable seed, and run the torsional Markov "breath" synchronization pump |
 | `mage_tower/Biomesh_Mind_Eye_3D_Guide.html` | companion how-to guide (navigation, packet, chains, raw data, seed, shared standard) |
 | `mage_tower/Celestial_Library.html` | walkable 3D geometric engine (`compileManifold`, protocol-packet driven) + intrinsic clock (π/6-gear Chronology window) — standalone today, staged for BioChain-AI + Familiar integration |
+| `mage_tower/Celestial_Library_Scholar.html` | identical room, gated by `scripts/auth-guard.js`, with a Scholar Account window bound to the signed-in Google identity (avatar/name/email/sign-out + sealed Cosmological ID) |
 | `firestore.rules` | `biochains` / `biochainTransfers` / `biochainRatings` / `chronicles` blocks |
 | `BioChain-AI/BioChain_Enterprise/` | the measured reference stack this deploys |
 
