@@ -1,0 +1,253 @@
+{
+  "description": "Synthetic examples only. Not uploaded or used as a real session.",
+  "entities": [
+    {
+      "id": "library-demo",
+      "entityType": "memoryLibraries",
+      "schemaVersion": 1,
+      "ownerUid": "fixture-acolyte",
+      "visibility": "private",
+      "plane": "dept-I",
+      "createdAt": "2026-10-23T00:00:00Z",
+      "updatedAt": "2026-10-23T00:00:00Z",
+      "title": "Acolyte Research Library"
+    },
+    {
+      "id": "shelf-demo",
+      "entityType": "memoryShelves",
+      "schemaVersion": 1,
+      "ownerUid": "fixture-acolyte",
+      "visibility": "private",
+      "plane": "dept-I",
+      "createdAt": "2026-10-23T00:00:00Z",
+      "updatedAt": "2026-10-23T00:00:00Z",
+      "libraryId": "library-demo",
+      "title": "Sacred Geometry"
+    },
+    {
+      "id": "book-demo",
+      "entityType": "memoryBooks",
+      "schemaVersion": 1,
+      "ownerUid": "fixture-acolyte",
+      "visibility": "private",
+      "plane": "dept-I",
+      "createdAt": "2026-10-23T00:00:00Z",
+      "updatedAt": "2026-10-23T00:00:00Z",
+      "shelfId": "shelf-demo",
+      "title": "Clifford Torus Notes",
+      "canonIds": [
+        "dept-I/clifford-toroid-proof"
+      ]
+    },
+    {
+      "id": "chapter-demo",
+      "entityType": "memoryChapters",
+      "schemaVersion": 1,
+      "ownerUid": "fixture-acolyte",
+      "visibility": "private",
+      "plane": "dept-I",
+      "createdAt": "2026-10-23T00:00:00Z",
+      "updatedAt": "2026-10-23T00:00:00Z",
+      "bookId": "book-demo",
+      "title": "First observations",
+      "position": 0
+    },
+    {
+      "id": "memory-demo",
+      "entityType": "memoryNodes",
+      "schemaVersion": 1,
+      "ownerUid": "fixture-acolyte",
+      "visibility": "private",
+      "plane": "dept-I",
+      "createdAt": "2026-10-23T00:00:00Z",
+      "updatedAt": "2026-10-23T00:00:00Z",
+      "chapterId": "chapter-demo",
+      "title": "A geometric memory",
+      "notes": "Fixture only: connect a personal observation to the public curriculum.",
+      "mediaIds": [],
+      "knowledgeNodeIds": [
+        "knowledge-demo"
+      ]
+    },
+    {
+      "id": "archive-demo",
+      "entityType": "archiveEntries",
+      "schemaVersion": 1,
+      "ownerUid": "fixture-acolyte",
+      "visibility": "private",
+      "plane": "dept-I",
+      "createdAt": "2026-10-23T00:00:00Z",
+      "updatedAt": "2026-10-23T00:00:00Z",
+      "title": "Clifford Toroid Proof",
+      "sourceType": "canon",
+      "sourceId": "dept-I/clifford-toroid-proof",
+      "mediaIds": []
+    },
+    {
+      "id": "media-demo",
+      "entityType": "archiveMedia",
+      "schemaVersion": 1,
+      "ownerUid": "fixture-acolyte",
+      "visibility": "private",
+      "plane": "dept-I",
+      "createdAt": "2026-10-23T00:00:00Z",
+      "updatedAt": "2026-10-23T00:00:00Z",
+      "title": "Future research image",
+      "storagePath": "celestialHypersim/fixture-acolyte/image-demo",
+      "mimeType": "image/png",
+      "sizeBytes": 0
+    },
+    {
+      "id": "knowledge-demo",
+      "entityType": "knowledgeNodes",
+      "schemaVersion": 1,
+      "ownerUid": "fixture-acolyte",
+      "visibility": "private",
+      "plane": "dept-I",
+      "createdAt": "2026-10-23T00:00:00Z",
+      "updatedAt": "2026-10-23T00:00:00Z",
+      "label": "Clifford Toroid Proof",
+      "kind": "Geometry",
+      "canonId": "dept-I/clifford-toroid-proof"
+    },
+    {
+      "id": "edge-demo",
+      "entityType": "knowledgeEdges",
+      "schemaVersion": 1,
+      "ownerUid": "fixture-acolyte",
+      "visibility": "private",
+      "plane": "dept-I",
+      "createdAt": "2026-10-23T00:00:00Z",
+      "updatedAt": "2026-10-23T00:00:00Z",
+      "sourceId": "knowledge-demo",
+      "targetId": "knowledge-demo",
+      "kind": "relates-to"
+    },
+    {
+      "id": "star-demo",
+      "entityType": "starObjects",
+      "schemaVersion": 1,
+      "ownerUid": "fixture-acolyte",
+      "visibility": "private",
+      "plane": "dept-I",
+      "createdAt": "2026-10-23T00:00:00Z",
+      "updatedAt": "2026-10-23T00:00:00Z",
+      "name": "Sirius (illustrative)",
+      "catalogId": "fixture-sirius",
+      "rightAscensionDeg": 101.287,
+      "declinationDeg": -16.716,
+      "epoch": "J2000.0",
+      "frame": "ICRS",
+      "provenance": "Approximate demonstration only; not an authoritative astronomical catalog."
+    },
+    {
+      "id": "constellation-demo",
+      "entityType": "skyConstellations",
+      "schemaVersion": 1,
+      "ownerUid": "fixture-acolyte",
+      "visibility": "private",
+      "plane": "dept-I",
+      "createdAt": "2026-10-23T00:00:00Z",
+      "updatedAt": "2026-10-23T00:00:00Z",
+      "name": "Illustrative sky grouping",
+      "starIds": [
+        "star-demo"
+      ],
+      "provenance": "Fixture only; unrelated to Academy Genesis positions."
+    },
+    {
+      "id": "observation-demo",
+      "entityType": "observations",
+      "schemaVersion": 1,
+      "ownerUid": "fixture-acolyte",
+      "visibility": "private",
+      "plane": "dept-I",
+      "createdAt": "2026-10-23T00:00:00Z",
+      "updatedAt": "2026-10-23T00:00:00Z",
+      "starId": "star-demo",
+      "observedAt": "2026-10-23T00:00:00Z",
+      "notes": "Illustrative research observation; no device location stored."
+    },
+    {
+      "id": "geometry-demo",
+      "entityType": "geometryObjects",
+      "schemaVersion": 1,
+      "ownerUid": "fixture-acolyte",
+      "visibility": "private",
+      "plane": "dept-I",
+      "createdAt": "2026-10-23T00:00:00Z",
+      "updatedAt": "2026-10-23T00:00:00Z",
+      "name": "Cube",
+      "kind": "platonic-solid",
+      "parameters": {
+        "sideLength": 1
+      },
+      "units": "dimensionless"
+    },
+    {
+      "id": "relationship-demo",
+      "entityType": "geometryRelationships",
+      "schemaVersion": 1,
+      "ownerUid": "fixture-acolyte",
+      "visibility": "private",
+      "plane": "dept-I",
+      "createdAt": "2026-10-23T00:00:00Z",
+      "updatedAt": "2026-10-23T00:00:00Z",
+      "sourceId": "geometry-demo",
+      "targetId": "geometry-demo",
+      "kind": "maps-to"
+    },
+    {
+      "id": "save-demo",
+      "entityType": "simulationStates",
+      "schemaVersion": 1,
+      "ownerUid": "fixture-acolyte",
+      "visibility": "private",
+      "plane": "dept-I",
+      "createdAt": "2026-10-23T00:00:00Z",
+      "updatedAt": "2026-10-23T00:00:00Z",
+      "moduleId": "hyper-sim-chambers",
+      "sceneId": "archive-room-demo",
+      "revision": 0,
+      "seed": 42,
+      "position": [
+        0,
+        0,
+        0
+      ],
+      "linkedNodeIds": [
+        "knowledge-demo"
+      ]
+    },
+    {
+      "entityType": "users",
+      "schemaVersion": 1,
+      "uid": "fixture-acolyte"
+    },
+    {
+      "entityType": "profiles",
+      "schemaVersion": 1,
+      "uid": "fixture-acolyte",
+      "displayName": "Fixture Scholar",
+      "school": "Hyper-Sim Topologist"
+    },
+    {
+      "entityType": "roles",
+      "schemaVersion": 1,
+      "uid": "fixture-acolyte",
+      "tier": "ACOLYTE",
+      "certifiedPlanes": [],
+      "source": "future-server-authority"
+    },
+    {
+      "entityType": "permissions",
+      "schemaVersion": 1,
+      "tier": "ACOLYTE",
+      "actions": [
+        "read",
+        "edit-memory"
+      ],
+      "source": "design-policy"
+    }
+  ]
+}

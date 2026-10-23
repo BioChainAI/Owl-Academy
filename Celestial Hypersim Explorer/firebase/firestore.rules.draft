@@ -1,0 +1,10 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Design artifact only. Do not deploy this file as a replacement for Academy rules.
+    // Live access stays disabled until trusted authority and ownership rules are reviewed.
+    match /celestialHypersim/{namespace}/{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

@@ -1,0 +1,1540 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://biochainai.github.io/Owl-Academy/celestial-hypersim/entities.schema.json",
+  "title": "Owl Academy Explorer draft records and safe projections",
+  "oneOf": [
+    {
+      "$ref": "#/$defs/memoryLibraries"
+    },
+    {
+      "$ref": "#/$defs/memoryShelves"
+    },
+    {
+      "$ref": "#/$defs/memoryBooks"
+    },
+    {
+      "$ref": "#/$defs/memoryChapters"
+    },
+    {
+      "$ref": "#/$defs/memoryNodes"
+    },
+    {
+      "$ref": "#/$defs/archiveEntries"
+    },
+    {
+      "$ref": "#/$defs/archiveMedia"
+    },
+    {
+      "$ref": "#/$defs/knowledgeNodes"
+    },
+    {
+      "$ref": "#/$defs/knowledgeEdges"
+    },
+    {
+      "$ref": "#/$defs/starObjects"
+    },
+    {
+      "$ref": "#/$defs/skyConstellations"
+    },
+    {
+      "$ref": "#/$defs/observations"
+    },
+    {
+      "$ref": "#/$defs/geometryObjects"
+    },
+    {
+      "$ref": "#/$defs/geometryRelationships"
+    },
+    {
+      "$ref": "#/$defs/simulationStates"
+    },
+    {
+      "$ref": "#/$defs/users"
+    },
+    {
+      "$ref": "#/$defs/profiles"
+    },
+    {
+      "$ref": "#/$defs/roles"
+    },
+    {
+      "$ref": "#/$defs/permissions"
+    }
+  ],
+  "$defs": {
+    "memoryLibraries": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 160,
+          "pattern": "^[A-Za-z0-9_-]+$"
+        },
+        "entityType": {
+          "const": "memoryLibraries"
+        },
+        "schemaVersion": {
+          "const": 1
+        },
+        "ownerUid": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 160,
+          "pattern": "^[A-Za-z0-9_-]+$"
+        },
+        "visibility": {
+          "enum": [
+            "private",
+            "academy"
+          ]
+        },
+        "plane": {
+          "enum": [
+            "dept-I",
+            "dept-II",
+            "dept-III",
+            "dept-IV",
+            "dept-V",
+            "dept-VI",
+            "dept-VII",
+            "dept-VIII",
+            "dept-IX",
+            "dept-X"
+          ]
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1000
+        }
+      },
+      "required": [
+        "id",
+        "entityType",
+        "schemaVersion",
+        "ownerUid",
+        "visibility",
+        "plane",
+        "createdAt",
+        "updatedAt",
+        "title"
+      ]
+    },
+    "memoryShelves": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 160,
+          "pattern": "^[A-Za-z0-9_-]+$"
+        },
+        "entityType": {
+          "const": "memoryShelves"
+        },
+        "schemaVersion": {
+          "const": 1
+        },
+        "ownerUid": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 160,
+          "pattern": "^[A-Za-z0-9_-]+$"
+        },
+        "visibility": {
+          "enum": [
+            "private",
+            "academy"
+          ]
+        },
+        "plane": {
+          "enum": [
+            "dept-I",
+            "dept-II",
+            "dept-III",
+            "dept-IV",
+            "dept-V",
+            "dept-VI",
+            "dept-VII",
+            "dept-VIII",
+            "dept-IX",
+            "dept-X"
+          ]
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "libraryId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 160,
+          "pattern": "^[A-Za-z0-9_-]+$"
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1000
+        }
+      },
+      "required": [
+        "id",
+        "entityType",
+        "schemaVersion",
+        "ownerUid",
+        "visibility",
+        "plane",
+        "createdAt",
+        "updatedAt",
+        "libraryId",
+        "title"
+      ]
+    },
+    "memoryBooks": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 160,
+          "pattern": "^[A-Za-z0-9_-]+$"
+        },
+        "entityType": {
+          "const": "memoryBooks"
+        },
+        "schemaVersion": {
+          "const": 1
+        },
+        "ownerUid": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 160,
+          "pattern": "^[A-Za-z0-9_-]+$"
+        },
+        "visibility": {
+          "enum": [
+            "private",
+            "academy"
+          ]
+        },
+        "plane": {
+          "enum": [
+            "dept-I",
+            "dept-II",
+            "dept-III",
+            "dept-IV",
+            "dept-V",
+            "dept-VI",
+            "dept-VII",
+            "dept-VIII",
+            "dept-IX",
+            "dept-X"
+          ]
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "shelfId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 160,
+          "pattern": "^[A-Za-z0-9_-]+$"
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1000
+        },
+        "canonIds": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 240
+          },
+          "maxItems": 100,
+          "uniqueItems": true
+        }
+      },
+      "required": [
+        "id",
+        "entityType",
+        "schemaVersion",
+        "ownerUid",
+        "visibility",
+        "plane",
+        "createdAt",
+        "updatedAt",
+        "shelfId",
+        "title",
+        "canonIds"
+      ]
+    },
+    "memoryChapters": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 160,
+          "pattern": "^[A-Za-z0-9_-]+$"
+        },
+        "entityType": {
+          "const": "memoryChapters"
+        },
+        "schemaVersion": {
+          "const": 1
+        },
+        "ownerUid": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 160,
+          "pattern": "^[A-Za-z0-9_-]+$"
+        },
+        "visibility": {
+          "enum": [
+            "private",
+            "academy"
+          ]
+        },
+        "plane": {
+          "enum": [
+            "dept-I",
+            "dept-II",
+            "dept-III",
+            "dept-IV",
+            "dept-V",
+            "dept-VI",
+            "dept-VII",
+            "dept-VIII",
+            "dept-IX",
+            "dept-X"
+          ]
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "bookId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 160,
+          "pattern": "^[A-Za-z0-9_-]+$"
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1000
+        },
+        "position": {
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "required": [
+        "id",
+        "entityType",
+        "schemaVersion",
+        "ownerUid",
+        "visibility",
+        "plane",
+        "createdAt",
+        "updatedAt",
+        "bookId",
+        "title",
+        "position"
+      ]
+    },
+    "memoryNodes": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 160,
+          "pattern": "^[A-Za-z0-9_-]+$"
+        },
+        "entityType": {
+          "const": "memoryNodes"
+        },
+        "schemaVersion": {
+          "const": 1
+        },
+        "ownerUid": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 160,
+          "pattern": "^[A-Za-z0-9_-]+$"
+        },
+        "visibility": {
+          "enum": [
+            "private",
+            "academy"
+          ]
+        },
+        "plane": {
+          "enum": [
+            "dept-I",
+            "dept-II",
+            "dept-III",
+            "dept-IV",
+            "dept-V",
+            "dept-VI",
+            "dept-VII",
+            "dept-VIII",
+            "dept-IX",
+            "dept-X"
+          ]
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "chapterId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 160,
+          "pattern": "^[A-Za-z0-9_-]+$"
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1000
+        },
+        "notes": {
+          "type": "string",
+          "maxLength": 20000
+        },
+        "mediaIds": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 240
+          },
+          "maxItems": 100,
+          "uniqueItems": true
+        },
+        "knowledgeNodeIds": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 240
+          },
+          "maxItems": 100,
+          "uniqueItems": true
+        }
+      },
+      "required": [
+        "id",
+        "entityType",
+        "schemaVersion",
+        "ownerUid",
+        "visibility",
+        "plane",
+        "createdAt",
+        "updatedAt",
+        "chapterId",
+        "title",
+        "notes",
+        "mediaIds",
+        "knowledgeNodeIds"
+      ]
+    },
+    "archiveEntries": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 160,
+          "pattern": "^[A-Za-z0-9_-]+$"
+        },
+        "entityType": {
+          "const": "archiveEntries"
+        },
+        "schemaVersion": {
+          "const": 1
+        },
+        "ownerUid": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 160,
+          "pattern": "^[A-Za-z0-9_-]+$"
+        },
+        "visibility": {
+          "enum": [
+            "private",
+            "academy"
+          ]
+        },
+        "plane": {
+          "enum": [
+            "dept-I",
+            "dept-II",
+            "dept-III",
+            "dept-IV",
+            "dept-V",
+            "dept-VI",
+            "dept-VII",
+            "dept-VIII",
+            "dept-IX",
+            "dept-X"
+          ]
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1000
+        },
+        "sourceType": {
+          "enum": [
+            "canon",
+            "authored-tome",
+            "research"
+          ]
+        },
+        "sourceId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 240
+        },
+        "mediaIds": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 240
+          },
+          "maxItems": 100,
+          "uniqueItems": true
+        }
+      },
+      "required": [
+        "id",
+        "entityType",
+        "schemaVersion",
+        "ownerUid",
+        "visibility",
+        "plane",
+        "createdAt",
+        "updatedAt",
+        "title",
+        "sourceType",
+        "sourceId",
+        "mediaIds"
+      ]
+    },
+    "archiveMedia": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 160,
+          "pattern": "^[A-Za-z0-9_-]+$"
+        },
+        "entityType": {
+          "const": "archiveMedia"
+        },
+        "schemaVersion": {
+          "const": 1
+        },
+        "ownerUid": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 160,
+          "pattern": "^[A-Za-z0-9_-]+$"
+        },
+        "visibility": {
+          "enum": [
+            "private",
+            "academy"
+          ]
+        },
+        "plane": {
+          "enum": [
+            "dept-I",
+            "dept-II",
+            "dept-III",
+            "dept-IV",
+            "dept-V",
+            "dept-VI",
+            "dept-VII",
+            "dept-VIII",
+            "dept-IX",
+            "dept-X"
+          ]
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1000
+        },
+        "storagePath": {
+          "type": "string",
+          "pattern": "^celestialHypersim/[A-Za-z0-9_/-]+$"
+        },
+        "mimeType": {
+          "enum": [
+            "image/png",
+            "image/jpeg",
+            "image/webp",
+            "application/pdf"
+          ]
+        },
+        "sizeBytes": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 10485760
+        }
+      },
+      "required": [
+        "id",
+        "entityType",
+        "schemaVersion",
+        "ownerUid",
+        "visibility",
+        "plane",
+        "createdAt",
+        "updatedAt",
+        "title",
+        "storagePath",
+        "mimeType",
+        "sizeBytes"
+      ]
+    },
+    "knowledgeNodes": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 160,
+          "pattern": "^[A-Za-z0-9_-]+$"
+        },
+        "entityType": {
+          "const": "knowledgeNodes"
+        },
+        "schemaVersion": {
+          "const": 1
+        },
+        "ownerUid": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 160,
+          "pattern": "^[A-Za-z0-9_-]+$"
+        },
+        "visibility": {
+          "enum": [
+            "private",
+            "academy"
+          ]
+        },
+        "plane": {
+          "enum": [
+            "dept-I",
+            "dept-II",
+            "dept-III",
+            "dept-IV",
+            "dept-V",
+            "dept-VI",
+            "dept-VII",
+            "dept-VIII",
+            "dept-IX",
+            "dept-X"
+          ]
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "label": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1000
+        },
+        "kind": {
+          "enum": [
+            "Concept",
+            "Project",
+            "Person",
+            "Symbol",
+            "Location",
+            "Star",
+            "Research",
+            "Experiment",
+            "Geometry"
+          ]
+        },
+        "canonId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 240
+        }
+      },
+      "required": [
+        "id",
+        "entityType",
+        "schemaVersion",
+        "ownerUid",
+        "visibility",
+        "plane",
+        "createdAt",
+        "updatedAt",
+        "label",
+        "kind"
+      ]
+    },
+    "knowledgeEdges": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 160,
+          "pattern": "^[A-Za-z0-9_-]+$"
+        },
+        "entityType": {
+          "const": "knowledgeEdges"
+        },
+        "schemaVersion": {
+          "const": 1
+        },
+        "ownerUid": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 160,
+          "pattern": "^[A-Za-z0-9_-]+$"
+        },
+        "visibility": {
+          "enum": [
+            "private",
+            "academy"
+          ]
+        },
+        "plane": {
+          "enum": [
+            "dept-I",
+            "dept-II",
+            "dept-III",
+            "dept-IV",
+            "dept-V",
+            "dept-VI",
+            "dept-VII",
+            "dept-VIII",
+            "dept-IX",
+            "dept-X"
+          ]
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "sourceId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 160,
+          "pattern": "^[A-Za-z0-9_-]+$"
+        },
+        "targetId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 160,
+          "pattern": "^[A-Za-z0-9_-]+$"
+        },
+        "kind": {
+          "enum": [
+            "references",
+            "derives-from",
+            "inspires",
+            "relates-to",
+            "contains",
+            "maps-to"
+          ]
+        }
+      },
+      "required": [
+        "id",
+        "entityType",
+        "schemaVersion",
+        "ownerUid",
+        "visibility",
+        "plane",
+        "createdAt",
+        "updatedAt",
+        "sourceId",
+        "targetId",
+        "kind"
+      ]
+    },
+    "starObjects": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 160,
+          "pattern": "^[A-Za-z0-9_-]+$"
+        },
+        "entityType": {
+          "const": "starObjects"
+        },
+        "schemaVersion": {
+          "const": 1
+        },
+        "ownerUid": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 160,
+          "pattern": "^[A-Za-z0-9_-]+$"
+        },
+        "visibility": {
+          "enum": [
+            "private",
+            "academy"
+          ]
+        },
+        "plane": {
+          "enum": [
+            "dept-I",
+            "dept-II",
+            "dept-III",
+            "dept-IV",
+            "dept-V",
+            "dept-VI",
+            "dept-VII",
+            "dept-VIII",
+            "dept-IX",
+            "dept-X"
+          ]
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1000
+        },
+        "catalogId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 240
+        },
+        "rightAscensionDeg": {
+          "type": "number",
+          "minimum": 0,
+          "exclusiveMaximum": 360
+        },
+        "declinationDeg": {
+          "type": "number",
+          "minimum": -90,
+          "maximum": 90
+        },
+        "epoch": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 240
+        },
+        "frame": {
+          "const": "ICRS"
+        },
+        "provenance": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1000
+        }
+      },
+      "required": [
+        "id",
+        "entityType",
+        "schemaVersion",
+        "ownerUid",
+        "visibility",
+        "plane",
+        "createdAt",
+        "updatedAt",
+        "name",
+        "catalogId",
+        "rightAscensionDeg",
+        "declinationDeg",
+        "epoch",
+        "frame",
+        "provenance"
+      ]
+    },
+    "skyConstellations": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 160,
+          "pattern": "^[A-Za-z0-9_-]+$"
+        },
+        "entityType": {
+          "const": "skyConstellations"
+        },
+        "schemaVersion": {
+          "const": 1
+        },
+        "ownerUid": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 160,
+          "pattern": "^[A-Za-z0-9_-]+$"
+        },
+        "visibility": {
+          "enum": [
+            "private",
+            "academy"
+          ]
+        },
+        "plane": {
+          "enum": [
+            "dept-I",
+            "dept-II",
+            "dept-III",
+            "dept-IV",
+            "dept-V",
+            "dept-VI",
+            "dept-VII",
+            "dept-VIII",
+            "dept-IX",
+            "dept-X"
+          ]
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1000
+        },
+        "starIds": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 240
+          },
+          "maxItems": 100,
+          "uniqueItems": true
+        },
+        "provenance": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1000
+        }
+      },
+      "required": [
+        "id",
+        "entityType",
+        "schemaVersion",
+        "ownerUid",
+        "visibility",
+        "plane",
+        "createdAt",
+        "updatedAt",
+        "name",
+        "starIds",
+        "provenance"
+      ]
+    },
+    "observations": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 160,
+          "pattern": "^[A-Za-z0-9_-]+$"
+        },
+        "entityType": {
+          "const": "observations"
+        },
+        "schemaVersion": {
+          "const": 1
+        },
+        "ownerUid": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 160,
+          "pattern": "^[A-Za-z0-9_-]+$"
+        },
+        "visibility": {
+          "enum": [
+            "private",
+            "academy"
+          ]
+        },
+        "plane": {
+          "enum": [
+            "dept-I",
+            "dept-II",
+            "dept-III",
+            "dept-IV",
+            "dept-V",
+            "dept-VI",
+            "dept-VII",
+            "dept-VIII",
+            "dept-IX",
+            "dept-X"
+          ]
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "starId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 160,
+          "pattern": "^[A-Za-z0-9_-]+$"
+        },
+        "observedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "notes": {
+          "type": "string",
+          "maxLength": 20000
+        }
+      },
+      "required": [
+        "id",
+        "entityType",
+        "schemaVersion",
+        "ownerUid",
+        "visibility",
+        "plane",
+        "createdAt",
+        "updatedAt",
+        "starId",
+        "observedAt",
+        "notes"
+      ]
+    },
+    "geometryObjects": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 160,
+          "pattern": "^[A-Za-z0-9_-]+$"
+        },
+        "entityType": {
+          "const": "geometryObjects"
+        },
+        "schemaVersion": {
+          "const": 1
+        },
+        "ownerUid": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 160,
+          "pattern": "^[A-Za-z0-9_-]+$"
+        },
+        "visibility": {
+          "enum": [
+            "private",
+            "academy"
+          ]
+        },
+        "plane": {
+          "enum": [
+            "dept-I",
+            "dept-II",
+            "dept-III",
+            "dept-IV",
+            "dept-V",
+            "dept-VI",
+            "dept-VII",
+            "dept-VIII",
+            "dept-IX",
+            "dept-X"
+          ]
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1000
+        },
+        "kind": {
+          "enum": [
+            "platonic-solid",
+            "tessellation",
+            "coordinate-system",
+            "field",
+            "custom"
+          ]
+        },
+        "parameters": {
+          "type": "object",
+          "maxProperties": 16,
+          "additionalProperties": {
+            "type": "number"
+          }
+        },
+        "units": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 240
+        }
+      },
+      "required": [
+        "id",
+        "entityType",
+        "schemaVersion",
+        "ownerUid",
+        "visibility",
+        "plane",
+        "createdAt",
+        "updatedAt",
+        "name",
+        "kind",
+        "parameters",
+        "units"
+      ]
+    },
+    "geometryRelationships": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 160,
+          "pattern": "^[A-Za-z0-9_-]+$"
+        },
+        "entityType": {
+          "const": "geometryRelationships"
+        },
+        "schemaVersion": {
+          "const": 1
+        },
+        "ownerUid": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 160,
+          "pattern": "^[A-Za-z0-9_-]+$"
+        },
+        "visibility": {
+          "enum": [
+            "private",
+            "academy"
+          ]
+        },
+        "plane": {
+          "enum": [
+            "dept-I",
+            "dept-II",
+            "dept-III",
+            "dept-IV",
+            "dept-V",
+            "dept-VI",
+            "dept-VII",
+            "dept-VIII",
+            "dept-IX",
+            "dept-X"
+          ]
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "sourceId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 160,
+          "pattern": "^[A-Za-z0-9_-]+$"
+        },
+        "targetId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 160,
+          "pattern": "^[A-Za-z0-9_-]+$"
+        },
+        "kind": {
+          "enum": [
+            "dual-of",
+            "derived-from",
+            "maps-to"
+          ]
+        }
+      },
+      "required": [
+        "id",
+        "entityType",
+        "schemaVersion",
+        "ownerUid",
+        "visibility",
+        "plane",
+        "createdAt",
+        "updatedAt",
+        "sourceId",
+        "targetId",
+        "kind"
+      ]
+    },
+    "simulationStates": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 160,
+          "pattern": "^[A-Za-z0-9_-]+$"
+        },
+        "entityType": {
+          "const": "simulationStates"
+        },
+        "schemaVersion": {
+          "const": 1
+        },
+        "ownerUid": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 160,
+          "pattern": "^[A-Za-z0-9_-]+$"
+        },
+        "visibility": {
+          "enum": [
+            "private",
+            "academy"
+          ]
+        },
+        "plane": {
+          "enum": [
+            "dept-I",
+            "dept-II",
+            "dept-III",
+            "dept-IV",
+            "dept-V",
+            "dept-VI",
+            "dept-VII",
+            "dept-VIII",
+            "dept-IX",
+            "dept-X"
+          ]
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "moduleId": {
+          "enum": [
+            "hyper-sim-chambers",
+            "celestial-observatory",
+            "sacred-geometry"
+          ]
+        },
+        "sceneId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 160,
+          "pattern": "^[A-Za-z0-9_-]+$"
+        },
+        "revision": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "seed": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "position": {
+          "type": "array",
+          "items": {
+            "type": "number"
+          },
+          "minItems": 3,
+          "maxItems": 3
+        },
+        "linkedNodeIds": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 240
+          },
+          "maxItems": 100,
+          "uniqueItems": true
+        }
+      },
+      "required": [
+        "id",
+        "entityType",
+        "schemaVersion",
+        "ownerUid",
+        "visibility",
+        "plane",
+        "createdAt",
+        "updatedAt",
+        "moduleId",
+        "sceneId",
+        "revision",
+        "seed",
+        "position",
+        "linkedNodeIds"
+      ]
+    },
+    "users": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "entityType": {
+          "const": "users"
+        },
+        "schemaVersion": {
+          "const": 1
+        },
+        "uid": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 160,
+          "pattern": "^[A-Za-z0-9_-]+$"
+        }
+      },
+      "required": [
+        "entityType",
+        "schemaVersion",
+        "uid"
+      ]
+    },
+    "profiles": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "entityType": {
+          "const": "profiles"
+        },
+        "schemaVersion": {
+          "const": 1
+        },
+        "uid": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 160,
+          "pattern": "^[A-Za-z0-9_-]+$"
+        },
+        "displayName": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1000
+        },
+        "school": {
+          "enum": [
+            "Geometer",
+            "Arithmetician",
+            "Sacred Scientist",
+            "Biochain Architect",
+            "Hyper-Sim Topologist"
+          ]
+        }
+      },
+      "required": [
+        "entityType",
+        "schemaVersion",
+        "uid",
+        "displayName",
+        "school"
+      ]
+    },
+    "roles": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "entityType": {
+          "const": "roles"
+        },
+        "schemaVersion": {
+          "const": 1
+        },
+        "uid": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 160,
+          "pattern": "^[A-Za-z0-9_-]+$"
+        },
+        "tier": {
+          "enum": [
+            "ACOLYTE",
+            "INSTRUCTOR",
+            "ARCHON"
+          ]
+        },
+        "certifiedPlanes": {
+          "type": "array",
+          "items": {
+            "enum": [
+              "*",
+              "dept-I",
+              "dept-II",
+              "dept-III",
+              "dept-IV",
+              "dept-V",
+              "dept-VI",
+              "dept-VII",
+              "dept-VIII",
+              "dept-IX",
+              "dept-X"
+            ]
+          },
+          "uniqueItems": true
+        },
+        "source": {
+          "const": "future-server-authority"
+        }
+      },
+      "required": [
+        "entityType",
+        "schemaVersion",
+        "uid",
+        "tier",
+        "certifiedPlanes",
+        "source"
+      ]
+    },
+    "permissions": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "entityType": {
+          "const": "permissions"
+        },
+        "schemaVersion": {
+          "const": 1
+        },
+        "tier": {
+          "enum": [
+            "ACOLYTE",
+            "INSTRUCTOR",
+            "ARCHON"
+          ]
+        },
+        "actions": {
+          "type": "array",
+          "items": {
+            "enum": [
+              "read",
+              "edit-memory",
+              "author-lesson",
+              "publish-canon",
+              "manage-authority"
+            ]
+          },
+          "uniqueItems": true
+        },
+        "source": {
+          "const": "design-policy"
+        }
+      },
+      "required": [
+        "entityType",
+        "schemaVersion",
+        "tier",
+        "actions",
+        "source"
+      ]
+    }
+  }
+}

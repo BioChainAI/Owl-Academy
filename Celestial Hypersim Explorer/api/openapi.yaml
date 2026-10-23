@@ -1,0 +1,141 @@
+openapi: 3.1.0
+info:
+  title: Owl Academy Celestial Hypersim Explorer API Draft
+  version: 0.1.0
+  description: Design only. No API deployment or production connection exists.
+paths:
+  /v1/canon:
+    get:
+      operationId: listCanon
+      security: [{ FirebaseIdToken: [] }]
+      parameters:
+        - { in: query, name: cursor, schema: { type: string, maxLength: 256 } }
+        - { in: query, name: limit, schema: { type: integer, minimum: 1, maximum: 100, default: 25 } }
+      responses:
+        '200':
+          description: Canon projection; cursor is null at end
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items, nextCursor]
+                properties:
+                  items: { type: array, maxItems: 100, items: { $ref: '#/components/schemas/CanonTome' } }
+                  nextCursor: { type: [string, 'null'] }
+        '401': { $ref: '#/components/responses/Error' }
+        '429': { $ref: '#/components/responses/Error' }
+  /v1/graph/{nodeId}:
+    get:
+      operationId: traverseGraph
+      security: [{ FirebaseIdToken: [] }]
+      parameters:
+        - { in: path, name: nodeId, required: true, schema: { type: string, pattern: '^[A-Za-z0-9_-]{1,160}$' } }
+        - { in: query, name: maxDepth, schema: { type: integer, minimum: 0, maximum: 20, default: 3 } }
+      responses:
+        '200':
+          description: Access-filtered graph, maximum 500 nodes, with truncation flag
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [nodes, edges, truncated]
+                properties:
+                  nodes: { type: array, maxItems: 500, items: { $ref: '../schemas/entities.schema.json#/$defs/knowledgeNodes' } }
+                  edges: { type: array, maxItems: 1000, items: { $ref: '../schemas/entities.schema.json#/$defs/knowledgeEdges' } }
+                  truncated: { type: boolean }
+        '401': { $ref: '#/components/responses/Error' }
+        '404': { $ref: '#/components/responses/Error' }
+        '429': { $ref: '#/components/responses/Error' }
+  /v1/memory-nodes:
+    post:
+      operationId: createMemoryNode
+      security: [{ FirebaseIdToken: [] }]
+      parameters:
+        - { in: header, name: Idempotency-Key, required: true, schema: { type: string, minLength: 16, maxLength: 128 } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/MemoryNodeInput' }
+      responses:
+        '201':
+          description: Owner and timestamps assigned by service
+          content:
+            application/json:
+              schema: { $ref: '../schemas/entities.schema.json#/$defs/memoryNodes' }
+        '401': { $ref: '#/components/responses/Error' }
+        '403': { $ref: '#/components/responses/Error' }
+        '409': { $ref: '#/components/responses/Error' }
+        '422': { $ref: '#/components/responses/Error' }
+        '429': { $ref: '#/components/responses/Error' }
+  /v1/simulation-states/{stateId}:
+    put:
+      operationId: saveSimulation
+      security: [{ FirebaseIdToken: [] }]
+      parameters:
+        - { in: path, name: stateId, required: true, schema: { type: string, pattern: '^[A-Za-z0-9_-]{1,160}$' } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [expectedRevision, moduleId, sceneId, seed, position, linkedNodeIds]
+              properties:
+                expectedRevision: { type: integer, minimum: 0 }
+                moduleId: { enum: [hyper-sim-chambers, celestial-observatory, sacred-geometry] }
+                sceneId: { type: string, pattern: '^[A-Za-z0-9_-]{1,160}$' }
+                seed: { type: integer, minimum: 0 }
+                position: { type: array, minItems: 3, maxItems: 3, items: { type: number } }
+                linkedNodeIds: { type: array, maxItems: 100, uniqueItems: true, items: { type: string } }
+      responses:
+        '200':
+          description: Updated authoritative state with incremented revision; create uses expectedRevision zero
+          content:
+            application/json:
+              schema: { $ref: '../schemas/entities.schema.json#/$defs/simulationStates' }
+        '401': { $ref: '#/components/responses/Error' }
+        '403': { $ref: '#/components/responses/Error' }
+        '404': { $ref: '#/components/responses/Error' }
+        '409': { $ref: '#/components/responses/Error' }
+        '422': { $ref: '#/components/responses/Error' }
+        '429': { $ref: '#/components/responses/Error' }
+components:
+  securitySchemes:
+    FirebaseIdToken:
+      type: http
+      scheme: bearer
+      bearerFormat: Firebase ID token
+  responses:
+    Error:
+      description: Safe error; status code determines the failure category
+      content:
+        application/json:
+          schema:
+            type: object
+            required: [code, message, requestId]
+            additionalProperties: false
+            properties:
+              code: { type: string }
+              message: { type: string }
+              requestId: { type: string }
+  schemas:
+    CanonTome:
+      type: object
+      required: [canonId, title, dept, globalIndex]
+      properties:
+        canonId: { type: string }
+        title: { type: string }
+        dept: { enum: [I, II, III, IV, V, VI, VII, VIII, IX, X] }
+        globalIndex: { type: integer, minimum: 1, maximum: 145 }
+    MemoryNodeInput:
+      type: object
+      additionalProperties: false
+      required: [chapterId, title, notes, mediaIds, knowledgeNodeIds]
+      properties:
+        chapterId: { type: string, pattern: '^[A-Za-z0-9_-]{1,160}$' }
+        title: { type: string, minLength: 1, maxLength: 1000 }
+        notes: { type: string, maxLength: 20000 }
+        mediaIds: { type: array, maxItems: 100, uniqueItems: true, items: { type: string } }
+        knowledgeNodeIds: { type: array, maxItems: 100, uniqueItems: true, items: { type: string } }

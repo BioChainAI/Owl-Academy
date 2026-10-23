@@ -1,0 +1,13 @@
+# Integration strategy
+
+1. **Research and isolated scaffold (this change):** no production writes, Firebase initialization, Pages workflow changes, or navigation hooks. Public file canon projection only. Run tests, typecheck, static build, and local functional checks.
+2. **Authority remediation, separately authorized:** replace owner-editable privilege trust; evaluate HMAC certificates and unlock payload/lifecycle gaps. Capture current deployed policy securely and implement emulator tests before deployment. No automatic data rewrite or account upgrade.
+3. **Emulator adapter:** approve a dedicated Firebase project ID such as an emulator-only demo project, explicit loopback configuration, rules, indexes, fixtures and reset procedure. Reject fallback to production when an emulator is unavailable. Test cross-user privacy and denied writes as well as happy paths.
+4. **Read-only bridge:** approve host/base path and Firebase Auth domains. Map existing UID, server-owned authority, canon IDs and granted learning records. Fetch minimal fields, paginate queries, handle revoked/expired sessions and UID changes, unsubscribe, and render errors rather than silently treating denied reads as empty data.
+5. **Private memory persistence:** approve namespace and Storage paths. Enforce ownership, bounded schemas, safe media, byte limits, retention, export/delete semantics and idempotency. Private keys never enter the Explorer's data model. Test concurrent saves and recoverable versions.
+6. **Official content/approval bridge:** only after independent security review, use trusted services for canon publication, completion, rewards and audit. Separate personal memory actions from institutional approval. Migrations require dry-run reports, source ID mappings, backups and explicit scope.
+7. **Hosting/navigation integration:** build an export with the agreed encoded base path; stage only generated assets. Preserve the existing site's artifact. Add a reviewed navigation entry and functional smoke tests across login, deep links, assets, history and sign-out. The current workflow is untouched.
+
+Rollback at each stage: remove new entry points/adapter activation and stop new requests; preserve existing Academy records. Do not roll back by deleting shared users, changing legacy tier fields, overwriting rules, or removing the existing Pages site. Database migration rollback is designed and reviewed alongside each migration.
+
+The scaffold contains no universal `ENABLE_PRODUCTION=true` escape hatch. Live capabilities require implementing and reviewing the adapter and its enforcement, not changing a browser environment variable.
