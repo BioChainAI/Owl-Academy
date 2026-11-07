@@ -450,7 +450,8 @@ grow, transfer, and rate); a student-facing marketplace page can reuse
 
 | File | Role |
 |---|---|
-| `scripts/biomesh.js` | grow cell (pure) + certify/publish/send/accept/rate/trace/session-burn services |
+| `scripts/biomesh-core.js` | the pure, Firebase-free half: grow cell, recreation, `verifyIntegrity`, token engrams and language seeds, growth epochs, codex derivation, and the GROWN/1 · GROWTH/1 · CODEX/1 · PAIR/1 commitment strings (runs in Node too; `tests/unit/biomesh-core.test.mjs`) |
+| `scripts/biomesh.js` | re-exports `biomesh-core.js` + certify/publish/send/accept/rate/trace/session-burn services (Firestore); pages import this module |
 | `scripts/sigil-renderer.js` | familiar SVG engine, extended with `renderSealSigil`/`sealManifoldFromVector` for operator seals |
 | `mage_tower/Biomesh_Console.html` | the Archon-only control panel |
 | `mage_tower/Biomesh_Language_Growing.html` | BART/biochain/API language-seed growing surface + auditable chain of thought |
@@ -460,6 +461,8 @@ grow, transfer, and rate); a student-facing marketplace page can reuse
 | `mage_tower/Celestial_Library.html` | walkable 3D geometric engine (`compileManifold`, protocol-packet driven) + intrinsic clock (π/6-gear Chronology window) — standalone today, staged for BioChain-AI + Familiar integration |
 | `mage_tower/Celestial_Library_Scholar.html` | identical room, gated by `scripts/auth-guard.js`, with a Scholar Account window bound to the signed-in Google identity (avatar/name/email/sign-out + sealed Cosmological ID) |
 | `firestore.rules` | `biochains` / `biochainTransfers` / `biochainRatings` / `chronicles` blocks |
+| `firebase.json`, `.firebaserc` | the rules file and the Firestore emulator settings (no hosting); default project `owl-academy-6bce2` |
+| `tests/` | unit, rules (Firestore emulator) and static tests, run by `.github/workflows/biomesh-ci.yml`; see `tests/README.md` |
 | `BioChain-AI/BioChain_Enterprise/` | the measured reference stack this deploys |
 
 ## Trust model
@@ -476,9 +479,11 @@ System.
 
 ## Deploy
 
-1. `firebase deploy --only firestore:rules` (adds the three Biomesh collections).
+1. From the repository root, `firebase deploy --only firestore:rules` (adds the three Biomesh collections;
+   `firebase.json` names the rules file and `.firebaserc` the project). `cd tests && npm ci && npm run test:rules`
+   runs the rules tests in the emulator first.
 2. Open **Biomesh Console** as an Archon; grow → certify → list.
 3. Send a chain to any student UID — free; they accept from any page using
    `acceptBiochain` (or a future student marketplace page).
 
-*Last updated: 2026-07-03*
+*Last updated: 2026-11-07*

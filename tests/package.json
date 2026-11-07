@@ -1,0 +1,15 @@
+{
+  "name": "owl-academy-tests",
+  "private": true,
+  "type": "module",
+  "description": "Test tools only (Owl Academy has no build). The unit and static tests need just Node; the rules tests need these packages and Java 21. See README.md.",
+  "scripts": {
+    "test": "node --test \"unit/*.test.mjs\" \"static/*.test.mjs\"",
+    "test:rules": "firebase emulators:exec --config ../firebase.json --only firestore --project demo-owl-rules \"node --test rules/rules.test.mjs\""
+  },
+  "devDependencies": {
+    "@firebase/rules-unit-testing": "^5.0.2",
+    "firebase": "^12.15.0",
+    "firebase-tools": "^15.0.0"
+  }
+}

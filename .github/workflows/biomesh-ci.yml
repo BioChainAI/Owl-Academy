@@ -1,0 +1,151 @@
+# Owl Academy checks for the shared scripts, the Firestore rules and the pages that render records.
+# Jobs:
+#   unit      tests/unit: scripts/biomesh-core.js (the move from biomesh.js, goldens, round trips, the 13
+#             biomesh_compat_v1 texts), the vendored files (VENDOR.json) and tests/rules/client-requests.json, offline
+#   rules     tests/rules: firestore.rules in the Firestore emulator against tests/rules/client-requests.json (the
+#             client's requests are allowed; other accounts and signed-out visitors are refused)
+#   static    tests/static: escaping helpers, HTML sinks, MathJax pins, storage-key policy (also nightly)
+#   upstream  scheduled: compare tests/vendor/ with the upstream copies (notes only, never a failure)
+# The paths cover every file a job reads: the static checks scan pages and scripts across the repository.
+# Actions are pinned to commits (the tag is in the comment). The workflow holds no credentials: checkouts do not
+# persist the token, and nothing here deploys (a maintainer deploys the rules: firebase deploy --only firestore:rules).
+name: Biomesh CI
+
+on:
+  pull_request:
+    paths:
+      - "scripts/**"
+      - "mage_tower/**"
+      - "Proofs/**"
+      - "tests/**"
+      - "firestore.rules"
+      - "firebase.json"
+      - ".gitattributes"
+      - "**/*.html"
+      - "**/*.htm"
+      - "**/*.js"
+      - "**/*.mjs"
+      - "**/*.cjs"
+      - "**/*.ts"
+      - "**/*.tsx"
+      - "**/*.jsx"
+      - ".github/workflows/biomesh-ci.yml"
+  push:
+    branches: ["main"]
+    paths:
+      - "scripts/**"
+      - "mage_tower/**"
+      - "Proofs/**"
+      - "tests/**"
+      - "firestore.rules"
+      - "firebase.json"
+      - ".gitattributes"
+      - "**/*.html"
+      - "**/*.htm"
+      - "**/*.js"
+      - "**/*.mjs"
+      - "**/*.cjs"
+      - "**/*.ts"
+      - "**/*.tsx"
+      - "**/*.jsx"
+      - ".github/workflows/biomesh-ci.yml"
+  schedule:
+    - cron: "17 3 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: biomesh-ci-${{ github.ref }}-${{ github.event_name }}
+  cancel-in-progress: true
+
+jobs:
+  unit:
+    name: Unit
+    if: github.event_name != 'schedule'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: "Checkout (full history: the move is checked against 7f45f35)"
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - name: Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 22
+      - name: Unit tests
+        env:
+          OWL_REQUIRE_HISTORY: "1"
+        run: node --test "tests/unit/*.test.mjs"
+
+  rules:
+    name: Rules (Firestore emulator)
+    if: github.event_name != 'schedule'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: tests
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+      - name: Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: tests/package-lock.json
+      - name: Java (Firestore emulator)
+        uses: actions/setup-java@cf277c60eb25467037889841efdb72551f06f6c3 # v4.9.1
+        with:
+          distribution: temurin
+          java-version: "21"
+      - name: Emulator download cache
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        with:
+          path: ~/.cache/firebase/emulators
+          key: firebase-emulators-${{ runner.os }}-${{ hashFiles('tests/package-lock.json') }}
+      - name: Install (devDependencies of tests/package.json)
+        run: npm ci --no-audit --no-fund
+      - name: Rules tests
+        env:
+          OWL_RULES_REQUIRED: "1"
+        run: npm run test:rules
+
+  static:
+    name: Static (sinks, storage policy)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+      - name: Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 22
+      - name: Static checks
+        run: node --test "tests/static/*.test.mjs"
+
+  upstream:
+    name: Vendored files vs upstream (notes)
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+      - name: Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 22
+      - name: Compare
+        run: node tests/vendor/check-upstream.mjs
