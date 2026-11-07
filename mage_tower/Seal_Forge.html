@@ -127,14 +127,14 @@ import {
   SEAL_LATTICES, MANIFOLDS,
 } from "../scripts/minor-tome.js";
 import { renderSealSigil } from "../scripts/sigil-renderer.js";
+import { escapeHtml, escapeAttr } from "../scripts/ui/escape.js";
 
 const $ = (id) => document.getElementById(id);
-const esc = (s) => String(s).replace(/[&<>]/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;" }[c]));
 let UID = null, lastBlock = null;
 
 // populate selects
-for (const [k, v] of Object.entries(SEAL_LATTICES)) $("m-lattice").insertAdjacentHTML("beforeend", `<option value="${k}">${k} · ${v.name}</option>`);
-for (const [k, v] of Object.entries(MANIFOLDS)) $("m-manifold").insertAdjacentHTML("beforeend", `<option value="${k}">${v.name}</option>`);
+for (const [k, v] of Object.entries(SEAL_LATTICES)) $("m-lattice").insertAdjacentHTML("beforeend", `<option value="${escapeAttr(k)}">${escapeHtml(k)} · ${escapeHtml(v.name)}</option>`);
+for (const [k, v] of Object.entries(MANIFOLDS)) $("m-manifold").insertAdjacentHTML("beforeend", `<option value="${escapeAttr(k)}">${escapeHtml(v.name)}</option>`);
 $("m-coh").oninput = e => $("m-coh-o").textContent = (+e.target.value).toFixed(2);
 $("m-tor").oninput = e => $("m-tor-o").textContent = (+e.target.value).toFixed(2);
 
@@ -144,8 +144,7 @@ onAuthStateChanged(auth, async (u) => {
   if (!u) return; UID = u.uid;
   let tier = "ACOLYTE"; try { tier = await resolveTier(u.uid); } catch {}
   const sym = tier === "ARCHON" ? "♛" : tier === "INSTRUCTOR" ? "⬢" : "◯";
-  $("who").textContent = `${sym} ${tier} · ${u.uid.slice(0,10)}… · LOGOUT`;
-  $("who").innerHTML = `${sym} ${tier} · ${u.uid.slice(0,10)}…`;
+  $("who").textContent = `${sym} ${tier} · ${u.uid.slice(0,10)}…`;
   refreshSchumann(); loadTomes();
 });
 setInterval(refreshSchumann, 5 * 60 * 1000);
@@ -155,19 +154,19 @@ async function loadTomes(){
   $("tcount").textContent = `(${tomes.length})`;
   const active = tomes.filter(t => t.status === "active");
   $("s-tome").innerHTML = active.length
-    ? active.map(t => `<option value="${t.sealId}">${esc(t.label)} · ${t.sealId.slice(0,12)}…</option>`).join("")
+    ? active.map(t => `<option value="${escapeAttr(t.sealId)}">${escapeHtml(t.label)} · ${escapeHtml(String(t.sealId).slice(0, 12))}…</option>`).join("")
     : `<option value="">— no active minor tomes —</option>`;
   $("tome-list").innerHTML = tomes.length ? tomes.map(t => `
     <div class="tome">
       <div style="display:flex;gap:.7rem;align-items:flex-start">
         <div style="flex:0 0 auto;width:72px;height:72px" title="Unique SHD-CCP seal sigil">${renderSealSigil(t, { size: 72 })}</div>
         <div style="flex:1;min-width:0">
-          <div class="top"><span class="nm">${esc(t.label)}</span><span class="badge ${t.status}">${t.status}</span></div>
-          <div class="vec">⬡ ${t.sealVector} · ${t.sealId.slice(0,16)}…</div>
-          <div class="meta">${esc((t.params&&t.params.lattice)||"E8")} · ${esc((t.params&&t.params.manifold)||"clifford")} · coh ${(t.params&&t.params.coherency)??"–"} · tor ${(t.params&&t.params.torsion)??"–"} · tick ${esc(t.tickToken||"")}</div>
+          <div class="top"><span class="nm">${escapeHtml(t.label)}</span><span class="badge ${escapeAttr(t.status)}">${escapeHtml(t.status)}</span></div>
+          <div class="vec">⬡ ${escapeHtml(t.sealVector)} · ${escapeHtml(String(t.sealId).slice(0, 16))}…</div>
+          <div class="meta">${escapeHtml((t.params&&t.params.lattice)||"E8")} · ${escapeHtml((t.params&&t.params.manifold)||"clifford")} · coh ${escapeHtml((t.params&&t.params.coherency)??"–")} · tor ${escapeHtml((t.params&&t.params.torsion)??"–")} · tick ${escapeHtml(t.tickToken||"")}</div>
           <div style="margin-top:.45rem;display:flex;gap:.4rem">
-            <button class="btn sm" data-recall="${t.sealId}" ${t.status!=="active"?"disabled":""}>Recall</button>
-            <button class="btn sm" data-archive="${t.sealId}" ${t.status!=="active"?"disabled":""}>Archive</button>
+            <button class="btn sm" data-recall="${escapeAttr(t.sealId)}" ${t.status!=="active"?"disabled":""}>Recall</button>
+            <button class="btn sm" data-archive="${escapeAttr(t.sealId)}" ${t.status!=="active"?"disabled":""}>Archive</button>
           </div>
         </div>
       </div>
@@ -210,11 +209,11 @@ $("verify").onclick = async () => {
   const content = $("v-content").value;
   const r = content.trim() ? await verifySealAgainstContent(block, content) : await verifySealBlock(block);
   if (r.valid) {
-    $("v-out").innerHTML = `<div class="verdict ok">✓ Seal valid — ${esc(r.reason)}</div>
-      <div class="hint mono">traces to Genesis ${esc(r.genesisId||"?")} · ${esc(r.tier||"?")} · owner ${esc((r.ownerUid||"").slice(0,12))}… · ⬡ ${esc(r.sealVector||"")}${r.contentMatch===false?" · ⚠ content mismatch":""}</div>`;
+    $("v-out").innerHTML = `<div class="verdict ok">✓ Seal valid — ${escapeHtml(r.reason)}</div>
+      <div class="hint mono">traces to Genesis ${escapeHtml(r.genesisId||"?")} · ${escapeHtml(r.tier||"?")} · owner ${escapeHtml((r.ownerUid||"").slice(0,12))}… · ⬡ ${escapeHtml(r.sealVector||"")}${r.contentMatch===false?" · ⚠ content mismatch":""}</div>`;
   } else {
-    $("v-out").innerHTML = `<div class="verdict bad">✗ ${esc(r.reason||"invalid")}</div>` +
-      (r.genesisId ? `<div class="hint mono">claimed Genesis ${esc(r.genesisId)} · status ${esc(r.status||"?")}</div>` : "");
+    $("v-out").innerHTML = `<div class="verdict bad">✗ ${escapeHtml(r.reason||"invalid")}</div>` +
+      (r.genesisId ? `<div class="hint mono">claimed Genesis ${escapeHtml(r.genesisId)} · status ${escapeHtml(r.status||"?")}</div>` : "");
   }
 };
 </script>

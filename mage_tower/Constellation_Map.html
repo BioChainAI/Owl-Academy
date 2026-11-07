@@ -338,6 +338,7 @@
 
 <script type="module">
 import { auth, db } from "../scripts/firebase/config.js";
+import { escapeHtml, escapeAttr, jsArg } from "../scripts/ui/escape.js";
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-auth.js";
 import {
   collection, doc, getDoc, setDoc, getDocs,
@@ -687,12 +688,12 @@ function renderUserList(filter = '') {
   list.innerHTML = shown.map(u => {
     const tier  = normTier(u.tier);
     const isMe  = u.uid === myUid;
-    return `<div class="user-card${selectedUid === u.uid ? ' selected' : ''}" data-uid="${u.uid}" onclick="window._selectUser('${u.uid}')">
-      <div class="node-dot tier-${tier}"></div>
+    return `<div class="user-card${selectedUid === u.uid ? ' selected' : ''}" data-uid="${escapeAttr(u.uid)}" onclick="window._selectUser(${jsArg(u.uid)})">
+      <div class="node-dot tier-${escapeAttr(tier)}"></div>
       <div class="card-info">
-        <div class="card-name">${escHtml(u.displayName || 'Unknown Scholar')}${isMe ? ' <span style="color:rgba(52,211,153,0.7);font-size:9px;">(you)</span>' : ''}</div>
+        <div class="card-name">${escapeHtml(u.displayName || 'Unknown Scholar')}${isMe ? ' <span style="color:rgba(52,211,153,0.7);font-size:9px;">(you)</span>' : ''}</div>
         <div class="card-meta">
-          <div class="card-tier tier-${tier}">${tier}</div>
+          <div class="card-tier tier-${escapeAttr(tier)}">${escapeHtml(tier)}</div>
           ${orbitPipsHtml(u.orbitals)}
         </div>
       </div>
@@ -740,14 +741,10 @@ function selectUser(uid) {
     badgesEl.innerHTML  = '';
   } else {
     t1El.textContent = dept789.length + '/3';
-    badgesEl.innerHTML = dept789.map(d => `<span class="dept-badge d${d}">D${d}</span>`).join('');
+    badgesEl.innerHTML = dept789.map(d => `<span class="dept-badge d${escapeAttr(d)}">D${escapeHtml(d)}</span>`).join('');
   }
 }
 window._selectUser = selectUser;
-
-function escHtml(s) {
-  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-}
 
 // ── Warp ─────────────────────────────────────────────────────────────────────
 function warpToNode(uid) {
@@ -864,7 +861,7 @@ function startListening() {
     const isInitialLoad = snap.metadata.fromCache === false && allUsers.length === 0;
 
     snap.docChanges().forEach(change => {
-      const data = { uid: change.doc.id, ...change.doc.data() };
+      const data = { ...change.doc.data(), uid: change.doc.id };   // the document id is the owner's uid
 
       if (change.type === 'added') {
         if (allUsers.find(u => u.uid === data.uid)) return;

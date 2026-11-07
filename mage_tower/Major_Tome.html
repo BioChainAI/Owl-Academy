@@ -70,9 +70,9 @@ import { resolveTier } from "../scripts/genesis-registrar.js";
 import { listMinorTomes } from "../scripts/minor-tome.js";
 import { listMajorTomes, requestUnlock, claimCompletion, listMyRequests, listGrantsForStudent, verifyUnlockGrant } from "../scripts/major-tome.js";
 import { renderTomeSVG } from "../scripts/tome-procgen.js";
+import { escapeHtml, escapeAttr } from "../scripts/ui/escape.js";
 
 const $ = (id) => document.getElementById(id);
-const esc = (s) => String(s).replace(/[&<>]/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;" }[c]));
 let UID = null;
 
 onAuthStateChanged(auth, async (u) => {
@@ -90,7 +90,7 @@ async function load(){
   ]);
   const active = mine.filter(t => t.status === "active");
   $("signtome").innerHTML = active.length
-    ? active.map(t => `<option value="${t.sealId}">${esc(t.label)} · ${t.sealId.slice(0,12)}…</option>`).join("")
+    ? active.map(t => `<option value="${escapeAttr(t.sealId)}">${escapeHtml(t.label)} · ${escapeHtml(String(t.sealId).slice(0, 12))}…</option>`).join("")
     : `<option value="">— no active minor tomes (forge one) —</option>`;
 
   const accessReq = {}, compReq = {};
@@ -107,29 +107,29 @@ async function load(){
       let verified = false; try { verified = (await verifyUnlockGrant(aGrant)).valid; } catch {}
       stateHtml = `<span class="state unlocked">Unlocked${verified ? " ✓" : ""}</span>`;
       if (cGrant) {
-        actHtml = `<span class="hint mono">✓ completed — validated by ${esc(cGrant.issuerGenesisId || "?")} · ${esc(cGrant.issuerTier || "")}</span>`;
+        actHtml = `<span class="hint mono">✓ completed — validated by ${escapeHtml(cGrant.issuerGenesisId || "?")} · ${escapeHtml(cGrant.issuerTier || "")}</span>`;
       } else if (compReq[t.id] === "pending") {
         actHtml = `<span class="hint">Completion claimed — awaiting Instructor / Archon validation.</span>`;
       } else {
-        actHtml = `<button class="btn" data-claim="${t.id}">Claim completion</button>`
-          + `<span class="hint mono" style="margin-left:.5rem">unlocked by ${esc(aGrant.issuerGenesisId || "?")}</span>`;
+        actHtml = `<button class="btn" data-claim="${escapeAttr(t.id)}">Claim completion</button>`
+          + `<span class="hint mono" style="margin-left:.5rem">unlocked by ${escapeHtml(aGrant.issuerGenesisId || "?")}</span>`;
       }
     } else if (accessReq[t.id] === "pending") {
       stateHtml = `<span class="state pending">Requested · pending</span>`;
       actHtml = `<span class="hint">Awaiting an Instructor to combine seals.</span>`;
     } else {
       stateHtml = `<span class="state locked">Locked</span>`;
-      actHtml = `<button class="btn" data-req="${t.id}">Request unlock</button>`;
+      actHtml = `<button class="btn" data-req="${escapeAttr(t.id)}">Request unlock</button>`;
     }
     let sigil = "";
     try { if (t.canonId && t.dept) sigil = renderTomeSVG(t, 60); } catch {}
     return `<div class="tome"><div class="top">
         <div style="display:flex;gap:.8rem;align-items:center;min-width:0">
           ${sigil ? `<div style="flex-shrink:0;width:60px;height:60px;line-height:0">${sigil}</div>` : ""}
-          <h3 style="overflow:hidden;text-overflow:ellipsis">${esc(t.title)}${cGrant ? ` <span class="state unlocked" style="font-size:.5rem">completed</span>` : ""}</h3>
+          <h3 style="overflow:hidden;text-overflow:ellipsis">${escapeHtml(t.title)}${cGrant ? ` <span class="state unlocked" style="font-size:.5rem">completed</span>` : ""}</h3>
         </div>${stateHtml}</div>
-      ${t.summary?`<div class="sum">${esc(t.summary)}</div>`:""}
-      <div class="meta mono">${esc(t.plane||"")} · requires ${esc(t.requiredTier||"ACOLYTE")}${t.globalIndex?` · seat ${t.globalIndex}/145`:""} · immutable canon</div>
+      ${t.summary?`<div class="sum">${escapeHtml(t.summary)}</div>`:""}
+      <div class="meta mono">${escapeHtml(t.plane||"")} · requires ${escapeHtml(t.requiredTier||"ACOLYTE")}${t.globalIndex?` · seat ${escapeHtml(t.globalIndex)}/145`:""} · immutable canon</div>
       <div class="row-act">${actHtml}</div></div>`;
   }));
   $("list").innerHTML = rows.join("");

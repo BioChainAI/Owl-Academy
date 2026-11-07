@@ -451,6 +451,7 @@ import {
 import { resolveTier, issueCertificate, TIERS, GENESIS_MASTER_UIDS } from "../scripts/genesis-registrar.js";
 import { readRegistrar } from "../scripts/spire-registrar.js";
 import { DEPARTMENT_PLANES, PRIORITY_LABELS, createArtifact, listArtifactsByPlane } from "../scripts/tome-authoring.js";
+import { escapeHtml, jsArg } from "../scripts/ui/escape.js";
 
 // ── State ────────────────────────────────────────────────────────
 let currentUser = null;
@@ -459,9 +460,6 @@ let currentTier = "ACOLYTE";
 let editingTomeId = null;
 
 // ── Helpers ──────────────────────────────────────────────────────
-function escapeHtml(s) {
-    return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
-}
 function showToast(msg, ok = true) {
     const t = document.getElementById("toast");
     const ti = document.getElementById("toastInner");
@@ -713,9 +711,9 @@ window.renderDepartments = function() {
                                 <td class="py-2 text-right">
                                     ${!c.locked ? `
                                     <div class="flex gap-1 justify-end">
-                                        <button onclick="quickStatus('${escapeHtml(dept.plane)}','${escapeHtml(c.title)}','active')" class="px-2 py-0.5 rounded text-[10px] badge-active hover:opacity-80">Active</button>
-                                        <button onclick="quickStatus('${escapeHtml(dept.plane)}','${escapeHtml(c.title)}','manuscript')" class="px-2 py-0.5 rounded text-[10px] badge-manuscript hover:opacity-80">MS</button>
-                                        <button onclick="quickStatus('${escapeHtml(dept.plane)}','${escapeHtml(c.title)}','sealed')" class="px-2 py-0.5 rounded text-[10px] badge-sealed hover:opacity-80">Seal</button>
+                                        <button onclick="quickStatus(${jsArg(dept.plane)},${jsArg(c.title)},'active')" class="px-2 py-0.5 rounded text-[10px] badge-active hover:opacity-80">Active</button>
+                                        <button onclick="quickStatus(${jsArg(dept.plane)},${jsArg(c.title)},'manuscript')" class="px-2 py-0.5 rounded text-[10px] badge-manuscript hover:opacity-80">MS</button>
+                                        <button onclick="quickStatus(${jsArg(dept.plane)},${jsArg(c.title)},'sealed')" class="px-2 py-0.5 rounded text-[10px] badge-sealed hover:opacity-80">Seal</button>
                                     </div>` : `<span class="text-[10px] text-slate-600 mono">locked</span>`}
                                 </td>
                             </tr>`).join("")}
@@ -727,7 +725,7 @@ window.renderDepartments = function() {
                             <span class="text-yellow-300 font-semibold">⬡ ${escapeHtml(dept.artifactName)}</span>
                             <span class="text-slate-400 ml-2">requires ${dept.artifactThreshold} active tomes</span>
                         </div>
-                        <button onclick="switchTab('tomes-db', document.querySelector('[data-tab=tomes-db]')); filterDept('${escapeHtml(dept.plane)}')"
+                        <button onclick="switchTab('tomes-db', document.querySelector('[data-tab=tomes-db]')); filterDept(${jsArg(dept.plane)})"
                             class="text-xs btn-ghost px-3 py-1.5 rounded-lg">
                             View in Registry →
                         </button>
@@ -821,7 +819,7 @@ window.loadTomeRegistry = async function() {
                     style="color:${PRIORITY_LABELS[t.priority]?.color || "#aaa"}; border-color:${PRIORITY_LABELS[t.priority]?.color || "#aaa"}44;">
                     ${escapeHtml(PRIORITY_LABELS[t.priority]?.label || t.priority || "—")}
                 </span>
-                <button onclick="openTomeModal('${escapeHtml(t.id)}','${escapeHtml((t.title||"").replace(/'/g,"\\\'"))}','${escapeHtml(t.status||"manuscript")}')"
+                <button onclick="openTomeModal(${jsArg(t.id)},${jsArg(t.title || "")},${jsArg(t.status || "manuscript")})"
                     class="btn-ghost px-3 py-1.5 rounded-lg text-xs">Edit Status</button>
             </div>
         </div>`).join("");
@@ -863,7 +861,7 @@ window.loadChainAudit = async function() {
         const tomes = snap.docs.map(d => ({ id: d.id, ...d.data() }));
 
         // Summary stats
-        const totalStudents = tomes.reduce((s, t) => s + (t.enrolledCount || 0), 0);
+        const totalStudents = tomes.reduce((s, t) => s + (Number(t.enrolledCount) || 0), 0);
         const instructorSet = new Set(tomes.map(t => t.creatorGenesisId || t.creatorUid || "unknown"));
         const activeTomes = tomes.filter(t => t.status === "active").length;
         statsEl.innerHTML = [
@@ -902,8 +900,10 @@ window.loadChainAudit = async function() {
         const deptNames = Object.fromEntries(DEPARTMENT_PLANES.map(p => [p.plane, p.name]));
 
         let html = "";
+        let groupIdx = 0;
         for (const [key, group] of byInstructor) {
-            const groupTotal = group.tomes.reduce((s, t) => s + (t.enrolledCount || 0), 0);
+            const groupId = "chain-group-g" + (groupIdx++);   // element ids from an index, not from record values
+            const groupTotal = group.tomes.reduce((s, t) => s + (Number(t.enrolledCount) || 0), 0);
             const tierColor = group.tier === "ARCHON" ? "#D4AF37" : "#9482ff";
             const tierSymbol = group.tier === "ARCHON" ? "♛" : "⬢";
             const planeSet = [...new Set(group.tomes.map(t => t.plane).filter(Boolean))];
@@ -911,7 +911,7 @@ window.loadChainAudit = async function() {
             html += `
             <div class="glass rounded-xl overflow-hidden">
                 <!-- Instructor header -->
-                <div class="p-4 flex flex-wrap items-start gap-4 border-b border-white/5 dept-header" onclick="toggleDept('chain-group-${CSS.escape(key)}')">
+                <div class="p-4 flex flex-wrap items-start gap-4 border-b border-white/5 dept-header" onclick="toggleDept('${groupId}')">
                     <div class="flex-1 min-w-0">
                         <div class="flex items-center gap-2 flex-wrap">
                             <span class="text-base font-bold" style="color:${tierColor}">${tierSymbol}</span>
@@ -939,7 +939,7 @@ window.loadChainAudit = async function() {
                 </div>
 
                 <!-- Tome rows (collapsed by default) -->
-                <div id="chain-group-${escapeHtml(key)}" class="hidden">
+                <div id="${groupId}" class="hidden">
                     <table class="w-full text-xs">
                         <thead>
                             <tr class="text-left text-slate-500 mono border-b border-white/5 bg-white/2">
@@ -966,7 +966,7 @@ window.loadChainAudit = async function() {
                                     <td class="px-4 py-2.5">${badgeHtml(t.status || "manuscript")}</td>
                                     <td class="px-4 py-2.5 text-right">
                                         <span class="font-semibold ${(t.enrolledCount||0) > 0 ? "text-cyan-400" : "text-slate-600"} mono">
-                                            ${t.enrolledCount || 0}
+                                            ${escapeHtml(Number(t.enrolledCount) || 0)}
                                         </span>
                                     </td>
                                     <td class="px-4 py-2.5 text-right text-slate-500 mono">${escapeHtml(created)}</td>
@@ -978,7 +978,7 @@ window.loadChainAudit = async function() {
                         <span class="text-[10px] text-slate-600 mono">
                             Certificate chain: ${group.genesisId ? `issuer → subject → ${escapeHtml(group.genesisId)}` : "no genesis ID on record"}
                         </span>
-                        <button onclick="filterDept('${escapeHtml(planeSet[0] || '')}'); switchTab('tomes-db', document.querySelector('[data-tab=tomes-db]'))"
+                        <button onclick="filterDept(${jsArg(planeSet[0] || '')}); switchTab('tomes-db', document.querySelector('[data-tab=tomes-db]'))"
                             class="text-[10px] btn-ghost px-2 py-1 rounded mono">
                             View in Registry →
                         </button>

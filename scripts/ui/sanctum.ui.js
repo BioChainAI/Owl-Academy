@@ -7,6 +7,7 @@ import { getTotalXP } from "../services/user.service.js";
 import { resolveTier } from "../genesis-registrar.js";
 import { renderUserSigil } from "../sigil-renderer.js";
 import { getDocument } from "../firebase/firestore.js";
+import { escapeHtml, escapeAttr, safeUrl } from "./escape.js";
 
 const GENESIS_TIER_META = {
   ARCHON:     { symbol: "♛", label: "Archon",     color: "#D4AF37", glow: "rgba(212,175,55,0.55)" },
@@ -74,7 +75,7 @@ const renderWelcome = (profile, user) => {
                     flex items-center justify-center text-4xl mystical-font text-yellow-300
                     bg-gradient-to-br from-yellow-500/10 to-purple-500/10"
              style="width:192px;height:192px;text-shadow: 0 0 18px rgba(212,175,55,0.6); box-shadow: inset 0 0 18px rgba(212,175,55,0.15)">
-          ${initial}
+          ${escapeHtml(initial)}
         </div>`;
 
   el.innerHTML = `
@@ -83,21 +84,21 @@ const renderWelcome = (profile, user) => {
         ${placeholderSigil}
         <div class="absolute -bottom-1 -right-1 w-7 h-7 rounded-full bg-[#05030a] border border-yellow-500
                     flex items-center justify-center text-[10px] text-yellow-400 font-mono">
-          ${totalXP > 999 ? Math.floor(totalXP/1000) + "k" : totalXP}
+          ${escapeHtml(totalXP > 999 ? Math.floor(totalXP/1000) + "k" : totalXP)}
         </div>
       </div>
       <div class="flex-1 min-w-0">
         <p class="text-[10px] text-yellow-500/80 mystical-font tracking-[0.3em] uppercase mb-1">Sanctum of the</p>
-        <h2 class="text-2xl md:text-3xl mystical-font gold-gradient tracking-wide mb-1">${escape(profile.rank ?? "Initiate")}</h2>
-        <p class="text-sm text-slate-300">${escape(profile.displayName ?? "Scholar")} <span class="text-slate-500">·</span> <span class="text-yellow-400/80">${escape(profile.school ?? "Unaffiliated")}</span></p>
+        <h2 class="text-2xl md:text-3xl mystical-font gold-gradient tracking-wide mb-1">${escapeHtml(profile.rank ?? "Initiate")}</h2>
+        <p class="text-sm text-slate-300">${escapeHtml(profile.displayName ?? "Scholar")} <span class="text-slate-500">·</span> <span class="text-yellow-400/80">${escapeHtml(profile.school ?? "Unaffiliated")}</span></p>
         <div id="sanctum-genesis-tier" class="mt-2 flex flex-wrap items-center gap-2"></div>
         <div class="mt-3 max-w-md">
           <div class="flex justify-between items-center text-[10px] text-slate-400 uppercase tracking-widest mb-1">
             <span>Resonance toward next rank</span>
-            <span class="text-yellow-400 font-mono">${progress}%</span>
+            <span class="text-yellow-400 font-mono">${escapeHtml(progress)}%</span>
           </div>
           <div class="w-full h-1.5 bg-slate-800 rounded-full overflow-hidden">
-            <div class="h-full bg-gradient-to-r from-yellow-600 to-yellow-300 transition-all duration-700" style="width: ${progress}%"></div>
+            <div class="h-full bg-gradient-to-r from-yellow-600 to-yellow-300 transition-all duration-700" style="width: ${escapeAttr(progress)}%"></div>
           </div>
         </div>
       </div>
@@ -113,8 +114,8 @@ const renderWelcome = (profile, user) => {
       const isAdmin = tier === "INSTRUCTOR" || tier === "ARCHON";
       badgeEl.innerHTML = `
         <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-mono uppercase tracking-widest"
-              style="border:1px solid ${meta.color}55; background:${meta.color}12; color:${meta.color}; text-shadow:0 0 8px ${meta.glow};">
-          <span style="font-size:14px;line-height:1;">${meta.symbol}</span> ${meta.label}
+              style="border:1px solid ${escapeAttr(meta.color)}55; background:${escapeAttr(meta.color)}12; color:${escapeAttr(meta.color)}; text-shadow:0 0 8px ${escapeAttr(meta.glow)};">
+          <span style="font-size:14px;line-height:1;">${escapeHtml(meta.symbol)}</span> ${escapeHtml(meta.label)}
         </span>
         ${isAdmin ? `
           <a href="mage_tower/Admin_Console.html"
@@ -161,7 +162,7 @@ const renderWelcome = (profile, user) => {
           </a>
           <div class="absolute -bottom-1 -right-1 w-7 h-7 rounded-full bg-[#05030a] border border-yellow-500
                       flex items-center justify-center text-[10px] text-yellow-400 font-mono">
-            ${totalXP > 999 ? Math.floor(totalXP/1000) + "k" : totalXP}
+            ${escapeHtml(totalXP > 999 ? Math.floor(totalXP/1000) + "k" : totalXP)}
           </div>`;
       } catch(_) {}
     }).catch(() => {});
@@ -189,12 +190,12 @@ const renderOrrery = (profile) => {
     return `
       <div class="mb-3 last:mb-0">
         <div class="flex justify-between items-baseline mb-1">
-          <span class="text-xs text-slate-300 mystical-font tracking-wide">${meta.label}</span>
-          <span class="text-xs font-mono" style="color:${meta.color}">${xp} XP</span>
+          <span class="text-xs text-slate-300 mystical-font tracking-wide">${escapeHtml(meta.label)}</span>
+          <span class="text-xs font-mono" style="color:${escapeAttr(meta.color)}">${escapeHtml(xp)} XP</span>
         </div>
         <div class="h-1.5 bg-slate-800 rounded-full overflow-hidden">
           <div class="h-full transition-all duration-700"
-               style="width: ${pct}%; background: linear-gradient(90deg, ${meta.color}80, ${meta.color}); box-shadow: 0 0 8px ${meta.color}60"></div>
+               style="width: ${escapeAttr(pct)}%; background: linear-gradient(90deg, ${escapeAttr(meta.color)}80, ${escapeAttr(meta.color)}); box-shadow: 0 0 8px ${escapeAttr(meta.color)}60"></div>
         </div>
       </div>
     `;
@@ -225,11 +226,11 @@ const renderGrimoires = (profile) => {
   el.innerHTML = tomes.map(([id, t]) => `
     <div class="py-3 border-b border-white/5 last:border-0">
       <div class="flex justify-between items-start gap-2 mb-1.5">
-        <p class="text-sm text-white font-medium">${escape(id)}</p>
-        <span class="text-[10px] text-slate-500 whitespace-nowrap">${Math.round((t.progress ?? 0) * 100)}%</span>
+        <p class="text-sm text-white font-medium">${escapeHtml(id)}</p>
+        <span class="text-[10px] text-slate-500 whitespace-nowrap">${escapeHtml(Math.round((t.progress ?? 0) * 100))}%</span>
       </div>
       <div class="h-1 bg-slate-800 rounded-full overflow-hidden">
-        <div class="h-full bg-gradient-to-r from-yellow-600 to-yellow-300" style="width: ${(t.progress ?? 0) * 100}%"></div>
+        <div class="h-full bg-gradient-to-r from-yellow-600 to-yellow-300" style="width: ${escapeAttr((Number(t.progress) || 0) * 100)}%"></div>
       </div>
     </div>
   `).join("");
@@ -243,26 +244,26 @@ const renderChronicle = (profile) => {
   const events = [];
 
   if (profile.school) {
-    events.push({ icon: "✦", text: `Sworn to the ${escape(profile.school)} School`, color: "#D4AF37" });
+    events.push({ icon: "✦", html: `Sworn to the ${escapeHtml(profile.school)} School`, color: "#D4AF37" });
   }
 
   const totalXP = getTotalXP(profile.arts);
   if (totalXP > 0) {
-    events.push({ icon: "★", text: `Total Resonance: <span class="font-mono text-cyan-400">${totalXP}</span> XP across all Arts`, color: "#00d4ff" });
+    events.push({ icon: "★", html: `Total Resonance: <span class="font-mono text-cyan-400">${escapeHtml(totalXP)}</span> XP across all Arts`, color: "#00d4ff" });
   }
 
   const topArt = Object.entries(profile.arts ?? {})
     .sort(([, a], [, b]) => b - a)[0];
   if (topArt && topArt[1] > 0) {
     const artName = topArt[0].replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
-    events.push({ icon: "❖", text: `Strongest Art: <span class="text-purple-300">${artName}</span> at ${topArt[1]} XP`, color: "#8A2BE2" });
+    events.push({ icon: "❖", html: `Strongest Art: <span class="text-purple-300">${escapeHtml(artName)}</span> at ${escapeHtml(topArt[1])} XP`, color: "#8A2BE2" });
   }
 
   if ((profile.vis ?? 0) > 0) {
-    events.push({ icon: "◆", text: `Treasury: <span class="font-mono text-yellow-400">${profile.vis}</span> Vis accumulated`, color: "#D4AF37" });
+    events.push({ icon: "◆", html: `Treasury: <span class="font-mono text-yellow-400">${escapeHtml(profile.vis)}</span> Vis accumulated`, color: "#D4AF37" });
   }
 
-  events.push({ icon: "⬡", text: `Rank: <span class="text-yellow-300">${escape(profile.rank ?? "Initiate")}</span>`, color: "#D4AF37" });
+  events.push({ icon: "⬡", html: `Rank: <span class="text-yellow-300">${escapeHtml(profile.rank ?? "Initiate")}</span>`, color: "#D4AF37" });
 
   if (events.length === 0) {
     el.innerHTML = `<p class="text-slate-500 text-sm italic text-center py-6">No chronicle entries yet</p>`;
@@ -271,8 +272,8 @@ const renderChronicle = (profile) => {
 
   el.innerHTML = events.map(e => `
     <div class="flex items-start gap-3 py-2 border-b border-white/5 last:border-0">
-      <span class="text-sm flex-shrink-0 mt-0.5" style="color:${e.color}; text-shadow: 0 0 6px ${e.color}80">${e.icon}</span>
-      <p class="text-xs text-slate-300 leading-relaxed flex-1">${e.text}</p>
+      <span class="text-sm flex-shrink-0 mt-0.5" style="color:${escapeAttr(e.color)}; text-shadow: 0 0 6px ${escapeAttr(e.color)}80">${escapeHtml(e.icon)}</span>
+      <p class="text-xs text-slate-300 leading-relaxed flex-1">${e.html}</p>
     </div>
   `).join("");
 };
@@ -283,14 +284,14 @@ const renderAthenaeum = () => {
   if (!el) return;
 
   el.innerHTML = LIBRARY_DEPARTMENTS.map(d => `
-    <a href="${d.path}"
+    <a href="${escapeAttr(safeUrl(d.path))}"
        class="group block p-4 rounded-lg border border-white/5 hover:border-yellow-500/40
               bg-black/20 hover:bg-yellow-500/5 transition-all duration-300
               hover:shadow-[0_0_20px_rgba(212,175,55,0.1)] hover:-translate-y-0.5">
       <div class="text-2xl mb-2 group-hover:scale-110 transition-transform"
-           style="color: ${d.color}; text-shadow: 0 0 12px ${d.color}80">${d.icon}</div>
-      <p class="text-sm text-white mystical-font tracking-wide mb-0.5">${d.title}</p>
-      <p class="text-[10px] text-slate-400">${d.subtitle}</p>
+           style="color: ${escapeAttr(d.color)}; text-shadow: 0 0 12px ${escapeAttr(d.color)}80">${escapeHtml(d.icon)}</div>
+      <p class="text-sm text-white mystical-font tracking-wide mb-0.5">${escapeHtml(d.title)}</p>
+      <p class="text-[10px] text-slate-400">${escapeHtml(d.subtitle)}</p>
     </a>
   `).join("");
 };
@@ -301,15 +302,15 @@ const renderAtelier = () => {
   if (!el) return;
 
   el.innerHTML = ACADEMY_TOOLS.map(t => `
-    <a href="${t.path}"
+    <a href="${escapeAttr(safeUrl(t.path))}"
        class="group block p-5 rounded-lg border border-white/5 hover:border-cyan-500/40
               bg-black/20 hover:bg-cyan-500/5 transition-all duration-300
               hover:shadow-[0_0_20px_rgba(0,212,255,0.1)]">
       <div class="flex items-start gap-3">
-        <span class="text-xl flex-shrink-0 mt-1" style="color:${t.color}">⬢</span>
+        <span class="text-xl flex-shrink-0 mt-1" style="color:${escapeAttr(t.color)}">⬢</span>
         <div class="flex-1 min-w-0">
-          <p class="text-sm mystical-font tracking-wide mb-1" style="color: ${t.color}">${escape(t.title)}</p>
-          <p class="text-[10px] text-slate-400 leading-relaxed">${escape(t.desc)}</p>
+          <p class="text-sm mystical-font tracking-wide mb-1" style="color: ${escapeAttr(t.color)}">${escapeHtml(t.title)}</p>
+          <p class="text-[10px] text-slate-400 leading-relaxed">${escapeHtml(t.desc)}</p>
         </div>
         <svg class="w-4 h-4 text-slate-600 group-hover:text-cyan-400 group-hover:translate-x-1 transition-all flex-shrink-0"
              fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -331,12 +332,12 @@ export const renderAthenaeumFull = () => {
 
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-10">
       ${LIBRARY_DEPARTMENTS.map(d => `
-        <a href="${d.path}" class="group block p-6 rounded-xl border border-white/5 hover:border-yellow-500/40
+        <a href="${escapeAttr(safeUrl(d.path))}" class="group block p-6 rounded-xl border border-white/5 hover:border-yellow-500/40
                   bg-black/20 hover:bg-yellow-500/5 transition-all duration-300
                   hover:shadow-[0_0_25px_rgba(212,175,55,0.15)]">
-          <div class="text-4xl mb-3" style="color: ${d.color}; text-shadow: 0 0 16px ${d.color}80">${d.icon}</div>
-          <h3 class="text-base text-white mystical-font tracking-wide mb-1">${d.title}</h3>
-          <p class="text-xs text-slate-400 mb-3">${d.subtitle}</p>
+          <div class="text-4xl mb-3" style="color: ${escapeAttr(d.color)}; text-shadow: 0 0 16px ${escapeAttr(d.color)}80">${escapeHtml(d.icon)}</div>
+          <h3 class="text-base text-white mystical-font tracking-wide mb-1">${escapeHtml(d.title)}</h3>
+          <p class="text-xs text-slate-400 mb-3">${escapeHtml(d.subtitle)}</p>
           <span class="text-[10px] text-yellow-500/80 uppercase tracking-widest group-hover:text-yellow-400">Enter Department →</span>
         </a>
       `).join("")}
@@ -368,14 +369,14 @@ export const renderAtelierFull = () => {
 
     <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-10">
       ${ACADEMY_TOOLS.map(t => `
-        <a href="${t.path}" class="group block p-6 rounded-xl border border-white/5 hover:border-cyan-500/40
+        <a href="${escapeAttr(safeUrl(t.path))}" class="group block p-6 rounded-xl border border-white/5 hover:border-cyan-500/40
                   bg-black/20 hover:bg-cyan-500/5 transition-all duration-300
                   hover:shadow-[0_0_25px_rgba(0,212,255,0.15)]">
           <div class="flex items-start gap-3 mb-3">
-            <span class="text-2xl" style="color:${t.color}; text-shadow: 0 0 12px ${t.color}80">⬢</span>
-            <h3 class="text-base text-white mystical-font tracking-wide" style="color: ${t.color}">${escape(t.title)}</h3>
+            <span class="text-2xl" style="color:${escapeAttr(t.color)}; text-shadow: 0 0 12px ${escapeAttr(t.color)}80">⬢</span>
+            <h3 class="text-base text-white mystical-font tracking-wide" style="color: ${escapeAttr(t.color)}">${escapeHtml(t.title)}</h3>
           </div>
-          <p class="text-xs text-slate-400 leading-relaxed mb-3">${escape(t.desc)}</p>
+          <p class="text-xs text-slate-400 leading-relaxed mb-3">${escapeHtml(t.desc)}</p>
           <span class="text-[10px] uppercase tracking-widest group-hover:text-cyan-400 text-slate-500">Open Workspace →</span>
         </a>
       `).join("")}
@@ -385,19 +386,13 @@ export const renderAtelierFull = () => {
       <h3 class="mystical-font text-sm text-cyan-400 tracking-widest uppercase mb-4">Curriculum Tiers Quick-Jump</h3>
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
         ${TIER_PATHS.map(t => `
-          <a href="#" data-hub-tab-link="curriculum" data-hub-tab-anchor="tier-${t.tier}"
+          <a href="#" data-hub-tab-link="curriculum" data-hub-tab-anchor="tier-${escapeAttr(t.tier)}"
              class="block p-3 rounded-lg border border-white/5 hover:border-yellow-500/40 bg-black/20 hover:bg-yellow-500/5 transition-all text-center">
-            <p class="text-xs text-yellow-500 mystical-font tracking-widest mb-1">TIER ${t.tier}</p>
-            <p class="text-[10px] text-slate-400">${t.label}</p>
+            <p class="text-xs text-yellow-500 mystical-font tracking-widest mb-1">TIER ${escapeHtml(t.tier)}</p>
+            <p class="text-[10px] text-slate-400">${escapeHtml(t.label)}</p>
           </a>
         `).join("")}
       </div>
     </div>
   `;
 };
-
-// ── HTML escape helper ────────────────────────────────────────────────────────
-const escape = (str = "") =>
-  String(str).replace(/[&<>"']/g, (c) => ({
-    "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
-  }[c]));

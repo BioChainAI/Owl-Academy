@@ -29,9 +29,18 @@
 
         // Where to go after a successful sign-in
         // Default destination is the Mage Tower (Learning-Hub) — index.html is reachable
-        // via explicit deep-link only.
+        // via explicit deep-link only. Only a page of this site is accepted (the folder that
+        // holds login.html, on this origin); anything else goes to the default.
+        function siteDestination(value, fallback) {
+            const site = new URL(".", window.location.href);
+            try {
+                const dest = new URL(value || fallback, window.location.href);
+                if (dest.origin === site.origin && dest.pathname.startsWith(site.pathname)) return dest.href;
+            } catch (e) { /* not a URL: use the default */ }
+            return new URL(fallback, window.location.href).href;
+        }
         const params = new URLSearchParams(window.location.search);
-        const redirectTo = params.get("redirect") || "Learning-Hub.html";
+        const redirectTo = siteDestination(params.get("redirect"), "Learning-Hub.html");
 
         // If already signed in, skip the login screen entirely
         onAuthStateChanged(auth, (user) => {
@@ -54,10 +63,10 @@
             }
         };
 
-        // Keep global logout wired to Firebase
+        // Keep global logout wired to Firebase (scripts/auth-logout.js also removes Owl's own storage keys)
         window.globalLogout = async function() {
-            const { signOut } = await import("https://www.gstatic.com/firebasejs/12.15.0/firebase-auth.js");
-            await signOut(auth);
+            const { owlLogout } = await import("./scripts/auth-logout.js");
+            await owlLogout({ redirect: false });
             location.reload();
         };
     </script>
@@ -65,11 +74,12 @@
     <!-- MathJax Configuration -->
     <script>
         window.MathJax = {
+            loader: { load: ['ui/safe'] }, // MathJax safe mode: filters TeX links, classes, ids and styles
             tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']] },
             options: { skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre'] }
         };
     </script>
-    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-mml-chtml.js"></script>
 
     <!-- Tailwind Configuration -->
     <script>
@@ -390,14 +400,6 @@
                 setTimeout(() => toast.remove(), 300);
             }, 3000);
         }
-
-        // --- PLATFORM UNLOCK LOGIC ---
-        // Kept for any legacy calls — Firebase module handles the real redirect
-        window.unlockMainPlatform = function() {
-            document.getElementById('auth-status-text').innerText = "Authentication Successful. Redirecting...";
-            const params = new URLSearchParams(window.location.search);
-            window.location.replace(params.get("redirect") || "index.html");
-        };
 
         // --- Enrollment & Admin Logic ---
         function handleEnroll(e) {

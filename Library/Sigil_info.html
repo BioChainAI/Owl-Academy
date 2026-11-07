@@ -27,10 +27,11 @@
     <!-- MathJax -->
     <script>
         window.MathJax = {
+            loader: { load: ['ui/safe'] }, // MathJax safe mode: filters TeX links, classes, ids and styles
             tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']] }
         };
     </script>
-    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-mml-chtml.js"></script>
     
     <style>
         /* Dynamic Theme Variables */
@@ -994,6 +995,8 @@
         if (typeof window.globalLogout === 'undefined') {
             window.globalLogout = function() {
                 console.log("Severing connection...");
+                // Sign out and remove only Owl's own storage keys (scripts/auth-logout.js); stay on the page.
+                import("../scripts/auth-logout.js").then((m) => m.owlLogout({ redirect: false })).catch(() => {});
                 // Avoid location.href assignment in sandboxed iframe which causes URL resolution errors
                 document.body.innerHTML = '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;background:#05030a;color:#8A2BE2;font-family:monospace;letter-spacing:0.2em;"><h1>CONNECTION SEVERED</h1><br><a href="https://biochainai.github.io/Owl-Academy/Learning-Hub.html" style="color:#D4AF37;text-decoration:underline;margin-top:20px;">RETURN TO GRAND HALL</a></div>';
             };

@@ -140,8 +140,9 @@
         </select>
         <label class="f">Endpoint URL</label>
         <input id="apiUrl" placeholder="https://api.openai.com/v1/chat/completions">
-        <label class="f">Headers (JSON) — key stays in this browser only</label>
-        <textarea id="apiHeaders" rows="3" placeholder='{"Authorization":"Bearer sk-…","Content-Type":"application/json"}'></textarea>
+        <label class="f">Headers (JSON) — held in memory for this page only</label>
+        <textarea id="apiHeaders" rows="3" autocomplete="off" spellcheck="false" placeholder='{"Authorization":"Bearer sk-…","Content-Type":"application/json"}'></textarea>
+        <div class="meta" id="apiKeyNote">Your key is kept only while this page is open: it is never saved to this browser's storage or to Firestore, and it is cleared when you leave the page. Prefer a key with a spending limit. <a href="#" id="apiForget" style="color:var(--cyan)">Forget key now</a></div>
         <label class="f">Body template — {{query}} and {{context}} are substituted</label>
         <textarea id="apiBody" rows="5"></textarea>
         <label class="f">Response path (dot path to the text)</label>
@@ -220,6 +221,8 @@ import { resolveTier } from "../scripts/genesis-registrar.js";
 import { listMinorTomes, signWithMinorTome } from "../scripts/minor-tome.js";
 import { renderSealSigil } from "../scripts/sigil-renderer.js";
 import * as BM from "../scripts/biomesh.js";
+import { escapeHtml, escapeAttr } from "../scripts/ui/escape.js";
+import { owlLogout } from "../scripts/auth-logout.js";
 
 const $ = id => document.getElementById(id);
 let uid = null, seeds = [], sourceLabel = "STRIX concept library", busy = false;
@@ -266,9 +269,9 @@ function renderLedger() {
   $("parityHex").textContent = "0x" + hex32(sessionParity);
   $("ledger").innerHTML = sessionLog.slice().reverse().map(e => {
     const col = e.cls === "reproducible" ? "var(--green)" : "#d8b4fe";
-    return `<div style="border-left:2px solid ${col};padding-left:.4rem;margin-bottom:.3rem">
-      #${e.index} <span style="color:${col}">${e.cls}</span> · ${e.engine} · ${e.parity}
-      ${e.sig ? '· ✍' : ''}<br><span style="color:#7a8290">${(e.query||'').slice(0,42)}</span></div>`;
+    return `<div style="border-left:2px solid ${escapeAttr(col)};padding-left:.4rem;margin-bottom:.3rem">
+      #${escapeHtml(e.index)} <span style="color:${escapeAttr(col)}">${escapeHtml(e.cls)}</span> · ${escapeHtml(e.engine)} · ${escapeHtml(e.parity)}
+      ${e.sig ? '· ✍' : ''}<br><span style="color:#7a8290">${escapeHtml(String(e.query || '').slice(0, 42))}</span></div>`;
   }).join("");
 }
 
@@ -313,8 +316,17 @@ $("apiMode").addEventListener("change", () => {
   refreshMode();
 });
 $("apiPreset").addEventListener("change", () => applyPreset($("apiPreset").value));
+// A pasted API key lives only in this field (page memory): clear it on request and when the page is left.
+$("apiForget").addEventListener("click", e => { e.preventDefault(); $("apiHeaders").value = ""; });
+window.addEventListener("pagehide", () => { $("apiHeaders").value = ""; });
 $("qin").addEventListener("keydown", e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); transmit(); } });
 
+// Kernel readout: values are kept here and rendered as escaped text.
+const kernel = { j: "—", key: "—", nearest: "—", engine: "pure retrieval" };
+function renderKernel(update = {}) {
+  Object.assign(kernel, update);
+  $("kernel").innerHTML = `J torsion: <b>${escapeHtml(kernel.j)}</b><br>chiral key: <b>${escapeHtml(kernel.key)}</b><br>nearest: <b>${escapeHtml(kernel.nearest)}</b><br>engine: ${escapeHtml(kernel.engine)}`;
+}
 function refreshMode() {
   const m = $("apiMode").value;
   const label = m === "custom" ? "API synthesis" : m === "bart" ? "BART attested" : "retrieval";
@@ -322,8 +334,7 @@ function refreshMode() {
   $("modePill").className = "pill " + (m === "none" ? "ok" : m === "bart" ? "warn" : "am");
   const eng = m === "custom" ? ("API: " + (($("apiUrl").value || "custom").slice(0, 40)))
             : m === "bart" ? "BART (local fill-mask)" : "pure retrieval";
-  const k = $("kernel").innerHTML.split("engine:")[0];
-  $("kernel").innerHTML = k + "engine: " + eng;
+  renderKernel({ engine: eng });
 }
 
 // ── BART / BERT (local, in-browser fill-mask — Transformers.js) ──────────────
@@ -374,7 +385,7 @@ function applyPreset(p) {
 function addMsg(role, html, src) {
   const d = document.createElement("div");
   d.className = "msg " + role;
-  d.innerHTML = (src ? `<span class="src">${src}</span>` : "") + html;
+  d.innerHTML = (src ? `<span class="src">${escapeHtml(src)}</span>` : "") + html;
   $("stream").appendChild(d); $("stream").scrollTop = $("stream").scrollHeight;
   return d;
 }
@@ -394,12 +405,12 @@ async function loadSeeds() {
     for (const id of picked) {
       const chain = await BM.getBiochain(id);
       const integ = await BM.verifyIntegrity(chain);
-      if (!integ.ok) { $("seedStat").innerHTML = `<span style="color:var(--bad)">${id.slice(0,14)}… fails integrity — skipped</span>`; continue; }
+      if (!integ.ok) { $("seedStat").innerHTML = `<span style="color:var(--bad)">${escapeHtml(String(id).slice(0, 14))}… fails integrity — skipped</span>`; continue; }
       seeds.push(...BM.biochainToSeeds(chain));
     }
     sourceLabel = `${picked.length} biochain(s) → ${seeds.length} passage seeds`;
-    $("seedStat").innerHTML = `Source: <b style="color:var(--green)">${seeds.length}</b> language seeds recalled from ${picked.length} biochain(s). Legible because they are your real recorded text.`;
-  } catch (e) { $("seedStat").innerHTML = `<span style="color:var(--bad)">${e.message}</span>`; }
+    $("seedStat").innerHTML = `Source: <b style="color:var(--green)">${escapeHtml(seeds.length)}</b> language seeds recalled from ${escapeHtml(picked.length)} biochain(s). Legible because they are your real recorded text.`;
+  } catch (e) { $("seedStat").innerHTML = `<span style="color:var(--bad)">${escapeHtml(e.message)}</span>`; }
 }
 
 async function transmit() {
@@ -420,7 +431,7 @@ async function transmit() {
   if (seeds.length) {
     const top = BM.matchSeeds(text, seeds, 3);
     nearest = top[0] ? `${top[0].sim} sim` : "none";
-    chipHtml = `<div class="chips">${top.map(t => `<span class="chip">${(t.id||"").slice(-6)} <b>${t.sim}</b></span>`).join("")}</div>`;
+    chipHtml = `<div class="chips">${top.map(t => `<span class="chip">${escapeHtml(String(t.id || "").slice(-6))} <b>${escapeHtml(t.sim)}</b></span>`).join("")}</div>`;
     context = top.map((t, i) => `[${i + 1}] (sim ${t.sim}) ${t.text}`).join("\n\n");
     answer = top[0] ? top[0].text : "No resonant passage in the loaded seeds.";
     src = "recalled from biochain seed";
@@ -429,7 +440,7 @@ async function transmit() {
     let best = null, bd = Infinity;
     for (const s of strixSeeds) { const d = BM.hammingGrids(grid, s.grid); if (d < bd) { bd = d; best = s; } }
     nearest = best ? best.name + " (" + bd + ")" : "—";
-    chipHtml = `<div class="chips">${strixSeeds.map(s => `<span class="chip">${s.name} <b>${BM.hammingGrids(grid, s.grid)}</b></span>`).join("")}</div>`;
+    chipHtml = `<div class="chips">${strixSeeds.map(s => `<span class="chip">${escapeHtml(s.name)} <b>${escapeHtml(BM.hammingGrids(grid, s.grid))}</b></span>`).join("")}</div>`;
     context = best ? best.responses[jIdx] : "";
     answer = context; src = "STRIX concept resonance";
   }
@@ -448,15 +459,15 @@ async function transmit() {
   }
   status.remove();
 
-  $("kernel").innerHTML = `J torsion: <b>${j.toFixed(3)}</b><br>chiral key: <b>${engHex(grid)}</b><br>nearest: <b>${nearest}</b><br>engine: ${engine}`;
+  renderKernel({ j: j.toFixed(3), key: engHex(grid), nearest, engine });
   // LOG THE TURN — hash-chained + seal-signed (chain of thought)
   const logged = await logTurn({
     query: text, queryEngram: engHex(grid), engine, cls, context,
     contextRefs: seeds.length ? BM.matchSeeds(text, seeds, 3).map(t => t.id) : [Object.keys(STRIX)[0]],
     response: answer, j: +j.toFixed(4), nearest,
   }).catch(() => null);
-  const clsPill = `<span class="pill ${cls === "reproducible" ? "ok" : "am"}">${cls}</span>`;
-  const m = addMsg("strix", chipHtml + clsPill + (logged ? ` <span class="chip">turn #${logged.index} · ${logged.parity}${logged.sig ? " ✍" : ""}</span>` : ""), src);
+  const clsPill = `<span class="pill ${cls === "reproducible" ? "ok" : "am"}">${escapeHtml(cls)}</span>`;
+  const m = addMsg("strix", chipHtml + clsPill + (logged ? ` <span class="chip">turn #${escapeHtml(logged.index)} · ${escapeHtml(logged.parity)}${logged.sig ? " ✍" : ""}</span>` : ""), src);
   const body = document.createElement("span"); m.appendChild(body);
   typeWriter(body, answer, () => { busy = false; $("sendBtn").disabled = false; $("qin").focus(); });
 }
@@ -474,7 +485,7 @@ function exportEngram() {
   a.href = URL.createObjectURL(blob); a.download = "engram-cot-" + Date.now() + ".json"; a.click();
   URL.revokeObjectURL(a.href);
   sessionSaved = true;
-  $("auditMsg").innerHTML = `<span style="color:var(--green)">Exported ${sessionLog.length} turns · parity 0x${hex32(sessionParity)}</span>`;
+  $("auditMsg").innerHTML = `<span style="color:var(--green)">Exported ${escapeHtml(sessionLog.length)} turns · parity 0x${escapeHtml(hex32(sessionParity))}</span>`;
 }
 async function crystallizeSession() {
   if (!sessionLog.length) return void ($("auditMsg").textContent = "Nothing to crystallize.");
@@ -486,11 +497,11 @@ async function crystallizeSession() {
     if (activeSeal) {
       await BM.publishBiochain(uid, activeSeal.sealId, chain, { title: "Language Growing session " + new Date().toISOString().slice(0, 16) });
       sessionSaved = true;
-      $("auditMsg").innerHTML = `<span style="color:var(--green)">Crystallized + published: ${chain.chainId} · ${chain.engramCount} engrams. Now transferable/replayable on the mesh.</span>`;
+      $("auditMsg").innerHTML = `<span style="color:var(--green)">Crystallized + published: ${escapeHtml(chain.chainId)} · ${escapeHtml(chain.engramCount)} engrams. Now transferable/replayable on the mesh.</span>`;
     } else {
-      $("auditMsg").innerHTML = `<span style="color:var(--warn)">Grown ${chain.chainId} (value ${chain.value}) — select a seal to publish it.</span>`;
+      $("auditMsg").innerHTML = `<span style="color:var(--warn)">Grown ${escapeHtml(chain.chainId)} (value ${escapeHtml(chain.value)}) — select a seal to publish it.</span>`;
     }
-  } catch (e) { $("auditMsg").innerHTML = `<span style="color:var(--bad)">${e.message}</span>`; }
+  } catch (e) { $("auditMsg").innerHTML = `<span style="color:var(--bad)">${escapeHtml(e.message)}</span>`; }
 }
 async function replaySession() {
   if (!sessionLog.length) return void ($("auditMsg").textContent = "Nothing to replay.");
@@ -507,7 +518,7 @@ async function replaySession() {
   }
   $("auditMsg").innerHTML =
     `chain ${chainOk ? '<span style="color:var(--green)">intact ✓</span>' : '<span style="color:var(--bad)">TAMPERED ✗</span>'} · ` +
-    `reproducible ${reproOk}/${reproTot} re-derived ✓ · ${attested} attested (recorded, not re-run)`;
+    `reproducible ${escapeHtml(reproOk)}/${escapeHtml(reproTot)} re-derived ✓ · ${escapeHtml(attested)} attested (recorded, not re-run)`;
 }
 /** Burn the current session: destroys the local unexported working log.
  *  Does NOT touch anything already crystallized/published — those are
@@ -525,9 +536,9 @@ async function burnSession() {
   sessionLog = []; sessionParity = 0x53484443 >>> 0; sessionSaved = false;
   renderLedger();
   $("stream").innerHTML = "";
-  $("kernel").innerHTML = "J torsion: —<br>chiral key: —<br>nearest: —<br>engine: pure retrieval";
-  addMsg("strix", "Session burned. The working memory is gone — this is a fresh growing session. (The burn itself was logged: " + turnCount + " turns, last parity " + parityHex + ".)", "session reset");
-  $("auditMsg").innerHTML = `<span style="color:#fca5a5">Burned ${turnCount} turns · event logged (content not recoverable)</span>`;
+  renderKernel({ j: "—", key: "—", nearest: "—", engine: "pure retrieval" });
+  addMsg("strix", escapeHtml("Session burned. The working memory is gone — this is a fresh growing session. (The burn itself was logged: " + turnCount + " turns, last parity " + parityHex + ".)"), "session reset");
+  $("auditMsg").innerHTML = `<span style="color:#fca5a5">Burned ${escapeHtml(turnCount)} turns · event logged (content not recoverable)</span>`;
 }
 
 async function callAPI(query, context) {
@@ -547,25 +558,24 @@ async function callAPI(query, context) {
 
 const engHex = (grid) => { let h = ""; for (let i = 0; i < 8; i++) { let b = 0; for (let k = 0; k < 8; k++) b |= grid[i*8+k] << k; h += b.toString(16).padStart(2,"0"); } return h.toUpperCase(); };
 const jsonEsc = s => JSON.stringify(String(s)).slice(1, -1);
-const escapeHtml = s => s.replace(/[&<>"']/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
 
 // ── boot ─────────────────────────────────────────────────────────────────────
 onAuthStateChanged(auth, async user => {
   if (!user) return;
   uid = user.uid; $("who").textContent = user.email || uid;
   let tier = "ACOLYTE"; try { tier = await resolveTier(uid); } catch (_) {}
-  if (tier !== "ARCHON") { $("gateMsg").innerHTML = "Tier resolved: <b>" + tier + "</b> — BioChain Language Growing requires <b>ARCHON</b>."; return; }
+  if (tier !== "ARCHON") { $("gateMsg").innerHTML = "Tier resolved: <b>" + escapeHtml(tier) + "</b> — BioChain Language Growing requires <b>ARCHON</b>."; return; }
   $("gate").classList.add("hidden"); $("app").classList.remove("hidden");
   try {
     const chains = (await BM.listBiochains(200)).filter(c => c.ownerUid === uid || c.growerUid === uid);
-    $("chainSel").innerHTML = chains.map(c => `<option value="${c.chainId}">${c.title} · ${c.origBytes} B${c.pairedCodexHash ? " ⚭codex" : ""}</option>`).join("")
+    $("chainSel").innerHTML = chains.map(c => `<option value="${escapeAttr(c.chainId)}">${escapeHtml(c.title)} · ${escapeHtml(c.origBytes)} B${c.pairedCodexHash ? " ⚭codex" : ""}</option>`).join("")
       || `<option disabled>— no biochains yet; grow one in the Console —</option>`;
   } catch (_) {}
   // operator seals — sign every logged turn; show the unique SHD-CCP sigil
   try {
     const tomes = (await listMinorTomes(uid)).filter(t => t.status === "active");
     $("sealSel").innerHTML = tomes.length
-      ? tomes.map(t => `<option value="${t.sealId}">${t.label} · ${t.sealId.slice(0,12)}…</option>`).join("")
+      ? tomes.map(t => `<option value="${escapeAttr(t.sealId)}">${escapeHtml(t.label)} · ${escapeHtml(String(t.sealId).slice(0, 12))}…</option>`).join("")
       : `<option value="">— no active seal (mint one in the Seal Forge) —</option>`;
     window._seals = tomes;
     if (tomes.length) { $("sealSel").value = tomes[0].sealId; selectSeal(tomes[0].sealId); }
@@ -577,14 +587,14 @@ function selectSeal(sealId) {
   activeSeal = (window._seals || []).find(t => t.sealId === sealId) || null;
   if (activeSeal) {
     $("sealSigil").innerHTML = renderSealSigil(activeSeal, { size: 72 });
-    $("sealMeta").innerHTML = `⬡ ${activeSeal.sealVector}<br>signs each turn · recallable`;
+    $("sealMeta").innerHTML = `⬡ ${escapeHtml(activeSeal.sealVector)}<br>signs each turn · recallable`;
   } else { $("sealSigil").textContent = "◯"; $("sealMeta").textContent = "No active seal — turns log unsigned."; }
 }
 $("sealSel").addEventListener("change", () => selectSeal($("sealSel").value));
 window.transmit = transmit; window.loadSeeds = loadSeeds;
 window.exportEngram = exportEngram; window.crystallizeSession = crystallizeSession;
 window.replaySession = replaySession; window.burnSession = burnSession;
-window.globalLogout = window.globalLogout || (() => location.href = "../login.html");
+window.globalLogout = window.globalLogout || (() => owlLogout());
 </script>
 </body>
 </html>

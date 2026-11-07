@@ -28,9 +28,9 @@
 
     <!-- MathJax Configuration for Equations -->
     <script>
-        window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']] } };
+        window.MathJax = {loader:{load:['ui/safe']}, tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']] } };
     </script>
-    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-mml-chtml.js"></script>
 
     <style>
         :root {
@@ -659,11 +659,8 @@
 
     <!-- Static sign-out wiring (independent of main.js module chain) -->
     <script type="module">
-      import { signOutUser } from "./scripts/firebase/auth.js";
-      document.getElementById("btn-static-signout")?.addEventListener("click", async () => {
-        await signOutUser();
-        window.location.replace("login.html");
-      });
+      import { owlLogout } from "./scripts/auth-logout.js";
+      document.getElementById("btn-static-signout")?.addEventListener("click", () => owlLogout());
     </script>
 
     <!-- Firebase + Hub Logic (ES Module entry point) -->

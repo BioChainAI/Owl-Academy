@@ -211,6 +211,7 @@
     import { getTotalXP } from "../scripts/services/user.service.js";
     import { getLevelInfo, spendVis, getTransactions, getInventory, checkAndAwardLevelUp } from "../scripts/services/vis.service.js";
     import { MAX_FAMILIAR_SLOTS } from "../scripts/sigil-renderer.js";
+    import { escapeHtml, escapeAttr, jsArg } from "../scripts/ui/escape.js";
 
     // ── Store catalog ────────────────────────────────────────────────────────
     const STORE_ITEMS = [
@@ -353,7 +354,7 @@
 
             return `
             <div class="${cardClass}" style="--card-color:${item.color};--card-glow:${item.glow};"
-                 ${!owned && !cs && !blocked ? `onclick="openConfirm('${item.id}')"` : ''}>
+                 ${!owned && !cs && !blocked ? `onclick="openConfirm(${jsArg(item.id)})"` : ''}>
                 <div class="flex items-start justify-between mb-3">
                     <span class="text-3xl">${item.icon}</span>
                     <div class="flex flex-col items-end gap-1">
@@ -398,10 +399,10 @@
             const sign = tx.amount > 0 ? '+' : '';
             return `<div class="tx-row py-2.5 flex items-center justify-between gap-3">
                 <div>
-                    <div class="text-xs text-slate-300">${tx.reason || tx.itemTitle || label}</div>
-                    <div class="text-[10px] mono text-slate-600">${ts} · ${label}</div>
+                    <div class="text-xs text-slate-300">${escapeHtml(tx.reason || tx.itemTitle || label)}</div>
+                    <div class="text-[10px] mono text-slate-600">${escapeHtml(ts)} · ${escapeHtml(label)}</div>
                 </div>
-                <div class="mono font-bold text-sm whitespace-nowrap" style="color:${color}">${sign}${tx.amount} ◈</div>
+                <div class="mono font-bold text-sm whitespace-nowrap" style="color:${escapeAttr(color)}">${sign}${escapeHtml(tx.amount)} ◈</div>
             </div>`;
         }).join('');
     }
@@ -496,7 +497,7 @@
             document.getElementById('store-body').classList.remove('hidden');
         } catch(e) {
             console.error('[Store] load failed', e);
-            document.getElementById('loading').innerHTML = `<p class="text-red-400 text-center mono text-sm">${e.message}</p>`;
+            document.getElementById('loading').innerHTML = `<p class="text-red-400 text-center mono text-sm">${escapeHtml(e.message)}</p>`;
         }
     });
 </script>

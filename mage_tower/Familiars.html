@@ -369,6 +369,7 @@ window.TUTORIAL_CONFIG = {
     generateManifoldSVG, renderUserSigil,
   } from "../scripts/sigil-renderer.js";
   import { resolveTier } from "../scripts/genesis-registrar.js";
+  import { escapeHtml, escapeAttr } from "../scripts/ui/escape.js";
 
   // ── State ──────────────────────────────────────────────────────────────────
   let _user = null;
@@ -425,9 +426,9 @@ window.TUTORIAL_CONFIG = {
     const TIER_COLOR = { ARCHON: '#d4af37', INSTRUCTOR: '#00d4ff', ACOLYTE: '#94a3b8' };
     const tc = TIER_COLOR[_tier] || '#94a3b8';
     document.getElementById('fam-meta').innerHTML = `
-      <span class="meta-chip" style="border-color:${familiar.color}55;color:${familiar.color}">${familiar.id}</span>
-      <span class="meta-chip" style="border-color:${tc}55;color:${tc}">${_tier}</span>
-      ${_guilds.slice(0,3).map(g=>`<span class="meta-chip" style="border-color:#00ff6655;color:#00ff66">${g}</span>`).join('')}
+      <span class="meta-chip" style="border-color:${escapeAttr(familiar.color)}55;color:${escapeAttr(familiar.color)}">${escapeHtml(familiar.id)}</span>
+      <span class="meta-chip" style="border-color:${escapeAttr(tc)}55;color:${escapeAttr(tc)}">${escapeHtml(_tier)}</span>
+      ${_guilds.slice(0,3).map(g=>`<span class="meta-chip" style="border-color:#00ff6655;color:#00ff66">${escapeHtml(g)}</span>`).join('')}
     `;
 
     const mEl = document.getElementById('fam-manifold');
@@ -451,7 +452,8 @@ window.TUTORIAL_CONFIG = {
     let html = '';
 
     // Owned slots
-    for (const slotNum of _familiarSlots) {
+    for (const slot of _familiarSlots) {
+      const slotNum = Number(slot) || 0;   // slot numbers go into inline handlers below
       const fam = getFamiliarForSlot(_cosmologicalId, slotNum);
       const isActive = slotNum === _activeSlot;
       const smallSvg = renderUserSigil({
@@ -639,12 +641,14 @@ window.TUTORIAL_CONFIG = {
     _cosmologicalId = regSnap.exists() ? (regSnap.data().cosmologicalId || user.uid) : user.uid;
     _profile = profSnap.exists() ? profSnap.data() : {};
     _orbitals = constSnap?.exists() ? (constSnap.data().orbitals || {}) : {};
-    _guilds = _profile.guilds || [];
+    _guilds = Array.isArray(_profile.guilds) ? _profile.guilds : [];
 
     // Recovery: if profile.familiarSlots is missing but the user purchased echo familiars
     // (old Store.html only wrote to inventory, not to profile), rebuild from inventory.
     if (_profile.familiarSlots) {
-      _familiarSlots = _profile.familiarSlots;
+      // slot numbers are written into inline handlers below, so keep integers only
+      const slots = (Array.isArray(_profile.familiarSlots) ? _profile.familiarSlots : []).map(Number).filter(Number.isInteger);
+      _familiarSlots = slots.length ? slots : [0];
     } else {
       const invSnap = await getDocs(collection(db, 'users', user.uid, 'inventory'));
       const echoCount = invSnap.docs.filter(d => d.data().itemId === 'familiar-echo').length;

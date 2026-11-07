@@ -225,6 +225,7 @@ import {
 } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-firestore.js";
 import { readRegistrar } from "../scripts/spire-registrar.js";
 import { resolveTier } from "../scripts/genesis-registrar.js";
+import { escapeHtml, jsArg, safeUrl } from "../scripts/ui/escape.js";
 
 // ── State ─────────────────────────────────────────────────────────
 let allContent = [];   // merged: video tomes + HTML modules
@@ -468,14 +469,14 @@ function stampBarHtml(v) {
     const alreadyStamped = currentUser && (v.stampedBy||[]).includes(currentUser.uid);
     const isMine = currentUser && v.creatorUid === currentUser.uid;
     const stampLabel = sc > 0
-        ? `<span class="text-[10px] mono" style="color:#fbbf24">★ ${sc} useful${sc===1?"":" stamps"}</span>`
+        ? `<span class="text-[10px] mono" style="color:#fbbf24">★ ${escapeHtml(sc)} useful${sc===1?"":" stamps"}</span>`
         : `<span class="text-[10px] mono text-slate-700">⬡ no stamps yet</span>`;
     let stampBtn = "";
     if (!isMine) {
         if (alreadyStamped) {
             stampBtn = `<span class="text-[10px] mono px-2 py-0.5 rounded" style="color:#34d399;background:rgba(52,211,153,0.08);border:1px solid rgba(52,211,153,0.2)">✓ Stamped</span>`;
         } else {
-            stampBtn = `<button onclick="stampMinorTome('${escHtml(v.id)}')" title="Mark as useful"
+            stampBtn = `<button onclick="stampMinorTome(${jsArg(v.id)})" title="Mark as useful"
                 class="text-[10px] mono px-2 py-0.5 rounded transition-all hover:opacity-90"
                 style="color:#fbbf24;background:rgba(251,191,36,0.08);border:1px solid rgba(251,191,36,0.22)">★ Useful</button>`;
         }
@@ -493,7 +494,7 @@ function moduleCardHtml(m) {
     const lessonUrl = IL_BASE + encodeURI(m.modulePath || "");
     return `
     <div class="video-card" style="border-color:rgba(148,130,255,0.2)">
-        <div class="p-4 pb-2 flex items-start gap-3 cursor-pointer" onclick="openLesson('${escHtml(m.id)}')">
+        <div class="p-4 pb-2 flex items-start gap-3 cursor-pointer" onclick="openLesson(${jsArg(m.id)})">
             <div class="flex-shrink-0 w-10 h-10 rounded-lg flex items-center justify-center text-xl"
                  style="background:rgba(148,130,255,0.12);border:1px solid rgba(148,130,255,0.25)">📄</div>
             <div class="flex-1 min-w-0">
@@ -504,12 +505,12 @@ function moduleCardHtml(m) {
         <div class="px-4 pb-4">
             <div class="flex flex-wrap items-center gap-1.5 mt-2">
                 <span class="tag px-2 py-0.5 rounded-full text-[10px]">${escHtml(SUBJECT_MAP[m.subject]||m.subject||"—")}</span>
-                ${m.difficulty ? `<span class="px-2 py-0.5 rounded-full text-[10px] mono border" style="color:${diffColor};border-color:${diffColor}44">${escHtml(m.difficulty)}</span>` : ""}
+                ${m.difficulty ? `<span class="px-2 py-0.5 rounded-full text-[10px] mono border" style="color:${escapeHtml(diffColor)};border-color:${escapeHtml(diffColor)}44">${escHtml(m.difficulty)}</span>` : ""}
                 ${certBadges}
             </div>
             <div class="flex items-center justify-between mt-3 flex-wrap gap-2">
                 ${stampBarHtml(m)}
-                <a href="${escHtml(lessonUrl)}" target="_blank" onclick="trackModuleView('${escHtml(m.id)}')"
+                <a href="${escapeHtml(safeUrl(lessonUrl))}" target="_blank" onclick="trackModuleView(${jsArg(m.id)})"
                    class="btn-ghost px-3 py-1 rounded-lg text-xs" style="border-color:rgba(148,130,255,0.3);color:#a78bfa">
                     Open Lesson →
                 </a>
@@ -522,7 +523,7 @@ function moduleCardHtml(m) {
 // ── Video card HTML ───────────────────────────────────────────────
 function videoCardHtml(v, showCreator) {
     const thumb = v.platform === "youtube" && v.videoId
-        ? `<img src="https://img.youtube.com/vi/${escHtml(v.videoId)}/mqdefault.jpg" class="w-full aspect-video object-cover opacity-85 hover:opacity-100 transition-opacity" alt="">`
+        ? `<img src="https://img.youtube.com/vi/${escapeHtml(encodeURIComponent(v.videoId))}/mqdefault.jpg" class="w-full aspect-video object-cover opacity-85 hover:opacity-100 transition-opacity" alt="">`
         : `<div class="w-full aspect-video bg-blue-950/30 flex items-center justify-center"><span class="text-3xl opacity-20">▶</span></div>`;
     const certBadges = [
         v.owlCertified ? `<span class="cert-owl px-2 py-0.5 rounded-full text-[10px] mono">♛ OA Certified</span>` : "",
@@ -530,7 +531,7 @@ function videoCardHtml(v, showCreator) {
     ].filter(Boolean).join("");
     return `
     <div class="video-card">
-        <div class="relative cursor-pointer" onclick="openModal('${escHtml(v.id)}')">
+        <div class="relative cursor-pointer" onclick="openModal(${jsArg(v.id)})">
             ${thumb}
             <div class="absolute inset-0 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
                 <div class="w-12 h-12 rounded-full bg-blue-500/80 flex items-center justify-center"><span class="text-white text-lg ml-1">▶</span></div>
@@ -538,7 +539,7 @@ function videoCardHtml(v, showCreator) {
             ${certBadges ? `<div class="absolute bottom-2 left-2 flex gap-1 flex-wrap">${certBadges}</div>` : ""}
         </div>
         <div class="p-4">
-            <h3 class="font-semibold text-slate-200 text-sm flex-1 line-clamp-2 cursor-pointer hover:text-blue-300 transition-colors mb-2" onclick="openModal('${escHtml(v.id)}')">${escHtml(v.title||"Untitled")}</h3>
+            <h3 class="font-semibold text-slate-200 text-sm flex-1 line-clamp-2 cursor-pointer hover:text-blue-300 transition-colors mb-2" onclick="openModal(${jsArg(v.id)})">${escHtml(v.title||"Untitled")}</h3>
             <div class="flex items-center justify-between flex-wrap gap-2">
                 <span class="tag px-2 py-0.5 rounded-full text-[10px]">${escHtml(SUBJECT_MAP[v.subject]||v.subject||"—")}</span>
                 ${showCreator && v.creatorGenesisId ? `<span class="text-[10px] text-yellow-600 mono truncate max-w-[120px]">${escHtml(v.creatorGenesisId.slice(0,16))}…</span>` : ""}
@@ -557,8 +558,8 @@ function certRowHtml(v) {
         ? `<span class="text-[10px] px-2 py-0.5 rounded-full mono" style="background:rgba(148,130,255,0.1);border:1px solid rgba(148,130,255,0.3);color:#a78bfa">📄 Lesson</span>`
         : `<span class="tag text-[10px] px-2 py-0.5 rounded-full mono">▶ Video</span>`;
     const previewAction = v.type === "module"
-        ? `<a href="${escHtml(IL_BASE + encodeURI(v.modulePath||""))}" target="_blank" class="btn-ghost px-3 py-1.5 rounded-lg text-xs">📄 Open</a>`
-        : `<button onclick="openModal('${escHtml(v.id)}')" class="btn-ghost px-3 py-1.5 rounded-lg text-xs">▶ Preview</button>`;
+        ? `<a href="${escapeHtml(safeUrl(IL_BASE + encodeURI(v.modulePath||"")))}" target="_blank" class="btn-ghost px-3 py-1.5 rounded-lg text-xs">📄 Open</a>`
+        : `<button onclick="openModal(${jsArg(v.id)})" class="btn-ghost px-3 py-1.5 rounded-lg text-xs">▶ Preview</button>`;
     return `
     <div class="glass rounded-xl p-4 flex flex-wrap items-center gap-4">
         <div class="flex-1 min-w-0">
@@ -571,15 +572,15 @@ function certRowHtml(v) {
             </div>
             <div class="text-[10px] text-slate-500 mono">
                 By: ${escHtml(v.creatorGenesisId || v.creatorUid?.slice(0,12) || "system")}
-                &nbsp;·&nbsp; ${v.creatorTier || "ACOLYTE"}
+                &nbsp;·&nbsp; ${escapeHtml(v.creatorTier || "ACOLYTE")}
                 ${v.type==="module" && v.difficulty ? `&nbsp;·&nbsp; ${escHtml(v.difficulty)}` : ""}
             </div>
         </div>
         <div class="flex gap-2 flex-wrap">
             ${previewAction}
-            ${canCertOwl  ? `<button onclick="certifyOwl('${escHtml(v.id)}')" class="btn-gold px-3 py-1.5 rounded-lg text-xs">♛ OA Certify</button>` : ""}
-            ${canCertDept ? `<button onclick="certifyDept('${escHtml(v.id)}')" class="btn-ghost-gold px-3 py-1.5 rounded-lg text-xs">⬢ Dept Certify</button>` : ""}
-            ${isArchon && (v.owlCertified||v.deptCertified) ? `<button onclick="revokeCert('${escHtml(v.id)}')" class="text-xs px-3 py-1.5 rounded-lg border border-red-500/30 text-red-400 hover:bg-red-500/10 transition-colors">Revoke</button>` : ""}
+            ${canCertOwl  ? `<button onclick="certifyOwl(${jsArg(v.id)})" class="btn-gold px-3 py-1.5 rounded-lg text-xs">♛ OA Certify</button>` : ""}
+            ${canCertDept ? `<button onclick="certifyDept(${jsArg(v.id)})" class="btn-ghost-gold px-3 py-1.5 rounded-lg text-xs">⬢ Dept Certify</button>` : ""}
+            ${isArchon && (v.owlCertified||v.deptCertified) ? `<button onclick="revokeCert(${jsArg(v.id)})" class="text-xs px-3 py-1.5 rounded-lg border border-red-500/30 text-red-400 hover:bg-red-500/10 transition-colors">Revoke</button>` : ""}
         </div>
     </div>`;
 }
@@ -676,7 +677,7 @@ window.openModal = function(id) {
     const embed = document.getElementById("modalEmbed");
     if (v.platform==="youtube"&&v.videoId) embed.innerHTML=`<iframe src="https://www.youtube.com/embed/${encodeURIComponent(v.videoId)}?rel=0" allowfullscreen allow="autoplay; encrypted-media" style="position:absolute;top:0;left:0;width:100%;height:100%;border:none"></iframe>`;
     else if (v.platform==="vimeo"&&v.videoId) embed.innerHTML=`<iframe src="https://player.vimeo.com/video/${encodeURIComponent(v.videoId)}?color=60a5fa" allowfullscreen style="position:absolute;top:0;left:0;width:100%;height:100%;border:none"></iframe>`;
-    else embed.innerHTML=`<div style="position:absolute;top:0;left:0;width:100%;height:100%;display:flex;align-items:center;justify-content:center;color:#475569" class="text-sm">No embeddable source — <a href="${escHtml(v.videoUrl)}" target="_blank" class="text-blue-400 underline ml-1">Open link</a></div>`;
+    else embed.innerHTML=`<div style="position:absolute;top:0;left:0;width:100%;height:100%;display:flex;align-items:center;justify-content:center;color:#475569" class="text-sm">No embeddable source — <a href="${escapeHtml(safeUrl(v.videoUrl))}" target="_blank" rel="noopener noreferrer" class="text-blue-400 underline ml-1">Open link</a></div>`;
     document.getElementById("modalTitle").textContent = v.title||"";
     document.getElementById("modalSubject").textContent = SUBJECT_MAP[v.subject]||v.subject||"";
     const owlEl=document.getElementById("modalOwlCert"); v.owlCertified?owlEl.classList.remove("hidden"):owlEl.classList.add("hidden");
@@ -715,14 +716,14 @@ window.previewVideo = function() {
     let html="";
     if (selectedPlatform==="youtube"&&id) html=`<iframe src="https://www.youtube.com/embed/${encodeURIComponent(id)}?rel=0" allowfullscreen style="position:absolute;top:0;left:0;width:100%;height:100%;border:none"></iframe>`;
     else if (selectedPlatform==="vimeo"&&id) html=`<iframe src="https://player.vimeo.com/video/${encodeURIComponent(id)}" allowfullscreen style="position:absolute;top:0;left:0;width:100%;height:100%;border:none"></iframe>`;
-    else if (selectedPlatform==="direct"&&url) html=`<video src="${escHtml(url)}" controls style="position:absolute;top:0;left:0;width:100%;height:100%;"></video>`;
+    else if (selectedPlatform==="direct"&&url) html=`<video src="${escapeHtml(safeUrl(url))}" controls style="position:absolute;top:0;left:0;width:100%;height:100%;"></video>`;
     if (html) { embed.innerHTML=html; section.classList.remove("hidden"); } else { section.classList.add("hidden"); }
 };
 window.addExample = function() {
     exampleCount++;
     const id=`ex-${exampleCount}`;
     const div=document.createElement("div"); div.className="example-item"; div.id=id;
-    div.innerHTML=`<textarea rows="2" data-example="${exampleCount}" class="flex-1 rounded-lg px-3 py-2 text-sm resize-none" placeholder="Example ${exampleCount}…"></textarea><button type="button" onclick="document.getElementById('${id}').remove()" class="text-slate-600 hover:text-red-400 text-sm mt-1">✕</button>`;
+    div.innerHTML=`<textarea rows="2" data-example="${exampleCount}" class="flex-1 rounded-lg px-3 py-2 text-sm resize-none" placeholder="Example ${exampleCount}…"></textarea><button type="button" onclick="document.getElementById(${jsArg(id)}).remove()" class="text-slate-600 hover:text-red-400 text-sm mt-1">✕</button>`;
     document.getElementById("examplesList").appendChild(div);
 };
 window.submitTome = async function() {
@@ -778,7 +779,7 @@ function extractVideoId(url, platform) {
     if (platform==="vimeo") { const m=url.match(/vimeo\.com\/(\d+)/); return m?m[1]:null; }
     return url;
 }
-function escHtml(s) { return String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
+function escHtml(s) { return String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#39;"); }
 </script>
 <script>
 window.TUTORIAL_CONFIG = {

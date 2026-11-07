@@ -206,6 +206,7 @@
         import { syncStampVis, checkAndAwardLevelUp } from "../scripts/services/vis.service.js";
         import { readRegistrar, renderSigil, saveLocalBackup, exportLocalBackup } from "../scripts/spire-registrar.js";
         import { resolveTier, applyCertificate, tierRingOverlay, GENESIS_MASTER_UIDS } from "../scripts/genesis-registrar.js";
+        import { escapeHtml } from "../scripts/ui/escape.js";
 
         const XP_PER_STAMP = 5;
 
@@ -379,9 +380,9 @@
                             ? `<span class="text-[9px] mono" style="color:#a78bfa">⬢</span>` : "";
                         return `<div class="flex items-center gap-2 px-2 py-1.5 rounded text-[10px] bg-black/20 border border-white/5">
                             <span class="opacity-60">${typeIcon}</span>
-                            <span class="flex-1 truncate text-gray-300">${t.title||"Untitled"}</span>
+                            <span class="flex-1 truncate text-gray-300">${escapeHtml(t.title || "Untitled")}</span>
                             ${certBadge}
-                            <span class="mono shrink-0" style="color:${sc>0?'#fbbf24':'#475569'}">${stars} ${sc}</span>
+                            <span class="mono shrink-0" style="color:${sc>0?'#fbbf24':'#475569'}">${stars} ${escapeHtml(sc)}</span>
                         </div>`;
                     }).join("");
                 }

@@ -13,10 +13,11 @@
     
     <script>
         window.MathJax = {
+            loader: { load: ['ui/safe'] }, // MathJax safe mode: filters TeX links, classes, ids and styles
             tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']] }
         };
     </script>
-    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-mml-chtml.js"></script>
 
     <style>
         :root {
@@ -546,6 +547,14 @@ function verifyGeometricSeed(uint64 seed) {<br>
                 outSpan.innerText = `0x${currentSeed.toString(16).toUpperCase()}...`;
             }, 800);
         }
+
+        // Log out: scripts/auth-logout.js signs out of Owl Academy, removes only Owl's own
+        // browser-storage keys (other apps' data and saved work stay) and returns to the login page.
+        window.globalLogout = window.globalLogout || function() {
+            import("../../scripts/auth-logout.js")
+                .then((m) => m.owlLogout({ replace: false }))
+                .catch(() => { window.location.href = "https://biochainai.github.io/Owl-Academy/login.html"; });
+        };
     </script>
 </body>
 </html>

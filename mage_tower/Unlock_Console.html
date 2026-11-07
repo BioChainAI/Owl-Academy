@@ -102,9 +102,9 @@ import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.15.0/f
 import { resolveTier } from "../scripts/genesis-registrar.js";
 import { listMinorTomes } from "../scripts/minor-tome.js";
 import { listPendingRequests, grantUnlock, listMajorTomes, createMajorTome, listGrantsByIssuer, verifyUnlockGrant, inscribeCanon, loadCanonManifest } from "../scripts/major-tome.js";
+import { escapeHtml, escapeAttr } from "../scripts/ui/escape.js";
 
 const $ = (id) => document.getElementById(id);
-const esc = (s) => String(s).replace(/[&<>]/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;" }[c]));
 let UID = null, TIER = "ACOLYTE", tomeTitles = {};
 
 onAuthStateChanged(auth, async (u) => {
@@ -126,7 +126,7 @@ async function load(){
   tomeTitles = {}; majors.forEach(m => tomeTitles[m.id] = m.title);
   const active = mine.filter(t => t.status === "active");
   $("mytome").innerHTML = active.length
-    ? active.map(t => `<option value="${t.sealId}">${esc(t.label)} · ${t.sealId.slice(0,12)}…</option>`).join("")
+    ? active.map(t => `<option value="${escapeAttr(t.sealId)}">${escapeHtml(t.label)} · ${escapeHtml(String(t.sealId).slice(0, 12))}…</option>`).join("")
     : `<option value="">— no active minor tomes (forge one in Seal Forge) —</option>`;
 
   $("reqs").innerHTML = reqs.length ? reqs.map(r => {
@@ -134,17 +134,17 @@ async function load(){
     const chip = `<span style="font-size:.52rem;letter-spacing:.06em;border:1px solid;border-radius:999px;padding:.1em .55em;${isComp?'color:#fbbf24;border-color:#fbbf24':'color:#22d3ee;border-color:#22d3ee'}">${isComp?'completion claim':'access request'}</span>`;
     return `
     <div class="req">
-      <div class="t">${esc(tomeTitles[r.majorTomeId] || r.majorTomeId)} ${chip}</div>
-      <div class="meta mono">student ${esc((r.studentGenesisId||r.studentUid||"").slice(0,18))}… · seal ${esc((r.studentSealId||"").slice(0,14))}… · tick ${esc(r.tickToken||"")}</div>
-      <div class="act"><button class="btn" data-grant="${r.id}">${isComp?'Validate completion':'Combine &amp; grant access'}</button><span class="hint" id="rmsg-${r.id}"></span></div>
+      <div class="t">${escapeHtml(tomeTitles[r.majorTomeId] || r.majorTomeId)} ${chip}</div>
+      <div class="meta mono">student ${escapeHtml(String(r.studentGenesisId || r.studentUid || "").slice(0, 18))}… · seal ${escapeHtml(String(r.studentSealId || "").slice(0, 14))}… · tick ${escapeHtml(r.tickToken||"")}</div>
+      <div class="act"><button class="btn" data-grant="${escapeAttr(r.id)}">${isComp?'Validate completion':'Combine &amp; grant access'}</button><span class="hint" id="rmsg-${escapeAttr(r.id)}"></span></div>
     </div>`; }).join("") : `<div class="empty">No pending requests.</div>`;
   $("reqs").querySelectorAll("[data-grant]").forEach(b => b.onclick = () => doGrant(b.dataset.grant, b));
 
   $("mine").innerHTML = grants.length ? grants.map(g => `
-    <div class="req"><div class="t">${esc(tomeTitles[g.majorTomeId] || g.majorTomeId)}</div>
-      <div class="meta mono">→ student ${esc((g.studentUid||"").slice(0,12))}… · ${esc(g.status)} · <span id="vg-${g.id}">verifying…</span></div></div>`).join("")
+    <div class="req"><div class="t">${escapeHtml(tomeTitles[g.majorTomeId] || g.majorTomeId)}</div>
+      <div class="meta mono">→ student ${escapeHtml(String(g.studentUid || "").slice(0, 12))}… · ${escapeHtml(g.status)} · <span id="vg-${escapeAttr(g.id)}">verifying…</span></div></div>`).join("")
     : `<div class="empty">You haven't signed any unlocks yet.</div>`;
-  grants.forEach(async g => { try { const v = await verifyUnlockGrant(g); const el = $(`vg-${g.id}`); if (el) el.innerHTML = v.valid ? `<span class="vok">2-of-2 verified ✓</span>` : `<span class="vbad">✗ ${esc(v.reason||"invalid")}</span>`; } catch {} });
+  grants.forEach(async g => { try { const v = await verifyUnlockGrant(g); const el = $(`vg-${g.id}`); if (el) el.innerHTML = v.valid ? `<span class="vok">2-of-2 verified ✓</span>` : `<span class="vbad">✗ ${escapeHtml(v.reason || "invalid")}</span>`; } catch {} });
 }
 
 async function doGrant(requestId, btn){
@@ -153,7 +153,7 @@ async function doGrant(requestId, btn){
   btn.disabled = true;
   const m = $(`rmsg-${requestId}`); if (m) m.textContent = "Verifying student seal & combining…";
   try { await grantUnlock(UID, requestId, sid); if (m) { m.innerHTML = `<span class="vok">unlocked ✓</span>`; } load(); }
-  catch (e) { if (m) m.innerHTML = `<span class="vbad">${esc(e.message)}</span>`; btn.disabled = false; }
+  catch (e) { if (m) m.innerHTML = `<span class="vbad">${escapeHtml(e.message)}</span>`; btn.disabled = false; }
 }
 
 $("inscribe").onclick = async () => {
@@ -172,9 +172,9 @@ $("inscribe-manifest").onclick = async () => {
   try {
     const manifest = await loadCanonManifest();
     const res = await inscribeCanon(UID, manifest, (p) => { msg.textContent = `Inscribing ${p.made + p.skipped}/${p.total} · +${p.made} new · ${p.skipped} skipped`; });
-    msg.innerHTML = `<span class="vok">Canon inscribed ✓ ${res.made} new, ${res.skipped} already present (${res.total} total).</span>`;
+    msg.innerHTML = `<span class="vok">Canon inscribed ✓ ${escapeHtml(res.made)} new, ${escapeHtml(res.skipped)} already present (${escapeHtml(res.total)} total).</span>`;
     load();
-  } catch (e) { msg.innerHTML = `<span class="vbad">${esc(e.message)}</span>`; }
+  } catch (e) { msg.innerHTML = `<span class="vbad">${escapeHtml(e.message)}</span>`; }
   btn.disabled = false;
 };
 </script>
