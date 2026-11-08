@@ -1,7 +1,9 @@
 # Owl Academy checks for the shared scripts, the Firestore rules and the pages that render records.
 # Jobs:
 #   unit      tests/unit: scripts/biomesh-core.js (the move from biomesh.js, goldens, round trips, the 13
-#             biomesh_compat_v1 texts), the vendored files (VENDOR.json) and tests/rules/client-requests.json, offline
+#             biomesh_compat_v1 texts), the strict verifier and its tamper cases, the RFC 07 contract vectors, the
+#             vendored files (VENDOR.json), tests/rules/client-requests.json, the weave-engines set-up and the audit's
+#             engine check, and the Firestore reads against an in-memory fake, offline
 #   rules     tests/rules: firestore.rules in the Firestore emulator against tests/rules/client-requests.json (the
 #             client's requests are allowed; other accounts and signed-out visitors are refused)
 #   static    tests/static: escaping helpers, HTML sinks, MathJax pins, storage-key policy (also nightly)
@@ -30,6 +32,7 @@ on:
       - "**/*.tsx"
       - "**/*.jsx"
       - ".github/workflows/biomesh-ci.yml"
+      - ".github/workflows/weave-engines.yml"
   push:
     branches: ["main"]
     paths:
@@ -49,6 +52,7 @@ on:
       - "**/*.tsx"
       - "**/*.jsx"
       - ".github/workflows/biomesh-ci.yml"
+      - ".github/workflows/weave-engines.yml"
   schedule:
     - cron: "17 3 * * *"
   workflow_dispatch:

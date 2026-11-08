@@ -23,21 +23,46 @@
  * The pure, Firebase-free functions (grow, recreate, verify, engrams, seeds,
  * codex derivation, commitments) live in scripts/biomesh-core.js; this module
  * re-exports all of them and keeps the Firestore services below.
+ *
+ * Strict verification (verifyIntegrityStrict, RFC 07 section 12) runs in shadow
+ * mode while STRICT_ENFORCE is false: publishBiochain always refuses a record
+ * that fails it; acceptBiochain, extendBiochain and traceBiochain compute the
+ * verdict and return it, and refuse on it only when STRICT_ENFORCE is true.
  */
 
 import {
-  getDocument, setDocument, updateDocument, addToCollection, queryCollection,
-  where, orderBy, limit,
+  getDocument, setDocument, updateDocument, addToCollection, queryCollection, queryDocuments,
+  where, orderBy, limit, startAfter, documentId,
 } from "./firebase/firestore.js";
 import { readRegistrar } from "./spire-registrar.js";
 import { getTick } from "./schumann-oracle.js";
 import { signWithMinorTome, verifySealBlock } from "./minor-tome.js";
 import * as SC from "./seal-crypto.js";
 import {
-  verifyIntegrity, growthCommitment, grownCommitment, parseCodexStream, codexCommitment, pairCommitment,
+  verifyIntegrity, verifyIntegrityStrict, strictLabel, validateKind, extendBiochain as extendBiochainCore,
+  growthCommitment, grownCommitment, parseCodexStream, codexCommitment, pairCommitment,
 } from "./biomesh-core.js";
 
 export * from "./biomesh-core.js";
+
+/** Shadow mode: false computes strict verdicts on accept, extend, trace and the
+ *  pages without refusing on them; true makes them refuse. publishBiochain
+ *  refuses a record that fails the strict check either way. */
+export const STRICT_ENFORCE = false;
+
+/** extendBiochain from biomesh-core.js with this module's STRICT_ENFORCE: the
+ *  parent's strict verdict is on the result as `parentStrict`. */
+export const extendBiochain = (parentChain, newText, opts = {}) =>
+  extendBiochainCore(parentChain, newText, { ...opts, enforceStrict: STRICT_ENFORCE });
+
+/** Run fn over items with at most `concurrency` calls in flight; results in item order. */
+export async function mapLimit(items, concurrency, fn) {
+  const out = new Array(items.length);
+  let next = 0;
+  const worker = async () => { while (next < items.length) { const i = next++; out[i] = await fn(items[i], i); } };
+  await Promise.all(Array.from({ length: Math.max(1, Math.min(concurrency, items.length)) }, worker));
+  return out;
+}
 
 /** Verify a child epoch's GROWTH/1 seal against the record's own commitment. */
 export async function verifyGrowth(chain) {
@@ -54,8 +79,17 @@ export async function verifyGrowth(chain) {
 
 // ─── certification (GROWN/1) + publication ───────────────────────────────────
 
-/** Publish a grown biochain: seal-sign the commitment, write the record. */
+/** Publish a grown biochain: seal-sign the commitment, write the record.
+ *  The record must pass verifyIntegrityStrict whatever STRICT_ENFORCE says, and
+ *  meta.kind (default "text") must be in KINDS; meta.crystCost, when given, must
+ *  be a finite number ≥ 0. All three are checked before anything is signed or
+ *  written; `kind` and `crystCost` are stored on the record (F14). */
 export async function publishBiochain(uid, sealId, chain, meta = {}) {
+  const strict = verifyIntegrityStrict(chain);
+  if (!strict.ok) throw new Error("Not published: the record fails the strict check (" + strictLabel(strict) + ").");
+  const kind = validateKind(meta.kind === undefined ? "text" : meta.kind);
+  if (meta.crystCost !== undefined && !(typeof meta.crystCost === "number" && Number.isFinite(meta.crystCost) && meta.crystCost >= 0))
+    throw new Error("Not published: crystCost must be a number ≥ 0.");
   const reg = await readRegistrar(uid);
   if (!reg || !reg.cosmologicalId) throw new Error("Forge your Cosmological ID first.");
   const grownSeal = await signWithMinorTome(uid, sealId, grownCommitment(chain));
@@ -65,6 +99,8 @@ export async function publishBiochain(uid, sealId, chain, meta = {}) {
   const tick = await getTick();
   const rec = {
     ...chain,
+    kind,
+    ...(meta.crystCost !== undefined ? { crystCost: meta.crystCost } : {}),
     title: meta.title || "Untitled Biochain",
     description: meta.description || "",
     growerUid: uid, growerGenesisId: reg.cosmologicalId, growerSealId: sealId,
@@ -104,6 +140,25 @@ export async function verifyGrown(chain) {
 
 export const listBiochains = (max = 100) =>
   queryCollection("biochains", [orderBy("createdAt", "desc"), limit(max)]);
+/** One page of every biochain, in document-id order (records without createdAt
+ *  included). → { records, lastId, dataIds }. Each record is the document's
+ *  fields with `id` set to its document id. lastId is the last document id of
+ *  the page, taken from the query snapshot (null for an empty page): pass it as
+ *  `afterId` for the next page. dataIds maps the document id of each record
+ *  whose data has its own `id` field, different from the document id, to that
+ *  field's value. */
+export async function listBiochainsPage(pageSize = 50, afterId = null) {
+  const docs = await queryDocuments("biochains",
+    [orderBy(documentId()), ...(afterId !== null ? [startAfter(afterId)] : []), limit(pageSize)]);
+  const dataIds = new Map();
+  for (const d of docs)
+    if (Object.prototype.hasOwnProperty.call(d.data, "id") && d.data.id !== d.id) dataIds.set(d.id, d.data.id);
+  return {
+    records: docs.map(({ id, data }) => ({ ...data, id })),
+    lastId: docs.length ? docs[docs.length - 1].id : null,
+    dataIds,
+  };
+}
 export const getBiochain = (chainId) => getDocument(`biochains/${chainId}`);
 
 /** Owner toggles marketplace listing (transfers stay free either way). */
@@ -181,7 +236,9 @@ export async function sendBiochain(uid, sealId, chainId, toUid) {
 }
 
 /** Recipient accepts: transfer flips to accepted, then ownership moves (rules
- *  verify the accepted transfer addressed to the caller before allowing it). */
+ *  verify the accepted transfer addressed to the caller before allowing it).
+ *  The chain's strict verdict is computed before any write and returned
+ *  ({ accepted: true, strict }); it refuses only when STRICT_ENFORCE is true. */
 export async function acceptBiochain(uid, transferId) {
   const t = await getDocument(`biochainTransfers/${transferId}`);
   if (!t) throw new Error("Unknown transfer.");
@@ -189,9 +246,12 @@ export async function acceptBiochain(uid, transferId) {
   if (t.status !== "pending") throw new Error(`Transfer already ${t.status}.`);
   const sealCheck = await verifySealBlock(t.xferSeal);
   if (!sealCheck.valid) throw new Error("Sender's transfer seal fails verification: " + sealCheck.reason);
+  const chain = await getBiochain(t.chainId);
+  if (!chain) throw new Error("Unknown biochain.");
+  const strict = verifyIntegrityStrict(chain);
+  if (STRICT_ENFORCE && !strict.ok) throw new Error("Not accepted: the chain fails the strict check (" + strictLabel(strict) + ").");
   const reg = await readRegistrar(uid);
   await updateDocument(`biochainTransfers/${transferId}`, { status: "accepted", acceptedAt: new Date().toISOString() });
-  const chain = await getBiochain(t.chainId);
   await updateDocument(`biochains/${t.chainId}`, {
     ownerUid: uid, ownerGenesisId: reg?.cosmologicalId || null, lastTransferId: transferId,
     lineage: [...(chain.lineage || []), {
@@ -200,7 +260,7 @@ export async function acceptBiochain(uid, transferId) {
     }],
   });
   await addToCollection("chronicles", { kind: "biomesh.accepted", uid, chainId: t.chainId, transferId });
-  return true;
+  return { accepted: true, strict };
 }
 
 export const declineBiochain = async (uid, transferId) => {
@@ -225,7 +285,10 @@ export async function logSessionBurn(uid, turnCount, parityHex) {
   });
 }
 
-/** Full trace: certification + every hop's seal, verified. */
+/** Full trace: certification + every hop's seal, verified, and the record's
+ *  self-consistency (`integrity`) and strict verdict (`strict`). When
+ *  STRICT_ENFORCE is true a strict failure also fails `integrity`; `selfCheck`
+ *  is verifyIntegrity's own result either way (the D15 label uses it). */
 export async function traceBiochain(chainId) {
   const chain = await getBiochain(chainId);
   if (!chain) throw new Error("Unknown biochain.");
@@ -237,8 +300,12 @@ export async function traceBiochain(chainId) {
     const v = await verifySealBlock(t.xferSeal);
     hops.push({ ...t, sealValid: v.valid, sealReason: v.reason, senderGenesis: v.genesisId || t.fromGenesisId });
   }
-  const integrity = await verifyIntegrity(chain);
-  return { chain, grown, hops, integrity };
+  const selfCheck = await verifyIntegrity(chain);
+  const strict = verifyIntegrityStrict(chain);
+  const integrity = STRICT_ENFORCE && !strict.ok
+    ? { ok: false, reasons: ["strict check: " + strictLabel(strict, selfCheck.ok), ...selfCheck.reasons] }
+    : selfCheck;
+  return { chain, grown, hops, integrity, selfCheck, strict };
 }
 
 // ─── marketplace ratings → success score ─────────────────────────────────────
@@ -259,6 +326,17 @@ export async function rateBiochain(uid, chainId, stars, comment = "", recreatedO
 
 export const listRatings = (chainId) =>
   queryCollection("biochainRatings", [where("chainId", "==", chainId)]);
+/** The ratings of many chains in a few reads: one query per 30 chain ids (the
+ *  Firestore "in" limit), at most 4 in flight. → Map chainId → [ratings]. */
+export async function listRatingsForChains(chainIds) {
+  const ids = [...new Set(chainIds.filter(id => typeof id === "string" && id))];
+  const byChain = new Map(ids.map(id => [id, []]));
+  const groups = [];
+  for (let i = 0; i < ids.length; i += 30) groups.push(ids.slice(i, i + 30));
+  const pages = await mapLimit(groups, 4, g => queryCollection("biochainRatings", [where("chainId", "in", g)]));
+  for (const r of pages.flat()) if (byChain.has(r.chainId)) byChain.get(r.chainId).push(r);
+  return byChain;
+}
 
 /** Success score: measured value 40 · verified integrity 25 · utility stars 25 · adoption 10. */
 export function successScore(chain, ratings = [], transferCount = 0) {
