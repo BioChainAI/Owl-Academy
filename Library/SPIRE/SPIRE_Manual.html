@@ -12,6 +12,7 @@
     <!-- MathJax for rendering geometric equations -->
     <script>
         window.MathJax = {
+            loader: { load: ['ui/safe'] }, // MathJax safe mode: filters TeX links, classes, ids and styles
             tex: {
                 inlineMath: [['$', '$'], ['\\(', '\\)']],
                 displayMath: [['$$', '$$'], ['\\[', '\\]']]
@@ -21,7 +22,7 @@
             }
         };
     </script>
-    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-mml-chtml.js"></script>
 
     <style>
         /* Dynamic Theme Variables */

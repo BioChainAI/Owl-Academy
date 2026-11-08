@@ -8,8 +8,8 @@
 <!-- ── SECURITY: Genesis auth gate ── -->
 <script type="module" src="../../scripts/auth-guard.js"></script>
 
-<script>window.MathJax={tex:{inlineMath:[['$','$'],['\\(','\\)']],displayMath:[['$$','$$'],['\\[','\\]']]}};</script>
-<script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+<script>window.MathJax={loader:{load:['ui/safe']},tex:{inlineMath:[['$','$'],['\\(','\\)']],displayMath:[['$$','$$'],['\\[','\\]']]}};</script>
+<script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-mml-chtml.js"></script>
 
 <style>
   :root{ --void:#06040f; --abg:#0a0f2c; --afg:#c9d4ff; --orange:#ff8a1e; --gold:#D4AF37; --purple:#8b5cf6; --ok:#34d399; --bad:#f87171; }
@@ -107,13 +107,14 @@
 
 <script type="module">
   import { bootCartridge, parseCartridge, sealCartridge } from "../cartridge.js";
+  import { escapeHtml } from "../../scripts/ui/escape.js";
   const MACHINE = "amiga";
   const screen = document.getElementById("screen");
   const status = document.getElementById("status");
   function show(cart){
     const r = bootCartridge({ cart, screenEl: screen, machine: MACHINE });
     if (r.status === "empty") status.innerHTML = "No cartridge inserted.";
-    else if (r.status === "invalid") status.innerHTML = `<b class="bad">✗ invalid cartridge</b> — ${r.errors.join("; ")}`;
+    else if (r.status === "invalid") status.innerHTML = `<b class="bad">✗ invalid cartridge</b> — ${escapeHtml(r.errors.join("; "))}`;
     else if (r.status === "quarantine") status.innerHTML = `<b class="warn">⚠ seal mismatch</b> — loaded read-only in quarantine.`;
     else status.innerHTML = `<b class="ok">✓ booted</b> — seal verified, cartridge trusted.`;
     if (window.MathJax && window.MathJax.typesetPromise) MathJax.typesetPromise([screen]).catch(()=>{});
@@ -122,7 +123,7 @@
   document.getElementById("file").addEventListener("change", async (e) => {
     const f = e.target.files[0]; if (!f) return;
     try { show(parseCartridge(await f.text())); }
-    catch (err) { status.innerHTML = `<b class="bad">✗ could not read cartridge</b> — ${err.message}`; }
+    catch (err) { status.innerHTML = `<b class="bad">✗ could not read cartridge</b> — ${escapeHtml(err.message)}`; }
   });
   document.getElementById("eject").addEventListener("click", () => show(null));
   document.getElementById("demo").addEventListener("click", () => {

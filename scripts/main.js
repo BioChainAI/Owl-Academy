@@ -1,4 +1,5 @@
-import { onAuthChange, signInWithGoogle, signOutUser } from "./firebase/auth.js";
+import { onAuthChange, signInWithGoogle } from "./firebase/auth.js";
+import { owlLogout } from "./auth-logout.js";
 import { getOrCreateProfile, watchProfile } from "./services/user.service.js";
 import { getActiveQuests } from "./services/quest.service.js";
 import { checkAndAwardLevelUp } from "./services/vis.service.js";
@@ -48,8 +49,8 @@ const initHub = async (user) => {
     document.addEventListener("click", async (e) => {
       if (e.target.id === "btn-signout") {
         if (profileUnsubscribe) profileUnsubscribe();
-        await signOutUser();
         showToast("Resonance closed. Farewell, Scholar.", "info");
+        await owlLogout({ redirect: false }); // onAuthChange below redirects to login.html, as before
       }
     }, { once: false });
 

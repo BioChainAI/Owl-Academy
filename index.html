@@ -8,7 +8,9 @@
     <!-- Immediate logout fallback (runs synchronously before any module loads) -->
     <script>
       window.globalLogout = function () {
-        window.location.replace("login.html");
+        import("./scripts/auth-logout.js")
+          .then(function (m) { return m.owlLogout(); })
+          .catch(function () { window.location.replace("login.html"); });
       };
     </script>
 
@@ -723,12 +725,13 @@
         import { auth } from "./scripts/firebase/config.js";
         import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-auth.js";
         import { resolveTier } from "./scripts/genesis-registrar.js";
+        import { escapeHtml } from "./scripts/ui/escape.js";
         const el = document.getElementById("welcome");
         onAuthStateChanged(auth, async (u) => {
             if (!u) return;
             let tier = "ACOLYTE"; try { tier = await resolveTier(u.uid); } catch (_) {}
             const sym = tier === "ARCHON" ? "♛" : tier === "INSTRUCTOR" ? "⬢" : "◯";
-            if (el) el.innerHTML = `Welcome back · <span style="color:var(--color-primary)">${sym} ${tier}</span> · <span style="color:#475569">${u.uid.slice(0, 10)}…</span>`;
+            if (el) el.innerHTML = `Welcome back · <span style="color:var(--color-primary)">${sym} ${escapeHtml(tier)}</span> · <span style="color:#475569">${escapeHtml(u.uid.slice(0, 10))}…</span>`;
         });
     </script>
 </body>

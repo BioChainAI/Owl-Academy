@@ -1,5 +1,6 @@
 import { getRankProgress } from "../services/arts.service.js";
 import { getTotalXP } from "../services/user.service.js";
+import { escapeHtml, escapeAttr, safeUrl } from "./escape.js";
 
 const ART_LABELS = {
   mathematics:    "Mathematics",
@@ -28,26 +29,26 @@ export const renderHubProfile = (user, profile) => {
 
   bar.innerHTML = `
     <div class="flex items-center gap-4 flex-wrap">
-      <img src="${profile.avatarUrl || 'storage/logos/main/owl-placeholder.svg'}"
+      <img src="${escapeAttr(safeUrl(profile.avatarUrl || 'storage/logos/main/owl-placeholder.svg'))}"
            alt="Avatar"
            class="w-10 h-10 rounded-full border-2 border-yellow-500/60 object-cover"
            onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 40 40%22><circle cx=%2220%22 cy=%2220%22 r=%2220%22 fill=%22%23D4AF37%22 opacity=%220.3%22/><text x=%2250%%22 y=%2255%%22 text-anchor=%22middle%22 fill=%22%23D4AF37%22 font-size=%2218%22>⬡</text></svg>'">
       <div class="flex flex-col min-w-0">
-        <span class="text-white font-semibold text-sm truncate">${profile.displayName}</span>
-        <span class="text-yellow-500/80 text-xs mystical-font tracking-widest">${profile.rank ?? "Initiate"} · ${profile.school ?? "Unaffiliated"}</span>
+        <span class="text-white font-semibold text-sm truncate">${escapeHtml(profile.displayName)}</span>
+        <span class="text-yellow-500/80 text-xs mystical-font tracking-widest">${escapeHtml(profile.rank ?? "Initiate")} · ${escapeHtml(profile.school ?? "Unaffiliated")}</span>
       </div>
       <div class="flex items-center gap-3 ml-auto flex-wrap">
         <div class="flex items-center gap-1.5 text-xs text-cyan-400">
-          <span class="font-mono font-bold">${totalXP}</span>
+          <span class="font-mono font-bold">${escapeHtml(totalXP)}</span>
           <span class="text-slate-400">XP</span>
         </div>
         <div class="flex items-center gap-1.5 text-xs text-yellow-400">
-          <span class="font-mono font-bold">${profile.vis ?? 0}</span>
+          <span class="font-mono font-bold">${escapeHtml(profile.vis ?? 0)}</span>
           <span class="text-slate-400">Vis</span>
         </div>
-        <div class="w-24 h-1.5 bg-slate-800 rounded-full overflow-hidden" title="Rank progress: ${progress}%">
+        <div class="w-24 h-1.5 bg-slate-800 rounded-full overflow-hidden" title="Rank progress: ${escapeAttr(progress)}%">
           <div class="h-full bg-gradient-to-r from-yellow-600 to-yellow-300 rounded-full transition-all duration-700"
-               style="width: ${progress}%"></div>
+               style="width: ${escapeAttr(progress)}%"></div>
         </div>
         <button id="btn-signout"
                 class="text-[10px] text-slate-500 hover:text-red-400 transition-colors uppercase tracking-widest ml-2 cursor-pointer">
@@ -66,10 +67,10 @@ export const renderArtsBar = (arts = {}) =>
     const xp = arts[key] ?? 0;
     const color = ART_COLORS[key];
     return `
-      <div class="flex items-center gap-1.5 text-[10px] text-slate-400 group" title="${label}: ${xp} XP">
-        <span class="w-2 h-2 rounded-full flex-shrink-0" style="background:${color}; box-shadow: 0 0 6px ${color}80"></span>
-        <span class="hidden sm:inline">${label}</span>
-        <span class="font-mono" style="color:${color}">${xp}</span>
+      <div class="flex items-center gap-1.5 text-[10px] text-slate-400 group" title="${escapeAttr(label)}: ${escapeAttr(xp)} XP">
+        <span class="w-2 h-2 rounded-full flex-shrink-0" style="background:${escapeAttr(color)}; box-shadow: 0 0 6px ${escapeAttr(color)}80"></span>
+        <span class="hidden sm:inline">${escapeHtml(label)}</span>
+        <span class="font-mono" style="color:${escapeAttr(color)}">${escapeHtml(xp)}</span>
       </div>
     `;
   }).join("");
@@ -89,9 +90,9 @@ export const renderQuestPanel = (quests = []) => {
         <span class="text-[8px] text-yellow-500">⬡</span>
       </div>
       <div class="flex-1 min-w-0">
-        <p class="text-xs text-white font-medium">${q.title}</p>
-        <p class="text-[10px] text-slate-400 leading-relaxed">${q.description}</p>
-        <p class="text-[10px] text-yellow-600/80 mt-1">+${q.reward.xp} XP · +${q.reward.vis} Vis</p>
+        <p class="text-xs text-white font-medium">${escapeHtml(q.title)}</p>
+        <p class="text-[10px] text-slate-400 leading-relaxed">${escapeHtml(q.description)}</p>
+        <p class="text-[10px] text-yellow-600/80 mt-1">+${escapeHtml(q.reward?.xp)} XP · +${escapeHtml(q.reward?.vis)} Vis</p>
       </div>
     </div>
   `).join("");

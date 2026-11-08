@@ -1009,9 +1009,14 @@
                 setStatus('Publish unavailable here (' + (err?.message || err) + '). The Download/Copy seed IS the portable standard — any node imports and regrows it offline.', 'warn');
             }
         }
+        // Status lines can carry values from imported seed/environment files: render them as text.
+        function textLine(el, msg, cls) {
+            el.textContent = '';
+            if (!cls) { el.textContent = String(msg); return; }
+            const s = document.createElement('span'); s.className = cls; s.textContent = String(msg); el.appendChild(s);
+        }
         function setStatus(msg, cls) {
-            const el = document.getElementById('seedStatus');
-            el.innerHTML = cls ? `<span class="${cls}">${msg}</span>` : msg;
+            textLine(document.getElementById('seedStatus'), msg, cls);
         }
 
         // ── GUI ─────────────────────────────────────────────────────────────────
@@ -1189,7 +1194,7 @@
         function hammingWords(a, b) { let x = BigInt('0x' + a) ^ BigInt('0x' + b), d = 0; while (x) { d += Number(x & 1n); x >>= 1n; } return d; }
         function pumpLog(html, cls) {
             const box = pump.ledgerEl; if (!box) return;
-            const d = document.createElement('div'); d.innerHTML = cls ? `<span class="${cls}">${html}</span>` : html;
+            const d = document.createElement('div'); textLine(d, html, cls);
             box.appendChild(d); while (box.children.length > 60) box.removeChild(box.firstChild); box.scrollTop = box.scrollHeight;
         }
         function pumpEnsureGroups() {

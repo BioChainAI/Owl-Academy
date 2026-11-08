@@ -1,5 +1,6 @@
 import { updateProfile, SCHOOLS } from "../services/user.service.js";
 import { showToast } from "./hub.ui.js";
+import { escapeHtml, escapeAttr } from "./escape.js";
 
 /**
  * Renders the school-selection modal when a new user hasn't chosen one yet.
@@ -18,11 +19,11 @@ export const promptSchoolSelection = (uid) => {
       <p class="text-slate-400 text-sm text-center mb-6">Your School of Study defines your primary Art and unlocks specialised tomes.</p>
       <div class="grid grid-cols-1 gap-3">
         ${SCHOOLS.map((school) => `
-          <button data-school="${school}"
+          <button data-school="${escapeAttr(school)}"
                   class="school-btn text-left px-5 py-3 rounded-lg border border-yellow-600/20 bg-yellow-600/5
                          hover:border-yellow-500/60 hover:bg-yellow-600/15 transition-all duration-200
                          text-sm text-slate-200 mystical-font tracking-wide cursor-pointer">
-            ${school}
+            ${escapeHtml(school)}
           </button>
         `).join("")}
       </div>

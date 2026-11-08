@@ -967,9 +967,9 @@ const chiralEl = document.getElementById('chiral');
 function renderChiral(key) {
   const parts = key.split('::');
   chiralEl.innerHTML =
-    '<span class="pre">' + parts[0] + '</span>::' +
-    '<span class="root">' + parts[1] + '</span>::' +
-    (parts[2] || '');
+    '<span class="pre">' + escapeHtml(parts[0]) + '</span>::' +
+    '<span class="root">' + escapeHtml(parts[1]) + '</span>::' +
+    escapeHtml(parts[2] || '');
 }
 
 /* =====================================================================
@@ -1000,8 +1000,8 @@ function renderTextCrystal() {
   const key = 'O1::' + root + '::' + hex16;
   const parts = key.split('::');
   crystalKeyEl.innerHTML =
-    '<span class="pre">' + parts[0] + '</span>::' +
-    '<span class="root">' + parts[1] + '</span>::' + parts[2];
+    '<span class="pre">' + escapeHtml(parts[0]) + '</span>::' +
+    '<span class="root">' + escapeHtml(parts[1]) + '</span>::' + escapeHtml(parts[2]);
   return key;
 }
 window.renderTextCrystal = renderTextCrystal;
@@ -1181,16 +1181,16 @@ function ledgerRow(p) {
   const badge = p.source === 'strix' ? 'STX' : 'HUM';
   row.innerHTML =
     '<span class="ok ' + (p.parityOk ? 'good' : 'bad') + '"></span>' +
-    '<span class="idx">' + String(p.index).padStart(3, '0') + '</span>' +
-    '<span class="srcbadge ' + p.source + '">' + badge + '</span>' +
-    '<span class="src ' + p.source + '">' + srcGlyph + '</span>' +
+    '<span class="idx">' + escapeHtml(String(p.index).padStart(3, '0')) + '</span>' +
+    '<span class="srcbadge ' + escapeHtml(p.source) + '">' + badge + '</span>' +
+    '<span class="src ' + escapeHtml(p.source) + '">' + srcGlyph + '</span>' +
     '<span class="tok">' + escapeHtml(p.token) + '</span>' +
     '<span class="hexstr">' +
-      '<span class="h">' + p.header + '</span>' +
+      '<span class="h">' + escapeHtml(p.header) + '</span>' +
       '<span class="sep">:</span>' +
-      '<span class="b">' + p.seed64 + '</span>' +
+      '<span class="b">' + escapeHtml(p.seed64) + '</span>' +
       '<span class="sep">:</span>' +
-      '<span class="f">' + p.footer + '</span>' +
+      '<span class="f">' + escapeHtml(p.footer) + '</span>' +
     '</span>';
   return row;
 }
@@ -1217,7 +1217,7 @@ function renderFooter(p) {
   const name = (p.tri.conceptIdx >= 0 && p.tri.conceptIdx < CONCEPT_NAMES.length)
     ? CONCEPT_NAMES[p.tri.conceptIdx] : '—';
   footConcept.textContent = name;
-  footHex.innerHTML = '<span class="lbl2">FOOTER</span>' + p.footer;
+  footHex.innerHTML = '<span class="lbl2">FOOTER</span>' + escapeHtml(p.footer);
 }
 
 /* =====================================================================
@@ -1237,9 +1237,9 @@ function renderChips(distances) {
     const chip = document.createElement('div');
     chip.className = 'chip';
     chip.innerHTML =
-      '<span class="name" style="color:' + color + '">' + name + '</span>' +
+      '<span class="name" style="color:' + color + '">' + escapeHtml(name) + '</span>' +
       '<span class="distbar-track"><span class="distbar-fill" style="width:' + fillW + '%;background:' + color + '"></span></span>' +
-      '<span class="dval">' + dist + '</span>';
+      '<span class="dval">' + escapeHtml(dist) + '</span>';
     chipsEl.appendChild(chip);
   }
 }
@@ -1458,7 +1458,7 @@ const transmitBtn = document.getElementById('transmit');
 let busy = false;
 
 function escapeHtml(s) {
-  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
 }
 
 async function transmit() {
@@ -1691,7 +1691,7 @@ function restoreEngram(state) {
   if (Array.isArray(state.conversation)) {
     conversationLog = state.conversation;
     for (const entry of conversationLog) {
-      addMessage(entry.role, entry.role === 'human' ? escapeHtml(entry.text) : entry.text);
+      addMessage(entry.role, escapeHtml(entry.text)); // saved turns are plain text (STRIX replies are typed as text)
     }
   }
 }
@@ -1796,7 +1796,8 @@ userin.focus();
 import { auth, db } from '../../scripts/firebase/config.js';
 import { onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/12.15.0/firebase-auth.js';
 import { doc, getDoc } from 'https://www.gstatic.com/firebasejs/12.15.0/firebase-firestore.js';
-import { signOut } from 'https://www.gstatic.com/firebasejs/12.15.0/firebase-auth.js';
+import { owlLogout } from '../../scripts/auth-logout.js';
+import { safeUrl } from '../../scripts/ui/escape.js';
 import { getTotalXP } from '../../scripts/services/user.service.js';
 import { getLevelInfo } from '../../scripts/services/vis.service.js';
 
@@ -1829,7 +1830,7 @@ onAuthStateChanged(auth, async (user) => {
       const id = document.getElementById('emp-identity');
       const firstChild = id.firstElementChild;
       const img = document.createElement('img');
-      img.src = profile.avatarUrl;
+      img.src = safeUrl(profile.avatarUrl);
       img.style.cssText = 'width:32px;height:32px;border-radius:50%;border:1px solid rgba(139,92,246,0.4);object-fit:cover;flex-shrink:0;';
       img.onerror = () => { img.replaceWith(firstChild); };
       id.replaceChild(img, firstChild);
@@ -1851,7 +1852,7 @@ onAuthStateChanged(auth, async (user) => {
 });
 
 document.getElementById('emp-signout')?.addEventListener('click', () => {
-  signOut(auth).then(() => { window.location.href = '../../index.html'; });
+  owlLogout({ redirect: '../../index.html', replace: false });
 });
 </script>
 </body>

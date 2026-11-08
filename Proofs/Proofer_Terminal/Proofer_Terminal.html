@@ -17,11 +17,12 @@
     <!-- MathJax for rendering LaTeX -->
     <script>
         window.MathJax = {
+            loader: { load: ['ui/safe'] }, // MathJax safe mode: filters TeX links, classes, ids and styles
             tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']] },
             startup: { typeset: false } // We will trigger typesetting manually
         };
     </script>
-    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-mml-chtml.js"></script>
 
     <style>
         :root {
@@ -563,6 +564,7 @@
 <script type="module">
     import { auth } from "../../scripts/firebase/config.js";
     import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-auth.js";
+    import { escapeHtml } from "../../scripts/ui/escape.js";
     import { resolveTier } from "../../scripts/genesis-registrar.js";
 
     // Deep-link: opening Proofer_Terminal.html#issuer jumps straight to the cartridge-maker tab
@@ -579,7 +581,7 @@
         const sym = tier === 'ARCHON' ? '♛' : tier === 'INSTRUCTOR' ? '⬢' : '◯';
         const el = document.getElementById('memStatus');
         if (el) el.innerHTML =
-            `AKASHIC UPLINK: ${sym} ${tier} · ${user.uid.slice(0, 8)}… · ` +
+            `AKASHIC UPLINK: ${sym} ${escapeHtml(tier)} · ${escapeHtml(user.uid.slice(0, 8))}… · ` +
             `<span style="cursor:pointer;text-decoration:underline" onclick="globalLogout()">LOGOUT</span>`;
     });
 </script>
