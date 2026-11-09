@@ -164,9 +164,9 @@
    "id": "shdccp2-contract-s2",
    "repository": "BioChainAI/SHD-CCP-core",
    "ref": "main",
-   "commit": "762e6bc192cfbd3d8e00a2e66b549747df5726f4",
-   "pending": "762e6bc is the S2 commit of SHD-CCP-core (the RFC 07 suites added after 150a50f), not yet merged into main. When it merges, compare these files with main (check-upstream.mjs), copy any that changed, set commit to the merge commit and fold this source into shdccp2-contract. The tamper suites name Owl's strict verifier at 903c00d in their `source`; SHD-CCP-core repins that to Owl's published commit, which changes `source` only, never a case.",
-   "licence": "CC0-1.0, as for shdccp2-contract (the same contract_vectors/LICENSE, unchanged at 762e6bc; vendored once, as shdccp2-contract/LICENSE). Five of these suites are normative at 762e6bc (two independent implementations agreed on every case and SHD-CCP-core's lock pins them): shdccp2_limits, engram1_keys, rng_mulberry32, merkle_rules_same_bytes and shdccp2_tamper. shdccp2_tamper_open is draft: RFC 07 section 12.5 leaves the first failing check of its ten values open. Not vendored: rfc6962_lists and attest1_profile, which scripts/biomesh-core.js does not implement (RFC 6962 trees; the ATTEST/1 and SEAL/1 profile, which Owl verifies from Phase 4, decision D9).",
+   "commit": "f51b53f5d10d05a788bbd219089ec5661c8759e6",
+   "pending": "f51b53f is the S2 commit of SHD-CCP-core (the RFC 07 suites added after 150a50f), not yet merged into main. When it merges, compare these files with main (check-upstream.mjs), copy any that changed, set commit to the merge commit and fold this source into shdccp2-contract. The tamper suites name Owl's strict verifier at O3's commit f1d31af in their `source`; a repin of that commit in SHD-CCP-core changes `source` only, never a case.",
+   "licence": "CC0-1.0, as for shdccp2-contract (the same contract_vectors/LICENSE, unchanged at f51b53f; vendored once, as shdccp2-contract/LICENSE). Five of these suites are normative at f51b53f (two independent implementations agreed on every case and SHD-CCP-core's lock pins them): shdccp2_limits, engram1_keys, rng_mulberry32, merkle_rules_same_bytes and shdccp2_tamper. shdccp2_tamper_open is draft: RFC 07 section 12.5 leaves the first failing check of its ten values open. Not vendored: rfc6962_lists and attest1_profile, which scripts/biomesh-core.js does not implement (RFC 6962 trees; the ATTEST/1 and SEAL/1 profile, which Owl verifies from Phase 4, decision D9).",
    "usedBy": [
     "tests/unit/contract-vectors.test.mjs",
     "tests/unit/biomesh-strict.test.mjs",
@@ -176,38 +176,38 @@
     {
      "path": "shdccp2-contract/suites/engram1_keys.json",
      "upstream": "contract_vectors/suites/engram1_keys.json",
-     "lastChanged": "762e6bc192cfbd3d8e00a2e66b549747df5726f4",
+     "lastChanged": "f51b53f5d10d05a788bbd219089ec5661c8759e6",
      "sha256": "995ef52f9ba3c412ea17097a2504f3c6b34a1ffb002d8a60156fd2c11eca3653"
     },
     {
      "path": "shdccp2-contract/suites/merkle_rules_same_bytes.json",
      "upstream": "contract_vectors/suites/merkle_rules_same_bytes.json",
-     "lastChanged": "762e6bc192cfbd3d8e00a2e66b549747df5726f4",
+     "lastChanged": "f51b53f5d10d05a788bbd219089ec5661c8759e6",
      "sha256": "3f707802b5984961b6183ee4a2a963382b3bc6070dd4322a859767c4675d4457"
     },
     {
      "path": "shdccp2-contract/suites/rng_mulberry32.json",
      "upstream": "contract_vectors/suites/rng_mulberry32.json",
-     "lastChanged": "762e6bc192cfbd3d8e00a2e66b549747df5726f4",
+     "lastChanged": "f51b53f5d10d05a788bbd219089ec5661c8759e6",
      "sha256": "08b2cd096db86ac737d8b08cf870caac51206cf41a06d7360b2bd81ffb932ead"
     },
     {
      "path": "shdccp2-contract/suites/shdccp2_limits.json",
      "upstream": "contract_vectors/suites/shdccp2_limits.json",
-     "lastChanged": "762e6bc192cfbd3d8e00a2e66b549747df5726f4",
-     "sha256": "bed305faa5fcbe9d6887a48c4dc581ab7b89b1bc976667b4da68f177048d0aeb"
+     "lastChanged": "f51b53f5d10d05a788bbd219089ec5661c8759e6",
+     "sha256": "6fdced5008a09b2f1b0e93679b1410d4fca217c2d525c509c6cb93b7ed2b3ec9"
     },
     {
      "path": "shdccp2-contract/suites/shdccp2_tamper.json",
      "upstream": "contract_vectors/suites/shdccp2_tamper.json",
-     "lastChanged": "762e6bc192cfbd3d8e00a2e66b549747df5726f4",
-     "sha256": "a86ffbad3362cf1e921053c6682f7317843c8e4b629a674d6744ec39dec7cccb"
+     "lastChanged": "f51b53f5d10d05a788bbd219089ec5661c8759e6",
+     "sha256": "8e4646c1bbd896185a36ea3bd9ab3a462549c1e58cf20fbe429dc9e4f6d88a4b"
     },
     {
      "path": "shdccp2-contract/suites/shdccp2_tamper_open.json",
      "upstream": "contract_vectors/suites/shdccp2_tamper_open.json",
-     "lastChanged": "762e6bc192cfbd3d8e00a2e66b549747df5726f4",
-     "sha256": "0ed0d65e51168cd1cf74f20217c0655aced9347342c208d2a2e56640a23f9d2b"
+     "lastChanged": "f51b53f5d10d05a788bbd219089ec5661c8759e6",
+     "sha256": "360dc3cc17d0891ddeb7a35c1d5b86951097d29fc0ad4fde3d0cd9243c014fda"
     }
    ]
   }

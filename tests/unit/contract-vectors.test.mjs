@@ -16,14 +16,15 @@
 //                    (0x80 crystal bytes) pass the strict check
 //   engram1          tokens, grids, J numerators, engram stream, count and mean J, mulberry32 draws
 //   shdccp2_record   growBiochain, the two input errors, and verifyIntegrityStrict on every grown record
-//   shdccp2_limits   encodeChunk at the coder's largest codes (code lengths read from RFC 07 section 6 here), the
-//                    stream bound of section 4.4 against Owl's grows, and a 60,000-byte high-cost record
+//   shdccp2_limits   encodeChunk at the coder's largest codes (code lengths read from RFC 07 section 6 here), and
+//                    grown records of 1 to 60,000 bytes of a high-cost text, within the section 4.4 bound (informative)
 //   merkle_rules_same_bytes   Owl's leaves and root (the shdccp2 rule) of each text; the BIOSEED/1 and RFC 6962 roots
 //                    of the same chunks differ and fail the strict check at leaves
 //   engram1_keys     engramHex / engramOf of a string: the letters after full Unicode upper-casing, the key
 //   rng_mulberry32   mulberry32 draws; for the letter seeds, the draws above 2^31 are the letter's engram grid
-//   shdccp2_tamper   verifyIntegrityStrict: ok, the first failing check and legacy for each value (honest records
-//                    accepted, every altered value rejected at its expected check), with either hash; the label;
+//   shdccp2_tamper   verifyIntegrityStrict: ok and the first failing check for each value (honest records accepted,
+//                    every altered value rejected at its expected check), with either hash; the legacy flag and the
+//                    label (informative);
 //                    and verifyIntegrity returns on every value (run in a worker with a memory limit and a time limit)
 //                    with the self-consistency verdict the suite records
 //   shdccp2_tamper_open (draft)   every value is rejected, at the check RFC 07 names today (section 12.5)
@@ -246,10 +247,10 @@ function highCostText(n) {
   return s.repeat(Math.ceil(n / s.length)).slice(0, n);
 }
 
-test("shdccp2_limits: encodeChunk at the coder's largest codes, the stream bound against Owl's grows, a 60,000-byte record", async () => {
+test("shdccp2_limits: encodeChunk at the coder's largest codes, and grown records within the section 4.4 bound", async () => {
   const ids = [];
   for (const c of suite("shdccp2_limits").cases) {
-    const i = c.input, e = c.expect;
+    const i = c.input, e = c.expect, inf = c.informative || {};
     ids.push(c.id);
     if ("coder_input_hex" in i) {
       const bytes = bytesOf(i.coder_input_hex), residual = C.encodeChunk(bytes);
@@ -263,30 +264,24 @@ test("shdccp2_limits: encodeChunk at the coder's largest codes, the stream bound
       const pad = BigInt(residual.length * 4 - used);
       assert.equal(BigInt("0x" + residual) & ((1n << pad) - 1n), 0n, `${c.id}: zero padding`);
       assert.ok(max <= 25 && (bytes.length > 720 || max <= 23), `${c.id}: ${max} bits (RFC 07 section 6.6)`);
-    } else if ("stream_bound_input_bytes" in i) {
-      const n = i.stream_bound_input_bytes;
-      assert.deepEqual(streamBound(n), e, `${c.id}: the bound of RFC 07 section 4.4`);
-      assert.ok(n <= C.MAX_GROW_BYTES && e.max_stream_hex <= e.cap_hex);
-      const rec = await C.growBiochain(highCostText(n), { engrams: false });
-      const frames = C.parseBiochainStreamStrict(rec.stream);
-      assert.equal(frames.length, e.chunks, `${c.id}: Owl's frames`);
-      assert.equal(frames[frames.length - 1].chunkLen, e.last_chunk_bytes, `${c.id}: Owl's last chunk`);
-      assert.ok(rec.stream.length <= e.max_stream_hex, `${c.id}: Owl's stream (${rec.stream.length} hex digits) is within the bound`);
     } else {
-      const rec = await C.growBiochain(vectorText(i));
-      assert.ok(highCostText(60000) === vectorText(i), "the bound cases above grow the same de Bruijn text");
+      const text = vectorText(i), n = new TextEncoder().encode(text).length;
+      assert.equal(text, highCostText(n), `${c.id}: the de Bruijn text`);
+      const rec = await C.growBiochain(text);
       const frames = C.parseBiochainStreamStrict(rec.stream);
       assert.equal(frames.length, e.chunks, `${c.id}: chunks`);
       assert.deepEqual(frames.map((f) => f.residualBytes), e.residual_bytes, `${c.id}: residual bytes`);
       assert.equal(rec.stream.length, e.stream_length, `${c.id}: stream length`);
       assert.equal(sha256(rec.stream), e.stream_sha256, `${c.id}: stream SHA-256`);
-      assert.ok(rec.stream.length <= streamBound(60000).max_stream_hex);
+      assert.deepEqual(streamBound(n), inf.stream_bound, `${c.id}: the section 4.4 bound (informative)`);
+      assert.ok(rec.stream.length <= streamBound(n).max_stream_hex, `${c.id}: within the bound`);
       assertStrictOk(rec, c.id);
     }
   }
-  for (const id of ["coder_escape_after_255_candidates", "coder_hit_at_rank_256", "chunk_hub_720", "bound_60000", "grow_de_bruijn_60000"])
+  for (const id of ["coder_escape_after_255_candidates", "coder_hit_at_rank_256", "chunk_hub_720", "grow_de_bruijn_00001", "grow_de_bruijn_60000"])
     assert.ok(ids.includes(id), id);
   assert.equal(C.MAX_GROW_BYTES, 60000);
+  assert.equal(streamBound(60000).cap_hex, 380016, "84 frames of at most 4,524 hex digits");
 });
 
 // ---------------------------------------------------------------- merkle_rules_same_bytes (RFC 07 section 7)
@@ -343,16 +338,19 @@ test("rng_mulberry32: every draw; for the 26 letter seeds the draws above 2^31 a
 
 // ---------------------------------------------------------------- shdccp2_tamper (RFC 07 sections 12.3-12.5)
 
-/** One tamper case against the strict verifier: its verdict, the checks that ran, the fields, the label. */
+/** One tamper case against the strict verifier: { ok, failed } (expected), the checks that ran, and the legacy flag,
+ *  fields and label (informative). */
 function checkTamperCase(c) {
   const rec = c.input.record, e = c.expect, inf = c.informative || {};
   const v = C.verifyIntegrityStrict(rec);
   assert.equal(v instanceof Promise, false, "synchronous");
-  assert.deepEqual({ ok: v.ok, failed: v.failed, legacy: v.legacy }, e, `${c.id}: verdict (${C.failedCheck(v)?.detail})`);
+  assert.deepEqual({ ok: v.ok, failed: v.failed }, e, `${c.id}: verdict (${C.failedCheck(v)?.detail})`);
   const viaNode = C.verifyIntegrityStrict(rec, { sha256: (s) => sha256(String(s)) });
-  assert.deepEqual({ ok: viaNode.ok, failed: viaNode.failed, legacy: viaNode.legacy }, e, `${c.id}: verdict with node:crypto`);
+  assert.deepEqual({ ok: viaNode.ok, failed: viaNode.failed }, e, `${c.id}: verdict with node:crypto`);
+  assert.equal(v.legacy, inf.legacy, `${c.id}: legacy (informative)`);
+  assert.equal(viaNode.legacy, inf.legacy, `${c.id}: legacy with node:crypto (informative)`);
   const notRecord = rec === null || typeof rec !== "object" || Array.isArray(rec);
-  const ran = e.ok ? C.STRICT_CHECKS.length : e.legacy || notRecord ? 1 : C.STRICT_CHECKS.indexOf(e.failed) + 1;
+  const ran = e.ok ? C.STRICT_CHECKS.length : inf.legacy || notRecord ? 1 : C.STRICT_CHECKS.indexOf(e.failed) + 1;
   assert.deepEqual(v.checks.map((x) => x.name), C.STRICT_CHECKS.slice(0, ran), `${c.id}: the checks that ran`);
   assert.ok(v.checks.slice(0, e.ok ? ran : -1).every((x) => x.ok), `${c.id}: the earlier checks pass`);
   if (!e.ok) assert.deepEqual(C.failedCheck(v).fields, inf.owl_fields, `${c.id}: the fields named`);
