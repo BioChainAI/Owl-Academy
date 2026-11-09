@@ -9,15 +9,16 @@
 //   0..300, on non-ASCII text, and on every leaf of the RFC 07 record vectors (tests/vendor/shdccp2-contract/).
 // - engramGrid builds each letter's grid once (F15) and gives the same grid as its 7f45f35 text on 10,000 seeded
 //   tokens (the 7f45f35 text is checked against the fixture's SHA-256).
-// - parseBiochainStreamStrict reads exactly the form of RFC 07 section 4.3. parseBiochainStream, the lax parser,
+// - parseBiochainStreamStrict reads the frames of RFC 07 section 4.3 in hex digits of either case (the strict verifier
+//   reports the case at canonical or crystal) and nothing else. parseBiochainStream, the lax parser,
 //   throws on a negative residual length (with a length of -12 or less its 7f45f35 text never returned:
 //   shdccp2_tamper/length_negative) and gives what its 7f45f35 text gives on every other stream (the tamper vectors'
 //   streams and 3,000 fuzzed ones).
 // - verifyIntegrityStrict accepts every honest record (the record vectors, among them 0x80 crystal bytes and a leading
 //   U+FEFF) and rejects each tamper case of tests/unit/support/tamper.mjs at its expected first failing check; it is
-//   synchronous and uses the hash it is given. Ill-formed UTF-8 fails at canonical also when the change leaves the
-//   crystal, the leaves or the weaves wrong (RFC 07 section 12.3's order). verifyIntegrity, the self-consistency check, keeps its text: it still
-//   accepts T1, T2, T8 and T9.
+//   synchronous and uses the hash it is given. Ill-formed UTF-8 fails at the first check its change leaves wrong
+//   (crystal, leaves or weaves), and at derived when every other field comes from the same bytes (RFC 07 section 17,
+//   option (a)). verifyIntegrity, the self-consistency check, keeps its text: it still accepts T1, T2, T8 and T9.
 // - KINDS and validateKind. publishBiochain refuses a record that fails the strict check, an unknown kind and a bad
 //   crystCost before it signs or writes anything (biomesh.js imported with the Firebase SDK stubbed); STRICT_ENFORCE
 //   is false and biomesh.js's extendBiochain passes it to the core's.
@@ -130,7 +131,7 @@ test("engramGrid gives the same grid as its 7f45f35 text on 10,000 seeded tokens
 
 // ---------------------------------------------------------------- the strict parser
 
-test("parseBiochainStreamStrict reads RFC 07 section 4.3's form and nothing else", async () => {
+test("parseBiochainStreamStrict reads RFC 07 section 4.3's frames in hex digits of either case, and nothing else", async () => {
   const rec = await C.growBiochain("The owl reads the tome. ".repeat(40), { engrams: false });
   const frames = C.parseBiochainStreamStrict(rec.stream);
   assert.deepEqual(frames.map((f) => f.packet + f.residualBytes.toString(16).padStart(8, "0") + f.residual).join(""), rec.stream);
@@ -138,11 +139,22 @@ test("parseBiochainStreamStrict reads RFC 07 section 4.3's form and nothing else
   assert.ok(frames.every((f) => f.parityOk && f.form === 9));
   for (const [bad, why] of [
     ["", /no frame/], [rec.stream + "0", /truncated frame header/], [rec.stream.slice(0, -2), /shorter than its length/],
-    [rec.stream.slice(0, 16).toLowerCase() + rec.stream.slice(16), /16 upper-case/],
-    [rec.stream.slice(0, 16) + " 0000" + rec.stream.slice(21), /8 lower-case/],
-    [rec.stream.slice(0, 24) + "Z" + rec.stream.slice(25), /not lower-case hex/],
+    [rec.stream.slice(0, 15) + "G" + rec.stream.slice(16), /16 hex digits/],
+    [rec.stream.slice(0, 16) + " 0000" + rec.stream.slice(21), /8 hex digits/],
+    [rec.stream.slice(0, 24) + "Z" + rec.stream.slice(25), /not hex/],
   ]) assert.throws(() => C.parseBiochainStreamStrict(bad), why);
   assert.throws(() => C.parseBiochainStreamStrict(null), /not a string/);
+  // Hex digits of either case parse to the same frames (RFC 07 section 17, option (a)); the strict verifier then reports
+  // a packet not in upper case at crystal, and a residual or a length not in lower case at canonical.
+  const at = 24 + 2 * frames[0].residualBytes, head = rec.stream.slice(0, at), { packet, residual } = frames[1];
+  const len = rec.stream.slice(at + 16, at + 24);
+  assert.ok(/[A-F]/.test(packet) && /[a-f]/.test(len) && /[a-f]/.test(residual), "the last frame has hex letters to change");
+  for (const [stream, failed] of [[head + packet.toLowerCase() + len + residual, "crystal"],
+    [head + packet + len.toUpperCase() + residual, "canonical"], [head + packet + len + residual.toUpperCase(), "canonical"]]) {
+    const got = C.parseBiochainStreamStrict(stream);
+    assert.deepEqual(got.map(({ packet, residual, ...f }) => f), frames.map(({ packet, residual, ...f }) => f));
+    assert.equal(C.verifyIntegrityStrict({ ...rec, stream }).failed, failed);
+  }
 });
 
 // ---------------------------------------------------------------- the lax parser
@@ -269,25 +281,29 @@ test("each tamper case fails at its expected check; verifyIntegrity still accept
     "self-consistent only, failed at crystal");
 });
 
-test("ill-formed UTF-8 fails at canonical, whichever later fields the change leaves wrong (RFC 07 section 12.3)", async () => {
+test("ill-formed UTF-8 fails at the first check its change leaves wrong, at derived when the rest is from the same bytes", async () => {
   // The record of "a" with its residual replaced by the canonical residual of the byte 0xE9 (not UTF-8 on its own),
-  // then also its packet, then also its leaves and root, each recomputed for that byte. The checks after canonical
-  // would fail at crystal, leaves and weaves; RFC 07's order reports canonical for all three (a verifier that checks
-  // UTF-8 later, or not at all, names those later checks: RFC 07 section 12.5, shdccp2_tamper_open).
-  const rec = await C.growBiochain("a", { engrams: true });
+  // then also its packet, then also its leaves and root, then also its weaves and chainId, each recomputed for that
+  // byte. Well-formed UTF-8 is checked at the start of derived (RFC 07 section 17, option (a)), so the first three fail
+  // at crystal, leaves and weaves, and the fourth, whose every other field comes from the byte (engrams off), at
+  // derived: the first failing check that the Hyperbolic Lexicon's verifier names (shdccp2_tamper_open).
+  const rec = await C.growBiochain("a", { engrams: true }), off = await C.growBiochain("a", { engrams: false });
   assert.equal(rec.stream, "98BE8213A300016100000002b080");
   const bad = [0xE9], residual = C.encodeChunk(bad), packet = C.crystallize(bad), leaves = [C.leafHashSync(0, bad)];
+  const root = C.merkleRootSync(leaves), weaves = C.chainWeaves([bad]);
   assert.equal(residual, "f480");
   const variants = {
-    residual: { ...rec, stream: rec.stream.slice(0, 24) + residual },
-    packet_and_residual: { ...rec, stream: C.frameStream([packet], [residual]) },
-    leaves_and_root_too: { ...rec, stream: C.frameStream([packet], [residual]), leafHashes: leaves, merkleRoot: C.merkleRootSync(leaves) },
+    residual: [{ ...rec, stream: rec.stream.slice(0, 24) + residual }, "crystal"],
+    packet_and_residual: [{ ...rec, stream: C.frameStream([packet], [residual]) }, "leaves"],
+    leaves_and_root_too: [{ ...rec, stream: C.frameStream([packet], [residual]), leafHashes: leaves, merkleRoot: root }, "weaves"],
+    every_other_field: [{ ...off, stream: C.frameStream([packet], [residual]), leafHashes: leaves, merkleRoot: root, ...weaves,
+      chainId: "BC-" + C.sha256HexSync(root + "|" + weaves.weaveChiral).slice(0, 24) }, "derived"],
   };
-  for (const [id, r] of Object.entries(variants)) {
-    const v = C.verifyIntegrityStrict(r);
-    assert.equal(v.failed, "canonical", id);
-    assert.equal(C.failedCheck(v).detail, "the chunks are not well-formed UTF-8", id);
-    assert.deepEqual(v.checks.map((c) => c.ok), [true, false], id);
+  for (const [id, [r, failed]] of Object.entries(variants)) {
+    const v = C.verifyIntegrityStrict(r), at = C.STRICT_CHECKS.indexOf(failed);
+    assert.equal(v.failed, failed, `${id}: ${C.failedCheck(v)?.detail}`);
+    assert.deepEqual(v.checks.map((c) => c.ok), [...Array(at).fill(true), false], id);
+    if (failed === "derived") assert.equal(C.failedCheck(v).detail, "the chunks are not well-formed UTF-8", id);
   }
 });
 

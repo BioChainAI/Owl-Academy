@@ -81,20 +81,22 @@ export async function tamperCases(core, { honest, honestNoEngrams, x80 }) {
     const stream = rawFrame(f.packet, lenHexOf(f.residual), residual) + streamOf(core, fr.slice(1));
     add("residual_not_hex", "a residual character that is not a hex digit", withStream(stream), "parity");
   }
+  // hex case (RFC 07 section 4.3): the strict parse reads either case, and the case fails at canonical (a residual or
+  // its length) or at crystal (a packet), where the Hyperbolic Lexicon's verifier reports it (section 17, option (a))
   {
     const stream = rawFrame(fr[0].packet.toLowerCase(), lenHexOf(fr[0].residual), fr[0].residual) + streamOf(core, fr.slice(1));
-    add("packet_lower_case", "packet 0 in lower-case hex (RFC 07 section 4.3 requires upper case)", withStream(stream), "parity");
+    add("packet_lower_case", "packet 0 in lower-case hex (RFC 07 section 4.3 requires upper case)", withStream(stream), "crystal");
   }
   {
     const j = fr.findIndex((f) => /[a-f]/.test(f.residual));
     const frames = fr.map((f, i) => (i === j ? rawFrame(f.packet, lenHexOf(f.residual), f.residual.toUpperCase()) : rawFrame(f.packet, lenHexOf(f.residual), f.residual)));
-    add("residual_upper_case", "a residual in upper-case hex (section 4.3 requires lower case)", withStream(frames.join("")), "parity");
+    add("residual_upper_case", "a residual in upper-case hex (section 4.3 requires lower case)", withStream(frames.join("")), "canonical");
   }
   {
     const j = fr.findIndex((f) => /[a-f]/.test(lenHexOf(f.residual)));
     if (j >= 0) {
       const frames = fr.map((f, i) => rawFrame(f.packet, i === j ? lenHexOf(f.residual).toUpperCase() : lenHexOf(f.residual), f.residual));
-      add("length_upper_case", "a residual length in upper-case hex (section 4.3 requires lower case)", withStream(frames.join("")), "parity");
+      add("length_upper_case", "a residual length in upper-case hex (section 4.3 requires lower case)", withStream(frames.join("")), "canonical");
     }
   }
   {
@@ -103,7 +105,7 @@ export async function tamperCases(core, { honest, honestNoEngrams, x80 }) {
     add("parity_broken", "packet 1 with its parity bit flipped", withFrames(frames), "parity", { laxOk: false });
   }
 
-  // ---- canonical: the 720-byte cut, the 60,000-byte limit, canonical residuals, well-formed UTF-8
+  // ---- canonical: the 720-byte cut, the 60,000-byte limit, canonical residuals
   const text720 = "The owl keeps the tome; the fox keeps the lantern. ".repeat(20);
   const one = async (text) => framesOf(core, (await core.growBiochain(text, { engrams: false })).stream)[0];
   const a720 = await one(text720.slice(0, 720)), b719 = await one(text720.slice(1, 720)), c50 = await one(text720.slice(0, 50));
@@ -128,7 +130,9 @@ export async function tamperCases(core, { honest, honestNoEngrams, x80 }) {
   }
   {
     const split = framesOf(core, (await core.growBiochain("a".repeat(719) + "é", { engrams: false })).stream)[0];
-    add("utf8_ill_formed", "one 720-byte chunk ending in 0xC3, the first byte of a two-byte character", withFrames([split]), "canonical");
+    // well-formed UTF-8 is checked at the start of derived, so this fails at the first later check it leaves wrong
+    add("utf8_ill_formed", "one 720-byte chunk ending in 0xC3, the first byte of a two-byte character; the leaves are the honest record's",
+      withFrames([split]), "leaves");
   }
 
   // ---- crystal: each packet against crystallize(chunk)

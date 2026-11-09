@@ -164,9 +164,9 @@
    "id": "shdccp2-contract-s2",
    "repository": "BioChainAI/SHD-CCP-core",
    "ref": "main",
-   "commit": "f51b53f5d10d05a788bbd219089ec5661c8759e6",
-   "pending": "f51b53f is the S2 commit of SHD-CCP-core (the RFC 07 suites added after 150a50f), not yet merged into main. When it merges, compare these files with main (check-upstream.mjs), copy any that changed, set commit to the merge commit and fold this source into shdccp2-contract. The tamper suites name Owl's strict verifier at O3's commit f1d31af in their `source`; a repin of that commit in SHD-CCP-core changes `source` only, never a case.",
-   "licence": "CC0-1.0, as for shdccp2-contract (the same contract_vectors/LICENSE, unchanged at f51b53f; vendored once, as shdccp2-contract/LICENSE). Five of these suites are normative at f51b53f (two independent implementations agreed on every case and SHD-CCP-core's lock pins them): shdccp2_limits, engram1_keys, rng_mulberry32, merkle_rules_same_bytes and shdccp2_tamper. shdccp2_tamper_open is draft: RFC 07 section 12.5 leaves the first failing check of its ten values open. Not vendored: rfc6962_lists and attest1_profile, which scripts/biomesh-core.js does not implement (RFC 6962 trees; the ATTEST/1 and SEAL/1 profile, which Owl verifies from Phase 4, decision D9).",
+   "commit": "eaea3baa77924aa5f1965ae73b5d1dcf3cff8103",
+   "pending": "eaea3ba is a commit of SHD-CCP-core on top of main at 32d87f0 (which merged f51b53f, the RFC 07 suites added after 150a50f), not yet merged into main. It applies RFC 07 section 17's option (a): shdccp2_tamper_open becomes normative with 13 values, and shdccp2_tamper changes in `source` and four informative details only. When it merges, compare these files with main (check-upstream.mjs), copy any that changed, set commit to the merge commit and fold this source into shdccp2-contract. The tamper suites name Owl's strict verifier at cf1227a in their `source`; a repin of that commit in SHD-CCP-core changes `source` only, never a case.",
+   "licence": "CC0-1.0, as for shdccp2-contract (the same contract_vectors/LICENSE, unchanged at eaea3ba; vendored once, as shdccp2-contract/LICENSE). All six of these suites are normative at eaea3ba (two independent implementations agreed on every case and SHD-CCP-core's lock pins them): shdccp2_limits, engram1_keys, rng_mulberry32, merkle_rules_same_bytes, shdccp2_tamper and shdccp2_tamper_open (hex digits in the wrong case and ill-formed UTF-8, at the first failing check of RFC 07 section 17's option (a)). Not vendored: rfc6962_lists, attest1_profile and attest1_profile_open (draft), which scripts/biomesh-core.js does not implement (RFC 6962 trees; the ATTEST/1 and SEAL/1 profile, which Owl verifies from Phase 4, decision D9).",
    "usedBy": [
     "tests/unit/contract-vectors.test.mjs",
     "tests/unit/biomesh-strict.test.mjs",
@@ -200,14 +200,14 @@
     {
      "path": "shdccp2-contract/suites/shdccp2_tamper.json",
      "upstream": "contract_vectors/suites/shdccp2_tamper.json",
-     "lastChanged": "f51b53f5d10d05a788bbd219089ec5661c8759e6",
-     "sha256": "8e4646c1bbd896185a36ea3bd9ab3a462549c1e58cf20fbe429dc9e4f6d88a4b"
+     "lastChanged": "eaea3baa77924aa5f1965ae73b5d1dcf3cff8103",
+     "sha256": "3c052c207fe66c92e0f76bbad6d900d88e47a33e6baef2d14ffe55d5cecb6023"
     },
     {
      "path": "shdccp2-contract/suites/shdccp2_tamper_open.json",
      "upstream": "contract_vectors/suites/shdccp2_tamper_open.json",
-     "lastChanged": "f51b53f5d10d05a788bbd219089ec5661c8759e6",
-     "sha256": "360dc3cc17d0891ddeb7a35c1d5b86951097d29fc0ad4fde3d0cd9243c014fda"
+     "lastChanged": "eaea3baa77924aa5f1965ae73b5d1dcf3cff8103",
+     "sha256": "a2fcc00b9b98169e701bfbdb2a7e3e54929e8779e1bef658ca320263152feb05"
     }
    ]
   }
