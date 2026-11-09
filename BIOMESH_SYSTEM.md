@@ -67,8 +67,14 @@ Merkle root → chiral weave**. A legacy read path still verifies any older
 > **`verifyIntegrityStrict`** (`scripts/biomesh-core.js`): synchronous, hash-parametric,
 > and reporting the first failing check of **parity → canonical → crystal → leaves →
 > weaves → derived**; a record with no `stream` or another `streamVersion` is reported
-> as legacy. It runs in **shadow mode** while `STRICT_ENFORCE` (`scripts/biomesh.js`) is
-> false: `publishBiochain` always refuses a record that fails it; accept, extend, trace,
+> as legacy. Two rules sit where RFC 07 section 17's option (a) puts them, so the first
+> failing check is the one the Hyperbolic Lexicon's verifier (`verifyPackage`, steps 1-6)
+> names: hex digits of either case pass parity, and a packet not in upper case fails at
+> crystal, a residual or residual length not in lower case at canonical; well-formed
+> UTF-8 is checked at the start of derived, so ill-formed bytes fail at the first check
+> their change leaves wrong (crystal, leaves or weaves), and at derived when every other
+> field comes from the same bytes. Which records pass is the same under either order.
+> It runs in **shadow mode** while `STRICT_ENFORCE` (`scripts/biomesh.js`) is false: `publishBiochain` always refuses a record that fails it; accept, extend, trace,
 > the Console cards, the rating's `recreatedOk` and the Language Growing seed gate show
 > or record the verdict without refusing on it. Records are labelled (decision D15)
 > "strict ok", "legacy", "failed at <check>" or "self-consistent only" (the strict check

@@ -27,7 +27,8 @@
 //                    label (informative);
 //                    and verifyIntegrity returns on every value (run in a worker with a memory limit and a time limit)
 //                    with the self-consistency verdict the suite records
-//   shdccp2_tamper_open (draft)   every value is rejected, at the check RFC 07 names today (section 12.5)
+//   shdccp2_tamper_open (draft)   every value is rejected, at the first failing check of RFC 07 section 17's option (a)
+//                    (the Hyperbolic Lexicon's verifier, the right-hand column of section 12.5's table)
 //
 // Not vendored: rfc6962_lists and attest1_profile; biomesh-core.js implements neither (tests/vendor/VENDOR.json).
 import { test } from "node:test";
@@ -374,12 +375,23 @@ test("shdccp2_tamper: the honest records pass and every altered value fails at i
     "cut_719_middle", "over_60000_bytes", "merkleroot_bioseed1"]) assert.ok(ids.includes(id), id);
 });
 
-test("shdccp2_tamper_open (draft): every value is rejected, at the check RFC 07 names today", () => {
+// RFC 07 section 17, option (a): hex digits of either case pass parity, and well-formed UTF-8 is checked at the start of
+// derived, so these values fail where the Hyperbolic Lexicon's verifier names them (section 12.5's table). The vendored
+// draft still gives the earlier checks (parity, canonical) until SHD-CCP-core regenerates it at this commit; then its
+// expected values are these, and a case not listed here is checked against its own expected value.
+const OPTION_A = { packet_lower_case: "crystal", packet_mixed_case: "crystal", residual_upper_case: "canonical",
+  residual_mixed_case: "canonical", length_upper_case: "canonical", utf8_lead_byte_at_end: "derived", utf8_overlong: "derived",
+  utf8_encoded_surrogate: "derived", utf8_lone_continuation: "derived", utf8_invalid_across_cut: "derived" };
+
+test("shdccp2_tamper_open (draft): every value is rejected, at the first failing check of RFC 07 section 17's option (a)", () => {
   const s = suite("shdccp2_tamper_open");
   assert.equal(s.status, "draft");
+  for (const id of Object.keys(OPTION_A)) assert.ok(s.cases.some((c) => c.id === id), id);
   for (const c of s.cases) {
     assert.equal(c.expect.ok, false, `${c.id}: a value to reject`);
-    checkTamperCase(c);
+    const failed = OPTION_A[c.id] || c.expect.failed, inf = c.informative || {};
+    const label = (inf.self_consistent === true ? "self-consistent only, " : "") + "failed at " + failed;
+    checkTamperCase({ ...c, expect: { ok: false, failed }, informative: { ...inf, label } });
   }
 });
 

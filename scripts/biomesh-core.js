@@ -262,10 +262,13 @@ export function parseBiochainStream(streamHex) {
   return frames;
 }
 /** Parse a framed stream strictly (RFC 07 section 4.3, F85): at each frame start
- *  16 upper-case hex digits (the packet) and 8 lower-case hex digits (the residual
- *  length L), then exactly 2·L lower-case hex digits; the stream ends exactly after
- *  the last frame and holds at least one. Throws on anything else. Parity, the
- *  720-byte cut and canonical residuals are checked by verifyIntegrityStrict.
+ *  16 hex digits (the packet) and 8 hex digits (the residual length L), then
+ *  exactly 2·L hex digits; the stream ends exactly after the last frame and holds
+ *  at least one. Throws on anything else. Hex digits of either case are read here
+ *  (RFC 07 section 17, option (a)); verifyIntegrityStrict enforces the case of
+ *  section 4.3 later: a residual or length not in lower case fails at canonical,
+ *  a packet not in upper case at crystal. Parity, the 720-byte cut and canonical
+ *  residuals are checked by verifyIntegrityStrict.
  *  → [{ packet, residual, residualBytes, form, spin, quat32, payload16, chunkLen,
  *       freq, amp, parityOk }] */
 export function parseBiochainStreamStrict(streamHex) {
@@ -275,12 +278,12 @@ export function parseBiochainStreamStrict(streamHex) {
     const i = frames.length;
     if (p + 24 > streamHex.length) throw new Error(`frame ${i}: truncated frame header`);
     const packet = streamHex.slice(p, p + 16), lenHex = streamHex.slice(p + 16, p + 24);
-    if (!/^[0-9A-F]{16}$/.test(packet)) throw new Error(`frame ${i}: the packet is not 16 upper-case hex digits`);
-    if (!/^[0-9a-f]{8}$/.test(lenHex)) throw new Error(`frame ${i}: the residual length is not 8 lower-case hex digits`);
+    if (!/^[0-9A-Fa-f]{16}$/.test(packet)) throw new Error(`frame ${i}: the packet is not 16 hex digits`);
+    if (!/^[0-9A-Fa-f]{8}$/.test(lenHex)) throw new Error(`frame ${i}: the residual length is not 8 hex digits`);
     const residualBytes = parseInt(lenHex, 16), end = p + 24 + 2 * residualBytes;
     if (end > streamHex.length) throw new Error(`frame ${i}: the residual is shorter than its length`);
     const residual = streamHex.slice(p + 24, end);
-    if (!/^[0-9a-f]*$/.test(residual)) throw new Error(`frame ${i}: the residual is not lower-case hex`);
+    if (!/^[0-9A-Fa-f]*$/.test(residual)) throw new Error(`frame ${i}: the residual is not hex`);
     frames.push({ packet, residual, residualBytes, ...unpackPacket(packet) });
     p = end;
   }
@@ -448,6 +451,12 @@ export async function verifyIntegrity(chain) {
 // order of section 12.3 and reports the first failing check. It is synchronous
 // and takes the hash as a parameter (opts.sha256: string → 64 lower-case hex of
 // SHA-256 over its UTF-8), so a copy of this file can run with another SHA-256.
+// Two rules sit where RFC 07 section 17's option (a) puts them, so that the first
+// failing check is the one the Hyperbolic Lexicon's verifyPackage (steps 1-6)
+// names: hex digits of either case pass parity (the case fails at canonical or
+// crystal), and well-formed UTF-8 is checked at the start of derived (ill-formed
+// bytes fail at the first check their change leaves wrong, at derived when every
+// other field comes from the same bytes). Which records pass is unchanged.
 
 const SHA256_K = new Uint32Array([
   0x428a2f98, 0x71374491, 0xb5c0fbcf, 0xe9b5dba5, 0x3956c25b, 0x59f111f1, 0x923f82a4, 0xab1c5ed5,
@@ -526,17 +535,18 @@ const numEq = (a, b) => typeof a === "number" && a === b;   // binary64 equality
  *  when ok); `checks` lists the checks that ran. `fields` names the record fields
  *  a failing leaves, weaves or derived check found different.
  *    parity     streamVersion is "shdccp/2", the stream parses strictly
- *               (parseBiochainStreamStrict), at least one frame, every packet's
- *               parity holds
+ *               (parseBiochainStreamStrict, hex digits of either case), at least
+ *               one frame, every packet's parity holds
  *    canonical  the chunk lengths are the 720-byte cut (720 for every frame but the
  *               last, 1..720 for the last, at most 60,000 bytes in all); each
- *               residual decodes and re-encodes to itself; re-framing gives the
- *               stream; the bytes are well-formed UTF-8 (section 12.1, step 2)
- *    crystal    every packet is crystallize(chunk), raw rule
+ *               residual decodes and re-encodes to itself (lower case); re-framing
+ *               gives the stream (a length not in lower case fails here)
+ *    crystal    every packet is crystallize(chunk), raw rule (upper case)
  *    leaves     leafHashes has exactly K entries, each the recomputed leaf;
  *               merkleRoot is present and equals the root of the leaves
  *    weaves     weaveChiral, weaveMirror, segCuts, segments (7) and the chainId
- *    derived    the three engram fields when any is present (recomputed from the
+ *    derived    the bytes are well-formed UTF-8 (section 12.1, step 2), then the
+ *               three engram fields when any is present (recomputed from the
  *               text), origBytes, shippedBytes and value
  *  A record without a string `stream`, or whose streamVersion is missing or not
  *  "shdccp/2", is legacy: { ok: false, failed: "parity", legacy: true }.
@@ -582,11 +592,6 @@ export function verifyIntegrityStrict(chain, { sha256 = sha256HexSync } = {}) {
       }
       if (frameStream(frames.map(f => f.packet), frames.map(f => f.residual)) !== chain.stream)
         return fail("the stream is not the framing of its packets and residuals");
-      const data = new Uint8Array(total);
-      let at = 0;
-      for (const c of chunks) { data.set(c, at); at += c.length; }
-      try { st.text = new TextDecoder("utf-8", { fatal: true, ignoreBOM: true }).decode(data); }
-      catch (_) { return fail("the chunks are not well-formed UTF-8"); }
       st.chunks = chunks; st.bytes = total;
       return pass(`${k} chunk(s), ${total} bytes, canonical`);
     },
@@ -618,6 +623,11 @@ export function verifyIntegrityStrict(chain, { sha256 = sha256HexSync } = {}) {
       return bad.length ? fail(`${bad.join(", ")} not reproduced`, bad) : pass("weaveChiral, weaveMirror, segCuts, segments and chainId");
     },
     derived() {
+      const data = new Uint8Array(st.bytes);
+      let at = 0;
+      for (const c of st.chunks) { data.set(c, at); at += c.length; }
+      try { st.text = new TextDecoder("utf-8", { fatal: true, ignoreBOM: true }).decode(data); }
+      catch (_) { return fail("the chunks are not well-formed UTF-8"); }
       const bad = [];
       let engramHexLen = 0;
       if (ENGRAM_FIELDS.some(f => hasOwn(chain, f))) {
