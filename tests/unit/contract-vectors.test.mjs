@@ -2,9 +2,9 @@
 // Copyright (c) 2026 Ebayednoob
 //
 // The RFC 07 contract vectors (BioChainAI/SHD-CCP-core contract_vectors/, CC0-1.0, vendored in
-// tests/vendor/shdccp2-contract/ and pinned in tests/vendor/VENDOR.json) run against scripts/biomesh-core.js. Twelve
-// suites are normative upstream (two independent implementations agreed on every case); each case's expected value
-// must come out of Owl's code bit for bit. One suite is draft (shdccp2_tamper_open). Run from the repository root:
+// tests/vendor/shdccp2-contract/ and pinned in tests/vendor/VENDOR.json) run against scripts/biomesh-core.js. All
+// thirteen suites are normative upstream (two independent implementations agreed on every case); each case's expected
+// value must come out of Owl's code bit for bit. Run from the repository root:
 //   node --test tests/unit/contract-vectors.test.mjs
 //
 //   shdccp2_packet   crystallize(chunk): packet, crystal32, signed crystal codes, fields; never the kernel-normalised
@@ -27,8 +27,9 @@
 //                    label (informative);
 //                    and verifyIntegrity returns on every value (run in a worker with a memory limit and a time limit)
 //                    with the self-consistency verdict the suite records
-//   shdccp2_tamper_open (draft)   every value is rejected, at the first failing check of RFC 07 section 17's option (a)
-//                    (the Hyperbolic Lexicon's verifier, the right-hand column of section 12.5's table)
+//   shdccp2_tamper_open   the same for hex digits in the wrong case and ill-formed UTF-8: every value is rejected at
+//                    its expected check, the first failing check of RFC 07 section 17's option (a) (the Hyperbolic
+//                    Lexicon's verifier, section 12.5's table)
 //
 // Not vendored: rfc6962_lists and attest1_profile; biomesh-core.js implements neither (tests/vendor/VENDOR.json).
 import { test } from "node:test";
@@ -45,9 +46,8 @@ const C = await import(CORE_URL);
 const DIR = join(ROOT, "tests/vendor/shdccp2-contract/suites");
 const suite = (name) => JSON.parse(readFileSync(join(DIR, `${name}.json`), "utf8"));
 const NORMATIVE = ["engram1", "engram1_keys", "merkle_rules_same_bytes", "rng_mulberry32", "shdccp2_arith", "shdccp2_chunk",
-  "shdccp2_limits", "shdccp2_merkle", "shdccp2_packet", "shdccp2_record", "shdccp2_tamper", "shdccp2_weave"];
-const DRAFT = ["shdccp2_tamper_open"];
-const SUITES = [...NORMATIVE, ...DRAFT].sort();
+  "shdccp2_limits", "shdccp2_merkle", "shdccp2_packet", "shdccp2_record", "shdccp2_tamper", "shdccp2_tamper_open", "shdccp2_weave"];
+const SUITES = [...NORMATIVE].sort();
 
 const bytesOf = (hex) => Array.from({ length: hex.length / 2 }, (_, i) => parseInt(hex.slice(2 * i, 2 * i + 2), 16));
 /** IEEE-754 binary64 from / to 16 hex digits (big-endian bit pattern). */
@@ -56,12 +56,12 @@ const hex64 = (x) => { const v = new DataView(new ArrayBuffer(8)); v.setFloat64(
 const vectorText = (input) => ("text" in input ? input.text
   : input.text_parts.map((p) => (typeof p === "string" ? p : p.repeat.repeat(Math.ceil(p.length / p.repeat.length)).slice(0, p.length))).join(""));
 
-test("the thirteen suites are vendored: twelve normative, one draft, RFC 07 shdccp/2, CC0", () => {
+test("the thirteen suites are vendored: all normative, RFC 07 shdccp/2, CC0", () => {
   assert.deepEqual(readdirSync(DIR).filter((f) => f.endsWith(".json")).map((f) => f.replace(/\.json$/, "")).sort(), SUITES);
   for (const name of SUITES) {
     const s = suite(name);
     assert.equal(s.suite, name);
-    assert.equal(s.status, DRAFT.includes(name) ? "draft" : "normative", `${name}: ${s.status}`);
+    assert.equal(s.status, "normative", `${name}: ${s.status}`);
     assert.equal(s.rfc, "07");
     assert.equal(s.wire, "shdccp/2");
     assert.equal(s.license, "CC0-1.0");
@@ -376,23 +376,27 @@ test("shdccp2_tamper: the honest records pass and every altered value fails at i
 });
 
 // RFC 07 section 17, option (a): hex digits of either case pass parity, and well-formed UTF-8 is checked at the start of
-// derived, so these values fail where the Hyperbolic Lexicon's verifier names them (section 12.5's table). The vendored
-// draft still gives the earlier checks (parity, canonical) until SHD-CCP-core regenerates it at this commit; then its
-// expected values are these, and a case not listed here is checked against its own expected value.
+// derived, so these values fail where the Hyperbolic Lexicon's verifier names them (section 12.5's table): a packet not
+// in upper case at crystal, a residual or length not in lower case at canonical, and ill-formed UTF-8 at the first check
+// its change leaves wrong, at derived when every other field comes from the same bytes. These are the suite's expected
+// values; listing them here makes a refreshed copy that moves one of them fail this test.
 const OPTION_A = { packet_lower_case: "crystal", packet_mixed_case: "crystal", residual_upper_case: "canonical",
   residual_mixed_case: "canonical", length_upper_case: "canonical", utf8_lead_byte_at_end: "derived", utf8_overlong: "derived",
-  utf8_encoded_surrogate: "derived", utf8_lone_continuation: "derived", utf8_invalid_across_cut: "derived" };
+  utf8_encoded_surrogate: "derived", utf8_lone_continuation: "derived", utf8_invalid_across_cut: "derived",
+  utf8_residual_changed: "crystal", utf8_packet_and_residual_changed: "leaves", utf8_leaves_and_root_changed: "weaves" };
 
-test("shdccp2_tamper_open (draft): every value is rejected, at the first failing check of RFC 07 section 17's option (a)", () => {
+test("shdccp2_tamper_open: every value fails at its expected check, RFC 07 section 17's option (a), with either hash", () => {
   const s = suite("shdccp2_tamper_open");
-  assert.equal(s.status, "draft");
-  for (const id of Object.keys(OPTION_A)) assert.ok(s.cases.some((c) => c.id === id), id);
+  for (const [id, failed] of Object.entries(OPTION_A)) {
+    const c = s.cases.find((x) => x.id === id);
+    assert.ok(c, id);
+    assert.deepEqual(c.expect, { ok: false, failed }, `${id}: the expected verdict`);
+  }
   for (const c of s.cases) {
     assert.equal(c.expect.ok, false, `${c.id}: a value to reject`);
-    const failed = OPTION_A[c.id] || c.expect.failed, inf = c.informative || {};
-    const label = (inf.self_consistent === true ? "self-consistent only, " : "") + "failed at " + failed;
-    checkTamperCase({ ...c, expect: { ok: false, failed }, informative: { ...inf, label } });
+    checkTamperCase(c);
   }
+  assert.ok(s.cases.length >= 13, `${s.cases.length} values`);
 });
 
 /** verifyIntegrity and recreateChunks on each value, in a worker with a memory limit and a time limit, so that a
