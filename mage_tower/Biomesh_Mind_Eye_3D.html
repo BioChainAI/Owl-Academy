@@ -45,6 +45,9 @@
         #seedPanel button.cyan:hover { background:rgba(0,212,255,.22); }
         #seedPanel button.amber { background:rgba(245,166,35,.12); color:#ffe6c2; border-color:rgba(245,166,35,.45); }
         #seedPanel button.amber:hover { background:rgba(245,166,35,.24); }
+        #seedPanel select { flex:1 1 auto; min-width:0; background:rgba(0,0,0,.5); color:#d9ffee; border:1px solid rgba(0,255,136,.3); border-radius:6px; font-family:'JetBrains Mono',monospace; font-size:10.5px; padding:4px 6px; }
+        #seedPanel .sealRow { align-items:center; }
+        #seedPanel .sealRow label { color:#9fb4c8; font-size:10.5px; font-family:'JetBrains Mono',monospace; }
         #seedStatus { font-family:'JetBrains Mono',monospace; font-size:10.5px; color:#9fb4c8; line-height:1.5; min-height:15px; word-break:break-all; }
         #seedStatus .ok { color:#00ff88; } #seedStatus .bad { color:#f87171; } #seedStatus .warn { color:#f5a623; }
         #helpBtn {
@@ -124,6 +127,10 @@
             <button onclick="window.ME.loadFile()">Load file</button>
             <button class="amber" onclick="window.ME.publish()">Publish</button>
         </div>
+        <div class="row sealRow">
+            <label for="sealPick">Seal</label>
+            <select id="sealPick" title="The minor-tome seal that signs a published seed or environment"><option value="">— loading seals… —</option></select>
+        </div>
         <div id="seedStatus">Program vertices, chain them, then Build a regrowable seed.</div>
         <input type="file" id="seedFile" accept=".json,.latticeseed,.txt" style="display:none">
     </div>
@@ -175,10 +182,13 @@
         import GUI from 'lil-gui';
 
         // ══════════════════════════════════════════════════════════════════════
-        //  SHD-CCP 64-bit packet codec — byte-identical to scripts/biomesh.js
-        //  (and BioChain_Enterprise/shdccp_kernel.py). Inlined so this page is a
-        //  fully standalone node of the mesh; the canonical definition lives in
-        //  biomesh.js. Field map (MSB..LSB of the 64-bit word):
+        //  SHD-CCP 64-bit packet codec — byte-identical to scripts/biomesh.js,
+        //  the shdccp/2 packet of RFC 07 (BioChainAI/SHD-CCP-core): crystal bytes
+        //  are written raw, so a crystal byte 0x80 stays 0x80. The Python kernel
+        //  (BioChain_Enterprise/shdccp_kernel.py) writes it as 0x81 and agrees
+        //  only on chunks without one (RFC 07 section 5.4). Inlined so this page
+        //  is a fully standalone node of the mesh; the canonical definition lives
+        //  in biomesh.js. Field map (MSB..LSB of the 64-bit word):
         //    63..60 form · 59 parity · 58..56 spin · 55..24 quat32
         //    · 23..8 payload16 · 7..3 freq · 2..0 amp
         // ══════════════════════════════════════════════════════════════════════
@@ -990,19 +1000,54 @@
             r.onload = () => { document.getElementById('seedBox').value = r.result; setStatus(`Loaded ${f.name}. Click Regrow to rebuild.`, 'ok'); };
             r.readAsText(f); e.target.value = '';
         }
+        // ── mesh: Firebase loads only when a seal list or a publish needs it ──────
+        // listMinorTomes comes from scripts/minor-tome.js (biomesh.js does not export it).
+        async function meshContext() {
+            const BM = await import('../scripts/biomesh.js');
+            const { listMinorTomes } = await import('../scripts/minor-tome.js');
+            const { auth } = await import('../scripts/firebase/config.js');
+            if (auth?.authStateReady) await auth.authStateReady();
+            return { BM, listMinorTomes, uid: auth?.currentUser?.uid || null };
+        }
+        // Fill the seal picker with the signed-in user's active minor tomes.
+        async function refreshSeals() {
+            const sel = document.getElementById('sealPick');
+            const placeholder = (text) => { sel.textContent = ''; const o = document.createElement('option'); o.value = ''; o.textContent = text; sel.appendChild(o); };
+            try {
+                const { listMinorTomes, uid } = await meshContext();
+                if (!uid) { placeholder('— sign in to publish —'); return null; }
+                const seals = (await listMinorTomes(uid).catch(() => [])).filter(t => t && t.status === 'active' && t.sealId);
+                const keep = sel.value;
+                if (!seals.length) { placeholder('— mint a seal in the Seal Forge —'); return uid; }
+                sel.textContent = '';
+                for (const t of seals) {
+                    const o = document.createElement('option');
+                    o.value = String(t.sealId);
+                    o.textContent = `${t.label || 'seal'} · ${String(t.sealId).slice(0, 12)}…`;
+                    sel.appendChild(o);
+                }
+                if (seals.some(t => String(t.sealId) === keep)) sel.value = keep;
+                return uid;
+            } catch (err) { placeholder('— mesh unavailable —'); return null; }
+        }
+        // The picked seal, or null after telling the user what to do.
+        async function pickedSeal(uid, report) {
+            if (!uid) { report('Sign in to publish. The seed is still exportable as a file or from the clipboard: that is the portable artifact.'); return null; }
+            let sealId = document.getElementById('sealPick').value;
+            if (!sealId) { await refreshSeals(); sealId = document.getElementById('sealPick').value; }
+            if (!sealId) { report('Pick a seal to sign with (mint one in the Seal Forge first). The seed is still exportable as a file or from the clipboard.'); return null; }
+            return sealId;
+        }
         async function publish() {
             const s = parseSeedBox() || collectSeed();
             document.getElementById('seedBox').value = JSON.stringify(s);
             setStatus('Publishing seed to the mesh…', 'warn');
             try {
-                const BM = await import('../scripts/biomesh.js');
-                const { auth } = await import('../scripts/firebase/config.js');
-                const uid = auth?.currentUser?.uid;
-                if (!uid) { setStatus('Sign in to publish. Seed is still exportable as a file/clipboard — that is the portable decentralized artifact.', 'warn'); return; }
+                const { BM, uid } = await meshContext();
+                const sealId = await pickedSeal(uid, (m) => setStatus(m, 'warn'));
+                if (!sealId) return;
                 const seedString = JSON.stringify(s);
                 const chain = await BM.growBiochain(seedString, {});
-                const seals = await BM.listMinorTomes?.(uid).catch(() => []);
-                const sealId = Array.isArray(seals) && seals[0] ? (seals[0].sealId || seals[0].id) : null;
                 await BM.publishBiochain(uid, sealId, chain, { title: 'Mind\'s Eye lattice ' + s.hash, kind: 'mindseye.lattice_seed' });
                 setStatus(`Published as biochain ${chain.chainId || ''} — decentralized nodes can fetch it and Regrow the identical lattice. hash ${s.hash}`, 'ok');
             } catch (err) {
@@ -1490,13 +1535,11 @@
             const env = collectEnvironment(); const cost = crystEstimate(); CRYST.lastCost = cost;
             pumpLog(`◈ CRYST commit — window OK · cost ≈ ${cost} CRYST · env ${env.hash}. FLUX simulation was free.`, 'scal');
             try {
-                const BM = await import('../scripts/biomesh.js');
-                const { auth } = await import('../scripts/firebase/config.js');
-                const uid = auth?.currentUser?.uid;
+                const { BM, uid } = await meshContext();
                 if (uid) {
+                    const sealId = await pickedSeal(uid, (m) => pumpLog('◈ ' + m, 'sys'));
+                    if (!sealId) return;
                     const chain = await BM.growBiochain(JSON.stringify(env), {});
-                    const seals = await BM.listMinorTomes?.(uid).catch(() => []);
-                    const sealId = Array.isArray(seals) && seals[0] ? (seals[0].sealId || seals[0].id) : null;
                     await BM.publishBiochain(uid, sealId, chain, { title: 'Mind\'s Eye environment ' + env.hash, kind: 'mindseye.environment', crystCost: cost });
                     pumpLog(`◈ crystallized as biochain ${chain.chainId || ''} · ${cost} CRYST issued against compute.`, 'scal');
                 } else {
@@ -1585,9 +1628,12 @@
             _frontier: frontier, _flux: FLUX, _cryst: CRYST, _fold: foldState,
             set _codex(v) { attachedCodex = v; }, get _codex() { return attachedCodex; },
             crystallize, packWord, unpackWord, nodeToWord, wordToNode, fold32, canonicalSeed, collectSeed,
+            refreshSeals,
         };
 
         init();
+        document.getElementById('sealPick').addEventListener('focus', () => { refreshSeals(); }, { once: true });
+        refreshSeals();
     </script>
 </body>
 </html>

@@ -18,6 +18,16 @@
  * The functions were moved here from biomesh.js without change; the unit test
  * checks each one's text against biomesh.js at 7f45f35. crystallizeGolden and
  * engramHex are additions (the golden packet and a token's engram key).
+ *
+ * The strict verifier (RFC 07 section 12, in BioChainAI/SHD-CCP-core) is
+ * verifyIntegrityStrict: synchronous, with the hash passed in (sha256HexSync,
+ * a FIPS 180-4 SHA-256 in plain JS, by default). verifyIntegrity is unchanged:
+ * it checks self-consistency only (see its comment). Changed on purpose since
+ * 7f45f35, each checked by behaviour in the unit tests: engramGrid builds each
+ * letter's grid once (same output), parseBiochainStream throws on a negative
+ * residual length, and extendBiochain also computes the parent's strict verdict.
+ * Exported primitives (crystallize, encodeChunk, frameStream, the quaternion
+ * helpers, mulberry32) let the tests run the RFC 07 vectors; text unchanged.
  */
 
 import { sha256Hex } from "./seal-crypto.js";
@@ -37,21 +47,28 @@ function fold64(bytes) {
   for (const b of bytes) a = (((a << 7n) | (a >> 57n)) & M64) ^ ((BigInt(b) * 0x100000001B3n) & M64);
   return a;
 }
-const qmul = (a, b) => [
+export const qmul = (a, b) => [
   a[0]*b[0]-a[1]*b[1]-a[2]*b[2]-a[3]*b[3], a[0]*b[1]+a[1]*b[0]+a[2]*b[3]-a[3]*b[2],
   a[0]*b[2]-a[1]*b[3]+a[2]*b[0]+a[3]*b[1], a[0]*b[3]+a[1]*b[2]-a[2]*b[1]+a[3]*b[0]];
-const qconj = a => [a[0], -a[1], -a[2], -a[3]];
-const qn = a => { const n = Math.hypot(...a) || 1; return a.map(x => x / n); };
-function crystalQuat(bytes) {
+export const qconj = a => [a[0], -a[1], -a[2], -a[3]];
+export const qn = a => { const n = Math.hypot(...a) || 1; return a.map(x => x / n); };
+export function crystalQuat(bytes) {
   const c32 = Number((fold64(bytes) ^ (fold64(bytes) >> 32n)) & 0xFFFFFFFFn);
   const s = i => { const v = (c32 >>> i) & 255; return v >= 128 ? v - 256 : v; };
   return qn([0.5 + s(24) / 254, s(16) / 127, s(8) / 127, s(0) / 127]);
 }
-const quatHex = q => q.map(v => v.toFixed(12)).join(",");
+export const quatHex = q => q.map(v => v.toFixed(12)).join(",");
 
-// ─── SHD-CCP 64-bit packet (byte-identical to shdccp_kernel.crystallize) ──────
+// ─── SHD-CCP 64-bit packet: the shdccp/2 crystal packet (RFC 07 section 5) ───
 // Field map (MSB..LSB of the 64-bit word):
 //   63..60 form · 59 parity · 58..56 spin · 55..24 quat32 · 23..8 payload16 · 7..3 freq · 2..0 amp
+// The four crystal bytes are written RAW (RFC 07 section 5.4, decision D6): a
+// crystal byte 0x80 stays 0x80 in the packet, and crystalQuat reads it as -128.
+// The Python kernel shdccp_kernel.py (BioChainAI/BioChain-AI protocol/, and the
+// copy in BioChain-AI/BioChain_Enterprise/ here) rewrites the int8 code -128 as
+// -127 (byte 0x81) for its ABI and codex words; shdccp/2 packets never do, so
+// this packet equals the kernel's only for chunks without a 0x80 crystal byte
+// (about 1.5 % of real chunks have one). The golden 9841D88D8B003CEA has none.
 // A biochain body is stored as ONE framed stream of these packets instead of
 // parallel per-chunk arrays: each chunk contributes its crystal packet (which
 // carries the chunk length in its payload field) followed by a length-prefixed
@@ -64,7 +81,7 @@ function popcountEven(word) {               // parity over the other 63 bits
   return c;                                 // 0n | 1n
 }
 /** chunk bytes → 16-hex SHD-CCP crystal packet (form 9, payload = chunk length). */
-function crystallize(bytes) {
+export function crystallize(bytes) {
   const acc = fold64(bytes);
   const crystal32 = (acc ^ (acc >> 32n)) & 0xFFFFFFFFn;
   let csum = 0; for (const b of bytes) csum += b; csum &= 0xFF;
@@ -106,7 +123,7 @@ export const crystallizeGolden = () => crystallize(Array.from({ length: 60 }, (_
 // same packing its chiralKey uses). A biochain's engram packet for a token is
 // therefore bit-identical to crystallize(token) on that page — an engram
 // stream can pre-seed the Mind Eye's Hamming matcher directly.
-function mulberry32(seed) {
+export function mulberry32(seed) {
   return function () {
     seed |= 0; seed = seed + 0x6D2B79F5 | 0;
     let t = Math.imul(seed ^ seed >>> 15, 1 | seed);
@@ -120,12 +137,22 @@ function engramCharGrid(ch) {
   const rng = mulberry32(seed);
   return Array.from({ length: 64 }, () => rng() > 0.5 ? 1 : 0);
 }
-/** token → 64-bit XOR-crystallized engram grid (Mind Eye crystallize, verbatim). */
+// Each letter's grid, built once: engramGrid used to rebuild it for every one of
+// the 64 cells (F15). Only the 26 letters A-Z reach it, so the cache stays small.
+const LETTER_GRIDS = new Map();
+function letterGrid(ch) {
+  let g = LETTER_GRIDS.get(ch);
+  if (!g) { g = engramCharGrid(ch); LETTER_GRIDS.set(ch, g); }
+  return g;
+}
+/** token → 64-bit XOR-crystallized engram grid (Mind Eye crystallize; the same
+ *  output as at 7f45f35, with each letter's grid built once). */
 export function engramGrid(token) {
   let acc = new Array(64).fill(0);
   for (const ch of token.toUpperCase()) {
     if (!/[A-Z]/.test(ch)) continue;
-    acc = acc.map((b, i) => b ^ engramCharGrid(ch)[i]);
+    const g = letterGrid(ch);
+    acc = acc.map((b, i) => b ^ g[i]);
   }
   return acc;
 }
@@ -214,7 +241,7 @@ export function matchSeeds(queryText, seeds, topK = 3) {
 }
 
 /** Frame parallel packet/residual lists into one self-describing hex stream. */
-function frameStream(packetsHex, residualsHex) {
+export function frameStream(packetsHex, residualsHex) {
   let s = "";
   for (let i = 0; i < packetsHex.length; i++) {
     const r = residualsHex[i];
@@ -222,16 +249,42 @@ function frameStream(packetsHex, residualsHex) {
   }
   return s;
 }
-/** Parse a framed stream back into [{ packet, chunkLen, residual, parityOk }]. */
+/** Parse a framed stream back into [{ packet, chunkLen, residual, parityOk }]; a length that is not a number or is negative throws. */
 export function parseBiochainStream(streamHex) {
   const frames = []; let p = 0;
   while (p < streamHex.length) {
     const packet = streamHex.slice(p, p + 16); p += 16;
     const rbytes = parseInt(streamHex.slice(p, p + 8), 16); p += 8;
-    if (!Number.isFinite(rbytes)) throw new Error("malformed stream frame");
+    if (!Number.isFinite(rbytes) || rbytes < 0) throw new Error("malformed stream frame");
     const residual = streamHex.slice(p, p + rbytes * 2); p += rbytes * 2;
     frames.push({ packet, residual, ...unpackPacket(packet) });
   }
+  return frames;
+}
+/** Parse a framed stream strictly (RFC 07 section 4.3, F85): at each frame start
+ *  16 upper-case hex digits (the packet) and 8 lower-case hex digits (the residual
+ *  length L), then exactly 2·L lower-case hex digits; the stream ends exactly after
+ *  the last frame and holds at least one. Throws on anything else. Parity, the
+ *  720-byte cut and canonical residuals are checked by verifyIntegrityStrict.
+ *  → [{ packet, residual, residualBytes, form, spin, quat32, payload16, chunkLen,
+ *       freq, amp, parityOk }] */
+export function parseBiochainStreamStrict(streamHex) {
+  if (typeof streamHex !== "string") throw new Error("the stream is not a string");
+  const frames = []; let p = 0;
+  while (p < streamHex.length) {
+    const i = frames.length;
+    if (p + 24 > streamHex.length) throw new Error(`frame ${i}: truncated frame header`);
+    const packet = streamHex.slice(p, p + 16), lenHex = streamHex.slice(p + 16, p + 24);
+    if (!/^[0-9A-F]{16}$/.test(packet)) throw new Error(`frame ${i}: the packet is not 16 upper-case hex digits`);
+    if (!/^[0-9a-f]{8}$/.test(lenHex)) throw new Error(`frame ${i}: the residual length is not 8 lower-case hex digits`);
+    const residualBytes = parseInt(lenHex, 16), end = p + 24 + 2 * residualBytes;
+    if (end > streamHex.length) throw new Error(`frame ${i}: the residual is shorter than its length`);
+    const residual = streamHex.slice(p + 24, end);
+    if (!/^[0-9a-f]*$/.test(residual)) throw new Error(`frame ${i}: the residual is not lower-case hex`);
+    frames.push({ packet, residual, residualBytes, ...unpackPacket(packet) });
+    p = end;
+  }
+  if (!frames.length) throw new Error("the stream holds no frame");
   return frames;
 }
 
@@ -250,7 +303,7 @@ class BR { constructor(hex){ this.d = []; for (let i = 0; i < hex.length; i += 2
 const cands = (t, c) => { const m = t.get(c); return m ? [...m.entries()].sort((a, b) => b[1] - a[1] || a[0] - b[0]).map(e => e[0]) : []; };
 const upd = (t, c, b) => { let m = t.get(c); if (!m) { m = new Map(); t.set(c, m); } m.set(b, (m.get(b) || 0) + 1); };
 
-function encodeChunk(bytes) {
+export function encodeChunk(bytes) {
   const t = new Map(), bw = new BW(); let c = [0, 0], ctx = "0,0";
   for (const b of bytes) {
     const cs = cands(t, ctx), i = cs.indexOf(b);
@@ -336,7 +389,15 @@ export function recreateText(chain) {
 
 /** Recreate + verify a chain record client-side. Returns {ok, reasons}.
  *  Reads the single SHD-CCP `stream` (v2); falls back to legacy parallel
- *  `streams`/`chunkLens` arrays if a pre-stream record is encountered. */
+ *  `streams`/`chunkLens` arrays if a pre-stream record is encountered.
+ *
+ *  SELF-CONSISTENCY ONLY (F83): it checks packet parity, each leaf and the root
+ *  when the record has them, the chiral weave, and the engram stream when present.
+ *  It does not check the strict stream form, the packets against their chunks,
+ *  the number of leaves, weaveMirror, segCuts, segments, the chainId or the
+ *  derived numbers, and it reads legacy records. A record it accepts can still
+ *  fail RFC 07's validity predicate; verifyIntegrityStrict checks that predicate.
+ *  Kept unchanged for display and for the records verifyIntegrityStrict labels. */
 export async function verifyIntegrity(chain) {
   const reasons = [];
   try {
@@ -382,6 +443,219 @@ export async function verifyIntegrity(chain) {
   }
 }
 
+// ─── strict verification (RFC 07 section 12) ─────────────────────────────────
+// verifyIntegrityStrict checks RFC 07's validity predicate (section 12.1) in the
+// order of section 12.3 and reports the first failing check. It is synchronous
+// and takes the hash as a parameter (opts.sha256: string → 64 lower-case hex of
+// SHA-256 over its UTF-8), so a copy of this file can run with another SHA-256.
+
+const SHA256_K = new Uint32Array([
+  0x428a2f98, 0x71374491, 0xb5c0fbcf, 0xe9b5dba5, 0x3956c25b, 0x59f111f1, 0x923f82a4, 0xab1c5ed5,
+  0xd807aa98, 0x12835b01, 0x243185be, 0x550c7dc3, 0x72be5d74, 0x80deb1fe, 0x9bdc06a7, 0xc19bf174,
+  0xe49b69c1, 0xefbe4786, 0x0fc19dc6, 0x240ca1cc, 0x2de92c6f, 0x4a7484aa, 0x5cb0a9dc, 0x76f988da,
+  0x983e5152, 0xa831c66d, 0xb00327c8, 0xbf597fc7, 0xc6e00bf3, 0xd5a79147, 0x06ca6351, 0x14292967,
+  0x27b70a85, 0x2e1b2138, 0x4d2c6dfc, 0x53380d13, 0x650a7354, 0x766a0abb, 0x81c2c92e, 0x92722c85,
+  0xa2bfe8a1, 0xa81a664b, 0xc24b8b70, 0xc76c51a3, 0xd192e819, 0xd6990624, 0xf40e3585, 0x106aa070,
+  0x19a4c116, 0x1e376c08, 0x2748774c, 0x34b0bcb5, 0x391c0cb3, 0x4ed8aa4a, 0x5b9cca4f, 0x682e6ff3,
+  0x748f82ee, 0x78a5636f, 0x84c87814, 0x8cc70208, 0x90befffa, 0xa4506ceb, 0xbef9a3f7, 0xc67178f2]);
+const SHA256_H0 = [0x6a09e667, 0xbb67ae85, 0x3c6ef372, 0xa54ff53a, 0x510e527f, 0x9b05688c, 0x1f83d9ab, 0x5be0cd19];
+const UTF8 = new TextEncoder();
+const rotr = (x, n) => (x >>> n) | (x << (32 - n));
+
+/** SHA-256 (FIPS 180-4) of the UTF-8 encoding of String(str), as 64 lower-case hex
+ *  digits: the same value as seal-crypto.js sha256Hex (Web Crypto), synchronously. */
+export function sha256HexSync(str) {
+  const msg = UTF8.encode(String(str)), n = msg.length;
+  const buf = new Uint8Array((((n + 8) >>> 6) + 1) * 64);   // message, 0x80, zeros, 64-bit length
+  buf.set(msg); buf[n] = 0x80;
+  const dv = new DataView(buf.buffer);
+  dv.setUint32(buf.length - 8, Math.floor(n / 0x20000000));  // bit length = 8·n, high word
+  dv.setUint32(buf.length - 4, (n << 3) >>> 0);              // low word
+  const H = SHA256_H0.slice(), W = new Uint32Array(64);
+  for (let off = 0; off < buf.length; off += 64) {
+    for (let t = 0; t < 16; t++) W[t] = dv.getUint32(off + 4 * t);
+    for (let t = 16; t < 64; t++) {
+      const x = W[t - 15], y = W[t - 2];
+      W[t] = W[t - 16] + (rotr(x, 7) ^ rotr(x, 18) ^ (x >>> 3)) + W[t - 7] + (rotr(y, 17) ^ rotr(y, 19) ^ (y >>> 10));
+    }
+    let [a, b, c, d, e, f, g, h] = H;
+    for (let t = 0; t < 64; t++) {
+      const t1 = (h + (rotr(e, 6) ^ rotr(e, 11) ^ rotr(e, 25)) + ((e & f) ^ (~e & g)) + SHA256_K[t] + W[t]) | 0;
+      const t2 = ((rotr(a, 2) ^ rotr(a, 13) ^ rotr(a, 22)) + ((a & b) ^ (a & c) ^ (b & c))) | 0;
+      h = g; g = f; f = e; e = (d + t1) | 0; d = c; c = b; b = a; a = (t1 + t2) | 0;
+    }
+    H[0] = (H[0] + a) | 0; H[1] = (H[1] + b) | 0; H[2] = (H[2] + c) | 0; H[3] = (H[3] + d) | 0;
+    H[4] = (H[4] + e) | 0; H[5] = (H[5] + f) | 0; H[6] = (H[6] + g) | 0; H[7] = (H[7] + h) | 0;
+  }
+  return H.map(v => (v >>> 0).toString(16).padStart(8, "0")).join("");
+}
+
+/** The shdccp/2 leaf of chunk i (RFC 07 section 7.1): H(i + "|" + H(latin1(chunk))). */
+export const leafHashSync = (i, chunk, sha256 = sha256HexSync) =>
+  sha256(i + "|" + sha256(String.fromCharCode(...chunk)));
+/** The shdccp/2 Merkle root (RFC 07 section 7.2): pairs H(left + right), the last
+ *  node of an odd level duplicated; one leaf is its own root. */
+export function merkleRootSync(leaves, sha256 = sha256HexSync) {
+  let level = leaves.slice();
+  while (level.length > 1) {
+    if (level.length & 1) level.push(level[level.length - 1]);
+    const next = [];
+    for (let i = 0; i < level.length; i += 2) next.push(sha256(level[i] + level[i + 1]));
+    level = next;
+  }
+  return level[0] || sha256("empty");
+}
+/** The chiral and mirror weaves of a chunk list, as growBiochain computes them (RFC 07 section 8). */
+export function chainWeaves(chunks) {
+  let wf = [1, 0, 0, 0], wm = [1, 0, 0, 0];
+  for (const c of chunks) wf = qn(qmul(crystalQuat(c), wf));
+  for (let i = chunks.length - 1; i >= 0; i--) wm = qn(qmul(qconj(crystalQuat(chunks[i])), wm));
+  return { weaveChiral: quatHex(wf), weaveMirror: quatHex(wm) };
+}
+const segCutsOf = (k) => Array.from({ length: SEGMENTS + 1 }, (_, i) => Math.round(i * k / SEGMENTS));
+
+/** The strict checks, in the order verifyIntegrityStrict runs them (RFC 07 section 12.3). */
+export const STRICT_CHECKS = Object.freeze(["parity", "canonical", "crystal", "leaves", "weaves", "derived"]);
+const ENGRAM_FIELDS = ["engramStream", "engramCount", "engramMeanJ"];
+const hasOwn = (o, k) => Object.prototype.hasOwnProperty.call(o, k);
+const numEq = (a, b) => typeof a === "number" && a === b;   // binary64 equality (-0 equals 0)
+
+/** Check a record against RFC 07's validity predicate, synchronously.
+ *  → { ok, failed, legacy, checks: [{ name, ok, detail, fields? }] }
+ *  The checks run in order and stop at the first failure (`failed` names it; null
+ *  when ok); `checks` lists the checks that ran. `fields` names the record fields
+ *  a failing leaves, weaves or derived check found different.
+ *    parity     streamVersion is "shdccp/2", the stream parses strictly
+ *               (parseBiochainStreamStrict), at least one frame, every packet's
+ *               parity holds
+ *    canonical  the chunk lengths are the 720-byte cut (720 for every frame but the
+ *               last, 1..720 for the last, at most 60,000 bytes in all); each
+ *               residual decodes and re-encodes to itself; re-framing gives the
+ *               stream; the bytes are well-formed UTF-8 (section 12.1, step 2)
+ *    crystal    every packet is crystallize(chunk), raw rule
+ *    leaves     leafHashes has exactly K entries, each the recomputed leaf;
+ *               merkleRoot is present and equals the root of the leaves
+ *    weaves     weaveChiral, weaveMirror, segCuts, segments (7) and the chainId
+ *    derived    the three engram fields when any is present (recomputed from the
+ *               text), origBytes, shippedBytes and value
+ *  A record without a string `stream`, or whose streamVersion is missing or not
+ *  "shdccp/2", is legacy: { ok: false, failed: "parity", legacy: true }.
+ *  opts.sha256: the hash (default sha256HexSync), synchronous, same contract. */
+export function verifyIntegrityStrict(chain, { sha256 = sha256HexSync } = {}) {
+  const checks = [];
+  const verdict = (failed, legacy = false) => ({ ok: failed === null, failed, legacy, checks });
+  const isRecord = chain !== null && typeof chain === "object" && !Array.isArray(chain);
+  if (!isRecord || typeof chain.stream !== "string" || chain.streamVersion !== STREAM_VERSION) {
+    const detail = !isRecord ? "not a record"
+      : typeof chain.stream !== "string" ? "no shdccp/2 stream (a legacy record)"
+      : !hasOwn(chain, "streamVersion") ? "no streamVersion (a legacy record)"
+      : "streamVersion is not shdccp/2 (a legacy record)";
+    checks.push({ name: "parity", ok: false, detail });
+    return verdict("parity", isRecord);
+  }
+  const pass = (detail) => ({ ok: true, detail });
+  const fail = (detail, fields) => ({ ok: false, detail, ...(fields ? { fields } : {}) });
+  const st = {};
+  const run = {
+    parity() {
+      st.frames = parseBiochainStreamStrict(chain.stream);
+      const bad = st.frames.findIndex(f => !f.parityOk);
+      return bad < 0 ? pass(`${st.frames.length} frame(s), parity holds`) : fail(`packet ${bad}: parity does not hold`);
+    },
+    canonical() {
+      const { frames } = st, k = frames.length;
+      let total = 0;
+      for (let i = 0; i < k; i++) {
+        const n = frames[i].chunkLen;
+        if (i < k - 1 ? n !== CHUNK : !(n >= 1 && n <= CHUNK)) return fail(`frame ${i}: a ${n}-byte chunk is not the 720-byte cut`);
+        total += n;
+      }
+      if (total > MAX_GROW_BYTES) return fail(`${total} bytes is more than ${MAX_GROW_BYTES}`);
+      const chunks = [];
+      for (let i = 0; i < k; i++) {
+        let bytes;
+        try { bytes = decodeChunk(frames[i].residual, frames[i].chunkLen); }
+        catch (e) { return fail(`frame ${i}: the residual does not decode (${e.message})`); }
+        if (!bytes.every(b => Number.isInteger(b) && b >= 0 && b <= 255)) return fail(`frame ${i}: the residual decodes to a value that is not a byte`);
+        if (encodeChunk(bytes) !== frames[i].residual) return fail(`frame ${i}: the residual is not the canonical encoding of its chunk`);
+        chunks.push(bytes);
+      }
+      if (frameStream(frames.map(f => f.packet), frames.map(f => f.residual)) !== chain.stream)
+        return fail("the stream is not the framing of its packets and residuals");
+      const data = new Uint8Array(total);
+      let at = 0;
+      for (const c of chunks) { data.set(c, at); at += c.length; }
+      try { st.text = new TextDecoder("utf-8", { fatal: true, ignoreBOM: true }).decode(data); }
+      catch (_) { return fail("the chunks are not well-formed UTF-8"); }
+      st.chunks = chunks; st.bytes = total;
+      return pass(`${k} chunk(s), ${total} bytes, canonical`);
+    },
+    crystal() {
+      const bad = st.chunks.findIndex((c, i) => crystallize(c) !== st.frames[i].packet);
+      return bad < 0 ? pass("every packet is crystallize(chunk)") : fail(`packet ${bad} is not crystallize(chunk ${bad})`);
+    },
+    leaves() {
+      const k = st.chunks.length, lh = chain.leafHashes;
+      if (!Array.isArray(lh)) return fail("leafHashes is missing", ["leafHashes"]);
+      if (typeof chain.merkleRoot !== "string") return fail("merkleRoot is missing", ["merkleRoot"]);
+      if (lh.length !== k) return fail(`leafHashes has ${lh.length} entries for ${k} chunk(s)`, ["leafHashes"]);
+      const leaves = st.chunks.map((c, i) => leafHashSync(i, c, sha256));
+      const bad = leaves.findIndex((h, i) => lh[i] !== h);
+      if (bad >= 0) return fail(`leaf ${bad} differs from the recomputed leaf`, ["leafHashes"]);
+      st.root = merkleRootSync(leaves, sha256);
+      return chain.merkleRoot === st.root ? pass(`${k} leaves and merkleRoot`) : fail("merkleRoot is not the root of the leaves", ["merkleRoot"]);
+    },
+    weaves() {
+      const w = chainWeaves(st.chunks), cuts = segCutsOf(st.chunks.length);
+      const chainId = "BC-" + sha256(st.root + "|" + w.weaveChiral).slice(0, 24);
+      const bad = [];
+      if (chain.weaveChiral !== w.weaveChiral) bad.push("weaveChiral");
+      if (chain.weaveMirror !== w.weaveMirror) bad.push("weaveMirror");
+      if (!(Array.isArray(chain.segCuts) && chain.segCuts.length === cuts.length && cuts.every((c, i) => numEq(chain.segCuts[i], c))))
+        bad.push("segCuts");
+      if (!numEq(chain.segments, SEGMENTS)) bad.push("segments");
+      if (chain.chainId !== chainId) bad.push("chainId");
+      return bad.length ? fail(`${bad.join(", ")} not reproduced`, bad) : pass("weaveChiral, weaveMirror, segCuts, segments and chainId");
+    },
+    derived() {
+      const bad = [];
+      let engramHexLen = 0;
+      if (ENGRAM_FIELDS.some(f => hasOwn(chain, f))) {
+        const eng = engramStreamFromText(st.text);
+        engramHexLen = eng.stream.length;
+        if (chain.engramStream !== eng.stream) bad.push("engramStream");
+        if (!numEq(chain.engramCount, eng.count)) bad.push("engramCount");
+        if (!numEq(chain.engramMeanJ, eng.meanJ)) bad.push("engramMeanJ");
+      }
+      const ship = chain.stream.length / 2 + engramHexLen / 2 + st.chunks.length * 32 + 40;
+      if (!numEq(chain.origBytes, st.bytes)) bad.push("origBytes");
+      if (!numEq(chain.shippedBytes, Math.round(ship))) bad.push("shippedBytes");
+      if (!numEq(chain.value, +(st.bytes / ship).toFixed(4))) bad.push("value");
+      return bad.length ? fail(`${bad.join(", ")} not reproduced`, bad) : pass("engram fields (when present), origBytes, shippedBytes and value");
+    },
+  };
+  for (const name of STRICT_CHECKS) {
+    let r;
+    try { r = run[name](); } catch (e) { r = fail(String((e && e.message) || e)); }
+    checks.push({ name, ...r });
+    if (!r.ok) return verdict(name);
+  }
+  return verdict(null);
+}
+
+/** The failing check of a strict verdict ({ name, ok, detail, fields? }), or null. */
+export const failedCheck = (v) => (v && !v.ok && v.checks.length ? v.checks[v.checks.length - 1] : null);
+
+/** The label a page shows for a strict verdict (decision D15): "strict ok",
+ *  "legacy", "failed at <check>", or "self-consistent only, failed at <check>"
+ *  when selfConsistent (verifyIntegrity's ok) is true. */
+export function strictLabel(v, selfConsistent) {
+  if (!v) return "not checked";
+  if (v.ok) return "strict ok";
+  if (v.legacy) return "legacy";
+  return (selfConsistent === true ? "self-consistent only, " : "") + "failed at " + v.failed;
+}
+
 // ─── growth epochs (GROWTH/1) — extending a crystallized chain ────────────────
 // A published biochain is immutable (rules freeze it), so "growing it further"
 // mints a NEW epoch: recreate the parent losslessly (proving you hold the real
@@ -393,20 +667,28 @@ export async function verifyIntegrity(chain) {
 export const growthCommitment = (c) =>
   ["GROWTH/1", c.parentChainId, c.chainId, c.parentMerkleRoot, c.merkleRoot, String(c.addedBytes)].join("|");
 
-/** Extend a chain with more data → a child-epoch claim (pure, no network). */
+/** Extend a chain with more data → a child-epoch claim (pure, no network).
+ *  The parent's strict verdict is computed every time and returned as the
+ *  non-enumerable `parentStrict` (so publishBiochain does not store it); with
+ *  opts.enforceStrict a parent that fails it is refused. scripts/biomesh.js
+ *  passes its STRICT_ENFORCE flag. The self-consistency check refuses as before. */
 export async function extendBiochain(parentChain, newText, opts = {}) {
   if (!newText || !newText.length) throw new Error("Nothing to add.");
+  const strict = verifyIntegrityStrict(parentChain);
+  if (opts.enforceStrict && !strict.ok) throw new Error("Parent chain fails the strict check: " + strictLabel(strict));
   const integ = await verifyIntegrity(parentChain);
   if (!integ.ok) throw new Error("Parent chain fails integrity: " + integ.reasons[0]);
   const parentText = recreateText(parentChain);
   const child = await growBiochain(parentText + newText, opts);
-  return {
+  const claim = {
     ...child,
     parentChainId: parentChain.chainId,
     parentMerkleRoot: parentChain.merkleRoot,
     epoch: (parentChain.epoch || 1) + 1,
     addedBytes: child.origBytes - parentChain.origBytes,
   };
+  Object.defineProperty(claim, "parentStrict", { value: strict, enumerable: false });
+  return claim;
 }
 
 // ─── certification commitment (GROWN/1) ───────────────────────────────────────
@@ -468,3 +750,21 @@ export const codexCommitment = (c) =>
   ["CODEX/1", c.codexHash, String(c.order), String(c.entryCount)].join("|");
 
 export const pairCommitment = (chainId, codexHash) => ["PAIR/1", chainId, codexHash].join("|");
+
+// ─── record kinds ─────────────────────────────────────────────────────────────
+// The `kind` a published biochain carries (F14, P14): what the grown text is. The
+// callers of publishBiochain pass these; RFC 07 section 11.3 lists them.
+export const KINDS = Object.freeze({
+  "text": "text grown in the Biomesh Console",
+  "language-session": "a Language Growing session transcript",
+  "language-shard": "a language shard grown for a seed corpus",
+  "mindseye.lattice_seed": "a Mind's Eye 3D lattice seed (LATTICE-SEED/1)",
+  "mindseye.environment": "a Mind's Eye 3D environment (ENVIRONMENT/1)",
+  "latticeforge.lattice_seed": "a BioChain-AI Lattice Forge lattice seed",
+  "latticeforge.environment": "a BioChain-AI Lattice Forge environment",
+});
+/** The kind if it is in KINDS; throws otherwise. */
+export function validateKind(kind) {
+  if (typeof kind === "string" && hasOwn(KINDS, kind)) return kind;
+  throw new Error("Unknown biochain kind; the known kinds are " + Object.keys(KINDS).join(", ") + ".");
+}

@@ -94,6 +94,7 @@
     <div class="tab" data-t="trace" onclick="showTab('trace')">Trace</div>
     <a class="tab" href="Biomesh_Language_Growing.html" style="text-decoration:none">🌱 Language Growing →</a>
     <a class="tab" href="Biomesh_Mind_Eye_3D.html" style="text-decoration:none">🧠 Mind's Eye 3D →</a>
+    <a class="tab" href="Biomesh_Audit.html" style="text-decoration:none">🔎 Strict audit →</a>
     <a class="tab" href="Celestial_Library.html" style="text-decoration:none">🦉 Celestial Library →</a>
   </div>
 
@@ -206,25 +207,73 @@ onAuthStateChanged(auth, async user => {
   await refresh();
 });
 
+// Reads per chain are batched (one ratings query per 30 chains) and the per-chain certification checks run at most
+// READS_IN_FLIGHT at a time (F86).
+const READS_IN_FLIGHT = 6;
+
+// Strict verdicts (RFC 07, verifyIntegrityStrict) for the marketplace cards: computed when a card scrolls into view,
+// one record per task so the page stays responsive, and kept for the record object they were computed from (the card
+// and its Verify & rate button share it; a refresh reads new objects, so every verdict is computed again).
+const strictCache = new WeakMap();
+const strictQueue = [];
+let strictBusy = false, strictObserver = null;
+async function strictOf(c) {
+  const hit = strictCache.get(c);
+  if (hit) return hit;
+  const v = BM.verifyIntegrityStrict(c);
+  const selfOk = v.ok || v.legacy ? null : (await BM.verifyIntegrity(c)).ok;
+  const f = BM.failedCheck(v);
+  const out = { v, label: BM.strictLabel(v, selfOk), cls: v.ok ? "ok" : v.legacy ? "gold" : "bad", detail: f ? f.detail : "" };
+  strictCache.set(c, out);
+  return out;
+}
+async function drainStrict() {
+  if (strictBusy) return;
+  strictBusy = true;
+  while (strictQueue.length) {
+    const { c, el } = strictQueue.shift();
+    await new Promise(r => setTimeout(r, 0));
+    try {
+      const s = await strictOf(c);
+      el.textContent = s.label; el.className = "pill " + s.cls; el.title = s.detail;
+    } catch (e) { el.textContent = "strict: error"; el.title = String(e && e.message || e); }
+  }
+  strictBusy = false;
+}
+function watchStrict(c, el) {
+  const job = { c, el };
+  if (!("IntersectionObserver" in window)) { strictQueue.push(job); drainStrict(); return; }
+  if (!strictObserver) strictObserver = new IntersectionObserver(entries => {
+    for (const e of entries) if (e.isIntersecting && e.target._strictJob) {
+      strictObserver.unobserve(e.target); strictQueue.push(e.target._strictJob); drainStrict();
+    }
+  }, { rootMargin: "200px" });
+  el._strictJob = job; strictObserver.observe(el);
+}
+
 async function refresh() {
-  chains = await BM.listBiochains(200);
-  transfers = await BM.listAllTransfers(300);
+  if (strictObserver) { strictObserver.disconnect(); strictObserver = null; }
+  strictQueue.length = 0;
+  [chains, transfers] = await Promise.all([BM.listBiochains(200), BM.listAllTransfers(300)]);
   // overview stats
   $("stChains").textContent = chains.length;
   $("stGrowers").textContent = new Set(chains.map(c => c.growerUid)).size;
   $("stListed").textContent = chains.filter(c => c.status === "listed").length;
   $("stXfers").textContent = transfers.length;
   let certOk = 0, scoreSum = 0, scored = 0;
+  const [ratingsBy, certs] = await Promise.all([
+    BM.listRatingsForChains(chains.map(c => c.chainId)).catch(() => new Map()),
+    BM.mapLimit(chains, READS_IN_FLIGHT, c => BM.verifyGrown(c).catch(() => ({ valid: false, reason: "verify error" }))),
+  ]);
   const marketEl = $("market"); marketEl.innerHTML = "";
-  for (const c of chains) {
-    const ratings = await BM.listRatings(c.chainId).catch(() => []);
+  chains.forEach((c, i) => {
+    const ratings = ratingsBy.get(c.chainId) || [];
     const txCount = transfers.filter(t => t.chainId === c.chainId && t.status === "accepted").length;
     const score = BM.successScore(c, ratings, txCount);
     scoreSum += score.total; scored++;
-    const cert = await BM.verifyGrown(c).catch(() => ({ valid: false, reason: "verify error" }));
-    if (cert.valid) certOk++;
-    marketEl.appendChild(chainCard(c, score, cert, ratings));
-  }
+    if (certs[i].valid) certOk++;
+    marketEl.appendChild(chainCard(c, score, certs[i], ratings));
+  });
   $("stAvg").textContent = scored ? (scoreSum / scored).toFixed(1) : "—";
   $("stCert").textContent = certOk + "/" + chains.length;
   // recent transfers table
@@ -254,7 +303,7 @@ async function refresh() {
     const d = document.createElement("div"); d.className = "chain-card";
     d.innerHTML = `<h4>${escapeHtml(t.chainId)}</h4><div class="meta">from ${escapeHtml(t.fromGenesisId)} · ${escapeHtml(t.sentAt || "")} · price: FREE</div>`;
     const a = document.createElement("button"); a.className = "btn sm"; a.textContent = "Accept";
-    a.onclick = async () => { try { await BM.acceptBiochain(uid, t.id); toast("Accepted — ownership moved, lineage extended."); refresh(); }
+    a.onclick = async () => { try { const r = await BM.acceptBiochain(uid, t.id); toast("Accepted — ownership moved, lineage extended. Strict check: " + BM.strictLabel(r.strict) + "."); refresh(); }
                               catch (e) { toast(e.message); } };
     const x = document.createElement("button"); x.className = "btn sm bad"; x.textContent = "Decline"; x.style.marginLeft = ".4rem";
     x.onclick = async () => { await BM.declineBiochain(uid, t.id); refresh(); };
@@ -267,6 +316,7 @@ function chainCard(c, score, cert, ratings) {
   const pct = Math.max(0, Math.min(100, Number(score.total) || 0));
   d.innerHTML =
     `<h4>${escapeHtml(c.title)} <span class="pill ${cert.valid ? "ok" : "bad"}">${cert.valid ? "certified grown" : "UNCERTIFIED"}</span>
+       <span class="pill cy" data-strict>strict …</span>
        <span class="pill ${c.status === "listed" ? "gold" : "cy"}">${escapeHtml(c.status)}</span>
        ${c.parentChainId ? `<span class="pill cy">epoch ${escapeHtml(c.epoch || "?")}</span>` : ""}
        ${c.pairedCodexHash ? `<span class="pill gold">⚭ codex</span>` : ""}</h4>
@@ -275,12 +325,16 @@ function chainCard(c, score, cert, ratings) {
      <div class="scorebar"><i style="width:${escapeAttr(pct)}%"></i></div>
      <div class="meta">success ${escapeHtml(score.total)}/100 — value ${escapeHtml(score.parts.value)} · integrity ${escapeHtml(score.parts.integrity)} ·
        stars ${escapeHtml(score.parts.stars)} (${escapeHtml(score.ratingCount)} ratings, ${escapeHtml(score.verifiedCount)} verified) · adoption ${escapeHtml(score.parts.adoption)}</div>`;
+  watchStrict(c, d.querySelector("[data-strict]"));
   const v = document.createElement("button"); v.className = "btn sm cy"; v.textContent = "Verify & rate";
   v.onclick = async () => {
+    // recreatedOk is the strict verdict (RFC 07); self-consistency is shown beside it.
+    const s = await strictOf(c);
     const integ = await BM.verifyIntegrity(c);
-    const stars = parseInt(prompt(`Integrity: ${integ.ok ? "VERIFIED — " + integ.reasons[0] : "FAILED — " + integ.reasons[0]}\n\nUtility stars 1–5:`, "5"), 10);
+    const stars = parseInt(prompt(`Strict check (RFC 07): ${s.label}${s.detail ? " — " + s.detail : ""}\n` +
+      `Self-consistency: ${integ.ok ? "ok" : "failed — " + integ.reasons[0]}\n\nUtility stars 1–5:`, "5"), 10);
     if (!stars) return;
-    try { await BM.rateBiochain(uid, c.chainId, stars, "", integ.ok); toast("Rated — success score updates on refresh."); refresh(); }
+    try { await BM.rateBiochain(uid, c.chainId, stars, "", s.v.ok); toast("Rated — success score updates on refresh."); refresh(); }
     catch (e) { toast(e.message); }
   };
   d.appendChild(v);
@@ -315,7 +369,7 @@ window.doGrow = async () => {
     if (parentId) {
       const parent = await BM.getBiochain(parentId);
       grown = await BM.extendBiochain(parent, $("gText").value);
-      $("growOut").textContent = `epoch ${grown.epoch} · ${grown.chainId} · +${grown.addedBytes} B (total ${grown.origBytes}) · ${grown.engramCount} engrams · grown from ${parentId.slice(0,14)}…`;
+      $("growOut").textContent = `epoch ${grown.epoch} · ${grown.chainId} · +${grown.addedBytes} B (total ${grown.origBytes}) · ${grown.engramCount} engrams · grown from ${parentId.slice(0,14)}… · parent: ${BM.strictLabel(grown.parentStrict)}`;
       toast(`Parent recreated losslessly — epoch ${grown.epoch} ready. Certify & publish.`);
     } else {
       grown = await BM.growBiochain($("gText").value);
@@ -348,6 +402,11 @@ window.doTrace = async () => {
       <div class="meta">GROWN/1: <span class="pill ${tr.grown.valid ? "ok" : "bad"}">${escapeHtml(tr.grown.reason)}</span>
         seal ${escapeHtml(tr.chain.growerSealId)} · tier ${escapeHtml(tr.grown.tier || "?")}</div>
       <div class="meta">integrity: <span class="pill ${tr.integrity.ok ? "ok" : "bad"}">${escapeHtml(tr.integrity.reasons[0])}</span></div>`;
+    // the strict verdict (RFC 07) and the check it failed at
+    const sv = tr.strict, sf = BM.failedCheck(sv);
+    html += `<div class="meta">strict (RFC 07${BM.STRICT_ENFORCE ? "" : ", shadow mode"}): <span class="pill ${sv.ok ? "ok" : sv.legacy ? "gold" : "bad"}">${escapeHtml(BM.strictLabel(sv, tr.selfCheck.ok))}</span>
+      ${escapeHtml(sf ? sf.detail : "")}</div>
+      <div class="meta">checks: ${escapeHtml(sv.checks.map(ch => ch.name + (ch.ok ? " ✓" : " ✗")).join(" · "))}</div>`;
     if (tr.chain.parentChainId) {
       const g = await BM.verifyGrowth(tr.chain);
       html += `<div class="meta">GROWTH/1: <span class="pill ${g.valid ? "ok" : "bad"}">${escapeHtml(g.reason)}</span></div>`;

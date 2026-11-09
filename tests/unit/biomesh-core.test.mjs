@@ -6,14 +6,16 @@
 //
 // - The move kept every function: each top-level declaration of biomesh.js at 7f45f35 has the same text at HEAD,
 //   in biomesh-core.js or in biomesh.js (tests/unit/fixtures/biomesh-7f45f35.json; rebuilt from git history when
-//   the commit is present, and required to be present when OWL_REQUIRE_HISTORY=1).
+//   the commit is present, and required to be present when OWL_REQUIRE_HISTORY=1), except the six that O3 changed
+//   on purpose (CHANGED_IN_O3), which tests/unit/biomesh-strict.test.mjs checks by behaviour.
 // - The core imports only sha256Hex from seal-crypto.js; biomesh.js re-exports the core, and every re-export is the
 //   same function object (biomesh.js is imported with the Firebase SDK stubbed, tests/unit/support/).
 // - Goldens: crystallizeGolden() = 9841D88D8B003CEA and the GEODESIC engram key 5C896A4801C9C24C.
 // - Grow and recreate round trips, growth epochs, codex derivation, seeds.
 // - The 13 texts of the Hyperbolic Lexicon's biomesh_compat_v1.json (tests/vendor/biomesh-compat-v1/) give the
 //   pinned records, engrams off and on: chainId, merkleRoot, value, and the SHA-256 of the whole record as
-//   JSON.stringify writes it (all fields, the weaves included); verifyIntegrity accepts each and it recreates the text.
+//   JSON.stringify writes it (all fields, the weaves included); verifyIntegrity and verifyIntegrityStrict accept each
+//   and it recreates the text.
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync, readdirSync } from "node:fs";
@@ -34,14 +36,41 @@ let Core = null, coreError = null;
 try { Core = await import(pathToFileURL(join(ROOT, "scripts/biomesh-core.js")).href); } catch (e) { coreError = e; }
 const core = () => { if (coreError) throw coreError; return Core; };
 
-// Additions at HEAD: the two exports BioChain-AI's copy carries, and the core's SC = { sha256Hex }.
-const ADDED_TO_CORE = ["SC", "crystallizeGolden", "engramHex"];
+// Additions at HEAD. O2: the two exports BioChain-AI's copy carries, and the core's SC = { sha256Hex }. O3: the strict
+// verifier (RFC 07 section 12) and its SHA-256, the kind registry, and engramGrid's letter-grid cache.
+const ADDED_TO_CORE = ["SC", "crystallizeGolden", "engramHex",
+  "LETTER_GRIDS", "letterGrid", "parseBiochainStreamStrict", "SHA256_K", "SHA256_H0", "UTF8", "rotr", "sha256HexSync",
+  "leafHashSync", "merkleRootSync", "chainWeaves", "segCutsOf", "STRICT_CHECKS", "ENGRAM_FIELDS", "hasOwn", "numEq",
+  "verifyIntegrityStrict", "failedCheck", "strictLabel", "KINDS", "validateKind"];
+// O3 additions to biomesh.js: the shadow-mode flag, bounded-concurrency reads, paged and batched reads.
+const ADDED_TO_BIO = ["STRICT_ENFORCE", "mapLimit", "listBiochainsPage", "listRatingsForChains"];
+// Exported at HEAD and not at 7f45f35: the additions above that are exported, and core primitives O3 exports so that
+// the tests can run the RFC 07 contract vectors (their text is unchanged).
+const ADDED_EXPORTS = ["crystallizeGolden", "engramHex",
+  "qmul", "qconj", "qn", "crystalQuat", "quatHex", "crystallize", "mulberry32", "frameStream", "encodeChunk",
+  "parseBiochainStreamStrict", "sha256HexSync", "leafHashSync", "merkleRootSync", "chainWeaves", "STRICT_CHECKS",
+  "verifyIntegrityStrict", "failedCheck", "strictLabel", "KINDS", "validateKind", ...ADDED_TO_BIO];
 // What stays in biomesh.js: Firestore reads and writes, and the checks that read the seal registry (verifySealBlock
-// in minor-tome.js reads Firestore): verifyGrowth, verifyGrown, verifyPair, traceBiochain.
-const KEPT = ["verifyGrowth", "publishBiochain", "verifyGrown", "listBiochains", "getBiochain", "setListing",
+// in minor-tome.js reads Firestore): verifyGrowth, verifyGrown, verifyPair, traceBiochain. O3 adds STRICT_ENFORCE and
+// the extendBiochain that passes it to the core's.
+const KEPT = ["STRICT_ENFORCE", "extendBiochain", "mapLimit", "verifyGrowth", "publishBiochain", "verifyGrown",
+  "listBiochains", "listBiochainsPage", "getBiochain", "setListing",
   "publishCodex", "getCodex", "pairCodex", "verifyPair", "sendBiochain", "acceptBiochain", "declineBiochain",
   "listIncoming", "listTransfersForChain", "listAllTransfers", "logSessionBurn", "traceBiochain", "TIER_WEIGHT",
-  "rateBiochain", "listRatings", "successScore"];
+  "rateBiochain", "listRatings", "listRatingsForChains", "successScore"];
+// Declarations O3 changed on purpose, with the file each is in; tests/unit/biomesh-strict.test.mjs checks each by
+// behaviour (engramGrid: the same keys as the 7f45f35 text on 10,000 tokens; parseBiochainStream: the same frames as
+// the 7f45f35 text on every stream without a negative length).
+const CHANGED_IN_O3 = {
+  engramGrid: "biomesh-core.js",       // each letter's grid built once (F15), same output
+  parseBiochainStream: "biomesh-core.js", // a negative residual length throws (the 7f45f35 text did not return)
+  extendBiochain: "biomesh-core.js",   // also computes the parent's strict verdict (parentStrict)
+  publishBiochain: "biomesh.js",       // strict check, kind and crystCost before signing or writing (F14)
+  acceptBiochain: "biomesh.js",        // strict verdict before any write; refuses only under STRICT_ENFORCE
+  traceBiochain: "biomesh.js",         // strict verdict in the trace
+};
+// Core functions biomesh.js wraps (declared in both files): the wrapper passes STRICT_ENFORCE.
+const WRAPPED = ["extendBiochain"];
 
 // ---------------------------------------------------------------- the move
 
@@ -60,22 +89,29 @@ test("biomesh.js imports the core, re-exports all of it and declares only the Fi
   assert.deepEqual([...bio.keys()], KEPT);
   const fromCore = bio.imported.find((i) => i.from === "./biomesh-core.js");
   assert.ok(fromCore, "biomesh.js imports the names it calls from the core");
-  for (const n of fromCore.names) assert.ok(n in core(), `${n} is exported by the core`);
+  for (const n of fromCore.names) assert.ok(n in core() || WRAPPED.some((w) => n === `${w}Core`), `${n} is exported by the core`);
+  assert.match(BIO_SRC, /extendBiochain as extendBiochainCore/);
   for (const n of ["verifyGrowth", "verifyGrown", "verifyPair"]) assert.ok(!declarations(CORE_SRC).has(n), `${n} is not in the core`);
 });
 
 test("every declaration of biomesh.js at 7f45f35 has the same text at HEAD, in exactly one of the two files", () => {
   const inCore = declarations(CORE_SRC), inBio = declarations(BIO_SRC);
+  const files = { "biomesh-core.js": inCore, "biomesh.js": inBio };
   for (const [name, want] of Object.entries(FIXTURE.declarations)) {
     const hits = [["biomesh-core.js", inCore.get(name)], ["biomesh.js", inBio.get(name)]].filter(([, d]) => d);
-    assert.equal(hits.length, 1, `${name} is declared in ${hits.map(([f]) => f).join(" and ") || "neither file"}`);
-    const [file, got] = hits[0];
+    if (WRAPPED.includes(name)) assert.equal(hits.length, 2, `${name} is in the core and wrapped in biomesh.js`);
+    else assert.equal(hits.length, 1, `${name} is declared in ${hits.map(([f]) => f).join(" and ") || "neither file"}`);
+    const file = CHANGED_IN_O3[name] || hits[0][0];
+    const got = files[file].get(name);
+    assert.ok(got, `${name} is in ${file}`);
     assert.equal(got.kind, want.kind, `${name} (${file}) kind`);
-    assert.equal(got.sha256, want.sha256, `${name} (${file}) has a different text than at 7f45f35`);
+    if (CHANGED_IN_O3[name]) assert.notEqual(got.sha256, want.sha256, `${name} is listed in CHANGED_IN_O3 but has its 7f45f35 text`);
+    else assert.equal(got.sha256, want.sha256, `${name} (${file}) has a different text than at 7f45f35`);
   }
   const extra = [...inCore.keys(), ...inBio.keys()].filter((n) => !(n in FIXTURE.declarations));
-  assert.deepEqual(extra.sort(), [...ADDED_TO_CORE].sort());
+  assert.deepEqual(extra.sort(), [...ADDED_TO_CORE, ...ADDED_TO_BIO].sort());
   assert.ok(ADDED_TO_CORE.every((n) => inCore.has(n)));
+  assert.ok(ADDED_TO_BIO.every((n) => inBio.has(n)));
 });
 
 test("the 7f45f35 table is rebuilt from git history", (t) => {
@@ -94,13 +130,16 @@ test("the 7f45f35 table is rebuilt from git history", (t) => {
   assert.deepEqual(exportNames(text), FIXTURE.exports);
 });
 
-test("biomesh.js exports what it exported at 7f45f35 plus the two additions, the core's as the same objects", async () => {
+test("biomesh.js exports what it exported at 7f45f35 plus the additions, the core's as the same objects", async () => {
   stubFirebase(ROOT);
   const BM = await import(pathToFileURL(join(ROOT, "scripts/biomesh.js")).href);
   for (const n of FIXTURE.exports) assert.ok(n in BM, `${n} is still exported`);
-  assert.deepEqual(Object.keys(BM).sort(), [...FIXTURE.exports, "crystallizeGolden", "engramHex"].sort());
+  assert.deepEqual(Object.keys(BM).sort(), [...FIXTURE.exports, ...ADDED_EXPORTS].sort());
   assert.ok(Object.keys(core()).length > 0);
-  for (const n of Object.keys(core())) assert.equal(BM[n], core()[n], `${n} re-exported as the same object`);
+  for (const n of Object.keys(core())) {
+    if (WRAPPED.includes(n)) assert.notEqual(BM[n], core()[n], `${n} is biomesh.js's wrapper`);
+    else assert.equal(BM[n], core()[n], `${n} re-exported as the same object`);
+  }
   for (const n of Object.keys(BM)) if (!(n in core())) assert.ok(KEPT.includes(n), `${n} is one of biomesh.js's own`);
 });
 
@@ -149,6 +188,8 @@ test("grow → recreate round trips, engrams off and on", async () => {
       assert.equal("engramStream" in rec, engrams, `${label}: engram layer present only when asked`);
       const v = await core().verifyIntegrity(rec);
       assert.equal(v.ok, true, `${label}: ${v.reasons.join("; ")}`);
+      const strict = core().verifyIntegrityStrict(rec);
+      assert.equal(strict.ok, true, `${label}: strict ${strict.failed}: ${core().failedCheck(strict)?.detail}`);
       const again = await core().growBiochain(text, { engrams });
       assert.deepEqual(again, rec, `${label}: growth is deterministic`);
     }
@@ -221,6 +262,8 @@ test("biomesh_compat_v1: the 13 texts give the pinned records, engrams off and o
         assert.equal(want.owlVerify, true);
         const v = await core().verifyIntegrity(rec);
         assert.equal(v.ok, true, v.reasons.join("; "));
+        const strict = core().verifyIntegrityStrict(rec);
+        assert.equal(strict.ok, true, `strict ${strict.failed}: ${core().failedCheck(strict)?.detail}`);
         assert.equal(core().recreateText(rec), text);
       });
     }

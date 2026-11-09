@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Biomesh Strict Audit — Owl Academy</title>
+<!-- SPDX-License-Identifier: MIT -->
+<!-- Copyright (c) 2026 Ebayednoob -->
+<script type="module" src="../scripts/auth-guard.js"></script>
+<script type="module" src="../scripts/ui/node-network-bg.js" data-accent="#00ff88"></script>
+<style>
+  :root{--void:#05030a;--gold:#D4AF37;--cyan:#22d3ee;--green:#00ff88;--ok:#34d399;--bad:#f87171;--warn:#fbbf24}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--void);color:#e2e8f0;font-family:system-ui,sans-serif;min-height:100vh;line-height:1.55}
+  .mono{font-family:ui-monospace,"Fira Code",monospace}
+  .secbar{display:flex;align-items:center;justify-content:space-between;gap:1rem;padding:.55rem 1.1rem;background:rgba(8,12,22,.85);
+          border-bottom:1px solid rgba(0,255,136,.25);position:sticky;top:0;z-index:30;backdrop-filter:blur(8px)}
+  .seal{display:flex;align-items:center;gap:.5rem;font-size:.64rem;letter-spacing:.16em;text-transform:uppercase;color:var(--green)}
+  .seal .g{width:20px;height:20px;border:1px solid var(--green);border-radius:50%;display:flex;align-items:center;justify-content:center}
+  .who{font-size:.62rem;color:rgba(255,255,255,.42)}
+  .btn{display:inline-block;background:rgba(0,255,136,.12);color:#d9ffee;border:1px solid rgba(0,255,136,.4);border-radius:6px;padding:.4rem .8rem;
+       font-size:.66rem;letter-spacing:.1em;text-transform:uppercase;cursor:pointer;font-family:inherit;transition:.2s;text-decoration:none}
+  .btn:hover{background:rgba(0,255,136,.24)} .btn[disabled]{opacity:.4;cursor:not-allowed}
+  .btn.sm{padding:.25rem .55rem;font-size:.58rem}
+  .btn.gold{background:rgba(212,175,55,.14);color:var(--gold);border-color:rgba(212,175,55,.45)}
+  header{text-align:center;padding:1.8rem 1rem .5rem}
+  .kick{font-size:.6rem;letter-spacing:.3em;text-transform:uppercase;color:rgba(0,255,136,.7)}
+  h1{font-weight:300;letter-spacing:.12em;color:#fff;margin-top:.4rem;font-size:1.6rem}h1 b{color:var(--green)}
+  .back{display:inline-block;margin-top:.6rem;font-size:.62rem;letter-spacing:.2em;text-transform:uppercase;color:rgba(139,92,246,.55);text-decoration:none}
+  main{max-width:1080px;margin:1.2rem auto;padding:0 1.1rem}
+  .panel{background:rgba(10,10,18,.88);backdrop-filter:blur(10px);border:1px solid rgba(0,255,136,.24);border-radius:12px;padding:1.1rem 1.3rem;margin-bottom:1.2rem;box-shadow:0 8px 28px -6px rgba(0,0,0,.55)}
+  .label{font-size:.6rem;letter-spacing:.26em;text-transform:uppercase;color:rgba(0,255,136,.7);margin-bottom:.7rem}
+  p.note{font-size:.74rem;color:#9aa3b0;margin:.35rem 0}
+  select{background:#0c0a18;color:#e2e8f0;border:1px solid rgba(139,92,246,.3);border-radius:6px;padding:.4rem .6rem;font-size:.8rem;font-family:inherit}
+  .row{display:flex;gap:.6rem;flex-wrap:wrap;align-items:center;margin:.6rem 0}
+  .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:.7rem;margin:.6rem 0}
+  .stat{background:rgba(0,0,0,.35);border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:.6rem .8rem}
+  .stat .l{font-size:.54rem;letter-spacing:.14em;text-transform:uppercase;color:#7a8290}
+  .stat .v{font-family:ui-monospace,monospace;font-size:1.05rem;color:#d9ffee;margin-top:.1rem}
+  .meta{font-size:.66rem;color:#8a93a0;font-family:ui-monospace,monospace;margin:.25rem 0;word-break:break-all}
+  table{width:100%;border-collapse:collapse;font-size:.7rem;margin:.5rem 0}
+  th{font-size:.56rem;letter-spacing:.12em;text-transform:uppercase;color:rgba(0,255,136,.7);text-align:left;padding:.4rem .5rem;border-bottom:1px solid rgba(0,255,136,.25)}
+  td{padding:.4rem .5rem;border-bottom:1px solid rgba(255,255,255,.05);color:#aab3bf;font-family:ui-monospace,monospace;font-size:.64rem;word-break:break-all}
+  #gate{max-width:520px;margin:4rem auto;text-align:center}
+  #gate .sigil{font-size:2.4rem;margin-bottom:.6rem}
+  .hidden{display:none}
+</style>
+</head>
+<body>
+<div class="secbar">
+  <div class="seal"><span class="g">🔎</span> Biomesh AI · Strict audit</div>
+  <div style="display:flex;align-items:center;gap:.7rem">
+    <span class="who mono" id="who">…</span>
+    <button class="btn sm" onclick="globalLogout()">Log out</button>
+  </div>
+</div>
+<header>
+  <div class="kick">Read-only · RFC 07 strict check over every biochain</div>
+  <h1>Biomesh <b>Strict Audit</b></h1>
+  <a class="back" href="Biomesh_Console.html">← Biomesh Console</a>
+</header>
+
+<!-- Archon gate: page content stays hidden until tier resolves to ARCHON -->
+<div id="gate" class="panel">
+  <div class="sigil">♛</div>
+  <div class="label" style="justify-content:center">Resolving tier…</div>
+  <p id="gateMsg" style="font-size:.8rem;color:#8a93a0">The strict audit is an Archon-only review surface.
+  Your Genesis tier is being verified against the registrar.</p>
+</div>
+
+<main id="app" class="hidden">
+  <section class="panel">
+    <div class="label">What this page does</div>
+    <p class="note">It reads every record in <span class="mono">biochains</span>, page by page in document-id order, and runs
+      <span class="mono">verifyIntegrityStrict</span> (RFC 07 section 12) on each: parity, canonical, crystal, leaves,
+      weaves, derived, stopping at the first failing check. It writes nothing. The report stays in this browser until you
+      download it.</p>
+    <p class="note">Labels (decision D15): <b>strict ok</b>; <b>legacy</b> (no shdccp/2 stream or streamVersion);
+      <b>failed at &lt;check&gt;</b>; <b>self-consistent only</b> when the older <span class="mono">verifyIntegrity</span>
+      still passes. <b>Weave mismatch</b> counts the records that fail at weaves because weaveChiral or weaveMirror does
+      not reproduce: they may have been grown in a browser whose <span class="mono">Math.hypot</span> differs from V8's
+      (RFC 07 section 8.7), so they are counted on their own.</p>
+    <p class="note">The weaves are recomputed with this browser's arithmetic. Before it reads anything, the audit compares
+      this browser's <span class="mono">Math.hypot</span> and a seeded weave with V8's values; when they differ, the page
+      says so and the report records it (<span class="mono">auditEngineMatchesV8: false</span>), because weave mismatches
+      may then come from this browser. Until the engine measurement (decision D7) is done, run the audit in a
+      Chromium-based browser.</p>
+    <div class="row">
+      <label class="meta" for="pageSize">page size</label>
+      <select id="pageSize"><option>25</option><option selected>50</option><option>100</option></select>
+      <button class="btn" id="runBtn" onclick="runAudit()">Run the audit</button>
+      <a id="dl" class="btn gold hidden" href="#">Download the report</a>
+    </div>
+    <div class="meta" id="progress">Not run yet.</div>
+    <p class="note hidden" id="engineWarn" style="color:var(--warn)"></p>
+  </section>
+
+  <section class="panel hidden" id="summary">
+    <div class="label">Summary</div>
+    <div class="stats">
+      <div class="stat"><div class="l">records</div><div class="v" id="nRecords">—</div></div>
+      <div class="stat"><div class="l">strict ok</div><div class="v" id="nOk">—</div></div>
+      <div class="stat"><div class="l">legacy</div><div class="v" id="nLegacy">—</div></div>
+      <div class="stat"><div class="l">failed</div><div class="v" id="nFailed">—</div></div>
+      <div class="stat"><div class="l">self-consistent only</div><div class="v" id="nSelf">—</div></div>
+      <div class="stat"><div class="l">root-less</div><div class="v" id="nRootless">—</div></div>
+      <div class="stat"><div class="l">weave mismatch</div><div class="v" id="nWeave">—</div></div>
+      <div class="stat"><div class="l">doc id ≠ chainId</div><div class="v" id="nIdMismatch">—</div></div>
+      <div class="stat"><div class="l">data id ≠ doc id</div><div class="v" id="nDataId">—</div></div>
+    </div>
+    <div class="label" style="margin-top:.8rem">Failed at (legacy records not included)</div>
+    <table id="byCheck"></table>
+    <div class="label" style="margin-top:.8rem">By kind</div>
+    <table id="byKind"></table>
+  </section>
+
+  <section class="panel hidden" id="weavePanel">
+    <div class="label">Weave mismatch: possibly grown on another engine</div>
+    <p class="note">"chainId from own weave" is yes when the record's chainId matches its own merkleRoot and weaveChiral,
+      as a grower whose engine computed other weaves would have written it.</p>
+    <p class="note hidden" id="weaveEngineWarn" style="color:var(--warn)">This browser's arithmetic differs from V8's
+      (see above), so these records may reproduce in a Chromium-based browser.</p>
+    <table id="weaveTable"></table>
+  </section>
+
+  <section class="panel hidden" id="failPanel">
+    <div class="label">Records that are not strict ok</div>
+    <table id="failTable"></table>
+  </section>
+</main>
+
+<script type="module">
+import { auth } from "../scripts/firebase/config.js";
+import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-auth.js";
+import { resolveTier } from "../scripts/genesis-registrar.js";
+import * as BM from "../scripts/biomesh.js";
+import { engineCheck } from "../scripts/biomesh-engine-check.js";
+import { escapeHtml } from "../scripts/ui/escape.js";
+
+const $ = id => document.getElementById(id);
+const str = (v, n) => (typeof v === "string" ? v.slice(0, n) : null);
+const yieldToPage = () => new Promise(r => setTimeout(r, 0));
+let running = false, reportUrl = null;
+
+onAuthStateChanged(auth, async user => {
+  if (!user) return;                       // auth-guard handles redirect
+  $("who").textContent = user.email || user.uid;
+  let tier = "ACOLYTE";
+  try { tier = await resolveTier(user.uid); } catch (_) {}
+  if (tier !== "ARCHON") {
+    $("gateMsg").innerHTML = "Tier resolved: <b>" + escapeHtml(tier) + "</b>.<br>The strict audit requires the ♛ <b>ARCHON</b> tier.";
+    return;
+  }
+  $("gate").classList.add("hidden");
+  $("app").classList.remove("hidden");
+});
+
+// This browser against V8 (RFC 07 section 8.3): the weaves are recomputed here, so a difference in Math.hypot would
+// show up as weave mismatches that come from the auditor's engine, not the grower's.
+function auditEngine() {
+  const userAgent = typeof navigator !== "undefined" ? navigator.userAgent : null;
+  try { return { userAgent, ...engineCheck() }; }
+  catch (e) { return { userAgent, matchesV8: false, error: String(e && e.message || e) }; }
+}
+
+// A value of unknown type, for the report: a string (cut to n characters), or its type in parentheses.
+const shown = (v, n) => (typeof v === "string" ? v.slice(0, n) : "(" + (v === null ? "null" : Array.isArray(v) ? "array" : typeof v) + ")");
+
+// One record → its audit entry. Reads nothing beyond the record itself. doc.id is the document id (from the query
+// snapshot); dataId is the record's own `id` field when it has one that differs from the document id.
+async function auditRecord(doc, dataId) {
+  const v = BM.verifyIntegrityStrict(doc);
+  const f = BM.failedCheck(v);
+  const selfConsistent = v.ok || v.legacy ? null : (await BM.verifyIntegrity(doc)).ok;
+  const fields = f && Array.isArray(f.fields) ? f.fields : [];
+  const weaveMismatch = v.failed === "weaves" && (fields.includes("weaveChiral") || fields.includes("weaveMirror"));
+  let chainIdFromOwnWeave = null;
+  if (weaveMismatch && typeof doc.merkleRoot === "string" && typeof doc.weaveChiral === "string")
+    chainIdFromOwnWeave = doc.chainId === "BC-" + BM.sha256HexSync(doc.merkleRoot + "|" + doc.weaveChiral).slice(0, 24);
+  return {
+    docId: doc.id,
+    ...(dataId !== undefined ? { dataId: shown(dataId, 64) } : {}),
+    chainId: str(doc.chainId, 64),
+    idMatches: doc.id === doc.chainId,
+    kind: str(doc.kind, 64),
+    title: str(doc.title, 120),
+    createdAt: str(doc.createdAt, 40),
+    growerGenesisId: str(doc.growerGenesisId, 80),
+    origBytes: typeof doc.origBytes === "number" ? doc.origBytes : null,
+    label: BM.strictLabel(v, selfConsistent),
+    strict: { ok: v.ok, failed: v.failed, legacy: v.legacy, detail: f ? f.detail : null, fields },
+    selfConsistent,
+    rootless: !Array.isArray(doc.leafHashes) || typeof doc.merkleRoot !== "string",
+    weaveMismatch,
+    chainIdFromOwnWeave,
+  };
+}
+
+function buildReport(entries, run) {
+  const failedAt = Object.fromEntries(BM.STRICT_CHECKS.map(c => [c, 0]));
+  const byKind = {};
+  const counts = { records: entries.length, strictOk: 0, legacy: 0, failed: 0, selfConsistentOnly: 0, rootless: 0,
+                   weaveMismatch: 0, idMismatch: 0, dataIdMismatch: 0, failedAt, byKind };
+  for (const e of entries) {
+    const k = e.kind || "(none)";
+    byKind[k] = byKind[k] || { records: 0, strictOk: 0 };
+    byKind[k].records++;
+    if (e.strict.ok) { counts.strictOk++; byKind[k].strictOk++; }
+    else if (e.strict.legacy) counts.legacy++;
+    else { counts.failed++; failedAt[e.strict.failed]++; }
+    if (e.selfConsistent === true) counts.selfConsistentOnly++;
+    if (e.rootless) counts.rootless++;
+    if (e.weaveMismatch) counts.weaveMismatch++;
+    if (!e.idMatches) counts.idMismatch++;
+    if ("dataId" in e) counts.dataIdMismatch++;
+  }
+  return {
+    format: "owl-biomesh-audit/1",
+    startedAt: run.startedAt,
+    generatedAt: new Date().toISOString(),
+    verifier: "verifyIntegrityStrict, scripts/biomesh-core.js (RFC 07 section 12, BioChainAI/SHD-CCP-core)",
+    strictEnforce: BM.STRICT_ENFORCE,
+    auditEngineMatchesV8: run.engine.matchesV8,
+    auditEngine: run.engine,
+    checks: [...BM.STRICT_CHECKS],
+    pageSize: run.pageSize,
+    pages: run.pages,
+    notes: [
+      "failedAt counts the first failing check of records that are not legacy.",
+      "selfConsistentOnly: the strict check fails and verifyIntegrity (self-consistency) passes.",
+      "rootless: the record has no leafHashes array or no merkleRoot string.",
+      "weaveMismatch: the record fails at weaves with weaveChiral or weaveMirror not reproduced; it may have been grown in a browser whose Math.hypot differs from V8's (RFC 07 section 8.7, D7). chainIdFromOwnWeave tells whether its chainId matches its own merkleRoot and weaveChiral.",
+      "auditEngine: the auditing browser (userAgent) and its comparison with V8 on the 24 hypot vectors of shdccp2_arith and a seeded weave (scripts/biomesh-engine-check.js). When auditEngineMatchesV8 is false, the weaves were recomputed with arithmetic that differs from V8's, so weaveMismatch may count records that reproduce in V8.",
+      "idMismatch: the document id is not the record's chainId field.",
+      "dataIdMismatch: the record's data has its own id field, different from its document id (dataId shows it); docId is always the document id.",
+    ],
+    counts,
+    weaveMismatch: entries.filter(e => e.weaveMismatch).map(e => ({ docId: e.docId, chainId: e.chainId, kind: e.kind,
+      createdAt: e.createdAt, fields: e.strict.fields, chainIdFromOwnWeave: e.chainIdFromOwnWeave })),
+    records: entries,
+  };
+}
+
+// Table rows from plain values, as text.
+function fillTable(el, head, rows) {
+  el.textContent = "";
+  const tr = document.createElement("tr");
+  for (const h of head) { const th = document.createElement("th"); th.textContent = h; tr.appendChild(th); }
+  el.appendChild(tr);
+  for (const r of rows) {
+    const row = document.createElement("tr");
+    for (const v of r) { const td = document.createElement("td"); td.textContent = v === null || v === undefined ? "—" : String(v); row.appendChild(td); }
+    el.appendChild(row);
+  }
+}
+
+function render(report) {
+  const c = report.counts;
+  $("nRecords").textContent = c.records; $("nOk").textContent = c.strictOk; $("nLegacy").textContent = c.legacy;
+  $("nFailed").textContent = c.failed; $("nSelf").textContent = c.selfConsistentOnly; $("nRootless").textContent = c.rootless;
+  $("nWeave").textContent = c.weaveMismatch; $("nIdMismatch").textContent = c.idMismatch; $("nDataId").textContent = c.dataIdMismatch;
+  fillTable($("byCheck"), ["check", "records"], report.checks.map(k => [k, c.failedAt[k]]));
+  fillTable($("byKind"), ["kind", "records", "strict ok"], Object.entries(c.byKind).map(([k, v]) => [k, v.records, v.strictOk]));
+  fillTable($("weaveTable"), ["doc id", "kind", "created", "fields", "chainId from own weave"],
+    report.weaveMismatch.map(w => [w.docId, w.kind, w.createdAt, w.fields.join(", "), w.chainIdFromOwnWeave === null ? null : w.chainIdFromOwnWeave ? "yes" : "no"]));
+  const notOk = report.records.filter(e => !e.strict.ok);
+  fillTable($("failTable"), ["doc id", "title", "kind", "label", "detail"],
+    notOk.map(e => [e.docId, e.title, e.kind, e.label, e.strict.detail]));
+  $("summary").classList.remove("hidden");
+  $("weavePanel").classList.toggle("hidden", !report.weaveMismatch.length);
+  $("weaveEngineWarn").classList.toggle("hidden", report.auditEngineMatchesV8 !== false);
+  $("failPanel").classList.toggle("hidden", !notOk.length);
+}
+
+// The report as a download link the user clicks (nothing leaves the browser otherwise).
+function offerDownload(report) {
+  if (reportUrl) URL.revokeObjectURL(reportUrl);
+  reportUrl = URL.createObjectURL(new Blob([JSON.stringify(report, null, 1)], { type: "application/json" }));
+  const a = $("dl");
+  a.href = reportUrl;
+  a.download = "biomesh-audit-" + report.generatedAt.replace(/[:.]/g, "-") + ".json";
+  a.textContent = `Download the report (JSON, ${report.counts.records} records)`;
+  a.classList.remove("hidden");
+}
+
+async function runAudit() {
+  if (running) return;
+  running = true; $("runBtn").disabled = true;
+  const pageSize = Number($("pageSize").value) || 50;
+  const run = { startedAt: new Date().toISOString(), pageSize, pages: 0, engine: auditEngine() };
+  const warn = $("engineWarn");
+  warn.textContent = run.engine.matchesV8 ? "" : "This browser's arithmetic differs from V8's" +
+    (run.engine.hypotMismatches ? ` (Math.hypot on ${run.engine.hypotMismatches.length} of ${run.engine.hypotCases} vectors` +
+      `, seeded weave ${run.engine.weaveMatches ? "equal" : "different"})` : "") +
+    ": weave mismatches in this report may come from this browser. Run the audit in a Chromium-based browser.";
+  warn.classList.toggle("hidden", run.engine.matchesV8);
+  const entries = [];
+  let after = null;
+  try {
+    for (;;) {
+      // The cursor is the last document id of the page, from the query snapshot (never a field of the data).
+      const page = await BM.listBiochainsPage(pageSize, after);
+      run.pages++;
+      for (const doc of page.records) {
+        entries.push(await auditRecord(doc, page.dataIds.get(doc.id)));
+        $("progress").textContent = `page ${run.pages} · ${entries.length} records checked…`;
+        await yieldToPage();
+      }
+      if (page.records.length < pageSize || page.lastId === null) break;
+      if (page.lastId === after) throw new Error("the page cursor did not advance");
+      after = page.lastId;
+    }
+    const report = buildReport(entries, run);
+    render(report);
+    offerDownload(report);
+    $("progress").textContent = `Done: ${entries.length} records in ${run.pages} page(s), ${report.counts.strictOk} strict ok. Shadow mode: ${BM.STRICT_ENFORCE ? "off (enforced)" : "on (not enforced)"}. This browser's weave arithmetic: ${run.engine.matchesV8 ? "equal to V8's" : "differs from V8's"}.`;
+  } catch (e) {
+    $("progress").textContent = `The audit stopped after ${entries.length} records: ${e && e.message ? e.message : e}`;
+  } finally {
+    running = false; $("runBtn").disabled = false;
+  }
+}
+window.runAudit = runAudit;
+</script>
+</body>
+</html>

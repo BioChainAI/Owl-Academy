@@ -21,7 +21,7 @@ transfers are seal-signed records that are never deleted, and every event is chr
 
 | Object | Collection | Mutability | Who creates | Purpose |
 |---|---|---|---|---|
-| **Biochain** | `biochains/{chainId}` | listing fields only; ownership moves via accepted transfer | any signed-in user (grower) | the grown chain: one framed SHD-CCP `stream` + leaf-commitment vector + Merkle root + chiral/mirror weave + GROWN/1 certification |
+| **Biochain** | `biochains/{chainId}` | listing fields only; ownership moves via accepted transfer | any signed-in user (grower) | the grown chain: one framed SHD-CCP `stream` + leaf-commitment vector + Merkle root + chiral/mirror weave + GROWN/1 certification; its `kind` (one of `KINDS`) and, for Mind's Eye environments, a numeric `crystCost` |
 | **Transfer** | `biochainTransfers/{id}` | recipient resolves status once | current owner | free, seal-signed BIOMESH-XFER/1; the lineage spine — never deleted |
 | **Codex** | `biomeshCodices/{codexHash}` | **immutable** | any signed-in user | content-addressed personalization seed (GEAR/PRIME/HALT packet program), CODEX/1-sealed; paired to chains via PAIR/1 |
 | **Rating** | `biochainRatings/{chainId}_{uid}` | rater may revise own | any signed-in user | utility stars + recreated-ok verdict; one per user per chain (doc-id enforced) |
@@ -40,15 +40,40 @@ crystal packet (16 hex = one 64-bit SHD-CCP word) │ residual length (4 bytes) 
 concatenated into a single `stream` string. The chunk length lives in each
 packet's `payload` field, so there is no separate `chunkLens` array to keep
 index-aligned, and no array-of-arrays for Firestore to reject. The `crystallize`
-packet is **byte-identical to `BioChain-AI/BioChain_Enterprise/shdccp_kernel.py`**
-(verified: `crystallize(0..59) = 9841D88D8B003CEA` on both the browser and the
-Python reference), so a node and a browser read the same wire format. Only the
+packet is the `shdccp/2` crystal packet specified by **RFC 07** (BioChainAI/SHD-CCP-core,
+`rfcs/07_shdccp2_contract.md`, section 5), whose contract vectors Owl's tests run
+(`tests/vendor/shdccp2-contract/`). Its four crystal bytes are written **raw**: a crystal
+byte 0x80 stays 0x80 in the packet (RFC 07 section 5.4, decision D6). The Python
+kernel `shdccp_kernel.py` (BioChainAI/BioChain-AI `protocol/`, and the copy in this
+repository's `BioChain-AI/BioChain_Enterprise/`) rewrites that byte as 0x81 for its own
+ABI and codex words, so the kernel's packet equals this one only for chunks
+without a 0x80 crystal byte (the golden `crystallize(0..59) = 9841D88D8B003CEA` has none;
+about 1.5 % of real chunks have one). A grower in another language must write the raw
+packet to produce `shdccp/2`. Only the
 `leafHashes` commitment vector remains a flat array — it must stay independently
 addressable so a validator can spot-check one chunk's leaf against the Merkle
 root without decoding the rest. `verifyIntegrity` recreates the chunks from the
 stream and checks, in order: **per-packet parity → per-chunk leaf → rebuilt
 Merkle root → chiral weave**. A legacy read path still verifies any older
 `streams`/`chunkLens` record.
+
+> **Interim note: `verifyIntegrity` checks self-consistency only (F83).** It compares
+> each leaf and the root only when the record has them, never checks the packets
+> against their chunks, the number of leaves, `weaveMirror`, `segCuts`, `segments`,
+> the chainId, `origBytes`, `shippedBytes` or `value`, accepts residuals the encoder
+> never writes, and reads legacy records. A record it accepts can still be one that no
+> honest grow produces. It returns on every input: a residual length that is not a
+> number or is negative fails it ("decode failure"). RFC 07's validity predicate (section 12) is checked by
+> **`verifyIntegrityStrict`** (`scripts/biomesh-core.js`): synchronous, hash-parametric,
+> and reporting the first failing check of **parity → canonical → crystal → leaves →
+> weaves → derived**; a record with no `stream` or another `streamVersion` is reported
+> as legacy. It runs in **shadow mode** while `STRICT_ENFORCE` (`scripts/biomesh.js`) is
+> false: `publishBiochain` always refuses a record that fails it; accept, extend, trace,
+> the Console cards, the rating's `recreatedOk` and the Language Growing seed gate show
+> or record the verdict without refusing on it. Records are labelled (decision D15)
+> "strict ok", "legacy", "failed at <check>" or "self-consistent only" (the strict check
+> fails, `verifyIntegrity` passes); none is deleted. `mage_tower/Biomesh_Audit.html`
+> counts the verdicts over every record.
 
 ## Growing a chain further — GROWTH/1 epochs
 
@@ -80,7 +105,9 @@ is **bit-identical** to `crystallize(token)` on that page (verified in tests:
 Eye's Hamming-distance matcher directly — the chain *is* a memory pack for the
 familiar. Fields: `engramStream` (16 hex/token), `engramCount`, `engramMeanJ`
 (mean torsion flow). The engram layer is derived data: `verifyIntegrity`
-recomputes it from the recreated text and rejects any mismatch.
+recomputes the stream from the recreated text and rejects any mismatch;
+`verifyIntegrityStrict` also checks `engramCount` and `engramMeanJ`, and that the
+three fields are present together or not at all.
 
 ## Codex pairing — CODEX/1 + PAIR/1
 
@@ -199,9 +226,9 @@ orbit) rendered over a lattice of tens of thousands of null nodes. You fly the
 lattice, click any vertex, and **program it into a real 64-bit SHD-CCP packet** —
 the exact canonical word from the "Body storage" section above
 (`form·parity·spin·quat32·payload16·freq·amp`), byte-identical to
-`crystallize()`/`packWord()` in `scripts/biomesh.js` (the codec is inlined so
+`crystallize()`/`packWord()` in `scripts/biomesh-core.js` (the codec is inlined so
 the page is a fully standalone mesh node, with the canonical definition still
-living in `biomesh.js`). Form drives the vertex's shape, the quaternion its
+living in `biomesh-core.js`, re-exported by `scripts/biomesh.js`). Form drives the vertex's shape, the quaternion its
 color, amplitude a `φ^amp` scale, spin a `45°·spin` rotation — a packet you can
 *see*.
 
@@ -212,8 +239,9 @@ chain is what turns a scatter of vertices into a *lattice system*.
 **Raw data → packets.** Any input — UTF-8 text or hex bytes — is chunked into
 8-byte groups, each run through the canonical `crystallize()` (a real form-9
 word with valid parity), and laid along consecutive vertices, optionally
-auto-chained. Data crystallized here is bit-identical to what the Python kernel
-would produce, so "any data becomes SHD-CCP packets" in a portable way.
+auto-chained. Data crystallized here equals what the Python kernel produces except
+where a crystal byte is 0x80, which stays raw here and becomes 0x81 in the kernel
+(RFC 07 section 5.4), so "any data becomes SHD-CCP packets" in a portable way.
 
 **The seed.** The whole construction crystallizes into one compact, self-describing
 **seed**: `{ v, shape, params, count, rngSeed, nodes:[{i,w}], chains:[[i,…]],
@@ -230,7 +258,10 @@ character.
 the packet is the canonical 64-bit word; the seed is plain hash-stamped JSON
 (Copy / Download `.latticeseed.json` / Load file — regrows offline on any node);
 and **Publish** grows the seed string into a biochain via `growBiochain` +
-`publishBiochain`, certified by the operator's seal, so it becomes tradable and
+`publishBiochain`, certified by the seal picked in the panel's **Seal** list (the
+operator's active minor tomes, from `scripts/minor-tome.js`) and stored with its kind
+(`mindseye.lattice_seed`; a CRYST commit publishes `mindseye.environment` with its
+numeric `crystCost`), so it becomes tradable and
 traceable like any other biochain — another node fetches it, `recreateText`s the
 seed, and regrows the identical lattice. The build/chain/raw-data/seed/regrow
 core is 100% offline; publishing is the optional bridge onto the mesh. A "?"
@@ -415,7 +446,7 @@ caller** and only with a matching **accepted** transfer for that exact chain
 (`lastTransferId` is joined in the rule via `get()`); nothing in these collections is
 ever deletable. The transfer collection **is** the lineage — `traceBiochain()` replays
 certification + every hop's seal + a full client-side recreation (leaves, Merkle,
-chiral weave) in one call.
+chiral weave) and the strict verdict (`strict`, with the check it failed at) in one call.
 
 ## The success score (marketplace rating)
 
@@ -428,8 +459,9 @@ success = 40 · min(1, value/2)              measured at grow time (compression 
 
 Automatic components (value, integrity) cannot be talked up — they are recomputed
 from the record; social components (stars) are tier-weighted and capped at half the
-score. Verifying before rating is one click (`verifyIntegrity` runs the full
-recreation in the browser).
+score. Verifying before rating is one click: the Console's **Verify & rate** runs the
+strict check (`verifyIntegrityStrict`) in the browser, and its verdict is the rating's
+`recreatedOk`.
 
 ## The Archon console
 
@@ -440,7 +472,24 @@ the write backstop). Tabs: **Overview** (mesh stats, certification census, recen
 transfers) · **Marketplace** (success-scored chain cards, verify-and-rate, list/unlist)
 · **Grow** (Biostrata grow + certify + publish) · **Transfers** (free send, incoming
 accept/decline) · **Trace** (full lineage: GROWN/1 + every hop seal-verified +
-recreation).
+recreation + the strict verdict and the check it failed at). Each marketplace card
+shows its strict label, computed when the card scrolls into view; the ratings of all
+chains are read in batches of 30 and the certification checks at most six at a time.
+
+`mage_tower/Biomesh_Audit.html` (ARCHON only, read-only) runs the strict check over
+every record in `biochains`, page by page in document-id order (the cursor is the last
+document id of the query snapshot, never a field of the data), and offers the result as
+a JSON report to download: counts of strict ok, legacy, failed (by check),
+self-consistent only, root-less, records whose data carries an `id` field other than
+the document id, and "weave mismatch" (records whose weaves do not reproduce, possibly
+grown in a browser whose `Math.hypot` differs from V8's; RFC 07 section 8.7), counted on
+their own. The weaves are recomputed with the auditing browser's arithmetic, so the
+audit first runs `scripts/biomesh-engine-check.js` (the 24 hypot vectors of
+`shdccp2_arith` and a seeded weave against V8's values) and records the browser's
+user agent and the result (`auditEngineMatchesV8`); when the browser differs, the page
+warns that its weave mismatches may come from the browser.
+`.github/workflows/weave-engines.yml` (run by hand) measures the weaves in Chromium,
+Firefox and WebKit against Node (decision D7).
 
 Students participate through the same collections (rules allow any signed-in user to
 grow, transfer, and rate); a student-facing marketplace page can reuse
@@ -450,10 +499,12 @@ grow, transfer, and rate); a student-facing marketplace page can reuse
 
 | File | Role |
 |---|---|
-| `scripts/biomesh-core.js` | the pure, Firebase-free half: grow cell, recreation, `verifyIntegrity`, token engrams and language seeds, growth epochs, codex derivation, and the GROWN/1 · GROWTH/1 · CODEX/1 · PAIR/1 commitment strings (runs in Node too; `tests/unit/biomesh-core.test.mjs`) |
-| `scripts/biomesh.js` | re-exports `biomesh-core.js` + certify/publish/send/accept/rate/trace/session-burn services (Firestore); pages import this module |
+| `scripts/biomesh-core.js` | the pure, Firebase-free half: grow cell, recreation, `verifyIntegrity` (self-consistency) and `verifyIntegrityStrict` (RFC 07) with its synchronous SHA-256, the `KINDS` registry, token engrams and language seeds, growth epochs, codex derivation, and the GROWN/1 · GROWTH/1 · CODEX/1 · PAIR/1 commitment strings (runs in Node too; `tests/unit/biomesh-core.test.mjs`) |
+| `scripts/biomesh.js` | re-exports `biomesh-core.js` + certify/publish/send/accept/rate/trace/session-burn services (Firestore) and `STRICT_ENFORCE` (shadow mode while false); pages import this module |
+| `scripts/biomesh-engine-check.js` | compares the running engine's `Math.hypot` and a seeded weave with V8's values (RFC 07 section 8.3); the strict audit records the result |
 | `scripts/sigil-renderer.js` | familiar SVG engine, extended with `renderSealSigil`/`sealManifoldFromVector` for operator seals |
 | `mage_tower/Biomesh_Console.html` | the Archon-only control panel |
+| `mage_tower/Biomesh_Audit.html` | the Archon-only, read-only strict audit over every biochain, with a JSON report |
 | `mage_tower/Biomesh_Language_Growing.html` | BART/biochain/API language-seed growing surface + auditable chain of thought |
 | `mage_tower/Biomesh_Language_Growing_Guide.html` | companion how-to guide (seals, sources, engines, ledger, burn) |
 | `mage_tower/Biomesh_Mind_Eye_3D.html` | 3D SHD-CCP lattice forge — program vertices, chain packets, crystallize a regrowable seed, and run the torsional Markov "breath" synchronization pump |
@@ -462,7 +513,7 @@ grow, transfer, and rate); a student-facing marketplace page can reuse
 | `mage_tower/Celestial_Library_Scholar.html` | identical room, gated by `scripts/auth-guard.js`, with a Scholar Account window bound to the signed-in Google identity (avatar/name/email/sign-out + sealed Cosmological ID) |
 | `firestore.rules` | `biochains` / `biochainTransfers` / `biochainRatings` / `chronicles` blocks |
 | `firebase.json`, `.firebaserc` | the rules file and the Firestore emulator settings (no hosting); default project `owl-academy-6bce2` |
-| `tests/` | unit, rules (Firestore emulator) and static tests, run by `.github/workflows/biomesh-ci.yml`; see `tests/README.md` |
+| `tests/` | unit, rules (Firestore emulator) and static tests, run by `.github/workflows/biomesh-ci.yml`; the RFC 07 contract vectors vendored from SHD-CCP-core; the weave-engines harness (`tests/engines/`, run by `.github/workflows/weave-engines.yml`); see `tests/README.md` |
 | `BioChain-AI/BioChain_Enterprise/` | the measured reference stack this deploys |
 
 ## Trust model
@@ -471,7 +522,9 @@ Client-side crypto with Firestore rules as the backstop — the Academy's standi
 posture. Rules pin: grower/owner identity on create, free-only transfers, recipient-only
 resolution, ownership-moves-only-via-accepted-transfer (joined server-side via `get()`),
 and no deletes anywhere. Signatures are real ECDSA minor-tome seals, publicly verifiable
-against `seals/`. A dishonest client can lie to itself; it cannot forge a certification,
+against `seals/`. Record content is checked by clients, not by the rules: the strict
+check (RFC 07) gates publishing and is shown everywhere else in shadow mode until
+`STRICT_ENFORCE` is turned on (see the interim note under "Body storage"). A dishonest client can lie to itself; it cannot forge a certification,
 cannot move ownership without an accepted transfer addressed to it, and cannot erase
 history. For stronger guarantees the verification functions are side-effect-free and
 ready to port into a Cloud Function gate, matching the note in the Genesis Authority
@@ -486,4 +539,4 @@ System.
 3. Send a chain to any student UID — free; they accept from any page using
    `acceptBiochain` (or a future student marketplace page).
 
-*Last updated: 2026-11-07*
+*Last updated: 2026-11-08*

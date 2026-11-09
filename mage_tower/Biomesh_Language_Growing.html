@@ -402,14 +402,27 @@ async function loadSeeds() {
   $("seedStat").textContent = "Recreating + crystallizing seeds…";
   try {
     seeds = [];
+    // The seed gate: a chain that fails the self-consistency check is skipped; the strict verdict (RFC 07) is shown
+    // for every chain and skips a chain only when STRICT_ENFORCE is on (shadow mode until then).
+    const verdicts = [];
+    let used = 0;
     for (const id of picked) {
       const chain = await BM.getBiochain(id);
       const integ = await BM.verifyIntegrity(chain);
-      if (!integ.ok) { $("seedStat").innerHTML = `<span style="color:var(--bad)">${escapeHtml(String(id).slice(0, 14))}… fails integrity — skipped</span>`; continue; }
+      const strict = BM.verifyIntegrityStrict(chain);
+      const label = BM.strictLabel(strict, integ.ok);
+      const skip = !integ.ok || (BM.STRICT_ENFORCE && !strict.ok);
+      verdicts.push(`${String(id).slice(0, 14)}… ${skip ? "skipped, " : ""}${integ.ok ? label : "fails integrity"}`);
+      if (skip) continue;
       seeds.push(...BM.biochainToSeeds(chain));
+      used++;
     }
-    sourceLabel = `${picked.length} biochain(s) → ${seeds.length} passage seeds`;
-    $("seedStat").innerHTML = `Source: <b style="color:var(--green)">${escapeHtml(seeds.length)}</b> language seeds recalled from ${escapeHtml(picked.length)} biochain(s). Legible because they are your real recorded text.`;
+    sourceLabel = `${used} biochain(s) → ${seeds.length} passage seeds`;
+    $("seedStat").innerHTML = `Source: <b style="color:var(--green)">${escapeHtml(seeds.length)}</b> language seeds recalled from ${escapeHtml(used)} biochain(s). Legible because they are your real recorded text.`;
+    const line = document.createElement("div");
+    line.style.color = "var(--muted, #8a93a0)";
+    line.textContent = `Strict check (RFC 07${BM.STRICT_ENFORCE ? "" : ", shadow mode: shown, not enforced"}): ` + verdicts.join(" · ");
+    $("seedStat").appendChild(line);
   } catch (e) { $("seedStat").innerHTML = `<span style="color:var(--bad)">${escapeHtml(e.message)}</span>`; }
 }
 
@@ -495,7 +508,7 @@ async function crystallizeSession() {
       `[turn ${t.index} · ${t.engine} · ${t.cls} · ${t.parity}]\nQ: ${t.query}\nA: ${t.response}`).join("\n\n");
     const chain = await BM.growBiochain(transcript);
     if (activeSeal) {
-      await BM.publishBiochain(uid, activeSeal.sealId, chain, { title: "Language Growing session " + new Date().toISOString().slice(0, 16) });
+      await BM.publishBiochain(uid, activeSeal.sealId, chain, { title: "Language Growing session " + new Date().toISOString().slice(0, 16), kind: "language-session" });
       sessionSaved = true;
       $("auditMsg").innerHTML = `<span style="color:var(--green)">Crystallized + published: ${escapeHtml(chain.chainId)} · ${escapeHtml(chain.engramCount)} engrams. Now transferable/replayable on the mesh.</span>`;
     } else {

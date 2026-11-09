@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<!-- SPDX-License-Identifier: MIT -->
+<!-- Copyright (c) 2026 Ebayednoob -->
+<!-- Loaded by tests/engines/weave-engines.mjs in each browser (CI only): computes the weaves of the seeded shards
+     and the Math.hypot bit patterns with this engine, into window.__result. -->
+<html lang="en">
+<head><meta charset="UTF-8"><title>Weave engines</title></head>
+<body>
+<p id="state">computing…</p>
+<script type="module">
+import { chainWeaves } from "../../scripts/biomesh-core.js";
+import { shards, hypotInputs, f64hex } from "./shards.mjs";
+try {
+  const q = new URLSearchParams(location.search);
+  const seed = Number(q.get("seed")), n = Number(q.get("shards")), h = Number(q.get("hypot"));
+  const weaves = shards(seed, n).map((chunks) => chainWeaves(chunks));
+  const hypot = hypotInputs(seed, h).map((args) => f64hex(Math.hypot(...args)));
+  window.__result = { userAgent: navigator.userAgent, weaves, hypot };
+  document.getElementById("state").textContent = "done";
+} catch (e) {
+  window.__error = String(e && e.stack || e);
+  document.getElementById("state").textContent = "error";
+}
+</script>
+</body>
+</html>

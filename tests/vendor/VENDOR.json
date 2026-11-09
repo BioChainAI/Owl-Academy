@@ -95,6 +95,121 @@
      "sha256": "639106ad1fed377619bc75666a1941df09b0297c2a91c5596696ed3b9a15e0af"
     }
    ]
+  },
+  {
+   "id": "shdccp2-contract",
+   "repository": "BioChainAI/SHD-CCP-core",
+   "ref": "main",
+   "commit": "150a50f29acfe52fd689b74236d2a8cbab5223e0",
+   "licence": "CC0-1.0. The RFC 07 contract vectors (contract_vectors/ in BioChainAI/SHD-CCP-core) are dedicated to the public domain by their holder, Ebayednoob (contract_vectors/LICENSE, copied here as shdccp2-contract/LICENSE; decision D5c). The seven suites of this source are normative there: Owl's biomesh.js at 7f45f35 and the independent oracle agreed on every case. The rest of SHD-CCP-core is GPL-3.0 and none of it is copied here.",
+   "usedBy": [
+    "tests/unit/contract-vectors.test.mjs",
+    "tests/unit/biomesh-strict.test.mjs",
+    "tests/unit/vendor.test.mjs",
+    "tests/unit/weave-engines.test.mjs",
+    "scripts/biomesh-engine-check.js"
+   ],
+   "files": [
+    {
+     "path": "shdccp2-contract/LICENSE",
+     "upstream": "contract_vectors/LICENSE",
+     "lastChanged": "4ed48b3a33e8f09adffa80b3698a5ff02852cd20",
+     "sha256": "53a4248138648c71f1f35ee9fe07f7e41fdce3c56d17a97569a39d4d3ac638e0"
+    },
+    {
+     "path": "shdccp2-contract/suites/engram1.json",
+     "upstream": "contract_vectors/suites/engram1.json",
+     "lastChanged": "4ed48b3a33e8f09adffa80b3698a5ff02852cd20",
+     "sha256": "c191c14fabcfe413451e7961f28b39ad45781b6a792b5258b3daef4dd1212a1c"
+    },
+    {
+     "path": "shdccp2-contract/suites/shdccp2_arith.json",
+     "upstream": "contract_vectors/suites/shdccp2_arith.json",
+     "lastChanged": "4ed48b3a33e8f09adffa80b3698a5ff02852cd20",
+     "sha256": "cae9e790485d63ee3b2ecbbbcbab9b9a6e9e6e162ea922274a6cdd7e8e6f2322"
+    },
+    {
+     "path": "shdccp2-contract/suites/shdccp2_chunk.json",
+     "upstream": "contract_vectors/suites/shdccp2_chunk.json",
+     "lastChanged": "4ed48b3a33e8f09adffa80b3698a5ff02852cd20",
+     "sha256": "1d6bd04beb1cd23cf72d3a3d5c8606cb616328d0efe86f399185bd46a6d44052"
+    },
+    {
+     "path": "shdccp2-contract/suites/shdccp2_merkle.json",
+     "upstream": "contract_vectors/suites/shdccp2_merkle.json",
+     "lastChanged": "4ed48b3a33e8f09adffa80b3698a5ff02852cd20",
+     "sha256": "a33494eb2169da6718b5e5ce22517cbad73c5c425a64f8d8b736dc5a01a9ba95"
+    },
+    {
+     "path": "shdccp2-contract/suites/shdccp2_packet.json",
+     "upstream": "contract_vectors/suites/shdccp2_packet.json",
+     "lastChanged": "4ed48b3a33e8f09adffa80b3698a5ff02852cd20",
+     "sha256": "2b52d6b8e4262c36e3889664e5a5f02f8a4cc0a34fb46dc953d3f8ba535c6d6a"
+    },
+    {
+     "path": "shdccp2-contract/suites/shdccp2_record.json",
+     "upstream": "contract_vectors/suites/shdccp2_record.json",
+     "lastChanged": "4ed48b3a33e8f09adffa80b3698a5ff02852cd20",
+     "sha256": "87f5860db0d4157cf14e354fa328aea124dd8208dde23306c6c054ece11ce59e"
+    },
+    {
+     "path": "shdccp2-contract/suites/shdccp2_weave.json",
+     "upstream": "contract_vectors/suites/shdccp2_weave.json",
+     "lastChanged": "4ed48b3a33e8f09adffa80b3698a5ff02852cd20",
+     "sha256": "fa81d109bb4e06e2b41849a34da4708b7c3e64e56771033bd74665e405259f6c"
+    }
+   ]
+  },
+  {
+   "id": "shdccp2-contract-s2",
+   "repository": "BioChainAI/SHD-CCP-core",
+   "ref": "main",
+   "commit": "f51b53f5d10d05a788bbd219089ec5661c8759e6",
+   "pending": "f51b53f is the S2 commit of SHD-CCP-core (the RFC 07 suites added after 150a50f), not yet merged into main. When it merges, compare these files with main (check-upstream.mjs), copy any that changed, set commit to the merge commit and fold this source into shdccp2-contract. The tamper suites name Owl's strict verifier at O3's commit f1d31af in their `source`; a repin of that commit in SHD-CCP-core changes `source` only, never a case.",
+   "licence": "CC0-1.0, as for shdccp2-contract (the same contract_vectors/LICENSE, unchanged at f51b53f; vendored once, as shdccp2-contract/LICENSE). Five of these suites are normative at f51b53f (two independent implementations agreed on every case and SHD-CCP-core's lock pins them): shdccp2_limits, engram1_keys, rng_mulberry32, merkle_rules_same_bytes and shdccp2_tamper. shdccp2_tamper_open is draft: RFC 07 section 12.5 leaves the first failing check of its ten values open. Not vendored: rfc6962_lists and attest1_profile, which scripts/biomesh-core.js does not implement (RFC 6962 trees; the ATTEST/1 and SEAL/1 profile, which Owl verifies from Phase 4, decision D9).",
+   "usedBy": [
+    "tests/unit/contract-vectors.test.mjs",
+    "tests/unit/biomesh-strict.test.mjs",
+    "tests/unit/vendor.test.mjs"
+   ],
+   "files": [
+    {
+     "path": "shdccp2-contract/suites/engram1_keys.json",
+     "upstream": "contract_vectors/suites/engram1_keys.json",
+     "lastChanged": "f51b53f5d10d05a788bbd219089ec5661c8759e6",
+     "sha256": "995ef52f9ba3c412ea17097a2504f3c6b34a1ffb002d8a60156fd2c11eca3653"
+    },
+    {
+     "path": "shdccp2-contract/suites/merkle_rules_same_bytes.json",
+     "upstream": "contract_vectors/suites/merkle_rules_same_bytes.json",
+     "lastChanged": "f51b53f5d10d05a788bbd219089ec5661c8759e6",
+     "sha256": "3f707802b5984961b6183ee4a2a963382b3bc6070dd4322a859767c4675d4457"
+    },
+    {
+     "path": "shdccp2-contract/suites/rng_mulberry32.json",
+     "upstream": "contract_vectors/suites/rng_mulberry32.json",
+     "lastChanged": "f51b53f5d10d05a788bbd219089ec5661c8759e6",
+     "sha256": "08b2cd096db86ac737d8b08cf870caac51206cf41a06d7360b2bd81ffb932ead"
+    },
+    {
+     "path": "shdccp2-contract/suites/shdccp2_limits.json",
+     "upstream": "contract_vectors/suites/shdccp2_limits.json",
+     "lastChanged": "f51b53f5d10d05a788bbd219089ec5661c8759e6",
+     "sha256": "6fdced5008a09b2f1b0e93679b1410d4fca217c2d525c509c6cb93b7ed2b3ec9"
+    },
+    {
+     "path": "shdccp2-contract/suites/shdccp2_tamper.json",
+     "upstream": "contract_vectors/suites/shdccp2_tamper.json",
+     "lastChanged": "f51b53f5d10d05a788bbd219089ec5661c8759e6",
+     "sha256": "8e4646c1bbd896185a36ea3bd9ab3a462549c1e58cf20fbe429dc9e4f6d88a4b"
+    },
+    {
+     "path": "shdccp2-contract/suites/shdccp2_tamper_open.json",
+     "upstream": "contract_vectors/suites/shdccp2_tamper_open.json",
+     "lastChanged": "f51b53f5d10d05a788bbd219089ec5661c8759e6",
+     "sha256": "360dc3cc17d0891ddeb7a35c1d5b86951097d29fc0ad4fde3d0cd9243c014fda"
+    }
+   ]
   }
  ]
 }

@@ -1,0 +1,74 @@
+# Decision D7 (RFC 07 section 8.7): measure the shdccp/2 weaves in Chromium, Firefox and WebKit against Node (V8).
+# tests/engines/weave-engines.mjs computes the weaves (chainWeaves, scripts/biomesh-core.js) of 1,000 seeded shards,
+# and Math.hypot on 10,000 seeded four-argument inputs, in each browser through Playwright and in Node, and writes
+# weave-engines.json with the mismatch rate per engine. The rate goes into RFC 07 section 8.7 (BioChainAI/SHD-CCP-core);
+# if an engine differs, Owl's core gains an explicit hypotV8 (D7).
+# Run by hand only (workflow_dispatch): it downloads three browsers. It reads the repository, holds no credentials and
+# writes nothing back; the report is the run's artifact. Actions are pinned to commits (the tag is in the comment).
+name: Weave engines (D7)
+
+on:
+  workflow_dispatch:
+    inputs:
+      shards:
+        description: "Seeded shards whose weaves are compared"
+        required: false
+        default: "1000"
+      hypot:
+        description: "Seeded Math.hypot inputs compared"
+        required: false
+        default: "10000"
+      seed:
+        description: "Seed"
+        required: false
+        default: "20261108"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: weave-engines-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  measure:
+    name: Weaves in Chromium, Firefox and WebKit against Node
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+      - name: Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 22
+      - name: Install Playwright (tests/engines/package-lock.json)
+        working-directory: tests/engines
+        run: npm ci --no-audit --no-fund
+      - name: Browsers
+        working-directory: tests/engines
+        run: npx --no-install playwright install --with-deps chromium firefox webkit
+      - name: Measure
+        env:
+          SHARDS: ${{ inputs.shards }}
+          HYPOT: ${{ inputs.hypot }}
+          SEED: ${{ inputs.seed }}
+        run: node tests/engines/weave-engines.mjs --shards "$SHARDS" --hypot "$HYPOT" --seed "$SEED" --out weave-engines.json
+      - name: Summary
+        run: |
+          node -e '
+            const r = JSON.parse(require("fs").readFileSync("weave-engines.json", "utf8"));
+            const rows = Object.entries(r.engines).map(([n, e]) =>
+              `| ${n} | ${e.browserVersion} | ${e.weaveMismatches}/${r.shards} (${(100 * e.weaveMismatchRate).toFixed(2)} %) | ${e.hypotMismatches}/${r.hypotInputs} (${(100 * e.hypotMismatchRate).toFixed(2)} %) |`);
+            console.log(["## Weave engines (D7)", "", `Node ${r.node.version} (V8 ${r.node.v8}), seed ${r.seed}.`, "",
+              "| Engine | Version | Weaves that differ from Node | Math.hypot results that differ |", "| --- | --- | --- | --- |", ...rows].join("\n"));
+          ' >> "$GITHUB_STEP_SUMMARY"
+      - name: Report
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: weave-engines
+          path: weave-engines.json
+          if-no-files-found: error
+          retention-days: 90
