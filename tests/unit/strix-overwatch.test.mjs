@@ -94,9 +94,20 @@ test("geometry: frames are isometries, addresses sit at their tree distance, 2D 
     }
     for (let i = 0; i < seen.length; i++) for (let j = i + 1; j < seen.length; j++)
       assert.ok(Math.hypot(seen[i][0] - seen[j][0], seen[i][1] - seen[j][1], seen[i][2] - seen[j][2]) > 1e-3, `${dims}: distinct points`);
-    const r = OW.originOf(OW.receiverFrame());
-    for (let s = 0; s < 5; s++) assert.ok(OW.hypDist(r, OW.originOf(OW.lexiconFrame(String(s), dims))) > 1.5, "receiver is apart");
   }
+  const rx = OW.CROSSROADS.map((c) => OW.originOf(OW.receiverFrame(c.id)));
+  assert.deepEqual(OW.CROSSROADS.map((c) => c.people), ["Syrians", "Egyptians", "Greeks", "Romans"]);
+  rx.forEach((h, i) => {
+    assert.equal(h[2], 0, "receivers lie in the plane z = 0");
+    assert.ok(Math.abs(OW.hypDist(origin, h) - 0.8 * Math.log(1 + OW.CROSSROADS[i].km / 60)) < 1e-9);
+    for (let j = i + 1; j < rx.length; j++) assert.ok(OW.hypDist(h, rx[j]) > 0.4, "receivers are apart");
+    const f = OW.frameParameters(OW.receiverFrame(OW.CROSSROADS[i].id));
+    assert.ok(Math.abs(f.distance - f.distanceBack) < 1e-9, "the distance is the same from either zero point");
+    assert.ok(Math.abs(((90 - f.bearingOut) % 360 + 360) % 360 - OW.CROSSROADS[i].bearing) < 1e-9, "compass bearing");
+    assert.ok(Math.abs(Math.abs(f.bearingBack) - 180) < 1e-9, "each sees the other straight along the road");
+  });
+  assert.deepEqual(OW.receiverFrame(), OW.receiverFrame("antioch"));
+  assert.throws(() => OW.receiverFrame("atlantis"));
   const a = OW.originOf(OW.lexiconFrame("0.0", "3D")), b = OW.originOf(OW.lexiconFrame("3.2", "3D")), g = OW.geodesic(a, b, 10);
   assert.equal(g.length, 11);
   let total = 0; for (let i = 1; i < g.length; i++) total += OW.hypDist(g[i - 1], g[i]);
@@ -207,3 +218,33 @@ test("tampering: each change is rejected at its named check", async () => {
   const m = await OW.overwatchInspect({ chain: clone(prose), lexicon: OW.lexiconOf([]), lineage: [], trace: [] });
   assert.equal(m.failed, "meaning");
 });
+
+test("HANDSHAKE/1: the receiver signs what it read and decided; the sender checks signature, echo and verdict", async () => {
+  const b = await journey(), keys = await OW.newSessionKeys(), theirs = await OW.newSessionKeys();
+  const { certificate } = await OW.issueCertificate(b, keys);
+  const wire = JSON.stringify(OW.makeHyperpack({ ...b, certificate }));
+  const { verdict, answer } = await OW.answerHyperpack(wire, theirs, "2026-01-01T00:00:02.000Z");
+  assert.equal(verdict.ok, true);
+  assert.match(answer.line, new RegExp(`^HANDSHAKE/1\\|[0-9a-f]{64}\\|${b.chain.chainId}\\|accepted\\|-$`));
+  const done = await OW.verifyAnswer(answer, wire);
+  assert.deepEqual([done.ok, done.failed, done.checks.map((c) => c.ok)], [true, null, [true, true, true]]);
+
+  // noise on the way: the receiver refuses, and the sender sees the receiver read something else
+  const at = wire.indexOf('"stream":"') + 14, damaged = wire.slice(0, at) + (wire[at] === "0" ? "1" : "0") + wire.slice(at + 1);
+  const far = await OW.answerHyperpack(damaged, theirs);
+  assert.equal(far.verdict.ok, false);
+  assert.match(far.answer.line, /\|refused\|[a-z]+$/);
+  assert.equal((await OW.verifyAnswer(far.answer, wire)).failed, "echo");
+  assert.equal((await OW.verifyAnswer(far.answer, damaged)).failed, "refused");
+
+  // an answer cannot be edited, re-signed by another key under the same seal id, or reused for another package
+  const edited = clone(far.answer); edited.line = edited.line.replace("|refused|", "|accepted|").replace(/\|[a-z]+$/, "|-");
+  assert.equal((await OW.verifyAnswer(edited, damaged)).failed, "signature");
+  const stolen = clone(answer); stolen.publicJwk = keys.publicJwk;
+  assert.equal((await OW.verifyAnswer(stolen, wire)).failed, "signature");
+  assert.equal((await OW.verifyAnswer(answer, wire + " ")).failed, "echo");
+  for (const junk of [null, {}, "x", { format: "HANDSHAKE/1", line: "HANDSHAKE/1|a|b|maybe|-" }]) assert.equal((await OW.verifyAnswer(junk, wire)).failed, "signature");
+  const garbage = await OW.answerHyperpack("not json", theirs);
+  assert.match(garbage.answer.line, /^HANDSHAKE\/1\|[0-9a-f]{64}\|-\|refused\|parse$/);
+});
+

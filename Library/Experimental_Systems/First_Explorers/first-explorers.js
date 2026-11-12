@@ -90,13 +90,21 @@ const STATIONS = [
       "The tamper lab never touches the real journey. It changes one thing in a copy and runs the receiver's checks on it.",
       "OVERWATCH/1 is one signed line: chainId, Merkle root, epoch, lexicon root, dims, the ledger head at inspection, and the scope. A receiver rebuilds the line from the evidence before checking the signature."] },
   { title: "Across space", tab: "overwatch", say: [
-    "Let's send our discovery to another explorer far away. They start in the dark too, but they know the same rules, so they can check everything themselves.",
-    "The package travels the straightest path through hyperbolic space. The receiver repeats every check from the bytes alone. Add noise and watch them refuse it.",
-    "HYPERPACK/1 carries chain, lexicon, lineage, trace and certificate as JSON. The receiver runs parse, the ten Overwatch checks, then commitment and signature."],
+    "Let's send our discovery to explorers far away. They start in the dark too, but they know the same rules, so they can check everything themselves. Then they answer, and we shake hands.",
+    "The package travels the straightest path through hyperbolic space. The receiver repeats every check from the bytes alone and signs an answer. Add noise and watch them refuse it.",
+    "HYPERPACK/1 carries chain, lexicon, lineage, trace and certificate as JSON. The receiver runs parse, the ten Overwatch checks, commitment and signature, then signs a HANDSHAKE/1 line: the hash of what it read, and its verdict. We check signature, echo and verdict."],
     note: [
       "You can save the package and the ledger as files, then go and observe something new.",
       "Integrity needs no trust in the sender or the path: any damage breaks a check. Who the sender is, is a separate question this page does not answer yet.",
-      "The receiver is simulated in this page: the package is serialised, optionally damaged by one hex digit, and verified from that text alone."] },
+      "The receivers are simulated in this page: the package is serialised, optionally damaged by one hex digit, and verified from that text alone. Each receiver signs its answer with its own key for this visit."] },
+  { title: "The way", tab: "overwatch", say: [
+    "Look how far our little signal went. We began as one dot in the dark, and now there are roads from us to four great cities, with a hand shaken at the end.",
+    "Every receiver has its own zero point. From where they stand, they are the centre and we are far away. The distance between us is the same from either side, and that is what lets two strangers agree.",
+    "Each receiver frame is a Lorentz boost of ours. The distance between two zero points is frame-free: the same number from both sides. HANDSHAKE/1 adds the signed echo. RFC 06, the frame-free alignment handshake, is still an outline; this is not it."],
+    note: [
+      "Press the gold button to turn the flat map and look at it from the side.",
+      "In the flat map, the line that crosses it at right angles is hidden inside one point: the zero point. Turn the map into the ball and the point turns out to be a line.",
+      "The 2D disc is the plane z = 0 of the 3D ball. The geodesic through the origin along z is perpendicular to that plane, so in the disc view it projects to a single point. Display geometry only: nothing here is committed."] },
 ];
 const TAMPERS = [
   ["Flip one bit of a packet", "parity", (p) => { p.chain.stream = swapHex(p.chain.stream, 15); }],
@@ -116,7 +124,8 @@ function swapHex(s, i) { return s.slice(0, i) + (s[i] === "0" ? "1" : "0") + s.s
 const S = {
   lens: 0, dims: "2D", station: 0, maxStation: 0, tab: "trace", sound: false,
   keys: null, sealId: null, trace: [], observations: [], chain: null, lineage: [], lexicon: null,
-  certificate: null, report: null, tamper: null, rx: null, busy: false, error: "",
+  certificate: null, report: null, tamper: null, busy: false, error: "",
+  dest: OW.CROSSROADS[0].id, rxKeys: {}, hands: {}, last: null, cube: false,
   draft: { sense: "sound", name: "", sound: { hz: 432, ms: 600 }, light: { hex: "#38bdf8" }, touch: { at: null, path: "" }, symbol: { text: "owl" }, number: { text: "1, 1, 2, 3, 5, 8" } },
   flips: new Set(), selected: null, view: OW.IDENT.slice(), flyTo: null, send: null,
 };
@@ -166,7 +175,7 @@ async function observe() {
     log("strix", "chain.grown", commitment);
     log("strix", "chain.sealed", `${S.sealId}|${await signPayload(S.keys.privateJwk, commitment)}`);
     S.chain = chain; S.observations.push(obs); S.lineage.push(OW.lineageRow(chain)); S.lexicon = OW.lexiconOf(S.observations);
-    S.certificate = null; S.report = null; S.tamper = null; S.rx = null; S.flips.clear();
+    S.certificate = null; S.report = null; S.tamper = null; S.hands = {}; S.last = null; S.flips.clear();
     S.selected = S.lexicon.entries[S.lexicon.entries.length - 1].address;
     S.draft.name = ""; S.draft.touch = { at: null, path: "" };
     if (obs.sense === "sound") tone(obs.hz, obs.ms); else chime(330);
@@ -178,7 +187,7 @@ async function inspect() {
   const { certificate, report } = await OW.issueCertificate(bundle(), S.keys);
   log("overwatch", "inspection", report.ok ? "all ten checks pass" : "failed at " + report.failed);
   if (certificate) log("overwatch", "certificate.issued", certificate.commitment);
-  S.certificate = certificate; S.report = report; S.rx = null; S.busy = false;
+  S.certificate = certificate; S.report = report; S.hands = {}; S.last = null; S.busy = false;
   chime(report.ok ? 528 : 110); render();
 }
 const pack = () => OW.makeHyperpack({ ...bundle(), certificate: S.certificate });
@@ -190,24 +199,33 @@ async function runTamper(index) {
   log("overwatch", "tamper.test", `${label}: ${verdict.ok ? "accepted" : "rejected at " + verdict.failed}`);
   chime(verdict.ok ? 528 : 150); render();
 }
+const place = (id) => OW.CROSSROADS.find((c) => c.id === id);
 function transmit(noise) {
-  if (S.send) return;
-  let wire = JSON.stringify(pack());
-  log("human", "package.sent", `HYPERPACK/1, ${wire.length} characters, to the receiver${noise ? ", through noise" : ""}`);
-  if (noise) {
-    const at = wire.indexOf('"stream":"') + 10 + 3 + (S.trace.length * 7) % 12;
-    wire = swapHex(wire, at);
-  }
-  S.rx = null; S.send = { t: 0, wire, noise };
-  S.flyTo = null; S.view = OW.IDENT.slice(); if (S.dims === "3D") S.view = homeView();
+  if (S.send || !S.certificate) return;
+  const to = S.dest, sent = JSON.stringify(pack());
+  let wire = sent;
+  log("human", "package.sent", `HYPERPACK/1, ${sent.length} characters, to ${place(to).city}${noise ? ", through noise" : ""}`);
+  if (noise) wire = swapHex(sent, sent.indexOf('"stream":"') + 13 + (S.trace.length * 7) % 12);
+  S.send = { t: 0, leg: "out", to, sent, wire, noise };
+  S.last = null; S.flyTo = null; S.view = homeView();
   chime(392); render();
 }
 async function arrive() {
-  const { wire, noise } = S.send;
-  const verdict = await OW.verifyHyperpack(wire);
-  S.send = null; S.rx = { verdict, noise, size: wire.length };
-  log("overwatch", "package.received", verdict.ok ? "accepted: every check repeated by the receiver" : "refused at " + verdict.failed);
+  const m = S.send;
+  S.rxKeys[m.to] = S.rxKeys[m.to] || await OW.newSessionKeys();
+  const { verdict, answer } = await OW.answerHyperpack(m.wire, S.rxKeys[m.to]);
+  log("overwatch", "package.received", `${place(m.to).city}: ${verdict.ok ? "accepted, every check repeated" : "refused at " + verdict.failed}`);
+  log("overwatch", "handshake.answered", answer.line);
+  Object.assign(m, { verdict, answer, leg: "back", t: 0, done: false });
   chime(verdict.ok ? 660 : 130); render();
+}
+async function complete() {
+  const m = S.send, result = await OW.verifyAnswer(m.answer, m.sent);
+  S.hands[m.to] = { verdict: m.verdict, answer: m.answer, result, noise: m.noise, size: m.wire.length };
+  S.last = m.to; S.send = null;
+  log("human", result.ok ? "handshake.complete" : "handshake.failed", `${place(m.to).city}: ${result.ok ? "signature, echo and verdict all hold" : "stopped at " + result.failed}`);
+  if (result.ok) S.maxStation = Math.max(S.maxStation, 8);
+  chime(result.ok ? 792 : 120); render();
 }
 function download(name, value) {
   const a = h("a", { href: URL.createObjectURL(new Blob([JSON.stringify(value, null, 1)], { type: "application/json" })), download: name });
@@ -216,7 +234,9 @@ function download(name, value) {
 function go(n, unlock) {
   if (unlock) S.maxStation = Math.max(S.maxStation, n);
   if (n > S.maxStation) return;
-  S.station = n; S.tab = STATIONS[n].tab; S.error = "";
+  const sceneChanges = (n >= 7) !== (S.station >= 7);
+  S.station = n;
+  if (sceneChanges && !S.send) { S.flyTo = null; S.view = homeView(); } S.tab = STATIONS[n].tab; S.error = "";
   render();
 }
 
@@ -349,16 +369,35 @@ function controlsFor(n) {
       h("select", { id: "tamperSel" }, ...TAMPERS.map(([l], i) => h("option", { value: i }, l)))),
     S.certificate && h("div", { class: "row" }, h("button", { class: "btn warn", onclick: () => runTamper(Number($("tamperSel").value)) }, "Tamper and verify")),
   ];
-  return [
+  const hand = S.hands[S.dest], sending = !!S.send;
+  const destPick = h("div", { class: "sense-pick", style: "grid-template-columns:repeat(4,1fr)", role: "group", "aria-label": "Receiver" }, ...OW.CROSSROADS.map((c) =>
+    h("button", { "aria-pressed": String(S.dest === c.id), style: "--c:#c084fc", disabled: sending, onclick: () => { S.dest = c.id; S.last = S.hands[c.id] ? c.id : S.last; render(); } },
+      h("i", { style: S.hands[c.id] ? `background:${S.hands[c.id].result.ok ? "#34d399" : "#fb7185"}` : "" }), c.city)));
+  if (n === 7) return [
     !S.certificate && h("span", { class: "note" }, "The journey changed since the last certificate. Run the inspection at station 6 first."),
+    destPick,
     h("div", { class: "row" },
-      h("button", { class: "btn gold", disabled: !S.certificate || !!S.send, onclick: () => transmit(false) }, "Send to the receiver"),
-      h("button", { class: "btn warn", disabled: !S.certificate || !!S.send, onclick: () => transmit(true) }, "Send through noise")),
-    S.rx && h("div", { class: "row" }, h("span", { class: "badge " + (S.rx.verdict.ok ? "ok" : "bad") }, S.rx.verdict.ok ? "RECEIVER ACCEPTED" : "RECEIVER REFUSED AT " + S.rx.verdict.failed.toUpperCase())),
+      h("button", { class: "btn gold", disabled: !S.certificate || sending, onclick: () => transmit(false) }, `Send to ${place(S.dest).city}`),
+      h("button", { class: "btn warn", disabled: !S.certificate || sending, onclick: () => transmit(true) }, "Send through noise")),
+    sending && h("span", { class: "note" }, S.send.leg === "out" ? "The package is on its way…" : "Their answer is on its way back…"),
+    hand && !sending && h("div", { class: "row" },
+      h("span", { class: "badge " + (hand.result.ok ? "ok" : "bad") }, hand.result.ok ? "HANDSHAKE COMPLETE" : "NO HANDSHAKE: " + hand.result.failed.toUpperCase()),
+      h("button", { class: "btn ghost", onclick: () => { S.flyTo = OW.originOf(OW.receiverFrame(S.dest)); } }, "Stand where they stand")),
     h("div", { class: "row" },
       h("button", { class: "btn ghost", disabled: !S.certificate, onclick: () => download(`hyperpack-${S.chain.chainId}.json`, pack()) }, "Save package"),
       h("button", { class: "btn ghost", onclick: () => download("first-explorers-trace.json", S.trace) }, "Save ledger")),
-    h("div", { class: "row" }, h("button", { class: "btn", onclick: () => go(1) }, "Observe something new")),
+    S.maxStation >= 8 && h("div", { class: "row" }, nextBtn("See the way")),
+  ];
+  const met = OW.CROSSROADS.filter((c) => S.hands[c.id] && S.hands[c.id].result.ok).map((c) => c.city);
+  return [
+    h("span", { class: "note" }, met.length ? `Hands joined so far: ${met.join(", ")}.` : "No handshake stands for this journey yet. Send it again from station 7."),
+    S.dims === "2D" && h("div", { class: "row" }, h("button", { class: "btn gold", onclick: () => { S.dims = "3D"; S.flyTo = null; S.view = homeView(); render(); } }, "Turn the map: see the bridge")),
+    h("div", { class: "row" },
+      h("button", { class: "btn", onclick: () => go(7) }, "Reach another people"),
+      h("button", { class: "btn", onclick: () => go(1) }, "Observe something new")),
+    h("div", { class: "row" },
+      h("a", { class: "btn ghost", href: "../Engram_Mind_Eye.html" }, "Meet the STRIX familiar"),
+      h("a", { class: "btn ghost", href: "../../SHD-CCP/SHD-CCP_Introduction.html" }, "SHD-CCP introduction")),
   ];
 }
 
@@ -374,15 +413,23 @@ function tabPacket() {
   let hex = original; for (const b of S.flips) hex = OW.flipBit(hex, b);
   const d = OW.decodePacket(hex);
   const fieldOf = (bit) => OW.PACKET_FIELDS.find((f) => bit <= f.hi && bit >= f.lo).key;
+  const bitButtons = [...d.bits].map((v, i) => {
+    const bit = 63 - i;
+    return h("button", { class: (v === "1" ? "on" : "") + (S.flips.has(bit) ? " flipped" : ""), style: `--c:${FIELD[fieldOf(bit)][0]}`, title: `bit ${bit} (${fieldOf(bit)})`,
+      onclick: () => { S.flips.has(bit) ? S.flips.delete(bit) : S.flips.add(bit); chime(S.flips.size ? 160 : 440); render(); } }, v);
+  });
   return [
     h("div", null, h("h3", null, "Packet 0 of the chain (64 bits)"), h("div", { class: "hexbig" }, d.hex.replace(/(.{4})/g, "$1 ").trim())),
     h("div", { class: "row" }, h("span", { class: "badge " + (d.parityOk ? "ok" : "bad") }, d.parityOk ? "PARITY HOLDS" : "PARITY BROKEN"),
       S.flips.size > 0 && h("button", { class: "btn ghost", onclick: () => { S.flips.clear(); render(); } }, "Restore")),
-    h("div", { class: "bits", role: "group", "aria-label": "The 64 bits, bit 63 first. Select a bit to flip it." }, ...[...d.bits].map((v, i) => {
-      const bit = 63 - i;
-      return h("button", { class: (v === "1" ? "on" : "") + (S.flips.has(bit) ? " flipped" : ""), style: `--c:${FIELD[fieldOf(bit)][0]}`, title: `bit ${bit} (${fieldOf(bit)})`,
-        onclick: () => { S.flips.has(bit) ? S.flips.delete(bit) : S.flips.add(bit); chime(S.flips.size ? 160 : 440); render(); } }, v);
-    })),
+    h("div", { class: "row" }, h("div", { class: "seg", role: "group", "aria-label": "Arrangement of the 64 bits" },
+      h("button", { "aria-pressed": String(!S.cube), onclick: () => { S.cube = false; render(); } }, "Row of 64"),
+      h("button", { "aria-pressed": String(S.cube), onclick: () => { S.cube = true; render(); } }, "Cube 4 × 4 × 4")),
+      S.cube && h("span", { class: "note" }, "1 → 4 → 16 → 64")),
+    S.cube
+      ? h("div", { class: "cube", role: "group", "aria-label": "The 64 bits as four layers of four by four, bit 63 first. Select a bit to flip it." },
+        ...[0, 1, 2, 3].map((layer) => h("div", null, h("div", { class: "bits four" }, ...bitButtons.slice(layer * 16, layer * 16 + 16)), h("span", { class: "note" }, `layer ${layer + 1}`))))
+      : h("div", { class: "bits", role: "group", "aria-label": "The 64 bits, bit 63 first. Select a bit to flip it." }, ...bitButtons),
     h("div", { class: "fields" }, ...OW.PACKET_FIELDS.flatMap((f) => [
       h("i", { style: `--c:${FIELD[f.key][0]}` }),
       h("code", null, `${f.key} = ${f.key === "quat32" ? "0x" + d.quat32.toString(16).toUpperCase().padStart(8, "0") : d[f.key]}`),
@@ -429,10 +476,20 @@ function tabOverwatch() {
   if (S.tamper) out.push(h("div", null, h("h3", null, "Tamper lab: " + S.tamper.label),
     h("div", { class: "row", style: "margin-bottom:7px" }, h("span", { class: "badge " + (S.tamper.verdict.ok ? "ok" : "bad") }, S.tamper.verdict.ok ? "ACCEPTED" : "REJECTED AT " + S.tamper.verdict.failed.toUpperCase())),
     checkList(S.tamper.verdict.checks)));
-  if (S.rx) out.push(h("div", null, h("h3", null, `Receiver's verdict${S.rx.noise ? " (one hex digit damaged on the way)" : ""}`),
-    h("div", { class: "row", style: "margin-bottom:7px" }, h("span", { class: "badge " + (S.rx.verdict.ok ? "ok" : "bad") }, S.rx.verdict.ok ? "ACCEPTED" : "REFUSED AT " + S.rx.verdict.failed.toUpperCase()),
-      h("span", { class: "note" }, `${S.rx.size} characters received`)),
-    checkList(S.rx.verdict.checks)));
+  const hd = S.last && S.hands[S.last];
+  if (hd) {
+    const c = place(S.last), f = OW.frameParameters(OW.receiverFrame(S.last));
+    out.push(h("div", null, h("h3", null, `${c.city}'s verdict${hd.noise ? " (one hex digit damaged on the way)" : ""}`),
+      h("div", { class: "row", style: "margin-bottom:7px" }, h("span", { class: "badge " + (hd.verdict.ok ? "ok" : "bad") }, hd.verdict.ok ? "ACCEPTED" : "REFUSED AT " + hd.verdict.failed.toUpperCase()),
+        h("span", { class: "note" }, `${hd.size} characters received`)),
+      checkList(hd.verdict.checks)));
+    out.push(h("div", { class: "box" + (hd.result.ok ? " cert" : "") }, h("h3", null, `Handshake with ${c.city} (HANDSHAKE/1)`),
+      h("code", null, hd.answer.line),
+      h("dl", { class: "kv", style: "margin:7px 0" }, h("dt", null, "signed by"), h("dd", null, hd.answer.sealId + ` (${c.city}'s key for this visit)`),
+        h("dt", null, "distance"), h("dd", null, `${f.distance.toFixed(3)} from our zero point, ${f.distanceBack.toFixed(3)} from theirs`),
+        h("dt", null, "bearing"), h("dd", null, `we see them at ${c.bearing}° east of north; they see us straight back along the same road`)),
+      checkList(hd.result.checks)));
+  }
   return out;
 }
 function tabTrace() {
@@ -454,6 +511,8 @@ function render() {
   $("stationTitle").textContent = `${S.station}. ${st.title}`;
   $("strixSay").textContent = st.say[S.lens];
   $("lensNote").textContent = st.note[S.lens];
+  $("bridgeSay").textContent = st.bridge ? st.bridge[S.lens] : "";
+  $("bridgeSay").hidden = !st.bridge;
   $("controls").replaceChildren(...controlsFor(S.station).filter(Boolean));
   for (const b of $("lensSeg").children) b.setAttribute("aria-pressed", String(Number(b.dataset.lens) === S.lens));
   for (const b of $("dimSeg").children) b.setAttribute("aria-pressed", String(b.dataset.dims === S.dims));
@@ -464,7 +523,8 @@ function render() {
   $("dragHint").textContent = S.dims === "2D" ? "Drag to travel. Select a dot to fly to it." : "Drag to turn. Select a dot to fly to it.";
   const seen = [...new Set(S.observations.map((o) => o.sense))];
   $("legend").replaceChildren(h("span", { style: "--c:#e2e8f0" }, h("i"), "us"), ...seen.map((s) => h("span", { style: `--c:${SENSE[s].c}` }, h("i"), SENSE[s].label)),
-    S.maxStation >= 7 && h("span", { style: "--c:#c084fc" }, h("i"), "receiver") || "");
+    S.station >= 7 && h("span", { style: "--c:#c084fc" }, h("i"), "the crossroads") || "",
+    S.station >= 8 && S.dims === "3D" && h("span", { style: "--c:#fbbf24" }, h("i"), "the bridge") || "");
 }
 function toggleSound() { S.sound = !S.sound; render(); if (S.sound) chime(440); }
 function select(address) {
@@ -473,7 +533,8 @@ function select(address) {
   if (S.tab !== "chain" && S.station !== 1) S.tab = "chain";
   render();
 }
-const homeView = () => OW.lmul(OW.rotX(-0.35), OW.rotY(0.5));
+// 3D home: the lexicon seen at a slant; from station 7 the map plane lies like ground and its normal stands upright.
+const homeView = () => (S.dims === "2D" ? OW.IDENT.slice() : S.station >= 7 ? OW.rotX(-1.15) : OW.lmul(OW.rotX(-0.35), OW.rotY(0.5)));
 
 // ─── the space canvas ────────────────────────────────────────────────────────
 const cv = $("space"), ctx = cv.getContext("2d");
@@ -492,17 +553,19 @@ function screen(hp) {
   const k = 1 / (1 - 0.28 * b[2]);
   return { x: W / 2 + R * b[0] * k * 0.78, y: W / 2 - R * b[1] * k * 0.78, z: b[2], k: k * 0.78, r: Math.hypot(...b) };
 }
+let veil = 1;   // below 1 while something is drawn as background (the lexicon, from station 7 on)
 function path(points, colour, width = 1, alpha = 1) {
   ctx.beginPath();
   points.forEach((p, i) => (i ? ctx.lineTo(p.x, p.y) : ctx.moveTo(p.x, p.y)));
-  ctx.strokeStyle = colour; ctx.lineWidth = width; ctx.globalAlpha = alpha; ctx.stroke(); ctx.globalAlpha = 1;
+  ctx.strokeStyle = colour; ctx.lineWidth = width; ctx.globalAlpha = alpha * veil; ctx.stroke(); ctx.globalAlpha = 1;
 }
 function dot(p, radius, colour, glow = 0) {
   ctx.beginPath(); ctx.arc(p.x, p.y, Math.max(0.6, radius * p.k * (1 - 0.55 * p.r * p.r)), 0, 7);
-  ctx.fillStyle = colour; ctx.shadowColor = colour; ctx.shadowBlur = glow; ctx.fill(); ctx.shadowBlur = 0;
+  const ga = ctx.globalAlpha;
+  ctx.fillStyle = colour; ctx.shadowColor = colour; ctx.shadowBlur = glow * veil; ctx.globalAlpha = ga * veil; ctx.fill(); ctx.shadowBlur = 0; ctx.globalAlpha = ga;
 }
 function label(p, text, colour) {
-  if (p.r > 0.93) return;
+  if (p.r > 0.95 || veil < 1) return;
   ctx.font = `500 ${Math.round(11 * Math.max(0.75, 1 - 0.3 * p.r))}px Inter, system-ui, sans-serif`;
   ctx.fillStyle = colour; ctx.globalAlpha = 0.9; ctx.fillText(text, p.x + 8, p.y - 7); ctx.globalAlpha = 1;
 }
@@ -539,8 +602,9 @@ function draw(time) {
   }
 
   // the lexicon: origin → sense → observation, along geodesics
-  const showTree = S.station >= 3 && entries.length;
+  const showTree = S.station >= 3 && entries.length, far = S.station >= 7;
   if (showTree) {
+    veil = far ? 0.2 : 1;
     const senses = [...new Set(entries.map((e) => e.address.split(".")[0]))];
     for (const s of senses) {
       const hp = OW.originOf(OW.lexiconFrame(s, S.dims)), c = SENSE[OW.SENSES[s]].c;
@@ -552,8 +616,9 @@ function draw(time) {
       path(OW.geodesic(parent, hp, 14).map(screen), c, 1, 0.5);
       const p = screen(hp), on = e.address === S.selected;
       dot(p, on ? 7 : 5, on ? "#ffffff" : c, on ? 16 : 6); label(p, e.name, on ? "#ffffff" : "#cbd5e1");
-      hits.push({ x: p.x, y: p.y, address: e.address });
+      if (!far) hits.push({ x: p.x, y: p.y, address: e.address });
     }
+    veil = 1;
   }
   if (o && S.station === 3) {   // the crystal of the latest line
     const c = OW.crystalPoint(utf8(o.line + "\n")).point, p = screen(ballToHyp(S.dims === "2D" ? [c[0] * 0.999, c[1] * 0.999, 0] : c.map((v) => v * 0.999)));
@@ -562,16 +627,35 @@ function draw(time) {
     ctx.fillStyle = "#fbbf24"; ctx.shadowColor = "#fbbf24"; ctx.shadowBlur = 14; ctx.fill(); ctx.shadowBlur = 0;
     label(p, "crystal", "#fbbf24");
   }
-  if (S.maxStation >= 7 && S.station >= 6) {   // the receiver and the path to it
-    const rh = OW.originOf(OW.receiverFrame()), geo = OW.geodesic(ORIGIN, rh, 40);
-    path(geo.map(screen), "#c084fc", 1, 0.35);
-    const p = screen(rh); dot(p, 6, "#c084fc", 12); label(p, "receiver", "#c084fc");
-    if (S.send) {
-      S.send.t = Math.min(1, S.send.t + 0.008);
-      const at = Math.min(geo.length - 1, Math.floor(S.send.t * (geo.length - 1)));
-      path(geo.slice(0, at + 1).map(screen), S.send.noise && S.send.t > 0.5 ? "#fb7185" : "#fbbf24", 2.2, 0.9);
-      dot(screen(geo[at]), 6, S.send.noise && S.send.t > 0.5 ? "#fb7185" : "#fbbf24", 18);
-      if (S.send.t >= 1 && !S.send.done) { S.send.done = true; arrive(); }
+  if (S.station >= 7) {   // the crossroads: one road (geodesic) from our zero point to each receiver
+    for (const c of OW.CROSSROADS) {
+      const rh = OW.originOf(OW.receiverFrame(c.id)), geo = OW.geodesic(ORIGIN, rh, 40), hand = S.hands[c.id], on = c.id === S.dest;
+      const colour = hand ? (hand.result.ok ? "#34d399" : "#fb7185") : "#c084fc";
+      path(geo.map(screen), colour, hand && hand.result.ok ? 1.8 : 1, on || hand ? 0.7 : 0.3);
+      const p = screen(rh); dot(p, on ? 7 : 5, colour, on ? 14 : 8);
+      ctx.textAlign = c.id === "rome" ? "right" : "left";
+      label(c.id === "rome" ? { ...p, x: p.x - 16 } : p, S.lens === 0 ? c.city : `${c.city} · ${c.people}`, on ? "#f5f3ff" : "#c4b5fd");
+      ctx.textAlign = "left";
+      if (S.send && S.send.to === c.id) {
+        const m = S.send, back = m.leg === "back";
+        m.t = Math.min(1, m.t + 0.01);
+        const at = Math.round((back ? 1 - m.t : m.t) * (geo.length - 1));
+        const tint = back ? (m.verdict.ok ? "#34d399" : "#fb7185") : m.noise && m.t > 0.5 ? "#fb7185" : "#fbbf24";
+        path((back ? geo.slice(at) : geo.slice(0, at + 1)).map(screen), tint, 2.2, 0.9);
+        dot(screen(geo[at]), 6, tint, 18);
+        if (m.t >= 1 && !m.done) { m.done = true; (back ? complete : arrive)(); }
+      }
+    }
+  }
+  if (S.station >= 8) {   // the bridge: the geodesic through the zero point at right angles to the whole map
+    const axis = [];
+    for (let i = -40; i <= 40; i++) { const d = i * 0.12; axis.push([0, 0, Math.sinh(d), Math.cosh(d)]); }
+    if (S.dims === "3D") {
+      ctx.shadowColor = "#fbbf24"; ctx.shadowBlur = 16; path(axis.map(screen), "#fbbf24", 2.4, 0.95); ctx.shadowBlur = 0;
+      label(screen(axis[axis.length - 6]), "the source", "#fde68a");
+    } else {
+      const c0 = screen(ORIGIN), ring = 10 + 4 * Math.sin(t * 2);
+      ctx.beginPath(); ctx.arc(c0.x, c0.y, ring, 0, 7); ctx.strokeStyle = "#fbbf24"; ctx.lineWidth = 1.6; ctx.shadowColor = "#fbbf24"; ctx.shadowBlur = 14; ctx.stroke(); ctx.shadowBlur = 0;
     }
   }
   // us
@@ -622,11 +706,11 @@ cv.addEventListener("pointercancel", () => { drag = null; });
 $("lensSeg").addEventListener("click", (e) => { if (e.target.dataset.lens) { S.lens = Number(e.target.dataset.lens); render(); } });
 $("dimSeg").addEventListener("click", (e) => {
   if (!e.target.dataset.dims || S.send) return;
-  S.dims = e.target.dataset.dims; S.flyTo = null; S.view = S.dims === "3D" ? homeView() : OW.IDENT.slice(); render();
+  S.dims = e.target.dataset.dims; S.flyTo = null; S.view = homeView(); render();
 });
 $("tabs").addEventListener("click", (e) => { if (e.target.dataset.tab) { S.tab = e.target.dataset.tab; render(); } });
 $("soundBtn").addEventListener("click", toggleSound);
-$("homeBtn").addEventListener("click", () => { S.flyTo = null; S.view = S.dims === "3D" ? homeView() : OW.IDENT.slice(); });
+$("homeBtn").addEventListener("click", () => { S.flyTo = null; S.view = homeView(); });
 $("aboutBtn").addEventListener("click", () => $("about").showModal());
 $("aboutClose").addEventListener("click", () => $("about").close());
 window.addEventListener("resize", resize);

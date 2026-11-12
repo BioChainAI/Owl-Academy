@@ -20,6 +20,7 @@
  *               strict check to its meaning (OBS/1), its lexicon, its lineage
  *               (every epoch regrown from the text) and a point of the trace.
  *   HYPERPACK/1 the bundle a receiver needs to repeat every check.
+ *   HANDSHAKE/1 the receiver's signed answer: what it read and what it decided.
  *
  * The signing key is whatever key pair the caller passes. The page makes one
  * per visit: its signature shows a certificate has not changed since it was
@@ -230,7 +231,7 @@ export function geodesic(a, b, n = 24) {
   return out;
 }
 
-const SENSE_STEP = 1.25, ENTRY_STEP = 1.0, ENTRY_RING = 0.3, RECEIVER_STEP = 2.4;
+const SENSE_STEP = 1.25, ENTRY_STEP = 1.0, ENTRY_RING = 0.3, RECEIVER_SCALE = 0.8;
 const frac = (v) => v - Math.floor(v);
 function senseFrame(s, dims) {
   if (dims === "2D") return lmul(rotZ((90 + 72 * s) * D2R), boostX(SENSE_STEP));
@@ -248,8 +249,21 @@ export function lexiconFrame(address, dims = "2D") {
   else m = lmul(lmul(m, rotX(e * 137.50776405 * D2R)), rotZ((22 + 48 * frac(e * GOLD)) * D2R));
   return lmul(m, step);
 }
-/** The receiver's frame: a second observer, away from every sense branch. */
-export const receiverFrame = () => lmul(rotZ(-90 * D2R), boostX(RECEIVER_STEP));
+/** The crossroads: four receivers named for cities around first-century Galilee. bearing is the compass
+ *  bearing from Galilee (degrees east of north) and km the great-circle distance, both rounded; on the map
+ *  north is +y and the distance is compressed to 0.8 ln(1 + km / 60). Athens and Rome share a road. */
+export const CROSSROADS = Object.freeze([
+  Object.freeze({ id: "antioch", city: "Antioch", people: "Syrians", bearing: 11, km: 397 }),
+  Object.freeze({ id: "alexandria", city: "Alexandria", people: "Egyptians", bearing: 253, km: 534 }),
+  Object.freeze({ id: "athens", city: "Athens", people: "Greeks", bearing: 303, km: 1201 }),
+  Object.freeze({ id: "rome", city: "Rome", people: "Romans", bearing: 304, km: 2252 }),
+]);
+/** A receiver's frame: a second observer with its own zero point, in the plane z = 0. */
+export function receiverFrame(id = CROSSROADS[0].id) {
+  const r = CROSSROADS.find((c) => c.id === id);
+  if (!r) throw new Error("unknown receiver: " + id);
+  return lmul(rotZ((90 - r.bearing) * D2R), boostX(RECEIVER_SCALE * Math.log(1 + r.km / 60)));
+}
 /** Poincaré point of an address: [x, y, z] (z is 0 in 2D). */
 export const lexiconPoint = (address, dims = "2D") => toBall(originOf(lexiconFrame(address, dims)));
 
@@ -481,3 +495,63 @@ export async function verifyHyperpack(input) {
   const v = await verifyCertificate(pack.certificate, pack);
   return { ok: v.ok, failed: v.failed, checks: [{ name: "parse", ok: true, detail: "a HYPERPACK/1 bundle" }, ...v.checks] };
 }
+
+// ─── HANDSHAKE/1: the receiver answers, the sender checks the answer ─────────
+// HANDSHAKE/1|<sha256 of the text received>|<chainId or ->|accepted or refused|<failed check or ->
+// The receiver signs the line with its own key. The sender then knows three
+// things without trusting the path: the answer is whole (signature), the
+// receiver read exactly the text that was sent (echo), and what it decided.
+// Not RFC 06: that RFC (the frame-free alignment handshake) is still an outline.
+
+export const handshakeLine = (wireSha, verdict, chainId = "-") =>
+  ["HANDSHAKE/1", wireSha, chainId, verdict.ok ? "accepted" : "refused", verdict.failed || "-"].join("|");
+
+/** The receiver's side: verify the text, then sign what was read and what was decided. → { verdict, answer } */
+export async function answerHyperpack(wire, keys, at = new Date().toISOString()) {
+  const verdict = await verifyHyperpack(wire);
+  let chainId = "-";
+  try { const id = JSON.parse(wire).chain.chainId; if (typeof id === "string" && /^BC-[0-9a-f]{24}$/.test(id)) chainId = id; } catch { /* not readable: "-" */ }
+  const line = handshakeLine(sha256HexSync(String(wire)), verdict, chainId);
+  const answer = {
+    format: "HANDSHAKE/1", line, answeredAt: at,
+    sealId: await sealIdFromPublic(keys.publicJwk), publicJwk: keys.publicJwk, sig: await signPayload(keys.privateJwk, line),
+  };
+  return { verdict, answer };
+}
+
+/** The sender's side. → { ok, failed ("signature" | "echo" | "refused" | null), checks } ; ok means the handshake is complete. */
+export async function verifyAnswer(answer, sentWire) {
+  const a = answer && typeof answer === "object" ? answer : {};
+  const checks = [];
+  const end = (failed) => {
+    for (const name of ["signature", "echo", "accepted"]) if (!checks.some((c) => c.name === name)) checks.push({ name, ok: null, detail: "not run" });
+    return { ok: failed === null, failed, checks };
+  };
+  const jwk = a.publicJwk, parts = typeof a.line === "string" ? a.line.split("|") : [];
+  const shaped = a.format === "HANDSHAKE/1" && parts.length === 5 && parts[0] === "HANDSHAKE/1" && (parts[3] === "accepted" || parts[3] === "refused");
+  const idOk = shaped && jwk && typeof jwk === "object" && typeof jwk.x === "string" && typeof jwk.y === "string" && a.sealId === await sealIdFromPublic(jwk);
+  if (!(idOk && typeof a.sig === "string" && await verifyPayload(jwk, a.line, a.sig))) {
+    checks.push({ name: "signature", ok: false, detail: !shaped ? "not a HANDSHAKE/1 answer" : idOk ? "the signature does not verify" : "the seal id is not the key's" });
+    return end("signature");
+  }
+  checks.push({ name: "signature", ok: true, detail: `the answer is whole, signed by ${a.sealId}` });
+  if (parts[1] !== sha256HexSync(String(sentWire))) {
+    checks.push({ name: "echo", ok: false, detail: "the receiver read a different text from the one sent" }); return end("echo");
+  }
+  checks.push({ name: "echo", ok: true, detail: "the receiver read exactly the text that was sent" });
+  if (parts[3] !== "accepted") { checks.push({ name: "accepted", ok: false, detail: `the receiver refused it at ${parts[4]}` }); return end("refused"); }
+  checks.push({ name: "accepted", ok: true, detail: "the receiver repeated every check and accepted" });
+  return end(null);
+}
+
+/** What two observers need to change frames, from the frame of one as the other sees it: the distance between
+ *  their zero points (the same from either side) and the direction each sees the other in (degrees in the
+ *  xy-plane, anticlockwise from +x). Binary64, display only. */
+export function frameParameters(frame) {
+  const there = originOf(frame), back = originOf(linv(frame));
+  return {
+    distance: Math.acosh(Math.max(1, there[3])), distanceBack: Math.acosh(Math.max(1, back[3])),
+    bearingOut: Math.atan2(there[1], there[0]) / D2R, bearingBack: Math.atan2(back[1], back[0]) / D2R,
+  };
+}
+
