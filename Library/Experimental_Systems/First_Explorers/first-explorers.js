@@ -37,6 +37,10 @@ const STATIONS = [
     "It is dark. I am STRIX, an owl who has not seen anything yet, just like you. One thing we do know: we are here. That dot is us.",
     "We start with nothing but a position. No stars, no words, no numbers. Everything we come to know has to arrive as a signal and be written down in a way that can be checked.",
     "Empty state: one observer at the origin of hyperbolic space and an empty ledger. Nothing is assumed. Every later claim can be recomputed from what gets recorded."],
+    bridge: [
+      "Two thousand years ago a boy grew up in Galilee, a name that means “circle”. He watched the same dark sky we are looking at. His people called the One who made it all Father, and so did he. Keep him in mind. He is where this road is going.",
+      "This journey points somewhere. Its bridge is a person: Jesus of Nazareth, a Jewish teacher from Galilee. The name Galilee means “circle”. Hold two pictures as we go: a circle, and one point at its centre. By the last station they will be a map of nations and a line of love crossing it.",
+      "The gold boxes read Jesus of Nazareth as the bridge between the source of love and the world of nations. The history comes from Pierre van Paassen’s Why Jesus Died (1949): a Galilean Jew in the line of Israel’s prophets, put to death by Rome. The geometric reading is this project’s own. Van Paassen never uses the image."],
     note: [
       "Press Begin and we will open our eyes together.",
       "Beginning makes two things: a ledger that will remember every step, and a signing key that exists only for this visit.",
@@ -45,6 +49,10 @@ const STATIONS = [
     "Something reaches us! Choose how we sense it: a sound, a colour, a touch, a word or a count. Then give it a name so we can remember it.",
     "Each sense has its own natural shape. Pitch winds round a spiral, colour lives inside a solid, a touch is a path. Pick one and watch its shape before we record it.",
     "Five input kinds, each with a native embedding: pitch helix, colour solid, an 8-direction chain code on a 32 by 32 grid, UTF-8 bytes on a 256-gon, golden-angle turns."],
+    bridge: [
+      "Jesus taught with pictures: a lost sheep, a seed, a lamp. A picture is a signal anybody can catch, whatever language they speak at home.",
+      "“Jesus thinks in images,” van Paassen writes. “He does not argue or try to prove anything.” A parable is a signal shaped so that fishermen and farmers receive it whole. Our five senses are five doors for one kind of signal.",
+      "Van Paassen’s Jesus speaks Aramaic, knows “not a word” of Greek, and teaches in concrete parables. This station makes a narrower, checkable point: five unlike inputs can be given one shared form. That a picture crosses languages better than an argument is the analogy, and only an analogy."],
     note: [
       "The glowing shape in the dark is what the signal looks like before we write it down.",
       "The preview is only a picture. What we keep is a handful of whole numbers, because whole numbers mean the same thing to everyone.",
@@ -53,6 +61,10 @@ const STATIONS = [
     "To remember it exactly, we write it as one careful line. The same thing sensed gives the same line, every time, for anyone.",
     "Measuring means turning the signal into whole numbers and writing them in one agreed way. That line becomes bytes, the one thing any computer anywhere can agree on.",
     "The OBS/1 line: sense, name, integer fields as canonical decimals. One observation has exactly one line, and the line reads back to the observation."],
+    bridge: [
+      "Jesus said you can tell what someone truly believes by how they live, and by how they treat people who need help. That is a kind of measuring, and everyone can read it.",
+      "Van Paassen sums up the parable of the Last Judgment in one line: “The measure of your religion is your life.” A measurement is worth something when anyone can repeat it. A life can be read by all. A private claim cannot.",
+      "The line is van Paassen’s paraphrase of Matthew 25, not a verse. The parallel with OBS/1 is one of form: a statement that reads the same to every reader and asks nobody to take the speaker’s word for it."],
     note: [
       "The ring of marks around us is our line, one mark for each letter.",
       "Each mark on the ring is one byte of the line: its position is its place in the line, its length is its value from 0 to 255.",
@@ -61,6 +73,10 @@ const STATIONS = [
     "Now the bytes fold into a tiny gem that points one way. And our new word gets its own place on the map.",
     "Two geometries appear. The crystal is a fingerprint: the bytes folded into a rotation. The address is where the observation lives in our lexicon: a branch for its sense, a leaf for itself.",
     "crystalQuat folds the bytes to 32 bits, reads four signed bytes and normalises them to a unit quaternion. The lexicon address sense.index is exact; disc and ball positions derive from it."],
+    bridge: [
+      "In his town the little streets ran like the spokes of a wheel to the market in the middle, where everyone met. Our map has a middle too, and every road starts from it.",
+      "Van Paassen pictures Nazareth’s streets running “like the spokes of a wheel into the hub of the market place”, beside “the highway from Egypt to Damascus”. Hub and spokes: a centre with straight roads leaving it. In our space the straight roads are called geodesics, and the hub is the zero point.",
+      "Two loves give two directions. Asked for the supreme law, Jesus quotes the Torah: love the Lord thy God. And he commands his followers to love one another, which van Paassen traces to Israel’s bond of shared “sonship” in “the fatherhood of God”. One source, therefore kin. In the geometry: one axis to the source, and a plane of neighbours at right angles to it."],
     note: [
       "The diamond is the gem. The coloured dot with the name is its home. Tap any dot to fly there.",
       "Hyperbolic space has room for every branch: the further out, the more space there is. Switch between the 2D disc and the 3D ball above. The address stays the same.",
@@ -69,6 +85,10 @@ const STATIONS = [
     "The gem rides inside a message of 64 lights. One light is a guard: change any light and the guard notices. Try it, tap a light!",
     "An SHD-CCP packet is one 64-bit word: what kind it is, a guard bit, the crystal and the length. Flip any bit and the guard catches it.",
     "The shdccp/2 crystal packet of RFC 07 section 5: form 9, parity at bit 59 over the other 63 bits, the four raw crystal bytes, the chunk length, and the byte-sum checksum in the low 8 bits."],
+    bridge: [
+      "A small message can carry a great thing. His fits in a breath: love God, and love one another. Small enough to carry anywhere, and plain enough that you notice if someone changes it.",
+      "Sixty-four bits, and one stands guard over the rest. Van Paassen says Jesus restated the demands of the Kingdom of God “in unequivocal terms”. A message that plain is hard to bend without someone noticing, which is what the guard bit is for.",
+      "The cube view grows the 64 bits out of one point: 1, 4, 16, 64. Whether that is what the wider ecosystem will mean by a 64-bit cubit is not settled: RFC 05’s cubit is an acoustic unit and still an outline. Here the cube is one more way to look at the same word."],
     note: [
       "Bright squares are lights that are on. Tap one to flip it, then put it back.",
       "The packet shown is the real one at the front of our chain. Flipping bits here changes only this picture, never the chain.",
@@ -77,6 +97,10 @@ const STATIONS = [
     "Each new thing we learn adds a link to our chain. Nobody can sneak a change into an old link, because the whole chain would stop matching.",
     "The journey is grown into a biochain: packets plus a packed copy of the text, hashed into one root. Each observation makes a new epoch that points back to the one before.",
     "growBiochain and extendBiochain from biomesh-core.js, unchanged: 720-byte chunks, rank-coded residuals, leaf hashes, Merkle root, chiral and mirror weaves, the engram layer."],
+    bridge: [
+      "Jesus did not start from nothing. He learned from the prophets before him, and people after him passed his words on, hand to hand, like the links of our chain.",
+      "“Jesus joins hands across the ages with all the pioneers of the spirit,” van Paassen writes: Moses, the Prophets, then him. Each epoch of our chain points back to the one before in the same way. Nothing in it starts from nowhere.",
+      "Van Paassen’s title question is about a record being changed. He argues that Pilate “acted alone”, that the Jewish people and authorities “had no interest whatever in seeing Jesus arrested and executed”, and that later tellings fastened “the responsibility and guilt” on them, with centuries of suffering as the result. Historians debate his details. The engineering lesson needs none of them: keep a lineage anyone can regrow and check."],
     note: [
       "The chain's name starts with BC. It is made from everything inside it, so a different journey gets a different name.",
       "The same journey always grows the same chain, on any machine. That is why someone else can check ours by growing it again.",
@@ -85,6 +109,10 @@ const STATIONS = [
     "Overwatch is me checking our work step by step, taking nothing on trust. If every step passes, I stamp it. Then try to trick me!",
     "Ten checks in order, stopping at the first that fails: six for the chain itself, then meaning, lexicon, lineage and trace. A pass earns a signed certificate.",
     "verifyIntegrityStrict (parity, canonical, crystal, leaves, weaves, derived), then the OBS/1 re-parse, the LEXICON/1 recomputation, every epoch regrown from the text, and the TRACE/1 chain."],
+    bridge: [
+      "Jesus taught that good things cannot be built in bad ways. You cannot cheat your way to something true. Overwatch works the same: every step has to be honest, or there is no stamp.",
+      "“The Kingdom of God could not come by ungodly means. The means must correspond with the goal.” That is how van Paassen states what Jesus held in Jerusalem. Overwatch is the same rule made mechanical: a result counts only if every step that led to it checks out.",
+      "The sentence comes from van Paassen’s reconstruction of the last days, in which armed followers try force and Jesus will not have it. That reconstruction leans on Robert Eisler, and few historians accept it now. The principle does not depend on it: the means are part of the result, and that is what a verifier checks."],
     note: [
       "The tamper lab changes a copy of our package in a sneaky way. Watch which check catches it.",
       "The tamper lab never touches the real journey. It changes one thing in a copy and runs the receiver's checks on it.",
@@ -93,6 +121,10 @@ const STATIONS = [
     "Let's send our discovery to explorers far away. They start in the dark too, but they know the same rules, so they can check everything themselves. Then they answer, and we shake hands.",
     "The package travels the straightest path through hyperbolic space. The receiver repeats every check from the bytes alone and signs an answer. Add noise and watch them refuse it.",
     "HYPERPACK/1 carries chain, lexicon, lineage, trace and certificate as JSON. The receiver runs parse, the ten Overwatch checks, commitment and signature, then signs a HANDSHAKE/1 line: the hash of what it read, and its verdict. We check signature, echo and verdict."],
+    bridge: [
+      "After Jesus died, the news of him went down the roads: north to Antioch, south to Alexandria, west to Athens and on to Rome. Send our message down the same roads, and let each people check it for themselves.",
+      "Lay our zero point over Galilee. The roads run to Antioch of the Syrians, Alexandria of the Egyptians, Athens of the Greeks and Rome, each at its true compass bearing. Athens and Rome lie on one road. Rome ruled them all, and van Paassen still writes that Jesus’ love “embraced the entire human race”, the oppressors too.",
+      "Van Paassen’s account of these roads is a hard one. He holds that in Antioch, “that great melting pot of the North”, and the Greek cities beyond, the Galilean prophet was remade into what Theodore Reinach called “a Greek mystery-religion grafted upon a Jewish historical fact”. Most Christians read the same roads as good news arriving. This page takes neither side. It shows what the question is: did what arrived match what was sent? That is the echo check."],
     note: [
       "You can save the package and the ledger as files, then go and observe something new.",
       "Integrity needs no trust in the sender or the path: any damage breaks a check. Who the sender is, is a separate question this page does not answer yet.",
@@ -101,6 +133,10 @@ const STATIONS = [
     "Look how far our little signal went. We began as one dot in the dark, and now there are roads from us to four great cities, with a hand shaken at the end.",
     "Every receiver has its own zero point. From where they stand, they are the centre and we are far away. The distance between us is the same from either side, and that is what lets two strangers agree.",
     "Each receiver frame is a Lorentz boost of ours. The distance between two zero points is frame-free: the same number from both sides. HANDSHAKE/1 adds the signed echo. RFC 06, the frame-free alignment handshake, is still an outline; this is not it."],
+    bridge: [
+      "Here is the secret of the map. From above, the bridge is one tiny point: the place where we stand. Turn the map and the point becomes a shining line through the middle of every road. Love comes along that line from its source and goes out along all the roads, to friends and to enemies too. That is the way this story points.",
+      "On the flat map of peoples the bridge hides in a single point. In the ball it is a line through that point, at right angles to every road at once: the one direction that belongs to no nation and touches them all. We read Jesus as that line: love from its source, meeting the whole landscape at the zero point. Van Paassen names where the roads then lead: “towards one world and one mankind.”",
+      "Plainly: this is an interpretation, and it is ours. Van Paassen’s Jesus is a Jewish prophet, “an announcer and trail blazer of the idea of the community of mankind”; he would not have drawn this figure, and he rejects much that the churches teach. What the geometry itself establishes is small and exact: a geodesic at right angles to a plane projects to one point of it, and two zero points are the same distance apart from either side. The rest is the way we choose to point. His book ends: “It stands before the door! Open that door!”"],
     note: [
       "Press the gold button to turn the flat map and look at it from the side.",
       "In the flat map, the line that crosses it at right angles is hidden inside one point: the zero point. Turn the map into the ball and the point turns out to be a line.",
@@ -652,10 +688,11 @@ function draw(time) {
     for (let i = -40; i <= 40; i++) { const d = i * 0.12; axis.push([0, 0, Math.sinh(d), Math.cosh(d)]); }
     if (S.dims === "3D") {
       ctx.shadowColor = "#fbbf24"; ctx.shadowBlur = 16; path(axis.map(screen), "#fbbf24", 2.4, 0.95); ctx.shadowBlur = 0;
-      label(screen(axis[axis.length - 6]), "the source", "#fde68a");
+      label(screen(axis[62]), "the source", "#fde68a");
     } else {
       const c0 = screen(ORIGIN), ring = 10 + 4 * Math.sin(t * 2);
       ctx.beginPath(); ctx.arc(c0.x, c0.y, ring, 0, 7); ctx.strokeStyle = "#fbbf24"; ctx.lineWidth = 1.6; ctx.shadowColor = "#fbbf24"; ctx.shadowBlur = 14; ctx.stroke(); ctx.shadowBlur = 0;
+      label({ ...c0, x: c0.x + 8, y: c0.y + 30 }, "the bridge, seen end-on", "#fde68a");
     }
   }
   // us
