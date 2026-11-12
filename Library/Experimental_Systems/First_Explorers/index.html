@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>First Explorers — STRIX Holographic Introduction · Owl Academy</title>
+<meta name="description" content="Start in darkness with STRIX and learn, from first principles, how a signal becomes geometry, an SHD-CCP packet, a traceable biochain and a certificate anyone can check.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #03050a; --panel: rgba(13, 21, 39, .78); --line: rgba(148, 163, 184, .16); --line2: rgba(56, 189, 248, .28);
+  --ink: #f1f5f9; --dim: #94a3b8; --faint: #64748b;
+  --cyan: #38bdf8; --gold: #fbbf24; --violet: #c084fc; --emerald: #34d399; --rose: #fb7185;
+  --sans: Inter, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --display: "Space Grotesk", Inter, system-ui, sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, Menlo, Consolas, monospace;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--sans); }
+body { min-height: 100vh; display: flex; flex-direction: column; }
+button, input, select { font: inherit; color: inherit; }
+button { cursor: pointer; }
+button:disabled { cursor: not-allowed; opacity: .45; }
+:focus-visible { outline: 2px solid var(--cyan); outline-offset: 2px; }
+.mono { font-family: var(--mono); }
+
+header { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; padding: 10px 16px; border-bottom: 1px solid var(--line); background: rgba(3, 5, 10, .92); position: sticky; top: 0; z-index: 5; }
+.brand { display: flex; align-items: center; gap: 10px; margin-right: auto; min-width: 0; }
+.brand-mark { width: 38px; height: 38px; flex: none; border-radius: 11px; border: 1px solid var(--line2); display: grid; place-items: center; background: radial-gradient(circle at 50% 40%, rgba(192, 132, 252, .28), rgba(56, 189, 248, .08) 70%); }
+.brand h1 { font: 700 17px/1.1 var(--display); letter-spacing: .02em; margin: 0; }
+.brand p { margin: 2px 0 0; font-size: 11.5px; color: var(--dim); }
+.brand a { color: inherit; }
+.seg { display: flex; padding: 3px; gap: 2px; border-radius: 11px; background: rgba(15, 23, 42, .9); border: 1px solid var(--line); }
+.seg button { border: 0; background: transparent; padding: 6px 11px; border-radius: 8px; font-size: 12px; font-weight: 500; color: var(--dim); }
+.seg button[aria-pressed="true"] { background: rgba(56, 189, 248, .16); color: #e0f2fe; box-shadow: inset 0 0 0 1px var(--line2); }
+.pill { border: 1px solid var(--line); background: rgba(15, 23, 42, .8); border-radius: 10px; padding: 6px 11px; font-size: 12px; color: var(--dim); }
+.pill:hover:not(:disabled), .seg button:hover { color: var(--ink); }
+.pill[aria-pressed="true"] { color: var(--gold); border-color: rgba(251, 191, 36, .4); }
+
+main { flex: 1; display: grid; grid-template-columns: minmax(280px, 340px) minmax(0, 1fr) minmax(300px, 380px); gap: 12px; padding: 12px; max-width: 1560px; width: 100%; margin: 0 auto; }
+.panel { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 13px; }
+.col { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+h2 { font: 600 14px/1.25 var(--display); margin: 0; }
+h3 { font: 600 11px/1.2 var(--mono); letter-spacing: .09em; text-transform: uppercase; color: var(--faint); margin: 0 0 7px; }
+p { margin: 0; }
+
+.stations { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; list-style: none; margin: 0; padding: 0; }
+.stations button { width: 100%; border: 1px solid var(--line); background: rgba(15, 23, 42, .6); border-radius: 9px; padding: 6px 4px; font-size: 10.5px; color: var(--dim); display: flex; flex-direction: column; align-items: center; gap: 2px; }
+.stations button b { font: 600 13px var(--display); color: var(--faint); }
+.stations button[aria-current="step"] { border-color: var(--cyan); color: var(--ink); background: rgba(56, 189, 248, .12); }
+.stations button[aria-current="step"] b { color: var(--cyan); }
+.stations button.done b { color: var(--emerald); }
+
+.strix { display: flex; gap: 10px; align-items: flex-start; }
+.strix-face { flex: none; width: 44px; height: 44px; border-radius: 50%; border: 1px solid rgba(192, 132, 252, .5); background: radial-gradient(circle, rgba(192, 132, 252, .25), transparent 70%); display: grid; place-items: center; }
+.strix-say { font-size: 13.5px; line-height: 1.55; color: #e2e8f0; }
+.strix-say::before { content: "STRIX"; display: block; font: 600 10px var(--mono); letter-spacing: .14em; color: var(--violet); margin-bottom: 3px; }
+.lens-note { margin-top: 10px; padding: 9px 10px; border-left: 2px solid var(--gold); background: rgba(251, 191, 36, .06); border-radius: 0 8px 8px 0; font-size: 12px; line-height: 1.5; color: #cbd5e1; }
+.controls { display: flex; flex-direction: column; gap: 9px; margin-top: 12px; }
+.row { display: flex; gap: 7px; flex-wrap: wrap; align-items: center; }
+.btn { border: 1px solid var(--line2); background: rgba(56, 189, 248, .12); color: #e0f2fe; border-radius: 10px; padding: 8px 13px; font-size: 12.5px; font-weight: 600; }
+.btn:hover:not(:disabled) { background: rgba(56, 189, 248, .22); }
+.btn.gold { border-color: rgba(251, 191, 36, .45); background: rgba(251, 191, 36, .12); color: #fde68a; }
+.btn.ghost { background: transparent; border-color: var(--line); color: var(--dim); font-weight: 500; }
+.btn.warn { border-color: rgba(251, 113, 133, .45); background: rgba(251, 113, 133, .1); color: #fecdd3; }
+.sense-pick { display: grid; grid-template-columns: repeat(5, 1fr); gap: 5px; }
+.sense-pick button { border: 1px solid var(--line); background: rgba(15, 23, 42, .6); border-radius: 9px; padding: 7px 2px; font-size: 11px; color: var(--dim); }
+.sense-pick button[aria-pressed="true"] { color: var(--ink); border-color: var(--c); box-shadow: inset 0 0 14px -6px var(--c); }
+.sense-pick i { display: block; width: 9px; height: 9px; border-radius: 50%; background: var(--c); margin: 0 auto 4px; }
+label.f { display: flex; flex-direction: column; gap: 4px; font-size: 11.5px; color: var(--dim); flex: 1; min-width: 0; }
+label.f span b { font: 500 11.5px var(--mono); color: var(--ink); float: right; }
+input[type="text"], select { background: rgba(2, 6, 23, .8); border: 1px solid var(--line); border-radius: 8px; padding: 7px 9px; font-size: 12.5px; width: 100%; }
+input[type="range"] { width: 100%; accent-color: var(--cyan); }
+input[type="color"] { width: 100%; height: 36px; border: 1px solid var(--line); border-radius: 8px; background: transparent; padding: 2px; }
+#touchPad { width: 100%; max-width: 224px; aspect-ratio: 1; border: 1px solid var(--line); border-radius: 8px; background: #020617; touch-action: none; cursor: crosshair; display: block; }
+.err { color: var(--rose); font-size: 11.5px; min-height: 1em; }
+.note { font-size: 11.5px; line-height: 1.5; color: var(--dim); }
+
+.stage { position: relative; display: flex; flex-direction: column; min-height: 440px; padding: 10px; }
+.hud { display: flex; justify-content: space-between; gap: 8px; font: 500 11px var(--mono); color: var(--dim); flex-wrap: wrap; }
+.hud span { background: rgba(2, 6, 23, .7); border: 1px solid var(--line); padding: 4px 9px; border-radius: 99px; }
+#canvasWrap { flex: 1; min-height: 340px; display: grid; place-items: center; position: relative; }
+#space { max-width: 100%; touch-action: none; cursor: grab; }
+#space:active { cursor: grabbing; }
+.legend { display: flex; flex-wrap: wrap; gap: 5px 12px; font-size: 11px; color: var(--dim); justify-content: center; }
+.legend i { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--c); margin-right: 5px; }
+
+.tabs { display: flex; gap: 3px; margin-bottom: 10px; }
+.tabs button { flex: 1; border: 0; border-bottom: 2px solid transparent; background: transparent; padding: 7px 4px; font-size: 12px; font-weight: 500; color: var(--dim); }
+.tabs button[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--cyan); }
+.tabpane { display: flex; flex-direction: column; gap: 12px; max-height: calc(100vh - 150px); overflow-y: auto; padding-right: 2px; }
+.kv { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 4px 10px; font-size: 11.5px; margin: 0; }
+.kv dt { color: var(--faint); }
+.kv dd { margin: 0; font-family: var(--mono); font-size: 11px; overflow-wrap: anywhere; color: #cbd5e1; }
+.hexbig { font: 500 19px var(--mono); letter-spacing: .08em; color: var(--gold); overflow-wrap: anywhere; }
+.bits { display: grid; grid-template-columns: repeat(16, 1fr); gap: 2px; }
+.bits button { aspect-ratio: 1; border: 1px solid transparent; border-radius: 4px; font: 500 10px var(--mono); padding: 0; background: color-mix(in srgb, var(--c) 16%, transparent); color: color-mix(in srgb, var(--c) 55%, #64748b); }
+.bits button.on { background: color-mix(in srgb, var(--c) 62%, transparent); color: #020617; font-weight: 700; }
+.bits button.flipped { border-color: #fff; }
+.fields { display: grid; grid-template-columns: auto auto minmax(0, 1fr); gap: 3px 9px; font-size: 11px; align-items: baseline; }
+.fields i { width: 8px; height: 8px; border-radius: 2px; background: var(--c); display: inline-block; }
+.fields span { color: var(--dim); }
+.fields code, code { font-family: var(--mono); font-size: 10.5px; color: #cbd5e1; overflow-wrap: anywhere; }
+.badge { display: inline-block; font: 600 10.5px var(--mono); padding: 3px 8px; border-radius: 99px; border: 1px solid; }
+.badge.ok { color: var(--emerald); border-color: rgba(52, 211, 153, .4); background: rgba(52, 211, 153, .08); }
+.badge.bad { color: var(--rose); border-color: rgba(251, 113, 133, .45); background: rgba(251, 113, 133, .08); }
+.badge.idle { color: var(--dim); border-color: var(--line); }
+.checks { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 3px; }
+.checks li { display: grid; grid-template-columns: 18px 82px minmax(0, 1fr); gap: 6px; font-size: 11.5px; padding: 4px 6px; border-radius: 6px; align-items: baseline; }
+.checks li.ok { background: rgba(52, 211, 153, .06); } .checks li.ok b { color: var(--emerald); }
+.checks li.bad { background: rgba(251, 113, 133, .1); } .checks li.bad b { color: var(--rose); }
+.checks li.skip { opacity: .45; }
+.checks li em { font: 500 11px var(--mono); font-style: normal; }
+.checks li span { color: var(--dim); font-size: 11px; }
+.ledger { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.ledger li { border: 1px solid var(--line); border-radius: 8px; padding: 6px 8px; font-size: 11px; }
+.ledger .top { display: flex; gap: 6px; align-items: baseline; }
+.ledger .who { font: 600 9.5px var(--mono); letter-spacing: .08em; text-transform: uppercase; }
+.ledger .who.human { color: var(--cyan); } .ledger .who.strix { color: var(--violet); } .ledger .who.overwatch { color: var(--emerald); } .ledger .who.system { color: var(--faint); }
+.ledger .hash { margin-left: auto; font: 10px var(--mono); color: var(--faint); }
+.ledger .detail { font: 10.5px var(--mono); color: var(--dim); overflow-wrap: anywhere; margin-top: 2px; }
+table { width: 100%; border-collapse: collapse; font-size: 11px; }
+th { text-align: left; font: 500 10px var(--mono); color: var(--faint); padding: 3px 4px; }
+td { padding: 3px 4px; border-top: 1px solid var(--line); font-family: var(--mono); font-size: 10.5px; overflow-wrap: anywhere; }
+.box { border: 1px solid var(--line); border-radius: 10px; padding: 9px; }
+.box.cert { border-color: rgba(52, 211, 153, .4); background: rgba(52, 211, 153, .05); }
+
+dialog { background: #0b1220; color: var(--ink); border: 1px solid var(--line2); border-radius: 16px; max-width: 760px; width: calc(100% - 24px); padding: 20px; }
+dialog::backdrop { background: rgba(0, 0, 0, .75); }
+dialog h2 { font-size: 18px; margin-bottom: 10px; }
+dialog h4 { font: 600 13px var(--display); margin: 14px 0 5px; }
+dialog p, dialog li { font-size: 12.5px; line-height: 1.6; color: #cbd5e1; }
+dialog ul { margin: 0; padding-left: 18px; }
+
+@media (max-width: 1100px) { main { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } .col.mid { grid-column: 1 / -1; order: -1; } .tabpane { max-height: none; } }
+@media (max-width: 700px) { main { grid-template-columns: minmax(0, 1fr); padding: 8px; } header { position: static; padding: 8px 10px; } .brand { flex-basis: 100%; } .stage { min-height: 0; } #canvasWrap { min-height: 280px; } }
+@media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+</style>
+</head>
+<body>
+<header>
+  <div class="brand">
+    <div class="brand-mark" aria-hidden="true">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#c084fc" stroke-width="1.5"><circle cx="8" cy="10" r="3.2"/><circle cx="16" cy="10" r="3.2"/><circle cx="8" cy="10" r=".9" fill="#38bdf8" stroke="none"/><circle cx="16" cy="10" r=".9" fill="#38bdf8" stroke="none"/><path d="M12 12.5l-1.4 2.4h2.8zM4.5 5.5l3 1.6M19.5 5.5l-3 1.6M6 16c2 3 10 3 12 0"/></svg>
+    </div>
+    <div>
+      <h1>FIRST EXPLORERS</h1>
+      <p>BioChain AI · Astral AI <b>STRIX</b> · <a href="../index.html">Owl Academy experimental systems</a></p>
+    </div>
+  </div>
+  <div class="seg" role="group" aria-label="Reading level" id="lensSeg">
+    <button data-lens="0" aria-pressed="true" title="Ages 6 and up">Stargazer</button>
+    <button data-lens="1" aria-pressed="false" title="Ages 12 and up">Explorer</button>
+    <button data-lens="2" aria-pressed="false" title="Technical">Architect</button>
+  </div>
+  <div class="seg" role="group" aria-label="Lexicon view" id="dimSeg">
+    <button data-dims="2D" aria-pressed="true">2D disc</button>
+    <button data-dims="3D" aria-pressed="false">3D ball</button>
+  </div>
+  <button class="pill" id="soundBtn" aria-pressed="false">Sound off</button>
+  <button class="pill" id="aboutBtn">What is real here?</button>
+</header>
+
+<main>
+  <div class="col">
+    <nav class="panel" aria-label="Stations"><ol class="stations" id="stations"></ol></nav>
+    <section class="panel" aria-live="polite">
+      <div class="strix">
+        <div class="strix-face" aria-hidden="true">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#c084fc" stroke-width="1.4"><circle cx="8" cy="10" r="3.2"/><circle cx="16" cy="10" r="3.2"/><circle cx="8" cy="10" r="1" fill="#fbbf24" stroke="none"/><circle cx="16" cy="10" r="1" fill="#fbbf24" stroke="none"/><path d="M12 12.5l-1.4 2.4h2.8z"/></svg>
+        </div>
+        <div>
+          <h2 id="stationTitle"></h2>
+          <p class="strix-say" id="strixSay"></p>
+        </div>
+      </div>
+      <p class="lens-note" id="lensNote"></p>
+      <div class="controls" id="controls"></div>
+    </section>
+  </div>
+
+  <div class="col mid">
+    <section class="panel stage">
+      <div class="hud"><span id="hudLeft"></span><span id="hudRight"></span></div>
+      <div id="canvasWrap"><canvas id="space" aria-label="Hyperbolic space: the observer at the centre, the lexicon growing outwards"></canvas></div>
+      <div class="row" style="justify-content:center;margin-bottom:8px">
+        <button class="btn ghost" id="homeBtn">Return to origin</button>
+        <span class="note" id="dragHint"></span>
+      </div>
+      <div class="legend" id="legend"></div>
+    </section>
+  </div>
+
+  <div class="col">
+    <section class="panel">
+      <div class="tabs" role="tablist" id="tabs">
+        <button role="tab" data-tab="packet" aria-selected="true">Packet</button>
+        <button role="tab" data-tab="chain" aria-selected="false">Chain</button>
+        <button role="tab" data-tab="overwatch" aria-selected="false">Overwatch</button>
+        <button role="tab" data-tab="trace" aria-selected="false">Trace</button>
+      </div>
+      <div class="tabpane" id="tabpane" role="tabpanel"></div>
+    </section>
+  </div>
+</main>
+
+<dialog id="about">
+  <h2>What is real here, and what is a draft</h2>
+  <p>This page is a first-principles introduction. It runs entirely in your browser: nothing is uploaded, stored or published, and no account is needed.</p>
+  <h4>Real, and shared with the rest of Owl Academy</h4>
+  <ul>
+    <li><b>The packets and chains.</b> Every chain here is grown by <code>growBiochain</code> / <code>extendBiochain</code> in <code>scripts/biomesh-core.js</code>, unchanged: the <code>shdccp/2</code> stream of RFC 07, its Merkle root, weaves and engram layer.</li>
+    <li><b>The strict check.</b> The first six Overwatch checks are <code>verifyIntegrityStrict</code> (RFC 07 section 12), check for check.</li>
+    <li><b>The signatures.</b> ECDSA P-256 through Web Crypto, the same primitive as the Tome Seals (<code>scripts/seal-crypto.js</code>).</li>
+  </ul>
+  <h4>New in this page: draft 0, not yet specified in an RFC</h4>
+  <ul>
+    <li><b>OBS/1</b> (an observation as one canonical line), <b>LEXICON/1</b> (the exact address <code>sense.index</code> of each observation), <b>TRACE/1</b> (the hash-chained ledger), <b>OVERWATCH/1</b> (the certificate line) and <b>HYPERPACK/1</b> (the bundle a receiver checks). They live in <code>scripts/strix-overwatch.js</code> with unit tests.</li>
+    <li><b>The 2D disc and 3D ball positions</b> are computed from the exact address for display. They are floating-point and are never signed or committed; only the address is.</li>
+  </ul>
+  <h4>Limits to keep in mind</h4>
+  <ul>
+    <li><b>The signing key is made for this visit and then forgotten.</b> A valid signature shows the certificate has not changed since this page issued it. It does not show who issued it: binding Overwatch to a registered Genesis seal is later work.</li>
+    <li><b>STRIX here is a scripted guide.</b> The engram familiar lives in Engram Mind Eye; this page does not run it.</li>
+    <li><b>The lexicon here is the small one you build.</b> The Hyperbolic Lexicon's exact addresses and its attested package verifier are not connected yet.</li>
+    <li><b>The receiver is simulated</b> in this same page: the package is turned into text, optionally damaged, and verified again from that text alone.</li>
+  </ul>
+  <div class="row" style="margin-top:16px;justify-content:flex-end"><button class="btn" id="aboutClose">Close</button></div>
+</dialog>
+
+<script type="module" src="./first-explorers.js"></script>
+</body>
+</html>
