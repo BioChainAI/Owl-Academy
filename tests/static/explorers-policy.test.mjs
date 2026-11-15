@@ -1,0 +1,749 @@
+// SPDX-License-Identifier: MIT
+// Copyright (c) 2026 Ebayednoob
+//
+// Static policy for the Celestial Control Panel and the Lexicon Explorer.
+// Run from the repository root: node --test "tests/static/*.test.mjs"
+//
+// What is checked (the lists are right below; the rules are in the functions after them):
+//
+//  1. Forbidden names. In the page files (the shared kit, both index.html, every script of both page folders)
+//     and in the three cores, none of the names in FORBIDDEN. A rule looks at one of three views of a file:
+//       "code"  program text only: comments, the contents of strings, the text of template literals and regular
+//               expressions are blanked (for words that are also plain English, such as the request function);
+//       "text"  everything outside comments, the contents of strings included (for names no sentence needs);
+//       "all"   every character, comments included (the storage names, which are never written at all: copy
+//               and comments say "browser storage").
+//     An HTML file has no "code" view: it may not hold script at all (rule 2).
+//  2. Each index.html (and any other .html in a page folder): the content policy line is the first element of
+//     the head, letter for letter; no attribute whose name begins with "on"; exactly one script element, and it
+//     is a module with a relative src and no text; no host anywhere in the file but the two font hosts, over
+//     https; no javascript: URL.
+//  3. Ids. Every $("id") literal (and getElementById("id") literal) in a script of a page folder names an id
+//     that is in that page's index.html, or is given as { id: "…" } in an h(...) call of that page's scripts or
+//     of the kit. An id built as a literal prefix plus something ("e-" + address) covers every literal that
+//     starts with the prefix.
+//  4. Links. Every value of the kit's LINKS table is a relative URL that resolves, from each page folder, to a
+//     file that exists inside the repository; the table still leads to First Explorers, both pages and the
+//     wing index.
+//  5. Self-tests: every rule above is shown to fail on a broken sample and to pass on a sound one.
+//
+// Files that are not written yet. A page file that does not exist is skipped, and the skip says which file.
+// The skipping stops by itself: the kit and the three cores must always exist, and as soon as a page's
+// index.html exists every file listed for that page must exist too. A script or page that is in a page folder
+// but not in the list is checked like the listed ones. OWL_EXPLORERS_REQUIRE_ALL=1 turns every skip into a
+// failure (for the last run before a release).
+//
+// OWL_TEST_ROOT=<dir> runs the check against another checkout.
+import { test } from "node:test";
+import assert from "node:assert/strict";
+import { readFileSync, readdirSync, statSync, existsSync } from "node:fs";
+import { join, relative, resolve, dirname, isAbsolute, sep } from "node:path";
+import { fileURLToPath, pathToFileURL } from "node:url";
+
+const HERE = dirname(fileURLToPath(import.meta.url));
+const ROOT = process.env.OWL_TEST_ROOT || join(HERE, "..", "..");
+const REQUIRE_ALL = process.env.OWL_EXPLORERS_REQUIRE_ALL === "1";
+
+// ---------------------------------------------------------------- the lists
+
+const WING = "Library/Experimental_Systems";
+const KIT = `${WING}/explorer-kit.js`;
+const CORES = ["scripts/strix-overwatch.js", "scripts/hyperbolic-moves.js", "scripts/celestial-core.js"];
+
+// The page files. `scripts` are every module of the page folder; the ids rule reads all of them.
+const PAGES = [
+  {
+    name: "Celestial Control Panel",
+    dir: `${WING}/Celestial_Control_Panel`,
+    index: "index.html",
+    scripts: ["celestial-panel-model.js", "celestial-chart.js", "celestial-control-panel.js"],
+  },
+  {
+    name: "Lexicon Explorer",
+    dir: `${WING}/Lexicon_Explorer`,
+    index: "index.html",
+    scripts: ["lexicon-explorer-model.js", "lexicon-canvas.js", "lexicon-explorer.js", "ezekiel-1.js", "passage-as-supplied.js"],
+  },
+];
+
+// What LINKS must lead to, whatever its keys are called.
+const LINK_TARGETS = [
+  `${WING}/First_Explorers/index.html`,
+  `${WING}/Celestial_Control_Panel/index.html`,
+  `${WING}/Lexicon_Explorer/index.html`,
+  `${WING}/index.html`,
+];
+
+// The content policy line of both pages: the first element of the head.
+const POLICY = "default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " +
+  "font-src https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'none'; worker-src 'self'; " +
+  "base-uri 'none'; form-action 'none'";
+const FONT_HOSTS = ["fonts.googleapis.com", "fonts.gstatic.com"];
+
+// The forbidden names. `sample` is a line that breaks the rule; the self-test proves each one is caught.
+// An identifier: the name with no letter, digit, _ or $ on either side.
+const ident = (name) => new RegExp(`(?<![\\w$])${name}(?![\\w$])`);
+const STORE = "Storage";   // the two storage names are put together here so that this file does not write them
+const FORBIDDEN = [
+  // markup sinks
+  { name: "innerHTML", where: "text", re: /\binnerHTML\b/, sample: "el.innerHTML = s;" },
+  { name: "outerHTML", where: "text", re: /\bouterHTML\b/, sample: "el.outerHTML = s;" },
+  { name: "insertAdjacentHTML", where: "text", re: /\binsertAdjacentHTML\b/, sample: 'el.insertAdjacentHTML("beforeend", s);' },
+  { name: "document.write", where: "text", re: /\bdocument\s*\.\s*write(?:ln)?\b/, sample: "document.write(s);" },
+  { name: "srcdoc", where: "text", re: /srcdoc/i, sample: "frame.srcdoc = s;" },
+  { name: "DOMParser", where: "text", re: /\bDOMParser\b/, sample: "const d = new DOMParser();" },
+  { name: "createContextualFragment", where: "text", re: /\bcreateContextualFragment\b/, sample: "range.createContextualFragment(s);" },
+  // code from text
+  { name: "eval", where: "code", re: ident("eval"), sample: "const v = eval(s);" },
+  { name: "new Function", where: "code", re: /\bnew\s+Function\b|(?<![\w$])Function\s*\(/, sample: 'const f = new Function("a", s);' },
+  { name: "dynamic import(", where: "code", re: /(?<![\w$.])import\s*\(/, sample: 'const m = await import("./x.js");' },
+  // the network
+  { name: "fetch", where: "code", re: ident("fetch"), sample: "const r = await fetch(u);" },
+  { name: "XMLHttpRequest", where: "text", re: /\bXMLHttpRequest\b/, sample: "const x = new XMLHttpRequest();" },
+  { name: "WebSocket", where: "text", re: /\bWebSocket\b/, sample: "const w = new WebSocket(u);" },
+  { name: "EventSource", where: "text", re: /\bEventSource\b/, sample: "const e = new EventSource(u);" },
+  { name: "sendBeacon", where: "text", re: /\bsendBeacon\b/, sample: "navigator.sendBeacon(u, s);" },
+  // the device and what it keeps
+  { name: "geolocation", where: "text", re: /geolocation/i, sample: "navigator.geolocation.getCurrentPosition(f);" },
+  { name: "cookie", where: "code", re: ident("cookie"), sample: 'document.cookie = "a=1";' },
+  { name: "cookieStore", where: "text", re: /\bcookieStore\b/, sample: 'await cookieStore.set("a", "1");' },
+  { name: "IndexedDB", where: "all", re: /[Ii]ndexed[Dd][Bb]|\bIDB[A-Z][A-Za-z]+\b/, sample: 'const q = indexedDB.open("x");' },
+  { name: "browser storage (the local one)", where: "all", re: new RegExp(`\\blocal${STORE}\\b`), sample: `local${STORE}.setItem("a", "1");` },
+  { name: "browser storage (the session one)", where: "all", re: new RegExp(`\\bsession${STORE}\\b`), sample: `session${STORE}.setItem("a", "1");` },
+  { name: "navigator.storage", where: "text", re: /\bnavigator\s*\.\s*storage\b/, sample: "await navigator.storage.persist();" },
+  { name: "openDatabase", where: "text", re: /\bopenDatabase\b/, sample: 'const db = openDatabase("x", "1", "x", 1);' },
+  { name: "the Cache API", where: "code", re: /(?<![\w$])caches\s*\.\s*(?:open|match)\s*\(/, sample: 'const c = await caches.open("x");' },
+  // names no function may carry (tests/static/sinks.test.mjs trusts some of them as escapers)
+  { name: "a function named esc", where: "code", re: ident("esc"), sample: "function esc(s) { return s; }" },
+  { name: "a function named escapeHtml", where: "code", re: ident("escapeHtml"), sample: "const escapeHtml = (s) => s;" },
+  { name: "a function named escapeAttr", where: "code", re: ident("escapeAttr"), sample: "const escapeAttr = (s) => s;" },
+  { name: "a function named escHtml", where: "code", re: ident("escHtml"), sample: "const escHtml = (s) => s;" },
+  { name: "a function named escAttr", where: "code", re: ident("escAttr"), sample: "const escAttr = (s) => s;" },
+  { name: "a function named escapeHTML", where: "code", re: ident("escapeHTML"), sample: "const escapeHTML = (s) => s;" },
+  { name: "a function named jsArg", where: "code", re: ident("jsArg"), sample: "const jsArg = (s) => s;" },
+];
+
+// ---------------------------------------------------------------- files
+
+const abs = (rel) => join(ROOT, ...rel.split("/"));
+const present = (rel) => existsSync(abs(rel));
+const read = (rel) => readFileSync(abs(rel), "utf8");
+const posix = (p) => p.split(sep).join("/");
+const lineOf = (src, index) => src.slice(0, index).split("\n").length;
+
+const pageOf = (rel) => PAGES.find((p) => rel.startsWith(p.dir + "/")) || null;
+const listedOf = (page) => [page.index, ...page.scripts].map((f) => `${page.dir}/${f}`);
+
+// Only a listed page file may be missing, and only until its page's index.html exists (or the run asks for all).
+// Everything else (the kit, a core, a target of LINKS outside the two pages) must exist.
+function required(rel, exists = present) {
+  const page = pageOf(rel);
+  if (REQUIRE_ALL || !page || !listedOf(page).includes(rel)) return true;
+  return exists(`${page.dir}/${page.index}`);
+}
+// "present", "pending" (not written yet: skip) or "missing" (must exist: fail).
+function stateOf(rel, exists = present) {
+  return exists(rel) ? "present" : required(rel, exists) ? "missing" : "pending";
+}
+function pendingNote(rel) {
+  const page = pageOf(rel), index = page ? `${page.dir}/${page.index}` : "";
+  return `not written yet: ${rel} (checked as soon as it exists` + (rel === index ? ")" : `; it must exist once ${index} does)`);
+}
+function missingNote(rel) {
+  const page = pageOf(rel);
+  return `${rel} does not exist` + (page && !REQUIRE_ALL ? `, but ${page.dir}/${page.index} does: the page is not whole` : "");
+}
+
+// Scripts and pages found in a page folder (any depth), as repository paths.
+function foundIn(dirRel) {
+  const out = [];
+  if (!present(dirRel)) return out;
+  (function walk(dir) {
+    for (const name of readdirSync(dir).sort()) {
+      const p = join(dir, name);
+      if (statSync(p).isDirectory()) walk(p);
+      else if (/\.(m?js|cjs|html?)$/i.test(name)) out.push(posix(relative(ROOT, p)));
+    }
+  })(abs(dirRel));
+  return out;
+}
+const unlisted = (listed, found) => found.filter((f) => !listed.includes(f));
+
+// ---------------------------------------------------------------- views of a script
+
+const CODE = 0, COMMENT = 1, STRING = 2;
+const REGEX_AFTER_CHAR = "(,=:[!&|?{};+-*%<>~^";
+const REGEX_AFTER_WORD = new Set(["return", "typeof", "case", "in", "of", "do", "else", "void", "delete", "throw", "new", "instanceof", "yield", "await"]);
+// True when the token before a "/" ends a value, so that the "/" divides: a name, a number, a string, ) or ].
+const endsValue = (prev) => prev === "0" || prev === '"' || prev === "`" || prev === "re" || prev === ")" || prev === "]" || (/^[\w$]/.test(prev) && !REGEX_AFTER_WORD.has(prev));
+
+// One kind per character: CODE, COMMENT or STRING (a quoted string, the text of a template literal, a regular
+// expression; the code inside ${...} of a template is CODE again).
+function kindsOfJs(src) {
+  const n = src.length, kind = new Uint8Array(n), braces = [];
+  let i = 0, prev = "";
+  const mark = (from, to, k) => kind.fill(k, from, Math.min(n, to));
+  // src[from] opens a run of template text: the backtick, or the } that ends a ${...}. Returns where code goes on.
+  function templateText(from) {
+    let j = from + 1;
+    while (j < n) {
+      const c = src[j];
+      if (c === "\\") { j += 2; continue; }
+      if (c === "`") { mark(from, j + 1, STRING); prev = "`"; return j + 1; }
+      if (c === "$" && src[j + 1] === "{") { mark(from, j + 2, STRING); braces.push(0); prev = "{"; return j + 2; }
+      j++;
+    }
+    mark(from, n, STRING);
+    return n;
+  }
+  while (i < n) {
+    const c = src[i], d = src[i + 1];
+    if (c === "/" && d === "/") { let j = src.indexOf("\n", i); if (j < 0) j = n; mark(i, j, COMMENT); i = j; continue; }
+    if (c === "/" && d === "*") { let j = src.indexOf("*/", i + 2); j = j < 0 ? n : j + 2; mark(i, j, COMMENT); i = j; continue; }
+    if (c === '"' || c === "'") {
+      let j = i + 1;
+      while (j < n && src[j] !== c && src[j] !== "\n") j += src[j] === "\\" ? 2 : 1;
+      mark(i, j + 1, STRING);
+      i = Math.min(n, j + 1);
+      prev = '"';
+      continue;
+    }
+    if (c === "`") { i = templateText(i); continue; }
+    if (c === "{") { if (braces.length) braces[braces.length - 1]++; prev = c; i++; continue; }
+    if (c === "}") {
+      if (braces.length) {
+        if (braces[braces.length - 1] === 0) { braces.pop(); i = templateText(i); continue; }
+        braces[braces.length - 1]--;
+      }
+      prev = c;
+      i++;
+      continue;
+    }
+    if ((c === "+" || c === "-") && d === c) { prev = endsValue(prev) ? ")" : c; i += 2; continue; }   // n++ / 2 divides
+    if (c === "/" && (prev === "" || REGEX_AFTER_CHAR.includes(prev) || REGEX_AFTER_WORD.has(prev))) {
+      let j = i + 1, inClass = false;
+      while (j < n && src[j] !== "\n") {
+        if (src[j] === "\\") { j += 2; continue; }
+        if (src[j] === "[") inClass = true;
+        else if (src[j] === "]") inClass = false;
+        else if (src[j] === "/" && !inClass) break;
+        j++;
+      }
+      if (src[j] === "/") {
+        j++;
+        while (j < n && /[A-Za-z]/.test(src[j])) j++;
+        mark(i, j, STRING);
+        i = j;
+        prev = "re";
+        continue;
+      }
+    }
+    if (/[A-Za-z_$]/.test(c)) { let j = i + 1; while (j < n && /[\w$]/.test(src[j])) j++; prev = src.slice(i, j); i = j; continue; }
+    if (/[0-9]/.test(c)) { let j = i + 1; while (j < n && /[\w.]/.test(src[j])) j++; prev = "0"; i = j; continue; }
+    if (!/\s/.test(c)) prev = c;
+    i++;
+  }
+  return kind;
+}
+// Blanks every character whose kind is in `drop`; line breaks stay, so offsets and line numbers still hold.
+function blank(src, kind, drop) {
+  let out = "";
+  for (let i = 0; i < src.length; i++) out += drop.includes(kind[i]) && src[i] !== "\n" ? " " : src[i];
+  return out;
+}
+function viewsOfJs(src) {
+  const kind = kindsOfJs(src);
+  return { kind, all: src, text: blank(src, kind, [COMMENT]), code: blank(src, kind, [COMMENT, STRING]) };
+}
+
+// ---------------------------------------------------------------- reading a page
+
+// Start tags with their attributes, comments, and the text of script and style elements.
+function parseHtml(src) {
+  const tags = [], comments = [];
+  const n = src.length;
+  let i = 0;
+  while (i < n) {
+    const lt = src.indexOf("<", i);
+    if (lt < 0) break;
+    if (src.startsWith("<!--", lt)) {
+      const end = src.indexOf("-->", lt + 4);
+      const stop = end < 0 ? n : end + 3;
+      comments.push([lt, stop]);
+      i = stop;
+      continue;
+    }
+    const open = /^<([A-Za-z][^\s/>]*)/.exec(src.slice(lt, lt + 64));
+    if (!open) { i = lt + 1; continue; }
+    const tag = { name: open[1].toLowerCase(), attrs: [], index: lt, body: null };
+    let j = lt + open[0].length;
+    while (j < n && src[j] !== ">") {
+      if (/[\s/]/.test(src[j])) { j++; continue; }
+      const nameStart = j;
+      while (j < n && !/[\s/>=]/.test(src[j])) j++;
+      if (j === nameStart) { j++; continue; }   // a stray "="
+      const name = src.slice(nameStart, j).toLowerCase();
+      let k = j, value = null;
+      while (k < n && /\s/.test(src[k])) k++;
+      if (src[k] === "=") {
+        k++;
+        while (k < n && /\s/.test(src[k])) k++;
+        if (src[k] === '"' || src[k] === "'") {
+          const close = src.indexOf(src[k], k + 1);
+          const stop = close < 0 ? n : close;
+          value = src.slice(k + 1, stop);
+          j = Math.min(n, stop + 1);
+        } else {
+          const from = k;
+          while (k < n && !/[\s>]/.test(src[k])) k++;
+          value = src.slice(from, k);
+          j = k;
+        }
+      }
+      tag.attrs.push([name, value]);
+    }
+    i = Math.min(n, j + 1);
+    if (tag.name === "script" || tag.name === "style") {
+      const close = src.slice(i).search(new RegExp(`</${tag.name}\\b`, "i"));
+      const stop = close < 0 ? n : i + close;
+      tag.body = src.slice(i, stop);
+      i = stop;
+    }
+    tags.push(tag);
+  }
+  return { tags, comments };
+}
+const attr = (tag, name) => { const a = tag.attrs.find(([k]) => k === name); return a ? (a[1] === null ? "" : a[1]) : null; };
+
+function viewsOfHtml(src) {
+  let text = src;
+  for (const [from, to] of parseHtml(src).comments) text = text.slice(0, from) + text.slice(from, to).replace(/[^\n]/g, " ") + text.slice(to);
+  return { all: src, text, code: null };
+}
+
+// ---------------------------------------------------------------- rule 1: forbidden names
+
+function forbiddenIn(path, src) {
+  const views = /\.html?$/i.test(path) ? viewsOfHtml(src) : viewsOfJs(src);
+  const out = [];
+  for (const rule of FORBIDDEN) {
+    const view = views[rule.where];
+    if (view == null) continue;
+    const re = new RegExp(rule.re.source, rule.re.flags.includes("g") ? rule.re.flags : rule.re.flags + "g");
+    for (const m of view.matchAll(re)) out.push(`${path}:${lineOf(src, m.index)}: ${rule.name} (found "${m[0].trim()}")`);
+  }
+  return out;
+}
+
+// ---------------------------------------------------------------- rule 2: the page file
+
+function policyProblems(path, src) {
+  const { tags } = parseHtml(src);
+  const head = tags.findIndex((t) => t.name === "head");
+  if (head < 0) return [`${path}: no head element`];
+  const first = tags[head + 1];
+  if (!first || first.name !== "meta" || (attr(first, "http-equiv") || "").toLowerCase() !== "content-security-policy") {
+    return [`${path}:${first ? lineOf(src, first.index) : 1}: the first element of the head must be the Content-Security-Policy meta element`];
+  }
+  if (attr(first, "content") !== POLICY) {
+    return [`${path}:${lineOf(src, first.index)}: the content policy differs from the one line both pages carry:\n  have: ${attr(first, "content")}\n  want: ${POLICY}`];
+  }
+  return [];
+}
+
+function handlerProblems(path, src) {
+  const out = [];
+  for (const tag of parseHtml(src).tags) {
+    for (const [name] of tag.attrs) {
+      if (name.startsWith("on")) out.push(`${path}:${lineOf(src, tag.index)}: attribute ${name} on a ${tag.name} element (attach listeners in the module)`);
+    }
+  }
+  return out;
+}
+
+const isRelativeUrl = (v) => typeof v === "string" && v.trim() !== "" && !/^[A-Za-z][A-Za-z0-9+.-]*:/.test(v.trim()) && !/^[\\/]/.test(v.trim()) && !/[\s\\]/.test(v.trim());
+
+function scriptProblems(path, src) {
+  const scripts = parseHtml(src).tags.filter((t) => t.name === "script");
+  const out = [];
+  if (scripts.length !== 1) out.push(`${path}: ${scripts.length} script elements; a page has exactly one, a module with a relative src`);
+  for (const s of scripts) {
+    const where = `${path}:${lineOf(src, s.index)}`;
+    if ((attr(s, "type") || "").trim().toLowerCase() !== "module") out.push(`${where}: the script is not type="module"`);
+    if (!isRelativeUrl(attr(s, "src"))) out.push(`${where}: the script's src is missing or not a relative URL`);
+    if ((s.body || "").trim() !== "") out.push(`${where}: inline script`);
+  }
+  return out;
+}
+
+function hostProblems(path, src) {
+  const out = [];
+  for (const m of src.matchAll(/([A-Za-z][A-Za-z0-9+.-]*):\/\/([^\s/"'<>()\;,?#]*)/g)) {
+    const scheme = m[1].toLowerCase(), host = m[2].toLowerCase();
+    if (scheme !== "https" || !FONT_HOSTS.includes(host)) out.push(`${path}:${lineOf(src, m.index)}: ${m[0]} (the only hosts a page names are ${FONT_HOSTS.join(" and ")}, over https)`);
+  }
+  for (const tag of parseHtml(src).tags) {
+    const where = `${path}:${lineOf(src, tag.index)}`;
+    for (const [name, value] of tag.attrs) {
+      if (value === null) continue;
+      const v = value.trim();
+      if (/^[\\/]{2}/.test(v)) out.push(`${where}: ${name}="${v}" names a host without a scheme`);
+      if (/^(?:java|vb)script\s*:/i.test(v.replace(/[\s\0]/g, ""))) out.push(`${where}: ${name} is a script URL`);
+      if (/url\(\s*["']?\s*[\\/]{2}/i.test(v)) out.push(`${where}: ${name} has a url() that names a host without a scheme`);
+    }
+    if (tag.name === "style" && /(?:url\(|@import)\s*["']?\s*[\\/]{2}/i.test(tag.body || "")) out.push(`${where}: the style sheet names a host without a scheme`);
+  }
+  return out;
+}
+
+const PAGE_RULES = [
+  ["the content policy line is first in the head", policyProblems],
+  ["no on… attribute", handlerProblems],
+  ["exactly one module script with a relative src, and no inline script", scriptProblems],
+  ["no host but the two font hosts", hostProblems],
+];
+
+// ---------------------------------------------------------------- rule 3: ids
+
+const ID_LITERAL = /(?<![\w$])(?:\$|document\s*\.\s*getElementById)\s*\(\s*(["'`])([^"'`\\$\n]*)\1\s*\)/g;
+const ID_PROPERTY = /(?<![\w$.])(?:id|"id"|'id')\s*:\s*(?:(["'])([^"'\\\n]*)\1(\s*\+)?|`([^`$\\]*)(`|\$\{))/g;
+const H_CALL = /(?<![\w$.])h\s*\(/g;
+
+// The ids a script gives in its h(...) calls: `exact` ids, and `prefixes` of ids built as a literal plus something.
+function idsGivenBy(src) {
+  const { kind, text, code } = viewsOfJs(src);
+  const exact = new Set(), prefixes = new Set();
+  for (const call of code.matchAll(H_CALL)) {
+    let j = call.index + call[0].length, depth = 1;
+    while (j < code.length && depth > 0) { if (code[j] === "(") depth++; else if (code[j] === ")") depth--; j++; }
+    const from = call.index, slice = text.slice(from, j);
+    for (const m of slice.matchAll(ID_PROPERTY)) {
+      const at = from + m.index;
+      if (at > 0 && kind[at - 1] === STRING) continue;   // the words "id:" inside a string
+      const quoted = m[2] !== undefined;
+      const value = quoted ? m[2] : m[4];
+      const whole = quoted ? !m[3] : m[5] === "`";
+      if (value === "") continue;
+      (whole ? exact : prefixes).add(value);
+    }
+  }
+  return { exact, prefixes };
+}
+function idsOfHtml(src) {
+  const ids = new Set();
+  for (const tag of parseHtml(src).tags) { const id = attr(tag, "id"); if (id) ids.add(id); }
+  return ids;
+}
+// scripts: [{ path, src }] of one page; givers: the same plus the kit; htmlSrc: the page's index.html.
+function idProblems(scripts, htmlSrc, givers) {
+  const inPage = idsOfHtml(htmlSrc), exact = new Set(), prefixes = new Set();
+  for (const g of givers) { const got = idsGivenBy(g.src); got.exact.forEach((v) => exact.add(v)); got.prefixes.forEach((v) => prefixes.add(v)); }
+  const out = [];
+  for (const { path, src } of scripts) {
+    const { kind, text } = viewsOfJs(src);
+    for (const m of text.matchAll(ID_LITERAL)) {
+      if (kind[m.index] !== CODE) continue;
+      const id = m[2];
+      if (inPage.has(id) || exact.has(id) || [...prefixes].some((p) => id.startsWith(p))) continue;
+      out.push(`${path}:${lineOf(src, m.index)}: no element with id "${id}" in the page's index.html or in an h(..., { id }) call`);
+    }
+  }
+  return out;
+}
+
+// ---------------------------------------------------------------- rule 4: links
+
+// Returns { problems, pending }: pending are targets that are page files not written yet.
+function linkProblems(links, exists = present, pendingOk = (rel) => stateOf(rel, exists) === "pending") {
+  const problems = [], pending = [], reached = new Set();
+  if (!links || typeof links !== "object" || !Object.isFrozen(links)) return { problems: ["LINKS is not a frozen object"], pending };
+  const root = resolve(ROOT);
+  for (const [key, value] of Object.entries(links)) {
+    if (!isRelativeUrl(value) || /[#?]/.test(value)) { problems.push(`LINKS.${key} is not a plain relative URL`); continue; }
+    for (const page of PAGES) {
+      const rel = posix(relative(root, resolve(root, ...page.dir.split("/"), ...value.split("/"))));
+      if (rel === "" || rel.startsWith("..") || isAbsolute(rel)) { problems.push(`LINKS.${key} leads out of the repository from ${page.dir}`); continue; }
+      reached.add(rel);
+      if (exists(rel)) continue;
+      if (pendingOk(rel)) { if (!pending.includes(rel)) pending.push(rel); continue; }
+      problems.push(`LINKS.${key} = "${value}" resolves from ${page.dir} to ${rel}, which does not exist`);
+    }
+  }
+  for (const target of LINK_TARGETS) if (!reached.has(target)) problems.push(`LINKS no longer leads to ${target}`);
+  return { problems, pending };
+}
+
+// ---------------------------------------------------------------- the tests
+
+const report = (problems) => `${problems.length} problem${problems.length === 1 ? "" : "s"}:\n` + problems.join("\n");
+
+// Every file the rules read: the kit, the cores, the listed page files, and whatever else is in a page folder.
+const LISTED = [KIT, ...CORES, ...PAGES.flatMap(listedOf)];
+const EXTRA = PAGES.flatMap((page) => unlisted(listedOf(page), foundIn(page.dir)));
+
+test("the lists name files of this repository", () => {
+  assert.ok(present(KIT), missingNote(KIT));
+  for (const core of CORES) assert.ok(present(core), missingNote(core));
+  assert.equal(new Set(LISTED).size, LISTED.length, "a file is listed twice");
+  assert.equal(new Set(FORBIDDEN.map((r) => r.name)).size, FORBIDDEN.length, "a forbidden name is listed twice");
+});
+
+for (const rel of [...LISTED, ...EXTRA]) {
+  test(`forbidden names: ${rel}`, (t) => {
+    const state = stateOf(rel);
+    if (state === "pending") return t.skip(pendingNote(rel));
+    assert.notEqual(state, "missing", missingNote(rel));
+    const problems = forbiddenIn(rel, read(rel));
+    assert.deepEqual(problems, [], report(problems));
+  });
+}
+
+for (const page of PAGES) {
+  const index = `${page.dir}/${page.index}`;
+  const pages = [index, ...unlisted([index], foundIn(page.dir).filter((f) => /\.html?$/i.test(f)))];
+  for (const rel of pages) {
+    for (const [title, rule] of PAGE_RULES) {
+      test(`${rel}: ${title}`, (t) => {
+        const state = stateOf(rel);
+        if (state === "pending") return t.skip(pendingNote(rel));
+        assert.notEqual(state, "missing", missingNote(rel));
+        const problems = rule(rel, read(rel));
+        assert.deepEqual(problems, [], report(problems));
+      });
+    }
+  }
+
+  test(`${page.name}: every $("id") literal has its element`, (t) => {
+    if (stateOf(index) === "pending") return t.skip(pendingNote(index));
+    assert.ok(present(index), missingNote(index));
+    const scripts = foundIn(page.dir).filter((f) => /\.(m?js|cjs)$/i.test(f)).map((path) => ({ path, src: read(path) }));
+    const problems = idProblems(scripts, read(index), [...scripts, { path: KIT, src: read(KIT) }]);
+    assert.deepEqual(problems, [], report(problems));
+  });
+}
+
+test("the kit loads without a document, and every value of LINKS resolves to an existing file", async (t) => {
+  assert.equal(typeof globalThis.document, "undefined", "this test must run without a document");
+  const kit = await import(pathToFileURL(abs(KIT)).href);
+  for (const name of ["LINKS", "LAYER_META", "parseHashWith", "formatHashWith", "cutLabel"]) assert.ok(name in kit, `the kit does not export ${name}`);
+  const { problems, pending } = linkProblems(kit.LINKS);
+  assert.deepEqual(problems, [], report(problems));
+  if (pending.length) t.skip(`the other targets exist; not written yet: ${pending.join(", ")}`);
+});
+
+// ---------------------------------------------------------------- self-tests: every rule can fail
+
+const names = (problems) => problems.map((p) => p.replace(/^[^:]+:\d+: /, "").replace(/ \(found .*$/s, ""));
+
+test("self-test: every forbidden name is caught, and comments and sentences are told from code", () => {
+  for (const rule of FORBIDDEN) {
+    const { name, where, sample } = rule;
+    assert.deepEqual(names(forbiddenIn("x.js", `const a = 1;\n${sample}\n`)), [name], `${name}: not caught, or caught as something else`);
+    assert.match(forbiddenIn("x.js", `const a = 1;\n\n${sample}\n`)[0], /^x\.js:3: /, `${name}: wrong line number`);
+    const inLine = forbiddenIn("x.js", `const a = 1; // ${sample}\n`), inBlock = forbiddenIn("x.js", `/* ${sample}\n */\nconst a = 1;\n`);
+    const inString = forbiddenIn("x.js", `const a = ${JSON.stringify(sample)};\n`), inTemplate = forbiddenIn("x.js", "const a = `" + sample.replace(/[`$\\]/g, "") + "`;\n");
+    if (where === "all") {
+      assert.equal(inLine.length, 1, `${name}: must be caught in a line comment too`);
+      assert.equal(inBlock.length, 1, `${name}: must be caught in a block comment too`);
+    } else {
+      assert.deepEqual(inLine, [], `${name}: a line comment is not code`);
+      assert.deepEqual(inBlock, [], `${name}: a block comment is not code`);
+    }
+    if (where === "code") {
+      assert.deepEqual(inString, [], `${name}: a sentence in a string is not code`);
+      assert.deepEqual(inTemplate, [], `${name}: template text is not code`);
+      assert.equal(forbiddenIn("x.js", "const a = `${" + sample.replace(/;$/, "") + "}`;\n").length, 1, `${name}: the code inside \${...} is code`);
+    } else {
+      assert.equal(inString.length, 1, `${name}: must be caught inside a string too`);
+      assert.equal(inTemplate.length, 1, `${name}: must be caught inside a template too`);
+    }
+  }
+});
+
+test("self-test: forbidden names next to them are not caught", () => {
+  const sound = [
+    "import { h } from \"../explorer-kit.js\";",
+    "const fetched = fetchRows(1), evaluate = 2, cookies = 3, escape = 4, escaped = 5, local = 6, storage = 7;",
+    "const say = \"We do not fetch, eval or keep a cookie. Press Esc. Nothing is put in browser storage.\";",
+    "if (typeof say === \"function\") say();",
+    "const meta = import.meta.url, caches = new Map(); caches.has(1); caches.delete(1);",
+    "el.textContent = say; el.setAttribute(\"src\", \"x\");",
+    "",
+  ].join("\n");
+  assert.deepEqual(forbiddenIn("x.js", sound), []);
+});
+
+test("self-test: the scanner keeps its place after regular expressions, templates and division", () => {
+  const tricky = [
+    "const q = /[\"'`/]/g, r = a / b / c;            // innerHTML",
+    "const t = `one ${ two(`three ${ four } \"`) } five 'six`;",
+    "const u = x ? /* eval( */ 1 : 2, v = \"a\\\"b // not a comment\";",
+    "el.innerHTML = t;",
+    "const w = `${ `${ fetch(u) }` }`;",
+    "const y = n++ / 2 + eval(s) / 3, z = s.replace(/\\/\\/+/g, \"/\").split(/[/\\]]/); // fetch(u)",
+    "const k = s.match(/a/) ? cookie / 2 : 0;",
+    "",
+  ].join("\n");
+  assert.deepEqual(forbiddenIn("x.js", tricky).map((p) => p.replace(/ \(found .*$/, "")), ["x.js:4: innerHTML", "x.js:6: eval", "x.js:5: fetch", "x.js:7: cookie"]);
+});
+
+test("self-test: forbidden names in a page file, outside its comments", () => {
+  assert.deepEqual(names(forbiddenIn("p.html", "<p>a</p>\n<iframe srcdoc=\"x\"></iframe>\n")), ["srcdoc"]);
+  assert.deepEqual(forbiddenIn("p.html", "<p>a</p>\n<!-- no srcdoc,\n no innerHTML -->\n<p>We do not fetch (anything).</p>\n"), []);
+  assert.equal(forbiddenIn("p.html", `<!-- nothing goes to local${STORE} -->\n`).length, 1, "the storage names are caught in comments too");
+});
+
+const GOOD_PAGE = [
+  "<!DOCTYPE html>",
+  "<html lang=\"en\">",
+  "<head>",
+  `<meta http-equiv="Content-Security-Policy" content="${POLICY}">`,
+  "<meta charset=\"UTF-8\">",
+  "<title>A page</title>",
+  "<link rel=\"preconnect\" href=\"https://fonts.googleapis.com\">",
+  "<link rel=\"preconnect\" href=\"https://fonts.gstatic.com\" crossorigin>",
+  "<link href=\"https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap\" rel=\"stylesheet\">",
+  "<link rel=\"stylesheet\" href=\"../explorer-kit.css\">",
+  "<style>.x { color: red; }</style>",
+  "</head>",
+  "<body>",
+  "<!-- a comment -->",
+  "<p id=\"say\" title=\"turn on = off, onclick=1\" data-on=\"1\">Come on = in. Read on.</p>",
+  "<canvas id=\"cv\"></canvas>",
+  "<script type=\"module\" src=\"./page.js\"></script>",
+  "</body>",
+  "</html>",
+  "",
+].join("\n");
+const swap = (from, to) => { assert.ok(GOOD_PAGE.includes(from), "the self-test's sample page changed"); return GOOD_PAGE.replace(from, to); };
+
+test("self-test: a sound page passes every page rule", () => {
+  for (const [title, rule] of PAGE_RULES) assert.deepEqual(rule("p.html", GOOD_PAGE), [], title);
+});
+
+test("self-test: the content policy rule fails on a missing, late or altered line", () => {
+  const line = `<meta http-equiv="Content-Security-Policy" content="${POLICY}">\n`;
+  assert.equal(policyProblems("p.html", swap(line, "")).length, 1, "missing");
+  assert.equal(policyProblems("p.html", swap(line + "<meta charset=\"UTF-8\">\n", "<meta charset=\"UTF-8\">\n" + line)).length, 1, "after another element");
+  assert.equal(policyProblems("p.html", swap("connect-src 'none'", "connect-src 'self'")).length, 1, "one word changed");
+  assert.equal(policyProblems("p.html", swap("script-src 'self';", "script-src 'self' 'unsafe-inline';")).length, 1, "inline script allowed");
+  assert.equal(policyProblems("p.html", swap("form-action 'none'\"", "form-action 'none'; \"")).length, 1, "one character added");
+  assert.equal(policyProblems("p.html", "<html><body><p>no head</p></body></html>").length, 1, "no head");
+  assert.deepEqual(policyProblems("p.html", swap("<head>\n", "<head>\n<!-- a comment may come first -->\n")), []);
+});
+
+test("self-test: the handler rule fails on any on… attribute", () => {
+  assert.equal(handlerProblems("p.html", swap("<canvas id=\"cv\">", "<canvas id=\"cv\" onclick=\"go()\">")).length, 1);
+  assert.equal(handlerProblems("p.html", swap("<body>", "<body ONLOAD = 'go()'>")).length, 1);
+  assert.equal(handlerProblems("p.html", swap("<canvas id=\"cv\">", "<canvas id=\"cv\" onpointerdown=go>")).length, 1);
+  assert.equal(handlerProblems("p.html", swap("<canvas id=\"cv\">", "<canvas id=\"cv\"\n  onwheel>")).length, 1);
+});
+
+test("self-test: the script rule fails on none, two, inline, classic and non-relative scripts", () => {
+  const good = "<script type=\"module\" src=\"./page.js\"></script>";
+  const bad = [
+    ["none", ""],
+    ["two", good + "\n" + good],
+    ["inline", "<script type=\"module\">go();</script>"],
+    ["module with text", "<script type=\"module\" src=\"./page.js\">go();</script>"],
+    ["a second, inline one", good + "\n<script>go();</script>"],
+    ["classic", "<script src=\"./page.js\"></script>"],
+    ["no src", "<script type=\"module\"></script>"],
+    ["absolute", "<script type=\"module\" src=\"https://fonts.googleapis.com/x.js\"></script>"],
+    ["root-relative", "<script type=\"module\" src=\"/scripts/page.js\"></script>"],
+    ["protocol-relative", "<script type=\"module\" src=\"//example.org/page.js\"></script>"],
+    ["a data: URL", "<script type=\"module\" src=\"data:text/javascript,go()\"></script>"],
+  ];
+  for (const [what, tag] of bad) assert.ok(scriptProblems("p.html", swap(good, tag)).length >= 1, what);
+  assert.deepEqual(scriptProblems("p.html", swap(good, "<script src=\"../Lexicon_Explorer/page.js?v=2\" type=\"module\">\n</script>")), []);
+});
+
+test("self-test: the host rule fails on any host but the two font hosts", () => {
+  const css = "<link rel=\"stylesheet\" href=\"../explorer-kit.css\">";
+  const bad = [
+    ["another host", "<link rel=\"stylesheet\" href=\"https://cdn.example.org/x.css\">"],
+    ["a font host without TLS", "<link rel=\"stylesheet\" href=\"http://fonts.googleapis.com/css2\">"],
+    ["a look-alike host", "<link rel=\"stylesheet\" href=\"https://fonts.googleapis.com.example.org/css2\">"],
+    ["a font host as user name", "<link rel=\"stylesheet\" href=\"https://fonts.gstatic.com@example.org/x\">"],
+    ["a font host with a port", "<link rel=\"stylesheet\" href=\"https://fonts.gstatic.com:8443/x\">"],
+    ["no scheme", "<link rel=\"stylesheet\" href=\"//example.org/x.css\">"],
+    ["an image", "<img src=\"https://example.org/x.png\" alt=\"\">"],
+    ["a socket", "<a href=\"wss://example.org/\">x</a>"],
+    ["in a style sheet", "<style>@import url(//example.org/x.css);</style>"],
+    ["in a style attribute", "<p style=\"background: url('//example.org/x.png')\">x</p>"],
+    ["in a comment", "<!-- see https://example.org/notes -->"],
+    ["in the text", "<p>Read more at https://example.org/more</p>"],
+    ["a script URL", "<a href=\"javascript:go()\">x</a>"],
+    ["a script URL in disguise", "<a href=\" JaVa\tScript:go()\">x</a>"],
+  ];
+  for (const [what, tag] of bad) assert.ok(hostProblems("p.html", swap(css, tag)).length >= 1, what);
+  assert.deepEqual(hostProblems("p.html", swap(css, "<link rel=\"icon\" href=\"data:,\">\n<a href=\"../First_Explorers/index.html#lens=navigator\">x</a>")), []);
+});
+
+test("self-test: the ids rule fails on a literal without its element", () => {
+  const page = "<head></head><body><p id=\"say\"></p><canvas id='cv'></canvas><!-- <p id=\"ghost\"></p> --></body>";
+  const kit = { path: "kit.js", src: "export const $ = (id) => document.getElementById(id);\n" };
+  const run = (src, more = []) => idProblems([{ path: "x.js", src }], page, [{ path: "x.js", src }, kit, ...more]);
+  assert.deepEqual(run("const a = $(\"say\"), b = $('cv'), c = K.$(`say`), d = document.getElementById(\"cv\");\n"), []);
+  assert.equal(run("const a = $(\"sya\");\n").length, 1, "a misspelt id");
+  assert.match(run("\n\nconst a = $(\"sya\");\n")[0], /^x\.js:3: .*"sya"/);
+  assert.equal(run("const a = $(\"ghost\");\n").length, 1, "an id that is only in a comment of the page");
+  assert.equal(run("const a = document.getElementById(\"sya\");\n").length, 1, "getElementById counts too");
+  assert.equal(run("const a = K.$('sya');\n").length, 1, "the kit's $ through a namespace");
+  assert.equal(run("const a = $(\"\");\n").length, 1, "an empty id");
+  // given by an h() call: here, in another script of the page, nested, or as a prefix
+  assert.deepEqual(run("const p = h(\"p\", { id: \"made\" }, \"x\");\nconst a = $(\"made\");\n"), []);
+  assert.deepEqual(run("const p = h(\"div\", null, h(\"p\", { class: \"x\", \"id\": 'made' }));\nconst a = $(\"made\");\n"), []);
+  assert.deepEqual(run("const a = $(\"made\");\n", [{ path: "y.js", src: "h(\"p\", { id: `made` });\n" }]), []);
+  assert.deepEqual(run("const p = h(\"p\", { id: \"e-\" + address });\nconst a = $(\"e-26.1\");\n"), []);
+  assert.deepEqual(run("const p = h(\"p\", { id: `step-${n}` });\nconst a = $(\"step-3\");\n"), []);
+  // not given: an id elsewhere than in an h() call, in a comment, in a string, or under another prefix
+  assert.equal(run("const meta = { id: \"made\" };\nconst a = $(\"made\");\n").length, 1, "an id outside an h() call");
+  assert.equal(run("// h(\"p\", { id: \"made\" })\nconst a = $(\"made\");\n").length, 1, "an h() call in a comment");
+  assert.equal(run("const s = h(\"p\", null, \"write { id: 'made' } here\");\nconst a = $(\"made\");\n").length, 1, "the words in a string");
+  assert.equal(run("const p = h(\"p\", { id: \"e-\" + address });\nconst a = $(\"f-26.1\");\n").length, 1, "another prefix");
+  assert.equal(run("const p = h(\"p\", { id: \"\" + address });\nconst a = $(\"anything\");\n").length, 1, "an empty prefix covers nothing");
+  // a literal in a comment or a string is not a call
+  assert.deepEqual(run("// $(\"sya\")\nconst s = \"$('sya')\";\n"), []);
+});
+
+test("self-test: the links rule fails on a missing file, a way out and a URL that is not relative", () => {
+  const good = Object.freeze({ a: "../First_Explorers/index.html", b: "../Celestial_Control_Panel/index.html", c: "../Lexicon_Explorer/index.html", d: "../index.html" });
+  const all = () => true, never = () => false;
+  assert.deepEqual(linkProblems(good, all, never), { problems: [], pending: [] });
+  const one = (links, exists = all, pendingOk = never) => linkProblems(Object.freeze(links), exists, pendingOk).problems;
+  assert.equal(one({ ...good, d: "../indx.html" }, (rel) => !rel.endsWith("indx.html")).length, 3, "a missing file, from both pages, and the wing index no longer reached");
+  assert.ok(one({ ...good, e: "../../../../../../../../etc/hosts" }).length >= 1, "out of the repository");
+  assert.equal(one({ ...good, e: "https://example.org/" }).length, 1, "a host");
+  assert.equal(one({ ...good, e: "/index.html" }).length, 1, "root-relative");
+  assert.equal(one({ ...good, e: "../index.html#lens=navigator" }).length, 1, "a fragment belongs to formatHashWith, not to the table");
+  assert.equal(one({ ...good, e: 7 }).length, 1, "not a string");
+  assert.equal(one({ a: good.a, b: good.b, d: good.d }).length, 1, "a page dropped from the table");
+  assert.equal(linkProblems({ ...good }, all, never).problems.length, 1, "a table that is not frozen");
+  // a page that is not written yet is pending, not a failure; anything else that is missing fails
+  const lex = `${WING}/Lexicon_Explorer/index.html`;
+  assert.deepEqual(linkProblems(good, (rel) => rel !== lex, (rel) => rel === lex), { problems: [], pending: [lex] });
+  assert.equal(linkProblems(good, (rel) => rel !== lex, never).problems.length, 2);
+  // with the rule's own idea of "not written yet": a page may be, First Explorers and the wing index may not
+  const first = `${WING}/First_Explorers/index.html`;
+  assert.deepEqual(linkProblems(good, (rel) => rel !== first), { problems: [`LINKS.a = "${good.a}" resolves from ${PAGES[0].dir} to ${first}, which does not exist`, `LINKS.a = "${good.a}" resolves from ${PAGES[1].dir} to ${first}, which does not exist`], pending: [] });
+  assert.equal(linkProblems(good, (rel) => rel !== `${WING}/index.html`).problems.length, 2);
+  if (!REQUIRE_ALL) assert.deepEqual(linkProblems(good, (rel) => rel !== lex), { problems: [], pending: [lex] });
+});
+
+test("self-test: a page file may be missing only until its page has an index.html", () => {
+  const sky = PAGES[0], model = `${sky.dir}/${sky.scripts[0]}`, index = `${sky.dir}/${sky.index}`;
+  if (REQUIRE_ALL) {
+    assert.equal(stateOf(model, () => false), "missing");
+    return;
+  }
+  assert.equal(stateOf(model, () => false), "pending");
+  assert.equal(stateOf(index, () => false), "pending");
+  assert.equal(stateOf(model, (rel) => rel === index), "missing");
+  assert.equal(stateOf(model, () => true), "present");
+  assert.equal(stateOf(KIT, () => false), "missing");
+  assert.equal(stateOf(`${WING}/First_Explorers/index.html`, () => false), "missing");
+  assert.equal(stateOf(`${sky.dir}/not-listed.js`, () => false), "missing");
+  for (const core of CORES) assert.equal(stateOf(core, () => false), "missing");
+  assert.deepEqual(unlisted(listedOf(sky), [index, `${sky.dir}/extra.js`]), [`${sky.dir}/extra.js`], "a file that is not listed is still found and checked");
+});

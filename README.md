@@ -6,3 +6,4 @@ The one stop shop for Geometric emergence knowledge. FREE for all
 - [Tome & Artifact Mastery System](./TOME_SYSTEM.md) — the 145-tome curriculum & artifacts
 - [Tome Seal & Canon System](./TOME_SEAL_SYSTEM.md) — minor-tome seals, immutable canon, unlock & completion sign-off
 - [Biomesh AI System](./BIOMESH_SYSTEM.md) — grow/certify/trade biochains, free seal-signed transfers, marketplace success scores, Archon console
+- [First Explorers & STRIX Overwatch](./STRIX_OVERWATCH.md) — the from-darkness introduction: signal → geometry → SHD-CCP packet → traced biochain → Overwatch certificate (draft 0)

@@ -75,6 +75,19 @@ const SCOPE_FILES = [
   "Library/Ontology Department/Root_Ontology_Creator.html",
   "Library/Ontology Department/Lexicons/Lexicon_Creator.html",
   "Library/Ontology Department/Lexicons/Holographic_Geometry/Holographic_Geometry.html",
+  // The Celestial Control Panel and the Lexicon Explorer (the second shows package files a visitor loads): their
+  // shared kit, both pages, and each page's model, canvas, shell and data modules.
+  "Library/Experimental_Systems/explorer-kit.js",
+  "Library/Experimental_Systems/Celestial_Control_Panel/index.html",
+  "Library/Experimental_Systems/Celestial_Control_Panel/celestial-panel-model.js",
+  "Library/Experimental_Systems/Celestial_Control_Panel/celestial-chart.js",
+  "Library/Experimental_Systems/Celestial_Control_Panel/celestial-control-panel.js",
+  "Library/Experimental_Systems/Lexicon_Explorer/index.html",
+  "Library/Experimental_Systems/Lexicon_Explorer/lexicon-explorer-model.js",
+  "Library/Experimental_Systems/Lexicon_Explorer/lexicon-canvas.js",
+  "Library/Experimental_Systems/Lexicon_Explorer/lexicon-explorer.js",
+  "Library/Experimental_Systems/Lexicon_Explorer/ezekiel-1.js",
+  "Library/Experimental_Systems/Lexicon_Explorer/passage-as-supplied.js",
 ];
 const SCOPE_DIRS = ["mage_tower", "Proofs", "scripts"];
 
@@ -951,6 +964,21 @@ test("the pages that show other users' records and loaded files are in scope", (
     "Library/Ontology Department/Lexicons/Lexicon_Creator.html", "Library/Ontology Department/Root_Ontology_Creator.html",
     "Library/Ontology Department/Lexicons/Holographic_Geometry/Holographic_Geometry.html"]) {
     assert.ok(files.has(f), `${f} is in scope`);
+  }
+  // The Celestial Control Panel and the Lexicon Explorer, typed here a second time: listFiles() passes over a
+  // SCOPE_FILES entry whose file is missing, so a path mistyped there would go unnoticed. Every path must be
+  // listed, and one whose file exists must be among the files checked (a file not written yet is skipped until
+  // it exists).
+  for (const f of ["Library/Experimental_Systems/explorer-kit.js",
+    "Library/Experimental_Systems/Celestial_Control_Panel/index.html", "Library/Experimental_Systems/Lexicon_Explorer/index.html",
+    "Library/Experimental_Systems/Celestial_Control_Panel/celestial-panel-model.js",
+    "Library/Experimental_Systems/Lexicon_Explorer/lexicon-explorer-model.js",
+    "Library/Experimental_Systems/Celestial_Control_Panel/celestial-chart.js", "Library/Experimental_Systems/Lexicon_Explorer/lexicon-canvas.js",
+    "Library/Experimental_Systems/Celestial_Control_Panel/celestial-control-panel.js",
+    "Library/Experimental_Systems/Lexicon_Explorer/lexicon-explorer.js",
+    "Library/Experimental_Systems/Lexicon_Explorer/ezekiel-1.js", "Library/Experimental_Systems/Lexicon_Explorer/passage-as-supplied.js"]) {
+    assert.ok(SCOPE_FILES.includes(f), `${f} is listed in SCOPE_FILES`);
+    if (existsSync(join(ROOT, f))) assert.ok(files.has(f), `${f} is in scope`);
   }
 });
 
