@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'none'; worker-src 'self'; base-uri 'none'; form-action 'none'">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lexicon Explorer · Ezekiel 1:1-9 in hyperbolic space</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../explorer-kit.css">
+<style>
+  /* Lexicon Explorer: the rules of this page only. Sizes, colours, the phone order and the touch rules are the kit's. */
+  /* The ring is a shadow, not a border: a border would shift the pointer's coordinates against the drawing by its width. */
+  .chart { border-radius: 50%; box-shadow: 0 0 0 1px var(--line2); background: radial-gradient(circle, rgba(56, 189, 248, .06), rgba(124, 58, 237, .12)); }
+  @media (max-width: 699.98px) { .stage { --stage-side: 27vh; } }
+  /* Where the header stays at the top it is opaque (no text shows through it), and what is scrolled to stops below it. */
+  @media (min-width: 700px) and (min-height: 700px) { .top { background: var(--bg); } html { scroll-padding-top: 88px; } }
+  .dims-corner { position: absolute; top: 4px; left: 4px; z-index: 1; padding: 2px 6px; background: rgba(3, 5, 10, .85); }
+  .stage-tools .btn { padding: 2px 6px; }
+  #linkNote { flex-basis: 100%; text-align: center; }
+  .strix-name { margin-right: 6px; }
+  #stationMain:not(:empty), #verseBox, #strixRest { margin-top: 6px; }
+  .verse-head h2 { margin-right: auto; }
+  .steps button { overflow-wrap: normal; }
+  /* Seven stations do not fit in one row by name: the others show their number, the open one its name. */
+  .steps.many button { position: relative; }
+  .steps.many button:not([aria-current]) .st-name { position: absolute; width: 1px; height: 1px; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+  .steps.many li:has(button[aria-current]) { flex-grow: 4; }
+  @media (max-width: 699.98px) {
+    .stage .cap { line-height: 1.3; }
+    #explain { padding-top: 6px; }
+  }
+  .count-line { margin-top: 2px; }
+  /* On a phone STRIX speaks in a few lines above the open verse; the whole narration is in the first closed box below. */
+  @media (max-width: 699.98px) {
+    #strixLine { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2; overflow: hidden; }
+    body[data-lens="stargazer"] #strixLine { -webkit-line-clamp: 4; line-clamp: 4; }
+    body:not([data-lens="stargazer"]) #say[data-station="count"] #strixLine { -webkit-line-clamp: 1; line-clamp: 1; }
+    /* A sky has a banner above STRIX: one line of narration there (two at Stargazer), the rest in the box below. */
+    #say[data-origin="page"] #strixLine { -webkit-line-clamp: 1; line-clamp: 1; }
+    body[data-lens="stargazer"] #say[data-origin="page"] #strixLine { -webkit-line-clamp: 2; line-clamp: 2; }
+    .banner { padding: 5px 9px; }
+    .banner .gap { margin-top: 4px; }
+  }
+  .verse-head .btn { padding: 2px 8px; }
+  .vnum { margin-right: 4px; font-family: var(--mono); }
+  .reader-verse { margin-top: 4px; }
+  .gap { margin-top: 8px; }
+  .entry-row { margin-top: 8px; }
+  .entry-row .btn { margin-right: 6px; }
+  .explain-body h3 { margin: 14px 0 2px; color: var(--dim); }
+  .explain-body blockquote, .more-body blockquote, .bridge blockquote { margin: 6px 0; }
+  .words .note { display: block; }
+  .crumbs { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; margin: 4px 0; }
+  .crumbs .btn { padding: 2px 8px; }
+  .tree-list button { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 8px; }
+  .tree-list button[aria-selected="true"] { border-color: var(--cyan); background: rgba(56, 189, 248, .14); font-weight: 700; }
+  .tree-list button.centre { border-left: 4px solid var(--violet); }
+  .tree-list .note { margin-left: auto; }
+  .more-rows { margin-top: 10px; }
+  .wheel-canvas { display: block; width: min(100%, 380px); aspect-ratio: 1 / 1; margin: 0 auto; touch-action: pan-y pinch-zoom; }
+  .bitgrid-wrap { overflow-x: auto; }
+  .bitgrid { display: grid; grid-template-columns: repeat(8, minmax(var(--tap), 1fr)); gap: 1px; min-width: calc(8 * var(--tap) + 7px); }
+  @media (max-width: 699.98px) { .bitgrid-wrap { margin: 0 -6px; } }
+  .tabs button { flex: 1 1 auto; padding: 4px; overflow-wrap: normal; }
+  /* A check is named by a whole sentence here, so its detail goes on a line of its own. */
+  .checks li { grid-template-columns: 18px minmax(0, 1fr); }
+  .checks .detail { grid-column: 2; }
+  .bitgrid button { padding: 0; border: 1px solid var(--line); border-radius: 6px; background: var(--well); color: var(--dim); font-family: var(--mono); }
+  .bitgrid button[aria-pressed="true"] { background: #94a3b8; color: var(--dark); font-weight: 700; }
+  .bitgrid button.guard { border: 2px solid var(--violet); }
+  .light { min-width: 44px; min-height: 44px; }
+  .fig { display: block; max-width: 100%; margin: 6px auto; touch-action: pan-y pinch-zoom; }
+  .fig-a { width: 260px; aspect-ratio: 1 / 1; }
+  .fig-b { width: 240px; aspect-ratio: 1 / 1; }
+  .fig-c { width: 300px; height: 110px; }
+  .fig-d { width: 300px; height: 130px; }
+  .fig-e { width: 300px; height: 160px; }
+  .fig-part { margin-top: 12px; padding-top: 8px; border-top: 1px solid var(--line); }
+  .tamper { margin-top: 8px; }
+  .layer-btn .badge { margin-right: 4px; }
+  .marks-list { margin: 4px 0 0; padding: 0; list-style: none; }
+  #more, #under, #aside { display: flex; flex-direction: column; gap: 6px; }
+  #navRow .btn { flex: 1 1 auto; }
+  .table-wrap { overflow-x: auto; }
+  .table-wrap td, .table-wrap th { overflow-wrap: normal; }
+  .table-wrap td .hash { overflow-wrap: anywhere; }
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="brand"><div><h1>Lexicon Explorer</h1><p class="sub">Ezekiel 1:1-9 in hyperbolic space</p></div></div>
+  <button class="btn ghost" id="aboutBtn" type="button" data-key="about" aria-label="What is real here?"><span class="only-wide">What is real here?</span><span class="only-narrow" aria-hidden="true">?</span></button>
+  <div id="lensMount"></div>
+  <div class="seg only-wide" id="dimsSeg" role="group" aria-label="Flat map or ball">
+    <button type="button" id="dims2d" data-key="dims-2d" aria-pressed="true">2D</button>
+    <button type="button" id="dims3d" data-key="dims-3d" aria-pressed="false">3D</button>
+  </div>
+</header>
+<main class="explorer" id="main">
+  <nav class="area-strip" id="stripNav" aria-label="Stations"><ol class="steps" id="strip"></ol></nav>
+  <section class="panel area-say" id="say" aria-label="STRIX and the open verse">
+    <div class="banner" id="banner" hidden></div>
+    <div id="strix"></div>
+    <div id="stationMain"></div>
+    <div id="verseBox"></div>
+  </section>
+  <section class="panel stage side-tools area-stage" id="stage" aria-label="The map of the lexicon">
+    <button class="btn ghost dims-corner only-narrow" id="dimsBtn" type="button" data-key="dims-toggle" aria-pressed="false">3D</button>
+    <canvas class="chart" id="tree"></canvas>
+    <div class="stage-tools" id="tools">
+      <button class="btn ghost" id="nudgeLeft" type="button" data-key="nudge-left">&#8592;</button>
+      <button class="btn ghost" id="nudgeRight" type="button" data-key="nudge-right">&#8594;</button>
+      <button class="btn ghost" id="nudgeUp" type="button" data-key="nudge-up">&#8593;</button>
+      <button class="btn ghost" id="nudgeDown" type="button" data-key="nudge-down">&#8595;</button>
+      <button class="btn ghost" id="turnLeft" type="button" data-key="turn-left" hidden>&#8630;</button>
+      <button class="btn ghost" id="turnRight" type="button" data-key="turn-right" hidden>&#8631;</button>
+      <button class="btn ghost" id="turnUp" type="button" data-key="turn-up" hidden>&#10514;</button>
+      <button class="btn ghost" id="turnDown" type="button" data-key="turn-down" hidden>&#10515;</button>
+      <button class="btn ghost" id="dragBtn" type="button" data-key="drag">Drag the map</button>
+    </div>
+    <p class="note" id="dragNote"></p>
+    <p class="cap" id="treeCap"></p>
+    <p class="note" id="linkNote" hidden></p>
+  </section>
+  <section class="panel area-explain" id="explain" aria-label="About the chosen entry">
+    <div class="tabs" id="tabs" hidden></div>
+    <div class="explain-body" id="tabEntry"></div>
+    <div class="explain-body" id="tabWheel" hidden><h2>The word wheel</h2></div>
+    <div class="explain-body" id="tabChain" hidden></div>
+    <div class="explain-body" id="tabOverwatch" hidden></div>
+    <div class="explain-body" id="tabWitnesses" hidden></div>
+  </section>
+  <section class="panel bridge area-bridge" id="bridge" aria-label="The bridge: our reading"></section>
+  <div class="area-more" id="more">
+    <details class="more" id="stationBox"><summary id="stationSum" data-key="station-more">More at this station</summary><div class="more-body" id="stationBody"></div></details>
+    <details class="more" id="readerBox"><summary id="readerSum" data-key="reader-more">The passage</summary><div class="more-body" id="reader"></div></details>
+    <details class="more" id="legendBox"><summary data-key="legend-more">What the badges mean</summary><div class="more-body" id="legend"></div></details>
+  </div>
+  <div class="area-under" id="under">
+    <div class="row" id="navRow">
+      <button class="btn ghost" id="navHome" type="button" data-key="nav-home">Home</button>
+      <button class="btn ghost" id="navUp" type="button" data-key="nav-up">Up</button>
+      <button class="btn ghost" id="navPrev" type="button" data-key="nav-prev">Previous</button>
+      <button class="btn ghost" id="navNext" type="button" data-key="nav-next">Next</button>
+    </div>
+    <details class="more" id="listBox"><summary id="listSum" data-key="list-more">Entries around the centre</summary><div class="more-body"><ul class="pick-list tree-list" id="list" role="tree" aria-label="Entries around the centre"></ul></div></details>
+  </div>
+  <div class="area-aside" id="aside">
+    <details class="more" id="loadBox" hidden><summary data-key="load-more">Load a package file</summary><div class="more-body">
+      <label for="loadInput">Choose a package file made by this page or by First Explorers (hyperpack-BC-….json). It is read here and sent nowhere.</label>
+      <input type="file" id="loadInput" accept=".json,application/json" data-busy-lock data-key="load">
+      <div class="gap" id="loadOut"></div>
+    </div></details>
+  </div>
+</main>
+<p class="status" id="status"></p>
+<dialog id="about"><h2>What is real here?</h2><div id="aboutBody"></div></dialog>
+<script type="module" src="./lexicon-explorer.js"></script>
+</body>
+</html>
