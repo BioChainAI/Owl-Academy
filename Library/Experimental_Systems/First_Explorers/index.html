@@ -135,6 +135,7 @@ td { padding: 3px 4px; border-top: 1px solid var(--line); font-family: var(--mon
 dialog { background: #0b1220; color: var(--ink); border: 1px solid var(--line2); border-radius: 16px; max-width: 760px; width: calc(100% - 24px); padding: 20px; }
 dialog::backdrop { background: rgba(0, 0, 0, .75); }
 dialog h2 { font-size: 18px; margin-bottom: 10px; }
+dialog h2:focus { outline: none; }
 dialog h4 { font: 600 13px var(--display); margin: 14px 0 5px; }
 dialog p, dialog li { font-size: 12.5px; line-height: 1.6; color: #cbd5e1; }
 dialog ul { margin: 0; padding-left: 18px; }
@@ -212,8 +213,8 @@ dialog ul { margin: 0; padding-left: 18px; }
   </div>
 </main>
 
-<dialog id="about">
-  <h2>What is real here, and what is a draft</h2>
+<dialog id="about" aria-labelledby="aboutTitle">
+  <h2 id="aboutTitle" tabindex="-1" autofocus>What is real here, and what is a draft</h2>
   <p>This page is a first-principles introduction. It runs entirely in your browser: nothing is uploaded, stored or published, and no account is needed.</p>
   <h4>Real, and shared with the rest of Owl Academy</h4>
   <ul>

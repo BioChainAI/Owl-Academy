@@ -3,7 +3,7 @@
 // First Explorers: the page. All logic that can be checked lives in scripts/strix-overwatch.js (tested in
 // tests/unit/strix-overwatch.test.mjs); this file is the interface. Every value is written with textContent.
 import * as OW from "../../../scripts/strix-overwatch.js";
-import { crystallize, recreateText } from "../../../scripts/biomesh-core.js";
+import { crystallize, recreateText, frameStream, parseBiochainStreamStrict } from "../../../scripts/biomesh-core.js";
 import { signPayload, sealIdFromPublic } from "../../../scripts/seal-crypto.js";
 
 const $ = (id) => document.getElementById(id);
@@ -143,8 +143,14 @@ const STATIONS = [
       "The 2D disc is the plane z = 0 of the 3D ball. The geodesic through the origin along z is perpendicular to that plane, so in the disc view it projects to a single point. Display geometry only: nothing here is committed."] },
 ];
 const TAMPERS = [
-  ["Flip one bit of a packet", "parity", (p) => { p.chain.stream = swapHex(p.chain.stream, 15); }],
-  ["Change the packed text", "canonical", (p) => { p.chain.stream = p.chain.stream.slice(0, -1) + swapHex(p.chain.stream.slice(-1), 0); }],
+  // Exactly one bit of the first packet: an odd number of flips always breaks the guard bit. (Replacing a whole hex
+  // digit can flip two or four bits, which keeps parity and is caught one check later, at crystal.)
+  ["Flip one bit of a packet", "parity", (p) => { p.chain.stream = OW.flipBit(p.chain.stream.slice(0, 16), 0) + p.chain.stream.slice(16); }],
+  // One 00 byte appended to the last frame's packed text, with its length field raised: still well-formed, no longer canonical.
+  ["Change the packed text", "canonical", (p) => {
+    const frames = parseBiochainStreamStrict(p.chain.stream), last = frames.length - 1;
+    p.chain.stream = frameStream(frames.map((f) => f.packet), frames.map((f, i) => (i === last ? f.residual + "00" : f.residual)));
+  }],
   ["Change a leaf hash", "leaves", (p) => { p.chain.leafHashes[0] = swapHex(p.chain.leafHashes[0], 3); }],
   ["Rename the chain", "weaves", (p) => { p.chain.chainId = "BC-" + "0".repeat(24); }],
   ["Miscount the engrams", "derived", (p) => { p.chain.engramCount += 1; }],
@@ -748,7 +754,7 @@ $("dimSeg").addEventListener("click", (e) => {
 $("tabs").addEventListener("click", (e) => { if (e.target.dataset.tab) { S.tab = e.target.dataset.tab; render(); } });
 $("soundBtn").addEventListener("click", toggleSound);
 $("homeBtn").addEventListener("click", () => { S.flyTo = null; S.view = homeView(); });
-$("aboutBtn").addEventListener("click", () => $("about").showModal());
+$("aboutBtn").addEventListener("click", () => { const d = $("about"); d.showModal(); d.scrollTop = 0; $("aboutTitle").focus({ preventScroll: true }); });
 $("aboutClose").addEventListener("click", () => $("about").close());
 window.addEventListener("resize", resize);
 window.FirstExplorers = { state: S };   // for the browser check and for the curious
