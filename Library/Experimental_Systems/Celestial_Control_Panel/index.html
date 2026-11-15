@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'none'; worker-src 'self'; base-uri 'none'; form-action 'none'">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Celestial Control Panel · Celestial Holography: a Poincaré ball explorer</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../explorer-kit.css">
+<style>
+  /* Celestial Control Panel: the rules of this page only. Sizes, colours, the phone order and the touch rules are the kit's. */
+
+  /* Wide screens: the steps run across the top and the step's further controls sit above the gold box
+     in the first column. Placement is by grid
+     area; the DOM order (strip, say, stage, explain, bridge, more, under, aside) is the phone order. */
+  @media (min-width: 700px) and (max-width: 1099.98px) {
+    .explorer { grid-template-areas: "strip strip" "say stage" "explain stage" "more stage" "bridge stage" "under stage" "aside stage" ". stage" "wide wide"; }
+  }
+  @media (min-width: 1100px) {
+    .explorer { grid-template-areas: "strip strip strip" "say stage explain" "more stage explain" "bridge stage explain" ". under aside" "wide wide wide"; }
+  }
+
+  /* the step strip: on a phone the open step shows its name, the others their number */
+  .steps button { overflow-wrap: normal; }
+  .st-n { font-family: var(--mono); margin-right: 4px; }
+  @media (max-width: 699.98px) {
+    .steps button:not([aria-current]) .st-name { position: absolute; width: 1px; height: 1px; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+    .steps button:not([aria-current]) .st-n { margin-right: 0; }
+    .steps li:has(button[aria-current]) { flex-grow: 8; }
+  }
+
+  /* STRIX's sentence and the one main control: one row of buttons whose labels may wrap */
+  .one-row { display: flex; flex-wrap: nowrap; gap: 4px; margin-top: 6px; }
+  .one-row > * { flex: 1 1 auto; min-width: var(--tap); }
+  .one-row > .btn { padding: 3px 6px; }
+  #mainPanel { margin-top: 8px; }
+  #mainNote { margin-top: 4px; }
+  .field-row { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 6px; }
+  .field-row .field { flex: 1 1 90px; }
+  .field-row .seg { flex: none; }
+  .field-row .seg button { flex-direction: row; }
+  .gap { margin-top: 8px; }
+  .block { margin-top: 12px; padding-top: 8px; border-top: 1px solid var(--line); }
+  .block > h3 { margin-bottom: 4px; color: var(--dim); }
+  .wrap-row { display: flex; flex-wrap: wrap; gap: 4px; }
+  .wrap-row > .btn { flex: 1 1 auto; }
+  @media (max-width: 699.98px) {
+    /* a little tighter than the kit, so that the first line of the card under the canvas is on the first screen */
+    .explorer { gap: 4px; padding-top: 4px; }
+    .one-row { margin-top: 4px; }
+    .stage { gap: 2px; }
+    #say { padding-top: 6px; padding-bottom: 6px; }
+    #sayText { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; line-clamp: 3; overflow: hidden; }
+    body[data-dims="3D"] #sayText { -webkit-line-clamp: 2; line-clamp: 2; }
+    body[data-dark="true"] #sayText, body[data-ask="true"] #sayText { display: block; overflow: visible; }
+    #explain { padding-top: 6px; }
+    #stage { padding-top: 4px; padding-bottom: 4px; }
+    .stage .cap { line-height: 1.3; }
+  }
+
+  /* the chart: square, never clipped round (the name of the rim is written outside the disc) */
+  .dims-corner { position: absolute; top: 4px; right: 4px; z-index: 1; padding: 2px 6px; background: rgba(3, 5, 10, .85); }
+  .stage-tools .btn { padding: 2px 6px; }
+  .tool-group { display: inline-flex; gap: 2px; }
+  @media (max-width: 699.98px) { .tool-group { gap: 0; } }
+  .hud { align-self: stretch; }
+  .hud p { margin-top: 3px; font-size: var(--fs-ui); line-height: 1.45; color: var(--dim); }
+  #linkNote { text-align: center; }
+
+  /* the inspector and the read-outs */
+  .explain-body > * + * { margin-top: 6px; }
+  .glyph { display: inline-block; min-width: 1.2em; margin-right: 4px; text-align: center; color: var(--cyan-ink); }
+  .rows td:first-child { width: 46%; color: var(--dim); }
+  .rows .badge { margin-right: 4px; }
+  .moon-box { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 6px 12px; }
+  .moon-pic { flex: none; display: block; width: 132px; height: 132px; }
+  .moon-box .cap { flex: 1 1 140px; text-align: left; }
+  .moon-small { flex: none; display: block; width: 34px; height: 34px; }
+  .moon-buttons { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4px; }
+  .moon-buttons .btn { justify-content: flex-start; padding: 3px 6px; text-align: left; }
+  .chain-name { font-family: var(--mono); font-size: var(--fs-read); font-weight: 700; overflow-wrap: anywhere; }
+  .pick-list .glyph { color: inherit; }
+  .pick-list button.below { color: var(--dim); }
+  .copy-row { display: flex; gap: 6px; }
+  .copy-row input { flex: 1; min-width: 0; font-size: var(--fs-ui); }
+
+  /* the gold box */
+  .bridge blockquote { margin: 6px 0; }
+  .bridge-stands > * + * { margin-top: 6px; }
+  .fold-rest > * + *, .fold-first > * + * { margin-top: 6px; }
+  .bridge .wrap-row { margin-top: 8px; }
+
+  #more, #under, #aside { display: flex; flex-direction: column; gap: 6px; }
+  .more-body > * + * { margin-top: 8px; }
+  #aside > .btn { align-self: flex-start; }
+
+  /* dialogs */
+  .shells-fig { display: block; width: 240px; max-width: 100%; aspect-ratio: 1 / 1; margin: 6px auto; }
+  dialog p + p { margin-top: 6px; }
+  dialog ol { margin: 0; padding-left: 24px; }
+  dialog li + li { margin-top: 6px; }
+</style>
+</head>
+<body data-lens="stargazer" data-dims="2D" data-dark="true">
+<header class="top">
+  <div class="brand"><div><h1>Celestial Control Panel</h1><p class="sub">Celestial Holography: a Poincaré ball explorer</p></div></div>
+  <button class="btn ghost" id="aboutBtn" type="button" data-key="about" aria-label="What is real here?"><span class="only-wide">What is real here?</span><span class="only-narrow" aria-hidden="true">?</span></button>
+  <button class="btn ghost only-wide" id="blueprintBtn" type="button" data-key="blueprint">Blueprint</button>
+  <div id="lensMount"></div>
+  <div class="seg only-wide" id="dimsSeg" role="group" aria-label="Flat map or ball">
+    <button type="button" id="dims2d" data-key="dims-2d" aria-pressed="true">Flat map</button>
+    <button type="button" id="dims3d" data-key="dims-3d" aria-pressed="false">Ball</button>
+  </div>
+</header>
+<main class="explorer" id="main">
+  <nav class="area-strip" id="stripNav" aria-label="Steps"><ol class="steps" id="strip"></ol></nav>
+  <section class="panel area-say" id="say" aria-label="STRIX and the main control of this step">
+    <h2 class="only-wide" id="sayQ"></h2>
+    <p class="read" id="sayText"></p>
+    <div class="one-row" id="mainRow"></div>
+    <div class="one-row" id="mainRow2" hidden></div>
+    <div id="mainPanel" hidden></div>
+    <p class="err" id="mainNote" hidden></p>
+  </section>
+  <section class="panel stage area-stage" id="stage" aria-label="The map of the sky">
+    <button class="btn ghost dims-corner only-narrow" id="dimsBtn" type="button" data-key="dims-toggle" aria-pressed="false">Ball</button>
+    <canvas class="chart" id="sky"></canvas>
+    <div class="stage-tools" id="tools">
+      <span class="tool-group" id="nudges">
+        <button class="btn ghost" id="nudgeLeft" type="button" data-key="nudge-left">&#8592;</button>
+        <button class="btn ghost" id="nudgeUp" type="button" data-key="nudge-up">&#8593;</button>
+        <button class="btn ghost" id="nudgeDown" type="button" data-key="nudge-down">&#8595;</button>
+        <button class="btn ghost" id="nudgeRight" type="button" data-key="nudge-right">&#8594;</button>
+      </span>
+      <span class="tool-group" id="turns" hidden>
+        <button class="btn ghost" id="turnLeft" type="button" data-key="turn-left">&#8630;</button>
+        <button class="btn ghost" id="turnUp" type="button" data-key="turn-up">&#10514;</button>
+        <button class="btn ghost" id="turnDown" type="button" data-key="turn-down">&#10515;</button>
+        <button class="btn ghost" id="turnRight" type="button" data-key="turn-right">&#8631;</button>
+      </span>
+      <button class="btn ghost" id="dragBtn" type="button" data-key="drag">Drag the map</button>
+    </div>
+    <p class="note" id="dragNote"></p>
+    <p class="cap" id="skyCap"></p>
+    <div class="hud only-wide" id="hud"></div>
+    <p class="note" id="linkNote" hidden></p>
+  </section>
+  <section class="panel area-explain" id="explain" aria-label="About the chosen thing">
+    <h2 id="explainTitle"></h2>
+    <div class="explain-body" id="explainBody"></div>
+    <div class="hud only-narrow" id="hudNarrow"></div>
+  </section>
+  <section class="panel bridge area-bridge" id="bridge" aria-label="The bridge: our reading"></section>
+  <div class="area-more" id="more">
+    <details class="more" id="stepBox"><summary id="stepSum" data-key="step-more">More at this step</summary><div class="more-body"><div id="stepCtl"></div><div id="stepRead"></div></div></details>
+    <details class="more only-narrow" id="strixBox"><summary data-key="strix-more">All that STRIX says here</summary><div class="more-body" id="strixAll"></div></details>
+    <details class="more" id="legendBox"><summary data-key="legend-more">What the badges mean</summary><div class="more-body" id="legend"></div></details>
+  </div>
+  <div class="area-under" id="under">
+    <details class="more" id="listBox"><summary id="listSum" data-key="list-more">Everything on the map</summary><div class="more-body"><ul class="pick-list" id="list"></ul></div></details>
+  </div>
+  <div class="area-aside" id="aside">
+    <details class="more" id="teleBox" hidden><summary id="teleSum" data-key="tele-more">Telemetry</summary><div class="more-body" id="tele"></div></details>
+    <button class="btn ghost only-narrow" id="blueprintBtn2" type="button" data-key="blueprint2">Blueprint</button>
+    <div id="lensHint"></div>
+  </div>
+</main>
+<p class="status" id="status"></p>
+<dialog id="about"><h2>What is real here?</h2><div id="aboutBody"></div></dialog>
+<dialog id="blueprint"><h2>Blueprint</h2><div id="blueprintBody"></div></dialog>
+<script type="module" src="./celestial-control-panel.js"></script>
+</body>
+</html>

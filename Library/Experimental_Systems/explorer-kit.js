@@ -13,6 +13,9 @@
 //               fragment in the link alphabet, or to a blob: URL. Anything else throws. An attribute whose name
 //               begins with "on" must be a function and is attached as a listener, never written as an attribute.
 //               Any other attribute whose name begins with "src" (srcdoc, srcset) is refused.
+//   Style       h() refuses style text, and a value of a style object, that could name a resource to load: url(,
+//               image-set(, image(, src(, @import, expression( or javascript:, and any backslash, because a CSS
+//               escape spells the same names in other letters. The rule is isAllowedStyleText().
 //   Outside     A string from a loaded package goes through outsideText(): its own element, dir="auto", isolated.
 //   Pointer     A click is a gesture that moved less than 6 px in total (the sum of every movement). Mouse and pen
 //               drag. A finger taps; it drags only after the visitor switches on "Drag the map", because the canvas
@@ -27,7 +30,7 @@
 //
 // The module touches the document only inside its functions, so the DOM-free model modules and their node tests
 // can import the pure parts: LINKS, LENSES, LAYER_META, parseHashWith, formatHashWith, hashNumber, hashTuple,
-// hashOneOf, cutLabel, isAllowedUrl, hitTest, nextPaint.
+// hashOneOf, cutLabel, isAllowedUrl, isAllowedStyleText, hitTest, nextPaint.
 //
 // Event objects. onClick({ x, y, pointerType }); onDrag({ x, y, dx, dy, startX, startY, pointerType, first });
 // onDragEnd({ x, y, pointerType, cancelled }); onWheel({ x, y, deltaX, deltaY, ctrlKey, shiftKey }). x and y are
@@ -103,7 +106,9 @@ const ATTR_NAME = /^[a-z_:][a-z0-9_:.-]*$/;
 const NO_TAGS = new Set(["script", "iframe", "frame", "frameset", "object", "embed", "applet", "base", "meta", "link", "style"]);
 const URL_ATTRS = new Set(["href", "src", "action", "formaction", "xlink:href", "poster", "ping", "background", "data", "cite", "manifest"]);
 const NO_ATTRS = new Set(["http-equiv"]);
-const UNSAFE_STYLE = /url\s*\(|@import|expression\s*\(|javascript:/i;
+// What style text may not hold. The backslash is first: "\75rl(" and "u\72l(" are url( to a browser. image-set(
+// takes a bare string as a URL, and so do image( and src(. "image-set\s*\(" also covers "-webkit-image-set(".
+const UNSAFE_STYLE = /\\|url\s*\(|image-set\s*\(|image\s*\(|src\s*\(|@import|expression\s*\(|javascript:/i;
 const CHECK_NAME = /^[a-z][a-z0-9-]{0,31}$/;
 const PLAIN_DETAIL = /^[ -~]{0,160}$/;
 const TYPING = new Set(["text", "search", "number", "email", "tel", "url", "password", "date", "time", "month", "week", "datetime-local"]);
@@ -127,6 +132,12 @@ export function isAllowedUrl(value) {
     if (value.startsWith(link) && LINK_FRAGMENT.test(value.slice(link.length))) return true;
   }
   return false;
+}
+
+// True for a string h() may write as style text, or as one value of a style object: it holds nothing that could
+// name a resource to load (see UNSAFE_STYLE). Colours, lengths, gradients and custom properties pass.
+export function isAllowedStyleText(value) {
+  return typeof value === "string" && !UNSAFE_STYLE.test(value);
 }
 
 export const $ = (id) => document.getElementById(id);
@@ -168,14 +179,14 @@ function setAttr(el, key, value) {
 }
 function setStyle(el, value) {
   if (typeof value === "string") {
-    if (UNSAFE_STYLE.test(value)) throw new Error("h(): this style text is not allowed");
+    if (!isAllowedStyleText(value)) throw new Error("h(): this style text is not allowed");
     el.style.cssText = value;
     return;
   }
   if (typeof value !== "object" || Array.isArray(value)) throw new TypeError("h(): style is a string or an object of properties");
   for (const [prop, v] of Object.entries(value)) {
     if (v == null || v === false) continue;
-    if (!/^(--)?[a-z][a-z0-9-]*$/.test(prop) || UNSAFE_STYLE.test(String(v)) || /[;{}]/.test(String(v))) throw new Error("h(): this style text is not allowed");
+    if (!/^(--)?[a-z][a-z0-9-]*$/.test(prop) || !isAllowedStyleText(String(v)) || /[;{}]/.test(String(v))) throw new Error("h(): this style text is not allowed");
     el.style.setProperty(prop, String(v));
   }
 }

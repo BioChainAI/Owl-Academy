@@ -26,6 +26,9 @@
             rows: the title with the first control beside it, then the lens switch. Put the question-mark button
             before the lens switch in the DOM.
   Motion    No animation and no transition here; with prefers-reduced-motion a page's own are switched off too.
+  Contrast  Under forced colours a control that is pressed (aria-pressed="true"), chosen (aria-selected="true") or
+            current (aria-current) carries a ring inside its edge. Mark those states with these attributes and
+            the ring comes by itself. The edge of a text field, a select and a time field is --dim.
 */
 
 :root {
@@ -103,7 +106,8 @@ button, select, summary, textarea, [role="tab"], a.btn, input:not([type="hidden"
 button { cursor: pointer; font-size: var(--fs-ui); }
 button:disabled, [aria-disabled="true"] { cursor: not-allowed; opacity: .5; }
 input, select, textarea { font-size: var(--fs-read); }
-input[type="text"], input[type="number"], input[type="search"], select, textarea { width: 100%; padding: 3px 9px; border: 1px solid var(--line); border-radius: 8px; background: var(--well); }
+/* the edge of a field is --dim, about 7 to 1 against the panel: --line (1.3 to 1) is for dividers, not for the boundary of a control */
+input[type="text"], input[type="number"], input[type="search"], input[type="time"], select, textarea { width: 100%; padding: 3px 9px; border: 1px solid var(--dim); border-radius: 8px; background: var(--well); }
 input[type="range"] { width: 100%; accent-color: var(--cyan); }
 input[type="checkbox"], input[type="radio"] { width: var(--tap); height: var(--tap); accent-color: var(--cyan); }
 input[type="file"] { max-width: 100%; font-size: var(--fs-ui); }
@@ -285,4 +289,14 @@ dialog ul { margin: 0; padding-left: 20px; }
 }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
+}
+/* Forced colours take away the fills and edge colours that show what is pressed, chosen or current. A ring just
+   inside the edge, in the system's highlight colour, says it instead; an open tab keeps its underline and the
+   others lose theirs. The focus ring is drawn outside the edge, so on a pressed control that has the focus the
+   ring is drawn thick enough to reach from the one place to the other. */
+@media (forced-colors: active) {
+  [aria-pressed="true"], [aria-selected="true"], [aria-current]:not([aria-current="false"]) { outline: 2px solid Highlight; outline-offset: -3px; }
+  [aria-pressed="true"]:focus-visible, [aria-selected="true"]:focus-visible, [aria-current]:not([aria-current="false"]):focus-visible { outline-width: 5px; }
+  .tabs button { border-bottom-color: Canvas; }
+  .tabs button[aria-pressed="true"] { border-bottom-color: Highlight; }
 }

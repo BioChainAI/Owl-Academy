@@ -446,7 +446,7 @@ function controlsFor(n) {
 // ─── right panel ─────────────────────────────────────────────────────────────
 function checkList(checks) {
   return h("ul", { class: "checks" }, ...checks.map((c) => h("li", { class: c.ok === true ? "ok" : c.ok === false ? "bad" : "skip" },
-    h("b", null, c.ok === true ? "✓" : c.ok === false ? "✕" : "·"), h("em", null, c.name), h("span", null, c.detail))));
+    h("b", null, c.ok === true ? "✓" : c.ok === false ? "✕" : "·"), h("em", null, c.name), h("span", null, c.name === "signature" && c.ok === true && c.detail.startsWith("ECDSA P-256 by ") ? c.detail + " (a key made for this visit)" : c.detail))));
 }
 const empty = (text) => [h("p", { class: "note" }, text)];
 function tabPacket() {
