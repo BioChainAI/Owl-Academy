@@ -687,10 +687,14 @@ export function partsFromDayOfYear(year, n, calendar = "auto") {
 
 // ---------------------------------------------------------------- ranges of a sky
 // skyState accepts an instant whose LOCAL mean date at the given longitude lies in the years -1999..3000,
-// because that local date is the one a page shows and seals.
+// because that local date is the one a page shows and seals. The upper end is exclusive and has no slack: an
+// instant is refused when the local date it carries, rounded to the millisecond exactly as partsFromJd rounds
+// it, is at or beyond 0 h on 1 January 3001. So no state and no sealed sky is dated in the year 3001, whatever
+// the rounding of a link value or of jdUt + lonEast / 360. The lower end keeps its slack.
 const LOCAL_JD_MIN = jdFromCalendar(YEAR_MIN, 1, 1, "julian");
 const LOCAL_JD_MAX = jdFromCalendar(YEAR_MAX + 1, 1, 1, "gregorian");
-const JD_SLACK = 1e-6;                                               // 0.09 s, for the rounding of jdFromLocalMean
+const LOCAL_MS_END = (LOCAL_JD_MAX + 0.5) * 86400000;                // whole milliseconds since JD -0.5, as in partsFromJd
+const JD_SLACK = 1e-6;                                               // 0.09 s, for the rounding of jdFromLocalMean (lower end only)
 /** lat and lonEast are closed ranges; localJd = jdUt + lonEast / 360 runs from the first to below the second. */
 export const RANGES = deepFreeze({ lat: [-90, 90], lonEast: [-180, 180], year: [YEAR_MIN, YEAR_MAX], localJd: [LOCAL_JD_MIN, LOCAL_JD_MAX] });
 
@@ -698,7 +702,7 @@ function checkSkyInputs(jdUt, lat, lonEast) {
   checkLatLon(lat, lonEast);
   if (!isNum(jdUt)) throw new RangeError(RANGE_MESSAGES.instant);
   const local = jdUt + lonEast / 360;
-  if (local < LOCAL_JD_MIN - JD_SLACK || local >= LOCAL_JD_MAX + JD_SLACK) throw new RangeError(RANGE_MESSAGES.instant);
+  if (local < LOCAL_JD_MIN - JD_SLACK || Math.round((local + 0.5) * 86400000) >= LOCAL_MS_END) throw new RangeError(RANGE_MESSAGES.instant);
 }
 /** true exactly when skyState(jdUt, lat, lonEast) would not throw. For link values and typed numbers. */
 export function skyInputsValid(jdUt, lat, lonEast) {
@@ -841,7 +845,7 @@ export function bearingAndDistance(lat1, lon1, lat2, lon2) {
  *  and begin that day (a day reckoned from sunset to sunset); `said` names who gives the date. */
 export const EZEKIEL_DATES = deepFreeze([
   {
-    key: "593-07-31", label: "31 July 593 BC", said: "the date most reference works give",
+    key: "593-07-31", label: "31 July 593 BC", said: "the date usually given",
     endsDay: { year: -592, month: 7, day: 31, calendar: "julian" }, beginsDay: { year: -592, month: 7, day: 30, calendar: "julian" },
   },
   {

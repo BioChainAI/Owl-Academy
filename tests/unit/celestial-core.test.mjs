@@ -849,7 +849,7 @@ test("ANCHORS and CMB: the table of the vector file, with verified extras only",
 test("EZEKIEL_DATES: the three published dates, with who gives each", () => {
   assert.ok(deepFrozen(C.EZEKIEL_DATES));
   assert.deepEqual(JSON.parse(JSON.stringify(C.EZEKIEL_DATES)), [
-    { key: "593-07-31", label: "31 July 593 BC", said: "the date most reference works give",
+    { key: "593-07-31", label: "31 July 593 BC", said: "the date usually given",
       endsDay: { year: -592, month: 7, day: 31, calendar: "julian" }, beginsDay: { year: -592, month: 7, day: 30, calendar: "julian" } },
     { key: "593-07-01", label: "1 July 593 BC", said: "Finegan 1950, using Parker and Dubberstein's tables",
       endsDay: { year: -592, month: 7, day: 1, calendar: "julian" }, beginsDay: { year: -592, month: 6, day: 30, calendar: "julian" } },
@@ -861,6 +861,9 @@ test("EZEKIEL_DATES: the three published dates, with who gives each", () => {
     assert.equal(d.key, `${C.eraYear(d.endsDay.year).n}-${String(d.endsDay.month).padStart(2, "0")}-${String(d.endsDay.day).padStart(2, "0")}`);
   }
   assert.equal(C.EZEKIEL_DATES_NOTE, "Older books give 592 BC (Jewish Encyclopedia; Davidson 1892).");
+  // no reference work was opened for 31 July, so nothing here says what "most reference works" give
+  for (const d of C.EZEKIEL_DATES) assert.doesNotMatch(d.said, /most|reference works/i, d.key);
+  assert.doesNotMatch(C.EZEKIEL_DATES_NOTE, /most|reference works/i);
 });
 
 // ─── 8. calendar parts ───────────────────────────────────────────────────────
@@ -1046,6 +1049,41 @@ test("ranges: a year outside -1999..3000, a month or a day that does not exist, 
     assert.equal(C.skyInputsValid(first, 0, lon), true);
     assert.equal(C.skyInputsValid(first - 0.01, 0, lon), false);
   }
+  // the upper end is exclusive, without slack: the first instant of the year 3001 is out, at any longitude, also when it is
+  // reached by rounding a link value; and no instant that is let in carries a date of 3001
+  const END = C.RANGES.localJd[1];
+  refused(() => C.skyState(END, 0, 0), M.instant, "0 h on 1 January 3001, local");
+  assert.equal(C.skyInputsValid(END, 0, 0), false);
+  assert.equal(C.roundSkyInputs(2817152.499996, 0, 0).jdUt, END, "a link value that rounds up to the end");
+  assert.equal(C.skyInputsValid(C.roundSkyInputs(2817152.499996, 0, 0).jdUt, 0, 0), false);
+  assert.equal(C.skyState(2817152.49999, 0, 0).localDate.year, 3000, "the last link value before the end");
+  for (const lon of [-180, -45.23, 0.01, 135.76, 179.73, 180]) {
+    const first3001 = C.jdFromLocalMean({ year: 3000, month: 12, day: 31 }, 0, lon) + 1;
+    refused(() => C.skyState(first3001, 0, lon), M.instant, "the first instant of 3001 at " + lon);
+    assert.equal(C.skyInputsValid(first3001 + 1e-7, 0, lon), false, "and nothing within the old slack after it, at " + lon);
+  }
+  for (const ms of [0, 0.04, 0.2, 0.4, 0.6, 1, 50, 96, 864]) {       // this many milliseconds before the end
+    const j = END - ms / 86400000, shown = C.partsFromJd(j).year;
+    assert.equal(C.skyInputsValid(j, 0, 0), shown === 3000, `${ms} ms before the end is in exactly when its date, as the pages show it, is in 3000`);
+  }
+  let let3001 = 0, tried = 0;
+  for (let lon100 = -18000; lon100 <= 18000; lon100++) {              // every longitude of a link, and the link values next to the end
+    const lon = lon100 / 100;
+    for (let k = -2; k <= 3; k++) {
+      const j = Number((END - lon / 360 - k * 0.00001).toFixed(5));
+      if (!C.skyInputsValid(j, 0, lon)) continue;
+      tried++;
+      if (C.partsFromJd(j + lon / 360).year !== 3000) let3001++;
+    }
+  }
+  assert.ok(tried > 36000, "the sweep reached the end at every longitude");
+  assert.equal(let3001, 0, "no link value that is let in is dated in the year 3001");
+  // the lower end keeps its slack, for the rounding of jdFromLocalMean
+  const START = C.RANGES.localJd[0];
+  assert.equal(C.skyInputsValid(START, 0, 0), true);
+  assert.equal(C.skyInputsValid(START - 5e-7, 0, 0), true);
+  assert.equal(C.skyInputsValid(START - 2e-6, 0, 0), false);
+  assert.equal(C.skyInputsValid(Number((START - 0.00001).toFixed(5)), 0, 0), false, "the link value before the first instant");
   assert.equal(C.skyInputsValid(jd, 91, 0), false);
   assert.equal(C.skyInputsValid(jd, 0, "0"), false);
   assert.equal(C.skyInputsValid("x", 0, 0), false);

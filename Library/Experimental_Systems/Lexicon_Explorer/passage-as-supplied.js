@@ -10,7 +10,7 @@
 
 export const SUPPLIED_NOTICE = "Scripture quotations taken from The Holy Bible, New International Version®, NIV®. Copyright © 1973, 1978, 1984, 2011 by Biblica, Inc.® Used by permission. All rights reserved worldwide.";
 
-export const SUPPLIED_NOTE = "Only Ezekiel 1:1-9 is shown in this wording, as the author supplied it; every other Bible quotation here is King James. No separate permission was asked: the quotation relies on the allowance printed in NIV Bibles (up to 500 verses, less than a quarter of the quoting work), and this project has not confirmed the publisher's current online terms. The printed NIV has dashes in verses 2 and 4, prints LORD in small capitals where this copy has Lord, and has a footnote at Babylonians.";
+export const SUPPLIED_NOTE = "Only Ezekiel 1:1-9 is shown in this wording, as the author supplied it; every verse entry of this lexicon is King James, and other translations are quoted only in entries that name them. No separate permission was asked: the quotation relies on the allowance printed in NIV Bibles (up to 500 verses, less than a quarter of the quoting work), and this project has not confirmed the publisher's current online terms. The printed NIV has dashes in verses 2 and 4, prints LORD in small capitals where this copy has Lord, and has a footnote at Babylonians.";
 
 export const SUPPLIED_VERSES = Object.freeze({
   "26.1.1": "In my thirtieth year, in the fourth month on the fifth day, while I was among the exiles by the Kebar River, the heavens were opened and I saw visions of God.",

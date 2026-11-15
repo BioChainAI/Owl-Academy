@@ -1161,6 +1161,21 @@ test("a tree lexicon is certified, packaged and answered with the formats a jour
   assert.equal((await OW.verifyAnswer(far.answer, wire)).failed, "echo");
 });
 
+test("the passed signature check names the algorithm and the seal id, and nothing about when or by whom the key was made", async () => {
+  // The core cannot know where a package came from: a file from outside is verified by the same code as a package
+  // this page sealed. So its detail says only what was checked. A page that made the key in this visit may add that itself.
+  const { bundle, certificate, wire } = await small();
+  const want = { name: "signature", ok: true, detail: "ECDSA P-256 by " + certificate.sealId };
+  assert.match(certificate.sealId, /^S-[0-9a-f]{24}$/);
+  assert.deepEqual((await OW.verifyCertificate(certificate, bundle)).checks.at(-1), want);
+  assert.deepEqual((await OW.verifyHyperpack(wire)).checks.at(-1), want);
+  assert.deepEqual((await OW.readHyperpack(wire)).checks.at(-1), want, "a text from outside");
+  const { bundle: jb } = await journeyBundle(), keys = await OW.newSessionKeys(), jcert = (await OW.issueCertificate(jb, keys, AT)).certificate;
+  const jv = await OW.readHyperpack(JSON.stringify(OW.makeHyperpack({ ...jb, certificate: jcert })));
+  assert.deepEqual(jv.checks.at(-1), { name: "signature", ok: true, detail: "ECDSA P-256 by " + jcert.sealId }, "a journey package");
+  for (const v of [await OW.readHyperpack(wire), jv]) for (const c of v.checks) assert.doesNotMatch(c.detail, /this visit|this page|your|made for/i, c.name + ": no detail says whose key it is or when it was made");
+});
+
 // ─── Phase 1: relabelling ────────────────────────────────────────────────────
 
 test("relabelling a READING as TEXT: refused at lexicon, trace, commitment and signature; accepted only as a new package under a new key", async () => {
@@ -1380,12 +1395,9 @@ test("readHyperpack: what a package may hold is listed from real output, and a g
     ["an unknown member in the lexicon", (p) => { p.lexicon.title = "certified"; }, "lexicon"],
     ["an unknown member in a lexicon entry", (p) => { p.lexicon.entries[3].note = "x"; }, "lexicon"],
     ["an unknown member in a lineage row", (p) => { p.lineage[0].note = "x"; }, "lineage"],
-    ["a missing traceHead", (p) => { delete p.certificate.traceHead; }, "commitment"],
     ["a chain without its stream", (p) => { delete p.chain.stream; }, "parity"],
     ["lexicon.entries that is a string", (p) => { p.lexicon.entries = "x"; }, "lexicon"],
-    ["a public key that is a string", (p) => { p.certificate.publicJwk = "x"; }, "signature"],
     ["a public key with a numeric x", (p) => { p.certificate.publicJwk.x = 1; }, "signature"],
-    ["a signature that is an object", (p) => { p.certificate.sig = {}; }, "signature"],
     ["an epoch written as a string", (p) => { p.chain.epoch = "4"; }, "lineage"],
     ["a ledger entry changed", (p) => { p.trace[2].detail += " "; }, "trace"],
   ]) {
@@ -1405,6 +1417,56 @@ test("readHyperpack: what a package may hold is listed from real output, and a g
     const r = await door(JSON.stringify(p), what);
     assert.equal(r.ok, true, what);
     assert.deepEqual(r.pack, p, what);
+  }
+});
+
+test("readHyperpack: a certificate holds its seven members, each of its type; one without traceHead is refused, and so is its rewritten ledger", async () => {
+  const { pack, wire, keys } = await small();
+  const SEVEN = /^the certificate does not hold its seven members: six strings and the public key, an object$/;
+  assert.deepEqual(Object.keys(pack.certificate), ["format", "commitment", "traceHead", "issuedAt", "sealId", "publicJwk", "sig"]);
+  assert.equal((await door(wire, "the certificate as it is issued")).ok, true);
+
+  // The signer leaves traceHead out and signs the line that results: the place of the head in the line is empty, so the
+  // signature covers no point of the ledger. verifyHyperpack alone takes it. The front door must not.
+  const line = OW.overwatchCommitment({ chain: pack.chain, lexicon: pack.lexicon, traceHead: undefined });
+  assert.ok(line.endsWith("|2D+3D||" + OW.SCOPE), "the signed line names no ledger entry");
+  const headless = clone(pack), c = pack.certificate;
+  headless.certificate = { format: c.format, commitment: line, issuedAt: c.issuedAt, sealId: c.sealId, publicJwk: c.publicJwk, sig: await SC.signPayload(keys.privateJwk, line) };
+  assert.equal(await verdictOf(headless), "accepted", "verifyHyperpack alone lets it through");
+  await shut(JSON.stringify(headless), "a certificate signed without traceHead", SEVEN);
+  // what that would allow: someone without the key writes another ledger (other actors, other times, one more event)
+  const rewritten = clone(headless), ledger = [];
+  OW.traceAppend(ledger, "someone else", "ledger.rewritten", "no key was needed", "1999-01-01T00:00:00.000Z");
+  for (const e of headless.trace.filter((e) => e.event === "chain.grown")) OW.traceAppend(ledger, "someone else", e.event, e.detail, "1999-01-01T00:00:00.000Z");
+  rewritten.trace = ledger;
+  assert.deepEqual(rewritten.certificate, headless.certificate, "the certificate is the one that was signed");
+  assert.equal(await verdictOf(rewritten), "accepted", "verifyHyperpack alone lets the rewritten ledger through");
+  await shut(JSON.stringify(rewritten), "the same package with its ledger rewritten without the key", SEVEN);
+  // the control: with traceHead in the certificate the same rewrite is caught by the trace check
+  { const p = clone(pack); p.trace = ledger; assert.equal((await door(JSON.stringify(p), "the rewritten ledger under a certificate that names its head")).failed, "trace"); }
+
+  // every member must be there, and of its type: six strings and one object
+  for (const name of Object.keys(pack.certificate)) { const p = clone(pack); delete p.certificate[name]; await shut(JSON.stringify(p), "a certificate without " + name, SEVEN); }
+  for (const name of ["format", "commitment", "traceHead", "issuedAt", "sealId", "sig"]) for (const value of [null, 0, 1, true, [], ["x"], {}, { length: 64 }]) {
+    const p = clone(pack); p.certificate[name] = value; await shut(JSON.stringify(p), `certificate.${name} as ${show(value)}`, SEVEN);
+  }
+  for (const value of [null, 1, "x", true, [], [pack.certificate.publicJwk]]) { const p = clone(pack); p.certificate.publicJwk = value; await shut(JSON.stringify(p), "certificate.publicJwk as " + show(value).slice(0, 12), SEVEN); }
+  await shut(JSON.stringify({ ...clone(pack), certificate: {} }), "an empty certificate", SEVEN);
+  // an unknown member is still named first, and a string of the wrong content is left to the checks
+  { const p = clone(pack); delete p.certificate.traceHead; p.certificate.head = pack.certificate.traceHead; await shut(JSON.stringify(p), "traceHead under another name", /^the certificate has a member this format does not know$/); }
+  for (const [name, failed] of [["format", "commitment"], ["commitment", "commitment"], ["traceHead", "trace"], ["sealId", "signature"], ["sig", "signature"]]) {
+    const p = clone(pack); p.certificate[name] = "";
+    assert.equal((await door(JSON.stringify(p), `certificate.${name} as an empty string`)).failed, failed, name);
+  }
+  // verifyHyperpack is not the door: on the same texts it still names a check
+  for (const [what, change, failed] of [
+    ["a missing traceHead", (p) => { delete p.certificate.traceHead; }, "commitment"],
+    ["a public key that is a string", (p) => { p.certificate.publicJwk = "x"; }, "signature"],
+    ["a signature that is an object", (p) => { p.certificate.sig = {}; }, "signature"],
+  ]) {
+    const p = clone(pack); change(p);
+    assert.equal(await verdictOf(p), failed, what + ": verifyHyperpack");
+    await shut(JSON.stringify(p), what, SEVEN);
   }
 });
 

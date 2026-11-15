@@ -1,9 +1,17 @@
 // SPDX-License-Identifier: MIT
 // Copyright (c) 2026 Ebayednoob
 /**
- * STRIX Overwatch core (draft 0) — the Firebase-free, DOM-free half of the
- * First Explorers introduction (Library/Experimental_Systems/First_Explorers/).
+ * STRIX Overwatch core (a draft) — the Firebase-free, DOM-free half of three
+ * pages of Library/Experimental_Systems/: First Explorers (a journey of
+ * observations), the Lexicon Explorer (a tree lexicon) and the Celestial
+ * Control Panel (a sky, sealed as a tree lexicon).
  * ----------------------------------------------------------------------------
+ * One of three cores. This one holds the formats and the checks. Two others
+ * stand beside it: scripts/celestial-core.js (the sky: Sun, Moon, frames and
+ * the rows of a sky lexicon; it imports nothing) and scripts/hyperbolic-moves.js
+ * (the geometry the two newer pages draw with; it uses the moves of this file
+ * unchanged and nothing it computes is ever committed).
+ *
  * What is reused, unchanged: the shdccp/2 grow cell, growth epochs, the GROWN/1
  * and GROWTH/1 commitments and the strict verifier (RFC 07 section 12) of
  * scripts/biomesh-core.js, and the ECDSA P-256 signatures of seal-crypto.js.
@@ -15,16 +23,47 @@
  *               "sense.index" in a tree rooted at the observer. The address is
  *               exact (two integers); the 2D disc and 3D ball coordinates are
  *               derived from it for display and are never committed.
+ *   LEX/1       one entry of a tree lexicon as one canonical line of text: an
+ *               address of 1 to 8 indices, a layer (text, said, checked or
+ *               reading), a kind, a name and a text.
+ *   LEXICON/2   a tree lexicon: its text is the lines in the one depth-first
+ *               order, and its object lists every entry with the hash of its
+ *               line. The layer is in the line and in the root, so a label
+ *               changed after sealing no longer fits the certificate.
  *   TRACE/1     a hash-chained ledger of everything that happened.
  *   OVERWATCH/1 a certificate: one signed line binding a chain that passes the
- *               strict check to its meaning (OBS/1), its lexicon, its lineage
- *               (every epoch regrown from the text) and a point of the trace.
+ *               strict check to its meaning (OBS/1 or LEX/1), its lexicon, its
+ *               lineage (every epoch redone from the text) and a point of the
+ *               trace.
  *   HYPERPACK/1 the bundle a receiver needs to repeat every check.
  *   HANDSHAKE/1 the receiver's signed answer: what it read and what it decided.
+ * A lexicon's format picks its profile (PROFILES): a journey grows one epoch
+ * per observation, a tree one epoch per top-level entry. The certificate, the
+ * bundle and the answer are the same for both.
  *
- * The signing key is whatever key pair the caller passes. The page makes one
+ * Also here, each with its own section below:
+ *   readHyperpack   the front door: the one way a text from outside the page
+ *                   becomes a package. It refuses, before any check runs, what
+ *                   is not exactly the wire form of a package with the members
+ *                   and types this format knows; then it runs every check.
+ *   witnessQuorum   the witness rule: one seal is one witness. An answer counts
+ *                   only if it is whole, for the wire that was sent, accepting,
+ *                   canonically spelled, from a seal the caller already holds,
+ *                   not the sealer's, and not counted before.
+ *   the word figures  one 64-bit word as a wheel of 16 sectors and as a square
+ *                   of 8 by 8 (glyphCells, glyphHex), the mirror rule that fills
+ *                   64 cells from four (seedMirror), and three quarters giving
+ *                   the fourth (squareQuarters, fourthFromThree,
+ *                   quarterParities). Properties of the words, not of meaning.
+ *   LEXICON_TAMPERS what a page lets a visitor try on a sealed tree package,
+ *                   and the check that refuses each; the last row is the limit:
+ *                   relabelled and sealed again with a new key, it passes.
+ *
+ * The signing key is whatever key pair the caller passes. A page makes one
  * per visit: its signature shows a certificate has not changed since it was
- * issued, not who issued it. Binding to a Genesis seal is later work.
+ * issued, not who issued it and not that its sentences are true. This file
+ * cannot tell a package the page made from one that came in as a file, so no
+ * check detail says whose key it is. Binding to a Genesis seal is later work.
  */
 
 import { generateSealKeypair, signPayload, verifyPayload, sealIdFromPublic } from "./seal-crypto.js";
@@ -482,7 +521,9 @@ export async function verifyCertificate(certificate, bundle) {
   const idOk = jwk && typeof jwk === "object" && typeof jwk.x === "string" && typeof jwk.y === "string" && cert.sealId === await sealIdFromPublic(jwk);
   const sigOk = idOk && typeof cert.sig === "string" && await verifyPayload(jwk, cert.commitment, cert.sig);
   if (!sigOk) { checks.push({ name: "signature", ok: false, detail: idOk ? "the signature does not verify" : "the seal id is not the key's" }); return finish("signature"); }
-  checks.push({ name: "signature", ok: true, detail: `ECDSA P-256 by ${cert.sealId} (a key made for this visit)` });
+  // What was checked, and no more: this code cannot know when the key was made or whose it is. A page that made
+  // the key in this visit may say so beside this detail; for a package from outside nobody here can.
+  checks.push({ name: "signature", ok: true, detail: `ECDSA P-256 by ${cert.sealId}` });
   return finish(null);
 }
 
@@ -912,8 +953,12 @@ export function entriesOfPack(pack) {
 // (so no indentation, no padding and no member named twice); a value nested deeper than 12 levels or
 // holding a string that is not well-formed Unicode; anything but an object with exactly the members
 // format, route, chain, lexicon, lineage, trace and certificate, in that order and of their types; a
-// member this format does not know in the chain, the certificate or a ledger entry; more than 3,000
-// lexicon entries, 64 lineage rows or 4,096 ledger entries. Then it runs verifyHyperpack.
+// member this format does not know in the chain, the certificate or a ledger entry; a certificate that
+// does not hold all seven of its members, six of them strings and the public key an object; more than
+// 3,000 lexicon entries, 64 lineage rows or 4,096 ledger entries. Then it runs verifyHyperpack.
+// Why the certificate's members are required here: verifyCertificate reads a certificate without traceHead
+// as one that names no ledger entry. The signed line then holds an empty place for the head, the signature
+// covers no point of the ledger, and anyone could write another ledger under the same seal.
 // What a passing verdict covers is what the checks rebuilt and the signed line: the chain, the lexicon,
 // the lineage and the ledger up to the certified head. The route, issuedAt, ledger entries after the head
 // and whatever the key's record says beside the key itself (x and y) are not covered by the signature.
@@ -925,6 +970,7 @@ const PACK_MEMBERS = Object.freeze(["format", "route", "chain", "lexicon", "line
 const CHAIN_MEMBERS = Object.freeze(["chainId", "stream", "streamVersion", "leafHashes", "merkleRoot", "weaveChiral", "weaveMirror", "segCuts", "segments",
   "engramStream", "engramCount", "engramMeanJ", "origBytes", "shippedBytes", "value", "parentChainId", "parentMerkleRoot", "epoch", "addedBytes"]);
 const CERTIFICATE_MEMBERS = Object.freeze(["format", "commitment", "traceHead", "issuedAt", "sealId", "publicJwk", "sig"]);
+const CERTIFICATE_STRINGS = Object.freeze(CERTIFICATE_MEMBERS.filter((k) => k !== "publicJwk"));
 const LEDGER_MEMBERS = Object.freeze(["n", "actor", "event", "detail", "at", "prev", "hash"]);
 const onlyMembers = (o, allowed) => Object.keys(o).every((k) => allowed.includes(k));
 
@@ -957,6 +1003,8 @@ function packFault(v) {
   if (![v.route, v.chain, v.lexicon, v.certificate].every(isRecord) || !Array.isArray(v.lineage) || !Array.isArray(v.trace)) return "not a package: route, chain, lexicon and certificate are objects, lineage and trace are lists";
   if (!onlyMembers(v.chain, CHAIN_MEMBERS)) return "the chain has a member this format does not know";
   if (!onlyMembers(v.certificate, CERTIFICATE_MEMBERS)) return "the certificate has a member this format does not know";
+  const whole = CERTIFICATE_STRINGS.every((k) => Object.hasOwn(v.certificate, k) && typeof v.certificate[k] === "string") && Object.hasOwn(v.certificate, "publicJwk") && isRecord(v.certificate.publicJwk);
+  if (!whole) return "the certificate does not hold its seven members: six strings and the public key, an object";
   if (v.trace.length > MAX_LEDGER_ENTRIES) return `the ledger holds more than ${MAX_LEDGER_ENTRIES} entries`;
   if (!v.trace.every((e) => isRecord(e) && onlyMembers(e, LEDGER_MEMBERS))) return "a ledger entry is not an object, or has a member this format does not know";
   if (v.lineage.length > MAX_LINEAGE_ROWS) return `the lineage lists more than ${MAX_LINEAGE_ROWS} epochs`;

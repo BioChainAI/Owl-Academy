@@ -8,7 +8,9 @@
 //             at most 58,000 bytes; fourteen top-level entries; kinds, layers, book, chapter and verse rows; links;
 //             the 34 terms; the handles; the ten lines; plain rows; the order of the facets under a line.
 //   wording   no banned word under 100; search rows in their fixed form; every SAID row names a speaker from the
-//             list kept here; the hedges and the sensitive points that can be searched for; van Paassen quoted at
+//             list kept here, and so does every sentence of one unless it is on the short list of reviewed
+//             sentences (REVIEWED_WITHOUT_SPEAKER) or closes a search row; no search row says what a word means;
+//             the hedges and the sensitive points that can be searched for; van Paassen quoted at
 //             most eight times; every quotation in a SAID row is one of QUOTATIONS (the list compared with the
 //             sources in November 2026: a new or changed quotation fails until it is compared and listed).
 //   counts    countWord over the nine verses; COUNT_WORDS; and CHECKED_FACTS: every row of layer checked has one
@@ -102,7 +104,7 @@ function citedIn(listText) {
 }
 const NUMBER_WORDS = new Map(Object.entries({
   once: 1, twice: 2, "three times": 3, "four times": 4, "five times": 5,
-  one: 1, two: 2, three: 3, four: 4, five: 5, six: 6, eight: 8, nine: 9, sixteen: 16, "sixty-three": 63,
+  one: 1, two: 2, three: 3, four: 4, five: 5, six: 6, seven: 7, eight: 8, nine: 9, sixteen: 16, "sixty-three": 63,
   first: 1, fourth: 4, sixteenth: 16, "sixty-fourth": 64, half: 50,
 }));
 /** A number written in words in a row ("twice", "five times", "sixteenth") → the number. */
@@ -220,7 +222,7 @@ test("book, chapter and verse rows: the 38 verses of 6.2 under their books and c
 const LINK_QUOTES = [
   ["100.1.3", "an alien unto my mother's children"], ["100.1.5", "he that came down from heaven"], ["100.1.6", "not of the world"],
   ["100.1.7", "I was a stranger"], ["100.1.8", "no more strangers and foreigners"], ["100.1.9", "among the captives"],
-  ["100.2.3", "a wheel in the middle of a wheel"], ["100.4.3", "the face of an eagle"], ["100.4.4", "the fourth beast was like a flying eagle"],
+  ["100.2.4", "a wheel in the middle of a wheel"], ["100.4.3", "the face of an eagle"], ["100.4.4", "the fourth beast was like a flying eagle"],
   ["100.6.5", "four men"], ["100.6.5", "the form of the fourth"], ["100.7.3", "nothing but the truth"], ["100.7.4", "bear witness unto the truth"],
   ["100.7.5", "Swear not at all"], ["100.9.3", "they turned not when they went"], ["100.10.3", "In the beginning was the Word"],
 ];
@@ -304,8 +306,8 @@ const LINE_ADDRESSES = LINES.map((_, i) => `100.${i + 1}`);
 const FRAME_OF_LINE_8 = "The author's own words, in the style of the courtroom oath: a warning against leading people away from the truth. The page quotes them. It is not saying them to you.";
 // The facets under each line, as planned (layer/kind in order). A relabelled, moved, added or dropped facet shows here.
 const PLAN = {
-  "100.1": "said/plain reading/plain reading/link reading/link reading/link reading/link reading/link reading/link reading/link checked/count said/search said/history said/history reading/note reading/note",
-  "100.2": "said/plain reading/plain reading/link checked/code checked/geometry said/history",
+  "100.1": "said/plain reading/plain reading/link reading/link reading/link reading/link reading/link reading/link reading/link checked/count said/search said/history said/history reading/note reading/note reading/note",
+  "100.2": "reading/plain said/plain reading/plain reading/link checked/code checked/geometry said/history",
   "100.3": "reading/plain checked/plain reading/link reading/link checked/code said/history",
   "100.4": "checked/plain reading/plain reading/link reading/link reading/link checked/count checked/count said/history said/tradition said/tradition said/history",
   "100.5": "checked/plain reading/link checked/code checked/code",
@@ -388,15 +390,62 @@ const SEARCH_FRAME_BOOK = "This project's search of two scans of the 1949 book f
 // Speaker phrases. A SAID row must hold at least one of them in its text (the row name does not count).
 const SPEAKERS = [
   SEARCH_FRAME_KJV.trim(), SEARCH_FRAME_BOOK.trim(), "This project's search of the King James Bible found",
-  "King James Version, from the Project Gutenberg e-text", "Rabbinic tradition", "the Jewish Encyclopedia", "The Jewish Encyclopedia",
-  "Pierre van Paassen", "Van Paassen",
+  "The same search found", "King James Version, from the Project Gutenberg e-text", "Rabbinic tradition", "Jewish Encyclopedia",
+  "Pierre van Paassen", "Van Paassen", "This project's spelling of the Hebrew:", "Christian readings of a Jewish prophet's book",
   "The book says", "The book counts", "People who study", "A Hebrew dictionary of 1906", "The Hebrew lexicon of Brown, Driver and Briggs (1906)",
-  "Davidson (1892)", "The scholar Davidson", "Kutsch (1985)", "Finegan (1950)", "H. V. Hilprecht",
-  "American Standard Version (1901)", "Brenton's Septuagint in English (1844)", "the Douay Bible", "The King James says", "old translations say", "The old Greek translation",
-  "Origen", "Irenaeus", "Jerome", "Augustine", "is usually given as", "is usually dated to", "as books on the language report",
+  "Davidson (1892)", "The scholar Davidson", "Kutsch (1985)", "Finegan (1950)", "Parker and Dubberstein's tables", "H. V. Hilprecht",
+  "American Standard Version (1901)", "Brenton's Septuagint in English (1844)", "the Douay Bible", "The King James says", "The passage the author supplied says",
+  "old translations say", "One old translation says", "The old Greek translation",
+  "Origen", "Irenaeus", "Jerome", "Augustine", "Clement of Alexandria", "is usually given as", "is usually dated to", "as books on the language report",
   "Skeptical Inquirer", "SHD-CCP RFC 02", "The Catholic Encyclopedia (1912)", "H. W. Hoare (1902)", "A law book of 1618", "John Wilkinson", "Thomas Wilcox",
-  "Owl Academy's Loom Weave", "STRIX_OVERWATCH.md", "D. Dunham (2003)",
+  "Owl Academy's Loom Weave", "STRIX_OVERWATCH.md", "is the author's phrase", "D. Dunham (2003)", "B. Ernst",
 ];
+// A sentence of a SAID row that names no speaker itself. Each was read in its row (review finding HON-02): it carries on
+// what the sentence before it attributes, or it speaks of this lexicon and its sources. Address, sentence, reason.
+// A new sentence without a speaker fails the test below until it names one, moves to a READING row, or is listed here.
+const REVIEWED_WITHOUT_SPEAKER = [
+  ["0.2", "The e-text follows no single printed edition and does not mark the translators' italics.", "describes the e-text that the sentence before names (the notice of 6.2)"],
+  ["0.3", "Ezekiel 1 belongs first to the Hebrew Bible.", "the opening frame of 1.4: whose book the chapter is; the tradition is named in the next sentence"],
+  ["0.3", "(The Mishnah itself was not opened for this project.)", "this lexicon on its own sources: what was not opened"],
+  ["0.3", "This lexicon lists words, translations and sources.", "this lexicon on itself"],
+  ["0.3", "It does not explain the vision.", "this lexicon on itself"],
+  ["0.4.2", "The links between Ezekiel and the Gospels shown here come from early Christian writers and from this project, not from him.", "says whose the page's own links are, so that they are not taken for van Paassen's"],
+  ["26.1.1.1.1", "The book itself does not say.", "carries on from the sentence before; the book is the verse rows kept here"],
+  ["26.1.1.2.1", "Other dates are in print too.", "carries on the hedge of the sentence before; row 26.1.1.2.4 names who prints them"],
+  ["26.1.1.4.1", "They are fairly sure, not certain.", "they: the people who study old writing, named in the sentence before"],
+  ["26.1.1.5.8", "Acts 7:56 has \"I see the heavens opened\".", "a near phrase the same search met; run again under OWL_KJV_DIR"],
+  ["26.1.1.5.8", "This is a count of English words in one translation.", "the limit of the search just reported"],
+  ["26.1.4.5.2", "This row gives only what dictionaries and translations say.", "this row on itself"],
+  ["26.1.7.2.1", "It says their feet were winged.", "it: the old Greek translation, named in the sentence before"],
+  ["100.1.12", "He argues that it calls for changing this world.", "he: Pierre van Paassen, named in the sentence before"],
+  ["100.2.2", "In 1991 two men said they had made many crop circles with boards and string.", "the report that the sentence before announces and attributes to Skeptical Inquirer"],
+  ["100.3.6", "He writes as a Unitarian: elsewhere he says the teaching that God took on human form is a Greek idea that does not stem from Jesus.", "he: Pierre van Paassen, named in the sentence before"],
+  ["100.10.13", "He writes this of how a person should live.", "he: Pierre van Paassen, named in the sentence before"],
+];
+const REPEAT_THE_SEARCH = /^Search (a scan of the book for this name|the Project Gutenberg King James text for (this phrase|this word|"[^"]+"))\.$/;
+/** The sentences of a SAID row. A quotation stays inside the sentence that brings it; the full stop of an initial
+ *  ("H. V. Hilprecht", "M.C.") ends nothing; a new sentence begins with a capital, a quotation mark or a bracket. */
+function saidSentences(t) {
+  const hold = String.fromCodePoint(0xe000);
+  const masked = t.replace(/"[^"]*"/g, (q) => q.slice(0, -2).replace(/[.!?]/g, (c) => hold + c.codePointAt(0) + hold) + q.slice(-2));
+  return masked.split(/(?<=[.!?]["”)]?)(?<!(?:^|[^\p{L}])\p{Lu}\.)\s+(?=["“(]?\p{Lu})/u).map((s) => s.replace(new RegExp(hold + "(\\d+)" + hold, "g"), (_, c) => String.fromCodePoint(Number(c))));
+}
+/** Every sentence of a SAID row that names no speaker, is not reviewed, and is not the closing sentence of a search row
+ *  that says how to repeat the search: [address, sentence]. */
+function sentencesWithoutSpeaker(rows) {
+  const out = [];
+  for (const e of rows) {
+    if (e.layer !== "said") continue;
+    const ss = saidSentences(e.text);
+    ss.forEach((s, i) => {
+      if (SPEAKERS.some((p) => s.includes(p))) return;
+      if (e.kind === "search" && i === ss.length - 1 && REPEAT_THE_SEARCH.test(s)) return;
+      if (REVIEWED_WITHOUT_SPEAKER.some(([a, sentence]) => a === e.address && sentence === s)) return;
+      out.push([e.address, s]);
+    });
+  }
+  return out;
+}
 
 test("every SAID row names a speaker in its text, and none says but, however, in fact or actually outside a quotation", () => {
   const said = entries.filter((e) => e.layer === "said");
@@ -409,6 +458,44 @@ test("every SAID row names a speaker in its text, and none says but, however, in
     assert.ok(!/\b(but|however|in fact|actually)\b/i.test(outsideQuotes(e.text)), `${e.address}: a SAID row has none of but, however, in fact, actually outside a quotation (1.6, Voice)`);
   }
   assert.deepEqual(SPEAKERS.filter((p) => !used.has(p)), [], "a speaker phrase no row uses should leave the list");
+  // "The same search found" carries on a search: only in a row that begins by naming that search, never in its first sentence
+  for (const e of entries) {
+    const at = e.text.indexOf("The same search found");
+    if (at >= 0) assert.ok(e.layer === "said" && at > 0 && /^(A search of the Project Gutenberg King James e-text|This project's search of the King James Bible) /.test(e.text), `${e.address}: "The same search" follows a search named in the same row`);
+  }
+});
+
+test("every sentence of a SAID row names a speaker itself, is on the short list of reviewed sentences, or tells how to repeat a search", () => {
+  const said = entries.filter((e) => e.layer === "said");
+  // the splitter: one row whose sentences are known, with quotations, initials and brackets
+  assert.deepEqual(saidSentences("H. V. Hilprecht (1898) writes \"a. b. C.\" twice. He says \"No. Never.\" Most agree (so it is said). \"Quoted first.\" is last."),
+    ["H. V. Hilprecht (1898) writes \"a. b. C.\" twice.", "He says \"No. Never.\"", "Most agree (so it is said).", "\"Quoted first.\" is last."]);
+  for (const e of said) assert.equal(saidSentences(e.text).join(" "), e.text, `${e.address}: the sentences put together again are the row`);
+  assert.ok(said.reduce((n, e) => n + saidSentences(e.text).length, 0) > 120, "the SAID rows hold more than 120 sentences");
+  assert.deepEqual(sentencesWithoutSpeaker(entries), [], "SAID sentences that name no speaker (name one, move the sentence to a READING row, or review and list it)");
+  // the list stays short and current: every listed sentence still stands in its row, without a speaker, with a reason
+  assert.ok(REVIEWED_WITHOUT_SPEAKER.length <= 17, "the list of reviewed sentences is meant to stay short: " + REVIEWED_WITHOUT_SPEAKER.length);
+  for (const [address, sentence, reason] of REVIEWED_WITHOUT_SPEAKER) {
+    assert.equal(by.get(address)?.layer, "said", `${address}: a reviewed sentence belongs to a SAID row`);
+    assert.ok(saidSentences(T(address)).includes(sentence), `${address}: a listed sentence that left its row should leave the list: ${sentence}`);
+    assert.ok(!SPEAKERS.some((p) => sentence.includes(p)), `${address}: a listed sentence that names a speaker needs no listing: ${sentence}`);
+    assert.ok(saidSentences(T(address)).some((s) => SPEAKERS.some((p) => s.includes(p))), `${address}: another sentence of the row names the speaker`);
+    assert.ok(typeof reason === "string" && reason.length >= 12, `${address}: the reason is written down`);
+  }
+});
+
+test("the speaker check catches a judgement of this project put into a SAID row (the sentence cut from row 0.4, and three more)", () => {
+  const withText = (address, change) => entries.map((e) => (e.address === address ? { ...e, text: change(e.text) } : e));
+  const CUT = "Most Christians and many historians disagree with parts of it.";
+  assert.ok(!T("0.4").includes("Most Christians") && T("0.4").endsWith("\"No really objective life of Jesus can be written.\""), "row 0.4 ends with van Paassen's own words");
+  // the sentence as it stood in row 0.4 until the review (finding HON-05): the row names van Paassen, the sentence names nobody
+  assert.deepEqual(sentencesWithoutSpeaker(withText("0.4", (t) => t + " " + CUT)), [["0.4", CUT]]);
+  // a gloss inside a search row (finding HON-18, item 5), before the closing sentence
+  assert.deepEqual(sentencesWithoutSpeaker(withText("100.1.11", (t) => t.replace(" Search the Project", " In each it means a foreigner or outsider. Search the Project"))), [["100.1.11", "In each it means a foreigner or outsider."]]);
+  // a sentence that opens with a pronoun is not excused by its pronoun
+  assert.deepEqual(sentencesWithoutSpeaker(withText("100.10.13", (t) => t + " It is widely rejected.")), [["100.10.13", "It is widely rejected."]]);
+  // a reviewed sentence is excused in its own row only
+  assert.deepEqual(sentencesWithoutSpeaker(withText("100.4.8", (t) => t + " It does not explain the vision.")), [["100.4.8", "It does not explain the vision."]]);
 });
 
 test("every search row is layer said, begins with one of the two fixed frames and ends with how to repeat the search", () => {
@@ -427,6 +514,8 @@ test("every search row is layer said, begins with one of the two fixed frames an
     if (/\b(whole|entire) (King James|Bible|e-text)\b/i.test(e.text) || /\bnowhere else\b/i.test(e.text)) assert.fail(`${e.address}: a statement about the whole Bible outside a search row`);
   }
   assert.match(T("100.1.1"), /^This project's search of the King James Bible found /, "the plain row of line 1 names the search as its speaker and says found");
+  // a search finds words, not meanings: no row that reports a search says what a word means (review finding HON-18, item 5)
+  for (const e of entries) if (e.kind === "search" || (e.layer === "said" && /\bsearch\b/i.test(e.text))) assert.ok(!/\b(means?|meant|meaning)\b/i.test(e.text), `${e.address}: a row that reports a search says what was found, not what a word means`);
 });
 
 // Every quotation in a SAID row, as compared with its source in November 2026 (the sources are named in the row; the
@@ -468,7 +557,7 @@ const QUOTATIONS = new Map([
   ["100.6.16", ["three witnesses"]],
   ["100.6.17", ["a son of the gods"]],
   ["100.7.7", ["the whole truth, and nothing but the truth", "the truth, the whole trueth, and nothing but the trueth, so helpe you God"]],
-  ["100.7.8", ["nothing but the truth"]],
+  ["100.7.8", ["nothing but the truth", "the whole truth", "so help you God", "nothing but the truth"]],   // the three phrases searched for; the first again in the closing sentence
   ["100.8.5", ["so helpe you God"]],
   ["100.9.6", ["they turned not when they went", "they turned not as they went"]],
   ["100.10.9", ["1/16 M.C. ESCHER SYMMETRY"]],
@@ -524,10 +613,13 @@ test("hedges and sensitive points that can be searched for (1.3, 1.4)", () => {
   assert.ok(T("0.1").includes("It is a filing convention and carries no meaning."));
   // row 0.4 and below: van Paassen as 1.4 item 14 words him
   assert.ok(T("0.4").includes("who writes \"As a Unitarian\" and argues his own reconstruction"));
+  assert.ok(T("0.4").endsWith("he says himself, \"No really objective life of Jesus can be written.\""), "row 0.4 ends with his own words: this project's judgement of the book is not SAID");
   assert.ok(T("0.4.1").includes("the running text never mentions him"));
   assert.ok(T("0.4.2").endsWith("come from early Christian writers and from this project, not from him."));
   assert.deepEqual([by.get("0.4.3").layer, by.get("0.4.3").kind], ["reading", "note"], "what the book does not contain is this project's judgement: READING");
+  assert.ok(T("0.4.3").startsWith("This project's view: most Christians and many historians would disagree with parts of the book. "), "who disagrees with the book is this project's view, and is worded as one");
   assert.ok(T("0.4.3").includes("the rules are this project's, and the book does not contain them."));
+  for (const e of entries) if (/most Christians|many historians/i.test(e.text)) assert.deepEqual([e.address, e.layer], ["0.4.3", "reading"], `${e.address}: "most Christians and many historians" stands only in the READING row 0.4.3`);
   // the pairings of Irenaeus, Jerome, Augustine and Origen are introduced as Christian readings of a Jewish prophet's book
   const pairings = entries.filter((e) => e.kind === "tradition" && /\b(Irenaeus|Jerome|Augustine|Origen)\b/.test(e.text) && e.address !== "100.4.9");   // 100.4.9: the order of the Gospels, not a pairing
   assert.deepEqual(pairings.map((e) => e.address), ["26.1.1.5.9", "26.1.6.1.5", "26.1.10.1.2", "26.1.10.2.2", "26.1.10.3.3", "26.1.10.4.4", "100.4.10"]);
@@ -546,10 +638,10 @@ test("hedges and sensitive points that can be searched for (1.3, 1.4)", () => {
     if (/spacecraft/.test(e.text)) assert.match(e.text, /is usually dated to books of 1968 and 1974/, `${e.address}: the spacecraft reading is dated with a hedge, and no scholar is said to support it`);
     if (/1770s/.test(e.text)) assert.match(e.text, /is usually dated to the 1770s/, `${e.address}: Griesbach's edition is dated with a hedge`);
     if (/electricity/.test(e.text)) assert.equal(e.text, "The same word is used for electricity in modern Hebrew, as books on the language report.", `${e.address}: the hedged sentence of 1.3`);
-    if (/reference works/.test(e.text)) assert.equal(e.address, "26.1.1.2.3", `${e.address}: "reference works" stands only in the date row section 6.4 words`);
+    assert.ok(!/reference works?/i.test(e.name + " " + e.text), `${e.address}: no row says what reference works give: none was opened for the date (review finding HON-10)`);
   }
   // the conditional date row keeps its condition and its last sentence
-  assert.ok(T("26.1.1.2.3").startsWith("If the fifth day is placed where most reference works place it, ") && T("26.1.1.2.3").endsWith("The book gives no hour."));
+  assert.ok(T("26.1.1.2.3").startsWith("If the fifth day is placed on the date usually given, ") && T("26.1.1.2.3").includes(" On another published date, ") && T("26.1.1.2.3").endsWith("Verses 1 to 3 give a day and no hour."));
   assert.ok(T("26.1.1.2.4").includes("Older books give 592 BC"));
   // Hebrew transliterations are this project's spelling
   const hebrew = entries.filter((e) => e.kind === "lexicon" && /^26\.1\.\d+\.\d+\.\d+$/.test(e.address) && /Hebrew lexicon|Davidson|Septuagint/.test(e.text) && !["26.1.1.3.2", "26.1.1.4.4"].includes(e.address));
@@ -561,11 +653,21 @@ test("hedges and sensitive points that can be searched for (1.3, 1.4)", () => {
   const firstChebar = entries.find((e) => !["verse", "term", "plain", "link"].includes(e.kind) && e.text.includes("Chebar"));
   assert.ok(firstChebar.text.includes("Chebar (Kebar in the NIV)"), `${firstChebar.address}: the first fuller row that says Chebar writes: Chebar (Kebar in the NIV)`);
   assert.ok(T("26.1.4.5.2").endsWith("The Jewish Encyclopedia reports a Talmudic story that warns against prying into this word. This row gives only what dictionaries and translations say."));
-  // crop circles: the documented fact first, the author's belief as the author's
-  assert.match(T("100.2.1"), /^Skeptical Inquirer reports that in 1991 two men said /);
-  assert.equal(T("100.2.2"), "The line is the author's own belief. No check on this page depends on it.");
-  // line 1: the author's wordplay; what alien means where it occurs
-  assert.ok(T("100.1.11").includes("In each it means a foreigner or outsider; alienated and alienate are other words."));
+  // crop circles, as a Stargazer reads them: Ezekiel's own wheels beside the line (this project's reading, in the words of
+  // verse 16), then the report with its speaker named in the sentence that announces it, then the author's belief as the author's
+  assert.deepEqual(childrenOf("100.2").filter((e) => e.kind === "plain").map((e) => `${e.address} ${e.layer}`), ["100.2.1 reading", "100.2.2 said", "100.2.3 reading"]);
+  assert.equal(T("100.2.1"), "Ezekiel 1:16 has wheels too: a wheel in the middle of a wheel. We set them side by side.");
+  assert.ok(T("100.2.1").includes(by.get(HANDLES.wheel).name) && T("26.1.16").includes(by.get(HANDLES.wheel).name) && verseNamed("Ezekiel 1:16").address === "26.1.16", "the words of row 100.2.1 are the King James words of Ezekiel 1:16");
+  assert.match(T("100.2.2"), /^Here is what a magazine, Skeptical Inquirer, reports\. In 1991 two men said /);
+  assert.equal(T("100.2.3"), "The line is the author's own belief. No check on this page depends on it.");
+  assert.match(T("100.2.7"), /^Skeptical Inquirer, a sceptics' magazine \(1992 and 2002\), reports that in September 1991 two men, /);
+  // line 1: the author's wordplay; the search rows say what was found beside alien, and how the word is read there is this project's reading
+  assert.ok(T("100.1.11").includes("The same search found stranger, strangers or strange in seven of the eight (not in Hebrews 11:34); alienated and alienate stand in other verses and were not counted."));
+  assert.equal(T("100.1.1"), "This project's search of the King James Bible found alien or aliens in eight verses. The same search found stranger, strangers or strange in seven of them.");
+  assert.deepEqual([by.get("100.1.16").layer, by.get("100.1.16").kind, T("100.1.16")], ["reading", "note", "We read the word alien in those eight verses as foreigner or stranger. You may see it another way."]);
+  for (const e of entries) if (e.layer !== "reading" && e.kind !== "verse" && /\bforeigners?\b|\boutsiders?\b/i.test(e.text)) assert.fail(`${e.address}: how alien is read (foreigner, outsider) is this project's reading, not a finding`);
+  // the two verse rows kept here that hold alien or aliens hold stranger or strangers too (the rest of the eight are compared when OWL_KJV_DIR is set)
+  assert.deepEqual(verses.filter((v) => /\baliens?\b/.test(v.text)).map((v) => [v.address, /\bstrangers?\b/.test(v.text)]), [["19.69.8", true], ["49.2.12", true]]);
   assert.ok(childrenOf("100.1").some((e) => e.layer === "reading" && /the author's (play on words|wordplay)/.test(e.text)));
   // the translation is always named where a wording other than King James is used
   for (const e of entries) if (/\bNIV\b/.test(e.text + e.name)) assert.ok(["26.1.1.4.3", "100.9.7"].includes(e.address), `${e.address}: NIV is named only in the Chebar row and under line 9`);
@@ -578,10 +680,10 @@ test("READING rows give no instruction to the visitor, and CHECKED rows begin wi
       for (const s of sentences(e.text)) assert.ok(!/^(Open|Try|Count|Press|Pick|Flip|Hide|Slide|Look|Find|Search|Work|See|Read)\b/.test(s), `${e.address}: an OUR IDEA row gives no instruction: ${s}`);
     }
     if (e.layer !== "checked") continue;
-    // two rows keep sentences the specification words itself: the conditional date row (6.4) and the Stargazer sentence of 1.6
+    // one row puts its condition first: the conditional date row (6.4)
     if (e.address === "26.1.1.2.3") assert.ok(e.text.startsWith("If the fifth day is placed"));
-    else if (e.address === "100.6.2") assert.equal(e.text, "Pin three points on the rim of this map. Then the place of every other point is settled.");
     else assert.match(e.text, VERBS, `${e.address}: a CHECKED row puts the verb first`);
+    for (const s of sentences(e.text)) assert.ok(!/^Pin\b/.test(s), `${e.address}: a row does not ask for an action the page may not offer: ${s}`);
   }
 });
 
@@ -628,6 +730,18 @@ const moon = memo(() => {
   return { site, usual, other, begins, ends, litBegins: lit(begins), litEnds: lit(ends), litOther: lit(otherEnds), firstQuarter: K.nextPhaseTime(begins, 90),
     waxing: K.skyState(ends, site.lat, site.lonEast).phase.waxing };
 });
+// Words that would give a time of day. "even" is the King James word for evening ("at even").
+const HOUR_WORDS = ["hour", "hours", "morning", "evening", "even", "eventide", "night", "nights", "midnight", "noon", "noonday", "dawn", "dawning", "sunrise", "sunset", "twilight", "watch"];
+/** "Verses 1 to 3 give a day and no hour": the verse rows 26.1.<from> … 26.1.<to> name a day of a month and hold no word for a time of day. */
+function noHourInVerses(from, to, dayWord, hourWord) {
+  assert.deepEqual([from, to, dayWord, hourWord], [1, 3, "day", "hour"]);
+  const rows = NINE.slice(from - 1, to);
+  assert.deepEqual(rows, ["26.1.1", "26.1.2", "26.1.3"]);
+  assert.ok(rows.some((a) => T(a).includes("the fifth day of the month")), "the verses give a day");
+  assert.ok(rows.reduce((n, a) => n + countWord(T(a), dayWord), 0) >= 1);
+  for (const a of rows) for (const w of HOUR_WORDS) assert.equal(countWord(T(a), w), 0, `${a} holds the word "${w}"`);
+  if (hasSupplied) for (const a of rows) for (const w of HOUR_WORDS) assert.equal(countWord(SUP.SUPPLIED_VERSES[a], w), 0, `the supplied wording of ${a} holds the word "${w}"`);
+}
 /** Forward, left, back, right by 1 without turning; one slide alone; the same loop with slides of 0.001 (the flat limit). */
 const walk = memo(() => {
   const loop = (d) => H.slidePath([0, 1, 2, 3].map((k) => ({ angle: k * Math.PI / 2, dist: d })));
@@ -747,10 +861,12 @@ fact("26.1.1.2.2", "skyState, sunEventOnLocalDay, EZEKIEL_DATES, SITES (celestia
   assert.ok(s.litBegins < s.litEnds && s.waxing, "the Moon grew during the day");
 }, [PIN.moon]);
 fact("26.1.1.2.3", "skyState, sunEventOnLocalDay, nextPhaseTime, EZEKIEL_DATES, SITES (celestial-core.js)",
-  /^If the fifth day is placed where most reference works place it, it ran from sunset on (\d+) July to sunset on (\d+) July (\d+) BC\. Over Nippur the Moon grew during that day from (\d+) % to (\d+) % lit and reached first quarter as the day ended\. On the other published date, the day ending at sunset on (\d+) July (\d+) BC, it ended (\d+) % lit\. The book gives no hour\.$/, (m) => {
-    const s = moon();
+  /^If the fifth day is placed on (the date usually given), it ran from sunset on (\d+) July to sunset on (\d+) July (\d+) BC\. Over Nippur the Moon grew during that day from (\d+) % to (\d+) % lit and reached first quarter as the day ended\. On another published date, the day ending at sunset on (\d+) July (\d+) BC, it ended (\d+) % lit\. Verses (\d) to (\d) give a (day) and no (hour)\.$/, (mm) => {
+    const s = moon(), m = [mm[0], ...mm.slice(2)];   // m[1] … m[8]: the numbers, as before; mm[1]: the condition
     assert.ok(s.site.label.includes("Nippur"));
-    assert.ok(s.usual.said.includes("most reference works"), "EZEKIEL_DATES names who gives the first date");
+    assert.equal(s.usual.said, mm[1], "EZEKIEL_DATES words the first date as the row does, and names no reference work");
+    assert.ok(K.EZEKIEL_DATES.length > 2 && s.other === K.EZEKIEL_DATES[1], "another published date: the table of dates holds more than one other");
+    noHourInVerses(Number(mm[10]), Number(mm[11]), mm[12], mm[13]);
     assert.deepEqual(s.usual.beginsDay, { year: 1 - Number(m[3]), month: 7, day: Number(m[1]), calendar: "julian" });
     assert.deepEqual(s.usual.endsDay, { year: 1 - Number(m[3]), month: 7, day: Number(m[2]), calendar: "julian" });
     assert.equal(s.usual.label, `${m[2]} July ${m[3]} BC`);
@@ -898,8 +1014,13 @@ fact("26.1.10.1.1", ROWS_BY, /^Counted: verse (\d+) names (the face of a man) fi
   assert.ok(rising(names.map((n) => T("26.1." + m[1]).indexOf(n))), "the four faces stand in the verse in the order of the terms");
   assert.equal(names[0], m[2]);
 });
-fact("26.1.10.2.1", ROWS_BY, /^Read: verse (\d+) puts the (man) and the (lion) on the (right) side\.$/, (m) => {
-  assert.ok(T("26.1." + m[1]).includes(`the face of a ${m[2]}, and the face of a ${m[3]}, on the ${m[4]} side`));
+// what can be read off: the words stand straight after the lion's face. Which faces they govern is a reading of the comma, and the row does not say.
+fact("26.1.10.2.1", ROWS_BY, /^Read: in verse (\d+) the words (on the (right) side) follow the (lion)'s face\.$/, (m, row) => {
+  const verse = T("26.1." + m[1]), term = by.get(parentOf(row.address)).name;
+  assert.equal(term, `the face of a ${m[4]}`, "the row stands under the term it speaks of");
+  assert.equal(verse.split(m[2]).length - 1, 1, "the words stand once in the verse");
+  assert.equal(verse.indexOf(m[2]), verse.indexOf(term) + term.length + ", ".length, "they follow the term, after a comma");
+  assert.ok(!/\bman\b/.test(row.text) && !/\bputs\b/.test(row.text), "the row does not say which faces are on that side");
 });
 fact("26.1.10.3.1", ROWS_BY, /^Read: verse (\d+) puts (the face of an ox) on the (left) side\.$/, (m) => {
   assert.ok(T("26.1." + m[1]).includes(`${m[2]} on the ${m[3]} side`));
@@ -931,13 +1052,13 @@ fact("100.1.10", ROWS_BY, /^Counted from the rows: "([^"]+)" stands in (Psalm 69
   assert.ok(verseNamed(m[2]).text.includes(m[1]) && verseNamed(m[3]).text.includes(m[1]));
 });
 // ── line 2 ──
-fact("100.2.4", "glyphCells, glyphHex, seedMirror (strix-overwatch.js)", /^Built and read back: the word wheel on this page is a circle that carries (\d+) bits\. That is a fact about this page's own figure, not about crop circles\. Open the Wheel tab\.$/, (m) => {
+fact("100.2.5", "glyphCells, glyphHex, seedMirror (strix-overwatch.js)", /^Built and read back: the word wheel on this page is a circle that carries (\d+) bits\. That is a fact about this page's own figure, not about crop circles\. Open the Wheel tab\.$/, (m) => {
   for (const w of [GOLDEN, ...mirrorWords()]) {
     assert.equal(String(OW.glyphCells(w).length), m[1]);
     assert.equal(OW.glyphHex(OW.glyphCells(w)), w, "the word reads back");
   }
 }, [PIN.glyph]);
-fact("100.2.5", "moveBall, mobius (hyperbolic-moves.js); lmul, rotZ, boostAlong (strix-overwatch.js)", /^Computed: every move in these explorers sends circles to circles\. Slide the map and watch one\.$/, () => {
+fact("100.2.6", "moveBall, mobius (hyperbolic-moves.js); lmul, rotZ, boostAlong (strix-overwatch.js)", /^Computed: every move in these explorers sends circles to circles\. Slide the map and watch one\.$/, () => {
   const rnd = seeded(2);
   let worst = 0;
   for (const M of discMoves()) {
@@ -1003,7 +1124,7 @@ fact("100.5.4", "buildLexiconBundle, treeEpochTexts (strix-overwatch.js)", /^Bui
   assert.equal(bundle.chain.parentChainId, bundle.lineage[tops.length - 2].chainId, "the last epoch is linked to its parent");
 }, [PIN.epochs]);
 // ── line 6 ──
-fact("100.6.2", "mobiusFromThree, skyImage (hyperbolic-moves.js)", /^Pin (three) points on the rim of this map\. Then the place of every other point is settled\.$/, (m) => {
+fact("100.6.2", "mobiusFromThree, skyImage (hyperbolic-moves.js)", /^Worked out: (three) points on the rim settle where every other point goes\.$/, (m) => {
   assert.equal(num(m[1]), 3);
   threeRimPointsFixTheFourth();
 }, [PIN.three]);
@@ -1213,7 +1334,7 @@ const SUPPLIED_HEAD = "// Quotes Ezekiel 1:1-9 from the Holy Bible, New Internat
   "// reading only; never sealed, downloaded or placed in a link. To remove it, set SUPPLIED_VERSES to {}.\n";
 const R = String.fromCodePoint(0xae), C = String.fromCodePoint(0xa9);
 const SUPPLIED_NOTICE = `Scripture quotations taken from The Holy Bible, New International Version${R}, NIV${R}. Copyright ${C} 1973, 1978, 1984, 2011 by Biblica, Inc.${R} Used by permission. All rights reserved worldwide.`;
-const SUPPLIED_NOTE = "Only Ezekiel 1:1-9 is shown in this wording, as the author supplied it; every other Bible quotation here is King James. No separate permission was asked: the quotation relies on the allowance printed in " +
+const SUPPLIED_NOTE = "Only Ezekiel 1:1-9 is shown in this wording, as the author supplied it; every verse entry of this lexicon is King James, and other translations are quoted only in entries that name them. No separate permission was asked: the quotation relies on the allowance printed in " +
   "NIV Bibles (up to 500 verses, less than a quarter of the quoting work), and this project has not confirmed the publisher's current online terms. The printed NIV has dashes in verses 2 and 4, prints LORD in small capitals " +
   "where this copy has Lord, and has a footnote at Babylonians.";
 const suppliedVerses = Object.values(SUP.SUPPLIED_VERSES || {});
@@ -1233,6 +1354,40 @@ test("passage-as-supplied.js: the header of 6.6, the four exports, the notice an
   assert.equal(SUP.SUPPLIED_NOTE, SUPPLIED_NOTE);
   assert.ok(Object.isFrozen(SUP.SUPPLIED_VERSES) && Object.isFrozen(SUP.SUPPLIED_TERMS));
   for (const [k, v] of [...Object.entries(SUP.SUPPLIED_VERSES), ...Object.entries(SUP.SUPPLIED_TERMS)]) assert.ok(typeof k === "string" && typeof v === "string" && v.length > 0, k);
+});
+
+// What SUPPLIED_NOTE says of the rows (review finding HON-03): every verse entry is King James, and other translations are
+// quoted only in entries that name them. The words of other translations quoted in the rows, each with the version its
+// own row names (compared with the scratch sources in November 2026) …
+const OTHER_TRANSLATIONS = [
+  ["26.1.1.6.3", "It was Ezechiel that saw the glorious vision, which was shewn him upon the chariot of cherubims.", "the Douay Bible"],
+  ["26.1.3.3.2", "the land of the Chaldeans", "American Standard Version (1901)"], ["26.1.3.3.2", "the land of the Chaldeans", "the Douay Bible"],
+  ["26.1.3.3.2", "the land of the Chaldeans", "Brenton's Septuagint in English (1844)"],
+  ["26.1.4.1.2", "stormy wind", "American Standard Version (1901)"], ["26.1.4.1.2", "sweeping wind", "Brenton's Septuagint in English (1844)"],
+  ["26.1.7.1.3", "legs were straight", "Brenton's Septuagint in English (1844)"],
+  ["26.1.7.2.2", "their feet were winged, and there were sparks, like gleaming brass", "Brenton's Septuagint in English (1844)"],
+  ["100.6.17", "a son of the gods", "American Standard Version (1901)"],
+];
+// … and the plain rows that give such words without quotation marks: the words, and the fuller row of the same entry that quotes them and names the version.
+const PLAIN_TRANSLATION_WORDS = [["26.1.4.1.1", ["stormy wind", "sweeping wind"], "26.1.4.1.2"], ["26.1.7.1.1", ["legs"], "26.1.7.1.3"], ["26.1.7.2.1", ["their feet were winged"], "26.1.7.2.2"]];
+
+test("SUPPLIED_NOTE says what holds of the rows: verse entries are King James rows, and another translation's words stand in an entry that names it", () => {
+  assert.ok(SUP.SUPPLIED_NOTE.includes("every verse entry of this lexicon is King James, and other translations are quoted only in entries that name them."));
+  assert.ok(!/every other Bible quotation/i.test(SUP.SUPPLIED_NOTE), "the note does not say that every other Bible quotation is King James: six rows quote other translations");
+  for (const v of verses) assert.ok(v.layer === "text" && !/Version|Septuagint|Douay|NIV/.test(v.name), `${v.address}: a verse entry is a King James row (compared with the e-text when OWL_KJV_DIR is set)`);
+  for (const [address, words, version] of OTHER_TRANSLATIONS) {
+    assert.equal(by.get(address)?.layer, "said", `${address}: another translation is reported, layer said`);
+    assert.ok(quotesOf(T(address)).includes(words), `${address} quotes "${words}"`);
+    assert.ok(T(address).includes(version), `${address} names ${version} in the row that quotes it`);
+  }
+  for (const [address, words, fuller] of PLAIN_TRANSLATION_WORDS) {
+    assert.equal(by.get(address)?.kind, "plain");
+    assert.equal(parentOf(address), parentOf(fuller), `${address} and ${fuller} belong to one entry`);
+    assert.ok(OTHER_TRANSLATIONS.some(([a]) => a === fuller), `${fuller} names its translation`);
+    for (const w of words) assert.ok(T(address).includes(w) && quotesOf(T(fuller)).some((q) => q.includes(w)), `${address}: "${w}" is quoted, with its translation named, in ${fuller}`);
+  }
+  // the supplied wording is named where the rows use it: Kebar and Babylonians in two term rows, and the author's line 9
+  assert.ok(T("26.1.1.4.3").includes("Kebar in the NIV") && T("26.1.3.3.1").includes("The passage the author supplied says") && T("100.9.7").includes("in the wording of the NIV"));
 });
 
 test("the supplied verses are keyed 26.1.1 to 26.1.9; every term of verses 1 to 9 has a phrase that is a case-sensitive substring of its supplied verse", (t) => {
@@ -1333,6 +1488,7 @@ test("each LEXICON_TAMPERS row behaves as declared on this lexicon's package", a
 
 // The search rows and how each is run again. A row that searches the 1949 book cannot be run from the repository.
 const BOOK_NAMES = new Map();   // filled from the e-text's own "Book NN  Name" lines
+const STRANGE = /\b(stranger|strangers|strange)\b/;   // the words row 100.1.11 reports beside alien
 const KJV_SEARCHES = new Map([
   ["0.4.1", null],            // two scans of van Paassen's book: compared by hand (November 2026), not shipped
   ["26.1.1.5.8", (kjv, row) => {
@@ -1348,15 +1504,22 @@ const KJV_SEARCHES = new Map([
     assert.equal(kjv.find(/\bwheels?\b/).find((k) => k.startsWith("26.")), "26.1." + m[3]);
   }],
   ["100.1.1", (kjv, row) => {
-    assert.ok(/found alien or aliens in eight verses\./.test(row.text));
-    assert.equal(kjv.find(/\baliens?\b/i).length, 8);
+    const m = /found alien or aliens in (eight) verses\. The same search found (stranger, strangers or strange) in (seven) of them\.$/.exec(row.text);
+    assert.ok(m);
+    const hits = kjv.find(/\baliens?\b/i);
+    assert.equal(hits.length, num(m[1]));
+    assert.equal(hits.filter((k) => STRANGE.test(kjv.all.get(k))).length, num(m[3]));
   }],
   ["100.1.11", (kjv, row) => {
-    const m = /found alien or aliens in eight verses, once in each: (.+?)\. In each it means/.exec(row.text);
+    const m = /found alien or aliens in eight verses, once in each: (.+?)\. The same search found (stranger, strangers or strange) in (seven) of the (eight) \(not in (Hebrews 11:34)\); alienated and alienate stand in other verses and were not counted\. /.exec(row.text);
     assert.ok(m);
     const hits = kjv.find(/\baliens?\b/i);
     assert.deepEqual(hits, kjv.cites(m[1]));
     assert.equal(hits.length, 8);
+    assert.equal(num(m[4]), hits.length);
+    assert.deepEqual(m[2].split(/, | or /), ["stranger", "strangers", "strange"], "the three words STRANGE looks for");
+    assert.deepEqual(hits.filter((k) => !STRANGE.test(kjv.all.get(k))), kjv.cites(m[5]), "all but one of the eight verses hold stranger, strangers or strange");
+    assert.equal(hits.filter((k) => STRANGE.test(kjv.all.get(k))).length, num(m[3]));
     for (const k of hits) assert.equal((kjv.all.get(k).match(/\baliens?\b/gi) || []).length, 1, "once in each");
     const other = kjv.find(/\balienated?\b/i);
     assert.ok(other.length > 0 && other.every((k) => !hits.includes(k)), "alienated and alienate are other words, in other verses");
@@ -1371,9 +1534,11 @@ const KJV_SEARCHES = new Map([
     for (const k of hits) assert.match(kjv.all.get(k), /two( witnesses,)? or( at the mouth of)? three witnesses/, "each of the six gives the rule of two or three");
   }],
   ["100.7.8", (kjv, row) => {
-    const m = /found "([^"]+)" once, in (2 Chronicles 18:15)\./.exec(row.text);
+    const m = /found "([^"]+)" once, in (2 Chronicles 18:15), and did not find "([^"]+)" or "([^"]+)"\. Search the Project Gutenberg King James text for "([^"]+)"\.$/.exec(row.text);
     assert.ok(m);
     assert.deepEqual(kjv.find(new RegExp(m[1], "i")), kjv.cites(m[2]));
+    assert.deepEqual([m[3], m[4], m[5]], ["the whole truth", "so help you God", m[1]]);
+    for (const phrase of [m[3], m[4]]) assert.deepEqual(kjv.find(new RegExp(phrase.replace(/ /g, "[\\s,;:]+"), "i")), [], `"${phrase}" is not in the e-text`);
   }],
   ["100.9.6", (kjv, row) => {
     const m = /found "([^"]+)" in three verses, (Ezekiel 1:9, 1:12 and 1:17), and nowhere else; (Ezekiel 10:11) has "([^"]+)" twice\./.exec(row.text);
