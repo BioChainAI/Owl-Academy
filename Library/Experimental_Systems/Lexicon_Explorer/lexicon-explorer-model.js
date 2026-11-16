@@ -12,7 +12,7 @@
 //                    lexiconTextOf, packetsOf, lineShaOf, layoutOf, layerCountsOf, topLevelOf, skyLexicon
 //   3  links         HASH_GRAMMAR, SKY_PAGE_GRAMMAR, IGNORED_NOTE, UNKNOWN_ENTRY_NOTE, parseHash, formatHash, entryHref,
 //                    skyPageHref, firstExplorersHref
-//   4  names         ROOT_NAME, nameOf, crumbOf, pathOf, pathCaption, shortLabel, isAuthorLine, badgeView, AUTHOR_LABEL,
+//   4  names         ROOT_NAME, nameOf, displayName, crumbOf, pathOf, pathCaption, shortLabel, isAuthorLine, badgeView, AUTHOR_LABEL,
 //                    LINE8_FRAMING, LINE8_FRAMING_STARGAZER, LINE8_RESTATED, quoted
 //   5  reader        SUPPLIED, WORDINGS, WORDINGS_NOTE, suppliedAvailable, defaultWording, wordingFor, spansOf, termsOfVerse,
 //                    verseView, TRADITION_LINK, readerHead, readerView, verseOfTerm
@@ -32,12 +32,12 @@
 //                    quarterFigure, squaresFigure, cornersFigure, CERTIFIED, CERTIFIED_TEXT, CERTIFIED_STARGAZER
 //   13 flows (async) epochRows, epochLine, packageFileName, sealLexicon, PASS_WORDING, CHAIN_NAME_LABEL, OWN_KEY_NOTE, sealView,
 //                    RESEAL_TEXT, TAMPER_COPY, tamperRows, tamperSentence, runTamper, RECEIVERS, NOISY_ROAD, WITNESS_MARKS,
-//                    makeReceivers, noisyWire, QUORUM_LIMIT, quorumSentence, SEND_READING, sendToReceivers
+//                    makeReceivers, noisyWire, QUORUM_LIMIT, quorumSentence, handshakeCount, SEND_READING, sendToReceivers
 //   14 outside       OUTSIDE_NOTICE, OUTSIDE_BANNER, OUTSIDE_SHORT, OUTSIDE_LEGEND, SHOW_IT, LOAD_COPY, CHECK_SENTENCES, fileAllowed,
-//                    LEDGER_POINTS, LEDGER_CUT_NOTE, readOutside
+//                    LEDGER_POINTS, LEDGER_CUT_NOTE, LEDGER_ROWS, readOutside
 //   15 copy          verseSlice, COPY_FACTS, KEBAR_NAZARETH, LENS_HINTS, FIRST_LINE, BRIDGE_TITLE, BRIDGE_PARTS, BRIDGE_OPENING,
 //                    STATIONS, FOURTH_PARTS, FOURTH_VERSE, TABS, visibleStations, visibleTabs, BRIDGE_GO, BRIDGE_FLY,
-//                    FIRST_EXPLORERS_LINK, bridgeView, stationView, UI, uiLabel, SKY_BANNER, MORE_LEVELS, SKY_PRIVACY
+//                    FIRST_EXPLORERS_LINK, bridgeView, stationView, UI, uiLabel, SKY_BANNER, MORE_LEVELS, moreLevelsFor, SKY_PRIVACY
 //   16 dialog        DIALOG
 //   17 all ages      stargazerStrings
 //
@@ -57,6 +57,9 @@
 //             once). After a drag or a nudge keep what dragView / nudgeView return (they re-base the view).
 //             A tap: the node within reach wins (hit test of the kit over scene.nodes), else treeHit() gives the cell.
 //   Wheel     wheel positions are measured from the wheel's centre in units of its radius, x right and y DOWN.
+//   Names     an entry's own name (entry.name, nameOf) is what is sealed. What a lens shows is displayName(lexicon, address, lens):
+//             every view here that takes a lens (entryView, rowView, neighbourhood, statusFor, treeCaption, pointerOf, and
+//             treeScene with the option lens) gives the name as shown, so the shell and the canvas print what they are given.
 //   Strings   a string from a lexicon of origin "outside" is the sender's: the shell puts it through outsideText().
 //             Nothing here turns a lexicon string into a URL, an id, a class or an object key (Map lookups only).
 //   Flows     sealLexicon, runTamper, makeReceivers, sendToReceivers and readOutside are async and never throw on what a
@@ -194,9 +197,12 @@ const SKY_TUPLE = hashTuple(hashNumber(HASH_PATTERNS.jd, 0, 9999999), hashNumber
 const skyRule = (text) => { const t = SKY_TUPLE(text); return t && skyRounded(t[0], t[1], t[2]) ? t : undefined; };
 /** HASH_GRAMMAR: the keys this page reads: sky=JD,LAT,LON, entry=ADDRESS, lens. */
 export const HASH_GRAMMAR = freeze([freeze(["sky", skyRule]), freeze(["entry", HASH_PATTERNS.address]), freeze(["lens", hashOneOf(LENS_IDS)])]);
+// The sky page's own rule for the key jd, the same in effect: the text fits the pattern, the number lies between 0 and 9999999, and the
+// core accepts it at some longitude (a place is at most half a day from Greenwich, east or west). The place is judged with the sky itself.
+const skyPageJd = (text) => { const n = hashNumber(HASH_PATTERNS.jd, 0, 9999999)(text); return n !== undefined && (skyInputsValid(n, 0, -180) || skyInputsValid(n, 0, 180)) ? n : undefined; };
 /** SKY_PAGE_GRAMMAR: the keys of the links this page writes to the Celestial Control Panel. */
 export const SKY_PAGE_GRAMMAR = freeze([freeze(["preset", freeze(["ezekiel"])]),
-  freeze(["jd", hashNumber(HASH_PATTERNS.jd, 0, 9999999)]), freeze(["lat", hashNumber(HASH_PATTERNS.lat, -90, 90)]), freeze(["lon", hashNumber(HASH_PATTERNS.lon, -180, 180)]),
+  freeze(["jd", skyPageJd]), freeze(["lat", hashNumber(HASH_PATTERNS.lat, -90, 90)]), freeze(["lon", hashNumber(HASH_PATTERNS.lon, -180, 180)]),
   freeze(["lab", freeze(["square"])]), freeze(["lens", hashOneOf(LENS_IDS)])]);
 /** IGNORED_NOTE: the line shown when a link carried something this page did not use. */
 export const IGNORED_NOTE = "a link value was ignored";
@@ -220,8 +226,8 @@ export function formatHash(obj) {
 /** entryHref(address, lens, sky) -> this page's own URL with the fragment for an entry (for "copy a link" and for history). */
 export const entryHref = (address, lens, sky) => LINKS.lexiconExplorer + formatHash({ sky: sky || null, entry: address || null, lens: lensOf(lens) });
 /** skyPageHref("date" | "lab" | "home" | "sky", lens, sky) -> the Celestial Control Panel's URL with preset=ezekiel, lab=square, the lens alone,
- *  or ("sky") the place and time of a sky as that page reads them (sky is the state's { jd, lat, lon }, link text; without one: the lens alone).
- *  No stamp and no name is ever put into a link. */
+ *  or ("sky") the place and time of a sky as that page reads them (sky is the state's { jd, lat, lon }, link text; without one, or with a
+ *  value that page would not read: the lens alone). No stamp and no name is ever put into a link. Never throws. */
 export function skyPageHref(what, lens, sky) {
   let o = what === "date" ? { preset: "ezekiel" } : what === "lab" ? { lab: "square" } : {};
   if (what === "sky" && sky && [sky.jd, sky.lat, sky.lon].every((x) => typeof x === "string" || typeof x === "number")) o = { jd: String(sky.jd), lat: String(sky.lat), lon: String(sky.lon) };
@@ -240,29 +246,42 @@ export const ROOT_NAME = "The whole lexicon";
 
 /** nameOf(lexicon, address) -> the entry's name, ROOT_NAME for "", "" for an unknown address. */
 export const nameOf = (lexicon, address) => (address === "" ? ROOT_NAME : (entryOf(lexicon, address) || { name: "" }).name);
-/** crumbOf(lexicon, address) -> the short word for an entry in a path: "chapter 1", "verse 4", otherwise its name. */
-export function crumbOf(lexicon, address) {
+// Five entries of the built-in lexicon carry a name written for older readers: the four verse rows named "… (context)" and entry 0.1.
+// At Stargazer they are shown under another name. No row and no seal changes: the name is chosen where the model builds what a lens shows.
+const STARGAZER_NAMES = new Map([["0.1", "How this lexicon is sorted"]]);
+const CONTEXT_NAME = / \(context\)$/, NEARBY_NAME = " (a verse nearby)";
+/** displayName(lexicon, address, lens) -> the name an entry is shown under at that lens: its own name (nameOf), except at Stargazer in the
+ *  built-in lexicon for entry 0.1 ("How this lexicon is sorted") and for a verse named "… (context)" ("Ezekiel 1:10 (a verse nearby)").
+ *  Every list row, card title, row, link, Go-to button, caption and canvas label this module builds for a lens takes its name from here;
+ *  the sealed name (nameOf, entry.name) is what is sealed, sent and written in a package. Without a lens: the entry's own name. */
+export function displayName(lexicon, address, lens) {
+  const name = nameOf(lexicon, address), e = entryOf(lexicon, address);
+  if (lens !== "stargazer" || lexicon.origin !== "builtin" || !e) return name;
+  return STARGAZER_NAMES.get(address) || (e.kind === "verse" ? name.replace(CONTEXT_NAME, NEARBY_NAME) : name);
+}
+/** crumbOf(lexicon, address, lens) -> the short word for an entry in a path: "chapter 1", "verse 4", otherwise its name (displayName). */
+export function crumbOf(lexicon, address, lens) {
   const e = entryOf(lexicon, address);
   if (!e) return address === "" ? ROOT_NAME : "";
   if (lexicon.origin === "builtin" && e.kind === "chapter") return "chapter " + lastIndexOf(address);
   if (lexicon.origin === "builtin" && e.kind === "verse") return "verse " + lastIndexOf(address);
-  return e.name;
+  return displayName(lexicon, address, lens);
 }
-/** pathOf(lexicon, address) -> [{ address, name, crumb }] from the top-level ancestor down to the entry. */
-export function pathOf(lexicon, address) {
+/** pathOf(lexicon, address, lens) -> [{ address, name, crumb }] from the top-level ancestor down to the entry (names as displayName gives them). */
+export function pathOf(lexicon, address, lens) {
   const out = [];
-  for (let a = address; a !== "" && lexicon.byAddress.has(a); a = parentOf(a)) out.unshift({ address: a, name: nameOf(lexicon, a), crumb: crumbOf(lexicon, a) });
+  for (let a = address; a !== "" && lexicon.byAddress.has(a); a = parentOf(a)) out.unshift({ address: a, name: displayName(lexicon, a, lens), crumb: crumbOf(lexicon, a, lens) });
   return out;
 }
-/** pathCaption(lexicon, address) -> "Ezekiel > chapter 1 > verse 1 > the river of Chebar". For a lexicon from outside the caption is made of
+/** pathCaption(lexicon, address, lens) -> "Ezekiel > chapter 1 > verse 1 > the river of Chebar". For a lexicon from outside the caption is made of
  *  addresses ("26 > 26.1 > 26.1.1"): its names are its sender's and are shown one by one from pathOf(), never inside a sentence of the page. */
-export const pathCaption = (lexicon, address) => (address === "" ? ROOT_NAME : pathOf(lexicon, address).map((p) => (lexicon.origin === "outside" ? p.address : p.crumb)).join(" > "));
-/** shortLabel(lexicon, address) -> the label drawn on the canvas: "1:4" for a verse, otherwise the first 18 code points of the name. */
-export function shortLabel(lexicon, address) {
+export const pathCaption = (lexicon, address, lens) => (address === "" ? ROOT_NAME : pathOf(lexicon, address, lens).map((p) => (lexicon.origin === "outside" ? p.address : p.crumb)).join(" > "));
+/** shortLabel(lexicon, address, lens) -> the label drawn on the canvas: "1:4" for a verse, otherwise the first 18 code points of the name (displayName). */
+export function shortLabel(lexicon, address, lens) {
   const e = entryOf(lexicon, address);
   if (!e) return address === "" ? "All" : "";
   if (lexicon.origin === "builtin" && e.kind === "verse" && depthOf(address) === 3) { const p = address.split("."); return p[1] + ":" + p[2]; }
-  return cutLabel(e.name, 18);
+  return cutLabel(displayName(lexicon, address, lens), 18);
 }
 /** isAuthorLine(lexicon, address) -> true for the rows 100.1 to 100.10 of the built-in lexicon (the author's ten lines). */
 export function isAuthorLine(lexicon, address) {
@@ -475,22 +494,30 @@ export const ENTRY_GROUPS = freeze([
 const GROUP_RANK = new Map(ENTRY_GROUPS.map((g, i) => [g.key, i]));
 /** OUTSIDE_ROWS_HEADING: the one heading over the rows of an entry of a lexicon from outside (no group heading of this page stands over a sender's rows). */
 export const OUTSIDE_ROWS_HEADING = "Entries under this one, as their sender labelled them";
-/** ENTRY_LEADS: address -> { layer, text }: three entries of the built-in lexicon whose own text is written for older readers. At Stargazer
- *  the Entry shows this one sentence first and the entry's own text behind MORE_LABEL. The rows themselves are not changed. */
+/** ENTRY_LEADS: address -> { layer, text }: seven entries of the built-in lexicon whose own text is written for older readers ("About this
+ *  lexicon", the five entries under it, and the author's notes). At Stargazer the Entry shows this one sentence first and the entry's own
+ *  text behind MORE_LABEL. Each lead wears the layer of its row, and a SAID lead names its speaker. The rows themselves are not changed. */
 export const ENTRY_LEADS = new Map([
   ["0", freeze({ layer: "reading", text: "This page lists words and where they come from." })],
-  ["0.3", freeze({ layer: "said", text: "The Jewish Encyclopedia says Jewish teachers explained this chapter with great care." })],
+  ["0.1", freeze({ layer: "reading", text: "We sort every piece into four kinds and give each piece a place of its own." })],
+  ["0.2", freeze({ layer: "said", text: "The Bible words kept here are the King James Version, from the Project Gutenberg e-text." })],
+  ["0.3", freeze({ layer: "said", text: "The Jewish Encyclopedia says Jewish teachers explained this chapter to one wise pupil at a time." })],
+  // the book's own writer speaks, about every book of this kind: his argument is not given here, as fact or as this project's view
+  ["0.4", freeze({ layer: "said", text: "Its writer, Pierre van Paassen, says no life of Jesus can be written without taking sides." })],
+  ["0.5", freeze({ layer: "reading", text: "We read Jesus of Nazareth as a bridge: a line through the middle of our map." })],
   ["100", freeze({ layer: "reading", text: "Ten lines the author wrote under the passage." })],
 ]);
 
 /** NOTES_INVITE: the one sentence and the one button of the card shown while nothing is chosen (built-in lexicon, every lens): where the
  *  author's ten lines are. The button opens the list of the lines (entry 100); it quotes nothing. `short` is the button beside the card's
- *  title under 700 px, where the sentence itself stands below the legend (the legend must begin on the first screen of a phone). */
-export const NOTES_INVITE = freeze({ layer: "reading", text: "The author wrote ten lines under this passage.", label: "Open the author's notes", short: "The author's notes", address: HANDLES.notes });
+ *  title under 700 px, where the sentence itself stands below the legend (the legend must begin on the first screen of a phone): there the
+ *  button alone carries the sentence's fact, the number of the lines. */
+export const NOTES_INVITE = freeze({ layer: "reading", text: "The author wrote ten lines under this passage.", label: "Open the author's notes", short: "The author's ten lines", address: HANDLES.notes });
 
-// Where a row's closing words point ("See it at The fourth square.", "Open the Wheel tab.", "Press Seal and watch."): the place on this page, or
-// on the sky page, that the words name. figure is a part of station 7 (FOURTH_PARTS); the mirror word (b) is also in "Stamp it" at Stargazer.
+// Where a row's closing words point ("See it at The fourth square.", "Open the Wheel tab.", "Press Seal and watch.", "Try the three tampers at
+// Seal."): the place on this page, or on the sky page, that the words name. figure is a part of station 7 (FOURTH_PARTS); the mirror word (b) is also in "Stamp it" at Stargazer.
 const POINTER_ROWS = new Map([
+  ["100.2.5", freeze({ place: "wheel" })],
   ["100.5.3", freeze({ place: "figure", figure: "b" })],
   ["100.5.4", freeze({ place: "station", station: "seal" })],
   ["100.6.8", freeze({ place: "figure", figure: "a" })],
@@ -499,6 +526,7 @@ const POINTER_ROWS = new Map([
   ["100.6.11", freeze({ place: "sky", what: "lab", label: "See it on the sky page" })],
   ["100.6.12", freeze({ place: "figure", figure: "d" })],
   ["100.6.14", freeze({ place: "entries", entries: freeze(["5.19.15", "40.18.16"]) })],
+  ["100.7.6", freeze({ place: "station", station: "seal" })],
   ["100.9.4", freeze({ place: "entries", entries: freeze(["26.1.9", "26.1.12", "26.1.17"]) })],
   ["100.9.5", freeze({ place: "sky", what: "lab", label: "Try it in the lab" })],
   ["100.10.6", freeze({ place: "figure", figure: "b" })],
@@ -535,17 +563,17 @@ export function pointerOf(lexicon, address, lens) {
   if (p.place === "station") return shown(p.station) ? { ...out, station: p.station, label: star ? "Go to " + STATION_BY_KEY.get(p.station).stargazerTitle : "Go to the " + STATION_BY_KEY.get(p.station).title + " station" } : null;
   if (p.place === "wheel") return star ? (shown("seal") ? { ...out, station: "seal", label: "Go to the word wheel" } : null) : { ...out, tab: "wheel", label: "Open the Wheel tab" };
   if (p.place === "sky") return { ...out, href: skyPageHref(p.what, l) };
-  const entries = p.entries.filter((a) => lexicon.byAddress.has(a)).map((a) => ({ address: a, name: nameOf(lexicon, a), label: "Go to " + nameOf(lexicon, a) }));
+  const entries = p.entries.filter((a) => lexicon.byAddress.has(a)).map((a) => ({ address: a, name: displayName(lexicon, a, l), label: "Go to " + displayName(lexicon, a, l) }));
   return entries.length ? { ...out, entries } : null;
 }
-/** pointedFrom(lexicon, address) -> [{ address, name, label }]: the author's lines and the outline (entries under the author's notes) that hold
+/** pointedFrom(lexicon, address, lens) -> [{ address, name, label }]: the author's lines and the outline (entries under the author's notes) that hold
  *  a link row to this entry, in the lexicon's order. Shown as Go-to buttons on the Entry of John 3:16 (built-in lexicon only). */
-export function pointedFrom(lexicon, address) {
+export function pointedFrom(lexicon, address, lens) {
   if (lexicon.origin !== "builtin" || address !== HANDLES.john316) return [];
   const out = [];
   for (const e of lexicon.entries) {
     const parent = parentOf(e.address);
-    if (e.kind === "link" && e.text === address && parent.startsWith(HANDLES.notes + ".") && !out.some((x) => x.address === parent)) out.push({ address: parent, name: nameOf(lexicon, parent), label: "Go to " + nameOf(lexicon, parent) });
+    if (e.kind === "link" && e.text === address && parent.startsWith(HANDLES.notes + ".") && !out.some((x) => x.address === parent)) out.push({ address: parent, name: displayName(lexicon, parent, lens), label: "Go to " + displayName(lexicon, parent, lens) });
   }
   return out;
 }
@@ -556,7 +584,7 @@ function linkView(lexicon, entry, lens) {
   if (!t) return { exists: false, target: null, name: BROKEN_LINK, layer: null, kind: null, text: "", badge: null };
   // a verse row of the built-in lexicon is King James: a verse reached through a link names its translation after its citation
   const translation = lexicon.origin === "builtin" && t.kind === "verse" && t.layer === "text" ? WORDINGS.kjv.translation : null;
-  return { exists: true, target: t.address, name: t.name, layer: t.layer, kind: t.kind, text: t.text, badge: badgeView(lexicon, t.address, lens), translation };
+  return { exists: true, target: t.address, name: displayName(lexicon, t.address, lensOf(lens)), layer: t.layer, kind: t.kind, text: t.text, badge: badgeView(lexicon, t.address, lens), translation };
 }
 function groupOf(lexicon, entry, link) {
   if (entry.kind === "plain") return "plain";
@@ -564,14 +592,14 @@ function groupOf(lexicon, entry, link) {
   if (STRUCTURE_KINDS.has(entry.kind) || childrenOf(lexicon, entry.address).length > 0) return "parts";
   return GROUP_RANK.has(entry.layer) ? entry.layer : "reading";
 }
-/** rowView(lexicon, address, lens) -> one child row of an entry as the Entry lists it:
+/** rowView(lexicon, address, lens) -> one child row of an entry as the Entry lists it (name: the name shown at that lens, displayName):
  *  { address, layer, kind, name, text, badge, group, link, author, quoted, children, countWithMe, pointer (pointerOf) }. */
 export function rowView(lexicon, address, lens) {
   const e = entryOf(lexicon, address);
   if (!e) return null;
   const link = linkView(lexicon, e, lens), author = isAuthorLine(lexicon, address);
   return {
-    address, layer: e.layer, kind: e.kind, name: e.name, text: e.text, badge: badgeView(lexicon, address, lens),
+    address, layer: e.layer, kind: e.kind, name: displayName(lexicon, address, lensOf(lens)), text: e.text, badge: badgeView(lexicon, address, lens),
     group: groupOf(lexicon, e, link), link, author, quoted: author ? quoted(e.text) : null,
     children: childrenOf(lexicon, address).length, countWithMe: countWithMe(lexicon, address) !== null,
     pointer: pointerOf(lexicon, address, lens),
@@ -585,7 +613,7 @@ export function firstFacet(lexicon, address) {
 /**
  * entryView(lexicon, address, lens, { wording, supplied }) -> what the Entry tab shows, as plain data:
  *   { empty, prompt, invite (NOTES_INVITE for the built-in lexicon, else null) } when nothing is selected; { missing: true } for an unknown address; otherwise
- *   { address, root, origin, name, layer, kind, text, badge,
+ *   { address, root, origin, name (the name shown at this lens: displayName), layer, kind, text, badge,
  *     show: { address, kind, path, hash }      what this lens shows beside the words
  *     path: [{ address, name, crumb }], caption,
  *     words: [{ text, translation, primary }]  for a verse or a term: the wording(s) to print, the first being the main one
@@ -594,7 +622,7 @@ export function firstFacet(lexicon, address) {
  *              an author's line is shown with its first said or checked row (facet); the plain rows that stand before
  *              that row in the lexicon keep their place and are shown before it (before)
  *     link: null | { exists, target, name, layer, kind, text, badge, translation }
- *     lead: null | { layer, text }             Stargazer, three entries (ENTRY_LEADS): shown first; the entry's own text goes behind MORE_LABEL
+ *     lead: null | { layer, text }             Stargazer, seven entries (ENTRY_LEADS): shown first; the entry's own text goes behind MORE_LABEL
  *     rows: [rowView] in the fixed order; first: the rows shown at once; more: the rows behind MORE_LABEL
  *     hidden: [address]                        rows not listed because the card already says the same (LINE8_RESTATED under line 8)
  *     from: [{ address, name, label }]         the author's lines that point to this entry (pointedFrom; John 3:16 only)
@@ -646,10 +674,10 @@ export function entryView(lexicon, address, lens, options = {}) {
   const facet = facetAddress ? rowView(lexicon, facetAddress, l) : null;
   return {
     empty: false, missing: false, address, root, origin: lexicon.origin,
-    name: root ? (builtin ? ROOT_NAME : lexicon.title) : e.name, layer: root ? null : e.layer, kind: root ? null : e.kind, text: root ? "" : e.text,
+    name: root ? (builtin ? ROOT_NAME : lexicon.title) : displayName(lexicon, address, l), layer: root ? null : e.layer, kind: root ? null : e.kind, text: root ? "" : e.text,
     badge: root ? null : badgeView(lexicon, address, l),
     show: { address: !star && !root, kind: !star && !root, path: !star, hash: l === "holographer" && !root },
-    path: pathOf(lexicon, address), caption: pathCaption(lexicon, address),
+    path: pathOf(lexicon, address, l), caption: pathCaption(lexicon, address, l),
     words, foot,
     author: author ? {
       label: AUTHOR_LABEL[l], line: Number(e.name.slice(5)), quoted: quoted(e.text), framing: address !== "100.8" ? null : star ? LINE8_FRAMING_STARGAZER : LINE8_FRAMING,
@@ -657,7 +685,7 @@ export function entryView(lexicon, address, lens, options = {}) {
     } : null,
     link: root ? null : linkView(lexicon, e, l),
     lead: star && builtin && !root ? ENTRY_LEADS.get(address) || null : null,
-    rows, first, more, hidden, from: root ? [] : pointedFrom(lexicon, address), moreLabel: MORE_LABEL, actions,
+    rows, first, more, hidden, from: root ? [] : pointedFrom(lexicon, address, l), moreLabel: MORE_LABEL, actions,
     line: l === "holographer" && !root ? e.line : null, lineSha: l === "holographer" && !root ? lineShaOf(lexicon, address) : null,
   };
 }
@@ -667,7 +695,7 @@ export function statusFor(lexicon, address, lens) {
   if (address === null || address === undefined || !hasPlace(lexicon, address)) return "Nothing is chosen.";
   const n = childrenOf(lexicon, address).length, name = lexicon.origin === "outside" && address !== "" ? "Entry " + address : nameOf(lexicon, address);
   if (lexicon.origin === "outside") return name + " of the loaded lexicon: " + plural(n, "entry", "entries") + " under it.";
-  if (lensOf(lens) === "stargazer") return name + ". " + (n === 0 ? "Nothing more under it." : plural(n, "thing", "things") + " under it.");
+  if (lensOf(lens) === "stargazer") return displayName(lexicon, address, "stargazer") + ". " + (n === 0 ? "Nothing more under it." : plural(n, "thing", "things") + " under it.");
   return (address === "" ? "" : address + ", ") + name + ": " + plural(n, "entry", "entries") + " under it.";
 }
 
@@ -679,15 +707,15 @@ export const LIST_KEYS = freeze({
   other: "Keys in this list. Up and Down: the entry before and the next one on the same level. Left: the entry above. Right: the first entry under it. Home: the home entry.",
 });
 /** neighbourhood(lexicon, focus, lens) -> [{ address, name, label, level, relation, expanded, layer, kind, children, badge }]: the root, the
- *  ancestors, the focused entry and its children, as tree items (level = depth + 1; relation "ancestor" | "focus" | "child";
+ *  ancestors, the focused entry and its children, as tree items (name and label as that lens shows them: displayName; level = depth + 1; relation "ancestor" | "focus" | "child";
  *  expanded is true for the root, the ancestors and the focused entry when their children are in the list, false for the focused entry
  *  without children, and null for a child, whose own children are not shown). */
 export function neighbourhood(lexicon, focus, lens) {
-  const at = hasPlace(lexicon, focus) ? focus : lexicon.home;
+  const at = hasPlace(lexicon, focus) ? focus : lexicon.home, l = lensOf(lens);
   const item = (address, relation) => {
     const e = entryOf(lexicon, address);
     return {
-      address, name: nameOf(lexicon, address), label: shortLabel(lexicon, address), level: depthOf(address) + 1, relation,
+      address, name: displayName(lexicon, address, l), label: shortLabel(lexicon, address, l), level: depthOf(address) + 1, relation,
       expanded: relation === "child" ? null : childrenOf(lexicon, address).length > 0,
       layer: e ? e.layer : null, kind: e ? e.kind : null, children: childrenOf(lexicon, address).length,
       badge: e ? badgeView(lexicon, address, lens) : null,
@@ -743,15 +771,19 @@ export function initialState(hash = "", supplied = SUPPLIED) {
     place: { from: HANDLES.place, to: HANDLES.john316 },
     seal: null, tampers: {}, send: null, outside: null, busy: false, notes: [],
   };
-  return applyHash(state, hash, supplied);
+  return applyHash(state, hash, { supplied });
 }
-/** applyHash(state, hash, supplied) -> a new state after a link (at load, on hashchange and on popstate): lens, sky, entry; notes lists what was ignored. */
-export function applyHash(state, hash, supplied = SUPPLIED) {
+/** applyHash(state, hash, { own, supplied }) -> a new state after a link (at load, on hashchange and on popstate): lens, sky, entry; notes lists
+ *  what was ignored. hash is the fragment, or what parseHash() gave for it. A typed or pasted link sets the reading level it names. With
+ *  own: true the fragment is one this page wrote into the history itself (Back and Forward): its sky and its entry are brought back and the
+ *  level on show is kept, whatever level the fragment names; the station and the tab then stay too, where the lexicon still has them. */
+export function applyHash(state, hash, options = {}) {
+  const own = !!options && options.own === true, supplied = (options && options.supplied) || SUPPLIED;
   const parsed = typeof hash === "string" ? parseHash(hash) : hash;
   const next = { ...state, notes: [] };
   if (parsed.note) next.notes.push(parsed.note);
   const v = parsed.values;
-  if (v.lens) Object.assign(next, setLens(next, v.lens, supplied));
+  if (v.lens && !own) Object.assign(next, setLens(next, v.lens, supplied));
   if (v.sky) {
     const made = skyLexicon(v.sky);
     const same = made.ok && next.sky && next.lexicon.origin === "page" && next.sky.jd === made.sky.jd && next.sky.lat === made.sky.lat && next.sky.lon === made.sky.lon;
@@ -811,7 +843,7 @@ export function tabFor(state) {
 export const RIM_CUT = 0.985;
 /** LABEL_CHILDREN_MAX: with more children than this the canvas shows cells and a count, and no child labels. */
 export const LABEL_CHILDREN_MAX = 16;
-/** TREE_LABEL: the accessible name of the tree canvas. */
+/** TREE_LABEL: the accessible name of the tree canvas (from Navigator up; uiLabel("treeLabel", lens) gives it with its Stargazer form). */
 export const TREE_LABEL = "The entries of this lexicon as a tree on a curved map";
 
 const viewOf = (lexicon, layout, view) => ({
@@ -820,7 +852,8 @@ const viewOf = (lexicon, layout, view) => ({
 });
 
 /**
- * treeScene(lexicon, view, dims, { orbit, filter, selected }) -> the tree as plain data for the canvas:
+ * treeScene(lexicon, view, dims, { orbit, filter, selected, lens }) -> the tree as plain data for the canvas (with lens: names and labels as
+ * that lens shows them, displayName; without it the entries' own names):
  *   { dims, focus, count, crowded, hidden, total, gateRadius, nodes, walls, edges }
  *   nodes  [{ address, x, y, z, k, radius, steps, relation ("focus" | "parent" | "child" | "near" | "far"), layer, kind, name,
  *            shape, colour, label, labelAt: [x, y], gate: [x, y] | null, filtered, selected, children }], far ones first (paint order);
@@ -847,12 +880,12 @@ export function treeScene(lexicon, view, dims = "2D", options = {}) {
     const relation = steps === 0 ? "focus" : steps === 1 ? (address === focusNode.parent ? "parent" : "child") : steps === 2 ? "near" : "far";
     const meta = e ? LAYER_BY_ID.get(e.layer) : null;
     let label = null, labelAt = [b[0], b[1]], gate = null;
-    if (relation === "focus") label = shortLabel(lexicon, address);
+    if (relation === "focus") label = shortLabel(lexicon, address, options.lens);
     else if (relation === "parent") {
-      label = shortLabel(lexicon, address);
+      label = shortLabel(lexicon, address, options.lens);
       if (d === "2D") { const s = focusNode.r + node.r * 0.3, p = point(base, [-Math.sinh(s), 0, 0, Math.cosh(s)]); labelAt = [p[0], p[1]]; }
     } else if (relation === "child") {
-      if (!crowded) label = shortLabel(lexicon, address);
+      if (!crowded) label = shortLabel(lexicon, address, options.lens);
       if (d === "2D") {
         const g = point(M, [-Math.sinh(node.r), 0, 0, Math.cosh(node.r)]), p = point(M, [-Math.sinh(node.r * 0.7), 0, 0, Math.cosh(node.r * 0.7)]);
         gate = [g[0], g[1]]; labelAt = [p[0], p[1]];
@@ -862,7 +895,7 @@ export function treeScene(lexicon, view, dims = "2D", options = {}) {
     if (address !== "") drawn += 1;
     nodes.push({
       address, x: b[0], y: b[1], z: b[2], k: 1 + 0.25 * b[2], radius, steps, relation,
-      layer: e ? e.layer : null, kind: e ? e.kind : null, name: nameOf(lexicon, address),
+      layer: e ? e.layer : null, kind: e ? e.kind : null, name: displayName(lexicon, address, options.lens),
       shape: meta ? meta.shape : "", colour: meta ? meta.colour : "", label, labelAt, gate,
       filtered: !!(e && filter && filter[e.layer] === false), selected: address === selected, children: childrenOf(lexicon, address).length,
     });
@@ -895,7 +928,7 @@ export function treeHit(lexicon, view, x, y) {
  *  its number of children and how many entries are too near the rim to draw. For a lexicon from outside the path is given by addresses. */
 export function treeCaption(lexicon, scene, lens) {
   const star = lensOf(lens) === "stargazer" && lexicon.origin !== "outside", a = scene.focus, n = scene.count;
-  const head = lexicon.origin === "outside" ? pathCaption(lexicon, a) + "." : (star || a === "" ? "" : a + " · ") + pathCaption(lexicon, a) + ".";
+  const head = lexicon.origin === "outside" ? pathCaption(lexicon, a) + "." : (star || a === "" ? "" : a + " · ") + pathCaption(lexicon, a, star ? "stargazer" : undefined) + ".";
   const under = star
     ? (n === 0 ? " Nothing under it." : " " + plural(n, "thing", "things") + " under it.")
     : " " + plural(n, "entry", "entries") + " under it" + (scene.crowded ? ", too many to label: use the list." : ".");
@@ -1438,8 +1471,11 @@ export function quorumSentence(k, n = 4) {
   const all = n === 4 ? "four" : numberWord(n);
   return k + " of the " + all + " receivers accepted. All " + all + " run inside this page, with the same code, each with a key made a moment ago. " + QUORUM_LIMIT.text;
 }
-/** SEND_READING: the READING sentence of the Send station. */
-export const SEND_READING = freeze({ layer: "reading", text: "The page borrows a number from this rule and nothing more. The rule is about people giving evidence." });
+/** handshakeCount(k, of) -> "4 of 4 handshakes in this page": the count line of the Send station and of the Witnesses tab (layer checked).
+ *  The count never stands without saying where the handshakes happened; QUORUM_LIMIT follows it. */
+export const handshakeCount = (k, of) => k + " of " + of + " handshakes in this page";
+/** SEND_READING: the READING sentence of the Send station. It names the rule itself: a sky has no verse and no gold box above it. */
+export const SEND_READING = freeze({ layer: "reading", text: "The page borrows a number from the rule of Deuteronomy 19:15 and nothing more. That rule is about people giving evidence." });
 /**
  * sendToReceivers(seal, receivers, { noise, at, onAnswer }) -> { rows, k, of, marks: [{ need, label, met }], sentence, stargazer, answers }.
  * Each receiver in turn is handed the wire (damaged for the receivers named by noise: true means NOISY_ROAD, or a list of ids),
@@ -1521,16 +1557,23 @@ export const LEDGER_CUT_NOTE = "A string that ends in … was longer: this page 
 // One field of a ledger entry as it is handed to the shell: a number as it is, a string cut to LEDGER_POINTS, anything else "".
 const ledgerField = (v) => (typeof v === "number" && Number.isFinite(v) ? v : typeof v === "string" ? cutLabel(v, LEDGER_POINTS) : "");
 const wasCut = (v) => typeof v === "string" && ledgerField(v) !== v;
+/** LEDGER_ROWS: of the covered ledger entries of a package from outside the first this many are listed; the page says how many were left out. */
+export const LEDGER_ROWS = 200;
 
 /**
  * readOutside(text) -> the view model of a package that did not originate in this page (always through readHyperpack):
  *   { ok, failed, checks, kind ("tree" | "journey" | null), lexicon (origin "outside") | null, notice, banner, line,
- *     covered: { chainId, merkleRoot, epoch, entries, lexiconRoot, lineage: [{ epoch, chainId, merkleRoot }], ledger: [{ n, actor, event, detail, at, cut }],
- *                ledgerCut (true when a string of the ledger was cut), commitment, sealId } | null,
+ *     covered: { chainId, merkleRoot, epoch, entries, lexiconRoot, lineage: [{ epoch, chainId, merkleRoot }],
+ *                ledger: [{ n, actor, event, detail, at, cut }] (the first LEDGER_ROWS covered entries at most),
+ *                ledgerTotal (the exact number of covered entries), ledgerMore (how many of them are not listed, 0 when all are),
+ *                ledgerMoreLine ("and 2752 more ledger entries, not listed", "" when all are listed),
+ *                ledgerCut (true when a string of a listed entry was cut), commitment, sealId } | null,
  *     signature ("signed by key S-…; this page cannot know whose key that is"), notCovered: { heading, items: [{ label, value }] } | null }
  * A package that fails gives only ok, failed and checks. Every string under lexicon, covered.ledger and notCovered is the sender's.
  * A string of the ledger may be of any length in the file: here each is cut to LEDGER_POINTS code points (the cut one ends in …), so
- * that the full value never reaches the page. Nothing here says the key was made in this visit: it was made by whoever sealed the file.
+ * that the full value never reaches the page. A ledger may hold thousands of entries: the page lists the first LEDGER_ROWS of the covered
+ * ones (a ledger this page writes itself is far shorter) and prints ledgerMoreLine under them. Nothing here says the key was made in this visit:
+ * it was made by whoever sealed the file.
  */
 export async function readOutside(text) {
   const verdict = await readHyperpack(text);
@@ -1544,7 +1587,8 @@ export async function readOutside(text) {
   }
   const cert = pack.certificate, trace = Array.isArray(pack.trace) ? pack.trace : [];
   const head = trace.findIndex((e) => e && e.hash === cert.traceHead), upTo = head < 0 ? trace.length : head + 1;
-  const ledger = trace.slice(0, upTo).map((e) => ({
+  const more = Math.max(0, upTo - LEDGER_ROWS);
+  const ledger = trace.slice(0, upTo - more).map((e) => ({
     n: ledgerField(e.n), actor: ledgerField(e.actor), event: ledgerField(e.event), detail: ledgerField(e.detail), at: ledgerField(e.at),
     cut: [e.actor, e.event, e.at].some(wasCut),      // of the strings the page shows (the detail is not shown for a package from outside)
   }));
@@ -1557,7 +1601,9 @@ export async function readOutside(text) {
     ...base, kind: tree ? "tree" : "journey", lexicon, line: tree ? "" : LOAD_COPY.journey,
     covered: {
       chainId: pack.chain.chainId, merkleRoot: pack.chain.merkleRoot, epoch: pack.chain.epoch || 1, entries: pack.lexicon.entries.length, lexiconRoot: pack.lexicon.root,
-      lineage: pack.lineage.map((r) => ({ epoch: r.epoch, chainId: r.chainId, merkleRoot: r.merkleRoot })), ledger, ledgerCut: ledger.some((e) => e.cut),
+      lineage: pack.lineage.map((r) => ({ epoch: r.epoch, chainId: r.chainId, merkleRoot: r.merkleRoot })), ledger,
+      ledgerTotal: upTo, ledgerMore: more, ledgerMoreLine: more > 0 ? "and " + plural(more, "more ledger entry", "more ledger entries") + ", not listed" : "",
+      ledgerCut: ledger.some((e) => e.cut),
       commitment: cert.commitment, sealId: cert.sealId,
     },
     signature: "signed by key " + cert.sealId + "; this page cannot know whose key that is",
@@ -1940,6 +1986,8 @@ export const UI = freeze({
   copyLink: two("Copy a link to this", "Copy a link to this entry"), ezekiel: two("Back to Ezekiel", "Back to the Ezekiel lexicon"),
   about: two("What is real here?"), close: two("Close"),
   chooseEntry: two("Choose a thing on the map or in the list", "Choose an entry on the map or in the list"), packetEntry: two("Of the chosen thing", "Of the chosen entry"),
+  aboutChosen: two("About the chosen thing", "About the chosen entry"),      // the name of the section that holds the tabs and the Entry
+  treeLabel: two("The things of this lexicon as a tree on a curved map", TREE_LABEL),      // the accessible name of the tree canvas
   more: two("more"), strixAll: two("What STRIX says here"), skipList: two("Skip to the list of things", "Skip to the list of entries"), aboutWords: two("About these words"),
   skyPage: two("Open the Celestial Control Panel"), skyPageShort: two("Sky page"), goLine6: two("Go to Line 6"),
   point: two("Point"), movePoint: two("Move the chosen point"),
@@ -1949,11 +1997,20 @@ export const uiLabel = (key, lens) => (Object.hasOwn(UI, key) ? (lensOf(lens) ==
 /** SKY_BANNER: the banner over a sky that was built from a #sky= link. Such a link may come from anyone, so the banner does not say who
  *  stamped it; the stamp and its name are never in a link, and the same three numbers always give the same chain name. */
 export const SKY_BANNER = "This sky was built from a link: a place and a time. Stamp it here. The same place and time always get the same name.";
-/** MORE_LEVELS: the line the Stargazer lens shows about what the next level adds, with its button (the lens hides stations and tabs and says so here). */
+const LEVELS_FIRST = "The Navigator level shows more: the chain, the Overwatch checks and four receivers.";
+/** MORE_LEVELS: the line the Stargazer lens shows about what the next level adds, with its button (the lens hides stations and tabs and says so here).
+ *  sky is the line for a sky: the first sentence alone, since a sky has no path to John 3:16 and no fourth square. Read it with moreLevelsFor(). */
 export const MORE_LEVELS = freeze({
-  text: "The Navigator level shows more: the chain, the Overwatch checks and four receivers. It also shows the path to John 3:16 and the fourth square.",
+  text: LEVELS_FIRST + " It also shows the path to John 3:16 and the fourth square.",
+  sky: LEVELS_FIRST,
   label: "Switch to Navigator", lens: "navigator",
 });
+/** moreLevelsFor(lens, origin) -> null, or { text, label, lens }: the line and its button as the Stargazer lens shows them for a lexicon of that
+ *  origin: MORE_LEVELS.text for the built-in lexicon, MORE_LEVELS.sky for a sky ("page"); null at the other lenses and for a lexicon from outside. */
+export function moreLevelsFor(lens, origin = "builtin") {
+  if (lensOf(lens) !== "stargazer" || (origin !== "builtin" && origin !== "page")) return null;
+  return { text: origin === "page" ? MORE_LEVELS.sky : MORE_LEVELS.text, label: MORE_LEVELS.label, lens: MORE_LEVELS.lens };
+}
 /** SKY_PRIVACY: shown beside the download and the link of a sealed sky. */
 export const SKY_PRIVACY = "This link and this file contain the place and the time that were entered.";
 
@@ -2011,7 +2068,7 @@ export const DIALOG = freeze({
       T("checked", "The ledger is what the sealer wrote down. Its links show it has not been edited since sealing, not that its times are true."),
       T("checked", "The words 2D+3D in the certificate mean that the same addresses are drawn both ways. The drawings are not signed."),
       T("checked", "The receivers are simulated in this page."),
-      T("checked", "The key is made for this visit and shows integrity, not identity."),
+      T("checked", "A key this page makes is made for this visit. A signature shows integrity, not identity."),
       T("reading", "LEX/1 and LEXICON/2 are drafts, not RFCs. The Hyperbolic Lexicon in Ebayednoob has its own address format and this is not it: an entry's rank among its siblings at each level converts to a Hyperbolic Lexicon word by its rule L3; the sparse citation address itself is not that path."),
     ]) }),
     freeze({ heading: "This page", items: freeze([
@@ -2048,6 +2105,7 @@ export function stargazerStrings() {
   add("pass", PASS_WORDING.stargazer); add("certified", CERTIFIED_STARGAZER.text); add("chain name", CHAIN_NAME_LABEL.stargazer);
   add("wordings note", WORDINGS_NOTE.text); add("tradition link", TRADITION_LINK);
   for (const [a, lead] of ENTRY_LEADS) add("lead " + a, lead.text);
+  for (const e of EZEKIEL.entries) { const shown = displayName(EZEKIEL, e.address, "stargazer"); if (shown !== e.name) add("name " + e.address, shown); }
   add("tamper, not sealed", tamperSentence(null, "stargazer"));
   DIALOG.inShort.forEach((p, i) => add("in short " + i, p.text));
   for (const m of LAYER_META) add("legend " + m.id, m.legend);
@@ -2063,7 +2121,7 @@ export function stargazerStrings() {
   add("wheel readout", wheelView(EZEKIEL, { packet: 0, flips: [4] }, "stargazer").readout.map((r) => r.text).join(" "));
   add("wheel readout clean", wheelView(EZEKIEL, { packet: 0, flips: [] }, "stargazer").readout.map((r) => r.text).join(" "));
   add("subtitle", PAGE.stargazerSubtitle); add("notes invite", NOTES_INVITE.text); add("notes button", NOTES_INVITE.label); add("notes button, short", NOTES_INVITE.short);
-  add("sky banner", SKY_BANNER); add("more levels", MORE_LEVELS.text); add("more levels button", MORE_LEVELS.label);
+  add("sky banner", SKY_BANNER); add("more levels", MORE_LEVELS.text); add("more levels, sky", MORE_LEVELS.sky); add("more levels button", MORE_LEVELS.label);
   add("mirror caption", MIRROR_STARGAZER.text); add("mirror box", MIRROR_BOX); add("list keys", LIST_KEYS.stargazer);
   add("bridge go", BRIDGE_GO.label); add("bridge fly", BRIDGE_FLY.label); add("first explorers link", FIRST_EXPLORERS_LINK);
   for (const a of [...POINTER_ADDRESSES, ...POINTER_LINES.keys()]) { const p = pointerOf(EZEKIEL, a, "stargazer"); if (p) { add("pointer " + a, p.label); p.entries.forEach((x) => add("pointer " + a + " entry", x.label)); } }

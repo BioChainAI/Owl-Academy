@@ -12,6 +12,8 @@
 
   /* Where the header stays at the top it is opaque (no text shows through it), and what is scrolled to stops below it. */
   @media (min-width: 700px) and (min-height: 700px) { .top { background: var(--bg); } html { scroll-padding-top: 88px; } }
+  /* Under 1100 px wide the header has two rows (up to 100 px): what is scrolled to stops below both. */
+  @media (min-width: 700px) and (min-height: 700px) and (max-width: 1099.98px) { html { scroll-padding-top: 112px; } }
   /* The header's second line is for readers of astronomy: the Stargazer lens does without it. */
   body[data-lens="stargazer"] .top .sub { display: none; }
 

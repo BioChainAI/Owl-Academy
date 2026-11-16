@@ -40,6 +40,8 @@
 //                    notes of the built-in lexicon: on a small canvas theirs was the one label the root view dropped)
 //      countWord     the word after the number when a centred entry has too many children to label
 //                    (default "entries"; the model's Stargazer copy says "things")
+//      lens          "stargazer", "navigator" or "holographer", or nothing: handed to treeScene, which labels a few entries of
+//                    the built-in lexicon with another name at the Stargazer lens (without it every label is the entry's own)
 //      dragSwitch, dragCaption, place   passed to attachPointer (the kit makes and places the "Drag the map"
 //                    switch after the canvas unless the shell passes its own elements or place: false)
 //      onPick(address, info)   a tap chose an entry. address may be "" (the root's cell). info is
@@ -55,7 +57,7 @@
 //                    called when flyTo finds the view already there).
 //    tree (the returned object):
 //      setLexicon(lexicon, address)   show another lexicon, centred on address (default: its home); no flight
-//      set({ dims, selected, filter, byLayer, countWord, keepLabel, orbit })   change any of these and redraw once;
+//      set({ dims, selected, filter, byLayer, countWord, keepLabel, lens, orbit })   change any of these and redraw once;
 //                    changing dims keeps the centred entry and resets local to the identity
 //      flyTo(address, { walk, jump }) -> boolean   fly along the tree to that entry and end in its own frame
 //                    (parent on the left). false if the lexicon has no such place. A flight lasts 300 ms plus
@@ -74,10 +76,10 @@
 //      marks()   the markers of the last draw: [{ address, x, y, r, relation }], in paint order
 //      pointer   what attachPointer returned: { dragSwitch, dragCaption, dragging, setDragging(on) }
 //      destroy() detach everything
-//    Hit rules. A tap inside a drawn label picks that label's entry. Otherwise in 2D the tap picks the entry
-//    whose cell holds the point (treeHit: a neighbour's whole cell is its hit area) and in 3D the marker
-//    painted last under the point, or else the one painted last within 22 px (focus, parent, children and
-//    the entries two edges out; far dots cannot be picked). A drag with a mouse or pen (or a finger while the switch is on) moves the 2D view (dragView) or
+//    Hit rules. A tap inside a drawn marker picks that marker's entry, whatever label lies on it (a child's label
+//    is not placed over another entry's marker). Otherwise a tap inside a drawn label picks that label's entry. Otherwise in 2D the tap
+//    picks the entry whose cell holds the point (treeHit: a neighbour's whole cell is its hit area) and in 3D the
+//    marker painted last within 22 px (focus, parent, children and the entries two edges out; far dots cannot be picked). A drag with a mouse or pen (or a finger while the switch is on) moves the 2D view (dragView) or
 //    turns the 3D ball (orbitDrag) and ends any flight.
 //
 // 2. createWordWheel(canvas, options) -> wheel                               (8.4; the wheel and the 8 x 8 square)
@@ -327,11 +329,12 @@ export function createTreeCanvas(canvas, options = {}) {
   let byLayer = options.byLayer !== false;
   let countWord = typeof options.countWord === "string" ? options.countWord : "entries";
   let keepLabel = typeof options.keepLabel === "string" ? options.keepLabel : null;
+  let lens = typeof options.lens === "string" ? options.lens : undefined;
   let scene = null, flight = null, reported = "", labels = [], marks = [];
   let geo = { cx: 0, cy: 0, R: 1, w: 0, h: 0 };
 
   // a filter by layer goes by this page's own labels: a lexicon from outside is drawn without one
-  const makeScene = () => (lexicon ? treeScene(lexicon, view, dims, { orbit, filter: lexicon.origin === "outside" ? null : filter, selected }) : null);
+  const makeScene = () => (lexicon ? treeScene(lexicon, view, dims, { orbit, filter: lexicon.origin === "outside" ? null : filter, selected, lens }) : null);
   const px = (p) => [geo.cx + geo.R * p[0], geo.cy - geo.R * p[1]];
   const disc = (x, y) => [(x - geo.cx) / geo.R, -(y - geo.cy) / geo.R];
 
@@ -464,6 +467,9 @@ export function createTreeCanvas(canvas, options = {}) {
   // before it (the centred entry first, then its parent, then its children): it slides along its spoke, steps
   // aside, and is cut shorter. On a small canvas a name is cut to the room there is; the caption and the list
   // carry the full name. A label that would still lie on another one (by more than a corner) is left out.
+  // No child's label lies on the marker of another entry (a place that would is not taken, and a label with no other place is
+  // left out); the names of the centred entry, its parent and the kept child are drawn even then, and a tap inside a marker
+  // finds that marker whatever lies on it (click()).
   // A box is pulled towards the centre until its four corners are inside the rim (the page may clip the canvas round).
   function intoDisc(b) {
     for (let turn = 0; turn < 4; turn++) {
@@ -495,13 +501,15 @@ export function createTreeCanvas(canvas, options = {}) {
     const placed = [], centre = markOf.get(s.focus);
     if (centre) placed.push({ x: centre.x - centre.r - 2, y: centre.y - centre.r - 2, w: 2 * centre.r + 4, h: 2 * centre.r + 4 });   // no label lies on the centred mark
     const cover = (b) => placed.reduce((sum, p) => sum + Math.max(0, Math.min(p.x + p.w, b.x + b.w) - Math.max(p.x, b.x)) * Math.max(0, Math.min(p.y + p.h, b.y + b.h) - Math.max(p.y, b.y)), 0);
+    // the markers of the other entries, each with 1 px around it (the centred one is among the placed boxes above)
+    const onMark = (b, own) => marks.some((m) => m !== own && m !== centre && b.x < m.x + m.r + 1 && b.x + b.w > m.x - m.r - 1 && b.y < m.y + m.r + 1 && b.y + b.h > m.y - m.r - 1);
     for (const it of items) {
       ctx.font = font(it.size, it.weight);
       let text = drawable(it.node.label), points = Array.from(text).length;
       while (points > 2 && ctx.measureText(text).width + 8 > it.room) { points -= 1; text = cutLabel(text, points); }
       const tries = [text];
       for (const n of [9, 6]) { const short = cutLabel(text, n); if (short !== tries[tries.length - 1]) tries.push(short); }
-      let box = null, best = null, bestCover = Infinity;
+      let box = null, best = null, bestCover = Infinity, touching = null, touchingCover = Infinity;
       for (const t of tries) {
         const bw = Math.ceil(ctx.measureText(t).width) + 8, bh = it.size + 6;
         for (const extra of [0, 8, 16, 26, 38, 52]) {
@@ -515,6 +523,7 @@ export function createTreeCanvas(canvas, options = {}) {
                 y: clamp(it.mark.y + u[1] * d + side * u[0] * step - bh / 2, 1, geo.h - bh - 1), w: bw, h: bh, text: t,
               });
               const c = cover(b);
+              if (onMark(b, it.mark)) { if (it.order < 2 && c < touchingCover) { touchingCover = c; touching = b; } continue; }
               if (c === 0) { box = b; break; }
               if (c < bestCover) { bestCover = c; best = b; }
             }
@@ -525,6 +534,8 @@ export function createTreeCanvas(canvas, options = {}) {
         if (box) break;
       }
       if (!box && best && (it.order === 0 || bestCover <= 0.12 * best.w * best.h)) box = best;
+      // the centred entry, its parent and the kept label are named even where every free place touches a marker (a tap on that marker still finds it)
+      if (!box && touching && (it.order === 0 || touchingCover <= 0.12 * touching.w * touching.h)) box = touching;
       if (!box) continue;
       placed.push(box);
       ctx.globalAlpha = it.node.filtered ? 0.5 : 1;
@@ -600,13 +611,15 @@ export function createTreeCanvas(canvas, options = {}) {
   function click(e) {
     if (!lexicon) return;
     let address = null, via = "label";
+    const dot = hitTest(marks, e.x, e.y, 0);      // inside a marker: that marker's entry, before any label
+    if (dot) { address = dot.address; via = "dot"; }
     for (let i = labels.length - 1; i >= 0 && address === null; i--) if (inside(labels[i], e.x, e.y)) address = labels[i].address;
     if (address === null && dims === "2D") {
       const p = disc(e.x, e.y);
       address = treeHit(lexicon, view, p[0], p[1]);
       via = "cell";
     } else if (address === null) {
-      const hit = hitTest(marks, e.x, e.y, 0) || hitTest(marks, e.x, e.y, HIT_REACH);
+      const hit = hitTest(marks, e.x, e.y, HIT_REACH);
       address = hit ? hit.address : null;
       via = "dot";
     }
@@ -642,6 +655,7 @@ export function createTreeCanvas(canvas, options = {}) {
       if (next.byLayer !== undefined) byLayer = next.byLayer !== false;
       if (typeof next.countWord === "string") countWord = next.countWord;
       if (next.keepLabel !== undefined) keepLabel = typeof next.keepLabel === "string" ? next.keepLabel : null;
+      if (next.lens !== undefined) lens = typeof next.lens === "string" ? next.lens : undefined;
       if (isMatrix(next.orbit)) orbit = next.orbit.slice();
       touch();
     },

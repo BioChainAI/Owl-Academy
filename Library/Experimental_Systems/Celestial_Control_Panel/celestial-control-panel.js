@@ -44,7 +44,8 @@
 //   chart        ov-KEY (the switches of OVERLAYS), frame-hor, frame-gal, quick-KEY (home, moon, sun,
 //                sgr_a_star, rim), obj-KEY (the list)
 //   lab          labOpen, slide-forward, slide-left, slide-back, slide-right, labFour, labHome, labAgain,
-//                labClose, labPlay, labNext, labTiling, labTile, stepSlider; labText, fiveText (results)
+//                labClose, labPlay, labNext, labTiling, labTile, stepSlider; labText, fiveText (results);
+//                labNoArea (the sentence in the place of the area, for a path that crosses itself)
 //   seal         sealBtn, sealFile, sealVerdict, linkField, copyBtn
 //   the way on   nextBtn (the last button of the card at steps 2 to 4), sayMore (opens strixBox)
 import {
@@ -91,10 +92,35 @@ const L = (record) => M.forLens(record, state.lens);
 const wide = () => typeof matchMedia === "function" && matchMedia("(min-width: 700px)").matches;
 const asking = () => !!state.site && state.step === 2 && !state.lit.day && !state.lab.open;
 const small = () => !!chart && chart.size.w < M.LAB.smallCanvas;
-/** The calendar date this device's own clock shows for the instant of the state. Question 2 sets it beside the date at the place: the two can be a day apart. */
-function deviceDay() {
-  const d = new Date(Math.round((state.jdUt - jdFromUnixMs(0)) * 86400000));
+/** The calendar date this device's own clock shows for the instant of a state (the state of the page when none is given). Question 2 sets it beside the date at the place: the two can be a day apart. */
+function deviceDay(s = state) {
+  const d = new Date(Math.round((s.jdUt - jdFromUnixMs(0)) * 86400000));
   return { year: d.getFullYear(), month: d.getMonth() + 1, day: d.getDate() };
+}
+/** The state with its instant read from the device clock again, while the day is not yet answered (the model's rule): used where a place is chosen, at every change of step, when a link changes and by the day's further controls (the times of day, the slider through the year, the typed time, the Moon shapes), so that a page left open past midnight asks about the day the device shows now, a step that lights the sky lights the sky of that moment, and a control that answers the day starts from that day. */
+const atClock = (s) => M.readClock(s, Date.now());
+/**
+ * The day question may have stood on the screen for hours. Before it is acted on, and when the page comes into view again, the
+ * clock is read once more (the model's askDayAgain and answerDay; there is no timer). "Yes" to a question whose day has changed
+ * meanwhile is not taken: the question is painted again with the new day, and the status line says so once.
+ */
+function dayYes() {
+  const r = M.answerDay(state, Date.now(), deviceDay);
+  apply(r.state, { quiet: !r.taken });
+  if (r.message) say(r.message);
+}
+/** "Change the day": the panel opens (or closes) on the day the device shows now. */
+function dayChange() {
+  const again = M.askDayAgain(state, Date.now(), deviceDay);
+  apply(again.state, { quiet: true, fromPanel: true });
+  if (again.changed) say(M.MESSAGES.dayChanged);
+  togglePanel("date");
+}
+/** The page is in view again: a day question that names another day by now is painted again. Nothing is said, and nothing else is touched. */
+function onVisible() {
+  if (document.visibilityState !== "visible" || !asking()) return;
+  const again = M.askDayAgain(state, Date.now(), deviceDay);
+  if (again.changed) apply(again.state, { quiet: true, fromPanel: true });
 }
 /** The badge of a sentence of the page's copy, in the words of the lens. */
 const tag = (layer) => badge(layer, { lens: state.lens });
@@ -239,7 +265,7 @@ function applyResult(r, options) {
 function setStep(n) {
   ui.panel = null;
   ui.four = null;
-  apply(M.setStep(state, n));
+  apply(M.setStep(atClock(state), n));          // the clock is read again at every change of step, until the day is answered
 }
 const dive = (key) => apply(M.dive(state, key));
 const setDims = (dims) => apply(M.setDims(state, dims));
@@ -305,8 +331,9 @@ function buildSay() {
 // map tools, the caption, the buttons of the step. A panel the visitor opened (pick a place, type a place, pick a day)
 // is not counted: it closes again. When anything is left out, the button "more" at the end of the line opens the box that
 // holds all of it and moves the focus there; when not even the first sentence fits, the button alone stands there and
-// names the box. On the first screen (no place yet) and while the day is asked, everything is said: those lines are
-// questions. From 700 px everything is shown.
+// names the box. That is done only where it brings the card's first line into the window: in a window so low that the line
+// is below its bottom edge whatever is left out (320 x 568), the first sentence stays. On the first screen (no place yet)
+// and while the day is asked, everything is said: those lines are questions. From 700 px everything is shown.
 const FIRST_SCREEN = 844;
 let sayParts = [], sayShown = -1;
 function showSay(n) {
@@ -337,11 +364,12 @@ function fitSay() {
   if (wide() || !state.site || asking() || total === 0) { if (sayShown !== total) showSay(total); return; }
   const limit = Math.max(FIRST_SCREEN, innerHeight) - 2;
   const opened = () => [$("mainPanel"), $("mainNote")].reduce((sum, el) => sum + (el.hidden ? 0 : el.getBoundingClientRect().height + parseFloat(getComputedStyle(el).marginTop)), 0);
-  const fits = () => cardLine() - opened() <= limit;
-  if (sayShown === total && fits()) return;
+  const fits = (edge) => cardLine() - opened() <= edge;
+  if (sayShown === total && fits(limit)) return;
   let n = total;
   showSay(n);
-  while (n > 0 && !fits()) showSay(--n);
+  while (n > 0 && !fits(limit)) showSay(--n);
+  if (n === 0 && !fits(innerHeight - 2)) showSay(1);   // the card's first line is below the window's own bottom edge whatever is left out (a low phone): nothing is gained by hiding the first sentence
 }
 function openStrix() {
   $("strixBox").open = true;
@@ -368,12 +396,12 @@ function buildMain() {
       btn(M.LAB_COPY.again, () => labAct(M.labReset, { jump: true }), { id: "labAgain", class: "btn ghost" }),
       btn(L(M.LAB_COPY.close), () => { ui.four = null; apply(M.closeLab(state)); }, { id: "labClose", class: "btn ghost" }));
   } else if (!state.site) {
-    row.push(btn(C.greenwich, () => { ui.panel = null; apply(M.chooseSite(state, M.FIRST_RUN.defaultSite)); }, { id: "placeGreenwich", class: "btn gold" }), ...placeButtons(true));
+    row.push(btn(C.greenwich, () => { ui.panel = null; apply(M.chooseSite(atClock(state), M.FIRST_RUN.defaultSite)); }, { id: "placeGreenwich", class: "btn gold" }), ...placeButtons(true));
   } else if (state.step === 1) {
     row.push(...placeButtons(true), btn(UI.next, () => setStep(2), { id: "placeNext", class: "btn gold" }));
   } else if (state.step === 2 && asking()) {
     const q = M.dayQuestion(state, deviceDay());
-    row.push(btn(q.yes, () => apply(M.confirmDay(state)), { id: "dayYes", class: "btn gold" }), btn(q.change, () => togglePanel("date"), { id: "dayChange", "aria-expanded": String(ui.panel === "date") }));
+    row.push(btn(q.yes, dayYes, { id: "dayYes", class: "btn gold" }), btn(q.change, dayChange, { id: "dayChange", "aria-expanded": String(ui.panel === "date") }));
   } else if (state.step === 2) {
     for (const b of M.DAY_BUTTONS) {
       if (b.key === "pick") row.push(btn(b.label, () => togglePanel("date"), { id: "day-pick", "aria-expanded": String(ui.panel === "date") }));
@@ -408,7 +436,7 @@ function pickPanel() {
     if (!M.siteOf(key)) return;
     ui.panel = null;
     ui.typed = null;
-    apply(M.chooseSite(state, key));
+    apply(M.chooseSite(atClock(state), key));
   };
   const select = h("select", { id: "placeSelect", "data-key": "placeSelect", onchange: act(choose) },
     h("option", { value: "" }, UI.choose),
@@ -425,7 +453,7 @@ function typePanel() {
   const go = btn(UI.showPlace, () => {
     const num = (text) => (String(text).trim() === "" ? NaN : Number(text));
     const la = num(t.lat), lo = num(t.lon);
-    const r = M.typePlace(state, la >= 0 ? (t.south ? -la : la) : NaN, lo >= 0 ? (t.west ? -lo : lo) : NaN);
+    const r = M.typePlace(atClock(state), la >= 0 ? (t.south ? -la : la) : NaN, lo >= 0 ? (t.west ? -lo : lo) : NaN);
     if (r.message) { setText(err, r.message); say.now(r.message); return; }
     ui.panel = null;
     ui.typed = null;
@@ -515,6 +543,7 @@ function labCard() {
   const r = M.labReadout(state.lab, state.lens), out = [h("p", { id: "labText" }, tag(r.layer), r.text)];
   if (r.flat) out.push(h("p", null, tag("checked"), r.flat));
   if (r.area) out.push(h("p", null, tag("checked"), r.area.text));
+  if (r.noArea) out.push(h("p", { id: "labNoArea" }, tag("checked"), r.noArea.text));   // in the place of the area: a path that crosses itself has none
   if (r.tile) out.push(h("p", null, tag("checked"), r.tile));
   for (const c of r.closed) out.push(h("p", { class: "note mono" }, c));
   if (state.lab.tiling) out.push(line(M.LAB_COPY.tileNote));
@@ -600,23 +629,24 @@ const smallMoons = M.moonButtons(state).map(() => {
 });
 function placeControls() {
   const lat = state.site ? Math.round(state.site.lat) : 0, lon = state.site ? Math.round(state.site.lonEast) : 0;
-  const move = (la, lo) => { ui.typed = null; apply(M.typePlace(state, la, lo).state, { jump: true }); };
+  const move = (la, lo) => { ui.typed = null; apply(M.typePlace(atClock(state), la, lo).state, { jump: true }); };
   return [
     slider("latSlider", L(M.CONTROLS.latitude), -90, 90, 1, lat, (v) => M.latitudeWords(v), (v) => move(v, state.site ? state.site.lonEast : 0)),
     slider("lonSlider", L(M.CONTROLS.longitude), -180, 180, 1, lon, (v) => M.longitudeWords(v), (v) => move(state.site ? state.site.lat : 0, v)),
   ];
 }
+/** The day's further controls. Each may be the first to answer the day, on a page that has stood open for hours: it reads the clock first (atClock), so that it starts from the day the device shows at that press, not from the day the page was opened. */
 function dayControls() {
   const d = M.dateView(state), out = [];
   out.push(h("div", { class: "field" }, h("span", { class: "note" }, UI.time),
-    h("div", { class: "wrap-row" }, M.TIME_BUTTONS.map((b) => btn(b.label, () => applyResult(M.timeButton(state, b.key, Date.now())), { id: "time-" + b.key })))));
+    h("div", { class: "wrap-row" }, M.TIME_BUTTONS.map((b) => btn(b.label, () => applyResult(M.timeButton(atClock(state), b.key, Date.now())), { id: "time-" + b.key })))));
   if (!isStar()) {
     out.push(note(d.calendarNote + ". " + M.MESSAGES.calendar));
-    out.push(slider("yearSlider", L(M.CONTROLS.dayOfYear), 1, d.daysInYear, 1, d.dayOfYear, () => M.dateView(state).text, (v) => { apply(M.setDayOfYear(state, v), { jump: true }); return M.dateView(state).text; }));
+    out.push(slider("yearSlider", L(M.CONTROLS.dayOfYear), 1, d.daysInYear, 1, d.dayOfYear, () => M.dateView(state).text, (v) => { apply(M.setDayOfYear(atClock(state), v), { jump: true }); return M.dateView(state).text; }));
     const clock = h("input", { type: "time", id: "clockField", "data-key": "clockField", value: d.clock });
     clock.addEventListener("change", () => {
       const m = /^(\d{1,2}):(\d{2})/.exec(clock.value);
-      if (m) apply(M.setClock(state, Number(m[1]) + Number(m[2]) / 60));
+      if (m) apply(M.setClock(atClock(state), Number(m[1]) + Number(m[2]) / 60));
     });
     out.push(h("div", { class: "field" }, h("label", { for: "clockField" }, L(M.CONTROLS.clock)), clock));
   }
@@ -626,7 +656,7 @@ function dayControls() {
       const name = h("span", null, b.label);
       smallMoons[i].picture.set(b);
       describeCanvas(smallMoons[i].canvas, b.label, name);
-      return btn([smallMoons[i].canvas, name], () => { const r = M.findMoon(state, b.target); apply(r.state, { quiet: true }); say(r.note); }, { id: "moon-" + b.target, "aria-label": b.label });
+      return btn([smallMoons[i].canvas, name], () => { const r = M.findMoon(atClock(state), b.target); apply(r.state, { quiet: true }); say(r.note); }, { id: "moon-" + b.target, "aria-label": b.label });
     }))));
   out.push(ezekielBlock());
   return out;
@@ -903,6 +933,8 @@ const arrows = [
 for (const [dir, nudge, turn] of arrows) {
   nudge.setAttribute("aria-label", M.CONTROLS.nudge[dir]);
   turn.setAttribute("aria-label", M.CONTROLS.turn[dir]);
+  nudge.title = M.CONTROLS.nudge[dir];            // the buttons show an arrow only: the same words, as a tooltip, for a pointer that rests on one
+  turn.title = M.CONTROLS.turn[dir];
   nudge.addEventListener("click", act(() => apply(M.nudgeView(state, dir), { quiet: true })));
   turn.addEventListener("click", act(() => apply({ ...state, orbit: M.orbitTurn(state.orbit, dir) }, { quiet: true })));
 }
@@ -916,10 +948,12 @@ wireDialog($("blueprint"), [$("blueprintBtn"), $("blueprintBtn2")]);
 addEventListener("hashchange", () => {
   ui.panel = null;
   ui.four = null;
-  apply(M.applyHash(state, location.hash));
+  apply(M.applyHash(atClock(state), location.hash));   // a link may choose a place or open a step: the clock is read again first, until the day is answered
   lens.set(state.lens);
+  sayArrival(false);
 });
 addEventListener("resize", () => { placeLegend(); render(); });
+document.addEventListener("visibilitychange", onVisible);
 if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => fitSay());   // other letters, other line breaks
 
 if (wide()) {
@@ -928,11 +962,18 @@ if (wide()) {
   $("teleBox").open = true;
   $("legendBox").open = isStar();
 }
-render();
-{
-  const first = M.statusSentence(state);
-  if (first) say(first);
+/**
+ * What the status line says when a link has brought the page somewhere: the note about a value the page did not use (it stands
+ * under the map too, where a screen reader would not come across it), then the place and time. always: also say the place and
+ * time when there is no note (at load; after a change of the link apply() has said it already).
+ */
+function sayArrival(always) {
+  const note = state.notes.link, where = M.statusSentence(state);
+  if (note) say(where ? note + ". " + where : note);
+  else if (always && where) say(where);
 }
+render();
+sayArrival(true);
 
 const ready = nextPaint().then(() => true);
 window.CelestialControlPanel = {

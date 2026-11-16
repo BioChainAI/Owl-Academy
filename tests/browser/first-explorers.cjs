@@ -5,8 +5,9 @@
 // is not part of node --test. One journey, the way a visitor would go, on a desktop screen (1440 x 900, mouse and
 // keyboard) and on a phone screen (390 x 844, touch): the nine stations from Darkness to The way, five
 // observations (one per sense), the packet and its bits, the chain and its ledger, the Overwatch checks, the
-// tamper lab, the four receivers with and without noise, the bridge in 2D and 3D, the three reading levels, the
-// dialog. Every check records what was expected and what the page really showed or held.
+// tamper lab, the four receivers with and without noise, the three files the page saves, the bridge in 2D and
+// 3D, the three reading levels, the dialog. Every check records what was expected and what the page really showed
+// or held.
 //
 //   node tests/browser/first-explorers.cjs                     both screens, about three minutes
 //   node tests/browser/first-explorers.cjs --only=desktop      one screen (desktop or phone)
@@ -22,7 +23,11 @@
 // Rules it keeps:  - every request that would leave this computer is refused, the page's web fonts among them
 //                    (so the page is seen with the fonts of this computer; the last step checks that the
 //                    font style sheet was the only such request);
-//                  - the three "Save" buttons are never pressed (no downloads);
+//                  - each of the three "Save" buttons is pressed once, with the journey of five, and nothing
+//                    else is downloaded: the package is read back here, given to the front door in Node
+//                    (readHyperpack) and loaded into the Lexicon Explorer, opened for that in a window of its
+//                    own; the ledger is compared with the one the page holds. The files go to a folder under
+//                    the system's temporary folder and are removed at the end;
 //                  - the repository is read, never written to.
 //
 // It needs Playwright with Chromium (see tests/browser/README.md) and serves the repository itself on 127.0.0.1
@@ -36,11 +41,14 @@ const USAGE = 'node tests/browser/first-explorers.cjs [--only=desktop|phone] [--
 const OPTS = kit.options(__dirname, USAGE, ['only']);
 const ROOT = OPTS.root;
 const PAGE_PATH = '/Library/Experimental_Systems/First_Explorers/index.html';
+const LEXICON_PATH = '/Library/Experimental_Systems/Lexicon_Explorer/index.html';   // where the saved package is loaded
 kit.needFile(ROOT, PAGE_PATH.slice(1));
+kit.needFile(ROOT, LEXICON_PATH.slice(1));
 const ONLY = kit.listOption(OPTS.only, ['desktop', 'phone'], 'only');
 const RECORD = new kit.Record('First Explorers', { verbose: OPTS.verbose });
 const SHOTS = new kit.Shots(OPTS.shots, 'Pictures of the First Explorers walkthrough (tests/browser/first-explorers.cjs). PNG, two device pixels per CSS pixel.');
 let ORIGIN = '', PAGE = '';   // the walkthrough's own server and the page on it, known once the server listens
+let SAVED = '';               // the folder the page's downloads are kept in while the walkthrough runs
 
 const T0 = Date.now();
 const log = (...a) => { if (OPTS.verbose) console.log(((Date.now() - T0) / 1000).toFixed(1).padStart(6) + 's', ...a); };
@@ -508,7 +516,7 @@ async function pass(browser, vp, EXP, SRC) {
       eq('newest entry first', ['chain.sealed', 'chain.grown', 'observe', 'key.created', 'genesis'], await st(() => [...document.querySelectorAll('#tabpane .ledger li b')].map((e) => e.textContent)));
       const led = await st(() => window.FirstExplorers.state.trace.map((e) => ({ n: e.n, actor: e.actor, event: e.event, detail: e.detail, at: e.at, prev: e.prev, hash: e.hash })));
       eq('this script’s own check of the ledger’s hash chain', { ok: true, entries: 5 }, verifyLedger(led));
-      check('a “Save” button is offered (not pressed)', 'present', (await button('Save').count()) === 1 ? 'present' : 'missing', (await button('Save').count()) === 1);
+      check('a “Save” button is offered (it is pressed later, with the whole ledger)', 'present', (await button('Save').count()) === 1 ? 'present' : 'missing', (await button('Save').count()) === 1);
       await press(page.locator('#tabs button[data-tab="chain"]'));
       eq('the button that moves on', ['Call Overwatch →'], await controls());
       await press(button('Call Overwatch →'));
@@ -696,7 +704,7 @@ async function pass(browser, vp, EXP, SRC) {
     await step('Station 7 (Across space): the crossroads', async () => {
       await arrive(7);
       eq('four receivers, Antioch chosen', ['Antioch:true', 'Alexandria:false', 'Athens:false', 'Rome:false'], await st(() => [...document.querySelectorAll('.sense-pick[aria-label="Receiver"] button')].map((b) => b.textContent + ':' + b.getAttribute('aria-pressed'))));
-      eq('buttons offered (the two Save buttons are never pressed in this walkthrough)', ['Send to Antioch', 'Send through noise', 'Save package', 'Save ledger'], (await controls()).filter((b) => !CITIES.some((c) => c.city === b)));
+      eq('buttons offered (the two Save buttons are pressed later, with the journey of five)', ['Send to Antioch', 'Send through noise', 'Save package', 'Save ledger'], (await controls()).filter((b) => !CITIES.some((c) => c.city === b)));
       eq('station 8 is still locked', true, await stationButton(8).isDisabled());
       has('the legend under the map names the crossroads', 'the crossroads', await text('#legend'));
       observe('The note at station 7 says “go and observe something new”, but station 7 has no button for it. “Observe something new” is on station 8; the station list also leads back to station 1.', { note: await text('#lensNote'), buttonsHere: await controls() });
@@ -1020,12 +1028,84 @@ async function pass(browser, vp, EXP, SRC) {
     });
     for (const c of CITIES) await step(`Send to ${c.city} again, clean (journey of 5)`, async () => { await send(c, false, 5); });
 
+    // ----- the files the page saves -----
+    // Presses a "Save" button and returns what was saved: the name the page gave the file, where it is kept, its text.
+    async function save(loc) {
+      const [d] = await Promise.all([page.waitForEvent('download', { timeout: 15000 }), press(loc)]);
+      const name = d.suggestedFilename(), file = path.join(SAVED, `${vp.short}-${R.downloads.length}-${name.replace(/[^\w.-]/g, '_')}`);
+      await d.saveAs(file);
+      return { name, file, text: fs.readFileSync(file, 'utf8') };
+    }
+    const parsed = (t) => { try { return JSON.parse(t); } catch { return undefined; } };
+    const ledgerOfPage = () => st(() => JSON.stringify(window.FirstExplorers.state.trace, null, 1));
+
+    await step('Station 7: “Save package” saves the wire text, and the front door accepts the file as saved', async () => {
+      const E = EXP.epochs[4], before = await snap();
+      eq('“Save package” is offered and can be pressed', { n: 1, disabled: false }, { n: await button('Save package').count(), disabled: await button('Save package').isDisabled() });
+      const got = await save(button('Save package')), pack = parsed(got.text);
+      R.facts.savedPackage = { name: got.name, characters: got.text.length };
+      eq('the file is named after the chain', `hyperpack-${E.chainId}.json`, got.name);
+      eq('the saved text is the wire text: exactly the JSON of its own value, on one line, with no indentation', { json: true, wire: true, lineBreaks: 0, begins: '{"format":"HYPERPACK/1",' },
+        { json: pack !== undefined, wire: pack !== undefined && JSON.stringify(pack) === got.text, lineBreaks: got.text.split('\n').length - 1, begins: got.text.slice(0, 24) });
+      eq('it is this journey: the chain, the root and the lexicon Node grew, five words, a certificate', { chainId: E.chainId, merkleRoot: E.merkleRoot, lexiconRoot: E.lexRoot, words: 5, lineage: 5, certificate: true },
+        pack ? { chainId: pack.chain.chainId, merkleRoot: pack.chain.merkleRoot, lexiconRoot: pack.lexicon.root, words: pack.lexicon.entries.length, lineage: pack.lineage.length, certificate: !!(pack.certificate && pack.certificate.sig) } : null);
+      const door = await EXP.OW.readHyperpack(got.text);
+      eq('the front door (readHyperpack of scripts/strix-overwatch.js, run in Node) accepts the file as saved: all thirteen checks', { ok: true, failed: null, checks: PACKAGE_CHECKS.map((n) => n + ':true') },
+        { ok: door.ok, failed: door.failed, checks: door.checks.map((c) => `${c.name}:${c.ok}`) });
+      const indented = await EXP.OW.readHyperpack(JSON.stringify(pack, null, 1));
+      eq('the same package written with indentation is refused at the door, so the check above can fail', { ok: false, failed: 'parse', detail: 'not in wire form: the text is not exactly the JSON of its own value' },
+        { ok: indented.ok, failed: indented.failed, detail: indented.checks[0].detail });
+      eq('saving changed nothing on the page', before, await snap());
+      R.saved = got;
+    });
+
+    await step('The Lexicon Explorer reads the saved package and names it a First Explorers journey', async () => {
+      const got = R.saved, seen = { messages: [], errors: [] };
+      const lexCtx = await browser.newContext({ viewport: vp.viewport, deviceScaleFactor: 2, isMobile: vp.touch, hasTouch: vp.touch });
+      try {
+        await kit.refuseOutside(lexCtx, ORIGIN, { fonts: false });
+        await kit.routeFonts(lexCtx, 'empty');
+        const lex = await lexCtx.newPage();
+        lex.setDefaultTimeout(10000);
+        lex.on('console', (m) => { if (m.type() === 'error' || m.type() === 'warning') seen.messages.push(m.type() + ': ' + m.text()); });
+        lex.on('pageerror', (e) => seen.errors.push(String(e && e.message || e)));
+        await lex.goto(ORIGIN + LEXICON_PATH + '#lens=navigator');
+        await lex.waitForFunction(() => window.LexiconExplorer && window.LexiconExplorer.ready);
+        await lex.evaluate(() => window.LexiconExplorer.ready);
+        has('its load box invites a file made by First Explorers', 'made by this page or by First Explorers', await lex.evaluate(() => (document.querySelector('label[for="loadInput"]') || {}).textContent || ''));
+        const summary = lex.locator('#loadBox > summary');
+        await summary.scrollIntoViewIfNeeded();
+        await (vp.touch ? summary.tap() : summary.click());
+        await lex.setInputFiles('#loadInput', got.file);
+        await lex.waitForFunction(() => !window.LexiconExplorer.state.busy && document.getElementById('loadOut').childElementCount > 0, null, { timeout: 60000 });
+        const out = await lex.evaluate(() => {
+          const rows = [...document.querySelectorAll('#loadOut .checks li')], one = (id) => { const e = document.getElementById(id); return e ? e.textContent : null; };
+          return { refused: one('loadRefused'), passed: rows.filter((li) => li.className === 'ok').length, notPassed: rows.filter((li) => li.className !== 'ok').map((li) => li.textContent),
+            first: rows.length ? rows[0].textContent : null, line: one('loadJourney'), showIt: !!document.getElementById('showItBtn'), lexicon: window.LexiconExplorer.state.lexicon.origin };
+        });
+        eq('every check passed and the page says what the file is; it is not offered as a lexicon to show', { refused: null, passed: PACKAGE_CHECKS.length, notPassed: [], line: 'This is a First Explorers journey.', showIt: false, lexicon: 'builtin' },
+          { refused: out.refused, passed: out.passed, notPassed: out.notPassed, line: out.line, showIt: out.showIt, lexicon: out.lexicon });
+        has('the first check it shows is the wire form', 'The text is a package in wire form.', out.first);
+        eq('the Lexicon Explorer wrote no console error or warning and threw nothing', { messages: [], errors: [] }, seen);
+        R.facts.savedPackage.lexiconExplorer = out.line;
+      } finally { await lexCtx.close().catch(() => {}); }
+    });
+
+    await step('Station 7: “Save ledger” saves the ledger the page holds, indented as before', async () => {
+      const want = await ledgerOfPage(), got = await save(button('Save ledger')), led = parsed(got.text);
+      eq('the file’s name', 'first-explorers-trace.json', got.name);
+      eq('the saved text is the page’s ledger, one space of indentation per level', { same: true, secondLine: ' {' }, { same: got.text === want, secondLine: got.text.split('\n')[1] });
+      eq('this script’s own check of every hash link in the saved file', { ok: true, entries: (await snap()).traceN }, Array.isArray(led) ? verifyLedger(led) : null);
+    });
+
     await step('Station 7: the whole ledger is still one unbroken chain', async () => {
       await press(page.locator('#tabs button[data-tab="trace"]'));
       const led = await st(() => window.FirstExplorers.state.trace.map((e) => ({ n: e.n, actor: e.actor, event: e.event, detail: e.detail, at: e.at, prev: e.prev, hash: e.hash })));
       eq('the page’s badge', `${led.length} ENTRIES, CHAIN WHOLE`, await text('#tabpane .badge'));
       eq('this script’s own check of every hash link', { ok: true, entries: led.length }, verifyLedger(led));
       R.facts.ledgerEntries = led.length;
+      const want = await ledgerOfPage(), got = await save(button('Save'));
+      eq('the “Save” button of the ledger tab saves the same ledger under the same name', { name: 'first-explorers-trace.json', same: true }, { name: got.name, same: got.text === want });
       await press(page.locator('#tabs button[data-tab="overwatch"]'));
       await press(button('See the way →'));
     });
@@ -1171,7 +1251,7 @@ async function pass(browser, vp, EXP, SRC) {
       eq('errors thrown by the page’s own code', [], R.pageErrors);
       eq('failed requests, leaving out the refused web-font request', [], realFailed);
       eq('requests that would have left this computer: only the page’s web-font stylesheet, and it was refused', ['fonts.googleapis.com'], [...new Set(R.blockedRequests.map((u) => new URL(u).hostname))]);
-      eq('files downloaded (the Save buttons were never pressed)', [], R.downloads);
+      eq('files downloaded: the package and the ledger twice, one for each press of a “Save” button, and nothing else', [`hyperpack-${EXP.epochs[4].chainId}.json`, 'first-explorers-trace.json', 'first-explorers-trace.json'], R.downloads);
       eq('pop-up boxes (alert, confirm)', [], R.dialogs);
       eq('the address in the browser never changed', PAGE, page.url());
       check('widest sideways overflow seen at any step', '0 px', `${Math.max(0, R.maxOverflow)} px`, R.maxOverflow <= 0);
@@ -1183,6 +1263,7 @@ async function pass(browser, vp, EXP, SRC) {
     R.fatal = String(e && e.message || e).split('\n').slice(0, 4).join(' | ');
     console.log(`!! [${vp.tag}] stopped: ${R.fatal}`);
   }
+  delete R.saved;
   await ctx.close();
   R.stepsTotal = R.steps.length; R.stepsPassed = R.steps.filter((s) => s.ok).length;
   R.checksTotal = R.checks.length; R.checksPassed = R.checks.filter((c) => c.pass).length;
@@ -1200,6 +1281,7 @@ async function pass(browser, vp, EXP, SRC) {
   ].filter((v) => !ONLY || ONLY.includes(v.tag));
   const server = await kit.serve(ROOT);
   ORIGIN = server.base; PAGE = ORIGIN + PAGE_PATH;
+  SAVED = kit.tempFolder('first-explorers-walk');
   console.log('First Explorers walkthrough · ' + VPS.map((v) => v.tag).join(', ') + ' · ' + ROOT + ' at ' + ORIGIN + ' · Chromium ' + version);
   const passes = {}, notes = [await kit.fontsDrawn(browser, PAGE)];
   for (const vp of VPS) {

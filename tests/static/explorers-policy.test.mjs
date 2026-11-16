@@ -20,8 +20,37 @@
 //     name; no href, src, style text, class name or id assigned; no assignment to location and no navigation
 //     through it; no window.open; no message listener, postMessage or message channel; no timer whose first
 //     argument is not a function written in place; no worker; the clipboard only in the sky page's one copy
-//     button; no host named in a string. The kit is where elements are made and attributes are set, so it
+//     button; no host named in a string; no style property set by name, and none assigned but the width and
+//     the height (of a canvas); no class name given to classList that is not a string literal, and no
+//     classList (or its value) set to anything but a string literal; no Object.assign onto anything but
+//     `state`, `next` or a new object; no part of a link's address (host, hostname, protocol, pathname,
+//     search) assigned; no navigation.navigate; no member or item of an element's attribute map
+//     (`.attributes.` or `.attributes[`). The kit is where elements are made and attributes are set, so it
 //     keeps only the rules marked `kit`.
+//     Optional chaining is no way round a rule: every rule reads `a?.b` as `a.b`, `f?.(x)` as `f(x)` and
+//     `a?.[k]` as `a[k]`.
+//     What these rules cannot see. They read how a line is spelt, not what it does when it runs, and they
+//     look only for the names listed here. An assignment is read whatever its sign (`=`, `+=`, `||=`, `??=`,
+//     `**=`, `>>=` and the like). Four kinds of spelling are known to get past every one of them; the list
+//     is not claimed to be complete. One is a member
+//     set under a computed name: `link[key] = value` and `img["src"] = value` set the same things as
+//     `link.href = value`, and no rule reads them. The second is a call through another name for `window` or
+//     for a function: after `const win = window`, `win.open(u)` is not seen, nor is `assign(link, x)` after
+//     `const assign = Object.assign` (the same holds for any object kept under a new name: `list.value = x`
+//     after `const list = el.classList`). The third is a listed member written to with no assignment sign
+//     after it, as the target of a destructuring or of a loop (`[link.href] = [value]`,
+//     `({ text: img.src } = entry)`, `for (link.href of list)`), and the attribute map taken whole instead of
+//     by member or item (`for (const a of link.attributes) a.value = x`). The fourth is anything that stands
+//     between a listed name and what its rule expects next: parentheses round the member or the object
+//     (`(link.href) = value`, `(el.classList).value = x`, `(window).open(u)`), `.call` or `.apply` after a
+//     listed function (`window.open.call(window, u)`), `++` or `--` in place of an assignment sign, and an
+//     escape inside the name (`link.hr\u0065f = value`). An escape hides a name from every rule of this file,
+//     the forbidden names of section 1 included. Besides these four, a name that no rule lists is not looked
+//     for:
+//     `document.title = x`, `link.download = x`, `link.port = x`, `link.hash = x`, `location.hash = x`,
+//     `navigator.share(x)`, `el.attachShadow(x)`, `el.attributeStyleMap.set(name, x)` and
+//     `link.setAttributeNode(x)` all pass. A change to a page script is therefore still read by a person;
+//     these rules catch the careless line, not every line.
 //  2. Each index.html (and any other .html in a page folder): the content policy line is the first element of
 //     the head, letter for letter; no attribute whose name begins with "on"; exactly one script element, and it
 //     is a module with a relative src and no text; no host anywhere in the file but the two font hosts, over
@@ -33,7 +62,11 @@
 //  4. Links. Every value of the kit's LINKS table is a relative URL that resolves, from each page folder, to a
 //     file that exists inside the repository; the table still leads to First Explorers, both pages and the
 //     wing index.
-//  5. Self-tests: every rule above is shown to fail on a broken sample and to pass on a sound one.
+//  5. The package First Explorers saves. Its "Save package" button writes the wire text, JSON.stringify(pack())
+//     with no indentation, and its download() writes the text it is given: the load box of the Lexicon
+//     Explorer invites that file, and the front door (readHyperpack) reads no other form. This is read in
+//     first-explorers.js as text; the browser walkthrough of that page saves the file and loads it.
+//  6. Self-tests: every rule above is shown to fail on a broken sample and to pass on a sound one.
 //
 // Files that are not written yet. A page file that does not exist is skipped, and the skip says which file.
 // The skipping stops by itself: the kit and the three cores must always exist, and as soon as a page's
@@ -101,6 +134,9 @@ const FORBIDDEN = [
   { name: "srcdoc", where: "text", re: /srcdoc/i, sample: "frame.srcdoc = s;" },
   { name: "DOMParser", where: "text", re: /\bDOMParser\b/, sample: "const d = new DOMParser();" },
   { name: "createContextualFragment", where: "text", re: /\bcreateContextualFragment\b/, sample: "range.createContextualFragment(s);" },
+  { name: "setHTMLUnsafe", where: "text", re: /\bsetHTMLUnsafe\b/, sample: "box.setHTMLUnsafe(s);" },
+  { name: "parseHTMLUnsafe", where: "text", re: /\bparseHTMLUnsafe\b/, sample: "const d = Document.parseHTMLUnsafe(s);" },
+  { name: "setHTML", where: "text", re: /\.\s*setHTML\s*\(/, sample: "box.setHTML(s);" },
   // code from text
   { name: "eval", where: "code", re: ident("eval"), sample: "const v = eval(s);" },
   { name: "new Function", where: "code", re: /\bnew\s+Function\b|(?<![\w$])Function\s*\(/, sample: 'const f = new Function("a", s);' },
@@ -136,7 +172,8 @@ const FORBIDDEN = [
 // then read on into a string (the name of an attribute, the first argument of a timer). `allow` names a file
 // and how many matches it may hold. `sound` are lines next to the rule that must not be caught.
 const SKY_SHELL = `${WING}/Celestial_Control_Panel/celestial-control-panel.js`;
-const assigned = "(?:=(?![=>])|[-+*/%&|^]=)";   // an assignment, not ==, === or =>
+const assigned = "(?:=(?![=>])|(?:\\*\\*|<<|>>>?|&&|\\|\\||\\?\\?|[-+*/%&|^])=)";   // an assignment (=, +=, ||=, ??=, **=, >>= …), not ==, === or =>
+const quoted = "(?:\"[\\w -]*\"|'[\\w -]*')";       // a class name, or several, written as a string literal
 const SCRIPT_RULES = [
   { name: "an element made outside the kit", where: "code",
     re: /(?<![\w$])createElement(?:NS)?(?![\w$])|(?<![\w$])new\s+(?:Image|Audio|Option)(?![\w$])/,
@@ -151,7 +188,7 @@ const SCRIPT_RULES = [
     sample: "a.href = u;",
     sound: ['const link = h("a", { href: x.href }, x.name); if (x.href === y.href || a.src == b.src) go();', "const url = location.href.split(\"#\")[0] + href.slice(1); const f = (x) => x.href => 1;"] },
   { name: "style text, a class name or an id assigned outside the kit", where: "code",
-    re: new RegExp(`\\.\\s*(?:cssText|className|id)\\s*${assigned}|\\.\\s*style\\s*=(?![=>])`),
+    re: new RegExp(`\\.\\s*(?:cssText|className|id|style)\\s*${assigned}`),
     sample: "a.className = s;",
     sound: ['canvas.style.width = w.toFixed(0) + "px"; box.classList.toggle("many", n > 4); box.hidden = !show;', "if (row.id === id || el.className == name) return { id: row.id, style: 1 };"] },
   { name: "location assigned or navigated", where: "code", kit: true,
@@ -190,6 +227,42 @@ const SCRIPT_RULES = [
     re: /[A-Za-z][A-Za-z0-9+.-]*:\/\/[^\s"'`<>()\\;,]*|(?<=["'`])\/\/[A-Za-z0-9-]+\.[A-Za-z0-9.-]*/,
     sample: 'const u = "https://example.org/x";',
     sound: ['const link = "../First_Explorers/index.html#lens=navigator", blob = "blob:", data = "data:,", r = /^https?:\\/\\//, half = n / 2 // 3;'] },
+  { name: "a style property set by name outside the kit", where: "code",
+    re: /\.\s*setProperty\s*\(/,
+    sample: 'el.style.setProperty("background", s);',
+    sound: ['const gold = getComputedStyle(el).getPropertyValue("--gold"); el.style.removeProperty("width"); const setProperty = 1, property = setProperties(el);'] },
+  { name: "a style property other than width and height assigned outside the kit", where: "code",
+    re: new RegExp(`\\.\\s*style\\s*\\.\\s*(?!(?:width|height|cssText)(?![\\w$]))[A-Za-z_$][\\w$]*\\s*${assigned}`),
+    sample: 'el.style.backgroundImage = "url(" + s + ")";',
+    sound: ['canvas.style.width = w.toFixed(0) + "px"; canvas.style.height = h.toFixed(0) + "px";', 'if (el.style.display === "none" || a.style.color == b.style.color) show(el.style.widths, row.styles.color = 1);'] },
+  { name: "a class name given to classList that is not a string literal", where: "text", start: true, kit: true,
+    re: new RegExp(`(?<![\\w$])classList\\s*\\.\\s*(?:add\\s*\\((?!\\s*${quoted}(?:\\s*,\\s*${quoted})*\\s*\\))|toggle\\s*\\((?!\\s*${quoted}\\s*[,)])|replace\\s*\\((?!\\s*${quoted}\\s*,\\s*${quoted}\\s*\\)))`),
+    sample: "el.classList.add(kind);",
+    sound: ['box.classList.toggle("many", n > 4); el.classList.add("seg", \'lens-switch\'); el.classList.replace("open", "shut"); el.classList.toggle("open");', 'el.classList.remove(old); if (el.classList.contains(name)) go(); const classLists = lists.add(name);'] },
+  { name: "Object.assign onto something other than state, next or a new object", where: "code", kit: true,
+    re: /(?<![\w$])Object\s*\.\s*assign\s*\((?!\s*(?:(?:state|next)\s*,|\{))/,
+    sample: "Object.assign(link, { href: u });",
+    sound: ["Object.assign(state, M.setLens(state, id)); Object.assign(next, { view: 1 }); const copy = Object.assign({}, a), other = Object.assign( { a: 1 }, b);", "const made = myObject.assigned(link), entries = Object.entries(link);"] },
+  { name: "a part of a link's address assigned outside the kit", where: "code",
+    re: new RegExp(`\\.\\s*(?:host|hostname|protocol|pathname|search)\\s*${assigned}`),
+    sample: "link.host = s;",
+    sound: ['const r = { host: box, search: "" }; if (hasFocus(r.host) || a.hostname === b.hostname || u.protocol == "blob:") go(u.pathname, u.search);', "const at = text.search(/a/), hosts = r.hosts = 2, f = (u) => u.host;"] },
+  { name: "navigation.navigate", where: "code", kit: true,
+    re: /(?<![\w$])navigation\s*\.\s*navigate\s*\(/,
+    sample: "navigation.navigate(u);",
+    sound: ["const navigation = rows.map(navigate), navigations = 1; nav.navigate(2); navigate(3);"] },
+  // classList = x sets the same class attribute as classList.value = x. An assignment to className is not in this rule: outside the
+  // kit the rule "style text, a class name or an id assigned" refuses it whatever stands on the right, and inside the kit h() sets
+  // className from its "class" attribute, which is how every class name of the pages is set.
+  { name: "classList or its value set to anything but a string literal", where: "text", start: true, kit: true,
+    re: new RegExp(`(?:(?<![\\w$])classList\\s*\\.\\s*value|\\.\\s*classList)\\s*${assigned}(?!\\s*${quoted}\\s*[;,)}\\]])`),
+    sample: "el.classList.value = kind;",
+    sound: ['el.classList.value = "row open"; box.classList = \'row\'; const v = el.classList.value, list = el.classList; if (el.classList.value === name) go();',
+      "const classList = spec.classList, values = { value: kind }; row.classLists = names; field.value = kind;"] },
+  { name: "a member or an item of an element's attribute map", where: "code", kit: true,
+    re: /\.\s*attributes\s*[.[]/,
+    sample: "link.attributes.href.value = u;",
+    sound: ['const attributes = rows.map(attr), n = attributes.length, first = attributes[0]; if (el.hasAttributes()) go(el.getAttribute("data-x"), spec.attributesOf(el));'] },
 ];
 const isScript = (rel) => /\.(?:m?js|cjs)$/i.test(rel);
 // The rules a file keeps: FORBIDDEN everywhere; SCRIPT_RULES in a script of a page folder and in a core; in the
@@ -400,8 +473,14 @@ function viewsOfHtml(src) {
 
 // ---------------------------------------------------------------- rule 1: forbidden names
 
+// Optional chaining spells the same member or the same call another way, so the rules read a?.b as a.b, f?.(x) as f(x) and
+// a?.[k] as a[k]: the two characters are written over in place (offsets and line numbers still hold). "?." before a digit is
+// the question mark of a choice and a number (on ?.5 : 1), and stays.
+const plainChain = (view) => view.replace(/\?\.(?!\d)(\s*[([])?/g, (m, open) => (open ? "  " + open : " ."));
+
 function forbiddenIn(path, src, rules = rulesFor(path)) {
-  const views = /\.html?$/i.test(path) ? viewsOfHtml(src) : viewsOfJs(src);
+  const html = /\.html?$/i.test(path), views = html ? viewsOfHtml(src) : viewsOfJs(src);
+  if (!html) { views.text = plainChain(views.text); views.code = plainChain(views.code); }
   const out = [];
   for (const rule of rules) {
     const view = views[rule.where];
@@ -555,6 +634,55 @@ function linkProblems(links, exists = present, pendingOk = (rel) => stateOf(rel,
   return { problems, pending };
 }
 
+// ---------------------------------------------------------------- rule 5: the package First Explorers saves
+
+const FIRST_EXPLORERS = `${WING}/First_Explorers/first-explorers.js`;
+const WIRE_TEXT = "JSON.stringify(pack())";
+// The arguments of the call whose "(" is at `open`, each as its text, cut at the commas of the call's own level.
+// Brackets and commas are counted in the program text only (`code`), so those inside a string do not count.
+function argumentsAt(src, code, open) {
+  const args = [];
+  let depth = 0, from = open + 1;
+  for (let i = open; i < code.length; i++) {
+    const c = code[i];
+    if (c === "(" || c === "[" || c === "{") depth++;
+    else if (c === ")" || c === "]" || c === "}") {
+      if (--depth > 0) continue;
+      const last = src.slice(from, i).trim();
+      if (last !== "" || args.length) args.push(last);
+      return args;
+    } else if (c === "," && depth === 1) { args.push(src.slice(from, i).trim()); from = i + 1; }
+  }
+  return args;
+}
+// What is saved under a name that begins "hyperpack-" must be the wire text, and download() must write the text
+// it is given and nothing else.
+function savedPackageProblems(path, src) {
+  const { code } = viewsOfJs(src);
+  const out = [];
+  let saves = 0;
+  for (const m of code.matchAll(/(?<![\w$.])download\s*\(/g)) {
+    if (/function\s+$/.test(code.slice(0, m.index))) continue;   // the function itself, read below
+    const args = argumentsAt(src, code, m.index + m[0].length - 1);
+    if (!/^[`"']hyperpack-/.test(args[0] || "")) continue;
+    saves++;
+    const text = (args[1] || "").replace(/\s+/g, "");
+    if (args.length !== 2 || text !== WIRE_TEXT) {
+      out.push(`${path}:${lineOf(src, m.index)}: the package must be saved as its wire text, ${WIRE_TEXT} with no indentation (the load box of the Lexicon Explorer reads no other form); it is saved as ${args.slice(1).join(", ") || "nothing"}`);
+    }
+  }
+  if (saves === 0) out.push(`${path}: no download(\`hyperpack-…\`, …) call: the rule no longer finds where the package is saved`);
+  const def = /(?<![\w$.])function\s+download\s*\(\s*[A-Za-z_$][\w$]*\s*,\s*([A-Za-z_$][\w$]*)\s*\)\s*\{/.exec(code);
+  if (!def) return [...out, `${path}: no function download(name, text)`];
+  let depth = 0, end = def.index + def[0].length - 1;
+  for (; end < code.length; end++) { if (code[end] === "{") depth++; else if (code[end] === "}" && --depth === 0) break; }
+  const body = code.slice(def.index + def[0].length, end), given = def[1].replace(/\$/g, "\\$");
+  if (/(?<![\w$])JSON(?![\w$])/.test(body) || !new RegExp(`(?<![\\w$])new\\s+Blob\\s*\\(\\s*\\[\\s*${given}\\s*\\]`).test(body)) {
+    out.push(`${path}:${lineOf(src, def.index)}: download() must write the text it is given, new Blob([${def[1]}], …), and not make its own JSON of it`);
+  }
+  return out;
+}
+
 // ---------------------------------------------------------------- the tests
 
 const report = (problems) => `${problems.length} problem${problems.length === 1 ? "" : "s"}:\n` + problems.join("\n");
@@ -644,6 +772,12 @@ test("the kit's style rule: text that could name a resource is refused in every 
   const src = read(KIT), setStyle = src.slice(src.indexOf("function setStyle("), src.indexOf("function appendKids("));
   assert.equal((setStyle.match(/isAllowedStyleText\(/g) || []).length, 2, "setStyle asks the rule for the text and for each value");
   assert.ok(!/UNSAFE_STYLE/.test(setStyle), "and has no second rule of its own");
+});
+
+test("First Explorers saves its package as the wire text, the one form the Lexicon Explorer's load box reads", () => {
+  assert.ok(present(FIRST_EXPLORERS), missingNote(FIRST_EXPLORERS));
+  const problems = savedPackageProblems(FIRST_EXPLORERS, read(FIRST_EXPLORERS));
+  assert.deepEqual(problems, [], report(problems));
 });
 
 // ---------------------------------------------------------------- self-tests: every rule can fail
@@ -763,6 +897,195 @@ test("self-test: the page-script rules catch every line of a function that works
   for (let n = 2; n < lines; n++) assert.ok(caught.has(n), `line ${n} of the probe is not caught: ${probe.split("\n")[n - 1].trim()}`);
   assert.ok(!caught.has(1) && !caught.has(lines), "the function's own first and last line are sound");
   assert.deepEqual(forbiddenIn("x.js", probe), [], "outside the pages only the forbidden names apply");
+});
+
+test("self-test: the page-script rules catch the ways round the kit that they can see", () => {
+  const probe = [
+    "function probe(entry, link, el, box) {",
+    "  Object.assign(link, { href: entry.text, target: \"_blank\" });",
+    "  Object.assign(el.style, { backgroundImage: entry.text });",
+    "  Object.assign(state.link, entry);",
+    "  el.style.backgroundImage = \"url(\" + entry.text + \")\";",
+    "  el.style.color = entry.color; el.style.widthy = entry.text;",
+    "  el.style.setProperty(\"background\", entry.text);",
+    "  const css = el.style; css.setProperty(\"background\", entry.text);",
+    "  el.classList.add(entry.kind);",
+    "  el.classList.add(\"row\", entry.kind);",
+    "  el.classList.toggle(entry.kind, true);",
+    "  el.classList.replace(\"row\", entry.kind);",
+    "  el.classList.add(`row ${entry.kind}`);",
+    "  box.setHTMLUnsafe(entry.text);",
+    "  box.setHTML(entry.text);",
+    "  const doc = Document.parseHTMLUnsafe(entry.text);",
+    "  link.host = entry.host;",
+    "  link.hostname = entry.host;",
+    "  link.protocol = entry.text;",
+    "  link.pathname = entry.text;",
+    "  link.search += entry.text;",
+    "  window.navigation.navigate(entry.text);",
+    "  navigation.navigate(entry.text);",
+    "  el.classList.value = entry.kind;",
+    "  el.classList.value += \" \" + entry.kind;",
+    "  el.classList.value = \"row \" + entry.kind;",
+    "  el.classList.value = `row ${entry.kind}`;",
+    "  el.classList = entry.kind;",
+    "  el.classList.value = \"row\"",
+    "    + entry.kind;",
+    "  link.attributes.href.value = entry.text;",
+    "  link.attributes[\"href\"].value = entry.text;",
+    "  link.attributes[0].value = entry.text;",
+    "  link . attributes . getNamedItem(\"href\").value = entry.text;",
+    "  link.attributes.setNamedItem(entry.attr);",
+    "}",
+    "",
+  ].join("\n");
+  const caught = new Set(forbiddenIn(IN_PAGE, probe).map((p) => Number(/:(\d+): /.exec(p)[1])));
+  const lines = probe.split("\n").length - 1;
+  for (let n = 2; n < lines; n++) if (!/^\s+\+ /.test(probe.split("\n")[n - 1])) assert.ok(caught.has(n), `line ${n} of the probe is not caught: ${probe.split("\n")[n - 1].trim()}`);
+  assert.ok(!caught.has(1) && !caught.has(lines), "the function's own first and last line are sound");
+  // the two new rules bind the kit as well, where the class attribute is otherwise set by h() alone
+  for (const line of ["el.classList.value = kind;", "el.classList = kind;", "link.attributes.href.value = u;", "link.attributes[\"href\"].value = u;"]) assert.equal(forbiddenIn(KIT, line + "\n").length, 1, `the kit: ${line}`);
+  assert.deepEqual(forbiddenIn(KIT, "if (name === \"class\") el.className = String(value);\nel.classList.add(\"seg\", \"lens-switch\"); box.classList.toggle(\"open\", on);\n"), [], "h() sets the class attribute, and the kit names its own classes");
+});
+
+test("self-test: optional chaining is read as the member or the call it stands for, in every rule", () => {
+  const probe = [
+    "function probe(entry, link, el, box) {",
+    "  navigation?.navigate(entry.text);",
+    "  window?.navigation?.navigate(entry.text);",
+    "  navigation.navigate?.(entry.text);",
+    "  el.classList?.add(entry.kind);",
+    "  el?.classList?.toggle(entry.kind, true);",
+    "  el.classList.add?.(entry.kind);",
+    "  el.classList?.replace?.(\"row\", entry.kind);",
+    "  Object?.assign(link, { href: entry.text });",
+    "  Object.assign?.(link, { href: entry.text });",
+    "  el.style?.setProperty(\"background\", entry.text);",
+    "  el.style.setProperty?.(\"background\", entry.text);",
+    "  box?.setHTML(entry.text);",
+    "  box.setHTML?.(entry.text);",
+    "  link.attributes?.setNamedItem(entry.attr);",
+    "  link?.attributes?.[\"href\"]?.value.at(0);",
+    "  el?.setAttribute(\"href\", entry.text);",
+    "  el.setAttribute?.(\"href\", entry.text);",
+    "  window?.open(entry.text);",
+    "  window.open?.(entry.text);",
+    "  location?.assign(entry.text);",
+    "  location.replace?.(entry.text);",
+    "  setTimeout?.(entry.text, 0);",
+    "  window?.setInterval(entry.text, 1000);",
+    "  window?.addEventListener?.(\"message\", (e) => probe(e.data));",
+    "  parent?.postMessage?.(entry.text, \"*\");",
+    "  navigator?.clipboard?.readText?.();",
+    "  document?.write(entry.text);",
+    "  document?.createElement?.(\"a\");",
+    "  navigator?.storage?.persist();",
+    "  caches?.open?.(entry.text);",
+    "}",
+    "",
+  ].join("\n");
+  const caught = new Set(forbiddenIn(IN_PAGE, probe).map((p) => Number(/:(\d+): /.exec(p)[1])));
+  const lines = probe.split("\n").length - 1;
+  for (let n = 2; n < lines; n++) assert.ok(caught.has(n), `line ${n} of the probe is not caught: ${probe.split("\n")[n - 1].trim()}`);
+  assert.ok(!caught.has(1) && !caught.has(lines), "the function's own first and last line are sound");
+  // each line is caught by the rule that catches its plain spelling, at the same place
+  for (const line of probe.split("\n").slice(1, -2)) {
+    const plain = line.replace(/\?\.(?=[([])/g, "").replace(/\?\./g, ".");
+    assert.deepEqual(names(forbiddenIn(IN_PAGE, line + "\n")), names(forbiddenIn(IN_PAGE, plain + "\n")), line.trim());
+    assert.ok(forbiddenIn(IN_PAGE, plain + "\n").length >= 1, plain.trim());
+  }
+  assert.match(forbiddenIn(IN_PAGE, "const a = 1;\n\nnavigation?.navigate(u);\n")[0], /:3: navigation\.navigate/, "the line number holds");
+  assert.equal(plainChain("a?.b(c?.[0], f?.(x), g?. (y)) ? on ?.5 : 1"), "a .b(c  [0], f  (x), g   (y)) ? on ?.5 : 1", "two characters for two: no offset moves, and a number after a question mark is left alone");
+  // sound lines with optional chaining pass, and a choice with a number after it is no chain
+  const sound = [
+    "const n = row?.cells?.length ?? 0, label = entry?.name, first = list?.[0], half = on ?.5 : 1; done?.(n);",
+    "dialogs.about?.open(button); el?.setAttribute(\"aria-pressed\", \"true\"); el.classList?.toggle(\"open\", on); box?.classList.add?.(\"seg\", \"many\");",
+    "const t = setTimeout?.(() => go(), 100); Object?.assign(state, next); const o = Object.assign?.({}, a); canvas.style.width = (w ?? 0) + \"px\";",
+    "const sentence = \"Is it so?.. navigation?.navigate(u) is only said here\"; // el.classList?.add(kind)",
+    "",
+  ].join("\n");
+  assert.deepEqual(forbiddenIn(IN_PAGE, sound), []);
+  assert.deepEqual(forbiddenIn(KIT, "const kind = node?.nodeType, open = box?.classList.contains(\"open\");\n"), []);
+});
+
+test("self-test: what the page-script rules cannot see, as the head of this file says", () => {
+  // If one of these lines is caught one day, the rules have grown: correct the paragraph at the head of this file.
+  const unseen = [
+    // a member set under a computed name
+    "for (const key of [\"href\", \"title\"]) link[key] = entry[key];",
+    "img[\"src\"] = entry.text;",
+    "el.style [\"color\"] = entry.text;",
+    "el[\"classList\"].value = entry.kind; link[\"attributes\"].href.value = entry.text;",
+    // a call through another name for window or for a function (or a member of an object kept under another name)
+    "const win = window; win.open(entry.text);",
+    "const assign = Object.assign; assign(link, { href: entry.text });",
+    "const list = el.classList; list.value = entry.kind;",
+    "const map = link.attributes; map.href.value = entry.text;",
+    // a listed member written to with no assignment sign after it, and the attribute map taken whole
+    "[link.href] = [entry.text]; ({ text: img.src } = entry);",
+    "for (link.href of [entry.text]) break;",
+    "for (const a of link.attributes) if (a.name === \"href\") a.value = entry.text;",
+    // something between a listed name and what its rule expects next
+    "(link.href) = entry.text; (el.classList).value = entry.kind; (el.style).color = entry.text; (window).open(entry.text);",
+    "window.open.call(window, entry.text); el.setAttribute.call(el, \"href\", entry.text); el.classList.add.apply(el.classList, entry.kinds);",
+    "link.href++;",
+    "link.hr\\u0065f = entry.text; el.inner\\u0048TML = entry.text;",
+    // names that no rule lists
+    "document.title = entry.name;",
+    "link.download = entry.name + \".json\";",
+    "link.port = entry.text; link.hash = entry.text; location.hash = entry.text;",
+    "el.attributeStyleMap.set(\"color\", entry.text);",
+    "navigator.share({ url: entry.text });",
+    "el.attachShadow({ mode: \"open\" }).append(new Text(entry.text));",
+    "link.setAttributeNode(entry.attr);",
+    "",
+  ].join("\n");
+  assert.deepEqual(forbiddenIn(IN_PAGE, unseen), []);
+  // … and each of these lines in its plain spelling is caught: it is the spelling that hides them, nothing else
+  for (const line of ["link.href = entry.href;", "img.src = entry.text;", "el.style.color = entry.text;", "el.classList.value = entry.kind;", "link.attributes.href.value = entry.text;", "window.open(entry.text);", "Object.assign(link, { href: entry.text });"])
+    assert.equal(forbiddenIn(IN_PAGE, line + "\n").length, 1, line);
+  // … and so is an assignment written with a longer sign
+  for (const line of ["link.href ||= entry.href;", "img.src ??= entry.text;", "el.style.color &&= entry.text;", "el.classList.value ||= entry.kind;", "el.id **= 2;", "link.host >>>= 1;", "link.search <<= 1;", "el.className >>= 1;", "el.style &&= entry.text;", "el.style += entry.text;"])
+    assert.equal(forbiddenIn(IN_PAGE, line + "\n").length, 1, line);
+});
+
+test("self-test: the saved-package rule fails on an indented package, a download that rewrites its text and a missing save", () => {
+  const page = (save, body = "const a = h(\"a\", { href: URL.createObjectURL(new Blob([text], { type: \"application/json\" })), download: name });") => [
+    "const pack = () => OW.makeHyperpack({ ...bundle(), certificate: S.certificate });",
+    "function download(name, text) {",
+    "  " + body,
+    "  document.body.append(a); a.click(); a.remove();",
+    "}",
+    "const row = h(\"div\", { class: \"row\" },",
+    "  h(\"button\", { onclick: () => " + save + " }, \"Save package\"),",
+    "  h(\"button\", { onclick: () => download(\"first-explorers-trace.json\", JSON.stringify(S.trace, null, 1)) }, \"Save ledger\"));",
+    "",
+  ].join("\n");
+  const good = "download(`hyperpack-${S.chain.chainId}.json`, JSON.stringify(pack()))";
+  assert.deepEqual(savedPackageProblems("x.js", page(good)), []);
+  assert.deepEqual(savedPackageProblems("x.js", page("download(\n    `hyperpack-${S.chain.chainId}.json`,\n    JSON.stringify( pack() ))")), [], "the same call over several lines");
+  const bad = [
+    ["indented by a number", "download(`hyperpack-${S.chain.chainId}.json`, JSON.stringify(pack(), null, 1))"],
+    ["indented by a tab", "download(`hyperpack-${S.chain.chainId}.json`, JSON.stringify(pack(), null, \"\\t\"))"],
+    ["a value handed over for download() to spell", "download(`hyperpack-${S.chain.chainId}.json`, pack())"],
+    ["a third argument", "download(`hyperpack-${S.chain.chainId}.json`, JSON.stringify(pack()), 1)"],
+    ["another text", "download(\"hyperpack-\" + S.chain.chainId + \".json\", pretty(pack()))"],
+    ["no save at all", "go()"],
+  ];
+  for (const [what, save] of bad) assert.equal(savedPackageProblems("x.js", page(save)).length, 1, what);
+  assert.match(savedPackageProblems("x.js", page(bad[0][1]))[0], /^x\.js:7: .*JSON\.stringify\(pack\(\), null, 1\)$/, "the line of the call, and what it saves");
+  // download() itself: the way the page was written before (it made its own, indented JSON of a value), and other rewrites
+  const rewrites = [
+    "const a = h(\"a\", { href: URL.createObjectURL(new Blob([JSON.stringify(text, null, 1)], { type: \"application/json\" })), download: name });",
+    "const a = h(\"a\", { href: URL.createObjectURL(new Blob([JSON.stringify(JSON.parse(text), null, 2)])), download: name });",
+    "const a = h(\"a\", { href: URL.createObjectURL(new Blob([text + \"\\n\"])), download: name });",
+    "const a = h(\"a\", { href: URL.createObjectURL(new Blob([name])), download: name });",
+  ];
+  for (const body of rewrites) assert.equal(savedPackageProblems("x.js", page(good, body)).length, 1, body);
+  assert.equal(savedPackageProblems("x.js", page("download(`hyperpack-${S.chain.chainId}.json`, pack())", rewrites[0])).length, 2, "both at once: the page as it was");
+  assert.equal(savedPackageProblems("x.js", page(good).replace("function download(name, text)", "function save(name, text)")).length, 1, "no download function");
+  // a call in a comment or in a sentence is not a call
+  assert.equal(savedPackageProblems("x.js", page("go()") + "// " + good + "\nconst say = \"" + good.replace(/[`$]/g, "") + "\";\n").length, 1);
 });
 
 test("self-test: the clipboard is allowed once, in the sky page's shell, and only as writeText", () => {

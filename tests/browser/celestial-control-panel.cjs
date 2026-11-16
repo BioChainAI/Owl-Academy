@@ -20,7 +20,8 @@
 // screen, the way on, STRIX's line, the list, the sticky header, single sentences), links (what a link does to
 // the page and what the page writes), touch (finger, mouse and keyboard on the canvas), motion (idle, and reduced
 // motion), aborted (the two font hosts aborted, and the whole journey once more that way), small (720 x 450,
-// 320 x 256 with mouse and with touch, 390 x 844: nothing scrolls sideways).
+// 320 x 256 with mouse and with touch, 390 x 844: nothing scrolls sideways; 700, 800, 1000, 1099 and 1100 x 900: the
+// header of two rows hides no focused control; 320 x 568: STRIX keeps its first sentence where hiding it gains nothing).
 // At every station it asserts: no visible text under 14 px outside hashes and three text sizes only, every enabled
 // control at least 44 x 44 px for a finger and 32 x 32 px for the mouse, text contrast at least 4.5 to 1, no
 // sideways overflow, on the phone the first line of the explanation card above y = 844, the focus never left on
@@ -1191,6 +1192,11 @@ async function details(W) {
       const g = await frame();
       W.eq("the order in the document is the phone order at every width: strip, STRIX, canvas, card, bridge, the rest", ["stripNav", "say", "stage", "explain", "bridge", "more", "under", "aside"], g.order.filter((id) => id !== "legendBox"));
       W.eq("STRIX is named beside the first line it says", "STRIX", g.strix);
+      if (where === "step 1") {
+        const arrows = await W.ev(() => ["nudgeLeft", "nudgeUp", "nudgeDown", "nudgeRight", "turnLeft", "turnUp", "turnDown", "turnRight"].map((id) => { const e = document.getElementById(id); return { id, name: e.getAttribute("aria-label"), title: e.getAttribute("title"), text: e.textContent.trim().length }; }));
+        W.rec("each of the eight map buttons shows an arrow only, so its tooltip says what it does: the same words as its accessible name", "Move the map left, up, down, right; Turn the ball left, up, down, right",
+          arrows.map((a) => a.id + ": " + a.title).join("; "), arrows.every((a) => !!a.name && a.title === a.name && a.text === 1) && arrows.map((a) => a.title).join("|") === "Move the map left|Move the map up|Move the map down|Move the map right|Turn the ball left|Turn the ball up|Turn the ball down|Turn the ball right");
+      }
       if (W.phone) {
         W.rec("on a phone the gold box follows the card (and the closed legend)", "after the card", "card ends " + g.explain[1] + ", gold box begins " + g.bridge[0], g.bridge[0] >= g.explain[1]);
         W.rec("on a phone the badge legend is a closed box directly under the card", "closed, at most 8 px under the card, before the gold box", { open: g.legendOpen, under: g.legend[0] - g.explain[1], bridge: g.bridge[0] - g.legend[1] }, !g.legendOpen && g.legendAfterCard && g.legend[0] - g.explain[1] >= 0 && g.legend[0] - g.explain[1] <= 8 && g.bridge[0] >= g.legend[1]);
@@ -1275,10 +1281,21 @@ async function details(W) {
     f = await W.key("obj-m31", "Enter");
     await sleep(1200);
     v = await inside();
-    W.rec("a second press, with the keyboard: the object comes to the middle, the map is in view again and the status line says so", "map and title inside; “Andromeda galaxy is in the middle of the map.”", { ok: v.ok, status: await W.status(), focus: f }, v.ok && f === "obj-m31" && (await W.txt("#status")) === "Andromeda galaxy is in the middle of the map.");
+    W.rec("a second press, with the keyboard: the object comes to the middle, the map is in view again and the status line says so", "map and title inside; “The Andromeda galaxy is in the middle of the map.”", { ok: v.ok, status: await W.status(), focus: f }, v.ok && f === "obj-m31" && (await W.txt("#status")) === "The Andromeda galaxy is in the middle of the map.");
     const cap = await W.shown("#skyCap");
-    W.rec("the caption, which describes the canvas, names what is in the middle after a slide and no longer speaks of straight up", "ends “Andromeda galaxy is in the middle of the map.”", clip(cap, 200), /Andromeda galaxy is in the middle of the map\.$/.test(cap) && !/straight up has no compass/i.test(cap) && (cap.toLowerCase().match(/the rim is your horizon/g) || []).length <= 1);
+    W.rec("the caption, which describes the canvas, names what is in the middle after a slide and no longer speaks of straight up", "ends “The Andromeda galaxy is in the middle of the map.”", clip(cap, 200), /\. The Andromeda galaxy is in the middle of the map\.$/.test(cap) && !/straight up has no compass/i.test(cap) && (cap.toLowerCase().match(/the rim is your horizon/g) || []).length <= 1);
     await W.audit("the list, " + lens, { shot: lens === "stargazer" ? "After Andromeda is chosen in the list under the map: the map and the card are brought into view" : undefined });
+    // the Moon, the Sun and a point of the horizon: each is named as a sentence names it, with its article
+    await W.press("obj-moon"); await sleep(900);
+    W.has("the first press on the Moon: the caption says what is in the middle, with the article", await W.shown("#skyCap"), /\. Half way to the Moon is in the middle of the map\.$/);
+    await W.key("obj-moon", "Enter"); await sleep(900);
+    W.eq("the second press: the status line and the caption say “The Moon is in the middle of the map.”", { status: "The Moon is in the middle of the map.", caption: true }, { status: await W.status(), caption: /\. The Moon is in the middle of the map\.$/.test(await W.shown("#skyCap")) });
+    await W.press("obj-sun"); await W.key("obj-sun", "Enter"); await sleep(900);
+    W.eq("the Sun: “The Sun is in the middle of the map.”", "The Sun is in the middle of the map.", await W.status());
+    await W.press("obj-north"); await sleep(900);
+    W.has("a point of the horizon never reaches the middle: the caption says where the map has slid, with the article", await W.shown("#skyCap"), lens === "stargazer" ? /\. The map has slid towards the north\.$/ : /\. The map has slid towards the north point\.$/);
+    W.lacks("no caption names a thing without its article", await W.shown("#skyCap"), / (to|towards) (Moon|Sun|North|Andromeda|Cosmic)/);
+    await W.audit("the list, what is in the middle, " + lens);
 
     // Open the lab: the focus goes to the slide buttons
     await W.press("step-4");
@@ -1350,8 +1367,151 @@ async function details(W) {
   await W.press("labHome");
   W.has("home again along one line", await W.shown("#labText"), "You are home, facing the way you began.");
   W.lacks("nowhere “not turned of”", await W.pageText(), /not turned of|face not turned/);
-  await W.audit("single sentences, Stargazer");
+  // a path that crosses itself has no single inside: no area is printed, and one sentence says why
+  const CROSSES = "Your path crosses itself, so it has no single inside to measure.";
+  const labLines = () => W.ev(() => ({ card: window.__w.plain("#explainBody"), line: window.__w.plain("#labNoArea"), badge: document.querySelector("#labNoArea .badge-word") ? document.querySelector("#labNoArea .badge-word").textContent : null, n: window.CelestialControlPanel.state.lab.slides.length }));
+  await W.press("labAgain");
+  for (const dir of ["forward", "left", "forward"]) await W.press("slide-" + dir);
+  let lab = await labLines();
+  W.eq("forward, left, forward: nothing is said about an inside before Slide home", { line: null, area: false }, { line: lab.line, area: /area inside/i.test(lab.card) });
+  await W.press("labHome");
+  lab = await labLines();
+  W.eq("after Slide home the path crosses itself: no area, and one CHECKED sentence in its place", { line: CROSSES, badge: "CHECKED", area: false, sides: 4 }, { line: lab.line, badge: lab.badge, area: /area inside/i.test(lab.card), sides: lab.n });
+  await W.press("labAgain");
+  for (const dir of ["forward", "left", "back", "right"]) await W.press("slide-" + dir);
+  await W.press("labHome");
+  lab = await labLines();
+  W.eq("the square has its area and no such sentence", { area: true, line: null }, { area: lab.card.includes("The area inside your five-sided path: 1.362."), line: lab.line });
+  // … also far from home, where the crossing is hard to see: forward eight times, left, forward
+  await W.press("labAgain");
+  for (const dir of ["forward", "forward", "forward", "forward", "forward", "forward", "forward", "forward", "left", "forward"]) await W.press("slide-" + dir);
+  await W.press("labHome");
+  lab = await labLines();
+  W.eq("forward eight times, left, forward, Slide home: the slide home crosses the path far from home, and no area is printed", { area: false, line: CROSSES, sides: 11 }, { area: /area inside/i.test(lab.card), line: lab.line, sides: lab.n });
+  await W.audit("single sentences, Stargazer", { card: true });
   await W.close();
+
+  // the day question follows the device clock until it is answered: a page left open past midnight asks about the new day
+  {
+    const NIGHT = new Date("2026-11-14T23:50:00Z"), MORNING = new Date("2026-11-15T08:10:00Z");
+    const reopen = async (hash) => { await W.page.clock.setFixedTime(NIGHT); await W.page.goto("about:blank"); await W.go(hash); };
+    await W.open("");
+    W.station = "the day question after midnight";
+    await reopen("");
+    W.eq("the page is opened when the device shows Saturday 14 November 2026, 23:50", 2461359.49306, Number((await W.st()).jd.toFixed(5)));
+    await W.page.clock.setFixedTime(MORNING);
+    await W.press("placeGreenwich");
+    W.has("a place chosen the next morning: the status line begins with the day and time the device shows then", await W.status(), /^15 November 2026, 08:10 at Greenwich, England\./);
+    await W.press("placeNext");
+    W.has("a place chosen the next morning: the question names the day the device shows then", await W.shown("#sayText"), "Your device says today is Sunday 15 November 2026. Is that right?");
+    await W.press("dayYes");
+    W.has("… and Yes lights that morning's sky", await W.status(), "15 November 2026, 08:10 at Greenwich, England.");
+    await reopen("");
+    await W.page.clock.setFixedTime(MORNING);
+    await W.press("placePick"); await W.pick("placeSelect", "kyoto");
+    W.has("a place picked from the list the next morning: again the status line begins with the new day and time", await W.status(), /^15 November 2026, 17:13 at Kyoto, Japan\./);
+    await reopen("");
+    await W.press("placeGreenwich");
+    await W.page.clock.setFixedTime(MORNING);
+    await W.press("placeNext");
+    W.has("a place chosen at once and step 2 opened the next morning: again the new day", await W.shown("#sayText"), "Your device says today is Sunday 15 November 2026. Is that right?");
+    // the question is already on the screen when midnight passes: Yes is not taken for a day the question no longer names
+    const SATURDAY = "Your device says today is Saturday 14 November 2026. Is that right?", SUNDAY = "Your device says today is Sunday 15 November 2026. Is that right?";
+    const CHANGED = "The day changed while this page was open. Please look again.";
+    const askAtNight = async () => { await reopen(""); await W.press("placeGreenwich"); await W.press("placeNext"); W.has("at 23:50 the question names Saturday", await W.shown("#sayText"), SATURDAY); await W.page.clock.setFixedTime(MORNING); };
+    const asked = async () => { const st = await W.st(); return { question: await W.plain("#sayBody"), day: st.lit.day, ask: st.ask, jd: Number(st.jd.toFixed(5)) }; };
+    await askAtNight();
+    let focus = await W.press("dayYes");
+    W.eq("Yes pressed the next morning is not taken: the question is shown again with the new day, the day stays open, the focus stays on Yes", { question: SUNDAY, day: false, ask: "true", jd: 2461359.84028, focus: "dayYes" }, { ...(await asked()), focus });
+    W.eq("… and the status line says once that the day changed", CHANGED, await W.status());
+    await W.press("dayYes");
+    W.has("… Yes to the new question is taken, and lights that morning's sky", await W.status(), /^15 November 2026, 08:10 at Greenwich, England\./);
+    W.eq("… with the day answered", { day: true, ask: "false" }, await W.st().then((st) => ({ day: st.lit.day, ask: st.ask })));
+    // … the same when the page comes into view again: the question is painted again, and nothing is said
+    const comeBack = () => W.ev(() => {
+      for (const v of ["hidden", "visible"]) { Object.defineProperty(document, "visibilityState", { configurable: true, get: () => v }); document.dispatchEvent(new Event("visibilitychange")); }
+      delete document.visibilityState;
+    });
+    await askAtNight();
+    const before = await W.status();
+    await comeBack(); await W.settle();
+    W.eq("the page comes into view again the next morning: the question names the new day, and is still to be answered", { question: SUNDAY, day: false, ask: "true", jd: 2461359.84028 }, await asked());
+    W.eq("… the status line says nothing new", before, await W.status());
+    await W.page.clock.setFixedTime(new Date(MORNING.getTime() + 90000));
+    await comeBack(); await W.settle();
+    W.eq("… a return on the same day changes nothing", { question: SUNDAY, day: false, ask: "true", jd: 2461359.84028 }, await asked());
+    await W.press("dayYes");
+    W.has("… and Yes is taken at once, with the time the device shows at that press", await W.status(), /^15 November 2026, 08:11 at Greenwich, England\./);
+    // … and “Change the day” opens its panel on the day the device shows now
+    await askAtNight();
+    await W.press("dayChange");
+    W.eq("Change the day pressed the next morning: the question and the panel show the new day", { question: SUNDAY, day: false, panel: "date", dayField: "15", expanded: "true" },
+      { question: await W.plain("#sayBody"), day: (await W.st()).lit.day, panel: (await W.st()).panel, dayField: await W.ev(() => document.getElementById("dateDay").value), expanded: await W.ev(() => document.getElementById("dayChange").getAttribute("aria-expanded")) });
+    W.eq("… and the status line says that the day changed", CHANGED, await W.status());
+    // a step opened from the strip before the day is answered lights the sky of the moment it is opened, not of the moment the page was opened
+    for (const n of [3, 4, 5]) {
+      await reopen("#site=greenwich");
+      await W.page.clock.setFixedTime(MORNING);
+      await W.press("step-" + n);
+      const st = await W.st();
+      W.eq("step " + n + " opened the next morning, the day not yet answered: the sky of that morning is lit", { jd: 2461359.84028, lit: { place: true, day: true, sky: true } }, { jd: Number(st.jd.toFixed(5)), lit: st.lit });
+      W.has("… and the status line says that morning", await W.status(), /^15 November 2026, 08:10 at Greenwich, England\./);
+    }
+    await reopen("#site=greenwich");
+    await W.page.clock.setFixedTime(MORNING);
+    await W.ev(() => { location.hash = "#lab=square"; }); await W.settle();
+    await W.press("labClose");
+    W.eq("a link that opens the lab the next morning: leaving the lab, the sky of that morning is lit", { jd: 2461359.84028, day: true }, await W.st().then((st) => ({ jd: Number(st.jd.toFixed(5)), day: st.lit.day })));
+    // the further controls of step 2 ("More at this step") can be the first to answer the day: used the next morning, each starts from the day the device shows then
+    const moreNextDay = async (hash, night, morning) => {
+      await W.page.clock.setFixedTime(night); await W.page.goto("about:blank"); await W.go(hash);
+      await W.press("step-2");
+      await W.page.clock.setFixedTime(morning);
+      await W.openBox("stepBox");
+    };
+    const cardDay = () => W.plain("#explainBody .moon-box .cap > p");               // the day stands first in the card once it is answered
+    const typeClock = async (value) => { await W.fill("clockField", value); await W.page.keyboard.press("Tab"); await W.settle(); };
+    await moreNextDay("#site=greenwich", NIGHT, MORNING);
+    W.has("at 23:50 the question names Saturday, and it still does when the box of further controls is opened the next morning", await W.shown("#sayText"), SATURDAY);
+    await W.press("time-sunrise");
+    W.has("Sunrise pressed the next morning, the day not yet answered: the sunrise of the day the device shows then", await W.status(), /^15 November 2026, 07:17 at Greenwich, England\./);
+    W.eq("… and that answers the day", { day: true, ask: "false", card: "Sunday 15 November 2026" }, { ...(await W.st().then((st) => ({ day: st.lit.day, ask: st.ask }))), card: await cardDay() });
+    await W.page.clock.setFixedTime(new Date(MORNING.getTime() + 2 * 86400000));
+    await W.press("time-noon");
+    W.has("… once the day is answered the clock is not read again: Noon pressed two days later is noon of that same day", await W.status(), /^15 November 2026, 12:00 at Greenwich, England\./);
+    // a Moon button: in the night of 14 to 15 November no Moon shape falls, and the search ends on the same evening from either instant.
+    // In the night of 14 to 15 June 2026 the Moon is new: from the 14th the next evening is the 15th, from the morning of the 15th it is a month on
+    await moreNextDay("#site=greenwich", new Date("2026-06-14T23:50:00Z"), new Date("2026-06-15T08:10:00Z"));
+    W.has("14 June 2026, 23:50: the question names Sunday 14 June", await W.shown("#sayText"), "Your device says today is Sunday 14 June 2026. Is that right?");
+    await W.press("moon-0");
+    W.eq("New Moon pressed the next morning, hours after that night's new Moon: the search starts from the 15th, so the night it finds is in July", { day: "Tuesday 14 July 2026", jd: 2461236.38318, answered: true },
+      { day: await cardDay(), ...(await W.st().then((st) => ({ jd: Number(st.jd.toFixed(5)), answered: st.lit.day }))) });
+    // the slider through the year and the typed time (from Navigator up)
+    await moreNextDay("#site=greenwich&lens=navigator", NIGHT, MORNING);
+    await W.key("yearSlider", "ArrowRight");
+    W.has("the slider through the year moved one day on the next morning: it starts from the day and time the device shows then, and so comes to that very morning", await W.status(), /^15 November 2026, 08:10 at Greenwich, England\./);
+    await moreNextDay("#site=greenwich&lens=navigator", NIGHT, MORNING);
+    await typeClock("06:00");
+    W.has("a time typed the next morning: that time on the day the device shows then", await W.status(), /^15 November 2026, 06:00 at Greenwich, England\./);
+    // … and none of them reads the clock where a link has set the time
+    await moreNextDay("#site=greenwich&jd=2461000.5&lens=navigator", NIGHT, MORNING);
+    const fromLink = {};
+    await W.press("time-sunrise"); fromLink.sunrise = (await W.status()).slice(0, 23);
+    await W.key("yearSlider", "ArrowRight"); fromLink.slider = (await W.status()).slice(0, 23);
+    await typeClock("06:00"); fromLink.clock = (await W.status()).slice(0, 23);
+    await W.press("moon-180"); fromLink.moon = await cardDay();
+    W.eq("after a link with a time the same controls start from the link's day (21 November 2025), not from the clock", { sunrise: "21 November 2025, 07:28", slider: "22 November 2025, 07:28", clock: "22 November 2025, 06:00", moon: "Thursday 4 December 2025, 16:52 local mean time" }, fromLink);
+    await reopen("#site=greenwich&jd=2461000.5");
+    await W.page.clock.setFixedTime(MORNING);
+    await W.press("step-2");
+    const kept = await W.st();
+    W.eq("a time set by a link is never changed by the clock, and the day is not asked", { jd: 2461000.5, ask: "false" }, { jd: kept.jd, ask: kept.ask });
+    await W.press("step-3"); await comeBack(); await W.settle();
+    W.eq("… nor by another step, nor when the page comes into view again", 2461000.5, (await W.st()).jd);
+    await W.page.clock.setFixedTime(NOW);
+    await W.audit("the day question after midnight");
+    await W.close();
+  }
 
   // the sticky header never covers the focused control (Shift+Tab up the page)
   if (!W.phone) {
@@ -1394,18 +1554,41 @@ async function links(W) {
   W.station = "link: hashchange";
   s = await W.st();
   W.eq("hashchange: lat, lon, jd, focus and lens are taken; an unknown key is ignored and named in one line", { lat: 10.5, lon: -20, jd: 2461000.5, selected: "moon", lens: "stargazer", note: "a link value was ignored" }, { lat: s.site.lat, lon: s.site.lon, jd: s.jd, selected: s.selected, lens: s.lens, note: await W.shown("#linkNote") });
+  W.has("… and the status line says so too, once, before the place and time (the line under the map is not announced)", await W.status(), /^a link value was ignored\. \d+ \w+ \d{4}, \d\d:\d\d at /);
   await W.audit("link: hashchange", { card: true });
   for (const [hash, what] of [["#site=greenwich&site=kyoto", "a key given twice"], ["#lat=91&lon=10", "a latitude out of range"], ["#jd=12abc", "a malformed Julian Day"], ["#lens=wizard&site=giza", "an unknown lens"], ["#site=<script>", "characters outside the grammar"]]) {
     await W.go(hash);
     W.has("" + what + " is ignored, and one line says so (" + hash + ")", await W.shown("#linkNote"), "a link value was ignored");
+    W.has("… under the map and in the status line (" + hash + ")", await W.status(), /^a link value was ignored(\. |$)/);
   }
   W.eq("a clean link shows no such line", false, (await W.go("#site=kyoto"), await W.seen("#linkNote")));
   await W.go("#site=greenwich&lab=square");
   s = await W.st();
   W.eq("#lab=square opens the lab at step 4", { open: true, step: 4 }, { open: s.lab.open, step: s.step });
+  // a link that names a place and the lab: on leaving the lab the whole sky is lit and the quick buttons work
+  await W.page.goto("about:blank");
+  await W.go("#site=kyoto&lab=square");
+  await W.press("labClose");
+  s = await W.st();
+  const listed = await W.ev(() => document.querySelectorAll("#list button").length);
+  W.rec("a link with a place and the lab, then Back to the sky: step 4 with the whole sky lit", "step 4, lit place, day and sky, 17 objects or more in the list", { step: s.step, lit: s.lit, listed }, s.step === 4 && s.lit.place && s.lit.day && s.lit.sky && listed >= 17);
+  const picked = [];
+  for (const key of ["moon", "sun", "sgr_a_star", "rim"]) { await W.press("quick-" + key); picked.push((await W.st()).selected); }
+  W.eq("… and each quick button selects its object", ["moon", "sun", "sgr_a_star", "cmb"], picked);
+  await W.press("quick-home");
+
   await W.go("#lat=32.13&lon=45.23");
   s = await W.st();
   W.rec("a link with lat and lon skips the first question; the Kebar's two numbers alone name the place but do not bring its date (the scene comes only by preset or by a link with its jd)", "a place, at the day the page already had (not 593 BC)", { label: s.site && s.site.label, jd: s.jd, dark: s.dark }, !!s.site && s.dark === "false" && s.jd > 2400000);
+  // a sky at the very end of the year range, far east: the link is read with its time, and the page can write its own link to it
+  await W.go("#jd=990923.1&lat=0&lon=180");
+  s = await W.st();
+  W.eq("a Julian Day half a day before the year range begins at Greenwich is a sky at the far east: the link is read whole", { jd: 990923.1, lon: 180, note: false, day: true }, { jd: s.jd, lon: s.site && s.site.lon, note: await W.seen("#linkNote"), day: s.lit.day });
+  await W.press("step-5");
+  await W.openBox("stepBox");
+  W.has("… and “Copy a link to this sky” holds that sky", await W.ev(() => { const e = document.getElementById("linkField"); return e ? e.value : null; }), /#jd=990923\.10000&lat=0\.00&lon=180\.00&lens=stargazer$/);
+  W.has("… as does the link to the Lexicon Explorer after the stamp", (await W.press("sealBtn"), await W.settle(20000), await W.ev(() => { const a = document.querySelector('#explainBody a[data-key="sealLink"]'); return a ? a.getAttribute("href") : null; })), /#sky=990923\.10000,0\.00,180\.00&lens=stargazer$/);
+  await W.press("step-1");
   await W.audit("link: others");
   if (W.linkToSky) {
     await W.page.goto(W.linkToSky.replace(/^https?:\/\/[^/]+/, W.base));
@@ -1413,6 +1596,19 @@ async function links(W) {
     s = await W.st();
     W.eq("the copied link opens the same sky", { lat: 32.13, lon: 45.23, jd: 1505042.16624, lens: "stargazer" }, { lat: s.site.lat, lon: s.site.lon, jd: s.jd, lens: s.lens });
   }
+  await W.close();
+  // arriving by a link with a value the page does not use: the status line says so (the line under the map is not announced)
+  await W.open("#preset=nothing");
+  W.station = "link: arrival";
+  W.eq("at load, without a place: the note under the map and the same words in the status line", { note: "a link value was ignored", status: "a link value was ignored" }, { note: await W.shown("#linkNote"), status: await W.status() });
+  await W.close();
+  await W.open("#zoom=3&site=giza&lens=navigator");
+  W.station = "link: arrival";
+  W.has("at load, with a place: the note first, then the place and time, in one status line", await W.status(), /^a link value was ignored\. 14 November 2026, \d\d:\d\d at Giza/);
+  await W.close();
+  await W.open("#site=giza&lens=navigator");
+  W.station = "link: arrival";
+  W.has("a clean link at load: the status line has the place and time only", await W.status(), /^14 November 2026, \d\d:\d\d at Giza/);
   await W.close();
   // a place where the Sun does not set
   await W.open("#site=south-pole");
@@ -1689,6 +1885,74 @@ async function small(browser, base) {
   }
 }
 
+/**
+ * Between 700 and 1100 px wide the header has two rows, and what is scrolled to must stop below both. At each width and lens,
+ * at step 2 and at step 4 (the ball, so the turn buttons are there too): Shift+Tab from the last control up to the header.
+ */
+async function headerWidths(browser, base) {
+  for (const w of [700, 800, 1000, 1099, 1100]) {
+    const vp = w + "x900", W = new Walk(browser, vp, "small", { context: { viewport: { width: w, height: 900 }, deviceScaleFactor: 1 }, noClipboard: true, noShots: true });
+    W.base = base; W.phone = false;
+    for (const lens of ["stargazer", "navigator", "holographer"]) {
+      await W.open("#site=greenwich&lens=" + lens);
+      for (const n of [2, 4]) {
+        W.station = "the header at " + w + " px, " + lens + ", step " + n;
+        await W.press("step-" + n);
+        if (n === 2) await W.press("dayYes"); else { await W.press("dims3d"); await W.ev(() => { for (const d of document.querySelectorAll("details")) d.open = true; }); await W.settle(); }
+        await W.top();
+        const head = await W.ev(() => { const t = document.querySelector("header.top"), q = t.getBoundingClientRect(); return { sticky: getComputedStyle(t).position === "sticky", height: Math.round(q.height), padding: parseFloat(getComputedStyle(document.documentElement).scrollPaddingTop) }; });
+        W.rec("the sticky header and the room kept for it", w < 1100 ? "sticky, one row or two, scroll padding 112 px, the header no higher" : "sticky, one row, scroll padding 88 px, the header no higher", head, head.sticky && head.padding === (w < 1100 ? 112 : 88) && head.height <= head.padding && (w < 1100 || head.height <= 60));
+        if (w <= 800 && lens !== "stargazer") W.rec("at this width the header has two rows", "higher than 88 px", head.height + " px", head.height > 88);
+        await W.ev(() => { const all = [...document.querySelectorAll("button, summary, input, select, a[href]")].filter((e) => window.__w.rendered(e) && !e.closest("dialog")); all[all.length - 1].focus(); });
+        const hidden = []; let steps = 0;
+        for (let i = 0; i < 260; i++) {
+          await W.page.keyboard.press("Shift+Tab");
+          const r = await W.ev(() => { const a = document.activeElement; if (!a || a === document.body) return null; const t = document.querySelector("header.top").getBoundingClientRect(), q = a.getBoundingClientRect(); return { name: a.id || a.getAttribute("data-key") || a.localName, top: Math.round(q.top), bottom: Math.round(q.bottom), head: Math.round(t.bottom), inHeader: !!a.closest("header.top"), vh: innerHeight }; });
+          if (!r) break;
+          steps++;
+          if (r.inHeader) break;
+          if (r.top < r.head || r.bottom > r.vh) hidden.push(r.name + " " + r.top + "–" + r.bottom + " (header to " + r.head + ")");
+        }
+        W.rec("tabbing backwards from the last control to the header, no focused control is under the header or outside the window", "none hidden, in at least 25 steps", hidden.length ? hidden.slice(0, 6) : "none hidden in " + steps + " steps", hidden.length === 0 && steps >= 25);
+      }
+      await W.audit("the header at " + w + " px, " + lens);
+      await W.close();
+    }
+  }
+}
+
+/**
+ * A phone too low for the card's first line to come into the window whatever STRIX leaves out (320 x 568): hiding the narration
+ * gains nothing there, so the first sentence stays, with “more” for the rest. At every step and at each lens.
+ */
+async function lowPhone(browser, base) {
+  const W = new Walk(browser, "320x568", "small-touch", { context: { viewport: { width: 320, height: 568 }, deviceScaleFactor: 2, hasTouch: true, isMobile: true }, noClipboard: true, noShots: true });
+  W.base = base; W.phone = true;
+  const line = () => W.ev(() => {
+    const m = document.getElementById("sayMore"), first = document.querySelector("#strixAll p");
+    const c = first.cloneNode(true); for (const b of c.querySelectorAll(".badge")) b.remove();
+    return { shown: window.__w.plain("#sayBody"), more: m.hidden ? null : m.textContent, name: m.hidden ? null : m.getAttribute("aria-label"), all: c.textContent.trim(), card: window.__w.audit().card, vh: innerHeight };
+  });
+  // the stations where the narration was once hidden although the card's first line stayed below the window
+  const ONCE_ALONE = { stargazer: [4], navigator: [5], holographer: [4, 5] };
+  for (const lens of ["stargazer", "navigator", "holographer"]) {
+    await W.open("#site=greenwich&lens=" + lens);
+    for (const n of [1, 2, 3, 4, 5]) {
+      await W.press("step-" + n);
+      if (n === 2) await W.press("dayYes");
+      await W.top();
+      W.station = "320 x 568, " + lens + ", step " + n;
+      const s = await line(), y = s.card.line === null ? s.card.title : s.card.line, edge = s.vh - 2, firstSentence = (s.all.match(/^.*?[.!?](?=\s|$)/) || [s.all])[0];
+      W.rec("STRIX is left with the button alone only where that brings the card's first line into the window", "a sentence, or the button alone with the card's first line at y = " + edge + " or above (the window is " + s.vh + " px high)", { shown: clip(s.shown, 80), more: s.more, cardLine: y }, s.vh === 568 && (s.shown !== "" || y <= edge));
+      if ((lens === "stargazer" && n === 2) || ONCE_ALONE[lens].includes(n)) W.rec("here the card's first line is below the window whatever is left out, so STRIX keeps its first sentence and offers the rest", "the narration from its first sentence on, the button “more” (named “more from STRIX”) when there is more, the card's first line below y = " + edge, { shown: s.shown, more: s.more, name: s.name, cardLine: y },
+        s.shown !== "" && s.shown.startsWith(firstSentence) && (s.more === null || (s.more === "more" && s.name === "more from STRIX")) && y > edge);
+      if (lens === "stargazer" && n === 2) W.eq("at step 2 it is the first sentence alone, with “more”", { shown: firstSentence, more: "more" }, { shown: s.shown, more: s.more });
+    }
+    await W.audit("320 x 568, " + lens);
+    await W.close();
+  }
+}
+
 // ─── run ─────────────────────────────────────────────────────────────────────
 (async () => {
   const browser = await kit.launch(), version = browser.version();
@@ -1717,7 +1981,7 @@ async function small(browser, base) {
     W.eq("everyone who seals the same sky gets the same name: the desktop visit and the phone visit", shared["1440x900chain"], shared["390x844chain"]);
   }
   if (wanted("small") && !OPTS.vp) {
-    try { await small(browser, base); } catch (e) { RECORD.add({ part: "small", section: "small / -", step: "the section ran to its end", expected: "no error", actual: String(e && e.stack ? e.stack.split("\n").slice(0, 4).join(" | ") : e), ok: false, group: "small | small" }); }
+    try { await small(browser, base); await headerWidths(browser, base); await lowPhone(browser, base); } catch (e) { RECORD.add({ part: "small", section: "small / -", step: "the section ran to its end", expected: "no error", actual: String(e && e.stack ? e.stack.split("\n").slice(0, 4).join(" | ") : e), ok: false, group: "small | small" }); }
   }
   await browser.close().catch(() => {});
   await server.close();

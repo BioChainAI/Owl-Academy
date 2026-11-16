@@ -23,7 +23,11 @@ nothing and publishes nothing.
 
 All of First Explorers' checkable logic is in `scripts/strix-overwatch.js`
 (Firebase-free, DOM-free; tests in `tests/unit/strix-overwatch.test.mjs`). The page
-file `first-explorers.js` is interface only.
+file `first-explorers.js` is interface only. At station 7 it can save two files:
+"Save package" saves the certified package as `hyperpack-<chain id>.json`, in wire
+form (see "The front door: `readHyperpack`"), so that the Lexicon Explorer can load
+it; "Save ledger" (and "Save" on the Trace tab) saves the ledger alone as
+`first-explorers-trace.json`, indented for reading. The ledger file is not a package.
 
 Two later pages build on it: the **Lexicon Explorer**, described from "Tree lexicons"
 on in this document, and the **Celestial Control Panel**, described in
@@ -92,14 +96,15 @@ growing from one point.
 
 - **It is an interpretation chosen by this project.** No check depends on it.
 - **The history is from one book**, read in full: Pierre van Paassen, *Why Jesus
-  Died* (Dial Press, 1949; Internet Archive `in.ernet.dli.2015.165919`). Text in
-  quotation marks is his and was checked against the scan's text.
+  Died* (Dial Press, 1949; Internet Archive `in.ernet.dli.2015.165919`). Where a
+  page quotes the book, the words in quotation marks were checked against the
+  scan's text. This document quotes nothing from it.
 - **What the book argues:** Jesus was a Galilean Jew in the line of Israel's
-  prophets who announced the Kingdom of God on earth; Pontius Pilate alone ordered
-  his death; later tellings moved the blame onto the Jewish people; Greek-speaking
-  missionaries, starting from Antioch, remade the message. The author writes as a
-  Unitarian and does not take the resurrection, the virgin birth or the Trinity as
-  history.
+  prophets who announced a Kingdom of God that was to come in this world; Pontius
+  Pilate alone ordered his death; later tellings moved the blame onto the Jewish
+  people; Greek-speaking missionaries, starting from Antioch, remade the message.
+  Van Paassen, a Unitarian by his own account, does not take the resurrection, the
+  virgin birth or the Trinity as history.
 - **This project's view of the book**, a READING and nothing this project checked:
   most Christians and many historians would disagree with parts of the book, and
   some of its sources are dated. Row `0.4.3` of the Ezekiel lexicon says the first
@@ -107,8 +112,11 @@ growing from one point.
   and opening with the words "This project's view".
 - **What is this project's and not the book's:** the bridge, the axis through the
   zero point, and the cross as a figure of two directions. The book uses none of
-  them. Where it and this reading meet is its picture of a love that "embraced the
-  entire human race" and of "the community of mankind".
+  them. Where it and this reading meet is the book's picture of Jesus' love as
+  meant for every people, the oppressors among them, and of all peoples as
+  belonging together. Van Paassen's own words for both stand in First Explorers'
+  gold boxes at stations 7 and 8. The Ezekiel lexicon quotes the book in six rows,
+  which are listed under "The Ezekiel lexicon" ("Sources").
 - "64-bit cubit" is not defined anywhere in the specifications yet (RFC 05's cubit
   is an acoustic unit, in outline). The page shows the cube and says so.
 
@@ -274,7 +282,10 @@ accepted.
 
 The wire form of a package is `JSON.stringify(makeHyperpack(...))` with no
 indentation. Download and send use this exact string, HANDSHAKE/1 hashes it, and the
-order of the members is part of the format. `readHyperpack(text)` is the one way a
+order of the members is part of the format. All three pages save a package as this
+string: the Lexicon Explorer, the Celestial Control Panel and First Explorers ("Save
+package"). The same package written with indentation is not in wire form and is
+refused (step 11 below). `readHyperpack(text)` is the one way a
 text that did not originate in a page becomes a package. It returns
 `{ ok, failed, checks, pack }` and never rejects or throws.
 
@@ -353,8 +364,10 @@ quorum shows depends on who holds the keys. On the Lexicon Explorer the four
 receivers (Antioch, Alexandria, Athens and Rome, as in First Explorers) run inside
 the one page, with the same code, each with a key made a moment before. A quorum of
 them is a demonstration of how a two-witness rule is checked. It is not independent
-testimony. The sentence the page prints with every count says so: all four run
-inside the page, and the count does not show that independent parties have looked.
+testimony. The page says so wherever it gives the count. The count line itself reads
+"4 of 4 handshakes in this page" (`handshakeCount`), at the Send station and on the
+Witnesses tab, and the sentence printed with it says that all four run inside the
+page and that the count does not show that independent parties have looked.
 
 ## The word figures, and their limits
 
@@ -418,21 +431,57 @@ the page, speaks for the open station above one verse of the passage, with the g
 box under it; the nine verses of Ezekiel 1:1-9 stand in the box "The passage", every
 term a button. In the middle, the tree: every entry owns a cell of the hyperbolic
 plane and no two cells overlap (`treeLayout` of the geometry core), so a centred
-entry has its children near the rim; a tap brings an entry to the centre; a 3D view
-shows the same tree in the ball; under the map the same entries are a list that can
-be walked with the arrow keys. On the right, the Entry: the words of the chosen entry
-and its children with their badges, in a fixed order of seven groups: "In short" (the
-plain rows), "Verses set beside it", "Under this entry", "Quoted", "Checked", "Said"
-and "Our reading". A verse reached through a link row is cited with its translation
-("Psalm 69:8, King James Version"). While nothing is chosen the card says where the
-author's ten lines are and offers a button to them.
+entry has its children near the rim; a tap brings an entry to the centre, and a tap
+inside an entry's marker picks that entry in every case, before any name drawn
+there; a 3D view shows the same tree in the ball; under the map the same entries
+are a list that can be walked with the arrow keys. A name on the map is placed
+where it touches no marker but its own, and a child's name that finds no such place
+is left out. Two things are allowed all the same. The names of the centred entry,
+of its parent and of the one child the page asks the map to keep (the author's
+notes, `100`, in the built-in lexicon) may take a place that touches another
+entry's marker when they find no other. And any name may cover a small part of the
+centred entry's marker: at most 12 per cent of the name's own box, counted together
+with what it covers of names already drawn (the centred entry's own name is not
+held to that limit).
+
+On the right, the Entry: the words of the chosen entry and its children with their
+badges, in a fixed order of seven groups: "In short" (the plain rows), "Verses set
+beside it", "Under this entry", "Quoted", "Checked", "Said" and "Our reading". A
+verse reached through a link row is cited with its translation ("Psalm 69:8, King
+James Version"). While nothing is chosen the card says where the author's ten lines
+are and offers a button to them; in a window under 700 px the button stands beside
+the card's title and reads "The author's ten lines".
+
+In a window under 700 px STRIX speaks above the map in whole sentences, and only in
+as many as leave the first line of the card on the first screen of a phone (above
+y = 844 at 390 px wide). What is left out stands behind a button at the end of the
+line: "more" after one or more sentences, "What STRIX says here" where none fits.
+That button stands alone only where leaving every sentence out brings the card's
+first line into the window. Where no sentence fits and the card's first line ends
+below the bottom edge of the window all the same, as it does at some stations in a
+phone window lower than 844 px (320 x 568 and 375 x 667 are two), the first
+sentence is shown, with "more" after it when there is more. For a sky opened from a
+link the banner's sentences about the link are the last thing to give way: they
+move into the station's box, as its first line, only where that brings the card's
+first line above the bottom edge of the window while no sentence of STRIX is shown,
+and stay in the banner where it cannot. After such a move STRIX's sentences are
+shown again as far as the first screen of a phone (y = 844) allows, so in a window a
+little lower than that (414 x 820 is one) the card's first line can then end below
+the window's bottom edge, though above y = 844.
 
 Three reading levels, called lenses, give the same facts at three depths: Stargazer
 ("ages 6 and up"), Navigator ("names, dates and sources") and Holographer ("formats
-and hashes"). At Stargazer the Entry is the only tab, and three entries (`0`, `0.3`
-and `100`) open with one short sentence of the page's own, the row's text standing
-under "More for older readers". From Navigator up there is also the Wheel, then Chain
-and Overwatch once the lexicon is sealed and Witnesses once it has been sent.
+and hashes"). At Stargazer the Entry is the only tab, and seven entries (`0`, the
+five entries under it, `0.1` to `0.5`, and `100`) open with one short sentence of the
+page's own (`ENTRY_LEADS`), the row's text standing under "More for older readers".
+Each of these sentences wears the layer of its row, and each SAID one names its
+speaker. Five entries are also shown under another name at Stargazer
+(`displayName`): `0.1`, "Layers and addresses", as "How this lexicon is sorted", and
+the four verse rows whose names end in "(context)" (`26.1.10`, `26.1.12`, `26.1.16`
+and `26.1.17`) with the ending "(a verse nearby)". The rows keep their own names:
+what is sealed, sent and saved is the same at every lens. From Navigator up there is
+also the Wheel, then Chain and Overwatch once the lexicon is sealed and Witnesses
+once it has been sent.
 
 **The seven stations**, free to visit in any order:
 
@@ -448,11 +497,20 @@ and Overwatch once the lexicon is sealed and Witnesses once it has been sent.
 
 At the Stargazer lens four stations are shown (Read, Count, "Kinds of sentence",
 "Stamp it") and three of the eight tampers ("Change a word", "Drop a thing", "Add a
-thing"). One line by the stations says what the Navigator level adds (the chain, the
-Overwatch checks, four receivers, the path to John 3:16 and the fourth square) and
-has a button that switches to it. "Stamp it" also holds, in a closed box, the one
-figure of the last station a Stargazer is shown: the mirror word with one corner
-hidden, "Three corners give the fourth".
+thing"). One line says what the Navigator level adds (the chain, the Overwatch
+checks, four receivers, the path to John 3:16 and the fourth square) and has a
+button, "Switch to Navigator", that switches to it. For a sky opened from a link the
+line is its first sentence alone (the chain, the Overwatch checks and four
+receivers): a sky has no path to John 3:16 and no fourth square. In a window of
+700 px or wider the line stands beside the stations; in a narrower one it stands
+below the card and the gold box, directly before the box of the open station, at
+every Stargazer station. After the button is pressed the focus is on the first
+station button. In a window of 700 px or wider nothing scrolls for that, so where
+the page had been scrolled by a few tens of pixels the header can cover that station
+button; in a narrower one, where the button stands far below the stations, the page
+scrolls the stations into view, at once when the device asks for reduced motion. "Stamp it"
+also holds, in a closed box, the one figure of the last station a Stargazer is
+shown: the mirror word with one corner hidden, "Three corners give the fourth".
 
 **The gold boxes** follow one line from station to station, from Ezekiel's river to
 John 3:16. They quote several writers, each named where it is quoted; where a box
@@ -461,10 +519,25 @@ scan of the book. The first box has a button "Go to John 3:16" and a link to Fir
 Explorers. While John 3:16 (`43.3.16`) is the chosen entry the gold box is the box of
 that verse at every lens, with a button "Fly here from the river" that walks the tree
 from the river term to the verse; the verse's own Entry has buttons to the two
-entries that point to it (the author's line 3 and the outline). A row under the
-author's lines 5, 6, 9 and 10 or under the outline whose last words send the reader
-somewhere ("Open the Wheel tab", "See it on the sky page") carries a button to that
-place, and only where the lens on show has the place.
+entries that point to it (the author's line 3 and the outline). Both buttons of the
+gold box start a flight on the map. Where the map is not wholly in the window (on a
+phone the gold box stands below it) the page first scrolls the map into view, at once
+when the device asks for reduced motion, and starts the flight when the page has
+stopped: when a scroll ends with the whole map inside the window, or after 1.2
+seconds at the latest. A scroll that ends while the map is still outside the window
+does not start it. The focus stays in the gold box.
+
+A row under the author's lines 2, 5, 6, 7, 9 and 10 or under the outline whose last
+words send the reader somewhere ("Open the Wheel tab", "Try the three tampers at
+Seal", "See it on the sky page") carries a button to that place, and only where the
+lens on show has the place (`POINTER_ADDRESSES`, 16 rows). At Stargazer, where
+there is no Wheel tab and the Seal station is called "Stamp it", the two rows quoted
+first lead to the word wheel inside "Stamp it" and to "Stamp it" itself. A button
+that leads to something inside a station's box (a figure of the last station, the
+mirror word, the word wheel) gives it the focus and brings it to the top of the
+window. At Stargazer, where no tab stands above the card, a button inside the card
+that the next card no longer has (a "Go to …" button, for one) hands the focus to
+the title of the new card.
 
 **The tampers** are one table, `LEXICON_TAMPERS`. Seven are refused, each at the
 check the table names: a changed word at `crystal`; a dropped entry, an added entry,
@@ -485,8 +558,11 @@ half and the signature. So the signature shows that the text is unchanged since 
 was sealed. It does not show who signed it, and once the page is closed nothing can
 be signed with that key again. Beside a seal the page made itself it prints "Signed
 by key S-… (a key made for this visit)"; it never prints those words for a package
-that came in as a file. The Celestial Control Panel does the same for a sky, with one
-key for the whole visit.
+that came in as a file. The dialog "What is real here?" says the same in two
+sentences that also hold while a package from a file is on show, whose key this page
+did not make: "A key this page makes is made for this visit. A signature shows
+integrity, not identity." The Celestial Control Panel does the same for a sky, with
+one key for the whole visit.
 
 **What a certificate covers**, in the page's words: certified are these bytes, their
 order, their addresses, the label each entry was given, the lineage and the ledger,
@@ -505,8 +581,8 @@ link value was ignored". This page reads three keys:
 
 | Link | What it does |
 |---|---|
-| `#entry=ADDRESS` | selects and centres that entry. The page writes it into the address bar on each selection, so Back returns to the entry before and an entry can be cited by its link. Back and Forward through entries the page wrote itself bring back the entry and keep the reading level that is on show; a link that is typed or pasted sets the level it names. An address the lexicon does not have is ignored with a note |
-| `#sky=JD,LAT,LON` | a Julian Day, a latitude and an east longitude, judged after they are rounded as the Celestial Control Panel rounds them. The page recomputes that sky's lexicon from the three numbers and shows it as its own; sealed here it gets the same chain id as on the sky page. A banner says that the sky was built from a link, a place and a time, and that the same place and time always get the same name; it has a button back to the Ezekiel lexicon and a link to the Celestial Control Panel. For a sky the reader, Count, Read and The fourth square are put away, and the Send station is a Navigator station, as for the Ezekiel lexicon |
+| `#entry=ADDRESS` | selects and centres that entry. The page writes it into the address bar on each selection, so Back returns to the entry before and an entry can be cited by its link. Back and Forward through entries the page wrote itself bring back the entry (and the sky, if the link holds one) and keep the reading level, the station and the tab that are on show. A link that is typed or pasted sets the level it names, once: from then on it counts as one of the page's own entries, so Back to it later keeps the level on show. When the page comes back to one of its own entries it rewrites that entry's link with the level on show; it does not do so while a lexicon from a file is shown, because such a lexicon is never in a link and the rewrite would drop the entry's address from the history. A change of the reading level is written into the link of the entry the history is at, without adding an entry to the history; this too is left undone while a lexicon from a file is shown, so that the entry keeps its address (`#entry=26.1.2&lens=holographer` stays in the address bar while Navigator is shown) and Back and then Forward to it bring its entry back at the level on show. An entry chosen in a lexicon from a file is never written into a link: what such a choice adds to the history names the level alone (`#lens=navigator`), or, where the file was loaded while a sky was on show, that sky and the level (`#sky=…&lens=navigator`). An address the lexicon does not have is ignored with a note |
+| `#sky=JD,LAT,LON` | a Julian Day, a latitude and an east longitude, judged after they are rounded as the Celestial Control Panel rounds them. The page recomputes that sky's lexicon from the three numbers and shows it as its own; sealed here it gets the same chain id as on the sky page. A banner says that the sky was built from a link, a place and a time, and that the same place and time always get the same name; it has a button back to the Ezekiel lexicon and a link to the Celestial Control Panel. On arrival by such a link the status line says the sky's title once ("A sky: By the Kebar (Nippur), 31 July 593 BC (Julian calendar)."), without moving the focus, and while a sky is on show the document's title names it ("Lexicon Explorer · A sky: …"). A link that opens the page with a sky and with a part the page does not use (a key or a reading level it does not know, or an entry the sky does not have) is said in one piece: the note first, then the sky's title, together and once ("a link value was ignored. A sky: Greenwich, England, 15 November 2026."), and the focus goes to the card's title, as after any link that left a note. Such a link typed into a tab where the page is already open says the title of the sky it builds without the note (followed by what is chosen, where the link also names an entry of that sky), and its note stands under the map; when it names the sky that is already on show, no sky is built and the status line says what is chosen, not the sky's title: "Nothing is chosen." where the link names no entry, and the entry chosen before where it names one that sky does not have. For a sky the reader, Count, Read and The fourth square are put away, and the Send station is a Navigator station, as for the Ezekiel lexicon |
 | `#lens=` | `stargazer`, `navigator` or `holographer` |
 
 Links the page writes to the Celestial Control Panel, each with the lens:
@@ -516,8 +592,11 @@ Links the page writes to the Celestial Control Panel, each with the lens:
 - `#lab=square`, from the term "they turned not when they went" and from two rows
   under the author's lines 6 and 9;
 - `#jd=JD&lat=LAT&lon=LON`, from the banner over a sky: the place and the time of that
-  sky in the sky page's own keys, so the visitor can go back and forth. No seal and
-  no chain name is ever put into a link;
+  sky in the sky page's own keys, so the visitor can go back and forth. The model
+  keeps a copy of the sky page's rule for each key (`SKY_PAGE_GRAMMAR`) and writes
+  only what that page reads; for `jd` both rules are the same (see
+  `CELESTIAL_CONTROL_PANEL.md`, "The link grammar"), and the integration test tries
+  them on the same texts. No seal and no chain name is ever put into a link;
 - the lens alone, from the gold box of the Send station.
 
 The dialog "What is real here?" ends with the section "Other pages": First
@@ -542,8 +621,21 @@ no station, narration or gold box is shown for it, and the reader stays the buil
 passage. An outside lexicon gets the tree, the Entry and the list of checks. Its
 signature row reads "signed by key S-…; this page cannot know whose key that is". A
 string of its ledger longer than 96 characters is shown as its first 95 and a mark,
-with a line saying so. A First Explorers journey loaded this way shows its checks
-and one line saying what it is.
+with a line saying so. Of the ledger entries up to the signed point at most the
+first 200 are listed (`LEDGER_ROWS`); a longer ledger is followed by a line of the
+page's own that counts the rest, "and 2752 more ledger entries, not listed". The
+front door admits up to 4,096 entries, and listing them all could hold the page for
+seconds. The ledger of the sealed Ezekiel lexicon has 15 entries and that of a sky
+5; a First Explorers journey writes three entries for each observation and one or
+more for each thing tried, so only a long one passes 200. The package First
+Explorers saves is read this way too: it shows its thirteen checks and the line
+"This is a First Explorers journey.", and nothing of it is drawn as a tree.
+
+**Scrolling under the header.** In a window at least 700 px wide and 700 px high the
+header stays at the top, and whatever the page scrolls to stops below it: 88 px from
+the top from 1100 px wide, 112 px between 700 and 1100 px, where the header can have
+two rows. While the banner of a lexicon from a file is shown the distances are 180
+and 202 px, and 76 px in a smaller window, where the banner alone stays at the top.
 
 ### The supplied passage
 
@@ -826,17 +918,24 @@ in these words. Each can be changed; the note after it says where.
 7. **LEX/1 and LEXICON/2 are drafts; one epoch per top-level entry; two witnesses
    are "enough" only as a demonstration.** The mark on the Send station reads "two:
    enough for the rule of Deuteronomy 19:15, as a demonstration" and counts simulated
-   receivers. Directly under the count the page says that this shows how a
-   two-witness rule is checked and does not show that independent parties have
-   looked, and it adds that it borrows a number from that rule and nothing more.
+   receivers. The count is printed as "4 of 4 handshakes in this page", and directly
+   under it the page says that this shows how a two-witness rule is checked and does
+   not show that independent parties have looked. A READING sentence adds, in words
+   that name the rule because a sky has no verse beside it: "The page borrows a number
+   from the rule of Deuteronomy 19:15 and nothing more. That rule is about people
+   giving evidence."
 8. **The reading levels are named Stargazer, Navigator and Holographer on this page
    too**, with the hints "ages 6 and up", "names, dates and sources" and "formats and
    hashes", so that the third is not read as a physics decoding of the vision. They
    are the three levels First Explorers calls Stargazer, Explorer and Architect.
 9. **No package link and no paste box.** A lexicon from outside enters only as a
    file and is shown as its sender's.
-10. **First Explorers and Loom Weave were left as they are.** The new pages reuse
-    the four receivers and the mirror rule without changing either page.
+10. **First Explorers and Loom Weave were left as they are, but for two small things
+    in First Explorers.** The new pages reuse the four receivers and the mirror rule
+    without changing either page. In First Explorers the signature check now adds "(a
+    key made for this visit)" to its detail, and "Save package" writes the package in
+    wire form (it was indented), because the Lexicon Explorer's load box invites that
+    file and the front door reads no other form.
 
 ## What guards what
 
@@ -847,15 +946,61 @@ Two kinds of check stand behind these pages, and each covers what the other cann
 | the three cores (`scripts/strix-overwatch.js`, `scripts/hyperbolic-moves.js`, `scripts/celestial-core.js`) | `node --test`: `tests/unit/strix-overwatch.test.mjs`, `strix-lexicon.test.mjs`, `hyperbolic-moves.test.mjs`, `celestial-core.test.mjs` |
 | the two model modules (`lexicon-explorer-model.js`, `celestial-panel-model.js`): all state, every sentence, every link | `node --test`: `tests/unit/lexicon-explorer-model.test.mjs`, `celestial-panel-model.test.mjs` |
 | the rows (`ezekiel-1.js`) and the supplied passage | `node --test`: `tests/unit/ezekiel-lexicon.test.mjs`, and with `OWL_KJV_DIR` the comparison with the e-text |
-| what the two pages, the cores and the two documents say of each other, the numbers of the `facts` blocks among them | `node --test`: `tests/unit/explorers-integration.test.mjs` |
-| the shells (`lexicon-explorer.js`, `celestial-control-panel.js`), the drawing modules (`lexicon-canvas.js`, `celestial-chart.js`), the DOM helpers of the kit, the style sheets (`explorer-kit.css` and the style block of each page) and the two `index.html` files: what a visitor sees and can reach, on a wide screen and on a phone, with a pointer and with the keyboard | the browser walkthroughs in `tests/browser/` |
+| what the two pages, the cores and the two documents say of each other, the numbers of the `facts` blocks among them; and that a package built and saved as First Explorers does it passes the front door | `node --test`: `tests/unit/explorers-integration.test.mjs` |
+| the shells of the two pages (`lexicon-explorer.js`, `celestial-control-panel.js`), the drawing modules (`lexicon-canvas.js`, `celestial-chart.js`), the DOM helpers of the kit, the style sheets (`explorer-kit.css` and the style block of each page) and the two `index.html` files: what a visitor sees and can reach, on a wide screen and on a phone, with a pointer and with the keyboard | the browser walkthroughs `tests/browser/lexicon-explorer.cjs` and `tests/browser/celestial-control-panel.cjs` |
+| First Explorers' page, `Library/Experimental_Systems/First_Explorers/first-explorers.js` and that page's `index.html`, which no other test opens: its nine stations on a wide screen and on a phone, and the files it saves | the browser walkthrough `tests/browser/first-explorers.cjs` |
 
-`node --test` never opens a page. Of the shells, the drawing modules and the two
-`index.html` files it reads only the text: `tests/static/explorers-policy.test.mjs`
-and `tests/static/sinks.test.mjs` look for forbidden names, for the content policy
-and for ids that do not exist, and the integration test for links it has not tried.
-Whether a button is on the screen, a label fits, or the focus lands where it should
-is seen only in a browser.
+`node --test` never opens a page. Of the shells, the drawing modules and the
+`index.html` files of the two newer pages it reads only the text:
+`tests/static/explorers-policy.test.mjs` and `tests/static/sinks.test.mjs` look for
+forbidden names, for the content policy and for ids that do not exist, and the
+integration test for links it has not tried. Of `first-explorers.js` it reads only
+the lines that import the core, make the receiver buttons, and build and save the
+package and the ledger: the integration test requires the import of
+`scripts/strix-overwatch.js` and one receiver button for each of the core's
+`CROSSROADS`; the static test requires that "Save package" writes the wire text and
+nothing else; and the integration test builds a journey with the same calls, puts
+the saved text through the front door, and requires that the ledger is still saved
+indented. Whether a button is on the screen, a label fits, or the focus lands where
+it should is seen only in a browser.
+
+**What the static rules catch, and what they cannot see.** In the scripts of the two
+page folders and in the three cores, `tests/static/explorers-policy.test.mjs`
+refuses the names of markup sinks (`innerHTML` and its relatives, `setHTMLUnsafe`,
+`parseHTMLUnsafe` and `.setHTML(` among them) and the ways a value could reach the
+page without passing through the kit: an element made outside the kit; an attribute
+set under a name that is not a literal `aria-` or `data-` name; an `href`, a `src`,
+style text, a class name or an id assigned; a style property set by name
+(`setProperty`) or assigned, the properties `width` and `height` excepted, on
+whatever element (the pages set them on a canvas); a class name given to
+`classList` that is not a string literal, and `classList` or its `value` set to
+anything but a string literal; `Object.assign` onto anything but `state`, `next` or
+a new object; a part of a link's address assigned (`host`, `hostname`, `protocol`,
+`pathname`, `search`); `navigation.navigate`; and a member or an item of an
+element's attribute map (`.attributes.` or `.attributes[`, so that
+`link.attributes.href.value = value` is refused). Optional chaining is no way round
+a rule: every rule reads `a?.b` as `a.b`, `f?.(x)` as `f(x)` and `a?.[k]` as `a[k]`.
+An assignment is read whatever its sign (`=`, `+=`, `||=`, `??=` and the like).
+These rules read how a line is spelt, not what it does when it runs, and they look
+only for the names they list. These ways past them are known, and the list is not
+claimed to be complete: a member set under a computed name (`link[key] = value`
+sets what `link.href = value` sets); a call through another name for `window` or
+for a function (`const assign = Object.assign`), and likewise a member of an object
+kept under another name (`const list = el.classList; list.value = x`); a listed
+member written to with no assignment sign after it, as the target of a
+destructuring or of a loop (`[link.href] = [value]`, `for (link.href of list)`),
+and likewise the attribute map taken whole instead of by member or item (`for
+(const a of link.attributes) a.value = x`); anything that stands between a listed
+name and what its rule expects next (parentheses round the member, as in
+`(link.href) = value`; `.call` or `.apply` after a listed function; `++` in place
+of an assignment sign; an escape inside the name, which hides a name from every
+rule of the file, the markup sinks included); and a name no rule lists, of which
+the head of the test file gives `document.title =`, `link.download =`,
+`link.port =`, `link.hash =`, `location.hash =`, `navigator.share(`,
+`attachShadow(`, `attributeStyleMap.set(` and `setAttributeNode(`. The test file
+says so at its head and keeps a test that shows these lines passing. So the rules
+catch the careless line, and a change to a page script still has to be read by a
+person.
 
 `tests/browser/` holds the three walkthroughs as optional scripts,
 `lexicon-explorer.cjs`, `celestial-control-panel.cjs` and `first-explorers.cjs`, with
@@ -899,6 +1044,7 @@ pack.lineage.rows.max = 64
 pack.ledger.entries.max = 4096
 pack.file.bytes.max = 4500000
 pack.ledger.string.characters.shown.max = 96
+pack.ledger.entries.shown.max = 200
 overwatch.checks = 10
 package.checks = 13
 witness.need.default = 2
@@ -957,5 +1103,5 @@ supplied.terms = 29
 tests.strix.overwatch.declared = 10
 tests.strix.lexicon.declared = 37
 tests.ezekiel.lexicon.declared = 31
-tests.lexicon.explorer.model.declared = 53
+tests.lexicon.explorer.model.declared = 57
 ```

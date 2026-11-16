@@ -315,7 +315,15 @@ test("the sensitive points of 1.4 in the copy", () => {
   assert.equal({ ...M.AUTHOR_LABEL }.navigator, "READING · the author's note");
   // one seal is one witness; the receivers are simulated
   assert.ok(M.quorumSentence(2).includes("All four run inside this page") && M.quorumSentence(2).endsWith("It does not show that independent parties have looked."));
-  assert.equal(M.SEND_READING.text, "The page borrows a number from this rule and nothing more. The rule is about people giving evidence.");
+  // the READING sentence of Send names the rule itself: for a sky no verse and no gold box stands beside it, so "this rule" would point at nothing
+  assert.deepEqual({ ...M.SEND_READING }, { layer: "reading", text: "The page borrows a number from the rule of Deuteronomy 19:15 and nothing more. That rule is about people giving evidence." });
+  for (const lens of ["navigator", "holographer"]) {
+    for (const lexicon of [M.EZEKIEL, SKY.lexicon]) assert.deepEqual(M.stationView("send", lens, lexicon).notes, [M.SEND_READING], `${lens}, ${lexicon.origin}`);
+    const sky = M.stationView("send", lens, SKY.lexicon);
+    assert.deepEqual([sky.verse, sky.bridge], [null, null], "a sky has no verse and no gold box at Send");
+    for (const p of [...sky.say, ...sky.notes]) assert.ok(!/\bth(is|e) rule\b/i.test(p.text.replace("the rule of Deuteronomy 19:15", "")), `a rule that nothing names: ${p.text}`);
+  }
+  assert.equal(M.stationView("send", "navigator", M.EZEKIEL).verse.source, "5.19.15", "the rule the sentence names is the verse the Ezekiel lexicon shows there");
 });
 
 test("the dialog holds the sentences section 8.6 prescribes", () => {
@@ -339,7 +347,7 @@ test("the dialog holds the sentences section 8.6 prescribes", () => {
     "The ledger is what the sealer wrote down. Its links show it has not been edited since sealing, not that its times are true.",
     "The words 2D+3D in the certificate mean that the same addresses are drawn both ways. The drawings are not signed.",
     "The receivers are simulated in this page.",
-    "The key is made for this visit and shows integrity, not identity.",
+    "A key this page makes is made for this visit. A signature shows integrity, not identity.",
     "LEX/1 and LEXICON/2 are drafts, not RFCs.",
     "the same three levels First Explorers calls Stargazer, Explorer and Architect",
     "The only request to another host is for web fonts (Google Fonts); the page works without them.",
@@ -347,6 +355,10 @@ test("the dialog holds the sentences section 8.6 prescribes", () => {
     "the running text never mentions",
   ]) assert.ok(all.includes(wanted), `the dialog lacks: ${wanted.slice(0, 50)}`);
   for (const m of KIT.LAYER_META) assert.ok(all.includes(m.legend));
+  // the dialog is the same beside a lexicon from a file, whose key its sender made at another time: no sentence of it says that "the key" is of this visit
+  const limits = M.DIALOG.sections.find((s) => s.heading === "Limits to keep in mind").items;
+  assert.deepEqual({ ...limits[4] }, { layer: "checked", text: "A key this page makes is made for this visit. A signature shows integrity, not identity." });
+  assert.ok(!/\b[Tt]he key (is|was) made for this visit/.test(all + " " + M.DIALOG.inShort.map((i) => i.text).join(" ") + " " + M.DIALOG.first.text));
   assert.equal(M.CERTIFIED_TEXT, "Certified: these bytes, their order, their addresses, the label each entry was given, the lineage and the ledger, unchanged since they were sealed with this key. "
     + "Not certified: that a TEXT entry matches its source, that a SAID entry is faithful, that a CHECKED number is right, that any READING is true, or who sealed it. "
     + "A TEXT row is checked by reading the source it names, a CHECKED row by running the code, a SAID row by opening the work cited. "
@@ -1498,6 +1510,8 @@ test("sending: four receivers answer with their own keys; noise on one road leav
   assert.deepEqual(clean.marks.map((m) => [m.need, m.label]), M.WITNESS_MARKS.map((m) => [m.need, m.label]));
   assert.ok(clean.rows.every((r) => r.accepted && r.counted && !r.noise && r.failed === null));
   assert.equal(clean.sentence, M.quorumSentence(4));
+  // the count line says where the handshakes happened, wherever it is printed (the Send station, the Witnesses tab)
+  assert.equal(M.handshakeCount(clean.k, clean.of), "4 of 4 handshakes in this page");
   assert.ok(clean.sentence.startsWith("4 of the four receivers accepted. All four run inside this page, with the same code, each with a key made a moment ago."));
   assert.equal(clean.stargazer, "Four receivers checked the stamp and agreed, so the parcel arrived unchanged. They are pretend receivers inside this page.");
   for (const a of clean.answers) assert.equal((await OW.verifyAnswer(a, SEAL.wire)).ok, true);
@@ -1507,6 +1521,8 @@ test("sending: four receivers answer with their own keys; noise on one road leav
   const noisy = await M.sendToReceivers(SEAL, receivers, { at: AT, noise: true });
   assert.deepEqual(noisy.rows.map((r) => [r.id, r.noise, r.accepted, r.counted]), [["antioch", false, true, true], ["alexandria", false, true, true], ["athens", true, false, false], ["rome", true, false, false]]);
   assert.deepEqual([noisy.k, noisy.marks.map((m) => m.met)], [2, [true, false]]);
+  assert.equal(M.handshakeCount(noisy.k, noisy.of), "2 of 4 handshakes in this page");
+  for (const [k, of] of [[0, 4], [1, 4], [3, 4], [1, 1]]) assert.match(M.handshakeCount(k, of), new RegExp("^" + k + " of " + of + " handshakes in this page$"));
   assert.ok(noisy.rows.filter((r) => r.noise).every((r) => typeof r.failed === "string" && OW.PACKAGE_CHECKS.includes(r.failed)));
   assert.equal(noisy.stargazer, "Two receivers checked the stamp and agreed, so the parcel arrived unchanged. They are pretend receivers inside this page.");
   const three = await M.sendToReceivers(SEAL, receivers, { at: AT, noise: ["antioch", "alexandria", "athens"] });
@@ -1734,6 +1750,16 @@ test("a link that replaces the lexicon drops the seal, the tampers and what was 
   const toSky = M.applyHash(sealed, "#sky=1505042.16624,32.13,45.23&lens=navigator");
   assert.equal(toSky.lexicon.origin, "page");
   assert.deepEqual([toSky.seal, toSky.tampers, toSky.send, toSky.tab, toSky.counting], [null, {}, null, "entry", null]);
+  // a lexicon from a file is on show (its package read and shown): a sky link replaces it, and nothing of the package stays in the state.
+  // Otherwise the load box would go on saying "This lexicon was not made by this page" beside a sky.
+  const outsideLexicon = M.makeLexicon([OW.makeEntry("1", "reading", "note", "A sender's note", "Words.")], "outside", "A lexicon from outside", "");
+  const result = { ok: true, kind: "tree", lexicon: outsideLexicon, banner: M.OUTSIDE_BANNER };
+  const loaded = { ...M.initialState("#lens=navigator"), lexicon: outsideLexicon, view: M.homeView(outsideLexicon), selected: "1", outside: { result, shown: true } };
+  assert.deepEqual([loaded.lexicon.origin, loaded.outside.shown, M.stationFor(loaded)], ["outside", true, null]);
+  const fromFile = M.applyHash(loaded, "#sky=1505042.16624,32.13,45.23&lens=navigator");
+  assert.equal(fromFile.outside, null);
+  assert.deepEqual([fromFile.lexicon.origin, fromFile.selected, fromFile.view.focus, fromFile.station, fromFile.sky.jd], ["page", null, "", "place", "1505042.16624"]);
+  assert.deepEqual(loaded.outside, { result, shown: true }, "the state that was handed in is not changed");
   const skySealed = { ...toSky, seal: SEAL, tampers: { drop: { ran: true } }, send: { k: 2 }, tab: "chain" };
   const back = M.applyHash(skySealed, "#lens=navigator");
   assert.deepEqual([back.lexicon, back.seal, back.tampers, back.send, back.tab], [M.EZEKIEL, null, {}, null, "entry"]);
@@ -1854,26 +1880,54 @@ test("an author's line: the plain rows before its first said or checked row keep
   assert.deepEqual(M.entryView(M.EZEKIEL, "100.7", "navigator").hidden, []);
 });
 
-test("three entries have a Stargazer sentence of their own; a verse reached through a link names its translation", () => {
+test("seven entries have a Stargazer sentence of their own; a verse reached through a link names its translation", () => {
   assert.deepEqual([...M.ENTRY_LEADS].map(([a, lead]) => [a, lead.layer, lead.text]), [
     ["0", "reading", "This page lists words and where they come from."],
-    ["0.3", "said", "The Jewish Encyclopedia says Jewish teachers explained this chapter with great care."],
+    ["0.1", "reading", "We sort every piece into four kinds and give each piece a place of its own."],
+    ["0.2", "said", "The Bible words kept here are the King James Version, from the Project Gutenberg e-text."],
+    ["0.3", "said", "The Jewish Encyclopedia says Jewish teachers explained this chapter to one wise pupil at a time."],
+    ["0.4", "said", "Its writer, Pierre van Paassen, says no life of Jesus can be written without taking sides."],
+    ["0.5", "reading", "We read Jesus of Nazareth as a bridge: a line through the middle of our map."],
     ["100", "reading", "Ten lines the author wrote under the passage."],
   ]);
   const words = (s) => s.split(/\s+/).filter((w) => /[\p{L}\p{N}]/u.test(w)).length;
   for (const [a, lead] of M.ENTRY_LEADS) {
-    assert.ok(words(lead.text) <= 16 && M.sentencesOf(lead.text).length === 1);
+    assert.ok(words(lead.text) <= 16 && M.sentencesOf(lead.text).length === 1, `${a}: one sentence of at most 16 words`);
     assert.equal(lead.layer, ROW.get(a).layer, "the lead wears the badge of its entry");
     const star = M.entryView(M.EZEKIEL, a, "stargazer");
     assert.deepEqual(star.lead, { ...lead });
     assert.equal(star.text, ROW.get(a).text, "the entry's own words are unchanged; the shell puts them behind More for older readers");
     for (const lens of ["navigator", "holographer"]) assert.equal(M.entryView(M.EZEKIEL, a, lens).lead, null);
   }
-  // what the lead of 0.3 says is what the row reports: the Jewish Encyclopedia, on a rule about explaining the chapter
+  // "About this lexicon" and every entry the Stargazer list offers under it have one; the rows under them keep their own text
+  assert.deepEqual([...M.ENTRY_LEADS.keys()], ["0", ...M.childrenOf(M.EZEKIEL, "0"), "100"]);
+  // each lead is true to the row it leads
+  // 0.1: the row tells the four kinds of row apart and says how addresses are given
+  for (const kind of ["TEXT rows", "SAID rows", "CHECKED rows", "READING rows"]) assert.ok(ROW.get("0.1").text.includes(kind), kind);
+  assert.ok(/Every verse has an address/.test(ROW.get("0.1").text) && /other entries have plain tree addresses/.test(ROW.get("0.1").text));
+  assert.equal(new Set(M.EZEKIEL.addresses).size, M.EZEKIEL.entries.length, "a place of its own: no two entries share an address");
+  assert.deepEqual([...new Set(M.EZEKIEL.entries.map((e) => e.layer))].sort(), ["checked", "reading", "said", "text"], "four kinds");
+  // 0.2: the sentence the Stargazer lens already shows for this row in the gold box of "Kinds of sentence"
+  assert.equal(M.ENTRY_LEADS.get("0.2").text, station("layers").bridge.stands[0].stargazer);
+  assert.equal(station("layers").bridge.stands[0].source, "0.2");
+  assert.ok(ROW.get("0.2").text.startsWith("King James Version, from the Project Gutenberg e-text"));
+  // 0.3: the Jewish Encyclopedia reports a rule that holds the explaining back: to one pupil, and only a wise one. The lead does not turn that round.
   assert.ok(ROW.get("0.3").text.includes("As the Jewish Encyclopedia reports it") && ROW.get("0.3").text.includes("must not be explained"));
+  assert.ok(ROW.get("0.3").text.includes("nor Ma'aseh Merkabah before one, unless he be wise"));
+  assert.ok(/to one wise pupil at a time\.$/.test(M.ENTRY_LEADS.get("0.3").text) && !/great care|freely|to everyone|in public/.test(M.ENTRY_LEADS.get("0.3").text));
+  // 0.4: the speaker is the book's own writer, and what he says is about every book of this kind. His argument is not given: not as fact, not as ours.
+  const book = M.ENTRY_LEADS.get("0.4").text;
+  assert.ok(ROW.get("0.4").text.includes("Pierre van Paassen") && ROW.get("0.4").text.includes("\"No really objective life of Jesus can be written.\""));
+  assert.match(book, /^Its writer, Pierre van Paassen, says no life of Jesus can be written /);
+  assert.ok(!/\b(we|our|this project|this page)\b/i.test(book), "not this project's view");
+  assert.ok(!/Unitarian|prophet|Pilate|Kingdom|Greek|reconstruction|died|death|killed/i.test(book), "none of his argument");
+  // 0.5: the bridge is this project's reading and is worded as one
+  assert.ok(ROW.get("0.5").text.includes("read Jesus of Nazareth as that line") && ROW.get("0.5").text.includes("This is this project's reading; no check depends on it"));
+  assert.match(M.ENTRY_LEADS.get("0.5").text, /^We read Jesus of Nazareth as a bridge: /);
+  assert.equal(M.entryView(M.EZEKIEL, "0.5", "stargazer").text, ROW.get("0.5").text, "the sentence that no check depends on it stays on the card, under More for older readers");
   assert.ok(ROW.get("100").text.startsWith("Ten lines the author wrote under the passage"));
-  // only these three, and only in the built-in lexicon
-  assert.equal(DATA.ROWS.filter((r) => M.entryView(M.EZEKIEL, r[0], "stargazer").lead !== null).length, 3);
+  // only these seven, and only in the built-in lexicon
+  assert.equal(DATA.ROWS.filter((r) => M.entryView(M.EZEKIEL, r[0], "stargazer").lead !== null).length, 7);
   const made = M.makeLexicon([OW.makeEntry("0", "reading", "about", "About", "A sender's words."), OW.makeEntry("0.1", "text", "verse", "A verse", "Words."), OW.makeEntry("0.2", "reading", "link", "See", "0.1")], "outside", "t", "");
   assert.equal(M.entryView(made, "0", "stargazer").lead, null);
   // a verse set beside an entry by a link is a King James row: its citation is followed by the name of the translation
@@ -1953,10 +2007,11 @@ test("John 3:16 has a gold box at every lens while it is the chosen entry, with 
 });
 
 test("the card shown while nothing is chosen says where the author's ten lines are, and quotes none of them", () => {
-  assert.deepEqual({ ...M.NOTES_INVITE }, { layer: "reading", text: "The author wrote ten lines under this passage.", label: "Open the author's notes", short: "The author's notes", address: "100" });
+  assert.deepEqual({ ...M.NOTES_INVITE }, { layer: "reading", text: "The author wrote ten lines under this passage.", label: "Open the author's notes", short: "The author's ten lines", address: "100" });
   assert.equal(M.NOTES_INVITE.address, DATA.HANDLES.notes);
   const lines = M.childrenOf(M.EZEKIEL, "100").filter((a) => M.isAuthorLine(M.EZEKIEL, a));
   assert.equal(lines.length, 10);
+  assert.match(M.NOTES_INVITE.short, /\bten lines\b/);      // the short button names the number just counted
   for (const a of lines) assert.ok(!M.NOTES_INVITE.text.includes(ROW.get(a).text) && !M.NOTES_INVITE.label.includes(ROW.get(a).text));
   assert.ok(!/["“”]/.test(M.NOTES_INVITE.text));
   for (const lens of LENSES) assert.deepEqual(M.entryView(M.EZEKIEL, null, lens).invite, M.NOTES_INVITE);
@@ -1965,12 +2020,14 @@ test("the card shown while nothing is chosen says where the author's ten lines a
 });
 
 test("a row whose closing words name a place of the page carries a button to that place, and only where the lens has the place", () => {
-  // the closing words that send the reader somewhere: every such row under lines 5, 6, 9 and 10 has a pointer
-  const sends = /^(See it |Try three points|Try it in the lab|Press Seal|Hide a corner|Flip one light|Pick four lights|Count the slices|Open the three|Open both)/;
+  // the closing words that send the reader somewhere: every such row under lines 2, 5, 6, 7, 9 and 10 has a pointer
+  const sends = /^(See it |Try three points|Try it in the lab|Press Seal|Hide a corner|Flip one light|Pick four lights|Count the slices|Open the three|Open both|Open the Wheel tab|Try the three tampers)/;
   const closing = (a) => { const s = M.sentencesOf(ROW.get(a).text); return s[s.length - 1]; };
-  const under = DATA.ROWS.map((r) => r[0]).filter((a) => /^100\.(5|6|9|10)\./.test(a));
+  const under = DATA.ROWS.map((r) => r[0]).filter((a) => /^100\.(2|5|6|7|9|10)\./.test(a));
   const pointing = under.filter((a) => sends.test(closing(a)));
-  assert.ok(pointing.length >= 11, String(pointing.length));
+  assert.ok(pointing.length >= 13, String(pointing.length));
+  assert.deepEqual([closing("100.2.5"), closing("100.7.6")], ["Open the Wheel tab.", "Try the three tampers at Seal."]);
+  assert.ok(pointing.includes("100.2.5") && pointing.includes("100.7.6"));
   for (const a of pointing) assert.ok(M.POINTER_ADDRESSES.includes(a), `${a}: "${closing(a)}" has no button`);
   for (const a of M.POINTER_ADDRESSES) assert.ok(ROW.has(a) && ROW.get(a).kind !== "link" && ROW.get(a).kind !== "plain", a);
   const figures = M.FOURTH_PARTS.map((f) => f.key);
@@ -2004,6 +2061,26 @@ test("a row whose closing words name a place of the page carries a button to tha
   assert.deepEqual(M.pointerOf(M.EZEKIEL, "100.9.4", "navigator").entries.map((x) => x.address), ["26.1.9", "26.1.12", "26.1.17"]);
   assert.equal(M.pointerOf(M.EZEKIEL, "100.5.4", "stargazer").label, "Go to Stamp it");
   assert.equal(M.pointerOf(M.EZEKIEL, "100.5.4", "navigator").label, "Go to the Seal station");
+  // line 2, "Open the Wheel tab.": the tab from Navigator up; Stargazer has no tabs, and has the wheel inside "Stamp it"
+  // line 7, "Try the three tampers at Seal.": the Seal station, which every lens has (three tampers at Stargazer, under the name "Stamp it")
+  for (const lens of ["navigator", "holographer"]) {
+    assert.deepEqual(place("100.2.5", lens), ["wheel", null, null, "wheel"]);
+    assert.deepEqual(place("100.7.6", lens), ["station", "seal", null, null]);
+    assert.deepEqual([M.pointerOf(M.EZEKIEL, "100.2.5", lens).label, M.pointerOf(M.EZEKIEL, "100.7.6", lens).label], ["Open the Wheel tab", "Go to the Seal station"]);
+  }
+  assert.deepEqual(place("100.2.5", "stargazer"), ["wheel", "seal", null, null]);
+  assert.deepEqual(place("100.7.6", "stargazer"), ["station", "seal", null, null]);
+  assert.deepEqual([M.pointerOf(M.EZEKIEL, "100.2.5", "stargazer").label, M.pointerOf(M.EZEKIEL, "100.7.6", "stargazer").label], ["Go to the word wheel", "Go to Stamp it"]);
+  assert.ok(!M.visibleTabs("stargazer", { origin: "builtin", sealed: true, sent: true }).some((t) => t.key === "wheel"), "no Wheel tab at Stargazer");
+  assert.deepEqual(M.tamperRows("stargazer").length, 3);
+  for (const lens of LENSES) {
+    // the button stands on the row where the line's card lists it, and on the row's own card
+    for (const [line, a] of [["100.2", "100.2.5"], ["100.7", "100.7.6"]]) {
+      const card = M.entryView(M.EZEKIEL, line, lens), row = [...card.first, ...card.more].find((r) => r.address === a);
+      assert.deepEqual(row.pointer, M.pointerOf(M.EZEKIEL, a, lens), `${a} at ${lens}`);
+      assert.deepEqual(M.entryView(M.EZEKIEL, a, lens).actions.filter((x) => x.key === "pointer").map((x) => x.label), [row.pointer.label]);
+    }
+  }
   // lines 5 and 6 themselves: a button to the mirror word at Stargazer only (from Navigator up their rows carry the buttons)
   for (const a of ["100.5", "100.6"]) {
     const star = M.pointerOf(M.EZEKIEL, a, "stargazer");
@@ -2071,6 +2148,25 @@ test("Stargazer is told what the Navigator level adds, and every thing the line 
   for (const key of ["chain", "overwatch", "witnesses"]) { assert.ok(tabs("navigator").includes(key)); assert.ok(!tabs("stargazer").includes(key)); }
   assert.equal(M.RECEIVERS.length, 4);
   assert.match(M.stationView("place", "navigator").bridge.reading.text, /John 3:16/);
+  // a sky at Stargazer is told the same, in the first sentence alone: a sky has no path to John 3:16 and no fourth square
+  assert.equal(M.MORE_LEVELS.sky, "The Navigator level shows more: the chain, the Overwatch checks and four receivers.");
+  assert.equal(M.MORE_LEVELS.sky, M.sentencesOf(M.MORE_LEVELS.text)[0]);
+  assert.ok(M.MORE_LEVELS.sky.split(/\s+/).length <= 16);
+  assert.deepEqual(M.moreLevelsFor("stargazer", "builtin"), { text: M.MORE_LEVELS.text, label: "Switch to Navigator", lens: "navigator" });
+  assert.deepEqual(M.moreLevelsFor("stargazer"), M.moreLevelsFor("stargazer", "builtin"));
+  assert.deepEqual(M.moreLevelsFor("stargazer", "page"), { text: "The Navigator level shows more: the chain, the Overwatch checks and four receivers.", label: "Switch to Navigator", lens: "navigator" });
+  for (const lens of ["navigator", "holographer"]) for (const origin of ["builtin", "page", "outside"]) assert.equal(M.moreLevelsFor(lens, origin), null);
+  assert.equal(M.moreLevelsFor("stargazer", "outside"), null, "a lexicon from outside has no stations and no level that adds any");
+  // every thing the sky's line names is there for a sky at Navigator and is not there for a sky at Stargazer
+  const skyStations = (lens) => M.visibleStations(lens, "page").map((s) => s.key), skyTabs = (lens) => M.visibleTabs(lens, { origin: "page", sealed: true, sent: true }).map((t) => t.key);
+  assert.ok(skyStations("navigator").includes("send") && !skyStations("stargazer").includes("send"), "four receivers: the Send station");
+  for (const key of ["chain", "overwatch", "witnesses"]) { assert.ok(skyTabs("navigator").includes(key), key); assert.ok(!skyTabs("stargazer").includes(key), key); }
+  assert.match(M.stationView("send", "navigator", SKY.lexicon).say[0].text, /four crossroads receivers/);
+  // and what the second sentence names is not there for a sky at any level
+  assert.ok(!skyStations("navigator").includes("fourth") && !skyStations("holographer").includes("fourth"));
+  assert.equal(SKY.lexicon.byAddress.has(DATA.HANDLES.john316), false);
+  assert.ok(!/John|fourth square/.test(M.MORE_LEVELS.sky));
+  assert.ok(M.stargazerStrings().some((x) => x.text === M.MORE_LEVELS.sky));
 });
 
 test("without a pointer: a point of figure (a) moves by buttons, the flip button reaches all sixteen lights, the list says what its keys do", () => {
@@ -2127,6 +2223,242 @@ test("Stargazer words: the line under the title, a light's name, the wheel's fie
   assert.equal(cells[56].name, "Light 57 of 64, " + (cells[56].on ? "on" : "off"));
   assert.match(named[56].name, /^Light 57 of 64, checksum, (on|off)$/);
   assert.equal(M.lightName(named[0]), M.lightName(named[0], "navigator"));
-  for (const key of ["chooseEntry", "packetEntry", "skipList"]) { assert.ok(!/\bentr(y|ies)\b/.test(M.UI[key].stargazer), key); assert.match(M.UI[key].other, /\bentr(y|ies)\b/); }
+  for (const key of ["chooseEntry", "packetEntry", "skipList", "aboutChosen", "treeLabel"]) { assert.ok(!/\bentr(y|ies)\b/.test(M.UI[key].stargazer), key); assert.match(M.UI[key].other, /\bentr(y|ies)\b/); }
+  // the name of the section that holds the Entry: "entry" is not a Stargazer word there either
+  assert.deepEqual([M.uiLabel("aboutChosen", "stargazer"), M.uiLabel("aboutChosen", "navigator"), M.uiLabel("aboutChosen", "holographer")], ["About the chosen thing", "About the chosen entry", "About the chosen entry"]);
+  // the name of the map: the same sentence at every lens, with "things" for "entries" at Stargazer
+  assert.deepEqual([M.uiLabel("treeLabel", "stargazer"), M.uiLabel("treeLabel", "navigator"), M.uiLabel("treeLabel", "holographer")],
+    ["The things of this lexicon as a tree on a curved map", M.TREE_LABEL, M.TREE_LABEL]);
+  assert.equal(M.TREE_LABEL, "The entries of this lexicon as a tree on a curved map");
   for (const r of M.tamperRows("stargazer")) assert.ok(!/\bentr(y|ies)\b/.test(r.label), r.label);
+});
+
+// ─── long ledgers, names for young readers, the history and the links to the sky page ───────────────────────────
+
+test("a package from outside with a long ledger: the first 200 covered entries are listed and the page says how many are not", async () => {
+  assert.equal(M.LEDGER_ROWS, 200);
+  // a ledger inside the limits of the front door, each entry three unbroken strings of 96 characters: listing all of it stopped the page for seconds
+  const make = async (extra) => {
+    const bundle = await OW.buildLexiconBundle([OW.makeEntry("1", "reading", "note", "A note", "Words.")], { at: AT });
+    for (let i = 0; i < extra; i++) OW.traceAppend(bundle.trace, "W".repeat(96), "M".repeat(96), "d", "W".repeat(96));
+    const { certificate } = await OW.issueCertificate(bundle, await OW.newSessionKeys(), AT);
+    return { bundle, pack: OW.makeHyperpack({ ...bundle, certificate }) };
+  };
+  const base = (await make(0)).bundle.trace.length;
+  assert.ok(base >= 1 && base < 10);
+  for (const [total, line] of [[201, "and 1 more ledger entry, not listed"], [2952, "and 2752 more ledger entries, not listed"]]) {
+    const { bundle, pack } = await make(total - base), out = await M.readOutside(JSON.stringify(pack));
+    assert.equal(bundle.trace.length, total);
+    assert.equal(out.ok, true, `a ledger of ${total} entries passes the front door`);
+    assert.equal(out.covered.ledger.length, 200, `${total}: no more than 200 are listed`);
+    assert.deepEqual(out.covered.ledger.map((e) => [e.n, e.actor, e.event, e.at]), bundle.trace.slice(0, 200).map((e) => [e.n, e.actor, e.event, e.at]), `${total}: the first 200, in the ledger's order, as they are`);
+    assert.deepEqual([out.covered.ledgerTotal, out.covered.ledgerMore, out.covered.ledgerMoreLine], [total, total - 200, line], `${total}: the count of covered entries is exact`);
+    assert.equal(out.covered.ledgerCut, false, "a string of 96 characters is shown whole");
+    assert.ok(!out.notCovered.items.some((i) => i.label.startsWith("ledger entries")), "every entry is under the certified head");
+    assert.ok(JSON.stringify(out.covered.ledger).length < 200 * 460, "what is handed to the page is bounded by the 200 rows");
+    // entries appended after the head are not covered: they are counted apart, as before, and do not move the covered count
+    const later = JSON.parse(JSON.stringify(pack));
+    for (let i = 0; i < 3; i++) OW.traceAppend(later.trace, "someone", "added.later", "after the seal", AT);
+    const late = await M.readOutside(JSON.stringify(later));
+    assert.deepEqual([late.ok, late.covered.ledger.length, late.covered.ledgerTotal, late.covered.ledgerMore, late.covered.ledgerMoreLine], [true, 200, total, total - 200, line]);
+    assert.deepEqual(late.notCovered.items.find((i) => i.label === "ledger entries after the certified head"), { label: "ledger entries after the certified head", value: "3" });
+  }
+  // exactly 200 covered entries, and fewer: all listed, nothing left out, no line
+  const even = await M.readOutside(JSON.stringify((await make(200 - base)).pack));
+  assert.deepEqual([even.covered.ledger.length, even.covered.ledgerTotal, even.covered.ledgerMore, even.covered.ledgerMoreLine], [200, 200, 0, ""]);
+  // a ledger this page writes itself is far below the limit: nothing honest is shortened
+  const own = await M.readOutside(SEAL.wire);
+  assert.ok(SEAL.bundle.trace.length < 100);
+  assert.deepEqual([own.covered.ledger.length, own.covered.ledgerTotal, own.covered.ledgerMore, own.covered.ledgerMoreLine], [SEAL.bundle.trace.length, SEAL.bundle.trace.length, 0, ""]);
+  // a string that is cut in an entry that is not listed does not bring the note about cut strings
+  const hidden = (await make(0)).bundle;
+  for (let i = 0; i < 205; i++) OW.traceAppend(hidden.trace, i === 204 ? "A".repeat(500) : "actor", "note", "d", AT);
+  const cert = (await OW.issueCertificate(hidden, await OW.newSessionKeys(), AT)).certificate;
+  const far = await M.readOutside(JSON.stringify(OW.makeHyperpack({ ...hidden, certificate: cert })));
+  assert.deepEqual([far.ok, far.covered.ledger.length, far.covered.ledgerCut, far.covered.ledgerMore], [true, 200, false, base + 5]);
+});
+
+test("Stargazer names: five entries are shown under a name a young reader can read, in every view the model builds, and nothing sealed changes", () => {
+  const NEAR = ["26.1.10", "26.1.12", "26.1.16", "26.1.17"];
+  const shownAs = new Map(DATA.ROWS.map((r) => [r[0], M.displayName(M.EZEKIEL, r[0], "stargazer")]));
+  assert.deepEqual(DATA.ROWS.filter((r) => shownAs.get(r[0]) !== r[3]).map((r) => [r[0], r[3], shownAs.get(r[0])]), [
+    ["0.1", "Layers and addresses", "How this lexicon is sorted"],
+    ["26.1.10", "Ezekiel 1:10 (context)", "Ezekiel 1:10 (a verse nearby)"],
+    ["26.1.12", "Ezekiel 1:12 (context)", "Ezekiel 1:12 (a verse nearby)"],
+    ["26.1.16", "Ezekiel 1:16 (context)", "Ezekiel 1:16 (a verse nearby)"],
+    ["26.1.17", "Ezekiel 1:17 (context)", "Ezekiel 1:17 (a verse nearby)"],
+  ]);
+  // each name is true of its entry: the four are verses of the same chapter just after the nine of the reader; 0.1 says how the rows are sorted and filed
+  for (const a of NEAR) assert.ok(ROW.get(a).kind === "verse" && OW.parentOf(a) === "26.1" && !VERSES9.includes(a) && Number(a.split(".")[2]) <= 9 + 8, a);
+  assert.deepEqual(DATA.ROWS.filter((r) => / \(context\)$/.test(r[3])).map((r) => r[0]), NEAR, "no other row is named (context)");
+  assert.ok(/TEXT rows .* SAID rows .* CHECKED rows .* READING rows /.test(ROW.get("0.1").text) && /address/.test(ROW.get("0.1").text));
+  // the other lenses, a call without a lens, the root and an unknown address: the entry's own name
+  for (const r of DATA.ROWS) for (const lens of ["navigator", "holographer", undefined]) assert.equal(M.displayName(M.EZEKIEL, r[0], lens), r[3]);
+  assert.deepEqual([M.displayName(M.EZEKIEL, "", "stargazer"), M.displayName(M.EZEKIEL, "7.7.7", "stargazer")], [M.ROOT_NAME, ""]);
+  // nothing sealed changes: the rows, the lines and the text that is sealed carry the names as written
+  for (const a of ["0.1", ...NEAR]) { assert.equal(M.nameOf(M.EZEKIEL, a), ROW.get(a).name); assert.equal(M.entryOf(M.EZEKIEL, a).name, ROW.get(a).name); assert.ok(M.entryOf(M.EZEKIEL, a).line.includes("|" + ROW.get(a).name + "|")); }
+  assert.ok(M.lexiconTextOf(M.EZEKIEL).includes("Ezekiel 1:10 (context)") && M.lexiconTextOf(M.EZEKIEL).includes("Layers and addresses"));
+  assert.ok(!/a verse nearby|How this lexicon is sorted/.test(M.lexiconTextOf(M.EZEKIEL)) && !/a verse nearby|How this lexicon is sorted/.test(SEAL.wire));
+  // a sky and a lexicon from outside keep every name at every lens (a sender's "(context)" is the sender's)
+  const theirs = M.makeLexicon([OW.makeEntry("0", "reading", "about", "About", ""), OW.makeEntry("0.1", "text", "verse", "A verse (context)", "Words.")], "outside", "t", "");
+  assert.equal(M.displayName(theirs, "0.1", "stargazer"), "A verse (context)");
+  assert.equal(M.entryView(theirs, "0.1", "stargazer").name, "A verse (context)");
+  for (const e of SKY.lexicon.entries) assert.equal(M.displayName(SKY.lexicon, e.address, "stargazer"), e.name);
+
+  // the places a name is shown at Stargazer, one by one
+  const old = /\(context\)|Layers and addres/;
+  assert.equal(M.entryView(M.EZEKIEL, "0.1", "stargazer").name, "How this lexicon is sorted");                                       // the card's title
+  assert.equal(M.entryView(M.EZEKIEL, "0.1", "navigator").name, "Layers and addresses");
+  assert.equal(M.entryView(M.EZEKIEL, "0", "stargazer").rows.find((r) => r.address === "0.1").name, "How this lexicon is sorted");   // a row of a card
+  assert.equal(M.rowView(M.EZEKIEL, "26.1.16", "stargazer").name, "Ezekiel 1:16 (a verse nearby)");
+  assert.equal(M.rowView(M.EZEKIEL, "26.1.16", "holographer").name, "Ezekiel 1:16 (context)");
+  assert.deepEqual(M.neighbourhood(M.EZEKIEL, "0", "stargazer").map((i) => i.name),                                                 // the list
+    ["The whole lexicon", "About this lexicon", "How this lexicon is sorted", "King James Version", "Ezekiel 1 in Jewish tradition", "Why Jesus Died (1949)", "The bridge"]);
+  assert.deepEqual(M.neighbourhood(M.EZEKIEL, "26.1", "stargazer").filter((i) => NEAR.includes(i.address)).map((i) => i.name), NEAR.map((a) => shownAs.get(a)));
+  assert.deepEqual(M.neighbourhood(M.EZEKIEL, "26.1", "navigator").filter((i) => NEAR.includes(i.address)).map((i) => i.name), NEAR.map((a) => ROW.get(a).name));
+  assert.equal(M.statusFor(M.EZEKIEL, "26.1.12", "stargazer"), "Ezekiel 1:12 (a verse nearby). Nothing more under it.");               // the status line
+  assert.equal(M.statusFor(M.EZEKIEL, "26.1.12", "navigator"), "26.1.12, Ezekiel 1:12 (context): 0 entries under it.");
+  const link = M.entryView(M.EZEKIEL, "100.2.4", "stargazer").link;                                                                  // a verse set beside an entry by a link
+  assert.deepEqual([link.target, link.name, link.translation], ["26.1.16", "Ezekiel 1:16 (a verse nearby)", "King James Version"]);
+  assert.equal(M.entryView(M.EZEKIEL, "100.2.4", "navigator").link.name, "Ezekiel 1:16 (context)");
+  assert.deepEqual(M.pointerOf(M.EZEKIEL, "100.9.4", "stargazer").entries.map((x) => x.label),                                       // Go-to buttons
+    ["Go to Ezekiel 1:9", "Go to Ezekiel 1:12 (a verse nearby)", "Go to Ezekiel 1:17 (a verse nearby)"]);
+  assert.deepEqual(M.pointerOf(M.EZEKIEL, "100.9.4", "navigator").entries.map((x) => x.label), ["Go to Ezekiel 1:9", "Go to Ezekiel 1:12 (context)", "Go to Ezekiel 1:17 (context)"]);
+  const at01 = M.treeScene(M.EZEKIEL, M.viewAt(M.EZEKIEL, "0.1"), "2D");                                                             // the caption of the map
+  assert.ok(M.treeCaption(M.EZEKIEL, at01, "stargazer").startsWith("About this lexicon > How this lexicon is sorted. Nothing under it."));
+  assert.ok(M.treeCaption(M.EZEKIEL, at01, "navigator").startsWith("0.1 · About this lexicon > Layers and addresses. 0 entries under it."));
+  assert.equal(M.pathCaption(M.EZEKIEL, "0.1"), "About this lexicon > Layers and addresses");
+  assert.equal(M.pathCaption(M.EZEKIEL, "0.1", "stargazer"), "About this lexicon > How this lexicon is sorted");
+  assert.deepEqual(M.pathOf(M.EZEKIEL, "0.1", "stargazer").map((x) => [x.name, x.crumb]), [["About this lexicon", "About this lexicon"], ["How this lexicon is sorted", "How this lexicon is sorted"]]);
+  // the canvas: treeScene takes the lens among its options; the label is the name cut to 18 code points, as every long name is
+  const node = (lens) => M.treeScene(M.EZEKIEL, M.viewAt(M.EZEKIEL, "0"), "2D", lens ? { lens } : {}).nodes.find((x) => x.address === "0.1");
+  assert.deepEqual([node("stargazer").label, node("stargazer").name], ["How this lexicon …", "How this lexicon is sorted"]);
+  assert.deepEqual([node("navigator").label, node("navigator").name], ["Layers and addres…", "Layers and addresses"]);
+  assert.deepEqual([node().label, node().name], ["Layers and addres…", "Layers and addresses"], "without a lens the scene is as it was");
+  assert.equal(M.shortLabel(M.EZEKIEL, "26.1.10", "stargazer"), "1:10", "a verse is labelled by chapter and verse at every lens");
+
+  // a sweep over the whole lexicon at Stargazer: no view of any entry carries one of the five names as written
+  const namesOf = (v) => [v.name, v.caption, ...v.path.flatMap((x) => [x.name, x.crumb]), ...v.rows.flatMap((r) => [r.name, r.link ? r.link.name : "", ...(r.pointer ? r.pointer.entries.flatMap((x) => [x.name, x.label]) : [])]),
+    v.link ? v.link.name : "", ...v.from.flatMap((x) => [x.name, x.label]), ...v.actions.map((x) => x.label), ...(v.author ? [...v.author.before, v.author.facet].filter(Boolean).map((r) => r.name) : [])];
+  let seenNew = 0;
+  for (const r of DATA.ROWS) {
+    const a = r[0], card = namesOf(M.entryView(M.EZEKIEL, a, "stargazer")), list = M.neighbourhood(M.EZEKIEL, a, "stargazer").flatMap((i) => [i.name, i.label]);
+    const scene = M.treeScene(M.EZEKIEL, M.viewAt(M.EZEKIEL, a), "2D", { lens: "stargazer" }), drawn = scene.nodes.flatMap((x) => [x.name, x.label || ""]);
+    for (const t of [...card, ...list, ...drawn, M.statusFor(M.EZEKIEL, a, "stargazer"), M.treeCaption(M.EZEKIEL, scene, "stargazer")]) {
+      assert.ok(!old.test(t), `${a} at Stargazer: "${t}"`);
+      if (/a verse nearby|How this lexicon/.test(t)) seenNew += 1;
+    }
+  }
+  assert.ok(seenNew > 30, String(seenNew));
+  // and the same sweep from Navigator up finds only the names as written
+  for (const a of ["0", "0.1", "26.1", "26.1.16", "100.2", "100.9.4"]) for (const lens of ["navigator", "holographer"]) {
+    for (const t of [...namesOf(M.entryView(M.EZEKIEL, a, lens)), ...M.neighbourhood(M.EZEKIEL, a, lens).map((i) => i.name)]) assert.ok(!/a verse nearby|How this lexicon is sorted/.test(t), `${a} at ${lens}: "${t}"`);
+  }
+  // the new names are among the strings the all-ages test reads
+  const strings = new Set(M.stargazerStrings().map((x) => x.text));
+  for (const a of ["0.1", ...NEAR]) assert.ok(strings.has(shownAs.get(a)), a);
+});
+
+test("Back and Forward through entries this page wrote keep the reading level on show; a typed or pasted link sets the level it names", () => {
+  // the visitor reads at Holographer, at the Place station with the Wheel tab open; the history holds entries written at Navigator
+  const reading = { ...M.setLens(M.initialState("#entry=26.1.1.4&lens=navigator"), "holographer"), station: "place", tab: "wheel" };
+  assert.deepEqual([reading.lens, M.stationFor(reading), M.tabFor(reading)], ["holographer", "place", "wheel"]);
+  // Back to an entry this page wrote (own): its entry comes back; the level, the station and the tab stay
+  const back = M.applyHash(reading, "#entry=26.1.5&lens=navigator", { own: true });
+  assert.deepEqual([back.lens, back.selected, back.view.focus, back.verse, back.station, back.tab, back.notes], ["holographer", "26.1.5", "26.1.5", "26.1.5", "place", "wheel", []]);
+  // the same fragment typed or pasted: the level it names is set
+  const typed = M.applyHash(reading, "#entry=26.1.5&lens=navigator");
+  assert.deepEqual([typed.lens, typed.selected, typed.station, typed.tab], ["navigator", "26.1.5", "place", "wheel"]);
+  assert.deepEqual(M.applyHash(reading, "#entry=26.1.5&lens=navigator", { own: false }), typed);
+  assert.deepEqual(M.applyHash(reading, "#entry=26.1.5&lens=navigator", {}), typed);
+  assert.deepEqual(M.applyHash(reading, "#entry=26.1.5&lens=navigator", null), typed);
+  // only own: true keeps the level (a value that is merely truthy is not the mark of an own entry)
+  assert.equal(M.applyHash(reading, "#entry=26.1.5&lens=navigator", { own: 1 }).lens, "navigator");
+  // a level a lens hides: Back from Stargazer over an entry written at Navigator stays at Stargazer, with the wording a Stargazer reads
+  const star = M.initialState("#entry=26.1.9");
+  const starBack = M.applyHash(star, "#entry=26.1.4.2&lens=holographer", { own: true });
+  assert.deepEqual([starBack.lens, starBack.selected, starBack.wording, starBack.tab], ["stargazer", "26.1.4.2", star.wording, "entry"]);
+  assert.equal(M.applyHash(star, "#entry=26.1.4.2&lens=holographer").lens, "holographer");
+  // what parseHash gave is taken as well as the fragment, and the result is the same
+  assert.deepEqual(M.applyHash(reading, M.parseHash("#entry=26.1.5&lens=navigator"), { own: true }), back);
+  // a sky: Back over own entries brings the sky and its entry back and keeps the level; leaving the sky keeps it too
+  const sky = M.applyHash(reading, "#sky=1505042.16624,32.13,45.23&entry=2.2&lens=navigator", { own: true });
+  assert.deepEqual([sky.lens, sky.lexicon.origin, sky.selected, sky.station], ["holographer", "page", "2.2", "place"]);
+  const home = M.applyHash(sky, "#entry=26.1.5&lens=stargazer", { own: true });
+  assert.deepEqual([home.lens, home.lexicon, home.selected], ["holographer", M.EZEKIEL, "26.1.5"]);
+  // an own entry still reports what its fragment has that the page cannot use
+  assert.deepEqual(M.applyHash(reading, "#entry=7.7.7&lens=navigator&junk=1", { own: true }).notes, ["a link value was ignored", M.UNKNOWN_ENTRY_NOTE]);
+  // the first state is a link that was typed, pasted or followed: it sets the level; the supplied passage is still handed through
+  assert.equal(M.initialState("#lens=navigator").lens, "navigator");
+  assert.equal(M.initialState("", EMPTY).wording, "kjv");
+  assert.equal(M.initialState("#lens=stargazer", EMPTY).wording, "kjv", "the link of the first state is applied with the same supplied passage");
+  assert.equal(M.initialState("#lens=stargazer").wording, "supplied");
+  assert.equal(M.applyHash(M.initialState(""), "#lens=stargazer", { supplied: EMPTY }).wording, "kjv");
+  assert.equal(M.applyHash(M.initialState(""), "#lens=stargazer").wording, "supplied");
+  // the state handed in is not changed
+  assert.deepEqual([reading.lens, reading.selected], ["holographer", "26.1.1.4"]);
+});
+
+test("a link to the sky page carries a Julian Day only when that page reads it: the core accepts it at some longitude", () => {
+  const [LO, HI] = CC.RANGES.localJd, jdRule = M.SKY_PAGE_GRAMMAR.find((r) => r[0] === "jd")[1];
+  const atSomeLongitude = (n) => CC.skyInputsValid(n, 0, -180) || CC.skyInputsValid(n, 0, 180);
+  const accepts = (text) => jdRule(text) !== undefined;
+  // the rule, value by value: the pattern, 0 to 9999999, and the core at the far east or the far west
+  for (const text of ["1505042.16624", "2461359.39603", "2451545", "2451545.123456", String(LO), String(HI - 0.1), String(LO - 0.4), String(HI + 0.4), String(LO - 0.5), String(HI + 0.49)]) {
+    assert.equal(accepts(text), true, text);
+    assert.equal(jdRule(text), Number(text));
+    assert.equal(atSomeLongitude(Number(text)), true, text);
+  }
+  for (const text of [String(LO - 0.6), String(HI + 0.6), String(HI + 0.5), "1", "0", "9999999", "990000", "2900000"]) {
+    assert.equal(accepts(text), false, text);
+    assert.equal(atSomeLongitude(Number(text)), false, text);
+    assert.match(text, KIT.HASH_PATTERNS.jd, "refused by its range, not by its form");
+  }
+  for (const text of ["", "abc", "-1", "1e6", "2451545.1234567", "12345678", " 2451545", "2451545,0", "NaN"]) assert.equal(accepts(text), false, JSON.stringify(text));
+  const rnd = seeded(11);
+  for (let i = 0; i < 400; i++) {
+    const n = Number((i % 2 ? LO - 2 + 4 * rnd() : HI - 2 + 4 * rnd()).toFixed(5));
+    assert.equal(accepts(String(n)), atSomeLongitude(n), String(n));
+  }
+  // the four skies at the very ends of the year range: far east at the start, far west at the end. Each is a sky for the core and for this page,
+  // and the link back to the sky page carries its jd, its place and the lens
+  const sky = "../Celestial_Control_Panel/index.html";
+  for (const [jd, lat, lon] of [[LO - 0.4, 0, 180], [HI + 0.4, 0, -180], [LO - 0.2, 32.13, 135.76], [HI + 0.2, -33.87, -120]]) {
+    const what = `the sky of JD ${jd}, ${lat}, ${lon}`;
+    assert.ok(CC.skyInputsValid(jd, lat, lon), `${what}: is a sky for the core`);
+    assert.equal(CC.skyInputsValid(jd, 0, 0), false, `${what}: is outside the range as Greenwich counts it`);
+    const there = M.initialState("#sky=" + jd + "," + lat + "," + lon + "&lens=navigator");
+    assert.ok(there.sky && there.notes.length === 0 && there.lexicon.origin === "page", `${what}: is a sky for this page`);
+    const s = CC.formatSkyInputs(jd, lat, lon);
+    assert.deepEqual({ ...there.sky }, s);
+    assert.equal(M.skyPageHref("sky", "navigator", there.sky), `${sky}#jd=${s.jd}&lat=${s.lat}&lon=${s.lon}&lens=navigator`, what);
+    assert.ok(KIT.isAllowedUrl(M.skyPageHref("sky", "navigator", there.sky)));
+  }
+  // every sky this page can show has a jd the rule reads: random skies at all longitudes, a third of them within a few hours of the start of
+  // the range, a third within a few hours of its end (local time), a third anywhere
+  let shown = 0, beyondGreenwich = 0;
+  for (let i = 0; i < 300; i++) {
+    const lon = Number((-180 + 360 * rnd()).toFixed(2)), lat = Number((-90 + 180 * rnd()).toFixed(2));
+    const local = i < 100 ? LO + 0.2 * rnd() : i < 200 ? HI - 0.001 - 0.2 * rnd() : LO + (HI - LO - 0.001) * rnd(), jd = Number((local - lon / 360).toFixed(5));
+    const made = M.skyLexicon([jd, lat, lon]);
+    if (!made.ok) continue;
+    shown += 1;
+    if (!CC.skyInputsValid(jd, 0, 0)) beyondGreenwich += 1;
+    assert.equal(M.skyPageHref("sky", "holographer", made.sky), `${sky}#jd=${made.sky.jd}&lat=${made.sky.lat}&lon=${made.sky.lon}&lens=holographer`, `JD ${jd}, ${lat}, ${lon}`);
+  }
+  assert.ok(shown > 280 && beyondGreenwich > 60, `${shown} skies, ${beyondGreenwich} of them outside the range as Greenwich counts it`);
+  // a Julian Day more than half a day outside the range is no time for the sky page at any place: the link carries the lens alone, and nothing throws
+  for (const jd of [LO - 0.6, HI + 0.6, LO - 30, HI + 30, 1, 9999999]) {
+    for (const lon of ["180.00", "-180.00", "0.00"]) {
+      let href;
+      assert.doesNotThrow(() => { href = M.skyPageHref("sky", "navigator", { jd: String(jd), lat: "0.00", lon }); });
+      assert.equal(href, sky + "#lens=navigator", `JD ${jd} at longitude ${lon}`);
+    }
+  }
+  for (const odd of [{ jd: "x", lat: "0", lon: "0" }, { jd: 2451545, lat: 95, lon: 0 }, { jd: NaN, lat: 0, lon: 0 }, { jd: "2451545", lat: "0" }, {}, [], "sky", 7, null, undefined]) {
+    for (const lens of ["navigator", "weird", undefined]) assert.doesNotThrow(() => M.skyPageHref("sky", lens, odd));
+    assert.equal(M.skyPageHref("sky", "stargazer", odd), sky + "#lens=stargazer");
+  }
+  // the other rules of the grammar are as they were
+  assert.deepEqual(M.SKY_PAGE_GRAMMAR.map((r) => r[0]), ["preset", "jd", "lat", "lon", "lab", "lens"]);
 });

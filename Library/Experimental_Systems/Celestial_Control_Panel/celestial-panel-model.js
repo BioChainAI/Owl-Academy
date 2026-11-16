@@ -13,8 +13,9 @@
 //                   DAY_BUTTONS, CONTROLS, MOON_NAMES, moonWords, siteOf, siteChoices
 //   3  links        HASH_GRAMMAR, LEXICON_PAGE_GRAMMAR, IGNORED_NOTE, parseHash, formatHash, skyLinkHref,
 //                   lexiconSkyHref, entryHref, firstExplorersHref
-//   4  state        DEFAULT_ORBIT, EZEKIEL_PRESET, initialState, applyHash, skyOf, chooseSite, typePlace,
-//                   confirmDay, setJd, stepDay, pickDate, pickEraDate, timeButton, setDayOfYear, setClock, findMoon,
+//   4  state        DEFAULT_ORBIT, EZEKIEL_PRESET, initialState, applyHash, skyOf, chooseSite, typePlace, readClock,
+//                   confirmDay, askDayAgain, answerDay, setJd, stepDay, pickDate, pickEraDate, timeButton, setDayOfYear, setClock,
+//                   findMoon,
 //                   ezekielChoices, ezekielSky, setLens, setDims, setFrame, setStep, toggleOverlay, select,
 //                   dateView, dayQuestion, seasonLine, statusSentence, nextStep
 //   5  objects      OBJECTS, objectOf, objectVisible, objectDirection, objectRho, objectPoint, objectList,
@@ -24,7 +25,7 @@
 //   7  scene        LABEL, placeLabels, sceneCaption, centreWords, chartCaption, scene, sceneHit, tapView
 //   8  Moon         MOON_COPY, moonFigure, moonButtons
 //   9  lab          LAB, LAB_COPY, labStart, openLab, closeLab, labSlide, labNext, labFour, labTile, labFrames, labHome,
-//                   labSetA, labReset, labToggleTiling, labArea, labReadout, fiveSlides, labPose, labScene
+//                   labSetA, labReset, labToggleTiling, labArea, labNoArea, labReadout, fiveSlides, labPose, labScene
 //   10 seal         packageFileName, sealSky, CERTIFIED, CERTIFIED_STARGAZER, SEAL_COPY, epochLine, sealView
 //   11 copy         COPY_FACTS, verseSlice, BRIDGE_TITLE, BRIDGE_PARTS, BRIDGE_OPENING, FIRST_RUN, STEPS, stepView,
 //                   visibleSteps, EZEKIEL_COPY, MESSAGES
@@ -231,9 +232,13 @@ export const siteChoices = () => SITES.filter((s) => s.key !== "kebar");
 // ─── 3. links: the one grammar (#key=value&key=value) ────────────────────────
 // This page reads preset, site, jd, lat, lon, focus, lab and lens. It writes links to itself ("Copy a link to this
 // sky": jd, lat, lon, lens) and to the Lexicon Explorer (sky=JD,LAT,LON or entry=ADDRESS, always with the lens).
+// The year range is a range of local dates, so the Julian Day that is still inside it depends on the longitude: by
+// half a day either way. The rule for the key jd therefore lets through every Julian Day that is a sky at some
+// longitude (it is one at the far west or the far east when it is one anywhere), and applyHash() judges it at the
+// place the link names, or at Greenwich when it names none.
 
 const OBJECT_KEYS = [];                          // filled in section 5; the focus rule reads it when a link is parsed
-const jdRule = (text) => { const n = hashNumber(HASH_PATTERNS.jd, 0, 9999999)(text); return n !== undefined && skyInputsValid(n, 0, 0) ? n : undefined; };
+const jdRule = (text) => { const n = hashNumber(HASH_PATTERNS.jd, 0, 9999999)(text); return n !== undefined && (skyInputsValid(n, 0, -180) || skyInputsValid(n, 0, 180)) ? n : undefined; };
 /** HASH_GRAMMAR: the keys this page reads, in the order it writes them. */
 export const HASH_GRAMMAR = freeze([
   freeze(["preset", freeze(["ezekiel"])]),
@@ -268,15 +273,29 @@ export function formatHash(obj) {
   if (isNum(o.lon)) o.lon = fixed(o.lon, 2);
   return formatHashWith(HASH_GRAMMAR, o);
 }
-/** skyLinkHref(state) -> this page's own URL with the place, the time and the lens ("Copy a link to this sky"); "" before a place is chosen. */
-export function skyLinkHref(state) {
-  if (!state.site) return "";
-  return LINKS.celestialControlPanel + formatHash({ jd: state.jdUt, lat: state.site.lat, lon: state.site.lonEast, lens: lensOf(state.lens) });
+// The three numbers a link carries for the state's sky, rounded as a sealed sky is (jd to 5 decimals, latitude and longitude to 2),
+// or null when the state has no sky. Within a second or two of either end of the year range the rounding can carry a sky across
+// the end; a link then carries the nearest instant of 5 decimals that is still a sky at the rounded place.
+function linkNumbers(state) {
+  if (!state || !state.site || !isNum(state.jdUt) || !skyInputsValid(state.jdUt, state.site.lat, state.site.lonEast)) return null;
+  const q = roundSkyInputs(state.jdUt, state.site.lat, state.site.lonEast);
+  if (skyInputsValid(q.jdUt, q.lat, q.lonEast)) return q;
+  for (let k = 1; k <= 4; k++) for (const way of [-1, 1]) {
+    const jdUt = Number((q.jdUt + way * k * 1e-5).toFixed(5));
+    if (skyInputsValid(jdUt, q.lat, q.lonEast)) return { ...q, jdUt };
+  }
+  return null;
 }
-/** lexiconSkyHref(state) -> the Lexicon Explorer's URL with sky=JD,LAT,LON (three rounded numbers) and the lens; "" before a place is chosen. */
+/** skyLinkHref(state) -> this page's own URL with the place, the time and the lens ("Copy a link to this sky"); "" before a place is chosen and for a state that has no sky. It never throws: at the very ends of the year range, where the rounded instant would fall outside it, the link carries the nearest instant of 5 decimals inside it. */
+export function skyLinkHref(state) {
+  const q = linkNumbers(state);
+  return q ? LINKS.celestialControlPanel + formatHash({ jd: q.jdUt, lat: q.lat, lon: q.lonEast, lens: lensOf(state.lens) }) : "";
+}
+/** lexiconSkyHref(state) -> the Lexicon Explorer's URL with sky=JD,LAT,LON (the same three rounded numbers as skyLinkHref) and the lens; "" before a place is chosen and for a state that has no sky. It never throws. */
 export function lexiconSkyHref(state) {
-  if (!state.site) return "";
-  const s = formatSkyInputs(state.jdUt, state.site.lat, state.site.lonEast);
+  const q = linkNumbers(state);
+  if (!q) return "";
+  const s = formatSkyInputs(q.jdUt, q.lat, q.lonEast);
   return LINKS.lexiconExplorer + formatHashWith(LEXICON_PAGE_GRAMMAR, { sky: [s.jd, s.lat, s.lon], lens: lensOf(state.lens) });
 }
 /** entryHref(address, lens) -> the Lexicon Explorer's URL for one entry (every TEXT sentence links to its row). */
@@ -326,7 +345,7 @@ const withNotes = (state, notes) => ({ ...state, notes: { ...state.notes, ...not
 const withTime = (state, jdUt) => retarget({ ...state, jdUt, lit: { ...state.lit, day: true }, notes: { ...state.notes, date: "", time: "", moon: "" } });
 const jdValidFor = (state, jdUt) => isNum(jdUt) && (state.site ? skyInputsValid(jdUt, state.site.lat, state.site.lonEast) : skyInputsValid(jdUt, 0, 0));
 
-/** applyHash(state, hash) -> the state with a link applied: preset first (it opens step 2, with the day already answered, so that the date and the Moon are on show), then site, lat and lon (both or neither), jd, focus (selected and brought to the centre; it needs a place), lab, lens; notes.link says when a value was ignored. Runs at load and on hashchange. */
+/** applyHash(state, hash) -> the state with a link applied: preset first (it opens step 2, with the day already answered, so that the date and the Moon are on show), then site, lat and lon (both or neither), jd (judged at the place the link names or the page has, at Greenwich without one; a jd that is no sky there is an ignored value), focus (selected and brought to the centre; it needs a place), lab (it opens step 4 as setStep does, so the sky is lit when the lab is left), lens; notes.link says when a value was ignored. Runs at load and on hashchange. */
 export function applyHash(state, hash) {
   const { values, ignored } = parseHash(hash);
   let s = state, dropped = ignored;
@@ -345,7 +364,7 @@ export function applyHash(state, hash) {
     if (objectVisible(shown, values.focus)) s = retarget({ ...select(shown, values.focus), centred: objectOf(values.focus).kind === "ring" ? null : { key: values.focus, half: false } });
     else dropped += 1;
   } else if (values.focus !== undefined) dropped += 1;
-  if (values.lab === "square") s = openLab({ ...s, step: 4 });
+  if (values.lab === "square") s = openLab(setStep(s, 4));
   return withNotes(s, { link: dropped > 0 ? IGNORED_NOTE : "" });
 }
 
@@ -372,8 +391,43 @@ export function typePlace(state, lat, lonEast) {
   if (!isNum(lonEast) || lonEast < -180 || lonEast > 180) return { state: withNotes(state, { place: MESSAGES.badLongitude }), message: MESSAGES.badLongitude };
   return { state: placed(state, siteForCoordinates(lat, lonEast)), message: "" };
 }
+/**
+ * readClock(state, nowMs) -> the state with its instant taken from the device clock again (nowMs: the clock's milliseconds), while the
+ * day is not yet answered (lit.day is false): the same state otherwise, and for a clock outside the year range. The shell calls it when a
+ * place is chosen, at every change of step, when a link changes, before one of the day's further controls under "More at this step" at
+ * step 2 acts (the times of day, the slider through the year, the typed time, the Moon shapes), and, through askDayAgain, at "Yes", at
+ * "Change the day" and when the page comes into view again, so that the day question names the day the device shows then, not the day
+ * the page was opened, and a step that lights the sky lights the sky of that moment.
+ * A time set by a link, a preset or the visitor is never changed by it: each of those answers the day.
+ */
+export function readClock(state, nowMs) {
+  if (state.lit.day || !isNum(nowMs)) return state;
+  const jdUt = jdFromUnixMs(nowMs);
+  return jdUt === state.jdUt || !jdValidFor(state, jdUt) ? state : retarget({ ...state, jdUt });
+}
 /** confirmDay(state) -> the state after "Yes" to the day question: the Sun and the Moon light up. */
 export const confirmDay = (state) => ({ ...state, lit: { ...state.lit, day: true } });
+/**
+ * askDayAgain(state, nowMs, deviceOf) -> { state, changed }: the device clock read again (readClock, so only while the day is not
+ * answered), and whether the day question now reads otherwise than it did. deviceOf(state) gives the calendar date the device shows for
+ * a state's instant, as dayQuestion() takes it. A question can stand on the screen for hours; changed is true when its day, the place's
+ * or the device's, is no longer the day it named.
+ */
+export function askDayAgain(state, nowMs, deviceOf) {
+  const device = (s) => (typeof deviceOf === "function" ? deviceOf(s) : undefined);
+  const now = readClock(state, nowMs);
+  return { state: now, changed: now !== state && dayQuestion(now, device(now)).text !== dayQuestion(state, device(state)).text };
+}
+/**
+ * answerDay(state, nowMs, deviceOf) -> { state, taken, message }: a press on "Yes" under the day question, with the clock read again
+ * first (askDayAgain). If the question is no longer the one that was asked (the day changed while it stood there), the answer is not
+ * taken: the state has the new instant, the day is still to be answered, and message is MESSAGES.dayChanged. Otherwise the day is
+ * answered at the instant just read, and message is "".
+ */
+export function answerDay(state, nowMs, deviceOf) {
+  const again = askDayAgain(state, nowMs, deviceOf);
+  return again.changed ? { state: again.state, taken: false, message: MESSAGES.dayChanged } : { state: confirmDay(again.state), taken: true, message: "" };
+}
 /** setJd(state, jdUt) -> the state at another instant (unchanged when the instant is outside the year range). */
 export const setJd = (state, jdUt) => (jdValidFor(state, jdUt) ? withTime(state, jdUt) : state);
 /** stepDay(state, n) -> { state, message }: n days later (or earlier), same clock time. */
@@ -1166,14 +1220,32 @@ export function sceneCaption(state) {
     : "the same chart as a ball seen from outside: each great circle is drawn on it, and straight up is a line; the rim is the sphere of directions";
   return stargazer ? frame.stargazer : frame.caption + "; the rim is " + frame.own;
 }
-/** centreWords(state) -> one sentence about the middle of the map once the view has left home, "" at home: "Andromeda galaxy is in the middle of the map." (a thing with a depth, brought to the centre), "Half way to the Moon is in the middle of the map." (the first press), "The map has slid towards North." (a direction or a point of the rim, which never reaches the middle), "The map has slid: home is no longer in the middle." (a nudge, a drag or a tap on an empty point). */
+// How each object is named inside a sentence: [at the Stargazer lens, from Navigator up]. The list names have no article ("Moon",
+// "North point"); a sentence needs one where English does ("the Moon", "the north point"), and a small first letter for a common name.
+const SPOKEN = freeze({
+  moon: list("the Moon", "the Moon"), sun: list("the Sun", "the Sun"), pleiades: list("the Pleiades", "the Pleiades"), polaris: list("Polaris", "Polaris"),
+  vela_pulsar: list("the Vela pulsar", "the Vela pulsar"), cyg_x1: list("Cygnus X-1", "Cygnus X-1"), sgr_a_star: list("the middle of our galaxy", "Sagittarius A*"),
+  m31: list("the Andromeda galaxy", "the Andromeda galaxy"),
+  zenith: list("the point straight up", "the zenith"), north: list("the north", "the north point"), east: list("the east", "the east point"),
+  south: list("the south", "the south point"), west: list("the west", "the west point"),
+  galactic_centre: list("the galaxy's middle", "the galactic centre (longitude 0°)"), ngp: list("the north galactic pole", "the north galactic pole"),
+  celestial_sphere: list("the sky of directions", "the celestial sphere"), antipode: list("the opposite point", "the opposite point"),
+  holography: list("a bold idea about the edge", "celestial holography"), shadow: list("the shadow transform", "the shadow transform"),
+  memory: list("a ripple that stays", "gravitational-wave memory"), cmb: list("the oldest light", "the cosmic microwave background"),
+});
+const SPOKEN_PLURAL = freeze(["pleiades"]);                               // "The Pleiades are …"
+const spoken = (o, lens) => {
+  const forms = SPOKEN[o.key], stargazer = lensOf(lens) === "stargazer";
+  return forms ? forms[stargazer ? 0 : 1] : (stargazer ? o.stargazer : o.label).replace(/^(The|A) /, (m) => m.toLowerCase());
+};
+/** centreWords(state) -> one sentence about the middle of the map once the view has left home, "" at home: "The Andromeda galaxy is in the middle of the map." (a thing with a depth, brought to the centre), "Half way to the Moon is in the middle of the map." (the first press), "The map has slid towards the north." (a direction or a point of the rim, which never reaches the middle), "The map has slid: home is no longer in the middle." (a nudge, a drag or a tap on an empty point). Each object is named as a sentence names it: with its article where English needs one. */
 export function centreWords(state) {
   if (!state.site || state.lab.open || viewDistance(state) < 1e-9) return "";
   const o = state.centred ? objectOf(state.centred.key) : null;
   if (!o) return "The map has slid: home is no longer in the middle.";
-  const name = (lensOf(state.lens) === "stargazer" ? o.stargazer : o.label).replace(/^(The|A) /, (m) => m.toLowerCase());
+  const name = spoken(o, state.lens);
   if (o.kind !== "body" && o.key !== "cmb") return "The map has slid towards " + name + ".";
-  return state.centred.half ? "Half way to " + name + " is in the middle of the map." : capital(name) + " is in the middle of the map.";
+  return state.centred.half ? "Half way to " + name + " is in the middle of the map." : capital(name) + (SPOKEN_PLURAL.includes(o.key) ? " are" : " is") + " in the middle of the map.";
 }
 /**
  * chartCaption(state, said) -> the whole caption under the chart, which is also the canvas's description: sceneCaption(state), then what
@@ -1409,7 +1481,7 @@ export const LAB = freeze({
   caption: "This is the curved map by itself. It is not the sky.",
 });
 const LAB_VERSE = freeze({ layer: "text", text: verseSliceOf("26.1.9", "they turned", "went"), source: "26.1.9", name: "Ezekiel 1:9, King James Version" });
-/** LAB_COPY: the words of the lab: title (TEXT: the lab is named with words of Ezekiel 1:9), open, close, slide (the four buttons), four, fourAtOnce (said in the status line where motion is reduced: one press draws all four), play, pause, next, home, again, step, tiling, tile, tileNote, challenge, flat. */
+/** LAB_COPY: the words of the lab: title (TEXT: the lab is named with words of Ezekiel 1:9), open, close, slide (the four buttons), four, fourAtOnce (said in the status line where motion is reduced: one press draws all four), play, pause, next, home, again, step, tiling, tile, tileNote, challenge, flat, crosses (said in place of the area, after "Slide home", for a path that crosses itself). */
 export const LAB_COPY = freeze({
   title: LAB_VERSE,
   open: "Open the lab", close: perLens("Back to the sky", "Leave the lab"),
@@ -1421,6 +1493,7 @@ export const LAB_COPY = freeze({
   tileNote: T("checked", "On this floor five squares meet at every corner."),
   challenge: "Find the step that brings five slides home",
   flat: T("checked", "On a flat floor, forward, left, back and right bring you back home, not turned."),
+  crosses: "Your path crosses itself, so it has no single inside to measure.",
 });
 /** labStart(a = 1) -> a fresh lab: { open: false, a, slides: [], home: false, tiling: false }. */
 export function labStart(a = LAB.aDefault) {
@@ -1474,49 +1547,99 @@ const turnWords = (clockwise) => {
   return deg <= 180 ? fixed(deg, 0) + " degrees to the right" : fixed(360 - deg, 0) + " degrees to the left";
 };
 const AREA_REACH = 12;                                                   // as for the turn: farther out binary64 has too few digits left
-const AREA_EPS = 1e-10;
-/**
- * labArea(lab) -> the area inside the closed path of the lab, worked out from the path itself and not from the turn, or null:
- *   { value (its size, in radians: the area of the curved map is measured as an angle), signed (positive for a path that runs anticlockwise) }.
- * The signed areas of the triangles (home, corner i, corner i + 1) are added: for disc points a and b that area is 2 · arg(1 − a · conj(b)).
- * null when the path is not closed (no "Slide home" yet), when a corner is farther than 12 from home, when the path has no inside (its corners
- * lie on one line, or it only goes out and back the same way) and when it crosses or touches itself (then it has no single inside).
- */
-export function labArea(lab) {
-  const frames = labFrames(lab);
-  if (frames.length < 4 || !(homecoming(frames[frames.length - 1]).distance < 1e-6)) return null;         // three slides at least, and home again
+const AREA_EPS = 1e-9;                                                   // an angle (its sine) under this is no angle; also the slack of "between", in Klein units
+const AREA_NOISE = 1e-14;                                                // the share of rounding in a corner's place (see pathInside; measured against 70 digits: under 7e-16)
+// Is the path closed, near enough, with one inside? -> { value, signed, sides } or { none: "open" | "far" | "line" | "crosses" | "touches" }.
+// sides: the sides of the shape whose inside is measured, that is the corners left once a stretch walked out and back the same way and
+// the corners that are no corners (the path went straight on there) are taken out.
+function pathInside(lab) {
+  const full = labFrames(lab);
+  if (full.length < 4) return { none: "open" };                           // three slides at least
+  if (full.some((F) => !(hypDist(originOf(F), ORIGIN) <= AREA_REACH))) return { none: "far" };
+  if (!(homecoming(full[full.length - 1]).distance < 1e-6)) return { none: "open" };   // and home again
+  // A slide straight back undoes the slide before it: out and back the same way has no inside. Such pairs are taken out of the
+  // list of slides, not out of the corners afterwards, so that the path that is judged has no corner that rounding has doubled.
+  const slides = [];
+  for (const s of lab.slides) {
+    const last = slides[slides.length - 1];
+    if (last && !s.home && !last.home && s.dist === last.dist && Math.abs(Math.abs(s.angle - last.angle) - Math.PI) < 1e-12) slides.pop();
+    else slides.push(s);
+  }
+  const frames = slides.length === lab.slides.length ? full : slidePath(slides);
+  if (frames.length < 4) return { none: "line" };
   const corners = frames.slice(0, -1).map((F) => originOf(F));           // home first; the last frame is home again
-  if (corners.some((p) => !(hypDist(p, ORIGIN) <= AREA_REACH))) return null;
   const disc = corners.map((p) => toBall(p));
   let signed = 0;
   for (let i = 1; i + 1 < disc.length; i++) { const a = disc[i], b = disc[i + 1]; signed += 2 * Math.atan2(a[0] * b[1] - a[1] * b[0], 1 - a[0] * b[0] - a[1] * b[1]); }
   // Has the path one inside? In the Klein picture (x / t, y / t) its sides are straight, so this is a question about a plain polygon.
-  const orient = (a, b, c) => (b[0] - a[0]) * (c[1] - a[1]) - (b[1] - a[1]) * (c[0] - a[0]);
+  // Which side of the line a-b the point c lies on is read from the sine of the angle at a, not from the bare product of the
+  // differences: towards the rim the Klein picture shrinks (a side of length 1 is 1e-10 long near a distance of 12), and a product
+  // of two such lengths would fall under any fixed bound, so that real corners were taken for points on one line. The sine does not
+  // shrink. It counts as 0 where rounding alone could have given it its sign: then the three points are taken to lie on one line,
+  // and a pair of sides judged with such a 0 is never said to cross, and is said to be apart only where another test shows it.
+  // How sure a corner is: each product of frames rounds in proportion to its entries (t of the corner reached so far), and the
+  // slides that follow carry that error on, magnified by cosh of the distance still to go. So corner n is sure, in Klein
+  // coordinates, to about AREA_NOISE · Σ t(k) · cosh(distance from corner k to corner n) / t(n), the sum over the corners before it.
+  // A path that goes far out and comes back is therefore less sure near home than one that stayed there.
+  const doubt = corners.map((p, n) => {
+    let sum = 0;
+    for (let k = 0; k <= n; k++) { const q = corners[k]; sum += q[3] * Math.max(1, q[3] * p[3] - q[0] * p[0] - q[1] * p[1]); }
+    return AREA_NOISE * sum / p[3];
+  });
+  const poly = corners.map((p, i) => [p[0] / p[3], p[1] / p[3], doubt[i]]);
+  const orient = (a, b, c) => {
+    const ux = b[0] - a[0], uy = b[1] - a[1], wx = c[0] - a[0], wy = c[1] - a[1], u = Math.hypot(ux, uy), w = Math.hypot(wx, wy), cross = ux * wy - uy * wx;
+    const slack = 3 * Math.max(a[2], b[2], c[2]);
+    return u > slack && w > slack && Math.abs(cross) > slack * (u + w) ? cross / (u * w) : 0;
+  };
   const flat = (v) => Math.abs(v) <= AREA_EPS;
-  const poly = corners.map((p) => [p[0] / p[3], p[1] / p[3]]);
   // a corner on the line of its two neighbours is no corner: the path went straight on there, or back the way it came
   for (let i = 0; poly.length >= 3 && i < poly.length;) {
     const m = poly.length, a = poly[(i + m - 1) % m], b = poly[i], c = poly[(i + 1) % m];
     if (flat(orient(a, b, c))) { poly.splice(i, 1); i = 0; } else i += 1;
   }
-  if (poly.length < 3) return null;
+  if (poly.length < 3) return { none: "line" };
   const between = (a, b, c) => Math.min(a[0], b[0]) - AREA_EPS <= c[0] && c[0] <= Math.max(a[0], b[0]) + AREA_EPS && Math.min(a[1], b[1]) - AREA_EPS <= c[1] && c[1] <= Math.max(a[1], b[1]) + AREA_EPS;
-  const meet = (a, b, c, d) => {                                          // two sides share a point (a touch counts)
+  // Two sides: 2 when they cross (each has its ends on both sides of the other, beyond doubt), 1 when they touch or are too
+  // near to tell, 0 when they are apart.
+  const meet = (a, b, c, d) => {
     const o1 = orient(a, b, c), o2 = orient(a, b, d), o3 = orient(c, d, a), o4 = orient(c, d, b);
-    if (flat(o1) && between(a, b, c)) return true;
-    if (flat(o2) && between(a, b, d)) return true;
-    if (flat(o3) && between(c, d, a)) return true;
-    if (flat(o4) && between(c, d, b)) return true;
-    return !flat(o1) && !flat(o2) && !flat(o3) && !flat(o4) && (o1 > 0) !== (o2 > 0) && (o3 > 0) !== (o4 > 0);
+    if (flat(o1) && between(a, b, c)) return 1;
+    if (flat(o2) && between(a, b, d)) return 1;
+    if (flat(o3) && between(c, d, a)) return 1;
+    if (flat(o4) && between(c, d, b)) return 1;
+    const s1 = flat(o1) ? 0 : Math.sign(o1), s2 = flat(o2) ? 0 : Math.sign(o2), s3 = flat(o3) ? 0 : Math.sign(o3), s4 = flat(o4) ? 0 : Math.sign(o4);
+    if (s1 * s2 > 0 || s3 * s4 > 0) return 0;                             // one side lies wholly on one side of the other
+    if (s1 !== 0 && s2 !== 0 && s3 !== 0 && s4 !== 0) return 2;
+    return s1 === 0 && s2 === 0 && s3 === 0 && s4 === 0 ? 0 : 1;           // on one line and apart; otherwise an end too near the other side's line
   };
   const m = poly.length;
+  let touches = false;
   for (let i = 0; i < m; i++) for (let j = i + 2; j < m; j++) {
     if (i === 0 && j === m - 1) continue;                                 // neighbours round the end
-    if (meet(poly[i], poly[(i + 1) % m], poly[j], poly[(j + 1) % m])) return null;
+    const met = meet(poly[i], poly[(i + 1) % m], poly[j], poly[(j + 1) % m]);
+    if (met === 2) return { none: "crosses" };
+    if (met === 1) touches = true;
   }
+  if (touches) return { none: "touches" };
   const value = Math.abs(signed);
-  return value > 1e-9 ? { value, signed } : null;
+  return value > 1e-9 ? { value, signed, sides: m } : { none: "line" };
 }
+/**
+ * labArea(lab) -> the area inside the closed path of the lab, worked out from the path itself and not from the turn, or null:
+ *   { value (its size, in radians: the area of the curved map is measured as an angle), signed (positive for a path that runs anticlockwise),
+ *     sides (the sides of the shape that has this inside: a slide straight on adds none, and a stretch walked out and back the same way adds none) }.
+ * The signed areas of the triangles (home, corner i, corner i + 1) are added: for disc points a and b that area is 2 · arg(1 − a · conj(b)).
+ * null when the path is not closed (no "Slide home" yet), when a corner is farther than 12 from home, when the path has no inside (its corners
+ * lie on one line, or it only goes out and back the same way) and when it crosses or touches itself (then it has no single inside).
+ * labNoArea(lab) says which of these it was.
+ */
+export function labArea(lab) {
+  const inside = pathInside(lab);
+  return inside.none ? null : inside;
+}
+/** labNoArea(lab) -> why labArea(lab) gives no area: "open" (the path is not closed), "far" (a corner farther than 12 from home), "line" (no inside: its corners lie on one line, or it goes out and back the same way), "crosses" (two of its sides cross, beyond doubt), "touches" (it touches itself, or two sides pass too near each other to tell); "" when labArea(lab) gives one. */
+export const labNoArea = (lab) => pathInside(lab).none || "";
 const isFour = (lab) => { const s = lab.slides.filter((x) => !x.home); return s.length === 4 && s.every((x, i) => x.unit && x.angle === LAB.directions[LAB.four[i]]); };
 const isTile = (lab) => { const s = lab.slides.filter((x) => !x.home); return s.length === 4 && s.every((x, i) => !x.unit && Math.abs(x.dist - LAB.tile) < 1e-12 && Math.abs(x.angle - LAB.tileHeadingsDeg[i] * RAD) < 1e-12); };
 /**
@@ -1524,8 +1647,11 @@ const isTile = (lab) => { const s = lab.slides.filter((x) => !x.home); return s.
  *   { slides (count), distance (from home), steps (distance / a), turnClockwise (radians; null far from home), turnDeg, home,
  *     text ("You are 0.87 of a step from home. Sliding home, you face 78 degrees to the right of where you began."; a walker that is
  *     not turned gets whole sentences of its own: "Sliding home, you would face the way you began.", "You are home, facing the way you began."),
- *     flat (what a flat floor gives), area: { value, text } | null (only after "Slide home", from labArea(): "the area inside your five-sided
- *     path: 1.362"; where the area is the turn itself the text says so, and where they differ by whole turns it says that),
+ *     flat (what a flat floor gives), area: { value, sides, text } | null (only after "Slide home", from labArea(): "the area inside your five-sided
+ *     path: 1.362"; the sides are those of the shape that is measured, so forward, forward, back, left and home is a three-sided path; where the
+ *     area is the turn itself the text says so, and where they differ by whole turns it says that),
+ *     noArea: { why: "crosses", text } | null (after "Slide home", in place of the area, for a path that crosses itself: LAB_COPY.crosses;
+ *     a path along one line gets neither),
  *     closed: [text] (the closed forms, from Navigator up, for the four slides), tile (text, for "Slide round one tile") | null, layer }.
  */
 export function labReadout(lab, lens) {
@@ -1540,19 +1666,20 @@ export function labReadout(lab, lens) {
   else if (hc.turnClockwise === null) text = "You are " + fixed(steps, 2) + " of a step from home: too far for this page to work out the turn.";
   else if (lab.home || hc.distance < 1e-9) text = unturned(hc.turnClockwise) ? "You are home, facing the way you began." : "You are home. You face " + turnWords(hc.turnClockwise) + " of where you began. No slide turned you.";
   else text = "You are " + fixed(steps, 2) + " of a step from home. " + (unturned(hc.turnClockwise) ? "Sliding home, you would face the way you began." : "Sliding home, you face " + turnWords(hc.turnClockwise) + " of where you began.");
-  const sides = numberWord(n), inside = lab.home && n >= 3 && hc.turnClockwise !== null ? labArea(lab) : null;
+  const asked = lab.home && n >= 3 && hc.turnClockwise !== null, inside = asked ? labArea(lab) : null, sides = inside ? numberWord(inside.sides) : "";
+  const noArea = asked && !inside && labNoArea(lab) === "crosses" ? { why: "crosses", text: LAB_COPY.crosses } : null;
   // the turn is the area up to whole turns: it is the area itself while the path goes round less than half a turn's worth
   const isTurn = !!inside && Math.abs(inside.value - Math.min(hc.turnClockwise, 2 * Math.PI - hc.turnClockwise)) < 1e-6;
   const area = !inside ? null : upper
-    ? { value: inside.value, text: "the area inside your " + sides + "-sided path: " + fixed(inside.value, 3) + (isTurn ? " (the turn, measured in radians)" : ", measured in radians. The turn matches it, give or take whole turns.") }
-    : { value: inside.value, text: "The area inside your " + sides + "-sided path: " + fixed(inside.value, 3) + "." };   // the Stargazer lens has no radians
+    ? { value: inside.value, sides: inside.sides, text: "the area inside your " + sides + "-sided path: " + fixed(inside.value, 3) + (isTurn ? " (the turn, measured in radians)" : ", measured in radians. The turn matches it, give or take whole turns.") }
+    : { value: inside.value, sides: inside.sides, text: "The area inside your " + sides + "-sided path: " + fixed(inside.value, 3) + "." };   // the Stargazer lens has no radians
   const closed = [];
   if (upper && isFour(lab)) {
     closed.push("gap = 2 · asinh(2√2 · cosh(a/2) · sinh³(a/2)) = " + fixed(squareWalkGap(lab.a), 6));
     closed.push("turn = 2 · atan2(sinh²(a) / 2, 1 − 2 · sinh⁴(a/2)) = " + fixed(squareWalkTurn(lab.a) / RAD, 4) + "°");
   }
   const tile = isTile(lab) && upper ? "home again, turned " + fixed(hc.turnClockwise / RAD, 0) + "° clockwise, the area of the tile" : null;   // at the Stargazer lens the sentence above says it
-  return { slides: n, distance: hc.distance, steps, turnClockwise: hc.turnClockwise, turnDeg: hc.turnClockwise === null ? null : hc.turnClockwise / RAD, home: lab.home || (n > 0 && hc.distance < 1e-9), text, flat, area, closed, tile, layer: "checked" };
+  return { slides: n, distance: hc.distance, steps, turnClockwise: hc.turnClockwise, turnDeg: hc.turnClockwise === null ? null : hc.turnClockwise / RAD, home: lab.home || (n > 0 && hc.distance < 1e-9), text, flat, area, noArea, closed, tile, layer: "checked" };
 }
 /** fiveSlides(a) -> the challenge "Find the step that brings five slides home" (forward, left, back, right, forward): { a, gap, success (gap within 0.005), closedForm (1.061275), text }. */
 export function fiveSlides(a) {
@@ -1618,20 +1745,22 @@ export const packageFileName = (chainId) => (typeof chainId === "string" && /^BC
  * sealSky(state, { keys, at, onEpoch }) -> { ok, inputs: { jd, lat, lon } (the three rounded numbers as link text), rows, entries, keys, at,
  *   bundle, certificate, report, pack, wire, chainId, fileName, link (the Lexicon Explorer's URL with sky=JD,LAT,LON), kebar }.
  * The rows come from skyLexiconRows on rounded inputs (jd to 5 decimals, latitude and longitude to 2), so the Lexicon Explorer, given the
- * same three numbers, builds the same rows and the same chain. The certificate is signed once, with a key made for this visit.
+ * same three numbers, builds the same rows and the same chain. The three numbers are those of the page's two links (lexiconSkyHref,
+ * skyLinkHref): within a second or two of either end of the year range, where the rounded instant would fall outside it, they are the
+ * nearest instant of 5 decimals inside it. So every sky the page can show can be sealed, and link is the link the page writes.
+ * The certificate is signed once, with a key made for this visit.
  */
 export async function sealSky(state, options = {}) {
   const at = typeof options.at === "string" ? options.at : new Date().toISOString();
   const none = { ok: false, inputs: null, rows: null, entries: null, keys: null, at, bundle: null, certificate: null, report: null, pack: null, wire: null, chainId: null, fileName: null, link: "", kebar: false };
-  if (!state.site || !skyInputsValid(state.jdUt, state.site.lat, state.site.lonEast)) return none;
-  const q = roundSkyInputs(state.jdUt, state.site.lat, state.site.lonEast);
-  if (!skyInputsValid(q.jdUt, q.lat, q.lonEast)) return none;
+  const q = linkNumbers(state);
+  if (!q) return none;
   const inputs = formatSkyInputs(q.jdUt, q.lat, q.lonEast);
   const rows = skyLexiconRows(skyState(q.jdUt, q.lat, q.lonEast)), entries = rows.map((r) => makeEntry(...r));
   const keys = options.keys || await newSessionKeys();
   const bundle = await buildLexiconBundle(entries, { at, onEpoch: options.onEpoch });
   const { certificate, report } = await issueCertificate(bundle, keys, at);
-  const chainId = bundle.chain.chainId, link = lexiconSkyHref({ ...state, jdUt: q.jdUt, site: { ...state.site, lat: q.lat, lonEast: q.lonEast } });
+  const chainId = bundle.chain.chainId, link = lexiconSkyHref(state);
   const kebar = q.lat === KEBAR.lat && q.lonEast === KEBAR.lonEast && q.jdUt === EZEKIEL_PRESET.jdUt;
   if (!certificate) return { ...none, inputs, rows, entries, keys, bundle, report, chainId, link, kebar };
   const pack = makeHyperpack({ ...bundle, certificate }), wire = JSON.stringify(pack);
@@ -1967,6 +2096,7 @@ export const MESSAGES = freeze({
   noSunrise: "The Sun does not rise here today.",
   noSunset: "The Sun does not set here today.",
   needPlace: "Choose a place first.",
+  dayChanged: "The day changed while this page was open. Please look again.",
   changesDay: MOON_COPY.changesDay,
   timeLabel: "Sun time at this place (local mean time)",
   calendar: "The calendar in force: Julian before 15 October 1582, Gregorian from that day on.",
@@ -2163,6 +2293,7 @@ export function stargazerStrings() {
   const straight = labSlide(labStart(), "forward"), eight = ["forward", "forward", "left", "left", "back", "back", "right", "right"].reduce((l, d) => labSlide(l, d), labStart());
   add("lab straight", labReadout(straight, "stargazer").text); add("lab straight home", labReadout(labHome(straight), "stargazer").text);
   add("lab wide area", labReadout(labHome(eight), "stargazer").area.text);
+  add("lab crosses", LAB_COPY.crosses);
   add("pick date", pickDate(samples[0], { year: 2027, month: 2, day: 29 }).message);
   add("epoch line", epochLine({ epoch: 3, epochs: 4 }, "stargazer"));
   return out;

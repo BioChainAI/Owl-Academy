@@ -6,10 +6,11 @@
 // as a visitor would (taps on a phone, the mouse and the keyboard on a wide screen), and records what the page
 // shows against what it should show.
 //
-//   node tests/browser/lexicon-explorer.cjs                 every part, about seven minutes
+//   node tests/browser/lexicon-explorer.cjs                 every part, about ten minutes
 //   node tests/browser/lexicon-explorer.cjs --part=phone    one part or several: phone (390 x 844, touch),
 //                                                           desk (1440 x 900, mouse), small (720 x 450 and
-//                                                           320 x 256), fonts (the two font hosts aborted)
+//                                                           320 x 256; the map as a ball at 320 x 568),
+//                                                           fonts (the two font hosts aborted)
 //   node tests/browser/lexicon-explorer.cjs --only=S06,S07  some sections, at phone and desk unless --part says otherwise
 //   --root=<folder>    walk a copy of the repository in another folder
 //   --shots=<folder>   write the screenshots (PNG, two device pixels per CSS pixel) and manifest.json there
@@ -21,7 +22,10 @@
 // canvas, S08 layers, S09 seal and tamper, S10 send to the four receivers, S11 the fourth square, S12 wheel and
 // square, S13 the three lenses at every station and tab, S14 the dialog, S15 loading a package file, S16 links,
 // S17 reduced motion, S18 place, S19 the author's notes, John 3:16, pointers and links out, S20 the layout, the
-// list, the banner that stays and a sky from a link, S21 the keyboard, what is announced, Stargazer words.
+// list, the banner that stays and a sky from a link, S21 the keyboard, what is announced, Stargazer words, S22 the
+// names a young reader is shown, the pointers of lines 2 and 7, a long ledger from a file, flights that are seen,
+// taps on markers, and what is scrolled to between 700 and 1100 px wide. S19 to S21 also open the page at 320 x 568,
+// 375 x 667 and 699 x 900: where the focus is after "Switch to Navigator", and what STRIX shows in a low phone window.
 // At every station it asserts: visible text is 17 or 14 px (13 px only for hashes), every enabled control is at
 // least 44 x 44 px for a finger and 32 x 32 px for the mouse, nothing scrolls sideways, on the phone the first line
 // of the explanation card ends above y = 844, the focus is never left on the body and never under the sticky
@@ -52,6 +56,9 @@ const OUTSIDE_NOTICE = "This lexicon was not made by this page. Its words and it
 const OUTSIDE_SHORT = "Not made by this page. Its words and labels are its sender's.";
 const SKY_BANNER = "This sky was built from a link: a place and a time. Stamp it here. The same place and time always get the same name.";
 const MORE_LEVELS = "The Navigator level shows more: the chain, the Overwatch checks and four receivers. It also shows the path to John 3:16 and the fourth square.";
+const SKY_LEVELS = "The Navigator level shows more: the chain, the Overwatch checks and four receivers.";
+const TWO_NOTES = "a link value was ignored. That link names an entry this lexicon does not have.";   // two notes of one link, joined
+const OWN_TITLE = "Lexicon Explorer · Ezekiel 1:1-9 in hyperbolic space";
 const JOHN_STAR = "We read John 3:16 as the bridge, in the Gospel's own words. It is love from its source to the world. You may see it another way.";
 const WING = "Library/Experimental_Systems/";
 /** The sentence of the banner that is on show (the whole notice from 700 px, one line under it). */
@@ -109,6 +116,50 @@ class Walk {
 }
 
 async function fresh(rec, browser, base, vp, options) { const w = new Walk(rec, vp, await L.open(browser, base, vp, options)); w.browser = browser; w.base = base; return w; }
+/** Waits until the page has stopped scrolling (a smooth scroll may still run after an activation). */
+async function still(w) { let y = null; for (let i = 0; i < 50; i++) { const now = await w.ev(() => Math.round(scrollY)); if (now === y) return; y = now; await sleep(130); } }
+/** Where an element stands against the top of the window (below the header and banner where they stay): "at the top", or its place. */
+const atTop = (w, id) => w.ev((i) => { const r = document.getElementById(i).getBoundingClientRect(), bar = document.getElementById("topWrap"), edge = getComputedStyle(bar).position === "sticky" ? bar.getBoundingClientRect().bottom : 0; return r.top >= edge - 1 && r.top <= edge + 60 ? "at the top" : "y " + Math.round(r.top) + " (the window begins at " + Math.round(edge) + ")"; }, id);
+/** The focused element, and whether it lies inside the window (below the header where that stays): true, or its place. */
+const focusPlace = (w) => w.ev(() => { const a = document.activeElement, bar = document.getElementById("topWrap"), edge = getComputedStyle(bar).position === "sticky" ? bar.getBoundingClientRect().bottom : 0;
+  if (!a || a === document.body || a === document.documentElement) return { focus: "body", inWindow: false };
+  const r = a.getBoundingClientRect(); return { focus: a.id || a.localName, inWindow: (r.height > 0 && r.top >= edge - 1 && r.bottom <= innerHeight + 1) || "y " + Math.round(r.top) + " to " + Math.round(r.bottom) + " (the window: " + Math.round(edge) + " to " + innerHeight + ")" }; });
+/** In a window of another size, at Stargazer: "Switch to Navigator" is pressed with the keyboard at a station; the lens and where the focus is once the page has stopped
+ *  (with `scroll`: the lens, the focused element and how far the page has scrolled). */
+async function switchInWindow(w, viewport, hash, station, scroll) {
+  const n = await fresh(w.rec, w.browser, w.base, w.vp, { viewport, hash });
+  await n.station(station);
+  await n.ev((id) => document.getElementById(id).focus(), viewport.width < 700 ? "levelsBtnBox" : "levelsBtn"); await sleep(300);
+  await n.key("Enter", "Enter on Switch to Navigator"); await sleep(200); await still(n);
+  const place = await focusPlace(n);
+  const out = scroll ? { lens: await state(n.page, "lens"), focus: place.focus, scrollY: await n.ev(() => Math.round(scrollY)), console: n.messages }
+    : { lens: await state(n.page, "lens"), ...place, console: n.messages };
+  await n.close();
+  return out;
+}
+/** A phone window lower than the first screen (844 px): at every station of the three lenses, as the page opens and again sealed and
+ *  sent, what STRIX shows above the map, where the card's first line ends and, for a sky, where the sentences about the link stand. */
+async function lowWindow(w, viewport, hash) {
+  const low = await fresh(w.rec, w.browser, w.base, w.vp, { viewport, hash }), rows = [];
+  const pass = async (when) => {
+    for (const lens of ["stargazer", "navigator", "holographer"]) {
+      await low.lens(lens);
+      for (const st of await low.ev(() => Array.from(document.querySelectorAll("#strip button")).map((b) => b.id.slice(3)))) {
+        await low.station(st); await sleep(200);
+        rows.push(await low.ev((at) => { scrollTo(0, 0);
+          const M = window.__M, x = window.LexiconExplorer.state, t = document.querySelector("#explain .explain-body:not([hidden]) h2"), r = t.getClientRects()[0] || t.getBoundingClientRect(), sn = document.getElementById("skyNotice");
+          return { at, text: (document.getElementById("strixText") || {}).textContent || "", first: M.sentencesOf(M.stationView(x.station, x.lens, x.lexicon).say[0].text)[0], card: Math.round(r.top + Math.min(r.height, parseFloat(getComputedStyle(t).lineHeight) || 22)), bottom: innerHeight, notice: sn ? (window.__W.shown(sn) ? "banner" : "box") : null }; }, lens + ", " + st + ", " + when));
+      }
+    }
+  };
+  await pass("as it opens");
+  await low.lens("navigator"); await low.station("seal"); await low.tap("#sealBtn"); await idle(low.page);
+  await low.station("send"); await low.tap("#sendBtn"); await idle(low.page);
+  await pass("sealed and sent");
+  const messages = low.messages.slice();
+  await low.close();
+  return { rows, below: rows.filter((r) => r.card > r.bottom - 2), messages };
+}
 const SECTIONS = [];
 const section = (id, title, fn) => SECTIONS.push({ id, title, fn });
 
@@ -612,13 +663,14 @@ section("S10", "send to the four receivers", async (w) => {
   if (w.phone) await w.openBox("stationBox");
   const clear = await w.ev(() => ({ rows: Array.from(document.querySelectorAll("#sendRows li, #sendRowsBox li")).filter((li) => window.__W.shown(li)).map((li) => li.textContent), count: document.getElementById("sendCount").textContent.replace(/^[^0-9]*/, ""), marks: Array.from(document.querySelectorAll(".send-marks li")).filter((li) => window.__W.shown(li)).map((li) => li.textContent), k: window.LexiconExplorer.state.send.k, keys: new Set(window.LexiconExplorer.state.send.rows.map((r) => r.sealId)).size, sealKey: window.LexiconExplorer.state.seal.certificate.sealId, rowKeys: window.LexiconExplorer.state.send.rows.map((r) => r.sealId) }));
   w.check("without noise: all four accept", ["Antioch: accepted", "Alexandria: accepted", "Athens: accepted", "Rome: accepted"], clear.rows);
-  w.check("4 of 4 handshakes, and both marks of the two-witness rule are met", { count: "4 of 4 handshakes", marks: ["✓ two: enough for the rule of Deuteronomy 19:15, as a demonstration", "✓ three: the stricter count in the same verse"] }, { count: clear.count, marks: clear.marks });
+  w.check("4 of 4 handshakes in this page, and both marks of the two-witness rule are met", { count: "4 of 4 handshakes in this page", marks: ["✓ two: enough for the rule of Deuteronomy 19:15, as a demonstration", "✓ three: the stricter count in the same verse"] }, { count: clear.count, marks: clear.marks });
   w.check("each receiver signed with its own key, none with the sealer's", { keys: 4, own: true }, { keys: clear.keys, own: !clear.rowKeys.includes(clear.sealKey) });
   await w.tap("#tabBtn-witnesses");
-  const wt = await w.ev(() => ({ rows: Array.from(document.querySelectorAll("#tabWitnesses table tbody tr")).map((tr) => Array.from(tr.cells).slice(0, 4).map((c) => c.textContent).join("|")), text: document.getElementById("tabWitnesses").textContent }));
+  const wt = await w.ev(() => ({ rows: Array.from(document.querySelectorAll("#tabWitnesses table tbody tr")).map((tr) => Array.from(tr.cells).slice(0, 4).map((c) => c.textContent).join("|")), text: document.getElementById("tabWitnesses").textContent, count: document.getElementById("witnessCount").textContent.replace(/^[^0-9]*/, ""), badge: document.querySelectorAll("#witnessCount .badge").length }));
+  w.check("Witnesses tab: the same count line, with its badge", { count: "4 of 4 handshakes in this page", badge: 1 }, { count: wt.count, badge: wt.badge });
   w.check("Witnesses tab: four rows", ["Antioch|clear|accepted|yes", "Alexandria|clear|accepted|yes", "Athens|clear|accepted|yes", "Rome|clear|accepted|yes"], wt.rows);
   const CH = "4 of the four receivers accepted. All four run inside this page, with the same code, each with a key made a moment ago. This shows how a two-witness rule is checked. It does not show that independent parties have looked.";
-  const RD = "The page borrows a number from this rule and nothing more. The rule is about people giving evidence.";
+  const RD = "The page borrows a number from the rule of Deuteronomy 19:15 and nothing more. That rule is about people giving evidence.";
   w.check("the CHECKED wording about simulated receivers", CH, wt.text.includes(CH) ? CH : wt.text.slice(-500));
   w.check("the READING wording about the rule", RD, wt.text.includes(RD) ? RD : "missing");
   await w.sweep("Send, four of four; Witnesses tab");
@@ -630,7 +682,7 @@ section("S10", "send to the four receivers", async (w) => {
   if (w.phone) await w.openBox("stationBox");
   const noisy = await w.ev(() => ({ rows: Array.from(document.querySelectorAll("#sendRows li, #sendRowsBox li")).filter((li) => window.__W.shown(li)).map((li) => li.textContent), count: document.getElementById("sendCount").textContent.replace(/^[^0-9]*/, ""), marks: Array.from(document.querySelectorAll(".send-marks li")).filter((li) => window.__W.shown(li)).map((li) => li.textContent), focus: window.__W.focus() }));
   w.check("with noise on the road to Athens and Rome: those two refuse, the other two accept", ["Antioch: accepted", "Alexandria: accepted", "Athens: refused", "Rome: refused"], noisy.rows.map((r) => r.replace(/ at the check called .*$/, "")), noisy.rows.length === 4 && /^Antioch: accepted$/.test(noisy.rows[0]) && /^Alexandria: accepted$/.test(noisy.rows[1]) && /^Athens: refused at the check called \S+ \(noise on its road\)$/.test(noisy.rows[2]) && /^Rome: refused at the check called \S+ \(noise on its road\)$/.test(noisy.rows[3]));
-  w.check("2 of 4 handshakes: the mark two is met, the mark three is not", { count: "2 of 4 handshakes", marks: ["✓ two: enough for the rule of Deuteronomy 19:15, as a demonstration", "· three: the stricter count in the same verse (not met)"] }, { count: noisy.count, marks: noisy.marks });
+  w.check("2 of 4 handshakes in this page: the mark two is met, the mark three is not", { count: "2 of 4 handshakes in this page", marks: ["✓ two: enough for the rule of Deuteronomy 19:15, as a demonstration", "· three: the stricter count in the same verse (not met)"] }, { count: noisy.count, marks: noisy.marks });
   await w.openBox("stationBox");
   const verse = await w.ev(() => document.getElementById("stationBody").textContent);
   w.check("the verse of the rule is shown as TEXT, with its translation named", true, verse.includes("at the mouth of two witnesses, or at the mouth of three witnesses, shall the matter be established") && verse.includes("Deuteronomy 19:15, King James Version"));
@@ -891,7 +943,7 @@ section("S14", "dialog: What is real here?", async (w) => {
     w.check(lens + ": first line, then In short with six Stargazer sentences (none over 16 words), every sentence with a badge", { first: true, firstBadge: true, inShortAt: 1, inShort: 6, inShortModel: true, words: "16 or fewer", unbadged: 0 }, { first: body.first, firstBadge: body.firstBadge, inShortAt: body.inShortAt, inShort: body.inShort, inShortModel: body.inShortModel, words: body.words <= 16 ? "16 or fewer" : body.words, unbadged: body.unbadged });
     const NEED = ["CHECKED means you can repeat this count or calculation. It does not mean the words beside it are proved.", "the same three levels First Explorers calls Stargazer, Explorer and Architect", "The only request to another host is for web fonts (Google Fonts); the page works without them.",
       "Code: MIT. Quoted texts belong to their rights holders and are not covered by that licence.", "The rules are this project's; the book does not contain them.", "It is an interpretation, chosen by this project.", "No check, packet or certificate on this page depends on it.", "The gold boxes quote several writers, each named where it is quoted.", "Van Paassen argues that Jesus was a Galilean Jew", "This project's view: most Christians and many historians would disagree with parts of that.", "STRIX is the owl that speaks on this page.", "What is ours, not his.", "the running text never mentions him", "Ezekiel 1 belongs first to the Hebrew Bible.", "LEX/1 and LEXICON/2 are drafts, not RFCs.",
-      "Certified: these bytes, their order, their addresses, the label each entry was given, the lineage and the ledger, unchanged since they were sealed with this key.", "They are not a record of when or in what order anything was written.", "Its links show it has not been edited since sealing, not that its times are true.", "The drawings are not signed.", "The receivers are simulated in this page.", "the key is made for this visit and shows integrity, not identity"];
+      "Certified: these bytes, their order, their addresses, the label each entry was given, the lineage and the ledger, unchanged since they were sealed with this key.", "They are not a record of when or in what order anything was written.", "Its links show it has not been edited since sealing, not that its times are true.", "The drawings are not signed.", "The receivers are simulated in this page.", "a key this page makes is made for this visit. a signature shows integrity, not identity"];
     const supplied = await w.ev(() => { const M = window.__M, t = document.getElementById("aboutBody").textContent; return t.includes(M.SUPPLIED.notice) && t.includes(M.SUPPLIED.note); });
     w.check(lens + ": the dialog holds the sentences it must", [], NEED.filter((x) => !body.t.toLowerCase().includes(x.toLowerCase())).concat(supplied ? [] : ["the notice and the note of the supplied wording"]));
     w.check(lens + ": the dialog's sections", ["The four layers", "The Bible words", "Where the facts come from", "The book", "The bridge narrative (the gold boxes)", "Ezekiel 1 in Jewish tradition", "What a certificate covers", "Limits to keep in mind", "This page", "Other pages"], body.heads);
@@ -1027,6 +1079,7 @@ section("S16", "links: #entry, #lens, #sky, Back", async (w) => {
   p = await o("#entry=77.7&x=1&lens=wizard");
   const bad = await p.ev(() => ({ selected: window.LexiconExplorer.state.selected, lens: window.LexiconExplorer.state.lens, note: window.__W.shown(document.getElementById("linkNote")) ? document.getElementById("linkNote").textContent : null }));
   w.check("an unknown entry, an unknown key and an unknown lens are ignored with a note", { selected: null, lens: "stargazer", note: "That link names an entry this lexicon does not have. + a link value was ignored" }, bad, bad.selected === null && bad.lens === "stargazer" && !!bad.note && bad.note.includes("That link names an entry this lexicon does not have.") && bad.note.includes("a link value was ignored"));
+  w.check("the two notes of one link stand under the map as two sentences", TWO_NOTES, bad.note);
   await p.shot("92-link-unknown-entry", "A link naming an entry the lexicon does not have: ignored, with a note under the map.");
   w.check("console clean", [], p.messages); await p.close();
   p = await o("#lens=holographer");
@@ -1064,7 +1117,7 @@ section("S16", "links: #entry, #lens, #sky, Back", async (w) => {
   const ss = await p.ev(() => ({ ok: window.LexiconExplorer.state.seal.ok, verdict: document.getElementById("sealVerdict").textContent, epochs: window.LexiconExplorer.state.seal.bundle.lineage.length, top: window.__M.topLevelOf(window.LexiconExplorer.state.lexicon).length, file: window.LexiconExplorer.state.seal.fileName }));
   w.check("the sky lexicon seals: every check passes, one epoch per top-level entry", { ok: true, verdict: true, epochs: ss.top, file: true }, { ok: ss.ok, verdict: ss.verdict.includes("Every check passed"), epochs: ss.epochs, file: FILE_NAME.test(ss.file || "") });
   await p.station("send"); await p.tap("#sendBtn"); await idle(p.page);
-  w.check("and is sent to the four receivers", "4 of 4 handshakes", (await p.ev(() => document.getElementById("sendCount").textContent)).replace(/^[^0-9]*/, ""));
+  w.check("and is sent to the four receivers", "4 of 4 handshakes in this page", (await p.ev(() => document.getElementById("sendCount").textContent)).replace(/^[^0-9]*/, ""));
   await p.sweep("a sky lexicon, sealed and sent");
   await p.ev(() => scrollTo(0, 0));
   await p.tap("#backBtn"); await sleep(200);
@@ -1073,10 +1126,78 @@ section("S16", "links: #entry, #lens, #sky, Back", async (w) => {
   p = await o("#sky=1505000.5,32.1,45.2");
   w.check("a sky at Stargazer shows the two stations Kinds of sentence and Stamp it", ["layers", "seal"], await p.ev(() => Array.from(document.querySelectorAll("#strip button")).map((b) => b.id.slice(3))));
   await p.sweep("a sky lexicon at Stargazer"); await p.close();
+  // the history: a link typed in the open tab sets its lens once and is the page's own entry from then on; while a lexicon
+  // from a file is on show, Back over the page's own entries does not rewrite them
+  const snap = (q) => q.ev(() => { const x = window.LexiconExplorer.state; return { lens: x.lens, station: x.station, selected: x.selected, origin: x.lexicon.origin, hash: location.hash }; });
+  const pick = async (q, a) => { await q.ev((x) => { window.LexiconExplorer.select(x); }, a); await settle(q.page); };
+  const typed = async (q, hash) => { await q.ev((x) => { location.hash = x; }, hash); await sleep(400); await settle(q.page); };
+  const back = async (q) => { await q.page.goBack(); await sleep(350); await settle(q.page); return snap(q); };
+  const forward = async (q) => { await q.page.goForward(); await sleep(350); await settle(q.page); return snap(q); };
+  p = await o("#lens=navigator");
+  await pick(p, "26.1.1.4");
+  await typed(p, "#entry=26.1.5&lens=holographer");
+  let hs = await snap(p);
+  w.check("a link typed in the open tab sets the lens it names", { lens: "holographer", selected: "26.1.5" }, { lens: hs.lens, selected: hs.selected });
+  await pick(p, "26.1.10"); await p.lens("navigator"); await p.station("place");
+  hs = await back(p);
+  w.check("Back to that typed entry brings its entry back and keeps the lens and the station of now; its link then names the lens that is shown", { lens: "navigator", station: "place", selected: "26.1.5", origin: "builtin", hash: "#entry=26.1.5&lens=navigator" }, hs);
+  hs = await back(p);
+  w.check("Back once more, to an entry the page wrote itself: the same", { lens: "navigator", station: "place", selected: "26.1.1.4", origin: "builtin", hash: "#entry=26.1.1.4&lens=navigator" }, hs);
+  await forward(p); hs = await forward(p);
+  w.check("Forward twice: the last entry, at the lens of now", { lens: "navigator", selected: "26.1.10" }, { lens: hs.lens, selected: hs.selected });
+  await typed(p, "#sky=2451545,10,20&lens=holographer");
+  hs = await snap(p);
+  w.check("a sky link typed in the open tab builds the sky and sets its lens", { lens: "holographer", origin: "page", selected: null }, { lens: hs.lens, origin: hs.origin, selected: hs.selected });
+  await sleep(450);
+  const typedSky = await p.ev(() => ({ status: document.getElementById("status").textContent, title: document.getElementById("skyTitle").textContent }));
+  w.check("and the status line then says that sky: it begins with the sky's title, the banner's first line", { sky: true, begins: true }, { sky: /^A sky: /.test(typedSky.title) || typedSky.title, begins: typedSky.status.startsWith(typedSky.title + ".") || typedSky.status });
+  const skyKid = await p.ev(() => { const M = window.__M, lx = window.LexiconExplorer.state.lexicon; return M.childrenOf(lx, lx.home)[0] || lx.addresses[0]; });
+  await pick(p, skyKid); await p.lens("navigator"); await p.station("send");
+  hs = await back(p);
+  w.check("Back to the typed sky link: the sky with nothing chosen, at the lens and the station of now", { lens: "navigator", station: "send", selected: null, origin: "page" }, { lens: hs.lens, station: hs.station, selected: hs.selected, origin: hs.origin });
+  hs = await back(p);
+  w.check("Back again leaves the sky: the Ezekiel lexicon and its entry, still at the lens of now", { lens: "navigator", selected: "26.1.10", origin: "builtin" }, { lens: hs.lens, selected: hs.selected, origin: hs.origin });
+  w.check("console clean", [], p.messages); p.focusReport("history"); await p.close();
+  p = await o("#lens=navigator");
+  await pick(p, "26.1.1.4"); await pick(p, "26.1.1.2"); await pick(p, "43.3.16");
+  await loadFile(p, path.join(FILES, "invented.json"));
+  await p.tap("#showItBtn"); await sleep(300); await settle(p.page);
+  const b1 = await back(p), b2 = await back(p);
+  w.check("while a lexicon from a file is on show, Back over the page's own entries leaves their links as they were", { origin: "outside", links: ["#entry=26.1.1.2&lens=navigator", "#entry=26.1.1.4&lens=navigator"] }, { origin: b2.origin, links: [b1.hash, b2.hash] });
+  await p.ev(() => scrollTo(0, 0));
+  await p.tap("#backBtn"); await sleep(250);
+  hs = await forward(p);
+  w.check("after Back to the Ezekiel lexicon, Forward returns to the entry that follows", { origin: "builtin", selected: "26.1.1.2", hash: "#entry=26.1.1.2&lens=navigator" }, { origin: hs.origin, selected: hs.selected, hash: hs.hash });
+  hs = await forward(p);
+  w.check("and Forward again to the last one", { selected: "43.3.16", hash: "#entry=43.3.16&lens=navigator" }, { selected: hs.selected, hash: hs.hash });
+  w.check("console clean", [], p.messages); await p.close();
+  // a reading level chosen while a lexicon from a file is on show: the entry of the history keeps its address
+  p = await o("#lens=navigator");
+  await pick(p, "26.1.1.4");
+  await loadFile(p, path.join(FILES, "invented.json"));
+  await p.tap("#showItBtn"); await sleep(300); await settle(p.page);
+  await typed(p, "#entry=26.1.2&lens=holographer");
+  hs = await snap(p);
+  w.check("a link typed while a lexicon from a file is on show sets its lens and chooses its entry there", { lens: "holographer", selected: "26.1.2", origin: "outside", hash: "#entry=26.1.2&lens=holographer" }, { lens: hs.lens, selected: hs.selected, origin: hs.origin, hash: hs.hash });
+  await p.ev(() => scrollTo(0, 0));
+  await p.lens("navigator"); await sleep(150);
+  hs = await snap(p);
+  w.check("a reading level chosen over that lexicon is shown, and the address of the history's entry stays as it was", { lens: "navigator", selected: "26.1.2", origin: "outside", hash: "#entry=26.1.2&lens=holographer" }, { lens: hs.lens, selected: hs.selected, origin: hs.origin, hash: hs.hash });
+  const lensBack = await back(p), lensForward = await forward(p);
+  w.check("Back and then Forward to that entry: its address is still the one that was typed, and its entry is chosen at the level of now", { back: "#entry=26.1.1.4&lens=navigator", hash: "#entry=26.1.2&lens=holographer", selected: "26.1.2", lens: "navigator", origin: "outside" }, { back: lensBack.hash, hash: lensForward.hash, selected: lensForward.selected, lens: lensForward.lens, origin: lensForward.origin });
+  w.check("console clean", [], p.messages); await p.close();
   p = await o("#sky=1505000.5,132.1,45.2");
   const bs = await p.ev(() => ({ origin: window.LexiconExplorer.state.lexicon.origin, note: window.__W.shown(document.getElementById("linkNote")) ? document.getElementById("linkNote").textContent : null }));
   w.check("a sky with a latitude out of range is ignored with a note, and Ezekiel is shown", { origin: "builtin", note: "a link value was ignored" }, bs, bs.origin === "builtin" && !!bs.note && bs.note.includes("a link value was ignored"));
   await p.close();
+  // a sky link with one faulty part: the note about the link is said first and then the sky's line, in one status line
+  for (const [part, note] of [["&lens=bogus", "a link value was ignored."], ["&entry=9.9", "That link names an entry this lexicon does not have."], ["&foo=1", "a link value was ignored."]]) {
+    p = await o("#sky=2461360.25000,51.48,0.00" + part);
+    await sleep(650);
+    const said = await p.ev(() => ({ origin: window.LexiconExplorer.state.lexicon.origin, status: document.getElementById("status").textContent }));
+    w.check("#sky=2461360.25000,51.48,0.00" + part + ": the sky is built, and the status line says the note and then the sky's title, each once", { origin: "page", status: note + " A sky: Greenwich, England, 15 November 2026." }, said);
+    await p.close();
+  }
 });
 
 // ─── S17 reduced motion ──────────────────────────────────────────────────────
@@ -1193,6 +1314,22 @@ async function smallWindows(rec, browser, base) {
     } catch (e) { rec.check("the part ran to its end", "no error", String((e && e.stack) || e), false); }
     await w.close();
   }
+  // 320 x 568, the map as a ball: the names that are always kept (the centred entry, the author's notes on the root view) are drawn
+  // even where every place for them touches a marker
+  const vp = { name: "320x568", phone: true, opts: { viewport: { width: 320, height: 568 }, hasTouch: true, isMobile: true, deviceScaleFactor: 2 } };
+  rec.at(vp.name, "small window, the map as a ball");
+  const w = await fresh(rec, browser, base, vp);
+  try {
+    await w.lens("navigator");
+    await w.tap("#dimsBtn"); await sleep(300);
+    const named = async (a) => { await w.ev((x) => { const X = window.LexiconExplorer; X.tree.stop(); X.tree.jumpTo(x); scrollTo(0, 0); }, a); await sleep(300); return w.ev(() => window.LexiconExplorer.tree.labels().map((l) => l.address)); };
+    w.check("the 2D/3D button switches to the ball", "3D", await state(w.page, "dims"));
+    w.check("the whole lexicon at the centre: the author's notes (100) keep their label", true, (await named("")).includes("100"));
+    for (const a of ["26.1", "100"]) w.check("entry " + a + " at the centre has its name on the map", true, (await named(a)).includes(a));
+    w.focusReport("the map as a ball");
+    w.check("console clean", [], w.messages);
+  } catch (e) { rec.check("the part ran to its end", "no error", String((e && e.stack) || e), false); }
+  await w.close();
 }
 
 // ─── fonts aborted: the one console message allowed ──────────────────────────
@@ -1219,7 +1356,7 @@ section("S19", "finding the way: the notes, John 3:16, pointers, links out", asy
   // the card shown while nothing is chosen: where the author's ten lines are
   const inv = await w.ev(() => ({ text: document.getElementById("notesInvite").textContent, legendFirst: document.getElementById("entryLegend").getBoundingClientRect().top < document.getElementById("notesInvite").getBoundingClientRect().top, quotes: /[“”"]/.test(document.getElementById("notesInvite").textContent) }));
   w.check("first screen: the empty card says where the author's ten lines are, with one button and no quotation", { text: true, quotes: false }, { text: inv.text.includes("The author wrote ten lines under this passage.") && inv.text.endsWith("Open the author's notes") || inv.text, quotes: inv.quotes });
-  if (w.phone) w.check("under 700 px a button to the author's notes stands beside the card's title, on the first screen", { label: "The author's notes", onFirstScreen: true }, await w.ev(() => { const b = document.getElementById("notesBtnTop"), r = b.getBoundingClientRect(); return { label: b.textContent, onFirstScreen: window.__W.shown(b) && r.bottom + scrollY < 844 }; }));
+  if (w.phone) w.check("under 700 px a button to the author's notes stands beside the card's title, on the first screen, and names the number of the lines", { label: "The author's ten lines", onFirstScreen: true }, await w.ev(() => { const b = document.getElementById("notesBtnTop"), r = b.getBoundingClientRect(); return { label: b.textContent, onFirstScreen: window.__W.shown(b) && r.bottom + scrollY < 844 }; }));
   if (!w.phone) w.check("at 1440 x 900 the sentence and its button are on the first screen", "above 900", await w.ev(() => Math.round(document.getElementById("notesBtn").getBoundingClientRect().bottom)), (await w.ev(() => document.getElementById("notesBtn").getBoundingClientRect().bottom)) < 900);
   // Stargazer is told what the Navigator level adds
   const lv = await w.ev(() => ({ wide: window.__W.shown(document.getElementById("levels")), text: document.getElementById("levels").textContent }));
@@ -1228,6 +1365,7 @@ section("S19", "finding the way: the notes, John 3:16, pointers, links out", asy
   await w.shot("70-first-screen-notes-and-levels", "First screen at Stargazer: the sentence and button for the author's notes in the card; from 700 px the line about the Navigator level beside the strip.");
   await w.tap(w.phone ? "#notesBtnTop" : "#notesBtn"); await settle(w.page);
   w.check("Open the author's notes selects entry 100, which lists the ten lines", { selected: "100", lines: 10 }, { selected: await sel(), lines: await w.ev(() => document.querySelectorAll('#tabEntry [data-key^="row-100."]').length) }, (await sel()) === "100" && (await w.ev(() => document.querySelectorAll('#tabEntry [data-key^="row-100."]').length)) >= 10);
+  w.check("ten is the number of quoted lines the card then shows", 10, await w.ev(() => document.querySelectorAll("#tabEntry blockquote").length));
   // the opening gold box leads to John 3:16 and to First Explorers
   await w.ev(() => scrollTo(0, 0));
   await w.station("read");
@@ -1252,10 +1390,13 @@ section("S19", "finding the way: the notes, John 3:16, pointers, links out", asy
   w.check("Go to Line 3 selects the author's line 3, and the gold box is the station's own again", { selected: "100.3", john: false }, { selected: await sel(), john: await w.ev(() => !!document.getElementById("bridgeFly")) });
   // pointers: each closing sentence that names a place has a button that opens it (Navigator)
   await w.lens("navigator");
-  const open = async (line, key) => { await w.ev((a) => { window.LexiconExplorer.select(a); }, line); await settle(w.page); await w.tap('[data-key="' + key + '"]'); await sleep(250); await settle(w.page); return w.ev(() => ({ station: window.LexiconExplorer.state.station, tab: window.LexiconExplorer.state.tab, focus: (document.activeElement || {}).id || "", box: document.getElementById("stationBox").open })); };
+  const open = async (line, key) => { await w.ev((a) => { window.LexiconExplorer.select(a); }, line); await settle(w.page); await w.tap('[data-key="' + key + '"]'); await sleep(250); await settle(w.page); await still(w); return w.ev(() => ({ station: window.LexiconExplorer.state.station, tab: window.LexiconExplorer.state.tab, focus: (document.activeElement || {}).id || "", box: document.getElementById("stationBox").open })); };
   w.check("Line 6, Hide a corner and see: the button opens station 7 at the mirror word and puts the focus on its heading", { station: "fourth", focus: "fig-b", box: true }, await open("100.6", "ptr-100.6.9").then((x) => ({ station: x.station, focus: x.focus, box: x.box })));
-  w.check("the heading of the figure is inside the window", "in view", await w.ev(() => { const r = document.getElementById("fig-b").getBoundingClientRect(); return r.top >= 0 && r.bottom <= innerHeight ? "in view" : Math.round(r.top); }));
+  const figureSeen = (id) => w.ev((i) => { const c = document.getElementById(i).closest("section").querySelector("canvas").getBoundingClientRect(); return c.top < innerHeight - 100 && c.bottom > 0; }, id);
+  w.check("the heading of the figure is at the top of the window (below the header where that stays), with the figure under it in the window", { heading: "at the top", figure: true }, { heading: await atTop(w, "fig-b"), figure: await figureSeen("fig-b") });
   w.check("Line 6, Try three points of your own: station 7 at the three squared distances", { station: "fourth", focus: "fig-a" }, await open("100.6", "ptr-100.6.8").then((x) => ({ station: x.station, focus: x.focus })));
+  w.check("that heading is at the top of the window too, the first figure of the station under it", { heading: "at the top", figure: true }, { heading: await atTop(w, "fig-a"), figure: await figureSeen("fig-a") });
+  w.check("Line 6, the squares: station 7 at its fourth figure, its heading at the top of the window", { station: "fourth", focus: "fig-d", heading: "at the top" }, await open("100.6", "ptr-100.6.12").then(async (x) => ({ station: x.station, focus: x.focus, heading: await atTop(w, "fig-d") })));
   await w.tap("#goLine6"); await settle(w.page);
   w.check("station 7 has a Go-to button to Line 6", "100.6", await sel());
   w.check("Line 5, Press Seal and watch: the Seal station", "seal", (await open("100.5", "ptr-100.5.4")).station);
@@ -1284,12 +1425,25 @@ section("S19", "finding the way: the notes, John 3:16, pointers, links out", asy
   await w.shot("72-stargazer-mirror-word-in-stamp-it", "Stargazer, Stamp it: the closed box Three corners give the fourth opened from Line 6, the fourth corner hidden.");
   await w.tap("#mirrorHide");
   if (w.phone) {
-    const lb = await w.ev(() => ({ shown: window.__W.shown(document.getElementById("levelsBox")), text: document.getElementById("levelsBox").textContent }));
-    w.check("under 700 px the line about the Navigator level stands inside Stamp it", { shown: true, text: MORE_LEVELS + " Switch to Navigator" }, lb);
+    const lb = await w.ev(() => { const e = document.getElementById("levelsBox"); return { shown: window.__W.shown(e), text: e.textContent, inBox: !!e.closest("details"), next: (e.nextElementSibling || {}).id }; });
+    w.check("under 700 px the line about the Navigator level stands directly before the station's box at Stamp it, inside no box that must be opened", { shown: true, text: MORE_LEVELS + " Switch to Navigator", inBox: false, next: "stationBox" }, lb);
+    const met = [];
+    for (const st of STAR_STATIONS) { await w.station(st); met.push(await w.ev(() => window.__W.shown(document.getElementById("levelsBox")) && document.getElementById("levelsBox").getBoundingClientRect().top > document.getElementById("explain").getBoundingClientRect().bottom)); }
+    w.check("it is there at each of the four Stargazer stations, below the card", [true, true, true, true], met);
+    await w.station("seal");
     await w.tap("#levelsBtnBox");
-  } else await w.tap("#levelsBtn");
+  } else { await w.ev(() => scrollTo(0, 0)); await sleep(80); await w.tap("#levelsBtn"); }
   await sleep(200);
   w.check("Switch to Navigator switches the lens; the focus is not lost", { lens: "navigator", focus: true }, { lens: await state(w.page, "lens"), focus: (await w.ev(() => window.__W.focus())) !== "body" });
+  await still(w);
+  if (w.phone) {
+    w.check("390 x 844: the station strip is brought into view, and the station button that has the focus lies inside the window", { focus: "st-read", inWindow: true }, await focusPlace(w));
+    w.check("320 x 568, the button pressed with the keyboard: the same", { lens: "navigator", focus: "st-read", inWindow: true, console: [] }, await switchInWindow(w, { width: 320, height: 568 }, "", "seal"));
+  } else {
+    w.check("1440 x 900: the button stands beside the strip, the focus goes to the first station button and nothing is scrolled", { focus: "st-read", inWindow: true, scrollY: 0 }, { ...(await focusPlace(w)), scrollY: await w.ev(() => Math.round(scrollY)) });
+    w.check("699 x 900, the button pressed with the keyboard: the station strip is brought into view, and the station button that has the focus lies inside the window", { lens: "navigator", focus: "st-read", inWindow: true, console: [] }, await switchInWindow(w, { width: 699, height: 900 }, "", "seal"));
+    w.check("1099 x 600, the button pressed with the keyboard: from 700 px wide nothing is scrolled", { lens: "navigator", focus: "st-read", scrollY: 0, console: [] }, await switchInWindow(w, { width: 1099, height: 600 }, "", "seal", true));
+  }
   // the dialog's other pages, and the wing link of the header
   await w.ev(() => scrollTo(0, 0));
   await w.tap("#aboutBtn"); await sleep(150);
@@ -1377,6 +1531,11 @@ section("S20", "layout, list choice, sticky banner, a sky from a link", async (w
   const sb = await p.ev(() => ({ title: document.getElementById("skyTitle").textContent, notice: document.getElementById("skyNotice").textContent, where: window.__W.shown(document.getElementById("skyNotice")) ? "banner" : "box", back: !!document.querySelector("#skyBanner #backBtn"), href: document.getElementById("skyPageLink").getAttribute("href"), label: document.getElementById("skyPageLink").getAttribute("aria-label"), top: window.__W.shown(document.getElementById("banner")) }));
   p.check("a #sky= link: the banner names the sky, says it was built from a link and what to do, and never says who stamped it", { title: "A sky: Greenwich, England, 15 November 2026", notice: SKY_BANNER, where: "banner", back: true, you: false, top: false }, { title: sb.title, notice: sb.notice, where: sb.where, back: sb.back, you: /\byou\b/i.test(sb.notice), top: sb.top });
   p.check("Open the Celestial Control Panel carries the same place and time in that page's own keys, and no stamp or name", { href: "../Celestial_Control_Panel/index.html#jd=2461360.25000&lat=51.48&lon=0.00&lens=stargazer", label: "Open the Celestial Control Panel", exists: true }, { href: sb.href, label: sb.label, exists: fs.existsSync(path.join(ROOT, WING, "Celestial_Control_Panel/index.html")) });
+  await sleep(450);
+  const arrive = await p.ev(() => ({ status: document.getElementById("status").textContent, focus: window.__W.focus(), title: document.title, y: scrollY }));
+  p.check("arriving by a #sky= link: the sky's title is said once in the status line, the focus is not moved, and the document's title names the sky", { status: "A sky: Greenwich, England, 15 November 2026.", focus: "body", title: "Lexicon Explorer · A sky: Greenwich, England, 15 November 2026", y: 0 }, arrive);
+  const skyLevels = () => p.ev(() => { const e = document.getElementById(innerWidth < 700 ? "levelsBox" : "levels"); return { shown: window.__W.shown(e), text: e.textContent, inBox: !!e.closest("details") }; });
+  p.check("a sky at Stargazer is told what the Navigator level adds: the first sentence alone (a sky has no path to John 3:16 and no fourth square), with the button", { shown: true, text: SKY_LEVELS + " Switch to Navigator", inBox: false }, await skyLevels());
   await p.sweep("a sky from a link, Stargazer, as it arrives");
   await p.shot("78-sky-from-a-link", "A sky opened by a #sky= link at Stargazer: the banner with Stamp it here, Back to Ezekiel and the link to the Celestial Control Panel.");
   await p.station("seal"); await p.tap("#sealBtn"); await idle(p.page);
@@ -1387,6 +1546,17 @@ section("S20", "layout, list choice, sticky banner, a sky from a link", async (w
   await p.station("layers"); await sleep(150);
   const moved = await p.ev(() => ({ banner: window.__W.shown(document.getElementById("skyNotice")), box: !document.getElementById("skyNoticeBox").hidden, text: document.getElementById("skyNoticeBox").textContent }));
   if (p.phone) p.check("under 700 px, where the banner's sentences would push the card off the first screen, they stand as the first line of the station's box", { banner: false, box: true, text: SKY_BANNER }, moved);
+  await p.lens("stargazer"); await p.station("seal");
+  p.check("the line is there at the sky's Stamp it station too", { shown: true, text: SKY_LEVELS + " Switch to Navigator", inBox: false }, await skyLevels());
+  await p.tap(p.phone ? "#levelsBtnBox" : "#levelsBtn"); await sleep(200);
+  p.check("its button switches to Navigator, where the sky has the Send station; the focus is not lost", { lens: "navigator", stations: ["place", "layers", "seal", "send"], focus: true }, { lens: await state(p.page, "lens"), stations: await p.ev(() => Array.from(document.querySelectorAll("#strip button")).map((b) => b.id.slice(3))), focus: (await p.ev(() => window.__W.focus())) !== "body" });
+  await still(p);
+  p.check("for a sky too the station button that has the focus lies inside the window after the press", { focus: "st-place", inWindow: true }, await focusPlace(p));
+  const skyLow = p.phone ? { width: 320, height: 568 } : { width: 699, height: 900 };
+  p.check("a sky at " + skyLow.width + " x " + skyLow.height + ", the button pressed with the keyboard: the same", { lens: "navigator", focus: "st-place", inWindow: true, console: [] }, await switchInWindow(p, skyLow, "#sky=2461360.25000,51.48,0.00&lens=stargazer", "seal"));
+  await p.ev(() => scrollTo(0, 0));
+  await p.tap("#backBtn"); await sleep(250);
+  p.check("Back to the Ezekiel lexicon: the document's title is the page's own again", OWN_TITLE, await p.ev(() => document.title));
   p.check("no console error on the sky page", [], p.messages);
   p.focusReport("S20 sky");
   await p.close();
@@ -1397,6 +1567,8 @@ section("S21", "keyboard, announcements, Stargazer words, STRIX in whole sentenc
   const status = async () => { await sleep(650); return w.ev(() => document.getElementById("status").textContent); };
   // Stargazer words in the header and on the first screen
   const hd = await w.ev(() => ({ sub: window.__W.shown(document.getElementById("sub")) ? document.getElementById("sub").textContent : null, lensLine: window.__W.shown(document.getElementById("lensLine")) ? document.getElementById("lensLine").textContent : null, strix: window.__W.shown(document.querySelector("#strixLine .strix-name")) }));
+  const regionNames = () => w.ev(() => [document.getElementById("explain").getAttribute("aria-label"), document.getElementById("tree").getAttribute("aria-label")]);
+  w.check("Stargazer: the card's section and the map are named with thing, not entry", ["About the chosen thing", "The things of this lexicon as a tree on a curved map"], await regionNames());
   if (w.phone) w.check("under 700 px: a line names the chosen level and its hint; the name STRIX stands before STRIX's line", { lensLine: "Stargazer: ages 6 and up", strix: true }, { lensLine: hd.lensLine, strix: hd.strix });
   else w.check("the line under the title at Stargazer has no hard word", "Ezekiel 1:1-9 on a curved map", hd.sub);
   if (w.phone) {
@@ -1444,13 +1616,19 @@ section("S21", "keyboard, announcements, Stargazer words, STRIX in whole sentenc
   await w.ev(() => { document.activeElement.blur(); scrollTo(0, 0); });
   // Navigator: STRIX in whole sentences; figure (a) and the flip button without a pointer
   await w.lens("navigator");
+  w.check("from Navigator up they are named with entry", ["About the chosen entry", "The entries of this lexicon as a tree on a curved map"], await regionNames());
+  const moreNames = [];
   for (const st of ALL_STATIONS) {
     await w.station(st); await sleep(120);
-    const s = await w.ev(() => { const M = window.__M, x = window.LexiconExplorer.state, full = M.stationView(x.station, x.lens, x.lexicon).say[0].text, all = M.sentencesOf(full), t = document.getElementById("strixText").textContent; let n = -1; for (let k = 0; k <= all.length; k++) if (all.slice(0, k).join(" ") === t) n = k; return { n, of: all.length, items: M.stationView(x.station, x.lens, x.lexicon).say.length + M.stationView(x.station, x.lens, x.lexicon).notes.length, more: window.__W.shown(document.getElementById("strixMore")), clamp: getComputedStyle(document.getElementById("strixLine")).webkitLineClamp }; });
+    const s = await w.ev(() => { const M = window.__M, x = window.LexiconExplorer.state, full = M.stationView(x.station, x.lens, x.lexicon).say[0].text, all = M.sentencesOf(full), t = document.getElementById("strixText").textContent; let n = -1; for (let k = 0; k <= all.length; k++) if (all.slice(0, k).join(" ") === t) n = k; return { n, of: all.length, items: M.stationView(x.station, x.lens, x.lexicon).say.length + M.stationView(x.station, x.lens, x.lexicon).notes.length, more: window.__W.shown(document.getElementById("strixMore")), clamp: getComputedStyle(document.getElementById("strixLine")).webkitLineClamp, label: document.getElementById("strixMore").textContent, aria: document.getElementById("strixMore").getAttribute("aria-label") }; });
+    if (w.phone && s.more) moreNames.push({ st, none: s.n === 0, label: s.label, aria: s.aria });
     if (w.phone) w.check("navigator, " + st + ": STRIX's line holds whole sentences only (" + s.n + " of " + s.of + "), is not clamped, and has the more button exactly when something is left out", { whole: true, more: s.n < s.of || s.items > 1, clamp: "none" }, { whole: s.n >= 0, more: s.more, clamp: s.clamp });
     else w.check("navigator, " + st + ": from 700 px STRIX's first paragraph is whole and there is no more button", { n: s.of, more: false }, { n: s.n, more: s.more });
   }
   if (w.phone) {
+    // the button's accessible name: its visible words where no sentence is shown, "more from STRIX" where it follows sentences
+    w.check("where no sentence of STRIX fits, the button reads What STRIX says here and has no other name; after sentences it reads more and is named more from STRIX", [], moreNames.filter((m) => (m.none ? !(m.label === "What STRIX says here" && m.aria === null) : !(m.label === "more" && m.aria === "more from STRIX"))));
+    w.check("both forms of the button occur among the seven stations", { withNone: true, afterSentences: true }, { withNone: moreNames.some((m) => m.none), afterSentences: moreNames.some((m) => !m.none) });
     await w.station("seal"); await w.ev(() => { document.getElementById("stationBox").open = false; scrollTo(0, 0); });
     await w.tap("#strixMore"); await sleep(200);
     const m = await w.ev(() => { const M = window.__M, x = window.LexiconExplorer.state, v = M.stationView(x.station, x.lens, x.lexicon), body = document.getElementById("stationBody").textContent; return { open: document.getElementById("stationBox").open, focus: (document.activeElement || {}).id, whole: v.say.concat(v.notes).every((p) => body.includes(p.text)), inView: document.getElementById("stationSum").getBoundingClientRect().top < innerHeight }; });
@@ -1491,9 +1669,210 @@ section("S21", "keyboard, announcements, Stargazer words, STRIX in whole sentenc
   await sleep(600);
   p.check("#entry=99.9.9: the note about the link is announced", "That link names an entry this lexicon does not have.", await q.ev(() => document.getElementById("status").textContent));
   await q.close();
+  if (w.phone) {
+    // a window too small for the card to reach the first screen: nothing is gained by leaving every sentence out
+    const low = await fresh(w.rec, w.browser, w.base, w.vp, { viewport: { width: 320, height: 568 } });
+    await low.station("count"); await sleep(250);
+    const lc = await low.ev(() => { const M = window.__M, x = window.LexiconExplorer.state, all = M.sentencesOf(M.stationView(x.station, x.lens, x.lexicon).say[0].text), m = document.getElementById("strixMore"); scrollTo(0, 0); const t = document.querySelector("#explain .explain-body:not([hidden]) h2").getClientRects()[0]; return { text: document.getElementById("strixText").textContent, first: all[0], more: window.__W.shown(m) ? m.textContent : null, aria: m.getAttribute("aria-label"), card: Math.round(t.bottom), over: window.__W.overflow().over }; });
+    low.check("320 x 568, Stargazer, Count: the card cannot reach the first screen whatever is left out, so STRIX's first sentence is shown, with the more button", { text: lc.first, more: "more", aria: "more from STRIX", cardBelow844: true, sideways: false }, { text: lc.text, more: lc.more, aria: lc.aria, cardBelow844: lc.card > 844, sideways: lc.over > 0 });
+    low.check("no console error in that window", [], low.messages);
+    await low.close();
+    // phone windows lower than 844 px: an empty line of STRIX gains nothing where the card is below the window's bottom edge all the same
+    for (const [width, height] of [[320, 568], [375, 667]]) for (const [what, hash, stations] of [["the Ezekiel lexicon", "", 36], ["a sky", "#sky=2461360.25000,51.48,0.00", 20]]) {
+      const m = await lowWindow(w, { width, height }, hash), at = width + " x " + height + ", " + what;
+      w.check(at + ": wherever the card's first line ends below the window's bottom edge, STRIX shows at least its first sentence (" + m.rows.length + " stations and lenses, as the page opens and sealed and sent; " + m.below.length + " with the card below the edge)", [],
+        m.below.filter((r) => !(r.first && r.text.startsWith(r.first))).map((r) => r.at + ": " + JSON.stringify(r.text) + ", the card's first line at y " + r.card), m.rows.length === stations && m.below.length > 0 && m.below.every((r) => r.first && r.text.startsWith(r.first)));
+      if (hash) w.check(at + ": the banner's sentences about the link are not moved into the station's box where the card stays below the window's bottom edge", [], m.below.filter((r) => r.notice !== "banner").map((r) => r.at + ": " + r.notice));
+      w.check(at + ": no console error", [], m.messages);
+    }
+  }
 });
 
-const PLAN = [["S01", "S02"], ["S03"], ["S04", "S05"], ["S06", "S07", "S08"], ["S09", "S10", "S18", "S11", "S12", "S13", "S14", "S15"], ["S16"], ["S17"], ["S19"], ["S20"], ["S21"]];
+// ─── S22 Stargazer names and leads, the pointers of lines 2 and 7, the focus after a Go-to button, a long ledger,
+//     flights started below the map, taps on markers, the scroll offset from 700 to 1100 px ───
+const LEADS = [["0.1", "OUR IDEA", "We sort every piece into four kinds and give each piece a place of its own."],
+  ["0.2", "SAID", "The Bible words kept here are the King James Version, from the Project Gutenberg e-text."],
+  ["0.3", "SAID", "The Jewish Encyclopedia says Jewish teachers explained this chapter to one wise pupil at a time."],
+  ["0.4", "SAID", "Its writer, Pierre van Paassen, says no life of Jesus can be written without taking sides."],
+  ["0.5", "OUR IDEA", "We read Jesus of Nazareth as a bridge: a line through the middle of our map."]];
+/** Two packages that pass every check and carry a long ledger: 201 and 2,952 covered entries, each of three unbroken strings of 96 characters. */
+async function makeLedgerFiles(root, folder) {
+  const OW = await import(require("url").pathToFileURL(path.join(root, "scripts/strix-overwatch.js")).href), AT = "2026-11-15T10:00:00.000Z";
+  for (const total of [201, 2952]) {
+    const bundle = await OW.buildLexiconBundle([OW.makeEntry("1", "reading", "note", "A note", "Words.")], { at: AT });
+    while (bundle.trace.length < total) OW.traceAppend(bundle.trace, "W".repeat(96), "M".repeat(96), "d", "W".repeat(96));
+    const { certificate } = await OW.issueCertificate(bundle, await OW.newSessionKeys(), AT);
+    fs.writeFileSync(path.join(folder, "ledger-" + total + ".json"), JSON.stringify(OW.makeHyperpack({ ...bundle, certificate })));
+  }
+}
+/** Puts into the page a function that says whether the whole map is inside the window (below the header where that stays). */
+const withMapSeen = (walk) => walk.ev(() => { window.__mapSeen = () => { const c = document.getElementById("tree").getBoundingClientRect(), bar = document.getElementById("topWrap"), edge = getComputedStyle(bar).position === "sticky" ? bar.getBoundingClientRect().bottom : 0; return c.top >= edge - 1 && c.bottom <= innerHeight + 1; }; });
+section("S22", "names and leads, new pointers, focus, a long ledger, flights seen, markers, scroll offsets", async (w) => {
+  const sel = async (a) => { await w.ev((x) => { window.LexiconExplorer.select(x); }, a); await settle(w.page); };
+  const status = async () => { await sleep(650); return w.ev(() => document.getElementById("status").textContent); };
+  // Stargazer: five entries are shown under a name a young reader can read; five cards open with a sentence of the page's own
+  await sel("0");
+  const n0 = await w.ev(() => ({ list: (document.getElementById("e-0.1") || {}).textContent || "", map: window.LexiconExplorer.tree.labels().filter((l) => l.address === "0.1").map((l) => l.text) }));
+  w.check("Stargazer, About this lexicon: entry 0.1 is named How this lexicon is sorted in the list and on the map", { list: true, map: true }, { list: n0.list.endsWith("How this lexicon is sorted") || n0.list, map: (n0.map.length === 1 && /^How this/.test(n0.map[0])) || n0.map });
+  const mapName = async (lens) => { await w.lens(lens); await sleep(300); return w.ev(() => window.LexiconExplorer.tree.labels().filter((l) => l.address === "0.1").map((l) => l.text)); };
+  const asNav = await mapName("navigator"), asStar = await mapName("stargazer");
+  w.check("with that entry still at the centre, the lens buttons change the name of 0.1 on the map: its own name at Navigator, the Stargazer name again at Stargazer", { navigator: true, stargazer: true }, { navigator: (asNav.length === 1 && /^Layers/.test(asNav[0])) || asNav, stargazer: (asStar.length === 1 && /^How this/.test(asStar[0])) || asStar });
+  await w.ev(() => scrollTo(0, 0));
+  await sel("0.1");
+  w.check("its card's title and the status line use that name; its own name is not shown at this lens", { title: "How this lexicon is sorted", status: "How this lexicon is sorted. Nothing more under it.", own: false }, { title: await w.ev(() => document.getElementById("entryTitle").textContent), status: await status(), own: await w.ev(() => document.querySelector("main").textContent.includes("Layers and addresses")) });
+  for (const [a, badge, lead] of LEADS) {
+    await sel(a);
+    const c = await w.ev((x) => { const M = window.__M, t = document.getElementById("entryText"), own = document.getElementById("entryOwn"), box = own ? own.closest("details") : null; return { lead: t.textContent.replace(/^[^A-Za-z]*/, ""), badges: t.querySelectorAll(".badge").length, own: !!own && own.textContent.includes(M.EZEKIEL.byAddress.get(x).text), behind: box ? box.querySelector("summary").textContent : null, open: box ? box.open : null }; }, a);
+    w.check("Stargazer, entry " + a + ": the card opens with one sentence of the page's own under one badge (" + lead.split(/\s+/).length + " words); the entry's own words are behind More for older readers", { lead: badge + lead, badges: 1, own: true, behind: "More for older readers", open: false }, c);
+  }
+  await w.sweep("Stargazer, entry 0.5 with its opening sentence");
+  await sel("26.1");
+  const near = await w.ev(() => ({ names: ["26.1.10", "26.1.12", "26.1.16", "26.1.17"].map((a) => document.getElementById("e-" + a).textContent.replace(/^[^A-Za-z]*WRITTEN/, "")), context: document.querySelector("main").textContent.includes("(context)") }));
+  w.check("Stargazer: the four verses kept for their surroundings are named a verse nearby, and the word context is nowhere", { names: ["Ezekiel 1:10 (a verse nearby)", "Ezekiel 1:12 (a verse nearby)", "Ezekiel 1:16 (a verse nearby)", "Ezekiel 1:17 (a verse nearby)"], context: false }, near);
+  await sel("100.9");
+  w.check("Stargazer, Line 9: the Go-to buttons use the same names", ["Go to Ezekiel 1:9", "Go to Ezekiel 1:12 (a verse nearby)", "Go to Ezekiel 1:17 (a verse nearby)"], await w.ev(() => Array.from(document.querySelectorAll('#tabEntry [data-key^="ptr-100.9.4-"]')).map((b) => b.textContent)));
+  await w.lens("navigator"); await sel("26.1");
+  w.check("from Navigator up those entries keep their own names", ["Ezekiel 1:10 (context)", "Layers and addresses"], [await w.ev(() => document.getElementById("e-26.1.10").textContent.replace(/^[^A-Za-z]*TEXT/, "").replace(/26\.1\.10.*$/, "")), await (async () => { await sel("0.1"); return w.ev(() => document.getElementById("entryTitle").textContent); })()]);
+  // the pointers of lines 2 and 7, at three lenses
+  const press = async (line, key) => { await sel(line); await w.ev(() => { for (const d of document.querySelectorAll("#tabEntry details")) d.open = true; }); const label = await w.ev((k) => (document.querySelector('#tabEntry [data-key="' + k + '"]') || {}).textContent || null, key);
+    if (label === null) return { label };
+    await w.tap('#tabEntry [data-key="' + key + '"]'); await sleep(250); await settle(w.page); await still(w);
+    return w.ev((l) => { const a = document.activeElement || {}, x = window.LexiconExplorer.state; return { label: l, station: x.station, tab: x.tab, focus: a.id || (a.getAttribute && a.getAttribute("data-key")) || "", box: document.getElementById("stationBox").open }; }, label); };
+  for (const lens of ["navigator", "holographer"]) {
+    await w.lens(lens); await w.station("read");
+    const p2 = await press("100.2", "ptr-100.2.5");
+    w.check(lens + ", Line 2, Open the Wheel tab: a button that opens the Wheel tab and puts the focus on it", { label: "Open the Wheel tab", tab: "wheel", focus: "tabBtn-wheel" }, { label: p2.label, tab: p2.tab, focus: p2.focus });
+    await w.tap("#tabBtn-entry");
+    const p7 = await press("100.7", "ptr-100.7.6");
+    w.check(lens + ", Line 7, Try the three tampers at Seal: a button that opens the Seal station", { label: "Go to the Seal station", station: "seal", focus: "st-seal" }, { label: p7.label, station: p7.station, focus: p7.focus });
+    const tampers = await w.ev(() => Array.from(document.querySelectorAll('#stationBody [data-key^="tamper-"]')).map((b) => b.getAttribute("data-key").slice(7)));
+    w.check(lens + ": the three tampers the row names are there (change a word, drop an entry, add one), among those this lens offers", ["word", "drop", "add"], ["word", "drop", "add"].filter((k) => tampers.includes(k)));
+  }
+  await w.lens("stargazer"); await w.station("read");
+  const s2 = await press("100.2", "ptr-100.2.5");
+  w.check("Stargazer, Line 2: the button goes to the word wheel inside Stamp it, opens its box and puts the focus on the wheel's first button", { label: "Go to the word wheel", station: "seal", box: true, focus: true }, { label: s2.label, station: s2.station, box: s2.box, focus: /^wheelview-/.test(s2.focus || "") || s2.focus });
+  w.check("the wheel is brought to the top of the window", "at the top", await w.ev(() => { const r = document.activeElement.getBoundingClientRect(), bar = document.getElementById("topWrap"), edge = getComputedStyle(bar).position === "sticky" ? bar.getBoundingClientRect().bottom : 0; return r.top >= edge - 1 && r.top <= edge + 60 ? "at the top" : "y " + Math.round(r.top) + " (the window begins at " + Math.round(edge) + ")"; }));
+  await w.ev(() => scrollTo(0, 0)); await w.station("read");
+  const s7 = await press("100.7", "ptr-100.7.6");
+  w.check("Stargazer, Line 7: the button goes to Stamp it, where the three tampers are", { label: "Go to Stamp it", station: "seal", focus: "st-seal", tampers: 3 }, { label: s7.label, station: s7.station, focus: s7.focus, tampers: await w.ev(() => document.querySelectorAll('#stationBody [data-key^="tamper-"]').length) });
+  // the focus after a Go-to button of the card, pressed with the keyboard
+  const goByKey = async (key) => { await sel("100.6"); await w.ev((k) => { for (const d of document.querySelectorAll("#tabEntry details")) d.open = true; document.querySelector('#tabEntry [data-key="' + k + '"]').focus(); }, key); await w.key("Enter", "Enter on " + key); await settle(w.page); await still(w);
+    return w.ev(() => { const a = document.activeElement || {}, r = a.getBoundingClientRect ? a.getBoundingClientRect() : { top: -1, bottom: -1 }, bar = document.getElementById("topWrap"), edge = getComputedStyle(bar).position === "sticky" ? bar.getBoundingClientRect().bottom : 0; return { selected: window.LexiconExplorer.state.selected, focus: a.id || "", seen: r.top >= edge - 1 && r.bottom <= innerHeight + 1 }; }); };
+  w.check("Stargazer: after Enter on a Go-to button inside More for older readers the new card's title has the focus and is in the window", { selected: "5.19.15", focus: "entryTitle", seen: true }, await goByKey("go-5.19.15"));
+  w.check("the same after the button made from a row's closing words", { selected: "5.19.15", focus: "entryTitle", seen: true }, await goByKey("ptr-100.6.14-5.19.15"));
+  await w.lens("navigator");
+  const nk = await goByKey("go-5.19.15");
+  w.check("from Navigator up the Entry tab receives the focus, as before", { selected: "5.19.15", focus: "tabBtn-entry" }, { selected: nk.selected, focus: nk.focus });
+  w.focusReport("S22 names, pointers, focus");
+  // a long ledger in a package from a file: 200 rows and one line of the page's own; the tab opens at once
+  for (const [total, line] of [[201, "and 1 more ledger entry, not listed"], [2952, "and 2752 more ledger entries, not listed"]]) {
+    await w.ev(() => scrollTo(0, 0));
+    await loadFile(w, path.join(FILES, "ledger-" + total + ".json"));
+    await w.tap("#showItBtn"); await sleep(300); await settle(w.page);
+    const ms = await w.ev(async () => { const t = performance.now(); document.getElementById("tabBtn-overwatch").click(); await new Promise((r) => requestAnimationFrame(() => setTimeout(r, 0))); return Math.round(performance.now() - t); });
+    const led = await w.ev(() => { const m = document.getElementById("ledgerMore"), prev = m ? m.previousElementSibling : null; return { rows: document.querySelectorAll("#tabOverwatch .table-wrap tbody tr").length, line: m ? m.textContent : null, under: prev ? prev.className : null, size: m ? getComputedStyle(m).fontSize : null, outside: m ? m.querySelectorAll(".outside").length : null }; });
+    w.check("a package whose ledger has " + total + " covered entries: the first 200 are listed and, under the table, one line of the page's own says how many are not", { rows: 200, line, under: "table-wrap", size: "14px", outside: 0 }, led);
+    w.check("its Checks tab opens in under half a second", "under 500 ms", ms, ms < 500);
+    if (total === 201) await w.sweep("a long ledger from a file, the Checks tab", { card: false });
+    await w.ev(() => scrollTo(0, 0));
+    await w.tap("#backBtn"); await sleep(250);
+  }
+  // taps on the map: a marker is found whatever name stands beside it, and no child's name lies on another entry's marker
+  await w.lens("stargazer");
+  const lay = async (a) => { await w.ev((x) => { const X = window.LexiconExplorer; X.tree.stop(); X.tree.jumpTo(x); scrollTo(0, 0); }, a); await sleep(220); };
+  const onMarkers = [];
+  for (const c of ["", "26.1", "100", "0", "26.1.5", "43.3.16", "66"]) {
+    await lay(c);
+    const hits = await w.ev(() => { const t = window.LexiconExplorer.tree, focus = t.view.focus, rel = new Map(t.scene.nodes.map((n) => [n.address, n.relation])), out = [];
+      for (const l of t.labels()) { if (rel.get(l.address) !== "child" || l.address === "100") continue; for (const m of t.marks()) { if (m.address === l.address || m.address === focus) continue; if (l.x < m.x + m.r && l.x + l.w > m.x - m.r && l.y < m.y + m.r && l.y + l.h > m.y - m.r) out.push(l.text + " on the marker of " + m.address); } }
+      return out; });
+    if (hits.length) onMarkers.push((c || "the whole lexicon") + ": " + hits.join(", "));
+  }
+  w.check("at seven centres no child's name lies on the marker of another entry", [], onMarkers);
+  await lay("");
+  w.check("the whole lexicon centred: the author's notes (100) keep their label", true, await w.ev(() => window.LexiconExplorer.tree.labels().some((l) => l.address === "100")));
+  const beside = await w.ev(() => window.LexiconExplorer.tree.marks().filter((m) => m.relation === "child").map((m) => m.address));
+  const wrong = [];
+  for (const a of beside) {
+    await lay("");
+    const at = await w.ev((x) => window.__W.markAt(x), a);
+    await w.tapAt(at.x, at.y, "the marker of " + a); await sleep(120);
+    const got = await state(w.page, "selected");
+    if (got !== a) wrong.push("the marker of " + a + " chose " + got);
+  }
+  w.check("the whole lexicon centred: a tap on the marker of each top-level entry chooses that entry, whatever name stands beside it (" + beside.length + " markers, Psalms among them)", [], wrong, wrong.length === 0 && beside.includes("19") && beside.length >= 10);
+  let over = null;
+  for (const c of ["0.4.1", "0.4.2", "5.19", "14.18"]) {
+    await sel("26.1"); await lay(c);
+    over = await w.ev(() => { const t = window.LexiconExplorer.tree, box = document.getElementById("tree").getBoundingClientRect();
+      for (const l of t.labels()) for (const m of t.marks()) { if (m.address === l.address) continue;
+        for (let dx = -m.r + 0.5; dx <= m.r - 0.5; dx += 0.5) for (let dy = -m.r + 0.5; dy <= m.r - 0.5; dy += 0.5) { const x = m.x + dx, y = m.y + dy; if (Math.hypot(dx, dy) <= m.r - 0.5 && x > l.x + 0.5 && x < l.x + l.w - 0.5 && y > l.y + 0.5 && y < l.y + l.h - 0.5) return { label: l.address, mark: m.address, x: box.left + x, y: box.top + y }; } }
+      return null; });
+    if (over) { over.centre = c; break; }
+  }
+  if (over) {
+    await w.tapAt(over.x, over.y, "a point inside a marker and inside a name"); await sleep(150);
+    w.check("where a name does reach a marker (centre " + over.centre + ": the name of " + over.label + " on the marker of " + over.mark + "), a tap inside the marker chooses the marker's entry", over.mark, await state(w.page, "selected"));
+  } else w.check("at four more centres no name reaches a marker in this window (nothing to tap)", null, over);
+  await w.tap("#navHome"); await settle(w.page);
+  w.focusReport("S22 markers");
+  // the two buttons of the gold box start a flight: the map is in the window while it runs
+  const f = await fresh(w.rec, w.browser, w.base, w.vp);
+  await withMapSeen(f);
+  const watch = () => f.ev(() => { const t = window.LexiconExplorer.tree, log = (window.__fl = { flying: 0, unseen: 0, path: [] });
+    window.__iv = setInterval(() => { if (!t.flying) return; log.flying++; if (!window.__mapSeen()) log.unseen++; const a = t.view.focus; if (log.path[log.path.length - 1] !== a) log.path.push(a); }, 12); });
+  const arrived = () => f.page.waitForFunction(() => { const t = window.LexiconExplorer.tree; return window.__fl.flying > 0 && !t.flying && t.view.focus === "43.3.16"; }, null, { timeout: 20000 });
+  await f.ev(() => document.getElementById("bridgeGo").scrollIntoView({ block: "center" })); await sleep(250);
+  const outside1 = !(await f.ev(() => window.__mapSeen()));
+  if (f.phone) f.check("on the phone the gold box stands below the card: the map is outside the window when Go to John 3:16 is pressed", true, outside1);
+  await watch();
+  await f.tap("#bridgeGo"); await arrived(); await sleep(200);
+  const g = await f.ev(() => { clearInterval(window.__iv); return { flew: window.__fl.flying > 0, unseen: window.__fl.unseen, seen: window.__mapSeen(), focus: (document.activeElement || {}).id, selected: window.LexiconExplorer.state.selected, title: document.getElementById("entryTitle").textContent }; });
+  f.check("Go to John 3:16: the map is brought into the window first and is in it for the whole flight; the verse is chosen and the focus stays in the gold box", { flew: true, unseen: 0, seen: true, focus: "bridgeFly", selected: "43.3.16", title: "John 3:16" }, g);
+  await f.ev(() => document.getElementById("bridgeFly").scrollIntoView({ block: "center" })); await sleep(250);
+  const outside2 = !(await f.ev(() => window.__mapSeen()));
+  await watch();
+  await f.tap("#bridgeFly"); await arrived(); await sleep(200);
+  const fl = await f.ev(() => { clearInterval(window.__iv); return { unseen: window.__fl.unseen, starts: window.__fl.path[0], passed: window.__fl.path.length, seen: window.__mapSeen(), focus: (document.activeElement || {}).id, ends: window.LexiconExplorer.tree.view.focus }; });
+  f.check("Fly here from the river" + (outside2 ? ", pressed with the map outside the window" : "") + ": the road from the river entry to John 3:16 is flown inside the window; the focus stays on the button", { unseen: 0, starts: "26.1.1.4", passed: "3 or more entries", seen: true, focus: "bridgeFly", ends: "43.3.16" }, { ...fl, passed: fl.passed >= 3 ? "3 or more entries" : fl.passed });
+  f.check("no console error on that page", [], f.messages); f.focusReport("S22 flights"); await f.close();
+  const r = await fresh(w.rec, w.browser, w.base, w.vp, { reducedMotion: "reduce" });
+  await withMapSeen(r);
+  await r.ev(() => document.getElementById("bridgeGo").scrollIntoView({ block: "center" })); await sleep(250);
+  await r.tap("#bridgeGo");
+  r.check("with reduced motion the map is in the window at once and the verse is at the centre at once", { seen: true, at: "43.3.16", flying: false }, await r.ev(() => ({ seen: window.__mapSeen(), at: window.LexiconExplorer.tree.view.focus, flying: window.LexiconExplorer.tree.flying })));
+  await r.close();
+  // from 700 to 1100 px wide the header may have two rows: what is scrolled to stops below it, with and without the banner of a lexicon from a file
+  if (!w.phone) {
+    for (const width of [700, 768, 820, 1000, 1099, 1100]) for (const banner of [false, true]) {
+      const n = await fresh(w.rec, w.browser, w.base, w.vp, { hash: "#lens=navigator", viewport: { width, height: 900 } }), what = width + " px wide" + (banner ? ", a lexicon from a file" : "");
+      if (banner) { await loadFile(n, path.join(FILES, "invented.json")); await n.tap("#showItBtn"); await sleep(300); await settle(n.page); }
+      const m = await n.ev(() => ({ block: Math.round(document.getElementById("topWrap").getBoundingClientRect().bottom), pad: parseFloat(getComputedStyle(document.documentElement).scrollPaddingTop) }));
+      n.check(what + ": the scroll offset is at least the height of the block that stays at the top", "pad >= block", m, m.pad >= m.block);
+      await n.openBox("listBox");
+      for (const which of ["first", "last"]) { await n.ev((x) => { const all = document.querySelectorAll("#list button"), b = x === "first" ? all[0] : all[all.length - 1]; b.scrollIntoView({ block: "center" }); b.focus({ preventScroll: true }); b.click(); }, which); await settle(n.page); await still(n); }
+      const t = await n.ev(() => { const el = document.getElementById("entryTitle"), q = el.getBoundingClientRect(), edge = document.getElementById("topWrap").getBoundingClientRect().bottom, hit = document.elementFromPoint(q.left + 8, q.top + 3); return { top: Math.round(q.top), bottom: Math.round(q.bottom), edge: Math.round(edge), hit: !!hit && el.contains(hit), h: innerHeight }; });
+      n.check(what + ": after a choice in the list the card's title is wholly below the header and inside the window", "top at or below the edge, nothing over it", t, t.top >= t.edge && t.bottom <= t.h && t.hit);
+      if (banner ? [700, 1000].includes(width) : [700, 820, 1099].includes(width)) {
+        await n.ev(() => { scrollTo(0, 0); const all = Array.from(document.querySelectorAll("button, summary, input, a[href], select, [tabindex='0']")).filter((e) => e.getClientRects().length && !e.closest("dialog") && !e.disabled); all[all.length - 1].focus(); });
+        const hidden = []; let stops = 0;
+        for (let i = 0; i < 260; i++) {
+          await n.page.keyboard.press("Shift+Tab");
+          const a = await n.ev(() => { const e = document.activeElement; if (!e || e === document.body) return null; const bar = document.getElementById("topWrap"), q = e.getBoundingClientRect(); return { name: e.id || e.getAttribute("data-key") || e.localName, top: Math.round(q.top), edge: Math.round(bar.getBoundingClientRect().bottom), inBar: bar.contains(e), w: q.width }; });
+          if (!a) break;
+          stops++;
+          if (a.inBar) break;
+          if (a.w >= 3 && a.top < a.edge - 1) hidden.push(a.name + " at y " + a.top + " under the edge at " + a.edge);
+        }
+        n.check(what + ": walking back with Shift+Tab from the last control to the header, no focused control is under the block (" + stops + " stops)", [], hidden, hidden.length === 0 && stops > 10);
+      }
+      n.check(what + ": no console error", [], n.messages);
+      await n.close();
+    }
+  }
+});
+
+const PLAN = [["S01", "S02"], ["S03"], ["S04", "S05"], ["S06", "S07", "S08"], ["S09", "S10", "S18", "S11", "S12", "S13", "S14", "S15"], ["S16"], ["S17"], ["S19"], ["S20"], ["S21"], ["S22"]];
 async function viewportPart(rec, browser, base, key, only) {
   const vp = L.VIEWPORTS[key], byId = new Map(SECTIONS.map((s) => [s.id, s]));
   for (const group of PLAN) {
@@ -1525,6 +1904,7 @@ async function viewportPart(rec, browser, base, key, only) {
   FILES = kit.tempFolder("lexicon-walk");
   try {
     await L.makeFiles(ROOT, FILES);
+    await makeLedgerFiles(ROOT, FILES);
     server = await kit.serve(ROOT);
     const base = server.base;
     fonts = await kit.fontsDrawn(browser, base + L.PAGE_PATH);

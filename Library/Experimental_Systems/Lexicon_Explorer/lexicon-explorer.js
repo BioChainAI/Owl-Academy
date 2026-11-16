@@ -9,13 +9,14 @@
 //
 // REGIONS (ids in index.html, in the DOM order that is the phone order of 1.6)
 //   topWrap      the header and, for a lexicon from a file, the banner (banner): they stay in view while the page scrolls
-//   strip        the stations (buttons st-KEY); at Stargazer the line about the Navigator level (levels)
+//   strip        the stations (buttons st-KEY); at Stargazer the line about the Navigator level (levels; under 700 px it is
+//                levelsBox, directly before stationBox)
 //   say          a sky's banner (skyBanner), STRIX's line (strixLine; under 700 px whole sentences and the button strixMore),
 //                the station's main control (stationMain), the open verse (verseBox, phone only)
 //   stage        the tree canvas, nudge and turn buttons, "Drag the map", the caption treeCap
 //   explain      the tabs (tabBtn-KEY) and their bodies tabEntry, tabWheel, tabChain, tabOverwatch, tabWitnesses
 //   bridge       the gold box of the station
-//   more         stationBox (the rest of the station), readerBox (the nine verses), legendBox (the four badges)
+//   more         levelsBox (under 700 px), stationBox (the rest of the station), readerBox (the nine verses), legendBox (the four badges)
 //   under        Home, Up, previous and next sibling; listBox with the neighbourhood list (role=tree, items e-ADDRESS)
 //   aside        loadBox (the one file input, from Navigator up)
 //   status       the one status line; about: the dialog "What is real here?"
@@ -28,12 +29,17 @@
 //   entryText and entryOwn (an entry's own words behind "More for older readers"), bannerNotice, outsideRows (the
 //   one heading over a sender's rows), legendOutside, ledgerCut, notesInvite and notesBtn (the empty card), entryFrom (John 3:16),
 //   bridgeGo and bridgeFly (the gold box), mirrorBox (Stargazer, inside "Stamp it"), fig-a .. fig-e (the headings of station 7),
+//   ledgerMore (under a long ledger of a package from a file), levelsBtn and levelsBtnBox,
 //   goLine6, skipList, toolHome, verseNote, skyNotice and skyPageLink, bannerShort, outsideNotice, aboutPages.
 //   A button made from a row's closing words carries data-key ptr-ADDRESS; openPlace() opens what it names.
 //
 // HISTORY   Every entry of the browser's history that this page writes is marked (OWN_ENTRY). Back and Forward to a
 //   marked entry bring back its sky and its entry and keep the lens, the station and the tab of now; a fragment that
-//   was typed or pasted sets the lens, as the fragment at load does.
+//   was typed or pasted sets the lens once, as the fragment at load does, and is marked then. While a lexicon from a
+//   file is on show the address of no entry of the history is changed, not by Back or Forward and not by a change of
+//   the reading level: such a lexicon is never in a link. (What a choice made in it adds to the history, once, where the
+//   address does not read so already, names the level alone, or the sky and the level where the file was loaded while a
+//   sky was on show.)
 //
 // Strings of a lexicon that came from a file are the sender's: they pass through outsideText() (own() below), are
 // never put into an id, a class, a URL or an object key, and their badges are outlined.
@@ -47,6 +53,7 @@ import { createTreeCanvas, createWordWheel, createFigure } from "./lexicon-canva
 // ─── state and small helpers ─────────────────────────────────────────────────
 
 const state = M.initialState(location.hash);
+const PAGE_TITLE = document.title;      // the page's own title, as index.html gives it
 const HOME_PLACE = { ...state.place };   // the two entries the Place station opens with, as the model gives them
 state.noise = false;          // the noise switch of the Send station
 state.sendNote = "";          // what Send says when it needs an earlier station
@@ -61,6 +68,9 @@ const lex = () => state.lexicon;
 const isStar = () => state.lens === "stargazer";
 const isBuiltin = () => state.lexicon.origin === "builtin";
 const isOutside = () => state.lexicon.origin === "outside";
+const isSky = () => state.lexicon.origin === "page";
+/** What the status line says when a link brought a sky: the banner's first line, then the chosen entry if the link names one. */
+const skyLine = () => lex().title + "." + (state.selected === null ? "" : " " + M.statusFor(lex(), state.selected, state.lens));
 const isSealed = () => !!state.seal && state.seal.ok === true;
 const ui = (key) => M.uiLabel(key, state.lens);
 const wide = () => typeof matchMedia === "function" && matchMedia("(min-width: 700px)").matches;
@@ -81,18 +91,21 @@ const note = (text) => h("p", { class: "note" }, text);
 const fill = (el, ...kids) => el.replaceChildren(...h("div", null, kids).childNodes);
 const listOf = (items) => (items.length < 2 ? items.join("") : items.slice(0, -1).join(", ") + " and " + items[items.length - 1]);
 
-/** Runs a handler and keeps the focus: on the same control, on its replacement (data-key), or on the first control of its region. */
+/** Runs a handler and keeps the focus: on the same control, on its replacement (data-key), or on the first control of its region.
+ *  At Stargazer a button of the card that the new card no longer has hands the focus to the card's title (no tab stands above it there). */
 function act(fn) {
   return (e) => {
     const from = e && e.currentTarget instanceof Element ? e.currentTarget : null;
-    const region = from ? from.closest("section, nav, details, header, dialog") : null;
+    const region = from ? from.closest("section, nav, details, header, dialog") : null, inCard = !!from && !!from.closest("#tabEntry");
     keepFocus(() => fn(e));
-    holdFocus(region);
+    holdFocus(region, inCard);
   };
 }
-function holdFocus(region) {
+function holdFocus(region, inCard) {
   const a = document.activeElement;
   if (a && a !== document.body && a !== document.documentElement) return;
+  const title = inCard && isStar() ? document.getElementById("entryTitle") : null;
+  if (title) { title.focus({ preventScroll: true }); showCard(); return; }
   const next = region && region.isConnected
     ? Array.from(region.querySelectorAll("button, [role=button], summary, a[href]")).find((el) => el.getClientRects().length > 0 && !el.disabled) : null;
   (next || $("aboutBtn")).focus({ preventScroll: true });
@@ -108,7 +121,8 @@ function hashNow() {
 }
 // A history entry this page wrote itself carries this mark. Its fragment names the lens of the moment it was written;
 // Back and Forward to such an entry bring back its sky and its entry and keep the lens of now (and with it the station
-// and the tab). A fragment that was typed or pasted has no mark and sets the lens, as the fragment at load does.
+// and the tab). A fragment that was typed or pasted has no mark and sets the lens, as the fragment at load does; once
+// its lens has been applied it gets the mark, so that Back to it later does not set that lens a second time.
 const OWN_ENTRY = { own: true };
 const isOwnEntry = () => { try { return !!history.state && history.state.own === true; } catch { return false; } };
 function writeUrl(push) {
@@ -123,16 +137,19 @@ function onHash() {
   if (location.hash === lastHash) return;
   lastHash = location.hash;
   const before = lex(), parsed = M.parseHash(location.hash), own = isOwnEntry();
-  Object.assign(state, M.applyHash(state, own ? { ...parsed, values: { ...parsed.values, lens: undefined } } : parsed));
+  Object.assign(state, M.applyHash(state, parsed, { own }));
   if (parsed.values.entry === undefined && !isOutside()) state.selected = null;
   if (lex() !== before) { resetForLexicon(); tree.setLexicon(lex(), state.selected || lex().home); }
   lens.set(state.lens);
-  tree.set({ selected: state.selected, countWord: isStar() ? "things" : "entries" });
+  tree.set({ selected: state.selected, countWord: isStar() ? "things" : "entries", lens: state.lens });
   tree.flyTo(state.selected === null ? lex().home : state.selected);
   listFocus = state.selected === null ? lex().home : state.selected;
   keepFocus(renderAll);
-  if (own) writeUrl(false);      // the fragment of this entry now names the lens that is shown
-  say(M.statusFor(lex(), state.selected, state.lens));
+  // An entry of the page's own: its fragment now names the lens that is shown. Not while a lexicon from a file is on show:
+  // that lexicon is in no link, and the rewrite would take the entry's address out of the history.
+  if (own) { if (!isOutside()) writeUrl(false); }
+  else { try { history.replaceState(OWN_ENTRY, ""); } catch { /* a page opened from a file may not rewrite its address */ } }
+  say(isSky() && lex() !== before ? skyLine() : M.statusFor(lex(), state.selected, state.lens));
 }
 
 // ─── choosing: an entry, a station, a lens, 2D or 3D ─────────────────────────
@@ -162,6 +179,27 @@ function showCard() {
   title.scrollIntoView({ block: "start", behavior: prefersReducedMotion() ? "auto" : "smooth" });
   return true;
 }
+/** Where the window begins for what is scrolled to: the bottom of the header and banner where they stay at the top, else 0. */
+function topEdge() {
+  const bar = $("topWrap");
+  return getComputedStyle(bar).position === "sticky" ? bar.getBoundingClientRect().bottom : 0;
+}
+/** seeFlight(fly): runs a flight where it can be seen. When the map is not wholly inside the window (the button pressed stands below it)
+ *  the map's panel is brought into view first, at once under reduced motion, and the flight starts when the page has stopped. The focus stays. */
+function seeFlight(fly) {
+  const seen = () => { const c = $("tree").getBoundingClientRect(); return c.top >= topEdge() - 1 && c.bottom <= innerHeight + 1; };
+  if (seen()) { fly(); return; }
+  const smooth = !prefersReducedMotion(), from = scrollY;
+  $("stage").scrollIntoView({ block: "start", behavior: smooth ? "smooth" : "auto" });
+  if (!smooth) { fly(); return; }
+  let waiting = true, timer = 0;
+  // A scroll that ends while the map is still outside the window is an earlier one (its end was still to come when the button
+  // was pressed): the flight waits for the next end, or for the timer.
+  const go = (e) => { if (!waiting || (e && !seen())) return; waiting = false; removeEventListener("scrollend", go); clearTimeout(timer); fly(); };
+  addEventListener("scrollend", go);
+  timer = setTimeout(() => go(), 1200);                           // a browser without the scrollend event
+  setTimeout(() => { if (scrollY === from) go(); }, 200);         // the panel was in place already: nothing scrolls, nothing ends
+}
 /** Opens the place a row's closing words name (the model's pointerOf): a station, a figure of station 7, the mirror word or the wheel. */
 function openPlace(p) {
   if (p.tab) {
@@ -175,11 +213,17 @@ function openPlace(p) {
   if (!p.station) return;
   setStation(p.station);
   $("stationBox").open = true;
-  let target = $("st-" + p.station);
+  const strip = $("st-" + p.station);
+  let target = strip;
   if (p.figure && isStar() && mirrorStar) { mirrorStar.box.open = true; target = mirrorStar.summary; }
   else if (p.figure) target = document.getElementById("fig-" + p.figure) || target;
   else if (p.place === "wheel" && wheelParts) target = wheelParts.views[0] || target;
-  if (target) target.focus();      // the browser scrolls the place into view
+  if (!target) return;
+  if (target === strip) { target.focus(); return; }      // the station itself: the browser scrolls its button into view
+  // a place inside the station's box: it takes the focus and is brought to the top of the window (below the header where that stays),
+  // so that the figure under a heading is in the window with it
+  target.focus({ preventScroll: true });
+  target.scrollIntoView({ block: "start", behavior: prefersReducedMotion() ? "auto" : "smooth" });
 }
 function startCount(words, word) {
   state.counting = { words: words.slice(), word: word || null };
@@ -211,8 +255,8 @@ function goNext() {
 function setLens(id) {
   Object.assign(state, M.setLens(state, id));
   lens.set(state.lens);
-  tree.set({ countWord: isStar() ? "things" : "entries" });
-  writeUrl(false);
+  tree.set({ countWord: isStar() ? "things" : "entries", lens: state.lens });
+  if (!isOutside()) writeUrl(false);      // not over a lexicon from a file: the entry of the history keeps its address (as in onHash)
   renderAll();
   say((isStar() ? "Stargazer" : state.lens === "navigator" ? "Navigator" : "Holographer") + ": " + M.LENS_HINTS[state.lens] + ".");
 }
@@ -259,13 +303,24 @@ function renderStrip() {
     type: "button", id: "st-" + s.key, "data-key": "st-" + s.key, "aria-current": s.key === state.station ? "step" : null,
     onclick: act(() => setStation(s.key)),
   }, h("span", { class: "st-n" }, String(i + 1)), " ", h("span", { class: "st-name" }, isStar() ? s.stargazerTitle : s.title)))));
-  // Stargazer hides stations and tabs: one line beside the strip says so (700 px and wider; under that it is in "Stamp it")
-  const levels = $("levels");
-  levels.hidden = !(isStar() && isBuiltin());
-  fill(levels, ...(levels.hidden ? [] : levelsNodes("levelsBtn")));
+  // Stargazer hides stations and tabs: one line with a button says what the next level adds, for the Ezekiel lexicon and for a sky.
+  // From 700 px it stands beside the strip; under that it stands below the card and the gold box, directly before the station's box,
+  // at every station (above the map it would push the card off the first screen).
+  const lv = M.moreLevelsFor(state.lens, lex().origin);
+  for (const [id, btn] of [["levels", "levelsBtn"], ["levelsBox", "levelsBtnBox"]]) {
+    const el = $(id);
+    el.hidden = !lv;
+    fill(el, ...(lv ? [lv.text, " ", h("button", { type: "button", class: "btn ghost", id: btn, "data-key": btn,
+      onclick: () => { keepFocus(() => setLens(lv.lens)); holdFocus($("stripNav")); showStrip(); } }, lv.label)] : []));
+  }
 }
-const levelsNodes = (id) => [M.MORE_LEVELS.text, " ", h("button", { type: "button", class: "btn ghost", id, "data-key": "levels",
-  onclick: () => { keepFocus(() => setLens(M.MORE_LEVELS.lens)); holdFocus($("stripNav")); } }, M.MORE_LEVELS.label)];
+
+/** Under 700 px the button "Switch to Navigator" stands far below the strip that takes the focus after it: the strip is brought
+ *  into view, at once under reduced motion. From 700 px the button stands beside the strip and nothing is scrolled. */
+function showStrip() {
+  if (wide() || !$("stripNav").contains(document.activeElement)) return;
+  $("stripNav").scrollIntoView({ block: "start", behavior: prefersReducedMotion() ? "auto" : "smooth" });
+}
 
 // ─── region: STRIX, the station's main control, the open verse ───────────────
 
@@ -291,7 +346,7 @@ function renderSay() {
   strixItems = items;
   fill($("strix"), ...(items.length === 0 ? [] : [
     h("p", { id: "strixLine" }, h("span", { class: "label violet strix-name" }, "STRIX"), h("span", { id: "strixBadge" }, tag(items[0].layer)), h("span", { id: "strixText" }, items[0].text),
-      h("button", { type: "button", class: "strix-more", id: "strixMore", "data-key": "strix-more", "aria-label": ui("more") + " from STRIX", hidden: true, onclick: openStrix }, ui("more"))),
+      h("button", { type: "button", class: "strix-more", id: "strixMore", "data-key": "strix-more", hidden: true, onclick: openStrix }, ui("more"))),
     items.length > 1 ? h("div", { class: "only-wide stack", id: "strixRest" }, items.slice(1).map(line)) : null,
   ]));
   fill($("stationMain"), ...stationMain());
@@ -302,8 +357,11 @@ function renderSay() {
 // leave the first line of the card on the first screen of a phone (rule 1.6: above y = 844 at 390 px), measured here each time
 // something above the card changes. What gives way, in this order: the later sentences, the note under the open verse, the
 // first sentence, and last, for a sky, the banner's sentences about the link, which then stand as the first line of the
-// station's box (after that, sentences of STRIX are shown again as far as they fit). When anything of the narration is left out, a small button at the end of the line ("more") opens the box
-// that holds all of it and moves the focus there. From 700 px everything is shown.
+// station's box (after that, sentences of STRIX are shown again as far as they fit). In a window where the card's first line
+// stays below the bottom edge whatever gives way (a window lower than that first screen, 320 x 568 or 375 x 667), nothing is
+// gained by an empty line: the first sentence is shown after all, and a sky's sentences about the link stay in the banner.
+// When anything of the narration is left out, a small button at the end of the line ("more") opens the box that holds all of
+// it and moves the focus there. From 700 px everything is shown.
 const FIRST_SCREEN = 844;
 function cardLine() {
   const title = $("explain").querySelector(".explain-body:not([hidden]) h2");
@@ -323,6 +381,8 @@ function fitStrix() {
     mark.hidden = n === 0;
     more.hidden = n === all.length && strixItems.length === 1;
     setText(more, n === 0 ? ui("strixAll") : ui("more"));
+    // with no sentence shown the button's name is its visible words; after sentences the one word "more" is named in full
+    if (n === 0) more.removeAttribute("aria-label"); else more.setAttribute("aria-label", ui("more") + " from STRIX");
   };
   if (verseNote) verseNote.hidden = false;
   show(all.length);
@@ -331,13 +391,17 @@ function fitStrix() {
   let n = all.length;
   while (n > 1 && !fits()) show(--n);
   if (verseNote && !fits()) verseNote.hidden = true;
-  if (!fits()) show(0);
+  if (!fits()) show((n = 0));
+  // What follows measures against the real bottom edge of the window, which is the first screen's at 390 x 844 and higher up
+  // in a lower window.
+  const below = () => cardLine() > innerHeight - 2;
   if (!fits() && skyNotice && skyNoticeBox) {
     notice(false);
-    n = all.length;
-    show(n);
-    while (n > 0 && !fits()) show(--n);
+    if (below()) notice(true);      // the card stays below the window whatever is moved: the sentences stay in the banner
+    else { n = all.length; show(n); while (n > 0 && !fits()) show(--n); }
   }
+  // No sentence is shown and the card's first line is below the window all the same: the first sentence is shown again.
+  if (n === 0 && below()) show(1);
 }
 function openStrix() {
   const box = $("stationBox");
@@ -433,7 +497,7 @@ function stationMain() {
     // Under 700 px only the count stands above the map (the Entry must begin on the first screen): the four
     // answers and the two marks are in the station's box below and in the Witnesses tab.
     h("ul", { class: "marks-list only-wide", id: "sendRows" }, s ? s.rows.map(receiverLine) : null),
-    s ? h("p", { id: "sendCount" }, tag("checked"), s.k + " of " + s.of + " handshakes") : null,
+    s ? h("p", { id: "sendCount" }, tag("checked"), M.handshakeCount(s.k, s.of)) : null,
     // What the count shows and what it does not, directly under the count. A sky has a banner above STRIX: under 700 px the
     // sentence would push the Entry off the first screen there, so for a sky it is the first line of the station's box instead.
     s ? h("p", { id: "sendLimit", class: isBuiltin() ? null : "only-wide" }, tag(M.QUORUM_LIMIT.layer), M.QUORUM_LIMIT.text) : null,
@@ -486,6 +550,11 @@ function staticControls() {
   idOf.set("navHome", $("navHome")); idOf.set("navUp", $("navUp")); idOf.set("navPrev", $("navPrev")); idOf.set("navNext", $("navNext"));
   idOf.set("entry", $("tabEntry")); idOf.set("wheel", $("tabWheel")); idOf.set("chain", $("tabChain")); idOf.set("overwatch", $("tabOverwatch")); idOf.set("witnesses", $("tabWitnesses"));
 }
+/** joinNotes(notes): the notes a link left, as one line; a note that does not end its own sentence gets a full stop before the next. */
+function joinNotes(notes) {
+  return notes.map((note, i) => (i < notes.length - 1 && !/[.!?]$/.test(note) ? note + "." : note)).join(" ");
+}
+
 function renderTools() {
   const ball = state.dims === "3D";
   for (const [id, , key] of NUDGES) idOf.get(id).setAttribute("aria-label", ui(key));
@@ -503,7 +572,7 @@ function renderTools() {
   setText($("listKeys"), M.LIST_KEYS[isStar() ? "stargazer" : "other"]);
   const notes = state.notes || [];
   $("linkNote").hidden = notes.length === 0;
-  setText($("linkNote"), notes.join(" "));
+  setText($("linkNote"), joinNotes(notes));
   showCaption();
 }
 function showCaption() { if (tree) setText($("treeCap"), M.treeCaption(lex(), tree.scene, state.lens)); }
@@ -776,6 +845,8 @@ function outsideNodes() {
       .map(([k, x]) => [h("dt", null, k), h("dd", { class: "hash" }, text(x))])),
     h("h3", null, "Ledger, as its sender wrote it"),
     table(["No.", "Actor", "Event", "Time"], c.ledger.map((e) => [text(e.n), text(e.actor), text(e.event), text(e.at)])),
+    // a long ledger: the model lists its first rows and counts the rest; this line is the page's own (a number, nothing of the sender's)
+    c.ledgerMoreLine ? h("p", { class: "note", id: "ledgerMore" }, c.ledgerMoreLine) : null,
     c.ledgerCut ? h("p", { class: "note", id: "ledgerCut" }, M.LEDGER_CUT_NOTE) : null,
     h("h3", null, o.notCovered.heading),
     h("dl", { class: "kv" }, o.notCovered.items.map((it) => [h("dt", null, it.label), h("dd", null, text(it.value))]))];
@@ -783,7 +854,7 @@ function outsideNodes() {
 function renderWitnesses() {
   const host = idOf.get("witnesses"), s = state.send;
   if (!s) { fill(host, h("h2", null, "Witnesses")); return; }
-  fill(host, h("h2", null, "Witnesses"), h("p", null, tag("checked"), s.k + " of " + s.of + " handshakes"),
+  fill(host, h("h2", null, "Witnesses"), h("p", { id: "witnessCount" }, tag("checked"), M.handshakeCount(s.k, s.of)),
     table(["Receiver", "Road", "Answer", "Counted", "Its key"], s.rows.map((r) => [r.city, r.noise ? "noise" : "clear", r.accepted ? "accepted" : "refused at " + r.failed, r.counted ? "yes" : "no", hashCell(r.sealId)])),
     h("ul", { class: "marks-list" }, s.marks.map((m) => h("li", null, (m.met ? "✓ " : "· ") + m.label + (m.met ? "" : " (not met)")))),
     line({ layer: "checked", text: s.sentence }), line(M.SEND_READING));
@@ -793,7 +864,7 @@ function renderWitnesses() {
 
 function standNode(x) {
   const open = x.source && M.hasPlace(lex(), x.source)
-    ? button("Open " + M.nameOf(lex(), x.source), () => select(x.source), { class: "btn ghost", "data-key": "stand-" + x.source, "data-address": x.source }) : null;
+    ? button("Open " + M.displayName(lex(), x.source, state.lens), () => select(x.source), { class: "btn ghost", "data-key": "stand-" + x.source, "data-address": x.source }) : null;
   if (x.layer === "text") return h("p", { class: "entry-row" }, tag("text"), M.quoted(x.text), " ", h("span", { class: "note" }, x.name), " ", open);
   return h("p", { class: "entry-row" }, tag(x.layer), x.text, " ", open,
     x.link ? [" ", h("a", { class: "btn ghost", href: x.link.href, "data-key": "stand-link" }, x.link.label)] : null);
@@ -807,8 +878,9 @@ function renderBridge() {
   fill(box, foldBox(
     // the box's name, and beside it the one button of the box: the way to John 3:16, or, on the John 3:16 box, the flight from the river
     [h("div", { class: "row bridge-head" }, h("p", { class: "label gold" }, b.title + " · " + M.BRIDGE_PARTS.reading),
-      b.fly ? button(b.fly.label, () => { tree.jumpTo(b.fly.from); tree.flyTo(b.fly.to, { walk: true }); listFocus = b.fly.to; say(b.fly.label + "."); }, { id: "bridgeFly", "data-key": "bridge-fly" }) : null,
-      b.go ? button(b.go.label, () => select(b.go.address), { class: "btn ghost", id: "bridgeGo", "data-key": "bridge-go", "data-address": b.go.address }) : null),
+      // both buttons start a flight; on a phone they stand below the card, so the map is brought into the window first (seeFlight)
+      b.fly ? button(b.fly.label, () => { listFocus = b.fly.to; say(b.fly.label + "."); seeFlight(() => { tree.jumpTo(b.fly.from); tree.flyTo(b.fly.to, { walk: true }); }); }, { id: "bridgeFly", "data-key": "bridge-fly" }) : null,
+      b.go ? button(b.go.label, () => { if (select(b.go.address, { fly: false })) seeFlight(() => tree.flyTo(b.go.address)); }, { class: "btn ghost", id: "bridgeGo", "data-key": "bridge-go", "data-address": b.go.address }) : null),
     h("p", { id: "bridgeFirst" }, tag(lead.layer), s[0])],
     [s.length > 1 ? h("p", null, s.slice(1).join(" ")) : null, b.opening ? h("p", { class: "gap" }, tag(b.reading.layer), b.reading.text) : null,
       b.links.length ? h("p", { class: "gap" }, b.links.map((k) => h("a", { class: "btn ghost", href: k.href, "data-key": "bridge-link" }, k.label))) : null,
@@ -852,9 +924,7 @@ function stationNodes() {
     return [isStar() && isSealed() ? line(M.CERTIFIED_STARGAZER) : null, isSealed() ? downloadButton() : null,
       h("h3", { class: "gap" }, isStar() ? "Try to change it" : "The tampers"), tamperNodes(), isStar() ? h("div", { class: "fig-part" }, h("h3", null, "The word wheel"), wheelHostStar) : null,
       // Stargazer has no station 7: the mirror word, where three corners give the fourth, is a closed box here (lines 5 and 6 open it)
-      isStar() && isBuiltin() ? mirrorStarNode() : null,
-      // under 700 px the line about the Navigator level stands here, not above the map (the Entry must begin on the first screen)
-      isStar() && isBuiltin() ? h("p", { class: "note only-narrow gap", id: "levelsBox" }, levelsNodes("levelsBtnBox")) : null];
+      isStar() && isBuiltin() ? mirrorStarNode() : null];
   }
   if (key === "send") {
     const sv = stationNow(), s = state.send;
@@ -1083,6 +1153,12 @@ function render(...names) { for (const name of names) REGIONS.get(name)(); fitSt
 function renderAll() {
   document.body.setAttribute("data-lens", state.lens);
   setText($("sub"), isStar() ? M.PAGE.stargazerSubtitle : M.PAGE.subtitle);      // "hyperbolic" is not a Stargazer word
+  // the names of the card's section and of the map follow the lens ("thing" for "entry" at Stargazer)
+  $("explain").setAttribute("aria-label", ui("aboutChosen"));
+  $("tree").setAttribute("aria-label", ui("treeLabel"));
+  // while a sky is on show the document's title names it (the banner's first line); otherwise it is the page's own title
+  const title = isSky() ? M.PAGE.title + " · " + lex().title : PAGE_TITLE;
+  if (document.title !== title) document.title = title;
   render(...REGIONS.keys());
 }
 
@@ -1096,7 +1172,7 @@ resetForLexicon();
 tree = createTreeCanvas($("tree"), {
   lexicon: lex(), dims: state.dims, view: state.view, orbit: state.orbit, selected: state.selected, filter: state.filter, byLayer: state.marks,
   keepLabel: isBuiltin() ? M.NOTES_INVITE.address : null,
-  countWord: isStar() ? "things" : "entries", dragSwitch: $("dragBtn"), dragCaption: $("dragNote"),
+  countWord: isStar() ? "things" : "entries", lens: state.lens, dragSwitch: $("dragBtn"), dragCaption: $("dragNote"),
   onPick(address) {
     keepFocus(() => select(address, { fly: false }));
     const a = document.activeElement;
@@ -1116,7 +1192,7 @@ tree = createTreeCanvas($("tree"), {
     renderNav();
   },
 });
-describeCanvas($("tree"), M.TREE_LABEL, $("treeCap"));
+describeCanvas($("tree"), ui("treeLabel"), $("treeCap"));
 
 // a nudge or a turn moves the picture only: the status line says the caption once, when the presses stop
 const sayCaption = () => say(M.treeCaption(lex(), tree.scene, state.lens));
@@ -1145,11 +1221,15 @@ try { history.replaceState(OWN_ENTRY, ""); } catch { /* a page opened from a fil
 renderAbout();
 renderAll();
 // Arriving by a link that names an entry, or one that left a note: say so once, and put the focus on the card's title.
-if (state.selected !== null || (state.notes || []).length > 0) {
-  say((state.notes || []).length > 0 ? state.notes.join(" ") : M.statusFor(lex(), state.selected, state.lens));
+// Arriving by a link that built a sky: say the sky's title once (the banner's first line); the focus is not moved for that.
+// A link that built a sky and left a note: the note first, then the sky's line, said together and once.
+const arrivalNote = joinNotes(state.notes || []);
+if (state.selected !== null || arrivalNote !== "") {
+  say(arrivalNote === "" ? (isSky() ? skyLine() : M.statusFor(lex(), state.selected, state.lens))
+    : isSky() ? arrivalNote + (/[.!?]$/.test(arrivalNote) ? " " : ". ") + skyLine() : arrivalNote);
   const title = $("entryTitle");
   if (title) title.focus({ preventScroll: true });
-}
+} else if (isSky()) say(skyLine());
 
 const ready = nextPaint().then(() => true);
 window.LexiconExplorer = { state, ready, tree, select, setStation, showLexicon };

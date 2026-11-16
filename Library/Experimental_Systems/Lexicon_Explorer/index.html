@@ -22,7 +22,9 @@
     html { scroll-padding-top: 88px; }
     html:has(#banner:not([hidden])) { scroll-padding-top: 180px; }
   }
-  @media (min-width: 700px) and (min-height: 700px) and (max-width: 1099.98px) { html:has(#banner:not([hidden])) { scroll-padding-top: 260px; } }
+  /* From 700 to 1099.98 px wide the header can have two rows (up to 100 px), and with the banner of a lexicon from a file the block
+     is up to 190 px high (at 700 px): what is scrolled to stops 12 px below the tallest block of the range. */
+  @media (min-width: 700px) and (min-height: 700px) and (max-width: 1099.98px) { html { scroll-padding-top: 112px; } html:has(#banner:not([hidden])) { scroll-padding-top: 202px; } }
   @media not ((min-width: 700px) and (min-height: 700px)) { html:has(#banner:not([hidden])) { scroll-padding-top: 76px; } }
   #banner { position: sticky; top: 0; z-index: 4; display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px; padding: 4px 12px; border-width: 0 0 1.5px; border-radius: 0; background: var(--dark); }
   #banner p { flex: 1 1 0; min-width: 0; font-size: var(--fs-ui); line-height: 1.45; }
@@ -194,6 +196,7 @@
   <section class="panel bridge area-bridge" id="bridge" aria-label="The bridge: our reading"></section>
   <div class="area-more" id="more">
     <button class="btn ghost skip" id="skipList" type="button" data-key="skip-list">Skip to the list of entries</button>
+    <p class="note only-narrow" id="levelsBox" hidden></p>
     <details class="more" id="stationBox"><summary id="stationSum" data-key="station-more">More at this station</summary><div class="more-body" id="stationBody"></div></details>
     <details class="more" id="readerBox"><summary id="readerSum" data-key="reader-more">The passage</summary><div class="more-body" id="reader"></div></details>
     <details class="more" id="legendBox"><summary data-key="legend-more">What the badges mean</summary><div class="more-body" id="legend"></div></details>

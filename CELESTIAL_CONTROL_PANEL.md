@@ -23,7 +23,7 @@ web fonts; the page works without them.
 | Step | Question | What happens | Code that does it |
 |---|---|---|---|
 | 1 Earth | Where am I standing on Earth? | a place by preset or by latitude and longitude; the compass points and the straight-up line appear | `chooseSite`, `typePlace`, `skyState` |
-| 2 Sun and Moon | What day of the year is it? What shape is the Moon tonight? | the day, from the device clock and confirmed by the visitor, or chosen; the Sun and the Moon appear; the Moon is drawn as it looks from that place | `confirmDay`, `pickDate`, `timeButton`, `moonFigure`, `findMoon` |
+| 2 Sun and Moon | What day of the year is it? What shape is the Moon tonight? | the day, from the device clock and confirmed by the visitor, or chosen; the Sun and the Moon appear; the Moon is drawn as it looks from that place | `readClock`, `answerDay`, `pickDate`, `timeButton`, `moonFigure`, `findMoon` |
 | 3 Project | Which great circles and which depths frame this sky? | the stars, the depth rings and the rim; horizon, celestial equator, ecliptic and galactic plane as switches; a horizon frame and a galactic frame; a flat chart and a ball | `scene`, `circleDirections`, `frameMatrix` |
 | 4 Dive | What does the move T_c(z) = (z − c)/(1 − c̄z) bring to the centre? | anything is brought to the centre by a tap or a button; a lab on slides that never turn | `dive`, `tapView`, `centreOn`, `slidePath`, `homecoming` |
 | 5 Seal | Can someone else rebuild this sky and get the same chain? | the sky as a small tree lexicon, grown into a chain and certified; a file and a link | `sealSky`, `skyLexiconRows`, `buildLexiconBundle`, `issueCertificate` |
@@ -48,6 +48,19 @@ Every sentence a visitor reads carries one of four labels (TEXT, SAID, CHECKED,
 READING), defined in `STRIX_OVERWATCH.md` under "LEX/1". This document uses the same
 words: CHECKED for what the code computes, SAID for what a named source says, READING
 for a choice or an interpretation of this project.
+
+In a window at least 700 px wide and 700 px high the header stays at the top, and
+whatever the page scrolls to stops below it: 88 px from the top from 1100 px wide,
+112 px between 700 and 1100 px, where the header can have two rows. In a window under
+700 px STRIX's line above the map is given in whole sentences, and only in as many as
+leave the first line of the card under the map on the first screen of a phone (above
+y = 844 at 390 px wide). What is left out stands behind a button at the end of the
+line: "more" after one or more sentences, "All that STRIX says here" where none
+fits. That button stands alone only where leaving every sentence out brings the
+card's first line into the window. Where no sentence fits and the card's first line
+ends below the window's own bottom edge all the same, as it does at some steps in a
+phone window lower than 844 px (320 x 568 is one), the first sentence is shown,
+with "more" after it when there is more.
 
 ## What the page computes, and to what accuracy
 
@@ -180,7 +193,26 @@ sidereal time), the altitude of the pole, and how far Polaris is from the pole o
 that date.
 
 **2 Sun and Moon.** The day is read from the device clock and shown for confirmation:
-"Your device says today is … Is that right?" Where the date at the chosen place is
+"Your device says today is … Is that right?" Until that question is answered the
+clock is read again (`readClock`) whenever a place is chosen, at every change of
+step, whenever the link changes, and before "Yes", "Change the day" or one of the
+further controls of this step (a time button, the slider through the year, the
+typed time, a Moon button) is acted on. So a page that was opened before midnight
+and used the next morning asks about the day the device shows then, each of those
+controls starts from that day and time and, when it acts, answers the day with it
+("Sunrise" pressed the next morning gives that morning's sunrise), and a step that
+lights the sky before the day is answered lights the sky of the moment it is
+opened. "Yes" to a question whose day has changed since it was painted is not taken
+(`answerDay`): the question is shown again with the new day, and the status line
+says "The day changed while this page was open. Please look again." Pressed on such
+a question, "Change the day" opens its panel on the new day and says the same
+sentence. When the page comes into view again, a question whose day has changed is
+painted again, and nothing is said. There is no timer: a question left on the
+screen across midnight names the old day until one of these things happens, and
+what the box "More at this step" shows before a press (the slider's position, the
+time in the typed field) is as old as the question. A time that was set by a link,
+by the preset or by the visitor answers the question and is never changed in this
+way. Where the date at the chosen place is
 not the device's own date (a place far to the east or west, or the preset by the
 Kebar), the question gives both: "At … it is now …. Your device says …. Is that the
 day you want?" Once the day is answered, the card under the map begins with that date
@@ -212,7 +244,12 @@ rim" is the point of the microwave-background shell in the direction of the curr
 selection, or straight up when nothing is selected. A flight lasts at most 600 ms
 and becomes a jump when the visitor's device asks for reduced motion. Once the view
 has left home, the caption under the chart ends by saying what is in the middle of
-the map, or which way the map has slid.
+the map, or which way the map has slid, naming the thing as a sentence names it:
+"Half way to the Moon is in the middle of the map.", "The Pleiades are in the middle
+of the map.", "The map has slid towards the north." (`centreWords`). Eight buttons
+by the chart show an arrow only, four that move the map and four that turn the ball;
+each carries its name ("Move the map left", "Turn the ball up") both as its
+accessible name and as a tooltip.
 
 **The lab** is named with words of Ezekiel 1:9 in the King James Version, "they
 turned not when they went". Opening it clears the sky and shows a plain disc with
@@ -233,11 +270,29 @@ On a flat floor the four slides would bring the walker home, not turned. No slid
 turns the walker: the turn found on coming home equals the area the path went round
 (1.362 for the unit slides, the same number as 78.0148° in radians). After "Slide
 home" the lab prints that area, worked out from the corners of the path itself
-(`labArea`) and not from the turn. For a path that goes round more than half a turn's
-worth, the area and the turn shown differ by whole turns, and from Navigator up the
-line says so; for a path with no inside (out and back along one line) or one that
-crosses itself, no area is printed. A walker who is not turned is told so in a whole
-sentence ("You are home, facing the way you began."). With reduced motion, "Four
+(`labArea`) and not from the turn. The line names the path by its sides ("The area
+inside your five-sided path: 1.362." for the four slides and the slide home), and
+the sides it counts are those of the shape whose inside is measured. A slide
+straight on adds no side, and a stretch walked out and back the same way adds none:
+forward, forward, back, left and home is a "three-sided path", and forward twice,
+left twice, back twice, right twice and home is a "five-sided path". Such a stretch
+is left out before the path is judged, also where it passes over another side; the
+path then has the area it has without the stretch. For a path that goes round more
+than half a turn's worth, the area and the turn shown differ by whole turns, and
+from Navigator up the line says so. For a path that crosses itself no area is
+printed, and one CHECKED sentence stands in its place at every lens: "Your path
+crosses itself, so it has no single inside to measure." A crossing is seen far from
+home as well as near it: which side of a line a corner lies on is read from the
+sine of an angle, with an allowance for what rounding alone could have signed, and
+a slide straight back along the slide before it is cancelled first (`labNoArea`
+gives the reason). A path with no inside
+(out and back along one line), a path that only touches itself or passes too near
+itself to tell, and a path with a corner farther than 12 from home get neither an
+area nor the sentence. Between about 11.1 and 12 from home the slide home can end
+more than a millionth from home, and a path with a corner that far out may then get
+neither an area nor the sentence about crossing; the lab says only that you are
+home and how you are turned. A walker who is not turned is told so in a whole sentence
+("You are home, facing the way you began."). With reduced motion, "Four
 slides" draws all four at once and the status line says so. This is a fact about the
 curved map, not about the sky. The lab is the CHECKED fact the fourth gold box sets
 beside the verse; what the page makes of the pair is a READING.
@@ -266,17 +321,19 @@ seen to be one.
 Both new pages read one grammar: `#key=value&key=value`, with values made of letters,
 digits and the characters `. _ - ,`. A key given twice, an unknown key or a value
 that does not fit is ignored, and one line on the page says "a link value was
-ignored". The link is read when the page loads and whenever the fragment changes.
-This page reads eight keys:
+ignored". The status line says it too, at load and after a change of the fragment,
+before the place and the time ("a link value was ignored. 14 November 2026, 18:04 at
+Giza, Egypt. Moon 24 per cent lit."). The link is read when the page loads and
+whenever the fragment changes. This page reads eight keys:
 
 | Key | Value | What it does |
 |---|---|---|
 | `preset` | `ezekiel` | the Kebar site at the sunset that ends the fifth day on the date usually given; applied before every other key. The page opens at step 2 with the day answered, so the date and the Moon picture are on show |
 | `site` | the key of a preset place | chooses that place |
 | `lat`, `lon` | a latitude from −90 to 90 and an east longitude from −180 to 180, at most four decimals | a typed place; one without the other is ignored |
-| `jd` | a Julian Day in Universal Time, at most seven digits and six decimals, inside the year range | sets the time. The range is judged twice: at Greenwich when the link is read, and at the place once the place is known. Within half a day of either end of the range a link to a place far east or west of Greenwich can therefore lose its time: the place opens at the present day, with the note |
+| `jd` | a Julian Day in Universal Time, at most seven digits and six decimals, that is a sky at some longitude | sets the time. The year range is a range of local dates, so which Julian Days lie inside it depends on the longitude, by up to half a day either way. A `jd` is read when the core accepts it at the far west or at the far east: from half a day before the range as Greenwich counts it to just under half a day after it. It is then judged at the place the link names or the page already has, and at Greenwich when there is none; a `jd` that is no sky there is ignored, with the note, and the time stays as it was. The Lexicon Explorer keeps the same rule for the links it writes to this page |
 | `focus` | the key of an object | selects it and brings it to the centre. Ignored, with the note, when the link gives no place, and for an object that is not on show in the sky the link opens: the seven depth rings (they are listed only while the "Depth rings" switch is on or the view has left home, and no link key does either), the galactic centre and the north galactic pole (shown only in the galactic frame, which no link key sets), the opposite point (it needs a selection of its own), and the shadow transform unless the link also carries `lens=holographer` |
-| `lab` | `square` | opens the lab at step 4 |
+| `lab` | `square` | opens the lab at step 4. When the link also gives a place, the whole sky of that place is lit once the lab is left, as it is for a visitor who reaches step 4 by the steps |
 | `lens` | `stargazer`, `navigator` or `holographer` | sets the reading level |
 
 Links the page writes:
@@ -288,6 +345,16 @@ Links the page writes:
   row; both carry the lens. The last gold box links on to John 3:16 there
   (`#entry=43.3.16`);
 - to First Explorers and to the index of Experimental Systems, as plain links.
+
+Both links to a sky are written for every sky the page can show, and neither
+function ever fails: `skyLinkHref` and `lexiconSkyHref` give an empty link before a
+place is chosen. Within about half a second of either end of the year range the
+Julian Day, rounded to 5 decimals, would fall outside the range; the links then
+carry the nearest instant of 5 decimals inside it, less than a second away.
+`sealSky` takes its three numbers from the same function as both links, so every
+sky the page can show can be sealed, there too: the seal then holds the rows of
+that nearest instant, the three numbers it reports are those of the links, and its
+link is the one `lexiconSkyHref` writes.
 
 Links the page receives from the Lexicon Explorer: `#preset=ezekiel` (from the date
 term), `#lab=square` (from the term "they turned not when they went" and two rows of
@@ -500,7 +567,9 @@ Each of these was a choice made while building. Each can be changed.
    stated once and labelled as this project's; no number depends on a verse.
 8. **A fifth step, Seal, was added. There is no sound, no location service, and
    nothing is stored.**
-9. **The Celestial Hypersim Explorer and First Explorers were left as they are.**
+9. **The Celestial Hypersim Explorer was left as it is, and so was First Explorers
+   but for two small things** that `STRIX_OVERWATCH.md` names: a detail of its
+   signature check, and the form in which it saves its package.
 10. **Tailwind and the icon font were removed and the palette kept.**
 
 The decisions about the scripture text, the formats and the author's ten lines are
@@ -610,6 +679,6 @@ seal.kebar.chain.id = BC-d8772576788818e2c5969e60
 link.keys = 8
 tests.celestial.core.declared = 46
 tests.hyperbolic.moves.declared = 40
-tests.celestial.panel.model.declared = 28
-tests.explorers.policy.declared = 18
+tests.celestial.panel.model.declared = 35
+tests.explorers.policy.declared = 23
 ```

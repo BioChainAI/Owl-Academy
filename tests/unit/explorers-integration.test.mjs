@@ -12,16 +12,21 @@
 //                 sealed sky is the chain name the Lexicon Explorer gives after it reads the link #sky=JD,LAT,LON and
 //                 seals what it recomputed; the downloaded package and the four receivers agree;
 //   4  links      every link either page writes is read by the other page (or by itself) without a note and means there
-//                 what it meant here; a sky opened in the Lexicon Explorer leads back to the same sky on the sky page;
-//                 each page's copy of the other's grammar reads what the other reads; hostile and malformed links are
-//                 refused by both without throwing;
+//                 what it meant here; a sky opened in the Lexicon Explorer leads back to the same sky on the sky page,
+//                 at the very ends of the year range too, where the sky page also seals the sky under the link it
+//                 writes; each page's copy of the other's grammar reads what the other reads, and the two rules for
+//                 the key jd read and refuse the same texts; hostile and malformed links are refused by both without
+//                 throwing;
 //   5  facts      the one fenced `facts` block of STRIX_OVERWATCH.md and of CELESTIAL_CONTROL_PANEL.md: every line is
-//                 `name = value`, every value is recomputed here from the code and compared as text;
+//                 `name = value`, every value is recomputed here from the code and compared as text; and the
+//                 sentences of their prose that say how much of a long ledger is listed and where the page stops
+//                 when it scrolls under the header are built from the numbers the pages hold;
 //   6  agreement  where the two pages, the documents and First Explorers overlap they say the same thing: the four
 //                 layers and their badge words, the four receivers, the numbers and the sentences both pages state,
-//                 what the sky page says the Lexicon Explorer will do with a sealed sky, the link keys the documents list.
-// One known fault is kept as a test marked todo (section 4): at the very ends of the year range, at a longitude far from
-// Greenwich, a sky's link to the sky page loses its time, and the sky page cannot write its own link.
+//                 what the sky page says the Lexicon Explorer will do with a sealed sky, the link keys the documents
+//                 list, and the sentences, labels and names the documents quote from the pages;
+//   7  package    a journey built with the calls First Explorers makes and saved as that page saves it, in wire form,
+//                 passes the front door (readHyperpack) and is read by the Lexicon Explorer as a First Explorers journey.
 // Nothing is written and no network is used. OWL_TEST_ROOT=<dir> runs the file against another checkout.
 // Run: node --test tests/unit/explorers-integration.test.mjs   (about 15 seconds)
 import test from "node:test";
@@ -42,6 +47,7 @@ const LEX = await load(WING + "Lexicon_Explorer/ezekiel-1.js");
 const SUP = await load(WING + "Lexicon_Explorer/passage-as-supplied.js");
 const G = await load(WING + "Lexicon_Explorer/lexicon-explorer-model.js");        // the Lexicon Explorer's model
 const P = await load(WING + "Celestial_Control_Panel/celestial-panel-model.js");  // the Celestial Control Panel's model
+const SEAL = await load("scripts/seal-crypto.js");                                 // signPayload and sealIdFromPublic, as First Explorers imports them
 
 // ─── shared helpers ──────────────────────────────────────────────────────────
 
@@ -393,12 +399,12 @@ const LINK_VALUES = {
   lens: { yes: ["stargazer", "navigator", "holographer"], no: ["Stargazer", "explorer", "architect", "stargazer,navigator", "0"] },
   preset: { yes: ["ezekiel"], no: ["Ezekiel", "kebar", "ezekiel,ezekiel"] },
   lab: { yes: ["square"], no: ["Square", "circle", "1"] },
-  // The sky page's own keys for a place and a time, which the Lexicon Explorer writes for a sky on show. `copyOnly`:
-  // what the Lexicon Explorer's copy of the rule would let through and the sky page refuses. There is one such thing:
-  // the copy does not know the year range, which the sky page judges (at Greenwich when it reads the link).
-  jd: { yes: ["1505042.16624", "2461359.39603", "2451545", "2451545.123456", String(JD_LO), String(JD_HI - 0.1)],
-    no: ["2451545.1234567", "12345678", "1e6", "+2451545", "-5", "NaN", "2451545.", ".5", "0x10", "2451545,0"],
-    copyOnly: [String(JD_LO - 0.1), String(JD_HI + 0.1), "1", "9999999"] },
+  // The sky page's own keys for a place and a time, which the Lexicon Explorer writes for a sky on show. The year range
+  // is a range of local dates, so a Julian Day is read when it is a sky at some longitude: from half a day before the
+  // range as Greenwich counts it to just under half a day after it. Whether it is a sky at the place the link names is
+  // judged afterwards, by the sky page, when the link is applied.
+  jd: { yes: ["1505042.16624", "2461359.39603", "2451545", "2451545.123456", String(JD_LO), String(JD_HI - 0.1), String(JD_LO - 0.1), String(JD_HI + 0.1), String(JD_LO - 0.5), String(JD_HI + 0.49)],
+    no: ["2451545.1234567", "12345678", "1e6", "+2451545", "-5", "NaN", "2451545.", ".5", "0x10", "2451545,0", String(JD_LO - 0.6), String(JD_HI + 0.5), String(JD_HI + 0.6), "1", "9999999"] },
   lat: { yes: ["0", "32.13", "-33.8688", "90", "-90", "89.9999", "-0", "00"], no: ["90.0001", "-90.01", "91", "0.12345", ".5", "5.", "+5", "1e1", "NaN", "100", "5,5"] },
   lon: { yes: ["0", "45.23", "-179.9999", "180", "-180", "151.2093", "000"], no: ["180.0001", "-180.01", "181", "0.12345", "1000", "1e2", "+5", "5.", "NaN"] },
 };
@@ -408,6 +414,7 @@ test("Each page's copy of the other page's link grammar reads every value exactl
     ["the sky page's copy of the Lexicon Explorer's grammar", P.LEXICON_PAGE_GRAMMAR, G.HASH_GRAMMAR, G.parseHash],
     ["the Lexicon Explorer's copy of the sky page's grammar", G.SKY_PAGE_GRAMMAR, P.HASH_GRAMMAR, P.parseHash],
   ];
+  const laxer = [], stricter = [];      // values a copy lets through and the page that owns the key refuses, and the other way round
   for (const [what, copy, own, parse] of pairs) {
     for (const key of grammarKeys(copy)) {
       assert.ok(grammarKeys(own).includes(key), `${what}: the key ${key} is a key the other page reads`);
@@ -415,21 +422,23 @@ test("Each page's copy of the other page's link grammar reads every value exactl
       for (const [value, wanted] of [...LINK_VALUES[key].yes.map((v) => [v, true]), ...LINK_VALUES[key].no.map((v) => [v, false])]) {
         const hash = "#" + key + "=" + value;
         const here = KIT.parseHashWith(copy, hash), there = parse(hash);
+        if (Object.hasOwn(here.values, key) && !Object.hasOwn(there.values, key)) laxer.push(what + ": " + hash);
+        if (!Object.hasOwn(here.values, key) && Object.hasOwn(there.values, key)) stricter.push(what + ": " + hash);
         assert.deepEqual({ ...here.values }, { ...there.values }, `${what}: ${hash} is read the same way by both`);
         assert.equal(here.ignored, there.ignored, `${what}: ${hash} is ignored by both or by neither`);
         assert.equal(Object.hasOwn(there.values, key), wanted, `${what}: ${hash} ${wanted ? "is read" : "is ignored"} by the page that owns the key`);
         if (wanted) assert.equal(KIT.formatHashWith(copy, { [key]: value.split(",").length > 1 ? value.split(",") : value }), hash, `${what}: ${hash} can be written`);
         else assert.ok(throws(() => KIT.formatHashWith(copy, { [key]: value })), `${what}: ${hash} cannot be written`);
       }
-      for (const value of LINK_VALUES[key].copyOnly || []) {
-        const hash = "#" + key + "=" + value;
-        assert.equal(Object.hasOwn(KIT.parseHashWith(copy, hash).values, key), true, `${what}: ${hash} is let through by the copy`);
-        assert.deepEqual([Object.hasOwn(parse(hash).values, key), parse(hash).ignored], [false, 1], `${what}: ${hash} is refused by the page that owns the key`);
-        assert.ok(!K.skyInputsValid(Number(value), 0, 0), `${what}: ${hash} is refused for one reason, the year range`);
-      }
     }
   }
-  assert.deepEqual(Object.keys(LINK_VALUES).filter((key) => LINK_VALUES[key].copyOnly), ["jd"], "in one place a copy is laxer than the page that owns the key: the Lexicon Explorer's copy of jd does not know the year range");
+  assert.deepEqual([laxer, stricter], [[], []], "no copy of a rule is laxer or stricter than the rule of the page that owns the key");
+  assert.deepEqual(Object.keys(LINK_VALUES).filter((key) => Object.keys(LINK_VALUES[key]).some((list) => list !== "yes" && list !== "no")), [], "and this test keeps no list of values on which a copy and its owner are allowed to differ");
+  // the key jd at the ends of the year range: the Lexicon Explorer's copy once did not know the range, and the sky page once judged it at Greenwich alone
+  for (const [value, wanted] of [[String(JD_LO - 0.1), true], [String(JD_HI + 0.1), true], ["1", false], ["9999999", false]]) {
+    assert.deepEqual([Object.hasOwn(KIT.parseHashWith(G.SKY_PAGE_GRAMMAR, "#jd=" + value).values, "jd"), Object.hasOwn(P.parseHash("#jd=" + value).values, "jd")], [wanted, wanted], `#jd=${value} is ${wanted ? "read" : "refused"} by the sky page and by the Lexicon Explorer's copy of its rule`);
+    assert.equal(K.skyInputsValid(Number(value), 0, 0), false, `#jd=${value} is outside the year range as Greenwich counts it`);
+  }
   assert.deepEqual(grammarKeys(G.HASH_GRAMMAR), ["sky", "entry", "lens"], "the Lexicon Explorer reads three keys");
   assert.deepEqual(grammarKeys(P.HASH_GRAMMAR), ["preset", "site", "jd", "lat", "lon", "focus", "lab", "lens"], "the sky page reads eight keys");
   assert.deepEqual(grammarKeys(P.LEXICON_PAGE_GRAMMAR), grammarKeys(G.HASH_GRAMMAR), "the sky page can write every key the Lexicon Explorer reads");
@@ -622,25 +631,118 @@ test("A sky opened in the Lexicon Explorer links back to the Celestial Control P
   for (const lens of LENSES) for (const none of [undefined, null, {}, { jd: "1505042.16624" }]) assert.equal(G.skyPageHref("sky", lens, none), KIT.LINKS.celestialControlPanel + "#lens=" + lens, `${lens}: without a whole sky the link carries the lens alone`);
 });
 
-// A known fault, kept as a test that runs. The sky page judges the Julian Day of a link at Greenwich when it reads the
-// link (its rule for jd) and at the place afterwards. A sky within half a day of either end of the year range, at a
-// longitude far from Greenwich, is a sky for both pages and for the core, but its jd is refused by that rule. So the
-// Lexicon Explorer's link back to the sky page opens the place at the present day, with the note, and the sky page
-// itself cannot write "Copy a link to this sky" for it (skyLinkHref throws). When the rule is changed, take the todo away
-// and move to `yes` the values of LINK_VALUES.jd.copyOnly that the sky page then reads.
-test("At the very ends of the year range, too, a sky opened in the Lexicon Explorer links back to the same sky, and the sky page can write its own link", { todo: "the sky page judges the Julian Day of a link at Greenwich: within half a day of either end of the year range a sky far east or west loses its time" }, () => {
+// The year range is a range of local dates, so within half a day of either end a sky far east or west of Greenwich has
+// a Julian Day that lies outside the range as Greenwich counts it. Both pages read such a Julian Day (their rule for
+// jd lets through every one that is a sky at some longitude), and the sky page judges it at the place the link names.
+test("At the very ends of the year range, too, a sky opened in the Lexicon Explorer links back to the same sky, and the sky page can write its own link and seal the sky under it", async () => {
   for (const [jd, lat, lon] of [[JD_LO - 0.4, 0, 180], [JD_HI + 0.4, 0, -180], [JD_LO - 0.2, 32.13, 135.76], [JD_HI + 0.2, -33.87, -120]]) {
     const what = `the sky of JD ${jd}, ${lat}, ${lon}`;
     assert.ok(K.skyInputsValid(jd, lat, lon), `${what}: is a sky for the core`);
+    assert.ok(!K.skyInputsValid(jd, 0, 0), `${what}: its Julian Day is outside the year range as Greenwich counts it`);
     const there = G.initialState("#sky=" + jd + "," + lat + "," + lon + "&lens=navigator");
     assert.ok(there.sky && there.notes.length === 0, `${what}: is a sky for the Lexicon Explorer`);
     const typedThere = P.setJd(P.typePlace(P.initialState(), lat, lon).state, jd);
     assert.equal(typedThere.jdUt, jd, `${what}: is a sky for the sky page`);
-    const back = P.initialState({ hash: fragment(G.skyPageHref("sky", "navigator", there.sky)), nowMs: 1 });
-    assert.equal(back.notes.link, "", `${what}: the Lexicon Explorer's link is read by the sky page with the note ${JSON.stringify(back.notes.link)}`);
-    assert.deepEqual(K.formatSkyInputs(back.jdUt, back.site.lat, back.site.lonEast), { ...there.sky }, `${what}: the sky page opens another sky`);
-    assert.doesNotThrow(() => P.skyLinkHref(typedThere), `${what}: the sky page cannot write its own link to it`);
+    const href = G.skyPageHref("sky", "navigator", there.sky);
+    assert.equal(fragment(href), "#jd=" + there.sky.jd + "&lat=" + there.sky.lat + "&lon=" + there.sky.lon + "&lens=navigator", `${what}: the Lexicon Explorer's link to the sky page carries the time and the place`);
+    const back = P.initialState({ hash: fragment(href), nowMs: 1 });
+    assert.equal(back.notes.link, "", `${what}: the sky page reads the Lexicon Explorer's link without a note`);
+    assert.deepEqual(K.formatSkyInputs(back.jdUt, back.site.lat, back.site.lonEast), { ...there.sky }, `${what}: and opens the same sky, with its time`);
+    let own = null;
+    assert.doesNotThrow(() => { own = P.skyLinkHref(P.setLens(typedThere, "navigator")); }, `${what}: the sky page writes its own link to it`);
+    assert.equal(own, href, `${what}: "Copy a link to this sky" is the link the Lexicon Explorer writes for that sky`);
+    assert.deepEqual({ ...G.initialState(fragment(P.lexiconSkyHref(typedThere))).sky }, { ...there.sky }, `${what}: and the sky page's link to the Lexicon Explorer opens that sky there`);
+    // and the seal of that sky carries the same link and the same three numbers
+    const sealed = await P.sealSky(P.setLens(typedThere, "navigator"), { at: AT });
+    assert.deepEqual([sealed.ok, sealed.link, { ...sealed.inputs }], [true, P.lexiconSkyHref(P.setLens(typedThere, "navigator")), { ...there.sky }], `${what}: the sky page seals it, under the link it writes to the Lexicon Explorer and with the numbers of that link`);
+    // the same Julian Day at Greenwich is no sky: the sky page reads the key, judges it at the place and says that a value was ignored
+    const atGreenwich = P.initialState({ hash: "#jd=" + there.sky.jd + "&lat=0&lon=0", nowMs: 1 });
+    assert.deepEqual([P.parseHash("#jd=" + there.sky.jd).ignored, atGreenwich.notes.link, atGreenwich.jdUt === Number(there.sky.jd)], [0, P.IGNORED_NOTE, false], `${what}: with a place at Greenwich the same Julian Day is dropped with the note`);
+    assert.equal(G.initialState("#sky=" + there.sky.jd + ",0,0").sky, null, `${what}: and the Lexicon Explorer opens no sky of that Julian Day at Greenwich to link from`);
   }
+  // Within half a second of either end the Julian Day, rounded to the 5 decimals a link keeps, would fall outside the range.
+  // Both links of the sky page then carry the nearest instant of 5 decimals inside it, and each page reads them as one sky.
+  // The seal takes the same three numbers: such a sky is sealed, its link is the link the page writes, and the Lexicon
+  // Explorer, which rebuilds the sky from that link, gives it the same chain name.
+  for (const [jd, lat, lon] of [[JD_HI - 2e-6, 0, 0], [JD_HI + 0.5 - 2e-6, 0, -180], [JD_HI - 135.76 / 360 - 6e-7, 32.13, 135.76], [JD_LO + 120 / 360, -33.87, -120]]) {
+    const what = `the sky of JD ${jd}, ${lat}, ${lon}`, state = P.setLens(P.setJd(P.typePlace(P.initialState(), lat, lon).state, jd), "navigator");
+    assert.equal(state.jdUt, jd, `${what}: is a sky for the sky page`);
+    const q = roundedOf(state);
+    assert.ok(!K.skyInputsValid(q.jdUt, q.lat, q.lonEast), `${what}: rounded to 5 decimals (${q.jdUt}) it would be outside the year range`);
+    let own = "", toLexicon = "";
+    assert.doesNotThrow(() => { own = P.skyLinkHref(state); toLexicon = P.lexiconSkyHref(state); }, `${what}: the sky page writes both links`);
+    const back = P.initialState({ hash: fragment(own), nowMs: 1 });
+    assert.equal(back.notes.link, "", `${what}: the sky page reads its own link (${fragment(own)}) without a note`);
+    assert.ok(Math.abs(back.jdUt - jd) * 86400 < 1 && back.site.lat === q.lat && back.site.lonEast === q.lonEast, `${what}: as the same place, less than a second away (${((back.jdUt - jd) * 86400).toFixed(2)} s)`);
+    const there = G.initialState(fragment(toLexicon));
+    assert.ok(there.sky && there.notes.length === 0, `${what}: the Lexicon Explorer opens the sky of the other link (${fragment(toLexicon)}) without a note`);
+    assert.deepEqual({ ...there.sky }, K.formatSkyInputs(back.jdUt, back.site.lat, back.site.lonEast), `${what}: both links carry the same three numbers`);
+    assert.equal(G.skyPageHref("sky", "navigator", there.sky), own, `${what}: and the Lexicon Explorer's link back is the sky page's own link`);
+    const sealed = await P.sealSky(state, { at: AT });
+    assert.equal(sealed.ok, true, `${what}: the sky page seals it`);
+    assert.equal(sealed.link, toLexicon, `${what}: the seal's link is the link the page writes to the Lexicon Explorer`);
+    assert.deepEqual({ ...sealed.inputs }, { ...there.sky }, `${what}: the three numbers the seal reports are the ones that link carries`);
+    assert.deepEqual(sealed.rows, rowsFor({ jdUt: Number(there.sky.jd), lat: Number(there.sky.lat), lonEast: Number(there.sky.lon) }), `${what}: the rows sealed are the rows of those three numbers`);
+    assert.equal((await G.sealLexicon(there.lexicon, { at: AT_LATER })).chainId, sealed.chainId, `${what}: and the Lexicon Explorer, sealing what it rebuilt from the link, gives the same chain name`);
+  }
+});
+
+// The two pages keep one rule for the key jd each (the Lexicon Explorer's is its copy of the sky page's). A text is read
+// by both or refused by both, and it is read exactly when it has the form of a Julian Day (one to seven digits, then at
+// most six decimals) and the core calls its number a sky at the far west or at the far east. A zero in front does not
+// change the number: #jd=0999999 is read as 999999.
+test("The Lexicon Explorer's rule and the sky page's rule for the key jd read and refuse the same texts, around both ends of the year range and at random", () => {
+  const byCopy = (text) => { const v = KIT.parseHashWith(G.SKY_PAGE_GRAMMAR, "#jd=" + text).values; return Object.hasOwn(v, "jd") ? v.jd : null; };
+  const byOwner = (text) => { const v = P.parseHash("#jd=" + text).values; return Object.hasOwn(v, "jd") ? v.jd : null; };
+  const byCore = (text) => (/^\d{1,7}(\.\d{1,6})?$/.test(text) && (K.skyInputsValid(Number(text), 0, -180) || K.skyInputsValid(Number(text), 0, 180)) ? Number(text) : null);
+  const rnd = seeded(990923), texts = [];
+  // around both ends: every hundredth of a day for a day either side, the same with 5 and 6 decimals, and random instants within two days
+  for (const end of [JD_LO, JD_HI]) {
+    for (let k = -100; k <= 100; k++) texts.push(String(Number((end + k / 100).toFixed(2))));
+    for (const d of [-0.500001, -0.5, -0.499999, -0.00001, 0, 0.00001, 0.499999, 0.5, 0.500001]) texts.push((end + d).toFixed(5), (end + d).toFixed(6));
+    for (let i = 0; i < 80; i++) texts.push((end - 2 + 4 * rnd()).toFixed(Math.floor(rnd() * 7)));
+  }
+  // at random over everything seven digits can say, and inside the range
+  for (let i = 0; i < 120; i++) texts.push((9999999 * rnd()).toFixed(Math.floor(rnd() * 7)));
+  for (let i = 0; i < 60; i++) texts.push((JD_LO + (JD_HI - JD_LO) * rnd()).toFixed(5));
+  // seven digits with a zero in front: the number counts, so both are read (the second is the first Julian Day the rule reads at all)
+  texts.push("0999999", "0990923");
+  // forms that are no Julian Day at all
+  texts.push("", "0", "1", "9999999", "10000000", "2451545.", ".5", "2451545.1234567", "02451545", "+2451545", "-2451545", "2451545e0", "0x2566B9", "2451545,0", "NaN", "Infinity", " 2451545", "2451545 ", "२४५१५४५");
+  let read = 0, refused = 0, beyondGreenwich = 0;
+  for (const text of texts) {
+    const copy = byCopy(text), owner = byOwner(text);
+    assert.equal(copy, owner, `#jd=${text}: the Lexicon Explorer's copy gives ${copy}, the sky page's rule ${owner}`);
+    assert.equal(owner, byCore(text), `#jd=${text}: read exactly when it is a Julian Day the core calls a sky at longitude -180 or 180`);
+    if (owner === null) refused += 1;
+    else { read += 1; if (!K.skyInputsValid(owner, 0, 0)) beyondGreenwich += 1; }
+    // what one page can write, the other reads, and neither writes what it refuses
+    const writes = (grammar) => !throws(() => KIT.formatHashWith(grammar, { jd: text }));
+    assert.deepEqual([writes(G.SKY_PAGE_GRAMMAR), writes(P.HASH_GRAMMAR)], [owner !== null, owner !== null], `#jd=${text}: both rules write it or neither does`);
+  }
+  assert.deepEqual([byOwner("0999999"), byCopy("0999999"), byOwner("0990923"), byCopy("0990923")], [999999, 999999, 990923, 990923], "a Julian Day written with a zero in front is read by both pages as its number");
+  assert.ok(texts.length >= 700 && read >= 250 && refused >= 250 && beyondGreenwich >= 80, `the values tried divide into read and refused, and many of those read lie outside the range as Greenwich counts it (${texts.length} tried, ${read} read, ${refused} refused, ${beyondGreenwich} beyond)`);
+  // the half day either side, exactly: the first and the last Julian Day read
+  assert.deepEqual([byOwner(String(JD_LO - 0.51)), byOwner(String(JD_LO - 0.5)), byOwner((JD_HI + 0.499999).toFixed(6)), byOwner(String(JD_HI + 0.5))], [null, JD_LO - 0.5, Number((JD_HI + 0.499999).toFixed(6)), null], "the rule reads from half a day before the range to just under half a day after it");
+  // a sky near either end at any longitude: each page writes a link the other reads as that sky
+  let made = 0, outside = 0;
+  while (made < 200) {
+    const lon = Number((-180 + 360 * rnd()).toFixed(2)), lat = Number((-90 + 180 * rnd()).toFixed(2));
+    const jd = Number(((made % 2 ? JD_HI : JD_LO) - lon / 360 + (made % 2 ? -1 : 1) * 0.6 * rnd()).toFixed(5));
+    if (!K.skyInputsValid(jd, lat, lon)) continue;
+    const what = `the sky of JD ${jd}, ${lat}, ${lon}`;
+    const there = G.initialState("#sky=" + jd.toFixed(5) + "," + lat.toFixed(2) + "," + lon.toFixed(2) + "&lens=holographer");
+    assert.ok(there.sky && there.notes.length === 0, `${what}: the Lexicon Explorer opens it`);
+    const href = G.skyPageHref("sky", "holographer", there.sky);
+    assert.ok(fragment(href).startsWith("#jd=" + there.sky.jd + "&"), `${what}: the Lexicon Explorer's link carries its Julian Day`);
+    const back = P.initialState({ hash: fragment(href), nowMs: 1 });
+    assert.deepEqual([back.notes.link, K.formatSkyInputs(back.jdUt, back.site.lat, back.site.lonEast)], ["", { ...there.sky }], `${what}: the sky page reads the link as that sky`);
+    assert.equal(P.skyLinkHref(back), href, `${what}: and writes the same link for it`);
+    assert.deepEqual({ ...G.initialState(fragment(P.lexiconSkyHref(back))).sky }, { ...there.sky }, `${what}: and its link to the Lexicon Explorer opens the same sky`);
+    if (!K.skyInputsValid(jd, 0, 0)) outside += 1;
+    made += 1;
+  }
+  assert.ok(outside >= 40, `many of those skies lie outside the year range as Greenwich counts it (${outside} of ${made})`);
 });
 
 test("A link a page writes to itself comes back to the same sky, the same entry and the same lens", async () => {
@@ -933,6 +1035,23 @@ async function strixFacts() {
       assert.ok(details[3].endsWith("…"), "and ends in the mark that it was cut");
       assert.equal(Array.from(details[3]).length, G.LEDGER_POINTS, "that length is the model's LEDGER_POINTS");
       return Array.from(details[3]).length;
+    })(),
+    "pack.ledger.entries.shown.max": await (async () => {
+      // packages whose ledger holds n entries up to the certified head, read as packages from outside: how many are listed
+      const listed = async (n) => {
+        const b = await OW.buildLexiconBundle([OW.makeEntry("1", "reading", "note", "One", "A first entry.")], { at: AT });
+        while (b.trace.length < n) OW.traceAppend(b.trace, "visitor", "note", "entry " + b.trace.length, AT);
+        const { certificate: c } = await OW.issueCertificate(b, await OW.newSessionKeys(), AT);
+        const shown = await G.readOutside(JSON.stringify(OW.makeHyperpack({ ...b, certificate: c })));
+        assert.equal(shown.ok, true, `the package with a ledger of ${n} entries is accepted`);
+        assert.deepEqual([shown.covered.ledgerTotal, shown.covered.ledger.length + shown.covered.ledgerMore], [n, n], `of ${n} covered entries each is either listed or counted as not listed`);
+        assert.equal(shown.covered.ledgerMoreLine === "", shown.covered.ledgerMore === 0, `the line under the ledger of ${n} entries is there exactly when entries are left out`);
+        return shown.covered.ledger.length;
+      };
+      const most = await largest(2, 1000, async (n) => (await listed(n)) === n, "ledger entries listed");
+      assert.deepEqual([await listed(most + 1), await listed(3 * most)], [most, most], "a longer ledger is listed up to that many entries, whatever its length");
+      assert.equal(most, G.LEDGER_ROWS, "that number is the model's LEDGER_ROWS");
+      return most;
     })(),
     "overwatch.checks": OW.OVERWATCH_CHECKS.length,
     "package.checks": OW.PACKAGE_CHECKS.length,
@@ -1391,4 +1510,197 @@ test("The link keys each document lists are the keys the page reads", () => {
   assert.match(row("preset"), /opens at step 2\b/, "CELESTIAL_CONTROL_PANEL.md says the preset opens at step 2");
   assert.equal(P.initialState({ hash: "#preset=ezekiel" }).step, 2, "and it does");
   for (const words of ["depth rings", "galactic centre", "north galactic pole", "opposite point", "shadow transform", "no place"]) assert.ok(row("focus").includes(words), `CELESTIAL_CONTROL_PANEL.md says a focus link is ignored for: ${words}`);
+});
+
+// The documents quote sentences, labels and names of the pages. Each one listed here is taken from the model that
+// prints it and must stand in the document word for word (line breaks of the document count as spaces), so a
+// sentence reworded in a model fails here until the document follows.
+test("The sentences, labels and names the two documents quote from the pages are the ones the models hold", async () => {
+  const flat = (file) => read(file).replace(/\s+/g, " ");
+  const strix = flat("STRIX_OVERWATCH.md"), sky = flat("CELESTIAL_CONTROL_PANEL.md");
+  const dialogOf = (model, pattern) => model.DIALOG.sections.flatMap((s) => s.items).map((x) => x.text).find((text) => pattern.test(text));
+  const walked = (moves) => P.labHome(moves.reduce((lab, move) => P.labSlide(lab, move), P.labStart()));
+  // the Lexicon Explorer, in STRIX_OVERWATCH.md
+  const kebarSky = G.initialState("#sky=" + [P.EZEKIEL_PRESET.jdUt.toFixed(5), "32.13", "45.23"].join(",")).lexicon;
+  const faultySky = G.initialState("#sky=2461360.25000,51.48,0.00&foo=1");
+  const longLedger = await (async () => {
+    const b = await OW.buildLexiconBundle([OW.makeEntry("1", "reading", "note", "One", "A first entry.")], { at: AT });
+    while (b.trace.length < G.LEDGER_ROWS + 2) OW.traceAppend(b.trace, "visitor", "note", "entry " + b.trace.length, AT);
+    const { certificate } = await OW.issueCertificate(b, await OW.newSessionKeys(), AT);
+    return (await G.readOutside(JSON.stringify(OW.makeHyperpack({ ...b, certificate })))).covered.ledgerMoreLine;
+  })();
+  assert.equal(longLedger, "and 2 more ledger entries, not listed", "the line under a long ledger, for two entries left out");
+  const quotedByStrix = [
+    ["the count line of the Send station", G.handshakeCount(4, 4)],
+    ["the READING sentence of the Send station", G.SEND_READING.text],
+    ["the mark of two witnesses", G.WITNESS_MARKS[0].label],
+    ["the dialog's sentence about the key", dialogOf(G, /^A key this page makes/)],
+    ["the words beside a seal this page made", G.OWN_KEY_NOTE, "part"],
+    ["the notice over a lexicon from outside", G.OUTSIDE_NOTICE],
+    ["the heading of the legend over a lexicon from outside", G.OUTSIDE_LEGEND],
+    ["the line for a First Explorers journey", G.LOAD_COPY.journey],
+    ["the line under a long ledger, with the document's own number", longLedger.replace(" 2 ", " 2752 ")],
+    ["the button of the line about the Navigator level", G.MORE_LEVELS.label],
+    ["the phone's button to the author's notes", G.NOTES_INVITE.short],
+    ["the Stargazer name of entry 0.1", G.displayName(G.EZEKIEL, "0.1", "stargazer")],
+    ["the name entry 0.1 is sealed under", G.nameOf(G.EZEKIEL, "0.1")],
+    ["the button that opens all STRIX says", G.uiLabel("strixAll", "navigator")],
+    ["the status line on arrival by a sky link", kebarSky.title + "."],
+    ["the note for an ignored link value", G.IGNORED_NOTE],
+    ["the status line on arrival by a sky link with a part the page does not use", faultySky.notes.join(" ") + ". " + faultySky.lexicon.title + "."],
+    ["the button after STRIX's sentences", G.uiLabel("more", "navigator")],
+  ];
+  assert.deepEqual([faultySky.notes, faultySky.lexicon.origin, faultySky.lexicon.title], [[G.IGNORED_NOTE], "page", "A sky: Greenwich, England, 15 November 2026"], "a sky link with an unknown key builds the sky and leaves the note");
+  for (const hash of ["#sky=2461360.25000,51.48,0.00&lens=bogus", "#sky=2461360.25000,51.48,0.00&entry=9.9"]) assert.deepEqual([G.initialState(hash).notes.length, G.initialState(hash).lexicon.title], [1, faultySky.lexicon.title], `${hash}: the same sky, and one note`);
+  // the two addresses the document gives for a lexicon from a file: an entry's link, and the level alone
+  for (const [what, href] of [["the link of an entry at the Holographer level", G.entryHref("26.1.2", "holographer")], ["the link that names the level alone", G.entryHref("", "navigator")]]) {
+    assert.ok(strix.includes("`" + fragment(href) + "`"), `STRIX_OVERWATCH.md gives ${what} as the page writes it: ${fragment(href)}`);
+  }
+  // A quotation stands between quotation marks, from its first word to its last; one marked "part" stands inside a longer quotation.
+  const quotes = (document, text, part) => document.includes(part ? text : '"' + text + '"');
+  for (const [what, text, part] of quotedByStrix) {
+    assert.ok(typeof text === "string" && text.length >= 4, `${what}: the model holds it (${JSON.stringify(text)})`);
+    assert.ok(quotes(strix, text, part), `STRIX_OVERWATCH.md quotes ${what} as the page prints it, between quotation marks: ${JSON.stringify(text)}`);
+  }
+  assert.match(G.displayName(G.EZEKIEL, "26.1.10", "stargazer"), / \(a verse nearby\)$/, "a verse row named (context) is shown as (a verse nearby) at Stargazer");
+  assert.ok(strix.includes('"(a verse nearby)"') && strix.includes('"(context)"'), "and STRIX_OVERWATCH.md gives both endings");
+  assert.equal([...G.ENTRY_LEADS.keys()].join(" "), "0 0.1 0.2 0.3 0.4 0.5 100", "seven entries open with a sentence of the page's own at Stargazer");
+  assert.ok(strix.includes("seven entries (`0`, the five entries under it, `0.1` to `0.5`, and `100`)"), "and STRIX_OVERWATCH.md lists them");
+  assert.deepEqual([...new Set(G.POINTER_ADDRESSES.map((a) => OW.parentOf(a)))], ["100.2", "100.5", "100.6", "100.7", "100.9", "100.10", "100.11"], "rows under the author's lines 2, 5, 6, 7, 9 and 10 and under the outline carry a button to a place");
+  assert.ok(strix.includes("A row under the author's lines 2, 5, 6, 7, 9 and 10 or under the outline") && strix.includes("(`POINTER_ADDRESSES`, " + G.POINTER_ADDRESSES.length + " rows)"), "and STRIX_OVERWATCH.md names those lines and the number of rows");
+  // the Celestial Control Panel, in CELESTIAL_CONTROL_PANEL.md
+  const quotedBySky = [
+    ["the lab's sentence for a path that crosses itself", P.LAB_COPY.crosses],
+    ["the lab's sentence for a walker who is not turned", P.labReadout(walked(["forward", "left", "forward"]), "navigator").text],
+    ["the button that opens all STRIX says", P.STRIX.all],
+    ["the name of an arrow button that moves the map", P.CONTROLS.nudge.left],
+    ["the name of an arrow button that turns the ball", P.CONTROLS.turn.up],
+    ["the sentence beside a link", "This link contains the place and the time you entered.", "part"],
+    ["the note for an ignored link value", P.IGNORED_NOTE],
+    ["the status line when the day changed under the day question", P.MESSAGES.dayChanged],
+    ["the button after STRIX's sentences", P.STRIX.more],
+    ["the second button of the day question", P.dayQuestion(SKIES[0].state()).change],
+    ["the lab's area line for the four slides and the slide home, at Stargazer", P.labReadout(P.labHome(P.labFour(P.labStart())), "stargazer").area.text],
+  ];
+  // the sides the area line counts, as the document gives them for two paths
+  for (const [moves, sides] of [[["forward", "forward", "back", "left"], "three-sided path"], [["forward", "forward", "left", "left", "back", "back", "right", "right"], "five-sided path"]]) {
+    for (const lens of LENSES) assert.ok(P.labReadout(walked(moves), lens).area.text.includes(" your " + sides + ": "), `${moves.join(", ")} and home is a ${sides} at the ${lens} lens`);
+    assert.ok(sky.includes('"' + sides + '"'), `CELESTIAL_CONTROL_PANEL.md calls that path a ${sides}`);
+  }
+  assert.deepEqual([P.dayQuestion(SKIES[0].state()).yes, sky.includes('"Yes"')], ["Yes", true], "the first button of the day question, as the document names it");
+  assert.ok(read(WING + "Celestial_Control_Panel/index.html").includes(">More at this step</summary>") && sky.includes('"More at this step"'), "the box of the further controls is named in the document as on the page");
+  assert.deepEqual(P.labReadout(walked(["forward", "left", "forward"]), "stargazer").noArea, { why: "crosses", text: P.LAB_COPY.crosses }, "forward, left, forward, Slide home crosses itself and is told so");
+  assert.ok(stringsOf(P).some((s) => s.includes(quotedBySky[5][1])), "the sentence beside a link is the sky page's");
+  for (const [what, text, part] of quotedBySky) {
+    assert.ok(typeof text === "string" && text.length >= 4, `${what}: the model holds it (${JSON.stringify(text)})`);
+    assert.ok(quotes(sky, text, part), `CELESTIAL_CONTROL_PANEL.md quotes ${what} as the page prints it, between quotation marks: ${JSON.stringify(text)}`);
+  }
+  // earlier wordings of two of these sentences, which no model holds any more and neither document may keep
+  for (const gone of ["The key is made for this visit and shows integrity, not identity.", "The page borrows a number from this rule and nothing more. The rule is about people giving evidence."]) {
+    assert.ok(!stringsOf(G).some((s) => s.includes(gone)), `the Lexicon Explorer no longer says ${JSON.stringify(gone)}`);
+    assert.ok(!strix.includes(gone) && !sky.includes(gone), `and neither document still quotes it`);
+  }
+});
+
+// Some sentences of the documents' prose hold numbers that no line of a facts block ties to them (the facts line could
+// say 200 while the sentence says 300). Each of these sentences is built here from the numbers the page holds and must
+// stand in the document word for word, so a number changed on one side alone fails.
+test("The numbers the documents give in their prose for the ledger list and for scrolling under the header are the ones the pages hold", () => {
+  const flat = (file) => read(file).replace(/\s+/g, " ");
+  const strix = flat("STRIX_OVERWATCH.md"), sky = flat("CELESTIAL_CONTROL_PANEL.md");
+  // how many entries of a long ledger are listed
+  assert.ok(strix.includes("at most the first " + G.LEDGER_ROWS + " are listed (`LEDGER_ROWS`)"), `STRIX_OVERWATCH.md says that at most the first ${G.LEDGER_ROWS} ledger entries are listed`);
+  assert.ok(strix.includes("so only a long one passes " + G.LEDGER_ROWS + "."), `and that only a long journey passes ${G.LEDGER_ROWS}`);
+  // where the page stops when it scrolls: the scroll-padding-top of each index.html, by the window it is set for
+  // (wide: at least 700 x 700 px; middle: of those, the ones under 1100 px wide; small: every other window)
+  // and by whether the banner of a lexicon from a file is shown
+  const paddings = (file) => {
+    const out = {}, css = read(file);
+    for (const line of css.split("\n").filter((l) => l.includes("scroll-padding-top"))) {
+      const window = line.includes("@media not") ? "small" : line.includes("max-width: 1099.98px") ? "middle" : "wide";
+      const rules = [...line.matchAll(/html(:has\(#banner:not\(\[hidden\]\)\))? \{ scroll-padding-top: (\d+)px; \}/g)];
+      assert.ok(rules.length >= 1, `${file}: a line that sets scroll-padding-top is read: ${line.trim().slice(0, 80)}`);
+      for (const m of rules) {
+        const name = window + (m[1] ? " with the banner" : "");
+        assert.ok(!Object.hasOwn(out, name), `${file}: scroll-padding-top is set once ${name}`);
+        out[name] = Number(m[2]);
+      }
+    }
+    assert.equal((css.match(/scroll-padding-top/g) || []).length, Object.keys(out).length, `${file}: every scroll-padding-top of the file was read`);
+    return out;
+  };
+  const lexicon = paddings(WING + "Lexicon_Explorer/index.html"), panel = paddings(WING + "Celestial_Control_Panel/index.html");
+  assert.deepEqual(Object.keys(lexicon).sort(), ["middle", "middle with the banner", "small with the banner", "wide", "wide with the banner"], "the Lexicon Explorer sets five distances");
+  assert.deepEqual(Object.keys(panel).sort(), ["middle", "wide"], "the sky page, which has no banner, sets two");
+  const header = (d) => `${d.wide} px from the top from 1100 px wide, ${d.middle} px between 700 and 1100 px, where the header can have two rows.`;
+  assert.ok(strix.includes(header(lexicon)), `STRIX_OVERWATCH.md gives the Lexicon Explorer's distances: ${header(lexicon)}`);
+  assert.ok(sky.includes(header(panel)), `CELESTIAL_CONTROL_PANEL.md gives the sky page's distances: ${header(panel)}`);
+  const banner = `the distances are ${lexicon["wide with the banner"]} and ${lexicon["middle with the banner"]} px, and ${lexicon["small with the banner"]} px in a smaller window`;
+  assert.ok(strix.includes(banner), `STRIX_OVERWATCH.md gives the distances under the banner of a lexicon from a file: ${banner}`);
+  assert.deepEqual([lexicon.wide, lexicon.middle], [panel.wide, panel.middle], "both pages stop at the same distances under the same header");
+});
+
+// ─── 7. a package saved by First Explorers ───────────────────────────────────
+
+// First Explorers is a DOM module, so its journey is built here with the same calls in the same order: the ledger entries
+// its begin(), observe() and inspect() write, the bundle and the package of its bundle() and pack(), and the text its
+// "Save package" button saves. The lines of the page that this test stands in for are compared as text first.
+test("A package as First Explorers builds and saves it, in wire form, passes the front door, and the Lexicon Explorer reads it as a First Explorers journey", async () => {
+  const page = read(WING + "First_Explorers/first-explorers.js");
+  for (const line of [
+    "const bundle = () => ({ chain: S.chain, lexicon: S.lexicon, lineage: S.lineage, trace: S.trace });",
+    "const pack = () => OW.makeHyperpack({ ...bundle(), certificate: S.certificate });",
+    "const { certificate, report } = await OW.issueCertificate(bundle(), S.keys);",
+    "download(`hyperpack-${S.chain.chainId}.json`, JSON.stringify(pack()))",
+  ]) assert.ok(page.includes(line), `First Explorers still builds and saves its package as this test does: ${line}`);
+  assert.ok(!/JSON\.stringify\(pack\(\),/.test(page), "and nowhere writes its package with a second argument to JSON.stringify (indentation)");
+  // the journey: five observations, one per sense, as tests/unit/strix-overwatch.test.mjs makes them
+  const observations = [["sound", { hz: 432, ms: 400 }, "tone-432"], ["light", { r: 56, g: 189, b: 248 }, "sky"], ["touch", { at: [4, 4], path: "0011223" }, "first stroke"],
+    ["symbol", { text: "owl | 100%\nwise" }, "owl"], ["number", { seq: [1, 1, 2, 3, 5, 8] }, "fib"]].map(([sense, input, name]) => OW.makeObservation(sense, input, name));
+  const keys = await OW.newSessionKeys(), sealId = await SEAL.sealIdFromPublic(keys.publicJwk);
+  const S = { trace: [], lineage: [], chain: null, lexicon: null, certificate: null, seen: [] };
+  const log = (actor, event, detail) => OW.traceAppend(S.trace, actor, event, detail);
+  log("system", "genesis", "an observer at the origin; nothing known");
+  log("system", "key.created", `${sealId} (ECDSA P-256, this visit only)`);
+  for (const obs of observations) {
+    log("human", "observe", obs.line);
+    const chain = await OW.growJourney(S.chain, obs), commitment = OW.epochCommitment(chain);
+    log("strix", "chain.grown", commitment);
+    log("strix", "chain.sealed", `${sealId}|${await SEAL.signPayload(keys.privateJwk, commitment)}`);
+    S.chain = chain; S.seen.push(obs); S.lineage.push(OW.lineageRow(chain)); S.lexicon = OW.lexiconOf(S.seen);
+  }
+  const bundle = () => ({ chain: S.chain, lexicon: S.lexicon, lineage: S.lineage, trace: S.trace });
+  const { certificate, report } = await OW.issueCertificate(bundle(), keys);
+  assert.equal(report.ok, true, "the journey passes the ten Overwatch checks");
+  log("overwatch", "inspection", "all ten checks pass");
+  log("overwatch", "certificate.issued", certificate.commitment);
+  S.certificate = certificate;
+  const pack = () => OW.makeHyperpack({ ...bundle(), certificate: S.certificate });
+  // what "Save package" saves
+  const saved = JSON.stringify(pack()), fileName = `hyperpack-${S.chain.chainId}.json`;
+  assert.ok(!saved.includes("\n") && saved.startsWith('{"format":"HYPERPACK/1",'), "the saved text is one line of JSON");
+  assert.match(fileName, KIT.DOWNLOAD_NAME, "under a name the Lexicon Explorer would give a package of its own");
+  assert.equal(fileName, G.packageFileName(S.chain.chainId), "the same name, chain for chain");
+  assert.ok(G.fileAllowed(utf8Bytes(saved)), "small enough for the load box");
+  // the front door
+  const door = await OW.readHyperpack(saved);
+  assert.deepEqual([door.ok, door.failed, door.checks.map((c) => c.name), door.checks.every((c) => c.ok === true)], [true, null, [...OW.PACKAGE_CHECKS], true], "the front door accepts the file as saved, with all thirteen checks");
+  assert.equal(JSON.stringify(door.pack), saved, "and hands back the package that was saved");
+  // the Lexicon Explorer's load box
+  const loaded = await G.readOutside(saved);
+  assert.deepEqual([loaded.ok, loaded.kind, loaded.line, loaded.lexicon], [true, "journey", G.LOAD_COPY.journey, null], "the Lexicon Explorer reads it as a journey: its checks and one line, and no lexicon to show");
+  assert.equal(loaded.line, "This is a First Explorers journey.", "that line names First Explorers");
+  assert.deepEqual([loaded.covered.chainId, loaded.covered.epoch, loaded.covered.entries, loaded.covered.lineage.length], [S.chain.chainId, 5, 5, 5], "it shows the chain the page grew: five epochs, five entries");
+  assert.deepEqual([loaded.covered.ledgerTotal, loaded.covered.ledger.length, loaded.covered.ledgerMoreLine], [S.trace.length - 2, S.trace.length - 2, ""], "the ledger up to the certified head is listed whole");
+  assert.deepEqual(loaded.notCovered.items.filter((x) => x.label === "ledger entries after the certified head").map((x) => x.value), ["2"], "and the two entries First Explorers writes after the certificate are counted as not covered");
+  assert.equal(loaded.signature, "signed by key " + sealId + "; this page cannot know whose key that is", "the key is named as someone's, not as this page's");
+  // what First Explorers once saved, the same package indented, is not wire form: the front door refuses it at parse
+  for (const indent of [1, 2, "\t"]) {
+    const indented = await OW.readHyperpack(JSON.stringify(pack(), null, indent));
+    assert.deepEqual([indented.ok, indented.failed, indented.pack], [false, "parse", null], `the same package indented by ${JSON.stringify(indent)} is refused at the door`);
+    assert.equal((await G.readOutside(JSON.stringify(pack(), null, indent))).line, G.LOAD_COPY.refused, "and the Lexicon Explorer says that it did not pass");
+  }
+  // the ledger files of the page stay indented and are not packages
+  assert.ok(page.includes('download("first-explorers-trace.json", JSON.stringify(S.trace, null, 1))'), "the ledger is saved indented, as before");
+  assert.equal((await OW.readHyperpack(JSON.stringify(S.trace, null, 1))).failed, "parse", "and a saved ledger is not a package");
 });

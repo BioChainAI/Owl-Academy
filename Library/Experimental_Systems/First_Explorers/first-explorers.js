@@ -269,8 +269,10 @@ async function complete() {
   if (result.ok) S.maxStation = Math.max(S.maxStation, 8);
   chime(result.ok ? 792 : 120); render();
 }
-function download(name, value) {
-  const a = h("a", { href: URL.createObjectURL(new Blob([JSON.stringify(value, null, 1)], { type: "application/json" })), download: name });
+// Saves a text as a file. The package is saved as its wire text, JSON.stringify(pack()) with no indentation: the
+// front door (OW.readHyperpack) reads no other form, so the Lexicon Explorer can load the file.
+function download(name, text) {
+  const a = h("a", { href: URL.createObjectURL(new Blob([text], { type: "application/json" })), download: name });
   document.body.append(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 2000);
 }
 function go(n, unlock) {
@@ -426,8 +428,8 @@ function controlsFor(n) {
       h("span", { class: "badge " + (hand.result.ok ? "ok" : "bad") }, hand.result.ok ? "HANDSHAKE COMPLETE" : "NO HANDSHAKE: " + hand.result.failed.toUpperCase()),
       h("button", { class: "btn ghost", onclick: () => { S.flyTo = OW.originOf(OW.receiverFrame(S.dest)); } }, "Stand where they stand")),
     h("div", { class: "row" },
-      h("button", { class: "btn ghost", disabled: !S.certificate, onclick: () => download(`hyperpack-${S.chain.chainId}.json`, pack()) }, "Save package"),
-      h("button", { class: "btn ghost", onclick: () => download("first-explorers-trace.json", S.trace) }, "Save ledger")),
+      h("button", { class: "btn ghost", disabled: !S.certificate, onclick: () => download(`hyperpack-${S.chain.chainId}.json`, JSON.stringify(pack())) }, "Save package"),
+      h("button", { class: "btn ghost", onclick: () => download("first-explorers-trace.json", JSON.stringify(S.trace, null, 1)) }, "Save ledger")),
     S.maxStation >= 8 && h("div", { class: "row" }, nextBtn("See the way")),
   ];
   const met = OW.CROSSROADS.filter((c) => S.hands[c.id] && S.hands[c.id].result.ok).map((c) => c.city);
@@ -539,7 +541,7 @@ function tabTrace() {
   const v = OW.verifyTrace(S.trace);
   return [
     h("div", { class: "row" }, h("span", { class: "badge " + (v.ok ? "ok" : "bad") }, v.ok ? `${S.trace.length} ENTRIES, CHAIN WHOLE` : "BROKEN AT " + v.brokenAt),
-      h("button", { class: "btn ghost", onclick: () => download("first-explorers-trace.json", S.trace) }, "Save")),
+      h("button", { class: "btn ghost", onclick: () => download("first-explorers-trace.json", JSON.stringify(S.trace, null, 1)) }, "Save")),
     h("ol", { class: "ledger" }, ...S.trace.slice().reverse().map((e) => h("li", null,
       h("div", { class: "top" }, h("span", { class: "who " + e.actor }, e.actor), h("b", null, e.event), h("span", { class: "hash" }, `#${e.n} ${e.hash.slice(0, 10)}`)),
       h("div", { class: "detail" }, e.detail.length > 150 ? e.detail.slice(0, 150) + "…" : e.detail)))),
