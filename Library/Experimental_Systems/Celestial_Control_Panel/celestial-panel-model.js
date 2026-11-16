@@ -9,22 +9,22 @@
 // MAP OF THE MODULE (section: what it exports)
 //   1  helpers      lensOf, forLens, sentencesOf, numberWord, latitudeWords, longitudeWords, placeWords,
 //                   distanceWords, weekdayOf
-//   2  lists        PAGE, PAGE_YEAR, LENS_HINTS, STEP_KEYS, OVERLAYS, FRAME_CHOICES, DIMS, QUICK, TIME_BUTTONS,
+//   2  lists        PAGE, PAGE_YEAR, STRIX, LENS_HINTS, STEP_KEYS, OVERLAYS, FRAME_CHOICES, DIMS, QUICK, TIME_BUTTONS,
 //                   DAY_BUTTONS, CONTROLS, MOON_NAMES, moonWords, siteOf, siteChoices
 //   3  links        HASH_GRAMMAR, LEXICON_PAGE_GRAMMAR, IGNORED_NOTE, parseHash, formatHash, skyLinkHref,
 //                   lexiconSkyHref, entryHref, firstExplorersHref
 //   4  state        DEFAULT_ORBIT, EZEKIEL_PRESET, initialState, applyHash, skyOf, chooseSite, typePlace,
-//                   confirmDay, setJd, stepDay, pickDate, timeButton, setDayOfYear, setClock, findMoon,
+//                   confirmDay, setJd, stepDay, pickDate, pickEraDate, timeButton, setDayOfYear, setClock, findMoon,
 //                   ezekielChoices, ezekielSky, setLens, setDims, setFrame, setStep, toggleOverlay, select,
-//                   dateView, dayQuestion, seasonLine, statusSentence
+//                   dateView, dayQuestion, seasonLine, statusSentence, nextStep
 //   5  objects      OBJECTS, objectOf, objectVisible, objectDirection, objectRho, objectPoint, objectList,
 //                   inspector, telemetry, placeReadout, dayReadout
 //   6  view         VIEW, geometryOf, viewMatrix, screenPoint, viewDistance, targetOf, dive, goHome, retarget,
 //                   flightPlan, dragView, nudgeView, orbitDrag, orbitTurn, hud, threePoints, aberrationReadout
-//   7  scene        LABEL, placeLabels, sceneCaption, scene, sceneHit, tapView
+//   7  scene        LABEL, placeLabels, sceneCaption, centreWords, chartCaption, scene, sceneHit, tapView
 //   8  Moon         MOON_COPY, moonFigure, moonButtons
 //   9  lab          LAB, LAB_COPY, labStart, openLab, closeLab, labSlide, labNext, labFour, labTile, labFrames, labHome,
-//                   labSetA, labReset, labToggleTiling, labReadout, fiveSlides, labPose, labScene
+//                   labSetA, labReset, labToggleTiling, labArea, labReadout, fiveSlides, labPose, labScene
 //   10 seal         packageFileName, sealSky, CERTIFIED, CERTIFIED_STARGAZER, SEAL_COPY, epochLine, sealView
 //   11 copy         COPY_FACTS, verseSlice, BRIDGE_TITLE, BRIDGE_PARTS, BRIDGE_OPENING, FIRST_RUN, STEPS, stepView,
 //                   visibleSteps, EZEKIEL_COPY, MESSAGES
@@ -49,6 +49,8 @@
 //   Lit       the sky lights up as the questions are answered: lit.place (a place is chosen: the compass points
 //             and the straight-up dot), lit.day (the day is confirmed or changed: the Sun and the Moon), lit.sky
 //             ("Look around": the stars, the rings and the rim). objectVisible() is the one rule for what is shown.
+//             The steps may be visited in any order: at step 3 and later the whole sky is lit as soon as there is
+//             a place, whichever came first, the step or the place (setStep and the functions that set a place).
 //   Presses   dive(state, key) is a press on a quick button or a list entry: the first centres the midpoint between
 //             home and the object, the second the object. tapView() is a tap on the canvas: the object comes to
 //             the centre at once. A state says where the view ends; flightPlan(from, to) gives the way there.
@@ -91,6 +93,7 @@ const clamp = (x, lo, hi) => Math.min(hi, Math.max(lo, x));
 const isNum = (x) => typeof x === "number" && Number.isFinite(x);
 const perLens = (stargazer, navigator, holographer) => freeze({ stargazer, navigator, holographer: holographer === undefined ? navigator : holographer });
 const list = (...items) => freeze(items);
+const capital = (text) => text.charAt(0).toUpperCase() + text.slice(1);
 
 /** lensOf(lens) -> a lens id; anything unknown is "stargazer". */
 export const lensOf = (lens) => (LENS_IDS.includes(lens) ? lens : "stargazer");
@@ -138,6 +141,8 @@ export const weekdayOf = (jd) => WEEKDAYS[((Math.floor(jd + 1.5) % 7) + 7) % 7];
 export const PAGE = freeze({ title: "Celestial Control Panel", subtitle: "Celestial Holography: a Poincaré ball explorer" });
 /** PAGE_YEAR: the year this page was written (for "about 2,600 years apart"). */
 export const PAGE_YEAR = 2026;
+/** STRIX: the narrator of this page: its name (the label beside the first line it says), who it is (one sentence of the dialog's "In short") and the name of the box that holds all it says at a step. */
+export const STRIX = freeze({ name: "STRIX", who: "STRIX is the owl that speaks on this page.", all: "All that STRIX says here", more: "more", moreFrom: "more from STRIX" });
 /** LENS_HINTS: the hint under each lens button on this page. */
 export const LENS_HINTS = freeze({ stargazer: "ages 6 and up", navigator: "astronomy", holographer: "physics" });
 /** STEP_KEYS: the five steps, in order; a step's number is its place here plus one. */
@@ -184,7 +189,7 @@ export const CONTROLS = freeze({
   frame: perLens("", "Frame"),
   place: perLens("My place", "Place"),
   presets: perLens("Pick a place", "Presets"),
-  latitude: "Latitude", longitude: "Longitude",
+  latitude: perLens("How far north or south", "Latitude"), longitude: perLens("How far east or west", "Longitude"),
   day: perLens("My day", "Local date"),
   year: perLens("Year", "Year (BC or AD)"),
   dayOfYear: perLens("", "Day of the year"),
@@ -321,11 +326,11 @@ const withNotes = (state, notes) => ({ ...state, notes: { ...state.notes, ...not
 const withTime = (state, jdUt) => retarget({ ...state, jdUt, lit: { ...state.lit, day: true }, notes: { ...state.notes, date: "", time: "", moon: "" } });
 const jdValidFor = (state, jdUt) => isNum(jdUt) && (state.site ? skyInputsValid(jdUt, state.site.lat, state.site.lonEast) : skyInputsValid(jdUt, 0, 0));
 
-/** applyHash(state, hash) -> the state with a link applied: preset first, then site, lat and lon (both or neither), jd, focus (selected and brought to the centre; it needs a place), lab, lens; notes.link says when a value was ignored. Runs at load and on hashchange. */
+/** applyHash(state, hash) -> the state with a link applied: preset first (it opens step 2, with the day already answered, so that the date and the Moon are on show), then site, lat and lon (both or neither), jd, focus (selected and brought to the centre; it needs a place), lab, lens; notes.link says when a value was ignored. Runs at load and on hashchange. */
 export function applyHash(state, hash) {
   const { values, ignored } = parseHash(hash);
   let s = state, dropped = ignored;
-  if (values.preset === "ezekiel") s = ezekielSky(s, EZEKIEL_PRESET.date, EZEKIEL_PRESET.which);
+  if (values.preset === "ezekiel") s = setStep(ezekielSky(s, EZEKIEL_PRESET.date, EZEKIEL_PRESET.which), 2);
   if (values.site !== undefined) s = chooseSite(s, values.site);
   const hasLat = values.lat !== undefined, hasLon = values.lon !== undefined;
   if (hasLat && hasLon) s = typePlace(s, values.lat, values.lon).state;
@@ -344,12 +349,19 @@ export function applyHash(state, hash) {
   return withNotes(s, { link: dropped > 0 ? IGNORED_NOTE : "" });
 }
 
+// The lighting rule of the steps, whichever comes first, the step or the place: at step 3 and later the whole sky is lit
+// once a place is chosen, and step 3 opens in 3D the first time. At steps 1 and 2 the day question is still asked.
+const lightUp = (state) => {
+  if (state.step < 3 || !state.site) return state;
+  const first = !state.lit.sky, next = { ...state, lit: { place: true, day: true, sky: true } };
+  return state.step === 3 && first ? setDims(next, "3D") : next;
+};
 const placed = (state, site) => {
   let jdUt = state.jdUt;
   if (!skyInputsValid(jdUt, site.lat, site.lonEast)) jdUt = state.jdUt + (lonOf(state) - site.lonEast) / 360;   // only at the very ends of the year range: keep the local time
-  return retarget({ ...state, site, jdUt, lit: { ...state.lit, place: true }, notes: { ...state.notes, place: "" } });
+  return retarget(lightUp({ ...state, site, jdUt, lit: { ...state.lit, place: true }, notes: { ...state.notes, place: "" } }));
 };
-/** chooseSite(state, key) -> the state at a preset place (unknown keys change nothing). */
+/** chooseSite(state, key) -> the state at a preset place (unknown keys change nothing); at step 3 and later the whole sky lights up with it. */
 export function chooseSite(state, key) {
   const site = siteOf(key);
   return site ? placed(state, site) : state;
@@ -391,6 +403,12 @@ export function pickDate(state, date) {
   const next = withTime(state, jdUt);
   return { state: withNotes(next, { date: message }), message };
 }
+/** pickEraDate(state, { n, bc, month, day }) -> { state, message }: pickDate for a year typed as it is written, a whole number from 1 up with BC or AD. There is no year 0 and no year below it: such a year gives the message "That day does not exist." and the state stays. */
+export function pickEraDate(state, date) {
+  const { n, bc, month, day } = date || {};
+  if (Number.isInteger(n) && n < 1) return { state: withNotes(state, { date: MESSAGES.noSuchDay }), message: MESSAGES.noSuchDay };
+  return pickDate(state, { year: bc ? 1 - n : n, month, day });
+}
 /** timeButton(state, which, nowMs) -> { state, message }: "now" (the device clock; "today" is the same), "sunrise", "noon", "sunset" or "midnight" on the local date; when the Sun does not rise or set that day the state stays and the message says so. */
 export function timeButton(state, which, nowMs) {
   const fail = (message) => ({ state: withNotes(state, { time: message }), message });
@@ -418,17 +436,17 @@ export function setClock(state, hours) {
   const jdUt = jdFromLocalMean(localParts(state), hours, lonOf(state));
   return jdValidFor(state, jdUt) ? withTime(state, jdUt) : state;
 }
-/** findMoon(state, target) -> { state, note, lines }: "Find the next night with this Moon" for a target of PHASE_TARGETS; never an earlier night; the time becomes one hour after sunset that evening. lines: the computed name and percentage, "this changes the day", and "nearest evening: 0.4 day after Full Moon" when the name differs from the button's. */
+/** findMoon(state, target) -> { state, note, lines }: "Find the next night with this Moon" for a target of PHASE_TARGETS; never an earlier night; the time becomes one hour after sunset that evening. lines: whole sentences, "This changes the day.", the computed name and percentage ("Full Moon, 100 per cent lit.") and, when the name differs from the button's, "Nearest evening: 0.4 day after Full Moon."; note: the lines joined by spaces. */
 export function findMoon(state, target) {
   const button = PHASE_TARGETS.find((p) => p.target === target);
   if (!state.site || !button) return { state: withNotes(state, { moon: MESSAGES.needPlace }), note: MESSAGES.needPlace, lines: [] };
   const r = phaseEveningJd(state.jdUt, target, state.site.lat, state.site.lonEast);
   if (!jdValidFor(state, r.jdUt)) return { state: withNotes(state, { moon: MESSAGES.yearRange }), note: MESSAGES.yearRange, lines: [] };
   const next = withTime(state, r.jdUt), sky = skyOf(next);
-  const lines = [MESSAGES.changesDay, moonWords(sky.phase.name, state.lens) + ", " + Math.round(100 * sky.phase.illuminatedFraction) + " per cent lit."];
+  const lines = [MESSAGES.changesDay, capital(moonWords(sky.phase.name, state.lens)) + ", " + Math.round(100 * sky.phase.illuminatedFraction) + " per cent lit."];
   if (sky.phase.name !== button.name) {
     const d = r.jdUt - r.phaseJd;
-    lines.push("nearest evening: " + fixed(Math.abs(d), 1) + " day " + (d >= 0 ? "after " : "before ") + moonWords(button.name, state.lens));
+    lines.push("Nearest evening: " + fixed(Math.abs(d), 1) + " day " + (d >= 0 ? "after " : "before ") + moonWords(button.name, state.lens) + ".");
   }
   const note = lines.join(" ");
   return { state: withNotes(next, { moon: note }), note, lines };
@@ -438,8 +456,8 @@ export function findMoon(state, target) {
 export function ezekielChoices() {
   const first = EZEKIEL_DATES[0];
   const out = [
-    { date: first.key, which: "ends", label: "the sunset that ends the fifth day (" + first.label + ")", said: first.said, isDefault: true },
-    { date: first.key, which: "begins", label: "the sunset that begins it (" + first.beginsDay.day + " " + MONTH_NAMES[first.beginsDay.month - 1] + ")", said: first.said, isDefault: false },
+    { date: first.key, which: "ends", label: "The sunset that ends the fifth day (" + first.label + ")", said: first.said, isDefault: true },
+    { date: first.key, which: "begins", label: "The sunset that begins it (" + first.beginsDay.day + " " + MONTH_NAMES[first.beginsDay.month - 1] + ")", said: first.said, isDefault: false },
   ];
   for (const d of EZEKIEL_DATES.slice(1)) out.push({ date: d.key, which: "ends", label: d.label, said: d.said, isDefault: false });
   return out;
@@ -452,11 +470,12 @@ export function ezekielSky(state, date, which) {
   return withTime(placed(state, KEBAR), jdUt);
 }
 
-/** setLens(state, lens) -> the state at a lens; an object only the Holographer sees is unselected on the way down, and Stargazer returns to the horizon frame. */
+/** setLens(state, lens) -> the state at a lens; an object only the Holographer sees is unselected on the way down, and Stargazer returns to the horizon frame (then "The edge" aims straight up again, as after setFrame). */
 export function setLens(state, lens) {
   const next = { ...state, lens: lensOf(lens) };
   if (next.lens === "stargazer" && next.frame !== "hor") next.frame = "hor";
   if (next.selected && !objectVisible(next, next.selected)) { next.selected = null; next.centred = null; }
+  if (state.site && !objectVisible(next, next.rimOf)) next.rimOf = next.frame === "hor" ? "zenith" : "ngp";
   return retarget(next);
 }
 /** setDims(state, dims) -> the state drawn in "2D" or "3D"; a centred object stays centred. */
@@ -484,12 +503,7 @@ export function setStep(state, n) {
   if (!Number.isInteger(n) || n < 1 || n > STEP_KEYS.length) return state;
   let next = { ...state, step: n };
   if (n !== 4 && next.lab.open) next = closeLab(next);
-  if (n >= 3 && state.site) {
-    const first = !state.lit.sky;
-    next.lit = { place: true, day: true, sky: true };
-    if (n === 3 && first) next = setDims(next, "3D");
-  }
-  return next;
+  return lightUp(next);
 }
 const tidy = (state) => (state.selected && !objectVisible(state, state.selected) ? { ...state, selected: null } : state);   // a thing no longer shown is no longer selected
 /** toggleOverlay(state, key) -> the state with one switch of OVERLAYS flipped. */
@@ -517,17 +531,50 @@ export function dateView(state) {
     dayOfYear: dayOfYear(parts), daysInYear: daysInYear(parts.year), hours,
   };
 }
-/** dayQuestion(state) -> { text ("Your device says today is Saturday 14 November 2026. Is that right?"), yes, change }: question 2, answered from the device clock and shown for confirmation. */
-export function dayQuestion(state) {
-  const d = dateView(state);
-  return { text: "Your device says today is " + d.weekday + " " + d.text.replace(/ \((Julian|Gregorian) calendar\)$/, "") + ". Is that right?", yes: "Yes", change: "Change the day" };
+const plainDate = (text) => text.replace(/ \((Julian|Gregorian) calendar\)$/, "");
+const placePhrase = (site) => (!site ? "" : site.key === null ? "At your place" : /^(At|By|In|On) /.test(site.label) ? site.label : "At " + site.label);
+/**
+ * dayQuestion(state, device) -> { text, yes, change, same }: question 2, answered from the device clock and shown for confirmation.
+ * device: { year, month, day }, the calendar date the device itself shows for the state's instant (the shell reads it from its clock).
+ * Every date of this page is the local date at the place, and that can be the day before or after the device's own. Where the two
+ * are the same day: "Your device says today is Saturday 14 November 2026. Is that right?". Where they differ, each is said as what
+ * it is: "At Sydney, Australia it is now Sunday 15 November 2026. Your device says Saturday 14 November 2026. Is that the day you want?".
+ * Without a device date nothing is said about the device: "At Greenwich, England it is now Saturday 14 November 2026. Is that the day you want?".
+ */
+export function dayQuestion(state, device) {
+  const d = dateView(state), local = d.weekday + " " + plainDate(d.text), buttons = { yes: "Yes", change: "Change the day" };
+  const v = device || {};
+  let theirs = null;
+  if (Number.isInteger(v.year) && Number.isInteger(v.month) && Number.isInteger(v.day)) {
+    try { theirs = weekdayOf(jdFromParts({ year: v.year, month: v.month, day: v.day, hour: 12 })) + " " + plainDate(formatDate({ year: v.year, month: v.month, day: v.day })); } catch { theirs = null; }
+  }
+  if (theirs !== null && v.year === d.parts.year && v.month === d.parts.month && v.day === d.parts.day) return { text: "Your device says today is " + local + ". Is that right?", ...buttons, same: true };
+  const here = (placePhrase(state.site) || "Here") + " it is now " + local + ".";
+  return { text: here + (theirs !== null ? " Your device says " + theirs + "." : "") + " Is that the day you want?", ...buttons, same: false };
 }
 const SEASON_NAMES = freeze({ "march-equinox": "the March equinox", "june-solstice": "the June solstice", "september-equinox": "the September equinox", "december-solstice": "the December solstice" });
-/** seasonLine(state) -> { key, days, text ("12 days after the June solstice") }: the days from the nearest equinox or solstice. */
+const SEASON_PLAIN = freeze({ "march-equinox": "the March day when day and night are about equal", "september-equinox": "the September day when day and night are about equal" });
+// A solstice in plain words. "The shortest day" holds where that time of year has days and nights of unequal length: between the polar
+// circles and away from the equator. Elsewhere the words say what holds at every place: how far north or south the Sun stands.
+const SHORT_DAY = freeze({ from: 1, to: 66 });
+function seasonPlain(key, lat) {
+  if (SEASON_PLAIN[key]) return SEASON_PLAIN[key];
+  const december = key === "december-solstice", a = isNum(lat) ? Math.abs(lat) : 0;
+  if (a >= SHORT_DAY.from && a <= SHORT_DAY.to) return december === lat > 0 ? "the shortest day" : "the longest day";
+  return "the day the Sun is farthest " + (december ? "south" : "north");
+}
+/** seasonLine(state) -> { key, days, text ("12 days after the June solstice") }: the days from the nearest equinox or solstice. At the Stargazer lens the four are named in plain words for the place ("37 days before the shortest day"; north of the equator that is the December solstice, south of it the June one). */
 export function seasonLine(state) {
   const s = nearestSeasonJd(state.jdUt), d = state.jdUt - s.jdUt, days = Math.round(Math.abs(d));
-  const text = days === 0 ? "the day of " + SEASON_NAMES[s.key] : days + (days === 1 ? " day " : " days ") + (d >= 0 ? "after " : "before ") + SEASON_NAMES[s.key];
+  const plain = lensOf(state.lens) === "stargazer", name = plain ? seasonPlain(s.key, state.site ? state.site.lat : null) : SEASON_NAMES[s.key];
+  const text = days === 0 ? (plain ? name : "the day of " + name) : days + (days === 1 ? " day " : " days ") + (d >= 0 ? "after " : "before ") + name;
   return { key: s.key, days, text };
+}
+/** nextStep(state) -> { n, label ("Next: Look around") } | null: the step the last button of the card leads on to. It is offered at steps 2 to 4 once the step has something to show: a place is chosen, the lab is closed and, at step 2, the day is answered. (Step 1 has its own button beside the place buttons.) */
+export function nextStep(state) {
+  if (!state.site || state.lab.open || state.step < 2 || state.step > 4 || (state.step === 2 && !state.lit.day)) return null;
+  const s = visibleSteps(state.lens)[state.step];
+  return { n: s.n, label: "Next: " + s.title };
 }
 /** statusSentence(state) -> the one sentence for the status line ("31 July 593 BC, 19:00 at By the Kebar (Nippur). Moon 50 per cent lit."); "" before a place is chosen. */
 export function statusSentence(state) {
@@ -575,7 +622,7 @@ const rim = (key, glyph, label, short, stargazer, core, minLens, status, text) =
  */
 export const OBJECTS = freeze([
   body("moon", "☾", "Moon", "Moon", "Moon", "day", STATUS.computed, perLens(
-    list(T("checked", "The Moon circles Earth about every 27 days. Its shapes repeat every 29 and a half days. That is because Earth is travelling round the Sun at the same time.")),
+    list(T("checked", "The Moon circles Earth about every 27 days. Its shapes repeat every 29 and a half days."), T("said", "Astronomers explain this by Earth's own travel round the Sun.")),
     list(T("checked", "The angle between the Sun and the Moon makes crescent, half and full Moons. The phases repeat every 29.53 days on average; the Moon goes once round the sky in 27.32 days. The numbers below are computed for your place and time.")),
     list(T("checked", "Lit fraction (1 + cos i)/2, with i the phase angle. The altitude in the table is topocentric: the Moon's parallax is applied. The direction on the chart is geocentric.")))),
   body("sun", "☉", "Sun", "Sun", "Sun", "day", STATUS.computed, perLens(
@@ -602,7 +649,7 @@ export const OBJECTS = freeze([
     list(T("said", "At the centre of our galaxy sits a black hole, astronomers say. It is 4 million times heavier than our Sun. Everything in our galaxy circles around the galaxy's centre. That is where this black hole sits.")),
     list(T("said", "The GRAVITY collaboration (2021) reports a mass of 4.30 million Suns for this black hole."), T("said", anchor("sgr_a_star").distanceNote),
       T("checked", "Computed: it lies at galactic longitude 359.94°, latitude −0.05°, 4 arcminutes from the zero point of the galactic frame.")),
-    list(T("said", "The Event Horizon Telescope collaboration (2023) reports an image “consistent with the expected appearance of a Kerr black hole with mass ∼4 × 10⁶ M⊙”."), positionLine("sgr_a_star"), PLACED))),
+    list(T("said", "The Event Horizon Telescope collaboration (2022) reports an image “consistent with the expected appearance of a Kerr black hole with mass ∼4 × 10⁶ M⊙”."), positionLine("sgr_a_star"), PLACED))),
   body("m31", "⊛", "Andromeda galaxy", "Andromeda", "Andromeda galaxy", "sky", STATUS.measured, perLens(
     list(T("said", "The Andromeda galaxy lies far outside our own galaxy. Astronomers say its light takes about two and a half million years to reach us.")),
     list(T("said", anchor("m31").distanceNote), T("checked", "Computed: that is 2.48 million light-years, 93 times the distance to the centre of our own galaxy.")),
@@ -703,7 +750,8 @@ export function objectRho(state, key) {
  * objectPoint(state, key) -> where an object is on the chart in the state's dims, or null:
  *   { dir (unit vector on the chart: in 2D flattened into the frame's plane), rho, point (hyperboloid point, or null on the rim),
  *     atRim, centreDot (2D: a direction with no bearing is the dot at the centre), nominal (2D: a rim object with no bearing is
- *     drawn at the top of the rim), below (its latitude in the frame is negative) }.
+ *     drawn at the top of the rim), below (its latitude in the frame is negative; for the Moon in the horizon frame: its altitude
+ *     as seen from the place, parallax applied, is below zero, which is what the list, the status line and the Moon picture say) }.
  */
 export function objectPoint(state, key) {
   const o = objectOf(key), v = objectDirection(state, key);
@@ -717,7 +765,8 @@ export function objectPoint(state, key) {
   }
   const atRim = !centreDot && !Number.isFinite(rho);
   const point = centreDot ? ORIGIN.slice() : atRim ? null : chartPoint(dir, rho);
-  return { dir, rho, point, atRim, centreDot, nominal, below: v[2] < 0 };
+  const sky = skyOf(state), below = key === "moon" && state.frame === "hor" && sky ? sky.moon.alt < 0 : v[2] < 0;
+  return { dir, rho, point, atRim, centreDot, nominal, below };
 }
 
 const percent = (fraction) => Math.round(100 * fraction);
@@ -1057,36 +1106,46 @@ export function aberrationReadout(state) {
 
 // ─── 7. the scene: the drawables of the chart, as plain data ─────────────────
 
-/** LABEL: constants of label placement: clear (px between a new label's dot and every labelled dot), height, pad, gap, charWidth (the estimate used when no measure function is given), cluster (px), font (px, never scaled with the geometry). */
-export const LABEL = freeze({ clear: 28, height: 18, pad: 4, gap: 6, charWidth: 7.4, cluster: 22, font: 13 });
+/** LABEL: constants of label placement: clear (px between a new label's dot and every labelled dot), height, pad, gap, charWidth (the estimate used when no measure function is given), cluster (px), font (px, never scaled with the geometry), markRoom (px kept free round a mark A to D, for the mark and its letter). */
+export const LABEL = freeze({ clear: 28, height: 18, pad: 4, gap: 6, charWidth: 7.4, cluster: 22, font: 13, markRoom: 12 });
 const overlap = (a, b) => a.x < b.x + b.w + 2 && b.x < a.x + a.w + 2 && a.y < b.y + b.h + 2 && b.y < a.y + a.h + 2;
 /**
  * placeLabels(items, options) -> { labels, dots }. items: [{ key, text, x, y, r, forced }] in order of priority (forced ones first:
  * the centred object and home are always labelled). A label is placed only if its dot is at least options.clear px (28) from every dot
- * already labelled and its box overlaps no box already placed; it is tried to the right, left, above and below its dot. The rest
- * are dots. options: { w, h (canvas size), clear, measure(text) -> px }. labels: [{ key, text, x, y, w, h, ax, ay }] (box corner and anchor).
+ * already labelled, its box overlaps no box already placed, and its box covers no other item's dot and no point of options.avoid;
+ * it is tried to the right, left, above and below its dot (a forced one at the four corners too). A forced label that finds no such
+ * place takes the one, free of other boxes, that covers the fewest dots: it alone may lie over a dot, and it is listed in covering.
+ * The rest are dots.
+ * options: { w, h (canvas size), clear, measure(text) -> px, avoid: [{ x, y, r }] (points no box may cover: the marks A to D) }.
+ * labels: [{ key, text, x, y, w, h, ax, ay }] (box corner and anchor); covering: keys of the forced labels that lie over a dot.
  */
 export function placeLabels(items, options = {}) {
   const W = isNum(options.w) ? options.w : Infinity, H = isNum(options.h) ? options.h : Infinity;
   const clear = isNum(options.clear) ? options.clear : LABEL.clear;
   const measure = typeof options.measure === "function" ? options.measure : (text) => [...text].length * LABEL.charWidth;
-  const labels = [], dots = [];
+  const labels = [], dots = [], covering = [];
+  const points = [];                                                    // every drawn dot (an item with a radius) and every point to keep clear
+  for (const it of items) if (it && isNum(it.x) && isNum(it.y) && isNum(it.r) && it.r > 0) points.push({ key: it.key, x: it.x, y: it.y, m: it.r + 1 });
+  for (const a of Array.isArray(options.avoid) ? options.avoid : []) if (a && isNum(a.x) && isNum(a.y)) points.push({ key: null, x: a.x, y: a.y, m: (isNum(a.r) ? a.r : 4) + 1 });
+  const covered = (b, own) => points.filter((d) => (d.key === null || d.key !== own) && d.x > b.x - d.m && d.x < b.x + b.w + d.m && d.y > b.y - d.m && d.y < b.y + b.h + d.m).length;
   for (const it of items) {
     if (!it || typeof it.text !== "string" || it.text === "" || !isNum(it.x) || !isNum(it.y)) { if (it && it.key) dots.push(it.key); continue; }
     const text = cutLabel(it.text), w = Math.ceil(measure(text)) + 2 * LABEL.pad, h = LABEL.height, r = isNum(it.r) ? it.r : 4;
     const far = it.forced || labels.every((l) => Math.hypot(l.ax - it.x, l.ay - it.y) >= clear);
-    let box = null;
+    let box = null, over = false;
     if (far) {
-      const tries = [[it.x + r + LABEL.gap, it.y - h / 2], [it.x - r - LABEL.gap - w, it.y - h / 2], [it.x - w / 2, it.y - r - LABEL.gap - h], [it.x - w / 2, it.y + r + LABEL.gap]];
-      for (const [tx, ty] of tries) {
-        const b = { x: clamp(tx, 2, Math.max(2, W - w - 2)), y: clamp(ty, 2, Math.max(2, H - h - 2)), w, h };
-        if (labels.every((l) => !overlap(l, b))) { box = b; break; }
-      }
+      const right = it.x + r + LABEL.gap, left = it.x - r - LABEL.gap - w, above = it.y - r - LABEL.gap - h, under = it.y + r + LABEL.gap;
+      const sides = [[right, it.y - h / 2], [left, it.y - h / 2], [it.x - w / 2, above], [it.x - w / 2, under]];
+      if (it.forced) sides.push([right, above], [right, under], [left, above], [left, under]);          // a label that must be shown also tries the four corners
+      const tries = sides.map(([tx, ty]) => ({ x: clamp(tx, 2, Math.max(2, W - w - 2)), y: clamp(ty, 2, Math.max(2, H - h - 2)), w, h }))
+        .filter((b) => labels.every((l) => !overlap(l, b)));
+      box = tries.find((b) => covered(b, it.key) === 0) || null;
+      if (!box && it.forced && tries.length > 0) { box = tries.reduce((best, b) => (covered(b, it.key) < covered(best, it.key) ? b : best)); over = true; }   // then the place that covers fewest
     }
-    if (box) labels.push({ key: it.key, text, x: box.x, y: box.y, w, h, ax: it.x, ay: it.y });
+    if (box) { labels.push({ key: it.key, text, x: box.x, y: box.y, w, h, ax: it.x, ay: it.y }); if (over) covering.push(it.key); }
     else dots.push(it.key);
   }
-  return { labels, dots };
+  return { labels, dots, covering };
 }
 
 const RAY_RHOS = freeze(Array.from({ length: 33 }, (_, i) => i * 0.25));
@@ -1107,6 +1166,31 @@ export function sceneCaption(state) {
     : "the same chart as a ball seen from outside: each great circle is drawn on it, and straight up is a line; the rim is the sphere of directions";
   return stargazer ? frame.stargazer : frame.caption + "; the rim is " + frame.own;
 }
+/** centreWords(state) -> one sentence about the middle of the map once the view has left home, "" at home: "Andromeda galaxy is in the middle of the map." (a thing with a depth, brought to the centre), "Half way to the Moon is in the middle of the map." (the first press), "The map has slid towards North." (a direction or a point of the rim, which never reaches the middle), "The map has slid: home is no longer in the middle." (a nudge, a drag or a tap on an empty point). */
+export function centreWords(state) {
+  if (!state.site || state.lab.open || viewDistance(state) < 1e-9) return "";
+  const o = state.centred ? objectOf(state.centred.key) : null;
+  if (!o) return "The map has slid: home is no longer in the middle.";
+  const name = (lensOf(state.lens) === "stargazer" ? o.stargazer : o.label).replace(/^(The|A) /, (m) => m.toLowerCase());
+  if (o.kind !== "body" && o.key !== "cmb") return "The map has slid towards " + name + ".";
+  return state.centred.half ? "Half way to " + name + " is in the middle of the map." : capital(name) + " is in the middle of the map.";
+}
+/**
+ * chartCaption(state, said) -> the whole caption under the chart, which is also the canvas's description: sceneCaption(state), then what
+ * the chart last reported ({ rimLabel, centreCaption } of scene()), then centreWords(state). A part the caption already holds is not said
+ * twice (the 2D caption of Navigator names the rim itself), and each part ends with a full stop.
+ */
+export function chartCaption(state, said = {}) {
+  let text = sceneCaption(state);
+  if (!state.site) return text;
+  for (const extra of [said.rimLabel, said.centreCaption, centreWords(state)]) {
+    if (typeof extra !== "string") continue;
+    const bare = extra.replace(/[.\s]+$/, "");
+    if (bare === "" || text.toLowerCase().includes(bare.toLowerCase())) continue;
+    text = text.replace(/[.\s]+$/, "") + ". " + capital(bare) + ".";
+  }
+  return text;
+}
 
 /**
  * scene(state, size, options) -> the drawables of the chart for the state's frame, dims and view, as plain data in CSS pixels:
@@ -1119,7 +1203,9 @@ export function sceneCaption(state) {
  *     bodies:  [{ key, kind, glyph, label, short, detail, x, y, z, k, r, hollow, below, selected, centred, near, atRim, centreDot, nominal, edge, layer, dist }] in paint order
  *     marks:   [{ label, x, y, z }]                                     the four rim points of threePoints() (Dive step, Navigator up)
  *     home: { x, y, z, k }, labels, dots (keys without a label), clusters: [{ x, y, count, keys }], hits: [{ key, x, y, r }] (paint order),
- *     caption, centreCaption ("straight up has no compass direction" when the dot at the centre is a direction), skipped (objects with no finite place) }.
+ *     caption, centreCaption ("straight up has no compass direction" when the dot at the centre of the screen is a direction: only while the
+ *     view is at home; after a slide another thing is at the centre), covering (keys of the forced labels that lie over another dot: the chart
+ *     paints those dots again, over the plates), skipped (objects with no finite place) }.
  * options: { measure(text) -> px } for label widths. Paint order in 3D: outline; far halves of circles at 35 % opacity; rings; rays and
  * bodies (sorted by z ascending); near halves; labels.
  */
@@ -1132,7 +1218,7 @@ export function scene(state, size, options = {}) {
     ...g, dims: state.dims, frame: state.frame, dark: !sky || !state.lit.place, diving,
     outline: { x: g.cx, y: g.cy, r: g.r }, rimLabel: "", rings: [], circles: [], rays: [], ticks: [], bodies: [], marks: [],
     home: { x: home.x, y: home.y, z: home.z, k: home.k }, labels: [], dots: [], clusters: [], hits: [],
-    caption: sceneCaption(state), centreCaption: "", skipped: 0,
+    caption: sceneCaption(state), centreCaption: "", covering: [], skipped: 0,
   };
   const candidates = [{ key: "home", text: stargazer ? "You" : "Home", x: home.x, y: home.y, r: 5, forced: true }];
   if (out.dark) { const placedDark = placeLabels(candidates, { w: g.w, h: g.h, measure: options.measure }); out.labels = placedDark.labels; return out; }
@@ -1183,7 +1269,7 @@ export function scene(state, size, options = {}) {
       x: s.x, y: s.y, z: s.z, k: s.k, r: (base + (selected ? 2 : 0)) * s.k, hollow: p.below && o.kind === "body", below: p.below, selected, centred, near,
       atRim: p.atRim, centreDot: p.centreDot, nominal: p.nominal, edge, layer: o.status.layer, dist,
     });
-    if (p.centreDot) out.centreCaption = state.frame === "hor" ? "straight up has no compass direction" : "the pole has no direction round the plane";
+    if (p.centreDot && !diving) out.centreCaption = state.frame === "hor" ? "straight up has no compass direction" : "the pole has no direction round the plane";
     // straight up is a line of the ball; so is the pole of the galactic frame
     if (!flat && o.kind === "direction" && o.core.body) out.rays.push({ key: o.key + "-axis", kind: "axis", label: name, points: RAY_RHOS.map((rho) => { const q = at(chartPoint(p.dir, rho)); return { x: q.x, y: q.y, z: q.z }; }) });
     // sight lines: all bodies when switched on; during a dive always the one to the selected object
@@ -1209,8 +1295,10 @@ export function scene(state, size, options = {}) {
   for (const b of others) candidates.push({ key: b.key, text: b.label, x: b.x, y: b.y, r: b.r, forced: false });
   for (const ring of out.rings) { const p = ring.points[12]; candidates.push({ key: "ring:" + ring.key, text: ring.label, x: p.x, y: p.y, r: 0, forced: false }); }
   for (const t of out.ticks) candidates.push({ key: "tick:" + t.key, text: t.label, x: t.x, y: t.y, r: 3, forced: false });
-  const placedLabels = placeLabels(candidates, { w: g.w, h: g.h, measure: options.measure });
+  // no plate may lie over another object's dot, nor over a mark A to D or the room for its letter
+  const placedLabels = placeLabels(candidates, { w: g.w, h: g.h, measure: options.measure, avoid: out.marks.map((m) => ({ x: m.x, y: m.y, r: LABEL.markRoom })) });
   out.labels = placedLabels.labels;
+  out.covering = placedLabels.covering;
   const objectKeys = new Set(items.map((b) => b.key));
   out.dots = [...placedLabels.dots.filter((k) => objectKeys.has(k)), ...items.filter((b) => b.edge && !b.centred && !b.selected).map((b) => b.key)];
   // clusters: dots that sit together get one count
@@ -1261,7 +1349,7 @@ export const MOON_COPY = freeze({
     T("checked", "Does my Moon look like yours? If not, check three things in this order. First the place: north or south of the equator turns it over. Then the day. Then the time."),
     T("checked", "Does my Moon look like yours? If not, check three things in this order: the place (north or south of the equator turns it over), the day, the time.")),
   below: "The Moon is below the ground right now",
-  changesDay: "this changes the day",
+  changesDay: "This changes the day.",
   findLabel: "Find the next night with this Moon",
   computed: T("checked", "The Moon is computed from the date; you look up and check it."),
 });
@@ -1280,8 +1368,8 @@ export function moonFigure(state) {
   const thin = ph.illuminatedFraction < 0.02 || ph.illuminatedFraction > 0.98;
   const lean = thin ? "" : leanWords(ph.brightLimbFromZenith);
   const name = moonWords(ph.name, lens, true);
-  const lines = lens === "stargazer" ? [name + ".", pct + " per cent lit.", fixed(ph.ageDays, 1) + " days after new Moon."] : [name + ", " + pct + " per cent lit.", fixed(ph.ageDays, 1) + " days after new Moon."];
-  if (lean) lines.push(lean);
+  const lines = lens === "stargazer" ? [capital(name) + ".", pct + " per cent lit.", fixed(ph.ageDays, 1) + " days after new Moon."] : [name + ", " + pct + " per cent lit.", fixed(ph.ageDays, 1) + " days after new Moon."];
+  if (lean) lines.push(capital(lean) + ".");
   if (below) lines.push(MOON_COPY.below + ".");
   return {
     fraction: ph.illuminatedFraction, percent: pct, waxing: ph.waxing, name, ageDays: ph.ageDays,
@@ -1296,7 +1384,7 @@ export function moonButtons(state) {
   const now = sky ? sky.phase.brightLimbFromZenith : 90, growing = sky ? norm360(now + (sky.phase.waxing ? 0 : 180)) : 90;
   return PHASE_TARGETS.map((p) => {
     const fraction = (1 - Math.cos(p.target * RAD)) / 2, waxing = p.target < 180;
-    return { target: p.target, name: p.name, label: moonWords(p.name, lens), fraction, terminator: 2 * fraction - 1, waxing, limbDeg: waxing ? growing : norm360(growing + 180) };
+    return { target: p.target, name: p.name, label: capital(moonWords(p.name, lens)), fraction, terminator: 2 * fraction - 1, waxing, limbDeg: waxing ? growing : norm360(growing + 180) };
   });
 }
 
@@ -1321,12 +1409,12 @@ export const LAB = freeze({
   caption: "This is the curved map by itself. It is not the sky.",
 });
 const LAB_VERSE = freeze({ layer: "text", text: verseSliceOf("26.1.9", "they turned", "went"), source: "26.1.9", name: "Ezekiel 1:9, King James Version" });
-/** LAB_COPY: the words of the lab: title (TEXT: the lab is named with words of Ezekiel 1:9), open, close, slide (the four buttons), four, play, pause, next, home, again, step, tiling, tile, tileNote, challenge, flat. */
+/** LAB_COPY: the words of the lab: title (TEXT: the lab is named with words of Ezekiel 1:9), open, close, slide (the four buttons), four, fourAtOnce (said in the status line where motion is reduced: one press draws all four), play, pause, next, home, again, step, tiling, tile, tileNote, challenge, flat. */
 export const LAB_COPY = freeze({
   title: LAB_VERSE,
   open: "Open the lab", close: perLens("Back to the sky", "Leave the lab"),
   slide: freeze({ forward: "Slide forward", left: "Slide left", back: "Slide back", right: "Slide right" }),
-  four: "Four slides", play: "Play", pause: "Pause", next: "Next slide", home: "Slide home", again: "Start again",
+  four: "Four slides", fourAtOnce: "All four slides were drawn at once.", play: "Play", pause: "Pause", next: "Next slide", home: "Slide home", again: "Start again",
   step: perLens("How long one step is", "Step length a"),
   tiling: perLens("Draw a floor of squares", "Draw the {4,5} tiling as the floor"),
   tile: "Slide round one tile",
@@ -1379,18 +1467,65 @@ export function labSetA(lab, a, small) {
 export const labReset = (lab) => ({ ...lab, slides: [], home: false });
 /** labToggleTiling(lab) -> the lab with the {4,5} floor switched on or off. */
 export const labToggleTiling = (lab) => ({ ...lab, tiling: !lab.tiling });
+const ZERO_TURN = 0.05 * RAD;                                            // a turn under 0.05 degrees is no turn (rounding leaves about 1e-9)
+const unturned = (clockwise) => clockwise < ZERO_TURN || clockwise > 2 * Math.PI - ZERO_TURN;
 const turnWords = (clockwise) => {
   const deg = clockwise / RAD;
-  if (deg < 0.05 || deg > 359.95) return "not turned";
   return deg <= 180 ? fixed(deg, 0) + " degrees to the right" : fixed(360 - deg, 0) + " degrees to the left";
 };
+const AREA_REACH = 12;                                                   // as for the turn: farther out binary64 has too few digits left
+const AREA_EPS = 1e-10;
+/**
+ * labArea(lab) -> the area inside the closed path of the lab, worked out from the path itself and not from the turn, or null:
+ *   { value (its size, in radians: the area of the curved map is measured as an angle), signed (positive for a path that runs anticlockwise) }.
+ * The signed areas of the triangles (home, corner i, corner i + 1) are added: for disc points a and b that area is 2 · arg(1 − a · conj(b)).
+ * null when the path is not closed (no "Slide home" yet), when a corner is farther than 12 from home, when the path has no inside (its corners
+ * lie on one line, or it only goes out and back the same way) and when it crosses or touches itself (then it has no single inside).
+ */
+export function labArea(lab) {
+  const frames = labFrames(lab);
+  if (frames.length < 4 || !(homecoming(frames[frames.length - 1]).distance < 1e-6)) return null;         // three slides at least, and home again
+  const corners = frames.slice(0, -1).map((F) => originOf(F));           // home first; the last frame is home again
+  if (corners.some((p) => !(hypDist(p, ORIGIN) <= AREA_REACH))) return null;
+  const disc = corners.map((p) => toBall(p));
+  let signed = 0;
+  for (let i = 1; i + 1 < disc.length; i++) { const a = disc[i], b = disc[i + 1]; signed += 2 * Math.atan2(a[0] * b[1] - a[1] * b[0], 1 - a[0] * b[0] - a[1] * b[1]); }
+  // Has the path one inside? In the Klein picture (x / t, y / t) its sides are straight, so this is a question about a plain polygon.
+  const orient = (a, b, c) => (b[0] - a[0]) * (c[1] - a[1]) - (b[1] - a[1]) * (c[0] - a[0]);
+  const flat = (v) => Math.abs(v) <= AREA_EPS;
+  const poly = corners.map((p) => [p[0] / p[3], p[1] / p[3]]);
+  // a corner on the line of its two neighbours is no corner: the path went straight on there, or back the way it came
+  for (let i = 0; poly.length >= 3 && i < poly.length;) {
+    const m = poly.length, a = poly[(i + m - 1) % m], b = poly[i], c = poly[(i + 1) % m];
+    if (flat(orient(a, b, c))) { poly.splice(i, 1); i = 0; } else i += 1;
+  }
+  if (poly.length < 3) return null;
+  const between = (a, b, c) => Math.min(a[0], b[0]) - AREA_EPS <= c[0] && c[0] <= Math.max(a[0], b[0]) + AREA_EPS && Math.min(a[1], b[1]) - AREA_EPS <= c[1] && c[1] <= Math.max(a[1], b[1]) + AREA_EPS;
+  const meet = (a, b, c, d) => {                                          // two sides share a point (a touch counts)
+    const o1 = orient(a, b, c), o2 = orient(a, b, d), o3 = orient(c, d, a), o4 = orient(c, d, b);
+    if (flat(o1) && between(a, b, c)) return true;
+    if (flat(o2) && between(a, b, d)) return true;
+    if (flat(o3) && between(c, d, a)) return true;
+    if (flat(o4) && between(c, d, b)) return true;
+    return !flat(o1) && !flat(o2) && !flat(o3) && !flat(o4) && (o1 > 0) !== (o2 > 0) && (o3 > 0) !== (o4 > 0);
+  };
+  const m = poly.length;
+  for (let i = 0; i < m; i++) for (let j = i + 2; j < m; j++) {
+    if (i === 0 && j === m - 1) continue;                                 // neighbours round the end
+    if (meet(poly[i], poly[(i + 1) % m], poly[j], poly[(j + 1) % m])) return null;
+  }
+  const value = Math.abs(signed);
+  return value > 1e-9 ? { value, signed } : null;
+}
 const isFour = (lab) => { const s = lab.slides.filter((x) => !x.home); return s.length === 4 && s.every((x, i) => x.unit && x.angle === LAB.directions[LAB.four[i]]); };
 const isTile = (lab) => { const s = lab.slides.filter((x) => !x.home); return s.length === 4 && s.every((x, i) => !x.unit && Math.abs(x.dist - LAB.tile) < 1e-12 && Math.abs(x.angle - LAB.tileHeadingsDeg[i] * RAD) < 1e-12); };
 /**
  * labReadout(lab, lens) -> the lab's results as text:
  *   { slides (count), distance (from home), steps (distance / a), turnClockwise (radians; null far from home), turnDeg, home,
- *     text ("You are 0.87 of a step from home. Sliding home, you face 78 degrees to the right of where you began."),
- *     flat (what a flat floor gives), area: { value, text } | null (only after "Slide home": "the area inside your five-sided path"),
+ *     text ("You are 0.87 of a step from home. Sliding home, you face 78 degrees to the right of where you began."; a walker that is
+ *     not turned gets whole sentences of its own: "Sliding home, you would face the way you began.", "You are home, facing the way you began."),
+ *     flat (what a flat floor gives), area: { value, text } | null (only after "Slide home", from labArea(): "the area inside your five-sided
+ *     path: 1.362"; where the area is the turn itself the text says so, and where they differ by whole turns it says that),
  *     closed: [text] (the closed forms, from Navigator up, for the four slides), tile (text, for "Slide round one tile") | null, layer }.
  */
 export function labReadout(lab, lens) {
@@ -1403,17 +1538,20 @@ export function labReadout(lab, lens) {
   let text;
   if (n === 0) text = "Press a slide button. The walker slides and never turns.";
   else if (hc.turnClockwise === null) text = "You are " + fixed(steps, 2) + " of a step from home: too far for this page to work out the turn.";
-  else if (lab.home || hc.distance < 1e-9) text = "You are home. You face " + turnWords(hc.turnClockwise) + (hc.turnClockwise > 1e-9 ? " of where you began. No slide turned you." : ".");
-  else text = "You are " + fixed(steps, 2) + " of a step from home. Sliding home, you face " + turnWords(hc.turnClockwise) + " of where you began.";
-  const sides = numberWord(n);
-  const areaValue = hc.turnClockwise === null ? null : Math.min(hc.turnClockwise, 2 * Math.PI - hc.turnClockwise);
-  const area = lab.home && n >= 3 && areaValue !== null ? { value: areaValue, text: "the area inside your " + sides + "-sided path: " + fixed(areaValue, 3) + " (the turn, measured in radians)" } : null;
+  else if (lab.home || hc.distance < 1e-9) text = unturned(hc.turnClockwise) ? "You are home, facing the way you began." : "You are home. You face " + turnWords(hc.turnClockwise) + " of where you began. No slide turned you.";
+  else text = "You are " + fixed(steps, 2) + " of a step from home. " + (unturned(hc.turnClockwise) ? "Sliding home, you would face the way you began." : "Sliding home, you face " + turnWords(hc.turnClockwise) + " of where you began.");
+  const sides = numberWord(n), inside = lab.home && n >= 3 && hc.turnClockwise !== null ? labArea(lab) : null;
+  // the turn is the area up to whole turns: it is the area itself while the path goes round less than half a turn's worth
+  const isTurn = !!inside && Math.abs(inside.value - Math.min(hc.turnClockwise, 2 * Math.PI - hc.turnClockwise)) < 1e-6;
+  const area = !inside ? null : upper
+    ? { value: inside.value, text: "the area inside your " + sides + "-sided path: " + fixed(inside.value, 3) + (isTurn ? " (the turn, measured in radians)" : ", measured in radians. The turn matches it, give or take whole turns.") }
+    : { value: inside.value, text: "The area inside your " + sides + "-sided path: " + fixed(inside.value, 3) + "." };   // the Stargazer lens has no radians
   const closed = [];
   if (upper && isFour(lab)) {
     closed.push("gap = 2 · asinh(2√2 · cosh(a/2) · sinh³(a/2)) = " + fixed(squareWalkGap(lab.a), 6));
     closed.push("turn = 2 · atan2(sinh²(a) / 2, 1 − 2 · sinh⁴(a/2)) = " + fixed(squareWalkTurn(lab.a) / RAD, 4) + "°");
   }
-  const tile = isTile(lab) ? "home again, turned " + fixed(hc.turnClockwise / RAD, 0) + "° clockwise, the area of the tile" : null;
+  const tile = isTile(lab) && upper ? "home again, turned " + fixed(hc.turnClockwise / RAD, 0) + "° clockwise, the area of the tile" : null;   // at the Stargazer lens the sentence above says it
   return { slides: n, distance: hc.distance, steps, turnClockwise: hc.turnClockwise, turnDeg: hc.turnClockwise === null ? null : hc.turnClockwise / RAD, home: lab.home || (n > 0 && hc.distance < 1e-9), text, flat, area, closed, tile, layer: "checked" };
 }
 /** fiveSlides(a) -> the challenge "Find the step that brings five slides home" (forward, left, back, right, forward): { a, gap, success (gap within 0.005), closedForm (1.061275), text }. */
@@ -1506,14 +1644,16 @@ export const CERTIFIED = freeze([
 ]);
 /** CERTIFIED_STARGAZER: the same in Stargazer words. */
 export const CERTIFIED_STARGAZER = T("checked", "The stamp shows this exact writing has not changed since it was stamped. It does not show that the writing is true. It does not show who stamped it.");
-/** SEAL_COPY: the fixed sentences of the Seal step: pass (per lens; never "all checks pass" alone), fail, about, privacy, witness (READING), kebar, needPlace, buttons. */
+/** SEAL_COPY: the fixed sentences of the Seal step: pass (per lens; never "all checks pass" alone), fail, about, privacy (per lens: what the link holds, and what the file holds besides), witness (READING), kebar, needPlace, buttons. */
 export const SEAL_COPY = freeze({
   pass: perLens("The stamp fits: this exact writing is unchanged since it was stamped.", "Every check passed: unchanged since it was sealed."),
   fail: perLens("The stamp does not fit: something was changed.", "A check failed: this is not the sky that was sealed."),
   about: perLens(T("checked", "The stamp is about this exact writing, not whether it is true."), T("checked", "The seal certifies these bytes, not their truth.")),
-  privacy: T("checked", "This link and this file contain the place and the time you entered."),
+  privacy: perLens(
+    T("checked", "This link holds the place and the time you entered. The parcel also holds the moment it was stamped. It holds a number that lets others check the stamp."),
+    T("checked", "This link contains the place and the time you entered. The file also holds the moment it was stamped and the public half of this visit's key.")),
   witness: perLens(
-    T("reading", "One stamp is one witness. The rule in the verse asks for two or three. In the Lexicon Explorer, pretend receivers check it too."),
+    T("reading", "One stamp is one witness. The rule in the verse asks for two or three. In the Lexicon Explorer, the Navigator level shows pretend receivers checking it too."),
     T("reading", "One seal is one witness. By the rule quoted here that settles nothing until others check it too: open it in the Lexicon Explorer and let the receivers answer.")),
   kebar: T("checked", "Everyone who seals this same sky gets this same name. Compare with a friend."),
   needPlace: "Choose a place first: a sky needs a place and a time.",
@@ -1534,7 +1674,7 @@ export function sealView(seal, lens) {
     if (seal.certificate) add("key", "Signed by", seal.certificate.sealId + " (a key made for this visit)", true);
   }
   if (l === "holographer" && seal.certificate) add("commitment", "OVERWATCH/1 line", seal.certificate.commitment, true);
-  const notes = [SEAL_COPY.privacy, forLens(SEAL_COPY.witness, l)];
+  const notes = [forLens(SEAL_COPY.privacy, l), forLens(SEAL_COPY.witness, l)];
   if (seal.kebar) notes.push(SEAL_COPY.kebar);
   return { ok: seal.ok, verdict: forLens(seal.ok ? SEAL_COPY.pass : SEAL_COPY.fail, l), chainName: seal.kebar ? seal.chainId : null, rows, checks: seal.report.checks, fileName: seal.fileName, link: seal.link, notes };
 }
@@ -1611,6 +1751,12 @@ export const COPY_FACTS = freeze({
 });
 const F = COPY_FACTS;
 const M0 = F.moon[0], M1 = F.moon[1], M2 = F.moon[2];
+// The Kebar site and Nazareth, in the wording both pages share (the Lexicon Explorer's KEBAR_NAZARETH): no finer than two approximate
+// positions bear. Minutes to the nearest 5, kilometres to the nearest 10; the unit test recomputes each rounded form.
+const KEBAR_MINUTES = Math.round(Math.abs(KEBAR.lonEast - NAZARETH.lonEast) * 4 / 5) * 5, KEBAR_KM = Math.round(EAST.km / 10) * 10;
+const KEBAR_NAZARETH = "Computed from approximate positions: the Kebar site (Nippur) and Nazareth lie "
+  + (F.kebar.latitudeApart >= 0.45 && F.kebar.latitudeApart <= 0.65 ? "about half a degree" : "about " + fixed(F.kebar.latitudeApart, 1) + "°")
+  + " apart in latitude, so almost the same stars pass overhead at both, about " + KEBAR_MINUTES + " minutes apart. From Nazareth the site lies roughly due east, about " + KEBAR_KM + " km.";
 
 /** BRIDGE_TITLE: the heading of a bridge box. */
 export const BRIDGE_TITLE = "THE BRIDGE";
@@ -1667,12 +1813,12 @@ export const STEPS = freeze([
         "We read the first verse as a fix: before anything is seen, the writer says where he stood. This panel asks the same first. You may see it another way.",
         "We read the straight-up line as this panel's axis: one point of the flat chart, a whole line of the ball. You may see it another way."),
       stands: freeze([
-        written("26.1.1", "as I was", "Chebar"),
+        freeze({ ...written("26.1.1", "as I was", "Chebar"), note: T("reading", "We write the Kebar (Chebar in the King James Version): one river, two spellings.") }),
         stand("said", "Pierre van Paassen, in Why Jesus Died (1949), writes of the young Jesus: “Lying awake at night on the roof of his father’s house in Nazareth, looking up at the stars running in their appointed courses”.",
           "A writer, Pierre van Paassen, wrote about the young Jesus in 1949. He pictured him on a roof in Nazareth, looking up at the stars.", null,
           T("reading", "That is his picture of the young Jesus, not a record.")),
-        stand("checked", "Computed: the Kebar site and Nazareth are " + fixed(F.kebar.latitudeApart, 2) + "° apart in latitude, so on any night the same stars cross straight overhead at both, " + F.kebar.minutesApart + " minutes apart. From Nazareth the Kebar lies due east: bearing " + F.kebar.bearing + "°, " + F.kebar.km + " km. Choose both places and compare.",
-          "Worked out: Nazareth and the Kebar are almost equally far north. The same stars pass overhead at both, " + F.kebar.minutesApart + " minutes apart. Try both places."),
+        stand("checked", KEBAR_NAZARETH + " Choose both places and compare.",
+          "Worked out from rough positions: Nazareth and the Kebar site are almost equally far north. Almost the same stars pass overhead at both, about " + KEBAR_MINUTES + " minutes apart. Try both places."),
         stand("checked", "Computed: in the flat horizon chart your straight-up line is one point; in the ball it is a line. Switch to 3D to see it.",
           "Worked out: the line straight up from your head looks like a dot from above. In the ball you can see the whole line."),
       ]),
@@ -1689,16 +1835,16 @@ export const STEPS = freeze([
     bridge: freeze({
       opening: null,
       reading: reading(
-        "We ask the three questions the book answers first: where, which day, which Moon. The book and this page are about " + grouped(F.yearsApart) + " years apart. You may see it another way.",
+        "We ask the three questions the book answers first: where, which day, which Moon. We read Ezekiel's date as his answer to the second and third. The book and this page are about " + grouped(F.yearsApart) + " years apart. You may see it another way.",
         "We read the verse's date as an answer to this panel's second and third questions: the day, and with it the Moon. The same three questions, " + grouped(F.yearsApart) + " years apart. You may see it another way.",
         "We read a date as a point on two circles: the Sun's place in its year and the Moon's place in its month. The verse gives both, " + grouped(F.yearsApart) + " years before this panel asks. You may see it another way."),
       stands: freeze([
         written("26.1.1", "in the fourth month", "day of the month"),
         stand("said", "Parker and Dubberstein (1942) write of Babylonian “lunar months, which began when the thin crescent of the new moon was first visible in the sky at sunset”.",
           "Two scholars, Parker and Dubberstein, wrote in 1942 about months in Babylon. Each month began when the thin new Moon was first seen at sunset."),
-        stand("checked", "Computed, if the day is placed on the conventional date: on the fifth day of such a month the Moon is a thick crescent growing towards half. Over the Kebar site it grew from " + M0.begins + " % lit at the sunset that began the day (30 July 593 BC) to " + M0.ends + " % at the sunset that ended it (31 July), reaching first quarter about " + F.firstQuarterMinutes
-          + " minutes before that second sunset, give or take " + F.clockMinutes + " minutes for the clock and a day for the calendar tables. On the other published dates it grew from " + M1.begins + " to " + M1.ends + " % and from " + M2.begins + " to " + M2.ends + " %. Open the preset and look.",
-          "Worked out: if that date is right, the Moon grew to half lit that day. Open the Kebar sky and look."),
+        stand("checked", "Computed, if the day is placed on the date usually given: on the fifth day of such a month the Moon is a thick crescent growing towards half. Over the site by the Kebar (Chebar in the King James Version) it grew from " + M0.begins + " % lit at the sunset that began the day (30 July 593 BC) to " + M0.ends + " % at the sunset that ended it (31 July), reaching first quarter about " + F.firstQuarterMinutes
+          + " minutes before that second sunset, give or take " + F.clockMinutes + " minutes for the clock and a day for the calendar tables. On two other published dates, " + M1.label + " and " + M2.label + ", it grew from " + M1.begins + " to " + M1.ends + " % and from " + M2.begins + " to " + M2.ends + " %. Open the preset and look.",
+          "Worked out: if that date is right, the Moon grew to half lit that day. Open the sky by the Kebar (Chebar in the King James Version) and look."),
       ]),
       links: freeze([]),
     }),
@@ -1717,8 +1863,8 @@ export const STEPS = freeze([
     bridge: freeze({
       opening: null,
       reading: reading(
-        "We look where the book looks: up, and to the north. The book says the heavens were opened. You may see it another way.",
-        "We set two openings of heaven side by side, as early Christian readers did: Ezekiel's by the river, and the one at the baptism of Jesus. This panel draws the sky; it does not say what was seen. You may see it another way.",
+        "We look where the book looks: up, and to the north. The book says the heavens were opened. We set two openings of heaven side by side: Ezekiel's, and one when Jesus was baptised. You may see it another way.",
+        "We set two openings of heaven side by side, as the early Christian writer Origen did: Ezekiel's by the river, and the one at the baptism of Jesus. This panel draws the sky; it does not say what was seen. You may see it another way.",
         "We read “out of the north” as a direction on this chart and nothing more: the one compass word in the nine verses. You may see it another way."),
       stands: freeze([
         written("26.1.4", "a whirlwind", "the north"),
@@ -1743,7 +1889,7 @@ export const STEPS = freeze([
     bridge: freeze({
       opening: null,
       reading: reading(
-        "We read the verse beside the map: the creatures went straight and did not turn. One straight slide of this map turns nothing either. You may see it another way.",
+        "We read the verse beside the map: the creatures went straight and did not turn. One straight slide of this map turns nothing either. Keeping straight is true of each slide, not of a whole trip. You may see it another way.",
         "We set the verse beside one fact of the map: the move that brings the far to the centre turns nothing on its line. Holding a heading is a property of each step, not of the whole trip. You may see it another way.",
         "We read “they turned not when they went” beside the slide T_c: it has no rotation part, yet two slides in a row make a slide and a turn. Holding a heading is a property of each step. You may see it another way."),
       stands: freeze([
@@ -1763,7 +1909,7 @@ export const STEPS = freeze([
     bridge: freeze({
       opening: null,
       reading: reading(
-        "We read one stamp as one witness. The rule in the verse asks for two or three. You may see it another way.",
+        "We read one stamp as one witness. The rule in the verse asks for two or three. First Explorers ends on its middle line; here that line is the line straight up. You may see it another way.",
         "One seal is one witness. By the rule quoted here that settles nothing until others check it too. First Explorers ends on the line through the zero point; in this panel that line is the zenith line. You may see it another way.",
         "We read the certificate as one witness's signed statement about bytes. The verse's rule asks for two or three; the Lexicon Explorer's receivers stand in for them, and they are simulated. In this panel the line through the zero point is the zenith line. You may see it another way."),
       stands: freeze([
@@ -1803,13 +1949,13 @@ export function stepView(step, lens) {
   };
 }
 
-/** EZEKIEL_COPY: the lines of the preset "Ezekiel by the Kebar": title, site (SAID: the place), derived (SAID: how the date is derived), noHour, stargazer (one line at the Stargazer lens). */
+/** EZEKIEL_COPY: the lines of the preset "Ezekiel by the Kebar": title, site (SAID: the place), derived (SAID: how the date is derived), noHour (CHECKED: read from the verse rows 26.1.1 to 26.1.3; the unit test reads them again), stargazer (one line at the Stargazer lens). */
 export const EZEKIEL_COPY = freeze({
   title: "Ezekiel by the Kebar",
   site: T("said", KEBAR.note),
   derived: T("said", rowText("26.1.1.2.4")),
   older: T("said", EZEKIEL_DATES_NOTE),
-  noHour: T("checked", "The book gives no hour."),
+  noHour: T("checked", "Read from the three verses kept here: they give a day and no hour."),
   stargazer: T("said", "This day is usually given as 31 July 593 BC. Other dates are in print too."),
 });
 /** MESSAGES: the plain messages under the controls. */
@@ -1842,6 +1988,7 @@ export const DIALOG = freeze({
     T("reading", "The squeezed map is our own way of drawing. Space is not squeezed."),
     T("reading", "The gold boxes hold our own idea about some Bible verses."),
     T("checked", "A stamp shows that writing has not changed. It cannot show that the writing is true."),
+    T("reading", STRIX.who),
   ]),
   sections: freeze([
     freeze({ heading: "The four layers", items: freeze([...LEGEND, T("checked", BADGE_HELP)]) }),
@@ -1851,7 +1998,8 @@ export const DIALOG = freeze({
       T("reading", "The allowance for ΔT is this project's, not a measurement. The page shows an uncertainty badge whenever it moves the Moon by 0.01° or more: before about AD 915 and after about 2045."),
     ]) }),
     freeze({ heading: "What others measured", items: freeze([
-      T("said", "The places and distances of the six objects beyond the Sun and Moon are those given by the sources named in each object's inspector. This page works out only where each one stands in your sky."),
+      T("said", "The places and distances of the six objects beyond the Sun and Moon are those given by the sources named in each object's inspector."),
+      T("checked", "This page works out only where each one stands in your sky."),
       T("said", "The Vela pulsar turns " + F.velaTurns + " times a second (Helfand and others 2001)."),
       T("said", CMB_NOTE[0]),
       T("said", "Celestial holography is a proposal (Pasterski 2021; Raclariu 2021)."),
@@ -1870,9 +2018,9 @@ export const DIALOG = freeze({
     ]) }),
     freeze({ heading: "The bridge narrative (the gold boxes)", items: freeze([
       T("reading", "It is an interpretation, chosen by this project. The gold boxes read Jesus of Nazareth as a bridge between the source of love and the world; on this page that bridge is the straight-up line, followed from Ezekiel's river to John 3:16. No check, packet or certificate on this page depends on it."),
-      T("said", "The history is from one book: Pierre van Paassen, Why Jesus Died (Dial Press, 1949). Words in quotation marks are his and were checked against the text."),
-      T("said", "What he argues. Jesus was a Galilean Jew in the line of Israel's prophets who announced the Kingdom of God on earth: justice, and all people as kin. Pontius Pilate alone ordered his death. Later tellings moved the blame onto the Jewish people. Greek-speaking missionaries, starting from Antioch, remade his message. He writes as a Unitarian and does not take the resurrection, the virgin birth or the Trinity as history."),
-      T("said", "Where others differ. Most Christians, and many historians, disagree with parts of that. Some of his sources are dated, among them Robert Eisler's reconstruction of an armed rising and the old theory of “dying and rising gods”."),
+      T("reading", "The gold boxes quote several writers, each named where it is quoted. Where a box quotes Pierre van Paassen, Why Jesus Died (Dial Press, 1949), the words in quotation marks are his and were checked against a scan of the book."),
+      T("said", "Van Paassen argues that Jesus was a Galilean Jew in the line of Israel's prophets who announced the Kingdom of God on earth: justice, and all people as kin; that Pontius Pilate alone ordered his death; that later tellings moved the blame onto the Jewish people; and that Greek-speaking missionaries, starting from Antioch, remade his message. He writes as a Unitarian and does not take the resurrection, the virgin birth or the Trinity as history."),
+      T("reading", "This project's view: most Christians and many historians would disagree with parts of that. Some of his sources are dated, among them Robert Eisler's reconstruction of an armed rising and the old theory of a dying and rising god."),
       T("reading", "What is ours, not his. He never calls Jesus a bridge and never uses the cross as a figure of two directions. The line through the zero point, and the reading of it as the straight-up line, are this project's."),
       T("said", rowSentence("0.4.1", 0)),
     ]) }),
@@ -1901,7 +2049,7 @@ const holds = (from, to) => OBJECTS.filter((o) => (o.kind === "body" || o.key ==
 export const BLUEPRINT = freeze({
   title: "Blueprint",
   heading: "Three pillars and four shells",
-  badge: T("reading", "The whole scale is this project's reading: a chosen way of drawing, not a claim about the shape of space."),
+  badge: T("reading", "The whole scale is this project's reading: a chosen way of drawing. It is not a claim about the shape of space."),
   pillars: freeze([
     freeze({ title: "Start from where you stand", text: T("reading", "Three questions come first: where on Earth am I standing, what day of the year is it, what shape is the Moon tonight. They put the centre of the map in something anyone can check by looking up.") }),
     freeze({ title: "Far things wait near the rim", text: T("reading", "In the Poincaré picture, equal-sized things are drawn smaller and smaller toward the rim, so an endless amount of room fits inside the circle. Deep material stays near the rim until the move T_c(z) = (z − c)/(1 − c̄z) brings it to the centre.") }),
@@ -1962,7 +2110,7 @@ export function stargazerStrings() {
     else if (typeof v.stargazer === "string") add("control " + k, v.stargazer);
     else for (const [k2, v2] of Object.entries(v)) add("control " + k + " " + k2, typeof v2 === "string" ? v2 : v2.stargazer);
   }
-  add("seal pass", SEAL_COPY.pass.stargazer); add("seal fail", SEAL_COPY.fail.stargazer); add("seal about", SEAL_COPY.about.stargazer.text); add("seal privacy", SEAL_COPY.privacy.text);
+  add("seal pass", SEAL_COPY.pass.stargazer); add("seal fail", SEAL_COPY.fail.stargazer); add("seal about", SEAL_COPY.about.stargazer.text); add("seal privacy", SEAL_COPY.privacy.stargazer.text);
   add("seal witness", SEAL_COPY.witness.stargazer.text); add("seal kebar", SEAL_COPY.kebar.text); add("seal need", SEAL_COPY.needPlace);
   add("seal button", SEAL_COPY.buttons.seal.stargazer); add("seal file", SEAL_COPY.buttons.file.stargazer); add("seal open", SEAL_COPY.buttons.open); add("seal copy", SEAL_COPY.buttons.copy);
   add("certified", CERTIFIED_STARGAZER.text);
@@ -1979,7 +2127,10 @@ export function stargazerStrings() {
   ];
   samples.forEach((st, n) => {
     const tag = "sample " + n + " ";
-    add(tag + "day question", dayQuestion(st).text);
+    const day = dateView(st).parts;                                  // the day question in its three forms: the device on the same day, on another day, not known
+    add(tag + "day question", dayQuestion(st, day).text);
+    add(tag + "day question other", dayQuestion(st, { year: 2026, month: 11, day: 13 }).text);
+    add(tag + "day question alone", dayQuestion(st).text);
     add(tag + "status", statusSentence(st));
     add(tag + "caption", sceneCaption({ ...st, dims: "2D" })); add(tag + "caption 3D", sceneCaption({ ...st, dims: "3D" }));
     const m = moonFigure(st);
@@ -1990,12 +2141,28 @@ export function stargazerStrings() {
     add(tag + "find moon", findMoon(st, 180).note);
     placeReadout(st).forEach((r, i) => add(tag + "place row " + i, r.label + ": " + r.value));
     dayReadout(st).forEach((r, i) => add(tag + "day row " + i, r.label + ": " + r.value));
+    add(tag + "next step", (nextStep(st) || { label: "" }).label);
+    for (const key of ["moon", "m31", "sgr_a_star", "north", "holography", "cmb"]) {
+      const half = dive(st, key), there = dive(half, key);
+      add(tag + "centre half " + key, centreWords(half)); add(tag + "centre " + key, centreWords(there));
+      add(tag + "caption centred " + key, chartCaption(there, { rimLabel: "", centreCaption: "" }));
+    }
+    add(tag + "centre free", centreWords(nudgeView(st, "left")));
+    for (const lat of [51, -34, 0, 80, -80]) for (const month of [3, 6, 9, 12]) add(tag + "season " + lat + " " + month, seasonLine(pickDate(typePlace(st, lat, 10).state, { year: 2026, month, day: 12 }).state).text);
   });
+  for (const n of [2, 3, 4]) add("next " + n, nextStep(setStep(samples[0], n)).label);
+  add("strix name", STRIX.name); add("strix all", STRIX.all); add("strix more", STRIX.more); add("strix more from", STRIX.moreFrom);
+  add("blueprint badge", BLUEPRINT.badge.text);
+  add("lab four at once", LAB_COPY.fourAtOnce);
+  add("lab tile home", labReadout(labHome(labTile(labStart())), "stargazer").text); add("lab tile area", labReadout(labHome(labTile(labStart())), "stargazer").area.text);
   add("lab start", labReadout(labStart(), "stargazer").text);
   const four = labFour(labStart());
   add("lab four", labReadout(four, "stargazer").text); add("lab four flat", labReadout(four, "stargazer").flat);
   const back = labReadout(labHome(four), "stargazer");
   add("lab home", back.text); add("lab area", back.area.text);
+  const straight = labSlide(labStart(), "forward"), eight = ["forward", "forward", "left", "left", "back", "back", "right", "right"].reduce((l, d) => labSlide(l, d), labStart());
+  add("lab straight", labReadout(straight, "stargazer").text); add("lab straight home", labReadout(labHome(straight), "stargazer").text);
+  add("lab wide area", labReadout(labHome(eight), "stargazer").area.text);
   add("pick date", pickDate(samples[0], { year: 2027, month: 2, day: 29 }).message);
   add("epoch line", epochLine({ epoch: 3, epochs: 4 }, "stargazer"));
   return out;

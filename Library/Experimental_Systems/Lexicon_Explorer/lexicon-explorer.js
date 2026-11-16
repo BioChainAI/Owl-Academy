@@ -8,8 +8,10 @@
 // initialState() and changed only with the model's own functions or by plain assignment of page choices.
 //
 // REGIONS (ids in index.html, in the DOM order that is the phone order of 1.6)
-//   strip        the stations (buttons st-KEY)
-//   say          STRIX's sentence, the station's main control (stationMain), the open verse (verseBox, phone only)
+//   topWrap      the header and, for a lexicon from a file, the banner (banner): they stay in view while the page scrolls
+//   strip        the stations (buttons st-KEY); at Stargazer the line about the Navigator level (levels)
+//   say          a sky's banner (skyBanner), STRIX's line (strixLine; under 700 px whole sentences and the button strixMore),
+//                the station's main control (stationMain), the open verse (verseBox, phone only)
 //   stage        the tree canvas, nudge and turn buttons, "Drag the map", the caption treeCap
 //   explain      the tabs (tabBtn-KEY) and their bodies tabEntry, tabWheel, tabChain, tabOverwatch, tabWitnesses
 //   bridge       the gold box of the station
@@ -20,12 +22,24 @@
 //
 // FOR THE WALKTHROUGH   window.LexiconExplorer = { state, ready, tree, select, setStation, showLexicon }.
 //   A term button carries data-address (data-key vterm-ADDRESS in the open verse, rterm-ADDRESS in the reader).
+//   Ids of single lines: sealVerdict and sealChain (the chain name, under the verdict at every lens), sendCount and
+//   sendLimit (what the count shows; for a sky under 700 px it is sendLimitBox, the first line of stationBody),
+//   readerHead (with the button reader-tradition to row 0.3), wordingsNote (Stargazer, under the wording switch),
+//   entryText and entryOwn (an entry's own words behind "More for older readers"), bannerNotice, outsideRows (the
+//   one heading over a sender's rows), legendOutside, ledgerCut, notesInvite and notesBtn (the empty card), entryFrom (John 3:16),
+//   bridgeGo and bridgeFly (the gold box), mirrorBox (Stargazer, inside "Stamp it"), fig-a .. fig-e (the headings of station 7),
+//   goLine6, skipList, toolHome, verseNote, skyNotice and skyPageLink, bannerShort, outsideNotice, aboutPages.
+//   A button made from a row's closing words carries data-key ptr-ADDRESS; openPlace() opens what it names.
+//
+// HISTORY   Every entry of the browser's history that this page writes is marked (OWN_ENTRY). Back and Forward to a
+//   marked entry bring back its sky and its entry and keep the lens, the station and the tab of now; a fragment that
+//   was typed or pasted sets the lens, as the fragment at load does.
 //
 // Strings of a lexicon that came from a file are the sender's: they pass through outsideText() (own() below), are
 // never put into an id, a class, a URL or an object key, and their badges are outlined.
 import {
   $, h, setText, outsideText, inlineButton, badge, layerLegend, checkList, downloadText, describeCanvas, wireDialog,
-  nextPaint, withBusy, keepFocus, statusLine, lensSwitch, foldBox, AUTHOR_NOTE_WORD, LAYER_META,
+  nextPaint, withBusy, keepFocus, statusLine, lensSwitch, foldBox, prefersReducedMotion, AUTHOR_NOTE_WORD, LAYER_META,
 } from "../explorer-kit.js";
 import * as M from "./lexicon-explorer-model.js";
 import { createTreeCanvas, createWordWheel, createFigure } from "./lexicon-canvas.js";
@@ -40,6 +54,8 @@ let listFocus = state.view.focus;   // the entry the neighbourhood list is centr
 let lastHash = location.hash;
 let tree = null, wheel = null, wheelBlock = null, wheelParts = null, fourth = null, lens = null, say = null;
 let moreOpenFor = null;       // the entry whose "More for older readers" is open
+let strixItems = [];          // what STRIX says at this station (the first item is the line above the map)
+let mirrorStar = null;        // the mirror word inside "Stamp it" (Stargazer)
 
 const lex = () => state.lexicon;
 const isStar = () => state.lens === "stargazer";
@@ -90,19 +106,24 @@ function hashNow() {
   const entry = !isOutside() && state.selected ? state.selected : null;
   try { return M.formatHash({ sky, entry, lens: state.lens }); } catch { return ""; }
 }
+// A history entry this page wrote itself carries this mark. Its fragment names the lens of the moment it was written;
+// Back and Forward to such an entry bring back its sky and its entry and keep the lens of now (and with it the station
+// and the tab). A fragment that was typed or pasted has no mark and sets the lens, as the fragment at load does.
+const OWN_ENTRY = { own: true };
+const isOwnEntry = () => { try { return !!history.state && history.state.own === true; } catch { return false; } };
 function writeUrl(push) {
   const next = hashNow();
-  if (next === "" || next === location.hash) return;
+  if (next === "" || (next === location.hash && isOwnEntry())) return;
   try {
-    if (push) history.pushState(null, "", next); else history.replaceState(null, "", next);
+    if (push && next !== location.hash) history.pushState(OWN_ENTRY, "", next); else history.replaceState(OWN_ENTRY, "", next);
     lastHash = location.hash;
   } catch { /* a page opened from a file may not rewrite its address */ }
 }
 function onHash() {
   if (location.hash === lastHash) return;
   lastHash = location.hash;
-  const before = lex(), parsed = M.parseHash(location.hash);
-  Object.assign(state, M.applyHash(state, parsed));
+  const before = lex(), parsed = M.parseHash(location.hash), own = isOwnEntry();
+  Object.assign(state, M.applyHash(state, own ? { ...parsed, values: { ...parsed.values, lens: undefined } } : parsed));
   if (parsed.values.entry === undefined && !isOutside()) state.selected = null;
   if (lex() !== before) { resetForLexicon(); tree.setLexicon(lex(), state.selected || lex().home); }
   lens.set(state.lens);
@@ -110,6 +131,7 @@ function onHash() {
   tree.flyTo(state.selected === null ? lex().home : state.selected);
   listFocus = state.selected === null ? lex().home : state.selected;
   keepFocus(renderAll);
+  if (own) writeUrl(false);      // the fragment of this entry now names the lens that is shown
   say(M.statusFor(lex(), state.selected, state.lens));
 }
 
@@ -125,9 +147,39 @@ function select(address, options) {
   if (fly) tree.flyTo(address);
   listFocus = address;
   if (push) writeUrl(true);
-  render("say", "reader", "explain", "list", "nav");
+  $("explain").scrollTop = 0;      // the card may scroll by itself on a wide screen: a new entry is shown from its title
+  render("say", "reader", "explain", "list", "nav", "bridge");      // the gold box is the John 3:16 box while that verse is chosen
   say(M.statusFor(lex(), address, state.lens));
   return true;
+}
+/** After a choice made in the list under the map: if the card's title is outside the window it is scrolled into view (true). The focus stays. */
+function showCard() {
+  const title = $("entryTitle");
+  if (!title) return false;
+  const r = title.getBoundingClientRect(), bar = $("topWrap").getBoundingClientRect(), stuck = getComputedStyle($("topWrap")).position === "sticky";
+  const top = stuck ? bar.bottom : isOutside() ? $("banner").getBoundingClientRect().bottom : 0;
+  if (r.top >= top && r.bottom <= innerHeight) return false;
+  title.scrollIntoView({ block: "start", behavior: prefersReducedMotion() ? "auto" : "smooth" });
+  return true;
+}
+/** Opens the place a row's closing words name (the model's pointerOf): a station, a figure of station 7, the mirror word or the wheel. */
+function openPlace(p) {
+  if (p.tab) {
+    state.tab = p.tab;
+    renderExplain();
+    const tab = $("tabBtn-" + p.tab);
+    if (tab) tab.focus();
+    say("The " + (M.TABS.find((t) => t.key === p.tab) || { label: "" }).label + " tab is open.");
+    return;
+  }
+  if (!p.station) return;
+  setStation(p.station);
+  $("stationBox").open = true;
+  let target = $("st-" + p.station);
+  if (p.figure && isStar() && mirrorStar) { mirrorStar.box.open = true; target = mirrorStar.summary; }
+  else if (p.figure) target = document.getElementById("fig-" + p.figure) || target;
+  else if (p.place === "wheel" && wheelParts) target = wheelParts.views[0] || target;
+  if (target) target.focus();      // the browser scrolls the place into view
 }
 function startCount(words, word) {
   state.counting = { words: words.slice(), word: word || null };
@@ -167,13 +219,14 @@ function setLens(id) {
 function setDims(dims) {
   state.dims = dims === "3D" ? "3D" : "2D";
   tree.set({ dims: state.dims });
-  render("tools", "say");
+  render("tools", "say", "station");      // the Place station prints the straight distance twice: above the map and in its box
 }
 function resetForLexicon() {
   state.place = isBuiltin() ? { ...HOME_PLACE } : { from: lex().home, to: lex().addresses[lex().addresses.length - 1] || "" };
   state.square.packet = 0;
   state.sendNote = "";
   moreOpenFor = null;
+  if (tree) tree.set({ keepLabel: isBuiltin() ? M.NOTES_INVITE.address : null });
 }
 /** showLexicon(lexicon, origin): the one way another lexicon comes on show ("builtin", "page" or "outside"). */
 function showLexicon(lexicon, origin) {
@@ -206,7 +259,13 @@ function renderStrip() {
     type: "button", id: "st-" + s.key, "data-key": "st-" + s.key, "aria-current": s.key === state.station ? "step" : null,
     onclick: act(() => setStation(s.key)),
   }, h("span", { class: "st-n" }, String(i + 1)), " ", h("span", { class: "st-name" }, isStar() ? s.stargazerTitle : s.title)))));
+  // Stargazer hides stations and tabs: one line beside the strip says so (700 px and wider; under that it is in "Stamp it")
+  const levels = $("levels");
+  levels.hidden = !(isStar() && isBuiltin());
+  fill(levels, ...(levels.hidden ? [] : levelsNodes("levelsBtn")));
 }
+const levelsNodes = (id) => [M.MORE_LEVELS.text, " ", h("button", { type: "button", class: "btn ghost", id, "data-key": "levels",
+  onclick: () => { keepFocus(() => setLens(M.MORE_LEVELS.lens)); holdFocus($("stripNav")); } }, M.MORE_LEVELS.label)];
 
 // ─── region: STRIX, the station's main control, the open verse ───────────────
 
@@ -216,17 +275,74 @@ function renderSay() {
   const sv = stationNow(), items = sayItems(sv), banner = $("banner");
   $("say").setAttribute("data-station", state.station || "none");
   $("say").setAttribute("data-origin", isBuiltin() ? "builtin" : isOutside() ? "outside" : "page");
-  if (isOutside()) fill(banner, h("p", null, M.OUTSIDE_BANNER), h("p", { class: "gap" }, backButton()));
-  // Under 700 px the note about the link stands in the station's box, so that the Entry begins on the first screen.
-  else if (!isBuiltin()) fill(banner, h("p", null, lex().title), h("p", { class: "note only-wide" }, M.SKY_PRIVACY), h("p", { class: "gap" }, backButton()));
-  else fill(banner);
-  banner.hidden = isBuiltin();
+  // A lexicon from a file: the banner is outside this panel, under the header, and stays in view while the page scrolls
+  // (index.html). Under 700 px it is one line with the Back button, and the whole notice stands here once.
+  banner.hidden = !isOutside();
+  fill(banner, ...(isOutside() ? [h("p", { class: "only-wide", id: "bannerNotice" }, M.OUTSIDE_NOTICE), h("p", { class: "only-narrow", id: "bannerShort" }, M.OUTSIDE_SHORT), backButton()] : []));
+  $("outsideNotice").hidden = !isOutside();
+  setText($("outsideNotice"), isOutside() ? M.OUTSIDE_NOTICE : "");
+  // A sky built from a link: what it is, what to do, the way back and the way to the page that draws skies (with the same
+  // place and time). Under 700 px the note about the link stands in the station's box, so that the Entry begins on the first screen.
+  const sky = !isBuiltin() && !isOutside(), skyBanner = $("skyBanner");
+  skyBanner.hidden = !sky;
+  fill(skyBanner, ...(sky ? [h("p", { id: "skyTitle" }, lex().title), h("p", { class: "note", id: "skyNotice" }, M.SKY_BANNER), h("p", { class: "note only-wide" }, M.SKY_PRIVACY),
+    h("p", { class: "row gap" }, backButton(), h("a", { class: "btn ghost", id: "skyPageLink", "data-key": "sky-page", href: M.skyPageHref("sky", state.lens, state.sky), "aria-label": ui("skyPage") },
+      h("span", { class: "only-wide" }, ui("skyPage")), h("span", { class: "only-narrow", "aria-hidden": "true" }, ui("skyPageShort"))))] : []));
+  strixItems = items;
   fill($("strix"), ...(items.length === 0 ? [] : [
-    h("p", { id: "strixLine" }, h("span", { class: "label violet strix-name only-wide" }, "STRIX"), tag(items[0].layer), items[0].text),
+    h("p", { id: "strixLine" }, h("span", { class: "label violet strix-name" }, "STRIX"), h("span", { id: "strixBadge" }, tag(items[0].layer)), h("span", { id: "strixText" }, items[0].text),
+      h("button", { type: "button", class: "strix-more", id: "strixMore", "data-key": "strix-more", "aria-label": ui("more") + " from STRIX", hidden: true, onclick: openStrix }, ui("more"))),
     items.length > 1 ? h("div", { class: "only-wide stack", id: "strixRest" }, items.slice(1).map(line)) : null,
   ]));
   fill($("stationMain"), ...stationMain());
   renderVerse();
+}
+
+// Under 700 px STRIX speaks above the map in whole sentences, never in a cut one: as many of the first paragraph's sentences as
+// leave the first line of the card on the first screen of a phone (rule 1.6: above y = 844 at 390 px), measured here each time
+// something above the card changes. What gives way, in this order: the later sentences, the note under the open verse, the
+// first sentence, and last, for a sky, the banner's sentences about the link, which then stand as the first line of the
+// station's box (after that, sentences of STRIX are shown again as far as they fit). When anything of the narration is left out, a small button at the end of the line ("more") opens the box
+// that holds all of it and moves the focus there. From 700 px everything is shown.
+const FIRST_SCREEN = 844;
+function cardLine() {
+  const title = $("explain").querySelector(".explain-body:not([hidden]) h2");
+  if (!title) return 0;
+  const r = title.getClientRects()[0] || title.getBoundingClientRect(), lh = parseFloat(getComputedStyle(title).lineHeight) || 22;
+  return r.top + scrollY + Math.min(r.height, lh);
+}
+function fitStrix() {
+  const text = $("strixText"), more = $("strixMore"), mark = $("strixBadge"), verseNote = document.getElementById("verseNote");
+  const skyNotice = document.getElementById("skyNotice"), skyNoticeBox = document.getElementById("skyNoticeBox");
+  const notice = (inBanner) => { if (skyNotice) skyNotice.hidden = !inBanner; if (skyNoticeBox) skyNoticeBox.hidden = inBanner; };
+  notice(true);
+  if (!text || !more || !mark || strixItems.length === 0) { if (verseNote && !wide()) verseNote.hidden = cardLine() > FIRST_SCREEN - 2; return; }
+  const whole = strixItems[0].text, all = M.sentencesOf(whole);
+  const show = (n) => {
+    setText(text, all.slice(0, n).join(" "));
+    mark.hidden = n === 0;
+    more.hidden = n === all.length && strixItems.length === 1;
+    setText(more, n === 0 ? ui("strixAll") : ui("more"));
+  };
+  if (verseNote) verseNote.hidden = false;
+  show(all.length);
+  if (wide()) return;
+  const fits = () => cardLine() <= FIRST_SCREEN - 2;
+  let n = all.length;
+  while (n > 1 && !fits()) show(--n);
+  if (verseNote && !fits()) verseNote.hidden = true;
+  if (!fits()) show(0);
+  if (!fits() && skyNotice && skyNoticeBox) {
+    notice(false);
+    n = all.length;
+    show(n);
+    while (n > 0 && !fits()) show(--n);
+  }
+}
+function openStrix() {
+  const box = $("stationBox");
+  box.open = true;
+  $("stationSum").focus();      // the browser scrolls the box into view
 }
 
 function termButton(span, prefix) {
@@ -247,17 +363,26 @@ function renderVerse() {
   box.hidden = !show;
   if (!show) { fill(box); return; }
   const v = M.verseView(state.verse, counting ? "kjv" : M.wordingFor(state)), i = M.READER_VERSES.indexOf(state.verse);
-  const step = (d) => { state.verse = M.READER_VERSES[(i + d + M.READER_VERSES.length) % M.READER_VERSES.length]; renderVerse(); };
+  const wordingName = (w) => (w === "supplied" ? "NIV" : "King James");
+  const step = (d) => {
+    state.verse = M.READER_VERSES[(i + d + M.READER_VERSES.length) % M.READER_VERSES.length];
+    renderVerse();
+    const now = M.verseView(state.verse, state.counting ? "kjv" : M.wordingFor(state));
+    say(now.name + ", " + wordingName(now.wording));
+  };
+  const head = M.readerHead();
   const words = counting
     ? (M.countMarks(counting.words).find((m) => m.address === state.verse) || { spans: [] }).spans.map((s) => (s.hit ? h("mark", null, s.text) : s.text))
     : v.spans.map((s) => (s.term ? termButton(s, "v") : s.text));
   const stepper = counting ? "btn ghost" : "btn ghost only-wide";   // on a phone the map is the way to another verse; while counting, these are
   fill(box,
     h("div", { class: "row verse-head" },
-      h("h2", { id: "verseTitle" }, v.name + ", " + (v.wording === "supplied" ? "NIV" : "King James")),
+      h("h2", { id: "verseTitle" }, v.name + ", " + wordingName(v.wording)),
       button("‹", () => step(-1), { class: stepper, "data-key": "verse-prev", "aria-label": "The verse before" }),
       button("›", () => step(1), { class: stepper, "data-key": "verse-next", "aria-label": "The next verse" })),
     h("p", { class: counting ? "read" : "verse", id: "openVerse" }, words),
+    // under 700 px the passage box is closed: the closing words of row 0.3 stand under the open verse (read from the row)
+    !counting && state.station === "read" && head && head.last ? h("p", { class: "note only-narrow", id: "verseNote" }, head.last) : null,
     counting ? countLine() : null,
     counting && state.station !== "count" ? h("p", null, button("Show the words again", () => { state.counting = null; render("say", "reader"); }, { "data-key": "count-done" })) : null);
 }
@@ -290,10 +415,13 @@ function stationMain() {
     }, { class: "btn ghost layer-btn", "data-key": "filter-" + m.id, "aria-pressed": String(state.filter[m.id] !== false) })))];
   }
   if (key === "seal") {
+    const v = state.seal ? M.sealView(state.seal, state.lens) : null;
     return [h("div", { class: "row" },
       h("button", { type: "button", class: "btn gold", id: "sealBtn", "data-key": "seal", "data-busy-lock": true, onclick: () => { doSeal(); } }, ui("seal")),
       h("span", { class: "note", id: "sealProgress" }, "")),
-    state.seal ? h("p", { id: "sealVerdict" }, tag("checked"), M.sealView(state.seal, state.lens).verdict) : null];
+    v ? h("p", { id: "sealVerdict" }, tag("checked"), v.verdict) : null,
+    // the name the sky page tells a visitor to compare: under the verdict at every lens, for the Ezekiel lexicon and for a sky
+    v && v.chain ? h("p", { id: "sealChain" }, v.chain.label + ": ", h("span", { class: "hash" }, v.chain.value)) : null];
   }
   if (key === "send") {
     const s = state.send;
@@ -306,6 +434,9 @@ function stationMain() {
     // answers and the two marks are in the station's box below and in the Witnesses tab.
     h("ul", { class: "marks-list only-wide", id: "sendRows" }, s ? s.rows.map(receiverLine) : null),
     s ? h("p", { id: "sendCount" }, tag("checked"), s.k + " of " + s.of + " handshakes") : null,
+    // What the count shows and what it does not, directly under the count. A sky has a banner above STRIX: under 700 px the
+    // sentence would push the Entry off the first screen there, so for a sky it is the first line of the station's box instead.
+    s ? h("p", { id: "sendLimit", class: isBuiltin() ? null : "only-wide" }, tag(M.QUORUM_LIMIT.layer), M.QUORUM_LIMIT.text) : null,
     s ? h("div", { class: "only-wide" }, markList(s)) : null];
   }
   return [];
@@ -323,17 +454,24 @@ function renderReader() {
   const counting = state.counting, r = M.readerView(counting ? "kjv" : M.wordingFor(state)), chosen = M.wordingFor(state);
   const marks = counting ? M.countMarks(counting.words) : null;
   fill($("reader"), 
-    r.head ? h("p", { id: "readerHead" }, tag(r.head.layer), r.head.text) : null,
+    r.head ? h("p", { id: "readerHead" }, tag(r.head.layer), r.head.text, " ",
+      button(r.head.link.label, () => select(r.head.link.address), { class: "btn ghost", "data-key": "reader-tradition", "data-address": r.head.link.address })) : null,
     r.canSwitch ? h("div", { class: "seg gap", role: "group", "aria-label": "Which wording" }, [M.WORDINGS.supplied, M.WORDINGS.kjv].map((w) => h("button", {
       type: "button", "data-key": "wording-" + w.key, "aria-pressed": String(w.key === chosen),
-      onclick: act(() => { Object.assign(state, M.setWording(state, w.key)); render("say", "reader", "explain"); }),
+      onclick: act(() => { Object.assign(state, M.setWording(state, w.key)); render("say", "reader", "explain"); say(w.label + "."); }),
     }, w.label))) : null,
+    r.switchNote && isStar() ? h("p", { class: "gap", id: "wordingsNote" }, tag(r.switchNote.layer), r.switchNote.text) : null,
     counting ? h("div", { class: "gap" }, line({ layer: "checked", text: "Counted: " + M.timesWord(marks.reduce((n, v) => n + v.times, 0)) + " in these nine verses. Count with me." }), countLine(), note(M.COUNT_NOTE)) : null,
     r.verses.map((v, n) => h("p", { class: "verse reader-verse" },
       inlineButton(String(v.number), act(() => select(v.address)), { class: "vnum", "data-key": "rverse-" + v.address, "data-address": v.address, "aria-label": v.name, "aria-pressed": String(state.selected === v.address) }),
       marks ? marks[n].spans.map((s) => (s.hit ? h("mark", null, s.text) : s.text)) : v.spans.map((s) => (s.term ? termButton(s, "r") : s.text)))),
     note(counting ? M.WORDINGS.kjv.translation : M.WORDINGS[r.wording].translation),
-    r.foot && !counting ? [note(r.foot.notice), note(r.foot.note)] : null);
+    r.foot && !counting ? footNodes(r.foot, "readerFoot") : null);
+}
+/** The notice and the note of the supplied wording. At Stargazer they stand behind a closed line "About these words"; the text is the same. */
+function footNodes(foot, id) {
+  const kids = [h("p", { class: "note", id }, foot.notice), note(foot.note)];
+  return isStar() ? [h("details", { class: "more gap", id: id + "Box" }, h("summary", { "data-key": id + "-more" }, ui("aboutWords")), h("div", { class: "more-body" }, kids))] : [h("div", { class: "gap" }, kids)];
 }
 
 // ─── region: the tree's tools, caption, list and navigation ──────────────────
@@ -359,6 +497,10 @@ function renderTools() {
   const corner = $("dimsBtn");
   corner.setAttribute("aria-pressed", String(ball));
   setText(corner, ui("ball"));
+  setText($("toolHome"), ui("home"));
+  $("toolHome").hidden = ball;      // under 700 px the four turn buttons take its row; Home is also under the card
+  setText($("skipList"), ui("skipList"));
+  setText($("listKeys"), M.LIST_KEYS[isStar() ? "stargazer" : "other"]);
   const notes = state.notes || [];
   $("linkNote").hidden = notes.length === 0;
   setText($("linkNote"), notes.join(" "));
@@ -381,8 +523,11 @@ function renderList() {
   fill($("list"), ...items.map((it) => h("li", { role: "none", style: { "padding-left": (Math.min(it.level - 1, 6) * 10).toFixed(0) + "px" } }, h("button", {
     type: "button", role: "treeitem", id: "e-" + it.address, "data-key": "e-" + it.address, "data-address": it.address,
     "aria-level": String(it.level), "aria-selected": String(state.selected === it.address), "aria-current": it.relation === "focus" ? "location" : null,
+    "aria-expanded": it.expanded === null ? null : String(it.expanded),
     class: it.relation === "focus" ? "centre" : null,
-    onclick: act(() => { select(it.address); const again = document.getElementById("e-" + it.address); if (again) again.focus({ preventScroll: true }); }),
+    onclick: act(() => { select(it.address); const again = document.getElementById("e-" + it.address); if (again) again.focus({ preventScroll: true });
+      // the list was rebuilt round the chosen entry: where the card needed no scrolling, the chosen item itself is kept in the window
+      if (!showCard() && again) again.scrollIntoView({ block: "nearest" }); }),
   }, mark(it.badge), h("span", null, own(it.name)),
   (!isStar() || isOutside()) && it.address !== "" ? h("span", { class: "note" }, it.address + (it.children ? " · " + it.children : "")) : null))));
 }
@@ -425,16 +570,25 @@ function renderExplain() {
 const HEADINGS = new Map(M.ENTRY_GROUPS.map((g) => [g.key, g.heading]));
 function authorNodes(a) {
   if (!a) return [];
+  const withLine = (f) => h("p", { class: "entry-row" }, mark(f.badge), isStar() ? null : [h("b", null, f.name), " "], f.text);
   return [h("p", { class: "label gold" }, a.label), h("blockquote", null, a.quoted),
-    a.framing ? h("p", null, tag("reading"), a.framing) : null,
-    a.facet ? h("p", { class: "entry-row" }, mark(a.facet.badge), isStar() ? null : [h("b", null, a.facet.name), " "], a.facet.text) : null];
+    a.framing ? h("p", { class: "line-framing" }, tag("reading"), a.framing) : null,
+    a.before.map(withLine), a.facet ? withLine(a.facet) : null];
 }
 function linkNodes(link, name) {
   if (!link) return [];
   if (!link.exists) return [h("p", { class: "entry-row" }, name ? [own(name), " "] : null, h("span", { class: "note" }, M.BROKEN_LINK))];
   return [name ? h("p", { class: "entry-row" }, own(name)) : null,
-    link.layer === "text" && link.text ? h("blockquote", null, mark(link.badge), isOutside() ? own(link.text) : M.quoted(link.text), h("span", { class: "note" }, " ", own(link.name))) : null,
+    link.layer === "text" && link.text ? h("blockquote", null, mark(link.badge), isOutside() ? own(link.text) : M.quoted(link.text),
+      h("span", { class: "note" }, " ", own(link.name), link.translation ? ", " + link.translation : null)) : null,
     h("p", null, mark(link.layer === "text" ? null : link.badge), button(["Go to ", own(link.name)], () => select(link.target), { class: "btn ghost", "data-key": "go-" + link.target, "data-address": link.target }))];
+}
+/** The button (or the link, or the Go-to buttons) for the place a row's closing words name. */
+function pointerNodes(p, address) {
+  if (!p) return [];
+  if (p.href) return [" ", h("a", { class: "btn ghost", href: p.href, "data-key": "ptr-" + address }, p.label)];
+  if (p.entries.length) return p.entries.map((x) => [" ", button(x.label, () => select(x.address), { class: "btn ghost", "data-key": "ptr-" + address + "-" + x.address, "data-address": x.address })]);
+  return [" ", button(p.label, () => openPlace(p), { class: "btn ghost", "data-key": "ptr-" + address })];
 }
 function countWith(address) {
   const c = M.countWithMe(lex(), address);
@@ -453,6 +607,7 @@ function rowNode(r) {
   else if (!(plain && isStar())) kids.push(h("b", null, own(r.name)), isOutside() ? " " + r.address : null, " ");
   if (r.text && !(opens && isStar())) kids.push(own(r.text));
   if (r.countWithMe) kids.push(" ", button("Count with me", () => countWith(r.address), { "data-key": "cwm-" + r.address }));
+  kids.push(...pointerNodes(r.pointer, r.address));
   return h("p", { class: "entry-row" }, kids);
 }
 function groupNodes(rows, headings) {
@@ -473,29 +628,42 @@ function entryNodes(v) {
   if (v.author) out.push(...authorNodes(v.author));
   else if (v.words.length) out.push(...v.words.map((w, i) => h("blockquote", { class: "words" }, i === 0 ? mark(v.badge) : null, M.quoted(w.text), h("span", { class: "note" }, w.translation))));
   else if (v.link) out.push(h("p", null, mark(v.badge)), ...linkNodes(v.link, null));
+  // Stargazer, three entries: one short sentence first; the entry's own words are behind "More for older readers"
+  else if (v.lead) out.push(h("p", { id: "entryText" }, tag(v.lead.layer), v.lead.text));
   else if (v.badge) out.push(h("p", { id: "entryText" }, mark(v.badge), v.text ? own(v.text) : null));
-  out.push(...groupNodes(v.first, !isStar()));
-  if (v.more.length) {
-    const more = h("details", { class: "more more-rows" }, h("summary", { "data-key": "more-rows" }, v.moreLabel), h("div", { class: "more-body" }, groupNodes(v.more, true)));
+  // John 3:16: the author's line and the outline that point to this verse
+  if (v.from.length) out.push(h("p", { class: "entry-row", id: "entryFrom" }, v.from.map((x) => button(x.label, () => select(x.address), { class: "btn ghost", "data-key": "from-" + x.address, "data-address": x.address }))));
+  // The page's group headings (Checked, Said, Our reading …) stand over its own rows only. Over a sender's rows there is one heading.
+  if (isOutside() && v.first.length + v.more.length > 0) out.push(h("h3", { id: "outsideRows" }, M.OUTSIDE_ROWS_HEADING));
+  out.push(...groupNodes(v.first, !isStar() && !isOutside()));
+  if (v.more.length || v.lead) {
+    const more = h("details", { class: "more more-rows" }, h("summary", { "data-key": "more-rows" }, v.moreLabel), h("div", { class: "more-body" },
+      v.lead ? h("p", { class: "entry-row", id: "entryOwn" }, mark(v.badge), own(v.text)) : null, groupNodes(v.more, !isOutside())));
     more.open = moreOpenFor === v.address;
     more.addEventListener("toggle", () => { moreOpenFor = more.open ? v.address : moreOpenFor === v.address ? null : moreOpenFor; });
     out.push(more);
   }
   if (v.actions.length) out.push(h("p", { class: "entry-row" }, v.actions.map((a) => (a.href
     ? h("a", { class: "btn", href: a.href, "data-key": "act-" + a.key }, a.label)
-    : button(a.label, () => countWith(v.address), { "data-key": "act-" + a.key })))));
+    : a.pointer ? button(a.label, () => openPlace(a.pointer), { "data-key": "act-" + a.key })
+      : button(a.label, () => countWith(v.address), { "data-key": "act-" + a.key })))));
   if (v.line) out.push(h("h3", null, "The line and its SHA-256"), h("p", { class: "hash" }, own(v.line)), h("p", { class: "hash" }, v.lineSha));
   return out;
 }
 function renderEntry() {
   const v = M.entryView(lex(), state.selected, state.lens, { wording: M.wordingFor(state) }), kids = [];
-  if (v.empty) kids.push(h("h2", { id: "entryTitle", tabindex: "-1" }, isBuiltin() ? v.prompt : "Choose an entry on the map or in the list"),
-    isOutside() ? null : h("div", { class: "gap", id: "entryLegend" }, layerLegend({ lens: state.lens, help: isStar() })));
+  if (v.empty) kids.push(h("div", { class: "row title-row" }, h("h2", { id: "entryTitle", tabindex: "-1" }, isBuiltin() ? v.prompt : ui("chooseEntry")),
+      // under 700 px the button to the author's notes stands beside the title, on the first screen; its sentence is below the legend
+      v.invite ? button(v.invite.short, () => select(v.invite.address), { class: "btn ghost only-narrow", id: "notesBtnTop", "data-key": "notes-top", "data-address": v.invite.address }) : null),
+    isOutside() ? null : h("div", { class: "gap", id: "entryLegend" }, layerLegend({ lens: state.lens, help: isStar() })),
+    // where the author's ten lines are: one sentence and one button; the button opens the list of the lines and quotes nothing.
+    // It stands after the legend, which must begin on the first screen of a phone.
+    v.invite ? h("p", { class: "entry-row", id: "notesInvite" }, tag(v.invite.layer), v.invite.text, " ", button(v.invite.label, () => select(v.invite.address), { id: "notesBtn", "data-key": "notes", "data-address": v.invite.address })) : null);
   else if (v.missing) kids.push(h("h2", { id: "entryTitle", tabindex: "-1" }, "Entry"), h("p", null, v.note));
   else kids.push(...entryNodes(v));
   const sv = stationNow();
   if (sv && sv.next) kids.push(h("p", { class: "entry-row" }, button(sv.next.label, goNext, { class: "btn gold", id: "nextBtn", "data-key": "next" })));
-  if (v.foot) kids.push(h("p", { class: "note gap", id: "entryFoot" }, v.foot.notice), note(v.foot.note));
+  if (v.foot) kids.push(...footNodes(v.foot, "entryFoot"));
   fill(idOf.get("entry"), ...kids);
 }
 
@@ -511,6 +679,7 @@ function buildWheel() {
     reset: button(ui("reset"), () => { state.wheel = { ...state.wheel, flips: [] }; renderWheel(); }, { class: "btn ghost", id: "wheelReset", "data-key": "wheel-reset" }),
   };
   const step = (d) => () => { const n = M.packetsOf(lex()).length; state.wheel = { ...state.wheel, packet: (state.wheel.packet + d + n) % n, flips: [], sector: null }; renderWheel(); };
+  p.ofEntry = button(ui("packetEntry"), () => { state.wheel = { ...state.wheel, packet: M.packetOfEntry(lex(), state.selected), flips: [], sector: null }; renderWheel(); }, { class: "btn ghost", "data-key": "packet-entry" });
   p.views = M.WHEEL_COPY.views.map((v) => h("button", { type: "button", "data-key": "wheelview-" + v.key, "data-view": v.key, onclick: act(() => { state.wheel.view = v.key; renderWheel(); }) }, v.label));
   for (let i = 0; i < 64; i++) p.bits.push(h("button", { type: "button", "data-key": "bit-" + i, onclick: act(() => { state.wheel.flips = M.toggleFlip(state.wheel.flips, i); renderWheel(); }) }, "0"));
   wheelParts = p;
@@ -518,7 +687,7 @@ function buildWheel() {
     h("div", { class: "seg", role: "group", "aria-label": "Wheel or square" }, p.views),
     h("div", { class: "row" }, button("‹", step(-1), { class: "btn ghost", "data-key": "packet-prev", "aria-label": "The one before" }), p.packet,
       button("›", step(1), { class: "btn ghost", "data-key": "packet-next", "aria-label": "The next one" }),
-      button("Of the chosen entry", () => { state.wheel = { ...state.wheel, packet: M.packetOfEntry(lex(), state.selected), flips: [], sector: null }; renderWheel(); }, { class: "btn ghost", "data-key": "packet-entry" })),
+      p.ofEntry),
     canvas, p.cap, p.hex, note(M.WHEEL_COPY.pick), p.sector,
     h("div", { class: "bitgrid-wrap" }, h("div", { class: "bitgrid", role: "group", "aria-label": M.WHEEL_COPY.squareLabel }, p.bits)),
     p.readout, h("p", null, p.reset),
@@ -556,6 +725,7 @@ function renderWheel() {
   });
   fill(p.readout, ...w.readout.map(line));
   setText(p.reset, ui("reset"));
+  setText(p.ofEntry, ui("packetEntry"));
   fill(p.captions, ...(isStar() ? [line(M.WHEEL_COPY.stargazerWheel)] : [line(M.WHEEL_COPY.ladder), line(M.WHEEL_COPY.parity)]));
   const a = M.wheelAuthorLine(lex(), state.lens);
   fill(p.author, ...(a ? [h("p", { class: "label gold gap" }, a.label), h("blockquote", null, a.quoted),
@@ -591,7 +761,7 @@ function renderOverwatch() {
   const c = s.certificate;
   fill(host, h("h2", null, "Overwatch"), line({ layer: "checked", text: v.verdict }), checkList(v.checks, { sentences: M.CHECK_SENTENCES }),
     h("h3", null, "The certificate"),
-    kv([{ label: "Format", value: c.format }, { label: "Signed by key", value: c.sealId + " (a key made for this visit)", hash: true }, { label: "Issued at", value: c.issuedAt },
+    kv([{ label: "Format", value: c.format }, { label: "Signed by key", value: c.sealId + " " + M.OWN_KEY_NOTE, hash: true }, { label: "Issued at", value: c.issuedAt },
       { label: "The signed line", value: c.commitment, hash: true }]),
     LIMITS[2] ? line(LIMITS[2]) : null, M.CERTIFIED.map(line), downloadButton());
 }
@@ -606,6 +776,7 @@ function outsideNodes() {
       .map(([k, x]) => [h("dt", null, k), h("dd", { class: "hash" }, text(x))])),
     h("h3", null, "Ledger, as its sender wrote it"),
     table(["No.", "Actor", "Event", "Time"], c.ledger.map((e) => [text(e.n), text(e.actor), text(e.event), text(e.at)])),
+    c.ledgerCut ? h("p", { class: "note", id: "ledgerCut" }, M.LEDGER_CUT_NOTE) : null,
     h("h3", null, o.notCovered.heading),
     h("dl", { class: "kv" }, o.notCovered.items.map((it) => [h("dt", null, it.label), h("dd", null, text(it.value))]))];
 }
@@ -624,16 +795,23 @@ function standNode(x) {
   const open = x.source && M.hasPlace(lex(), x.source)
     ? button("Open " + M.nameOf(lex(), x.source), () => select(x.source), { class: "btn ghost", "data-key": "stand-" + x.source, "data-address": x.source }) : null;
   if (x.layer === "text") return h("p", { class: "entry-row" }, tag("text"), M.quoted(x.text), " ", h("span", { class: "note" }, x.name), " ", open);
-  return h("p", { class: "entry-row" }, tag(x.layer), x.text, " ", open);
+  return h("p", { class: "entry-row" }, tag(x.layer), x.text, " ", open,
+    x.link ? [" ", h("a", { class: "btn ghost", href: x.link.href, "data-key": "stand-link" }, x.link.label)] : null);
 }
 function renderBridge() {
-  const sv = stationNow(), b = sv && sv.bridge, box = $("bridge");
+  // the station's gold box; while John 3:16 is the chosen entry, the John 3:16 box, at every lens
+  const b = M.bridgeView(state.station, state.lens, lex(), state.selected), box = $("bridge");
   box.hidden = !b;
   if (!b) { fill(box); return; }
   const lead = b.opening || b.reading, s = M.sentencesOf(lead.text);
   fill(box, foldBox(
-    [h("p", { class: "label gold" }, b.title + " · " + M.BRIDGE_PARTS.reading), h("p", { id: "bridgeFirst" }, tag(lead.layer), s[0])],
+    // the box's name, and beside it the one button of the box: the way to John 3:16, or, on the John 3:16 box, the flight from the river
+    [h("div", { class: "row bridge-head" }, h("p", { class: "label gold" }, b.title + " · " + M.BRIDGE_PARTS.reading),
+      b.fly ? button(b.fly.label, () => { tree.jumpTo(b.fly.from); tree.flyTo(b.fly.to, { walk: true }); listFocus = b.fly.to; say(b.fly.label + "."); }, { id: "bridgeFly", "data-key": "bridge-fly" }) : null,
+      b.go ? button(b.go.label, () => select(b.go.address), { class: "btn ghost", id: "bridgeGo", "data-key": "bridge-go", "data-address": b.go.address }) : null),
+    h("p", { id: "bridgeFirst" }, tag(lead.layer), s[0])],
     [s.length > 1 ? h("p", null, s.slice(1).join(" ")) : null, b.opening ? h("p", { class: "gap" }, tag(b.reading.layer), b.reading.text) : null,
+      b.links.length ? h("p", { class: "gap" }, b.links.map((k) => h("a", { class: "btn ghost", href: k.href, "data-key": "bridge-link" }, k.label))) : null,
       h("div", { class: "bridge-stands" }, h("p", { class: "label" }, M.BRIDGE_PARTS.stands), b.stands.map(standNode))],
     { about: "about the bridge" }));
 }
@@ -647,7 +825,7 @@ function tamperNodes() {
     const t = state.tampers[r.key];
     return h("div", { class: "tamper" },
       h("button", { type: "button", class: "btn warn", id: "tamper-" + r.key, "data-key": "tamper-" + r.key, "data-busy-lock": true, onclick: () => { doTamper(r.key); } }, r.label),
-      t ? h("p", { "data-tamper": r.key }, t.verdict ? [tag("checked"), h("b", null, t.verdict + ". ")] : null, t.sentence,
+      t ? h("p", { "data-tamper": r.key }, t.verdict ? [tag("checked"), h("b", null, t.verdict + ". ")] : null, M.tamperSentence(t, state.lens),
         t.accepted && t.sealId && !isStar() ? h("span", { class: "hash" }, " Signed by key " + t.sealId + ".") : null) : null);
   });
 }
@@ -672,7 +850,11 @@ function stationNodes() {
   }
   if (key === "seal") {
     return [isStar() && isSealed() ? line(M.CERTIFIED_STARGAZER) : null, isSealed() ? downloadButton() : null,
-      h("h3", { class: "gap" }, isStar() ? "Try to change it" : "The tampers"), tamperNodes(), isStar() ? h("div", { class: "fig-part" }, h("h3", null, "The word wheel"), wheelHostStar) : null];
+      h("h3", { class: "gap" }, isStar() ? "Try to change it" : "The tampers"), tamperNodes(), isStar() ? h("div", { class: "fig-part" }, h("h3", null, "The word wheel"), wheelHostStar) : null,
+      // Stargazer has no station 7: the mirror word, where three corners give the fourth, is a closed box here (lines 5 and 6 open it)
+      isStar() && isBuiltin() ? mirrorStarNode() : null,
+      // under 700 px the line about the Navigator level stands here, not above the map (the Entry must begin on the first screen)
+      isStar() && isBuiltin() ? h("p", { class: "note only-narrow gap", id: "levelsBox" }, levelsNodes("levelsBtnBox")) : null];
   }
   if (key === "send") {
     const sv = stationNow(), s = state.send;
@@ -690,7 +872,10 @@ function renderStation() {
   box.hidden = rest.length === 0 && nodes.length === 0;
   box.classList.toggle("only-narrow", nodes.length === 0);
   setText($("stationSum"), STATION_MORE.get(sv.key) || "More at this station");
-  fill($("stationBody"), rest.length ? h("div", { class: "only-narrow stack" }, rest.map(line)) : "",
+  fill($("stationBody"),
+    state.sky && !isBuiltin() && !isOutside() ? h("p", { class: "note only-narrow", id: "skyNoticeBox", hidden: true }, M.SKY_BANNER) : "",
+    sv.key === "send" && state.send && !isBuiltin() ? h("p", { class: "only-narrow", id: "sendLimitBox" }, tag(M.QUORUM_LIMIT.layer), M.QUORUM_LIMIT.text) : "",
+    rest.length ? h("div", { class: "only-narrow stack" }, rest.map(line)) : "",
     state.sky && !isBuiltin() && !isOutside() ? h("p", { class: "note only-narrow" }, M.SKY_PRIVACY) : "", ...nodes);
   if (isStar() && state.station === "seal") renderWheel();
 }
@@ -701,7 +886,7 @@ function buildFourth() {
   const parts = new Map(M.FOURTH_PARTS.map((p) => [p.key, p]));
   const make = (key, cls) => { const canvas = h("canvas", { class: "fig " + cls }), cap = h("p", { class: "cap" }); describeCanvas(canvas, parts.get(key).title, cap); return { canvas, cap }; };
   const a = make("a", "fig-a"), b = make("b", "fig-b"), c = make("c", "fig-c"), d = make("d", "fig-d"), e = make("e", "fig-e");
-  const part = (key, ...kids) => h("section", { class: "fig-part", "aria-label": parts.get(key).title }, h("h3", null, parts.get(key).title), line(parts.get(key).say), kids);
+  const part = (key, ...kids) => h("section", { class: "fig-part", "aria-label": parts.get(key).title }, h("h3", { id: "fig-" + key, tabindex: "-1" }, parts.get(key).title), line(parts.get(key).say), kids);
   const sq = state.square;
   const figA = createFigure(a.canvas, "three", { onPoints: (points) => { sq.points = points; showFourth(); } });
   setText(figA.pointer.dragSwitch, "Drag the points");          // this switch drags the three points, not a map
@@ -715,11 +900,16 @@ function buildFourth() {
   const figC = createFigure(c.canvas, "quarters"), figD = createFigure(d.canvas, "squares"), figE = createFigure(e.canvas, "corners");
   const seeds = [0, 1, 2, 3].map((k) => button("Light " + (k + 1), () => { sq.seed = sq.seed.map((x, j) => (j === k ? 1 - x : x)); showFourth(); }, { class: "btn ghost", "data-key": "seed-" + k }));
   const hide = button(ui("hide"), () => { sq.hidden = !sq.hidden; showFourth(); }, { class: "btn ghost", "data-key": "mirror-hide" });
-  const wrong = button(ui("wrong"), () => { sq.hidden = false; sq.wrongBit = sq.wrongBit === null ? 5 : null; showFourth(); }, { class: "btn ghost", "data-key": "mirror-wrong" });
+  const wrong = button(ui("wrong"), () => flipNext(showFourth), { class: "btn ghost", "data-key": "mirror-wrong" });
+  // figure (a) without a pointer: choose a point, then move it one grid step at a time
+  const points = [0, 1, 2].map((k) => button(ui("point") + " " + (k + 1), () => { fourth.point = k; showFourth(); }, { class: "btn ghost", "data-key": "point-" + k }));
+  const moves = M.TQF_MOVES.map((m) => button(m.label, () => { sq.points = M.tqfStep(sq.points, fourth.point, m.key); showFourth(); say(M.threeSquares(sq.points).sentence); }, { class: "btn ghost", "data-key": "move-" + m.key }));
   const packet = h("span", { class: "note" });
   const stepC = (dd) => () => { const n = M.packetsOf(lex()).length; sq.packet = (sq.packet + dd + n) % n; showFourth(); };
   const block = h("div", { id: "fourthBlock" },
+    h("p", null, button(ui("goLine6"), () => select(M.FOURTH_LINE), { class: "btn ghost", id: "goLine6", "data-key": "go-line6", "data-address": M.FOURTH_LINE })),
     part("a", a.canvas, h("div", { class: "row" }, figA.pointer.dragSwitch), figA.pointer.dragCaption, a.cap,
+      h("div", { class: "row", role: "group", "aria-label": ui("movePoint") }, points, moves),
       h("div", { class: "row", role: "group", "aria-label": "Three ready sets of points" }, M.TQF_PRESETS.map((p) => button(p.label, () => { sq.points = p.points.map((q) => q.slice()); showFourth(); }, { class: "btn ghost", "data-key": "preset-" + p.key })))),
     part("b", b.canvas, b.cap, h("div", { class: "row", role: "group", "aria-label": "The four seed lights" }, seeds), h("div", { class: "row" }, hide, wrong)),
     part("c", h("div", { class: "row" }, button("‹", stepC(-1), { class: "btn ghost", "data-key": "quarter-prev", "aria-label": "The one before" }), packet,
@@ -729,7 +919,45 @@ function buildFourth() {
   const dd = M.squaresFigure(), ee = M.cornersFigure();
   figD.set(dd); setText(d.cap, dd.sentence);
   figE.set(ee); setText(e.cap, ee.flat.sentence + " " + ee.curved.sentence);
-  fourth = { block, figA, figB, figC, a, b, c, seeds, hide, packet };
+  fourth = { block, figA, figB, figC, a, b, c, seeds, hide, packet, points, point: 0 };
+}
+/** "Flip one light in the fourth corner": each press flips the next of the sixteen lights, and after the last the corner is as it was. */
+function flipNext(show) {
+  const sq = state.square;
+  sq.hidden = false;
+  sq.wrongBit = M.nextWrongBit(sq.wrongBit);
+  show();
+  say(sq.wrongBit === null ? "The fourth corner is as it was." : "Light " + (sq.wrongBit + 1) + " of 16 in the fourth corner is flipped.");
+}
+// The mirror word for the Stargazer lens: a closed box inside "Stamp it" (that lens has no station 7). Same state as figure (b).
+function mirrorStarNode() {
+  if (!mirrorStar) {
+    const sq = state.square, canvas = h("canvas", { class: "fig fig-b", id: "mirrorCanvas" }), cap = h("p", { class: "cap", id: "mirrorCap" });
+    describeCanvas(canvas, M.MIRROR_BOX, cap);
+    const fig = createFigure(canvas, "mirror", { onPick: (hit) => {
+      if (hit.part === "seed") sq.seed = sq.seed.map((x, k) => (k === hit.index ? 1 - x : x));
+      else if (hit.part === "fourth") { sq.hidden = false; sq.wrongBit = sq.wrongBit === hit.index ? null : hit.index; }
+      else sq.hidden = !sq.hidden;
+      showMirrorStar();
+    } });
+    const seeds = [0, 1, 2, 3].map((k) => button("Light " + (k + 1), () => { sq.seed = sq.seed.map((x, j) => (j === k ? 1 - x : x)); showMirrorStar(); }, { class: "btn ghost", "data-key": "sseed-" + k }));
+    const hide = button(ui("hide"), () => { sq.hidden = !sq.hidden; showMirrorStar(); }, { class: "btn ghost", id: "mirrorHide", "data-key": "smirror-hide" });
+    const wrong = button(ui("wrong"), () => flipNext(showMirrorStar), { class: "btn ghost", "data-key": "smirror-wrong" });
+    const summary = h("summary", { id: "mirrorSum", "data-key": "mirror-box" }, M.MIRROR_BOX);
+    const box = h("details", { class: "more gap", id: "mirrorBox" }, summary, h("div", { class: "more-body" }, line(M.MIRROR_STARGAZER), canvas, cap,
+      h("div", { class: "row", role: "group", "aria-label": "The four seed lights" }, seeds), h("div", { class: "row gap" }, hide, wrong)));
+    box.addEventListener("toggle", () => fig.redraw());
+    mirrorStar = { box, summary, fig, cap, seeds, hide };
+  }
+  showMirrorStar();
+  return mirrorStar.box;
+}
+function showMirrorStar() {
+  const m = mirrorStar, sq = state.square, d = M.mirrorFigure(sq.seed, { hidden: sq.hidden, wrongBit: sq.wrongBit });
+  m.fig.set(d, { stage: 3 });
+  setText(m.cap, M.mirrorCaptionStargazer(d));
+  m.seeds.forEach((b, k) => b.setAttribute("aria-pressed", String(d.seed[k] === 1)));
+  setText(m.hide, sq.hidden ? ui("show") : ui("hide"));
 }
 function showFourth() {
   const f = fourth, sq = state.square;
@@ -738,6 +966,7 @@ function showFourth() {
   const db = M.mirrorFigure(sq.seed, { hidden: sq.hidden, wrongBit: sq.wrongBit });
   f.figB.set(db, { stage: 3 }); setText(f.b.cap, db.sentences.map((s) => s.text).join(" "));
   f.seeds.forEach((b, k) => b.setAttribute("aria-pressed", String(db.seed[k] === 1)));
+  f.points.forEach((b, k) => b.setAttribute("aria-pressed", String(k === f.point)));
   setText(f.hide, sq.hidden ? ui("show") : ui("hide"));
   const packets = M.packetsOf(lex()), i = Math.min(packets.length - 1, Math.max(0, sq.packet)), dc = M.quarterFigure(packets[i]);
   f.figC.set(dc); setText(f.c.cap, dc.sentence);
@@ -750,10 +979,11 @@ async function doSeal() {
   const sealing = lex();
   const done = await withBusy(state, () => M.sealLexicon(sealing, { onEpoch: async (p) => {
     const where = $("sealProgress");
-    if (where) setText(where, ui("sealing") + ": " + M.epochLine(p, state.lens));
+    if (where && lex() === sealing) setText(where, ui("sealing") + ": " + M.epochLine(p, state.lens));      // not on another lexicon's page
     await nextPaint();
   } }));
-  if (!done.ran || lex() !== sealing) return;
+  if (!done.ran) return;
+  if (lex() !== sealing) { keepFocus(() => render("say")); return; }      // the lexicon changed meanwhile: the result is dropped
   Object.assign(state, { seal: done.value, tampers: {}, send: null, sendNote: "" });
   state.tab = M.tabFor(state);
   keepFocus(() => render("say", "station", "explain"));
@@ -761,18 +991,21 @@ async function doSeal() {
   say(M.sealView(state.seal, state.lens).verdict);
 }
 async function doTamper(key) {
+  // The state keeps the facts of a result; the sentence is made for the lens of the moment each time it is shown.
   if (!isSealed()) {
-    state.tampers[key] = { verdict: "", sentence: isStar() ? "Stamp it first." : "Seal the lexicon first.", accepted: false, sealId: null };
+    state.tampers[key] = { ran: false, why: "unsealed", key, verdict: "", accepted: false, sealId: null };
     keepFocus(renderStation);
-    say(state.tampers[key].sentence);
+    say(M.tamperSentence(state.tampers[key], state.lens));
     return;
   }
-  const done = await withBusy(state, () => M.runTamper(state.seal, key, { lens: state.lens }));
-  if (!done.ran) return;
+  const seal = state.seal;
+  const done = await withBusy(state, () => M.runTamper(seal, key, { lens: state.lens }));
+  if (!done.ran || state.seal !== seal) return;      // the lexicon changed meanwhile: the result belongs to a package that is gone
   state.tampers[key] = done.value;
   keepFocus(renderStation);
   holdFocus($("stationBox"));
-  say(done.value.verdict + ". " + done.value.sentence);
+  const sentence = M.tamperSentence(done.value, state.lens);
+  say(done.value.verdict ? done.value.verdict + ". " + sentence : sentence);
 }
 async function doSend() {
   if (!isSealed()) { state.sendNote = "Seal the lexicon first: the Seal station makes the package that is sent."; keepFocus(() => render("say")); say(state.sendNote); return; }
@@ -785,7 +1018,7 @@ async function doSend() {
       n += 1;
       if (rows) rows.append(receiverLine(row));
       const where = $("sendProgress");
-      if (where) setText(where, row.city + ": " + (row.accepted ? "accepted" : "refused") + " (" + n + " of " + receivers.length + ")");
+      if (where && state.seal === seal) setText(where, row.city + ": " + (row.accepted ? "accepted" : "refused") + " (" + n + " of " + receivers.length + ")");
       await nextPaint();
     } });
   });
@@ -833,11 +1066,12 @@ function renderAside() {
 // ─── the legend and the dialog ───────────────────────────────────────────────
 
 // The badge help is shown once at the Stargazer lens (in the empty Entry) and always in the dialog.
-function renderLegend() { fill($("legend"), layerLegend({ lens: state.lens, help: !isStar() })); }
+function renderLegend() { fill($("legend"), isOutside() ? h("p", { id: "legendOutside" }, M.OUTSIDE_LEGEND) : null, layerLegend({ lens: state.lens, help: !isStar() })); }
 function renderAbout() {
   const d = M.DIALOG;
   fill($("aboutBody"), line(d.first), h("h3", null, "In short"), ...d.inShort.map(line),
-    ...d.sections.map((s) => h("section", null, h("h3", null, s.heading), s.items.map(line))));
+    ...d.sections.map((s) => h("section", null, h("h3", null, s.heading), s.items.map(line))),
+    h("section", { id: "aboutPages" }, h("h3", null, d.pagesHeading), h("div", { class: "row" }, d.pages.map((p) => h("a", { class: "btn ghost", href: p.href, "data-key": "page-" + p.key }, p.label)))));
 }
 
 // ─── rendering by region ─────────────────────────────────────────────────────
@@ -845,17 +1079,23 @@ function renderAbout() {
 const REGIONS = new Map([["strip", renderStrip], ["say", renderSay], ["reader", renderReader], ["tools", renderTools], ["nav", renderNav], ["list", renderList],
   ["explain", renderExplain], ["bridge", renderBridge], ["station", renderStation], ["aside", renderAside], ["legend", renderLegend]]);
 /** render("say", "explain", …): rebuilds the named regions only. */
-function render(...names) { for (const name of names) REGIONS.get(name)(); }
-function renderAll() { document.body.setAttribute("data-lens", state.lens); render(...REGIONS.keys()); }
+function render(...names) { for (const name of names) REGIONS.get(name)(); fitStrix(); }
+function renderAll() {
+  document.body.setAttribute("data-lens", state.lens);
+  setText($("sub"), isStar() ? M.PAGE.stargazerSubtitle : M.PAGE.subtitle);      // "hyperbolic" is not a Stargazer word
+  render(...REGIONS.keys());
+}
 
 // ─── start ───────────────────────────────────────────────────────────────────
 
 staticControls();
 say = statusLine($("status"));
 lens = lensSwitch({ mount: $("lensMount"), lens: state.lens, hints: M.LENS_HINTS, onChange: (id) => keepFocus(() => setLens(id)) });
+$("lensLine").append(lens.hint);      // under 700 px the hints inside the lens buttons are not shown: this line names the chosen level
 resetForLexicon();
 tree = createTreeCanvas($("tree"), {
   lexicon: lex(), dims: state.dims, view: state.view, orbit: state.orbit, selected: state.selected, filter: state.filter, byLayer: state.marks,
+  keepLabel: isBuiltin() ? M.NOTES_INVITE.address : null,
   countWord: isStar() ? "things" : "entries", dragSwitch: $("dragBtn"), dragCaption: $("dragNote"),
   onPick(address) {
     keepFocus(() => select(address, { fly: false }));
@@ -864,6 +1104,7 @@ tree = createTreeCanvas($("tree"), {
   },
   onScene(scene) {
     setText($("treeCap"), M.treeCaption(lex(), scene, state.lens));
+    fitStrix();      // the caption may have another number of lines now
     if (!tree || tree.flying || scene.focus === listFocus) return;
     listFocus = scene.focus;
     keepFocus(() => render("list", "nav"));
@@ -877,8 +1118,12 @@ tree = createTreeCanvas($("tree"), {
 });
 describeCanvas($("tree"), M.TREE_LABEL, $("treeCap"));
 
-for (const [id, direction] of NUDGES) idOf.get(id).addEventListener("click", () => tree.nudge(direction));
-for (const [id, direction] of TURNS) idOf.get(id).addEventListener("click", () => tree.turn(direction));
+// a nudge or a turn moves the picture only: the status line says the caption once, when the presses stop
+const sayCaption = () => say(M.treeCaption(lex(), tree.scene, state.lens));
+for (const [id, direction] of NUDGES) idOf.get(id).addEventListener("click", () => { tree.nudge(direction); sayCaption(); });
+for (const [id, direction, key] of TURNS) idOf.get(id).addEventListener("click", () => { tree.turn(direction); say(ui(key) + ". " + M.treeCaption(lex(), tree.scene, state.lens)); });
+$("toolHome").addEventListener("click", act(() => { select(lex().home); }));
+$("skipList").addEventListener("click", () => { $("listBox").open = true; $("listSum").focus(); });
 for (const [id, key] of NAVS) idOf.get(id).addEventListener("click", act(() => {
   const target = key === "home" ? lex().home : M.treeNav(lex(), tree.view.focus)[key];
   if (target !== null) select(target);
@@ -892,11 +1137,19 @@ $("aboutBtn").addEventListener("click", renderAbout);
 wireDialog($("about"), $("aboutBtn"));
 addEventListener("popstate", onHash);
 addEventListener("hashchange", onHash);
-addEventListener("resize", () => { if (wheelBlock && wheelBlock.isConnected) renderWheel(); });
+addEventListener("resize", () => { fitStrix(); if (wheelBlock && wheelBlock.isConnected) renderWheel(); });
+try { document.fonts.ready.then(fitStrix, () => {}); } catch { /* no font loading interface: the line is fitted at each render */ }
 
 if (wide()) { $("readerBox").open = true; $("listBox").open = true; $("stationBox").open = true; }
+try { history.replaceState(OWN_ENTRY, ""); } catch { /* a page opened from a file may not rewrite its address */ }
 renderAbout();
 renderAll();
+// Arriving by a link that names an entry, or one that left a note: say so once, and put the focus on the card's title.
+if (state.selected !== null || (state.notes || []).length > 0) {
+  say((state.notes || []).length > 0 ? state.notes.join(" ") : M.statusFor(lex(), state.selected, state.lens));
+  const title = $("entryTitle");
+  if (title) title.focus({ preventScroll: true });
+}
 
 const ready = nextPaint().then(() => true);
 window.LexiconExplorer = { state, ready, tree, select, setStation, showLexicon };

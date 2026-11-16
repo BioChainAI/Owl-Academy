@@ -31,9 +31,13 @@
 //      orbit         a 4 x 4 matrix (16 numbers) for 3D; default DEFAULT_ORBIT of the model
 //      selected      the address of the selected entry, or null: it gets a halo, and in 2D its cell is tinted
 //      filter        null, or { text, said, checked, reading }: a layer set to false is drawn faint
-//      byLayer       true (default): an entry is marked with its layer's shape in its layer's colour (for a
-//                    lexicon of origin "outside" the shape is outlined, never filled: its labels are its
-//                    sender's); false: every entry is a plain grey dot
+//      byLayer       true (default): an entry is marked with its layer's shape in its layer's colour; false: every
+//                    entry is a plain grey dot. A lexicon of origin "outside" never gets layer marks, whatever
+//                    this says: its labels are its sender's, so every entry is a plain hollow dot, and no layer
+//                    is drawn faint (the page offers no switch for either beside such a lexicon)
+//      keepLabel     an address, or null: when the labels of a centred entry's children do not all find room, this
+//                    child is placed before its siblings, so it is not the one left out (the shell names the author's
+//                    notes of the built-in lexicon: on a small canvas theirs was the one label the root view dropped)
 //      countWord     the word after the number when a centred entry has too many children to label
 //                    (default "entries"; the model's Stargazer copy says "things")
 //      dragSwitch, dragCaption, place   passed to attachPointer (the kit makes and places the "Drag the map"
@@ -51,7 +55,7 @@
 //                    called when flyTo finds the view already there).
 //    tree (the returned object):
 //      setLexicon(lexicon, address)   show another lexicon, centred on address (default: its home); no flight
-//      set({ dims, selected, filter, byLayer, countWord, orbit })   change any of these and redraw once;
+//      set({ dims, selected, filter, byLayer, countWord, keepLabel, orbit })   change any of these and redraw once;
 //                    changing dims keeps the centred entry and resets local to the identity
 //      flyTo(address, { walk, jump }) -> boolean   fly along the tree to that entry and end in its own frame
 //                    (parent on the left). false if the lexicon has no such place. A flight lasts 300 ms plus
@@ -77,7 +81,8 @@
 //    turns the 3D ball (orbitDrag) and ends any flight.
 //
 // 2. createWordWheel(canvas, options) -> wheel                               (8.4; the wheel and the 8 x 8 square)
-//    options: view ("wheel" default, or "square"), word, sector, onPick
+//    options: view ("wheel" default, or "square"), word, sector, onPick. A word whose `plain` is true (the model sets it
+//    at the Stargazer lens) is drawn with the guard named and no other field name: those names are not Stargazer words.
 //      onPick({ sector, ring, i, row, col, view, x, y, pointerType })   a tap on a light or on the hex digit
 //                    beside it. sector 0..15 is the hex digit; ring, i, row, col are null for a tap on a digit.
 //                    The wheel is the picture, not the control: the shell opens the sector's four buttons.
@@ -270,8 +275,9 @@ function discLine(ctx, a, b, cx, cy, R) {
   ctx.arc(cx + R * ox, cy - R * oy, R * rr, a0, a1, sweep > Math.PI);
 }
 
-// The mark of an entry: the shape of its layer in the colour of its layer, or a plain dot. Outlined (hollow)
-// for a lexicon from outside, whose labels are its sender's: the filled mark belongs to this page's own rows.
+// The mark of an entry: the shape of its layer in the colour of its layer, or a plain dot. A lexicon from outside
+// gets the plain dot only, outlined (hollow): its labels are its sender's, and a mark of this page, even a hollow
+// one, would read as the page's own (the tick has no hollow form).
 function drawMark(ctx, x, y, r, shape, colour, hollow) {
   ctx.lineWidth = 1.5;
   ctx.strokeStyle = DARK;
@@ -320,10 +326,12 @@ export function createTreeCanvas(canvas, options = {}) {
   let filter = options.filter || null;
   let byLayer = options.byLayer !== false;
   let countWord = typeof options.countWord === "string" ? options.countWord : "entries";
+  let keepLabel = typeof options.keepLabel === "string" ? options.keepLabel : null;
   let scene = null, flight = null, reported = "", labels = [], marks = [];
   let geo = { cx: 0, cy: 0, R: 1, w: 0, h: 0 };
 
-  const makeScene = () => (lexicon ? treeScene(lexicon, view, dims, { orbit, filter, selected }) : null);
+  // a filter by layer goes by this page's own labels: a lexicon from outside is drawn without one
+  const makeScene = () => (lexicon ? treeScene(lexicon, view, dims, { orbit, filter: lexicon.origin === "outside" ? null : filter, selected }) : null);
   const px = (p) => [geo.cx + geo.R * p[0], geo.cy - geo.R * p[1]];
   const disc = (x, y) => [(x - geo.cx) / geo.R, -(y - geo.cy) / geo.R];
 
@@ -443,7 +451,8 @@ export function createTreeCanvas(canvas, options = {}) {
         ctx.lineWidth = 2;
         ctx.strokeStyle = INK;
         ctx.stroke();
-      } else if (byLayer) drawMark(ctx, x, y, r, n.shape, n.colour, lexicon.origin === "outside");
+      } else if (lexicon.origin === "outside") drawMark(ctx, x, y, r, "", DIM, true);      // a sender's label never shows as a mark of this page
+      else if (byLayer) drawMark(ctx, x, y, r, n.shape, n.colour, false);
       else drawMark(ctx, x, y, r, "", DIM, false);
       ctx.globalAlpha = 1;
       marks.push({ address: n.address, x, y, r, relation: n.relation });
@@ -479,7 +488,7 @@ export function createTreeCanvas(canvas, options = {}) {
         const u = d > 0.5 ? [dx / d, dy / d] : (() => { const ex = geo.cx - m.x, ey = geo.cy - m.y, e = Math.hypot(ex, ey) || 1; return [ex / e, ey / e]; })();
         dirs = [u]; far = d;
       }
-      items.push({ node: n, mark: m, at, size, weight: focus ? 700 : 500, dirs, far, order: focus ? 0 : n.relation === "parent" ? 1 : 2,
+      items.push({ node: n, mark: m, at, size, weight: focus ? 700 : 500, dirs, far, order: focus ? 0 : n.relation === "parent" ? 1 : n.address === keepLabel ? 1.5 : 2,
         room: Math.min(geo.w - 4, focus ? Math.max(90, geo.w * 0.5) : clamp(geo.w * 0.36, 78, 260)) });
     }
     items.sort((a, b) => a.order - b.order);
@@ -632,6 +641,7 @@ export function createTreeCanvas(canvas, options = {}) {
       if (next.filter !== undefined) filter = next.filter || null;
       if (next.byLayer !== undefined) byLayer = next.byLayer !== false;
       if (typeof next.countWord === "string") countWord = next.countWord;
+      if (next.keepLabel !== undefined) keepLabel = typeof next.keepLabel === "string" ? next.keepLabel : null;
       if (isMatrix(next.orbit)) orbit = next.orbit.slice();
       touch();
     },
@@ -741,6 +751,7 @@ export function createWordWheel(canvas, options = {}) {
     // the fields, named round the wheel; a field that shares its sector with another is named on the outer tier
     const taken = [];
     for (const f of fieldArcs()) {
+      if (word.plain && !f.guard) continue;
       const mid = (f.a0 + f.a1) / 2, share = taken.some((t) => f.a0 < t.a1 - 1e-6 && t.a0 < f.a1 - 1e-6);
       const outer = f.guard || (share && !taken.some((t) => t.outer && f.a0 < t.a1 - 1e-6 && t.a0 < f.a1 - 1e-6));
       const tier = outer ? TIER_2 : TIER_1;
@@ -788,6 +799,7 @@ export function createWordWheel(canvas, options = {}) {
     }
     // the fields: a name over, beside or under the lights it covers
     for (const f of WORD_FIELDS) {
+      if (word.plain && !f.guard) continue;
       const r0 = f.first >> 3, r1 = f.last >> 3, colour = f.guard ? GUARD_INK : INK, weight = f.guard ? 700 : 500;
       ctx.font = font(LABEL_PX, weight);
       const tw = ctx.measureText(f.label).width;

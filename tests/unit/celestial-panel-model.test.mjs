@@ -12,7 +12,11 @@
 //   - state: the first run, the place, the day and time controls with their messages, the Moon buttons, the preset;
 //   - the chart: projection, rings, great circles, dives, labels that never overlap, disclosure, hits, drags, flights,
 //     the read-outs "three points fix the fourth" and the aberration line; random orders of actions;
-//   - the Moon picture, the lab ("they turned not when they went"), the seal, the two dialogs.
+//   - the Moon picture, the lab ("they turned not when they went"), the seal, the two dialogs;
+//   - what depends on the longitude or the latitude, away from Greenwich: the weekday, the day question (the device's
+//     date and the place's date), the sidereal time, a move of the latitude alone; the Moon as it sets;
+//   - the area inside a path of the lab, from the path itself (also for a path that goes round more than half a turn);
+//   - who says each SAID sentence of the dialog.
 // The Lexicon Explorer's model is loaded when it is there, so that each page's links are tried on the other's parser.
 // Run: node --test tests/unit/celestial-panel-model.test.mjs   (about 2 seconds)
 import test from "node:test";
@@ -50,6 +54,9 @@ const lit = (lens = "stargazer", dims = "2D") => M.setDims(M.setLens(M.setStep(a
 const kebar = (lens = "navigator") => M.initialState({ hash: "#preset=ezekiel&lens=" + lens, nowMs: NOW_MS });
 const VERSES = new Map(LEX.ROWS.filter((r) => r[1] === "text" && r[2] === "verse").map((r) => [r[0], r]));
 const unquoted = (s) => s.replace(/“[^”]*”/g, "“”");
+/** The calendar date a device shows at an instant when its clock runs offsetMinutes ahead of UT: what the shell reads from its clock and passes to dayQuestion(). */
+const deviceDate = (ms, offsetMinutes = 0) => { const d = new Date(ms + offsetMinutes * 60000); return { year: d.getUTCFullYear(), month: d.getUTCMonth() + 1, day: d.getUTCDate() }; };
+const D16 = Date.UTC(2026, 10, 14, 16, 0, 0);                              // Saturday 14 November 2026, 16:00 UT
 /** A small seeded generator, so that a failure can be repeated. */
 function rng(seed) { let a = seed >>> 0; return () => { a = (a + 0x6d2b79f5) >>> 0; let t = a; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
 /** Every { layer, text } of the copy tables, with a name for messages. */
@@ -64,9 +71,9 @@ function allSentences() {
     s.bridge.stands.forEach((x, i) => { add(`${s.key} stand ${i}`, { layer: x.layer, text: x.text }); if (x.stargazer) add(`${s.key} stand ${i} stargazer`, { layer: x.layer, text: x.stargazer }); if (x.note) add(`${s.key} stand ${i} note`, x.note); });
   }
   for (const o of M.OBJECTS) if (o.text) for (const l of LENSES) o.text[l].forEach((p, i) => add(`object ${o.key} ${l} ${i}`, p));
-  for (const l of LENSES) { add(`first run say ${l}`, M.FIRST_RUN.say[l]); add(`moon check ${l}`, M.MOON_COPY.check[l]); add(`seal witness ${l}`, M.SEAL_COPY.witness[l]); add(`seal about ${l}`, M.SEAL_COPY.about[l]); add(`opening ${l}`, M.BRIDGE_OPENING[l]); }
+  for (const l of LENSES) { add(`first run say ${l}`, M.FIRST_RUN.say[l]); add(`moon check ${l}`, M.MOON_COPY.check[l]); add(`seal witness ${l}`, M.SEAL_COPY.witness[l]); add(`seal about ${l}`, M.SEAL_COPY.about[l]); add(`seal privacy ${l}`, M.SEAL_COPY.privacy[l]); add(`opening ${l}`, M.BRIDGE_OPENING[l]); }
   add("first run questions", M.FIRST_RUN.threeQuestions); add("first run card", M.FIRST_RUN.card); add("first run after", M.FIRST_RUN.afterDefault);
-  add("moon computed", M.MOON_COPY.computed); add("seal privacy", M.SEAL_COPY.privacy); add("seal kebar", M.SEAL_COPY.kebar);
+  add("moon computed", M.MOON_COPY.computed); add("seal kebar", M.SEAL_COPY.kebar);
   M.CERTIFIED.forEach((p, i) => add(`certified ${i}`, p)); add("certified stargazer", M.CERTIFIED_STARGAZER);
   for (const k of ["site", "derived", "older", "noHour", "stargazer"]) add(`ezekiel ${k}`, M.EZEKIEL_COPY[k]);
   add("dialog first", M.DIALOG.first); M.DIALOG.inShort.forEach((p, i) => add(`dialog short ${i}`, p));
@@ -228,7 +235,17 @@ test("copy: every TEXT sentence is a slice of a verse row, never re-typed, and l
   assert.ok(copyText("project stand 5").startsWith("A Christian reading of a Jewish prophet's book: Origen, in his first homily on Ezekiel (section 4), sets"));
   assert.equal(M.EZEKIEL_COPY.derived.text, row("26.1.1.2.4"));
   assert.equal(M.EZEKIEL_COPY.older.text, C.EZEKIEL_DATES_NOTE);
-  assert.equal(M.EZEKIEL_COPY.noHour.text, "The book gives no hour.");
+  // "no hour" is read from the three verse rows kept in the lexicon, and read again here: they name a day and hold no word for a time of day
+  assert.deepEqual({ ...M.EZEKIEL_COPY.noHour }, { layer: "checked", text: "Read from the three verses kept here: they give a day and no hour." });
+  const three = ["26.1.1", "26.1.2", "26.1.3"].map((a) => VERSES.get(a));
+  assert.ok(three.every(Boolean), "Ezekiel 1:1 to 1:3 are kept as verse rows");
+  assert.deepEqual(three.map((r) => r[3]), ["Ezekiel 1:1", "Ezekiel 1:2", "Ezekiel 1:3"]);
+  assert.ok(three.filter((r) => /\bfifth day of the month\b/.test(r[4])).length >= 2, "they give a day");
+  const timeWords = ["hour", "hours", "morning", "evening", "even", "eventide", "night", "nights", "midnight", "noon", "noonday", "dawn", "dawning", "sunrise", "sunset", "twilight", "watch"];
+  const timeWordIn = (text) => timeWords.find((w) => new RegExp("\\b" + w + "\\b", "i").test(text)) || null;
+  for (const r of three) assert.equal(timeWordIn(r[4]), null, `${r[3]} holds a word for a time of day`);
+  assert.equal(timeWordIn(three[2][4] + " in the night"), "night", "the reading would notice an hour");
+  assert.ok(!allSentences().some((x) => x.text.includes("The book gives no hour")), "the old sentence, which no test recomputed, is gone");
   assert.equal(M.EZEKIEL_COPY.site.text, C.SITES[0].note);
 });
 
@@ -249,12 +266,14 @@ test("copy: the bridge, the voice of each kind of box, and the sensitive points"
       // OUR IDEA: a named subject, no instruction to the visitor, room left for another view
       assert.match(r, /^(We |One seal )/, `${s.key} ${l}`);
       assert.ok(r.endsWith("You may see it another way."), `${s.key} ${l} leaves room`);
-      assert.ok(M.sentencesOf(r).length <= (l === "stargazer" ? 3 : 5), `${s.key} ${l} is short`);
+      // short: three sentences at the Stargazer lens, and in the later boxes one more, which carries the line of the reading forward (see the second-pass test)
+      assert.ok(M.sentencesOf(r).length <= (l === "stargazer" ? (s.n === 1 ? 3 : 4) : 5), `${s.key} ${l} is short`);
+      assert.equal(r.split("You may see it another way.").length, 2, `${s.key} ${l}: said once`);
     }
     for (const x of s.bridge.stands) {
       // CHECKED: the verb first, then an invitation where the visitor can repeat it
       if (x.layer === "checked") {
-        assert.match(x.text, /^(Computed|Counted|Certified)[:,]/, `${s.key}: ${x.text.slice(0, 40)}`);
+        assert.match(x.text, /^(Computed|Computed from approximate positions|Counted|Certified)[:,]/, `${s.key}: ${x.text.slice(0, 40)}`);
         if (x.stargazer) assert.match(x.stargazer, /^(Worked out|Counted|Slide forward|The stamp shows)/, `${s.key}: ${x.stargazer.slice(0, 40)}`);
       }
       // SAID: a named speaker who says, writes, reports or found; none of the arguing words in the page's own voice
@@ -286,7 +305,17 @@ test("copy: the bridge, the voice of each kind of box, and the sensitive points"
   assert.ok(!/\bJews\b/.test(everything.replace("the Jewish people", "")), "no sentence about the Jews as a group");
   assert.ok(!/these bytes/.test(M.stargazerStrings().map((s) => s.text).join("\n")), "never \"these bytes\" at Stargazer");
   // every date sentence about the fifth day is conditional or attributed
-  assert.ok(copyText("sun-moon stand 2").startsWith("Computed, if the day is placed on the conventional date:"));
+  assert.ok(copyText("sun-moon stand 2").startsWith("Computed, if the day is placed on the date usually given:"));
+  assert.equal(C.EZEKIEL_DATES[0].said, "the date usually given", "the words of the core for that date");
+  // nothing says what "most reference works" give, and no sentence speaks of "the other published date" as if there were one
+  for (const gone of ["reference works", "conventional date", "the other published date", "early Christian readers did"]) assert.ok(!everything.includes(gone), gone);
+  assert.ok(copyText("sun-moon stand 2").includes("On two other published dates, 1 July 593 BC and 13 July 594 BC, it grew from 33 to 44 % and from 38 to 48 %."));
+  assert.deepEqual(C.EZEKIEL_DATES.slice(1).map((d) => d.label), ["1 July 593 BC", "13 July 594 BC"], "the two other dates this page computes");
+  // step 3: the one early reader this page has is named, and paraphrased, not quoted
+  const origen = M.STEPS[2].bridge.reading.navigator.text;
+  assert.ok(origen.startsWith("We set two openings of heaven side by side, as the early Christian writer Origen did: Ezekiel's by the river, and the one at the baptism of Jesus."));
+  assert.ok(!/[“”"]/.test(origen), "Origen is not quoted in the reading");
+  assert.ok(M.STEPS[2].bridge.stands.some((x) => x.layer === "said" && x.text.includes("Origen, in his first homily on Ezekiel")), "and the box stands on the row that cites him");
   assert.ok(copyText("sun-moon stand 2 stargazer").startsWith("Worked out: if that date is right,"));
   // proposals stay proposals
   assert.ok(M.objectOf("holography").text.stargazer[0].text.includes("Nobody knows yet"));
@@ -344,9 +373,18 @@ test("checked numbers: every one in the copy is recomputed from the cores", () =
   near(Math.abs(keb.lat - naz.lat), 0.57, 1e-9); near((keb.lonEast - naz.lonEast) * 4, 40, 0.5); near(bd.bearing, 91, 0.5); near(bd.km, 934, 0.5);
   // the sidereal clock agrees: the same star crosses the two meridians 39.6 minutes apart
   near(((keb.lonEast - naz.lonEast) / 360) * 23.9344696 * 60, 40, 0.5);
+  // the copy states them no finer than two approximate positions bear: half a degree, minutes to the nearest 5, km to the nearest 10
+  const apart = Math.abs(keb.lat - naz.lat), minutes = Math.abs(keb.lonEast - naz.lonEast) * 4;
+  assert.ok(apart >= 0.45 && apart <= 0.65, "about half a degree apart in latitude");
+  assert.equal(Math.round(minutes / 5) * 5, 40, "about 40 minutes"); assert.equal(Math.round(bd.km / 10) * 10, 930, "about 930 km");
+  assert.ok(Math.abs(bd.bearing - 90) <= 5, "roughly due east");
+  const shared = "Computed from approximate positions: the Kebar site (Nippur) and Nazareth lie about half a degree apart in latitude, so almost the same stars pass overhead at both, about 40 minutes apart. From Nazareth the site lies roughly due east, about 930 km.";
   const s1 = copyText("earth stand 2");
-  for (const piece of ["0.57° apart in latitude", "40 minutes apart", "bearing 91°, 934 km"]) assert.ok(s1.includes(piece), piece);
-  assert.ok(copyText("earth stand 2 stargazer").includes("40 minutes apart"));
+  assert.equal(s1, shared + " Choose both places and compare.");
+  if (OTHER && OTHER.KEBAR_NAZARETH) assert.equal(OTHER.KEBAR_NAZARETH.text, shared, "the same sentences on both pages, letter for letter");
+  for (const fine of ["0.57", "934", "bearing", "on any night", "straight overhead", "due east:"]) assert.ok(!s1.includes(fine), `finer than the positions bear: ${fine}`);
+  assert.ok(/position of Nippur approximate, not checked against a source/.test(keb.note), "the core says how well the place is known");
+  assert.equal(copyText("earth stand 2 stargazer"), "Worked out from rough positions: Nazareth and the Kebar site are almost equally far north. Almost the same stars pass overhead at both, about 40 minutes apart. Try both places.");
   // the Moon on the published dates
   const litAt = (parts) => 100 * C.skyState(C.sunEventOnLocalDay(parts, keb.lat, keb.lonEast, "set"), keb.lat, keb.lonEast).phase.illuminatedFraction;
   const expect = [[40, 50], [33, 44], [38, 48]];
@@ -415,7 +453,10 @@ test("checked numbers: every one in the copy is recomputed from the cores", () =
   near(360 / (sum / (turns * 0.5)), 27.32, 0.005, "once round the sky");
   assert.deepEqual({ ...F.months }, { synodic: 29.53, sidereal: 27.32 });
   assert.ok(copyText("object moon navigator 0").includes("repeat every 29.53 days on average; the Moon goes once round the sky in 27.32 days"));
-  assert.ok(copyText("object moon stargazer 0").includes("about every 27 days") && copyText("object moon stargazer 0").includes("29 and a half days"));
+  assert.equal(copyText("object moon stargazer 0"), "The Moon circles Earth about every 27 days. Its shapes repeat every 29 and a half days.");
+  // why the two differ is not computed here: it is told as what astronomers say
+  assert.deepEqual(M.objectOf("moon").text.stargazer.map((p) => ({ ...p })), [{ layer: "checked", text: "The Moon circles Earth about every 27 days. Its shapes repeat every 29 and a half days." }, { layer: "said", text: "Astronomers explain this by Earth's own travel round the Sun." }]);
+  for (const o of M.OBJECTS) if (o.text) for (const l of LENSES) for (const p of o.text[l]) if (p.layer === "checked") assert.ok(!/\bbecause\b/i.test(p.text), `${o.key} ${l}: a cause under a CHECKED badge`);
   // the Sun
   near(now.obliquity, 23.4, 0.05); assert.equal(F.obliquity, 23.4);
   assert.ok(copyText("object sun navigator 0").includes("tilted 23.4° to the celestial equator"));
@@ -500,7 +541,7 @@ test("Stargazer strings: no sentence over 16 words and none of the hard words", 
   // every control label and step name has a Stargazer form
   for (const o of M.OVERLAYS) assert.ok(have.has(o.stargazer));
   for (const q of M.QUICK) assert.ok(have.has(q.stargazer));
-  assert.equal(M.DIALOG.inShort.length, 5);
+  assert.equal(M.DIALOG.inShort.length, 6, "five, and who STRIX is");
   for (const p of M.DIALOG.inShort) assert.ok(have.has(p.text));
   // the Holographer's 3D line is the one of 1.6, and it is not a Stargazer string
   const caveat = "As a Lorentz transformation this is a boost of rapidity d. It acts physically on directions. Depth is this chart's own scale and has no Lorentz meaning.";
@@ -618,7 +659,13 @@ test("links: what this page writes, and what a link does to the state", () => {
   // applyHash: the preset first, then what the other keys say
   assert.equal(k.site.key, "kebar"); assert.equal(k.jdUt, 1505042.16624); assert.equal(k.lens, "navigator");
   assert.deepEqual({ ...k.lit }, { place: true, day: true, sky: false });
-  assert.equal(k.step, 1);
+  // the preset opens step 2 with the day answered: the date and the Moon picture are on show, and the day question is not asked
+  assert.equal(k.step, 2);
+  assert.equal(M.moonFigure(k).percent, 50); assert.equal(M.dayReadout(k)[0].value, "Monday 31 July 593 BC (Julian calendar), 19:00 local mean time");
+  assert.equal(M.dayReadout(M.setLens(k, "stargazer"))[0].value, "Monday 31 July 593 BC (Julian calendar)");
+  assert.equal(M.applyHash(M.setStep(atGreenwich(), 4), "#preset=ezekiel").step, 2, "also when the link arrives on a page in use");
+  assert.equal(M.applyHash(M.openLab(M.setStep(atGreenwich(), 4)), "#preset=ezekiel").lab.open, false);
+  { const both = M.initialState({ hash: "#preset=ezekiel&lab=square", nowMs: 0 }); assert.equal(both.step, 4); assert.ok(both.lab.open && both.site.key === "kebar"); }
   assert.deepEqual({ ...M.EZEKIEL_PRESET }, { site: "kebar", date: "593-07-31", which: "ends", jdUt: 1505042.16624 });
   const over = M.initialState({ hash: "#preset=ezekiel&site=giza&jd=2461359.25", nowMs: 0 });
   assert.equal(over.site.key, "giza"); assert.equal(over.jdUt, 2461359.25);
@@ -672,7 +719,7 @@ test("state: the first run, the three questions, the place", () => {
   assert.equal(M.moonFigure(p), null, "the Moon waits for the day");
   assert.equal(M.chooseSite(s, "atlantis"), s);
   // question 2: answered from the device clock and shown for confirmation
-  assert.deepEqual(M.dayQuestion(p), { text: "Your device says today is Saturday 14 November 2026. Is that right?", yes: "Yes", change: "Change the day" });
+  assert.deepEqual(M.dayQuestion(p, deviceDate(NOW_MS)), { text: "Your device says today is Saturday 14 November 2026. Is that right?", yes: "Yes", change: "Change the day", same: true });
   const d = M.confirmDay(p);
   assert.deepEqual(M.objectList(d).map((o) => o.key), ["moon", "sun", "zenith", "north", "east", "south", "west"]);
   // "Look around" brings the stars, the rings and the rim, and opens in 3D the first time
@@ -785,7 +832,8 @@ test("state: the day and time controls, their messages, the Moon buttons, the Ke
   const day = M.dayReadout(M.setLens(g, "navigator"));
   assert.deepEqual(day.map((x) => x.label), ["Local date", "Sun: ecliptic longitude", "Season"]);
   assert.equal(day[0].value, "Saturday 14 November 2026, 18:00 local mean time"); assert.equal(day[1].value, sky.sun.lambda.toFixed(2) + "°");
-  assert.equal(day[2].value, M.seasonLine(g).text);
+  assert.equal(day[2].value, M.seasonLine(M.setLens(g, "navigator")).text); assert.equal(day[2].value, "37 days before the December solstice");
+  assert.equal(M.dayReadout(g)[1].value, "37 days before the shortest day", "the same row in plain words");
   assert.deepEqual(M.dayReadout(g).map((x) => x.label), ["The day at your place", "The Sun's year"]);
   const old = M.dayReadout(kebar());
   assert.equal(old[3].label, "Uncertainty"); assert.equal(old[3].value, M.skyOf(kebar()).uncertainty.note); assert.equal(old[3].layer, "reading");
@@ -801,18 +849,23 @@ test("state: the day and time controls, their messages, the Moon buttons, the Ke
     assert.ok(r.state.jdUt >= g.jdUt, "never an earlier night");
     const set = C.sunEventOnLocalDay(M.skyOf(r.state).localDate, 51.4769, 0, "set");
     near(r.state.jdUt, set + 1 / 24, 1e-9, "one hour after sunset that evening");
-    assert.equal(r.lines[0], "this changes the day");
+    assert.equal(r.lines[0], "This changes the day.");
+    for (const line of r.lines) assert.match(line, /^[A-Z].*\.$/, `a whole sentence: ${line}`);
+    assert.equal(r.note, r.lines.join(" "));
     const got = M.skyOf(r.state).phase;
     assert.ok(r.lines[1].endsWith(Math.round(100 * got.illuminatedFraction) + " per cent lit."));
     assert.equal(r.lines.length, got.name === p.name ? 2 : 3);
-    if (got.name !== p.name) assert.match(r.lines[2], /^nearest evening: \d\.\d day (after|before) /);
+    if (got.name !== p.name) assert.match(r.lines[2], /^Nearest evening: \d\.\d day (after|before) .+\.$/);
     assert.equal(r.state.notes.moon, r.note);
   }
   // when the computed name differs from the button's, a third line says how far the evening is from the phase
   const december = M.stepDay(g, 24).state;
   assert.equal(M.dateView(december).text, "8 December 2026");
-  assert.deepEqual(M.findMoon(M.setLens(december, "navigator"), 0).lines, ["this changes the day", "Waxing Crescent, 1 per cent lit.", "nearest evening: 0.7 day after New Moon"]);
-  assert.deepEqual(M.findMoon(december, 0).lines, ["this changes the day", "thin Moon, growing, 1 per cent lit.", "nearest evening: 0.7 day after new Moon"]);
+  assert.deepEqual(M.findMoon(M.setLens(december, "navigator"), 0).lines, ["This changes the day.", "Waxing Crescent, 1 per cent lit.", "Nearest evening: 0.7 day after New Moon."]);
+  assert.deepEqual(M.findMoon(december, 0).lines, ["This changes the day.", "Thin Moon, growing, 1 per cent lit.", "Nearest evening: 0.7 day after new Moon."]);
+  assert.equal(M.findMoon(december, 0).note, "This changes the day. Thin Moon, growing, 1 per cent lit. Nearest evening: 0.7 day after new Moon.");
+  assert.equal(M.findMoon(g, 180).note, "This changes the day. Full Moon, 100 per cent lit.");
+  assert.equal(M.findMoon(g, 90).note, "This changes the day. Half Moon, growing, 52 per cent lit.");
   assert.equal(M.findMoon(g, 33).note, "Choose a place first.");
   assert.equal(M.findMoon(fresh(), 90).state.site, null);
   assert.equal(M.moonWords("First Quarter", "navigator"), "First Quarter");
@@ -822,7 +875,7 @@ test("state: the day and time controls, their messages, the Moon buttons, the Ke
   assert.deepEqual(Object.keys(M.MOON_NAMES), C.PHASE_TARGETS.map((p) => p.name));
   // the preset "Ezekiel by the Kebar"
   const choices = M.ezekielChoices();
-  assert.deepEqual(choices.map((c) => c.label), ["the sunset that ends the fifth day (31 July 593 BC)", "the sunset that begins it (30 July)", "1 July 593 BC", "13 July 594 BC"]);
+  assert.deepEqual(choices.map((c) => c.label), ["The sunset that ends the fifth day (31 July 593 BC)", "The sunset that begins it (30 July)", "1 July 593 BC", "13 July 594 BC"]);
   assert.deepEqual(choices.map((c) => c.isDefault), [true, false, false, false]);
   assert.deepEqual(choices.map((c) => c.said), [C.EZEKIEL_DATES[0].said, C.EZEKIEL_DATES[0].said, C.EZEKIEL_DATES[1].said, C.EZEKIEL_DATES[2].said]);
   const k = kebar();
@@ -884,8 +937,9 @@ test("chart: the projection of 7.2 and the 2D rules of 7.3", () => {
   for (const key of ["moon", "sun", "pleiades", "polaris", "vela_pulsar", "cyg_x1", "sgr_a_star", "m31"]) {
     const b = by.get(key), hz = C.horFromDir(C.bodyDirection(sky, key, "hor")), rr = Math.tanh(C.depthRho(C.bodyLightSeconds(sky, key)) / 2);
     near(b.x, 200 + 182 * rr * Math.sin(hz.az * RAD), 1e-6, key); near(b.y, 200 - 182 * rr * Math.cos(hz.az * RAD), 1e-6, key);
-    assert.equal(b.hollow, hz.alt < 0, key); assert.equal(list.get(key).below, hz.alt < 0, key);
-    assert.equal(list.get(key).state.includes("below the horizon"), hz.alt < 0, key);
+    const alt = key === "moon" ? sky.moon.alt : hz.alt;                  // the Moon: as seen from the place, parallax applied
+    assert.equal(b.hollow, alt < 0, key); assert.equal(list.get(key).below, alt < 0, key);
+    assert.equal(list.get(key).state.includes("below the horizon"), alt < 0, key);
     assert.equal(list.get(key).name, list.get(key).label + ", " + list.get(key).state);
   }
   assert.ok(sc.bodies.some((b) => b.hollow) && sc.bodies.some((b) => b.kind === "body" && !b.hollow));
@@ -1295,9 +1349,9 @@ test("Moon: the picture as it looks from the place, its words, the eight buttons
   near(m.terminator, 2 * sky.phase.illuminatedFraction - 1, 1e-12); near(m.ageDays, 6.78, 0.02);
   assert.equal(m.limbDeg, sky.phase.brightLimbFromZenith);
   assert.equal(m.label, "The Moon now: 50 per cent lit, growing, bright side towards 3 o'clock");
-  assert.deepEqual(m.lines, ["First Quarter, 50 per cent lit.", "6.8 days after new Moon.", "bright side towards 3 o'clock"]);
+  assert.deepEqual(m.lines, ["First Quarter, 50 per cent lit.", "6.8 days after new Moon.", "Bright side towards 3 o'clock."]);
   assert.equal(m.question.text, "Does my Moon look like yours? If not, check three things in this order: the place (north or south of the equator turns it over), the day, the time.");
-  assert.deepEqual(M.moonFigure(M.setLens(k, "stargazer")).lines.slice(0, 2), ["half Moon (astronomers say First Quarter: a quarter of the way round its month), growing.", "50 per cent lit."]);
+  assert.deepEqual(M.moonFigure(M.setLens(k, "stargazer")).lines.slice(0, 2), ["Half Moon (astronomers say First Quarter: a quarter of the way round its month), growing.", "50 per cent lit."]);
   // the example of 1.6
   const g = atGreenwich();
   assert.equal(M.moonFigure(g).label, "The Moon now: 25 per cent lit, growing, bright side towards 4 o'clock");
@@ -1322,9 +1376,9 @@ test("Moon: the picture as it looks from the place, its words, the eight buttons
   assert.deepEqual(buttons.map((b) => b.name), C.PHASE_TARGETS.map((p) => p.name));
   assert.deepEqual(buttons.map((b) => Math.round(100 * b.fraction)), [0, 15, 50, 85, 100, 85, 50, 15]);
   for (const b of buttons) { near(b.terminator, 2 * b.fraction - 1, 1e-12); assert.equal(b.waxing, b.target < 180); near(b.limbDeg, b.waxing ? m.limbDeg : (m.limbDeg + 180) % 360, 1e-9); }
-  assert.deepEqual(M.moonButtons(M.setLens(k, "stargazer")).map((b) => b.label), ["new Moon", "thin Moon, growing", "half Moon, growing", "nearly full Moon, growing", "full Moon", "nearly full Moon, shrinking", "half Moon, shrinking", "thin Moon, shrinking"]);
+  assert.deepEqual(M.moonButtons(M.setLens(k, "stargazer")).map((b) => b.label), ["New Moon", "Thin Moon, growing", "Half Moon, growing", "Nearly full Moon, growing", "Full Moon", "Nearly full Moon, shrinking", "Half Moon, shrinking", "Thin Moon, shrinking"]);
   assert.equal(M.moonButtons(fresh()).length, 8);
-  assert.equal(M.MOON_COPY.findLabel, "Find the next night with this Moon"); assert.equal(M.MOON_COPY.changesDay, "this changes the day");
+  assert.equal(M.MOON_COPY.findLabel, "Find the next night with this Moon"); assert.equal(M.MOON_COPY.changesDay, "This changes the day.", "the caption under the heading is a whole sentence"); assert.equal(M.MESSAGES.changesDay, M.MOON_COPY.changesDay);
 });
 
 // ─── the lab ─────────────────────────────────────────────────────────────────
@@ -1366,7 +1420,8 @@ test("lab: they turned not when they went", () => {
   near(home.slides[4].dist, H.squareWalkGap(1), 1e-12);
   assert.ok(back.distance < 1e-9);
   assert.equal(back.text, "You are home. You face 78 degrees to the right of where you began. No slide turned you.");
-  assert.equal(back.area.text, "the area inside your five-sided path: 1.362 (the turn, measured in radians)");
+  assert.equal(back.area.text, "The area inside your five-sided path: 1.362.");
+  assert.equal(M.labReadout(home, "navigator").area.text, "the area inside your five-sided path: 1.362 (the turn, measured in radians)");
   near(back.area.value, H.squareWalkTurn(1), 1e-9);
   const last = M.labFrames(home)[5];
   near(Math.atan2(last[4], last[0]), -H.squareWalkTurn(1), 1e-9, "home, and turned to the right");
@@ -1374,7 +1429,10 @@ test("lab: they turned not when they went", () => {
   assert.equal(M.labSlide(home, "forward").slides.length, 1, "after Slide home a slide starts a new path");
   assert.equal(M.labHome(lab).slides.length, 0);
   // one straight slide turns nothing; there and back turns nothing
-  assert.equal(M.labReadout(M.labHome(M.labSlide(lab, "forward")), "stargazer").text, "You are home. You face not turned.".replace("You face not turned.", "You face not turned."));
+  assert.equal(M.labReadout(M.labSlide(lab, "forward"), "stargazer").text, "You are 1.00 of a step from home. Sliding home, you would face the way you began.");
+  assert.equal(M.labReadout(M.labSlide(M.labSlide(lab, "forward"), "forward"), "navigator").text, "You are 2.00 of a step from home. Sliding home, you would face the way you began.");
+  assert.equal(M.labReadout(M.labHome(M.labSlide(lab, "forward")), "stargazer").text, "You are home, facing the way you began.");
+  assert.equal(M.labReadout(M.labSlide(M.labSlide(lab, "forward"), "back"), "stargazer").text, "You are home, facing the way you began.");
   near(M.labReadout(M.labSlide(M.labSlide(lab, "forward"), "back"), "navigator").turnClockwise, 0, 1e-12);
   near(M.labReadout(M.labSlide(lab, "forward"), "navigator").turnClockwise, 0, 1e-12);
   // forward then left is turned to the right; forward then right to the left
@@ -1484,10 +1542,16 @@ test("seal: this sky as a lexicon, from three rounded numbers", async () => {
   assert.equal(M.sealView(other, "navigator").chainName, null);
   assert.deepEqual(view.rows.map((x) => x.key), ["chain", "inputs", "entries", "epochs", "key"]);
   assert.ok(view.rows.find((x) => x.key === "key").value.startsWith(seal.certificate.sealId));
-  assert.deepEqual(view.notes.map((n) => n.text), ["This link and this file contain the place and the time you entered.",
+  assert.deepEqual(view.notes.map((n) => n.text), ["This link contains the place and the time you entered. The file also holds the moment it was stamped and the public half of this visit's key.",
     "One seal is one witness. By the rule quoted here that settles nothing until others check it too: open it in the Lexicon Explorer and let the receivers answer.",
     "Everyone who seals this same sky gets this same name. Compare with a friend."]);
   assert.equal(view.notes[1].layer, "reading");
+  // the privacy line says what is true of both: the link holds the three numbers and the lens; the file holds the moment of sealing and the public key besides
+  assert.equal(M.sealView(seal, "stargazer").notes[0].text, "This link holds the place and the time you entered. The parcel also holds the moment it was stamped. It holds a number that lets others check the stamp.");
+  assert.equal(M.sealView(seal, "holographer").notes[0].text, view.notes[0].text);
+  assert.ok(seal.wire.includes("2026-11-15T00:00:00.000Z") && seal.certificate.issuedAt === "2026-11-15T00:00:00.000Z", "the file holds the moment it was sealed");
+  assert.ok(seal.wire.includes(JSON.stringify(seal.certificate.publicJwk)) && !("d" in seal.certificate.publicJwk), "the file holds the public half of the key, and no private half");
+  assert.ok(!seal.link.includes("2026-11-15") && /^\.\.\/Lexicon_Explorer\/index\.html#sky=[\d.]+,[\d.-]+,[\d.-]+&lens=[a-z]+$/.test(seal.link), "the link holds the place, the time and the lens, nothing else");
   assert.ok(view.checks.length >= 8 && view.checks.every((c) => c.ok === true));
   assert.deepEqual(M.sealView(seal, "holographer").rows.map((x) => x.key), ["chain", "inputs", "entries", "epochs", "key", "commitment"]);
   const sv = M.sealView(seal, "stargazer");
@@ -1532,18 +1596,38 @@ test("dialogs: What is real here? and the Blueprint", () => {
   ]) assert.ok(all.includes(sentence), sentence.slice(0, 50));
   assert.ok(all.some((t) => t.startsWith("Your latitude and date drive the sky")));
   assert.ok(all.some((t) => t.startsWith("Van Paassen writes “As a Unitarian” and argues his own reconstruction; the running text never mentions Ezekiel")));
-  // the bridge narrative, taken over from First Explorers' dialog, plus the book never mentioning Ezekiel
+  // the bridge narrative: items 2, 3 and 4 in the wording both pages share, each under the layer it is; plus the book never mentioning Ezekiel
   const bridge = D.sections.find((s) => s.heading.startsWith("The bridge narrative")).items;
   assert.equal(bridge.length, 6);
-  assert.ok(bridge[0].layer === "reading" && bridge[0].text.startsWith("It is an interpretation, chosen by this project.") && bridge[0].text.endsWith("No check, packet or certificate on this page depends on it."));
-  assert.ok(bridge[1].text.startsWith("The history is from one book: Pierre van Paassen, Why Jesus Died (Dial Press, 1949)."));
-  assert.ok(bridge[2].text.startsWith("What he argues.") && bridge[3].text.startsWith("Where others differ.") && bridge[4].text.startsWith("What is ours, not his."));
+  assert.deepEqual(bridge.map((p) => p.layer), ["reading", "reading", "said", "reading", "reading", "said"]);
+  assert.ok(bridge[0].text.startsWith("It is an interpretation, chosen by this project.") && bridge[0].text.endsWith("No check, packet or certificate on this page depends on it."));
+  const sharedItems = [
+    "The gold boxes quote several writers, each named where it is quoted. Where a box quotes Pierre van Paassen, Why Jesus Died (Dial Press, 1949), the words in quotation marks are his and were checked against a scan of the book.",
+    "Van Paassen argues that Jesus was a Galilean Jew in the line of Israel's prophets who announced the Kingdom of God on earth: justice, and all people as kin; that Pontius Pilate alone ordered his death; that later tellings moved the blame onto the Jewish people; and that Greek-speaking missionaries, starting from Antioch, remade his message. He writes as a Unitarian and does not take the resurrection, the virgin birth or the Trinity as history.",
+    "This project's view: most Christians and many historians would disagree with parts of that. Some of his sources are dated, among them Robert Eisler's reconstruction of an armed rising and the old theory of a dying and rising god.",
+  ];
+  assert.deepEqual(bridge.slice(1, 4).map((p) => p.text), sharedItems);
+  if (OTHER && OTHER.DIALOG) {
+    const theirs = OTHER.DIALOG.sections.find((s) => s.heading.startsWith("The bridge narrative"));
+    if (theirs) for (const [i, text] of sharedItems.entries()) assert.ok(theirs.items.some((p) => p.text === text && p.layer === bridge[i + 1].layer), `the Lexicon Explorer's dialog has the same item ${i + 2}`);
+  }
+  assert.ok(bridge[4].text.startsWith("What is ours, not his."));
   assert.equal(bridge[5].text, LEX.ROWS.find((r) => r[0] === "0.4.1")[4].split(/(?<=\.)\s/)[0]);
   assert.ok(bridge[5].text.includes("the running text never mentions him"));
+  // the gold boxes do quote several writers, each named in the sentence that quotes: so "the history is from one book" would be false here
+  const quoting = M.STEPS.flatMap((s) => s.bridge.stands).filter((x) => x.layer === "said" && /“[^”]+”/.test(x.text)).map((x) => x.text);
+  assert.ok(quoting.some((t) => t.startsWith("Pierre van Paassen, in Why Jesus Died (1949), writes")) && quoting.some((t) => t.startsWith("Parker and Dubberstein (1942) write")), "two writers at least are quoted in the gold boxes");
+  for (const t of all) assert.ok(!/The history is from one book|Words in quotation marks are his|“dying and rising gods”|Where others differ|What he argues/.test(t), t.slice(0, 50));
+  // what this dialog still shares with First Explorers' dialog: what is ours, not his
   const fe = readFileSync(path.join(ROOT, "Library/Experimental_Systems/First_Explorers/index.html"), "utf8").replace(/<[^>]+>/g, "").replace(/&ldquo;/g, "“").replace(/&rdquo;/g, "”");
-  for (const piece of ["Jesus was a Galilean Jew in the line of Israel's prophets who announced the Kingdom of God on earth: justice, and all people as kin. Pontius Pilate alone ordered his death.", "Most Christians, and many historians, disagree with parts of that.", "He never calls Jesus a bridge and never uses the cross as a figure of two directions."]) {
+  for (const piece of ["He never calls Jesus a bridge and never uses the cross as a figure of two directions."]) {
     assert.ok(fe.includes(piece), "First Explorers says: " + piece.slice(0, 40)); assert.ok(bridge.some((p) => p.text.includes(piece)));
   }
+  // what others measured: the sources' part is SAID, the page's own part is CHECKED
+  const measured = D.sections.find((s) => s.heading === "What others measured").items;
+  assert.deepEqual({ ...measured[0] }, { layer: "said", text: "The places and distances of the six objects beyond the Sun and Moon are those given by the sources named in each object's inspector." });
+  assert.deepEqual({ ...measured[1] }, { layer: "checked", text: "This page works out only where each one stands in your sky." });
+  assert.equal(M.OBJECTS.filter((o) => o.kind === "body" && o.key !== "sun" && o.key !== "moon").length, 6, "six objects beyond the Sun and Moon");
   assert.equal(D.sections.find((s) => s.heading === "Neighbours of this page").items.length, 3);
   // the Blueprint: three pillars, four shells over the real scale, the age-lens card; the whole scale is READING
   const B = M.BLUEPRINT;
@@ -1563,4 +1647,500 @@ test("dialogs: What is real here? and the Blueprint", () => {
   assert.ok(B.shells[1].text.text.includes("the Moon at 0.25 and the Sun at 0.41") && B.shells[3].text.text.includes("Andromeda at 0.83, the microwave background at 0.90"));
   assert.deepEqual(B.lenses.map((l) => [l.id, l.label, l.hint]), [["stargazer", "Stargazer", "ages 6 and up"], ["navigator", "Navigator", "astronomy"], ["holographer", "Holographer", "physics"]]);
   assert.ok(B.lenses[0].text.text.includes("nothing made false to keep it simple"));
+});
+
+// ─── added in the fix pass: what the first review found the test could not see ─────────────────────────────
+
+test("away from Greenwich: the weekday, the day question, the sidereal time, a move of the latitude alone, the Moon as it sets", () => {
+  const WEEK = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+  const weekdayAt = (ms, lonEast) => WEEK[new Date(ms + lonEast * 240000).getUTCDay()];      // the day of the week of the local mean time, by the calendar of JavaScript
+  // 16:00 UT on Saturday 14 November 2026 is already Sunday at Sydney (151° east); 02:00 UT on Sunday is still Saturday on Mauna Kea (155° west)
+  const D02 = Date.UTC(2026, 10, 15, 2, 0, 0);
+  const sydney = M.chooseSite(M.initialState({ nowMs: D16 }), "sydney"), hawaii = M.chooseSite(M.initialState({ nowMs: D02 }), "mauna-kea");
+  assert.deepEqual([M.dateView(sydney).weekday, M.dateView(sydney).text, M.dateView(sydney).clock], ["Sunday", "15 November 2026", "02:04"]);
+  assert.deepEqual([M.dateView(hawaii).weekday, M.dateView(hawaii).text, M.dateView(hawaii).clock], ["Saturday", "14 November 2026", "15:38"]);
+  assert.equal(M.dayReadout(sydney)[0].value, "Sunday 15 November 2026"); assert.equal(M.dayReadout(hawaii)[0].value, "Saturday 14 November 2026");
+  const r = rng(41);
+  for (let i = 0; i < 300; i++) {
+    const ms = Date.UTC(1990 + Math.floor(60 * r()), Math.floor(12 * r()), 1 + Math.floor(28 * r()), Math.floor(24 * r()), Math.floor(60 * r())), lon = Number((360 * r() - 180).toFixed(2));
+    const st = M.typePlace(M.initialState({ nowMs: ms }), Number((120 * r() - 60).toFixed(2)), lon).state, want = weekdayAt(ms, lon);
+    assert.equal(M.dateView(st).weekday, want, `the weekday at ${lon}° east`);
+    assert.ok(M.dayReadout(st)[0].value.startsWith(want + " "), "the day row names the local weekday");
+    assert.equal(M.weekdayOf(st.jdUt + lon / 360), want);
+  }
+  // question 2 says what is true of the device and of the place. The same day at both: the sentence of the first run
+  assert.equal(M.dayQuestion(M.chooseSite(M.initialState({ nowMs: D16 }), "greenwich"), deviceDate(D16)).text, "Your device says today is Saturday 14 November 2026. Is that right?");
+  assert.deepEqual(M.dayQuestion(sydney, deviceDate(D16, 660)), { text: "Your device says today is Sunday 15 November 2026. Is that right?", yes: "Yes", change: "Change the day", same: true });
+  assert.equal(M.dayQuestion(hawaii, deviceDate(D02, -600)).text, "Your device says today is Saturday 14 November 2026. Is that right?");
+  // another day at the place than on the device: each date is said as what it is, and the device's own date is the device's
+  assert.deepEqual(M.dayQuestion(sydney, deviceDate(D16)), { text: "At Sydney, Australia it is now Sunday 15 November 2026. Your device says Saturday 14 November 2026. Is that the day you want?", yes: "Yes", change: "Change the day", same: false });
+  assert.equal(M.dayQuestion(hawaii, deviceDate(D02)).text, "At Mauna Kea, Hawaii, United States it is now Saturday 14 November 2026. Your device says Sunday 15 November 2026. Is that the day you want?");
+  // the default path of the first run, for a visitor in Sydney on Sunday morning and one in Los Angeles on Saturday evening (the review's cases)
+  const D22 = Date.UTC(2026, 10, 14, 22, 0, 0), D03 = Date.UTC(2026, 10, 15, 3, 0, 0);
+  assert.equal(M.dayQuestion(M.chooseSite(M.initialState({ nowMs: D22 }), "greenwich"), deviceDate(D22, 660)).text, "At Greenwich, England it is now Saturday 14 November 2026. Your device says Sunday 15 November 2026. Is that the day you want?");
+  assert.equal(M.dayQuestion(M.chooseSite(M.initialState({ nowMs: D03 }), "greenwich"), deviceDate(D03, -480)).text, "At Greenwich, England it is now Sunday 15 November 2026. Your device says Saturday 14 November 2026. Is that the day you want?");
+  // a place given by its two numbers, and the Kebar's label
+  assert.equal(M.dayQuestion(M.typePlace(M.initialState({ nowMs: D16 }), -33.5, 151).state, deviceDate(D16)).text, "At your place it is now Sunday 15 November 2026. Your device says Saturday 14 November 2026. Is that the day you want?");
+  assert.equal(M.dayQuestion(M.chooseSite(M.initialState({ nowMs: D16 }), "kebar"), deviceDate(D16, -600)).text, "Your device says today is Saturday 14 November 2026. Is that right?");
+  assert.ok(M.dayQuestion(M.chooseSite(M.initialState({ nowMs: D16 }), "kebar"), deviceDate(D16, 840)).text.startsWith("By the Kebar (Nippur) it is now Saturday 14 November 2026. Your device says Sunday 15 November 2026."));
+  // without a device date, or with one that is no date, nothing is said about the device
+  for (const none of [undefined, null, {}, { year: 2026, month: 13, day: 1 }, { year: 2026, month: 11, day: 14.5 }, "14 November"]) {
+    assert.equal(M.dayQuestion(sydney, none).text, "At Sydney, Australia it is now Sunday 15 November 2026. Is that the day you want?");
+    assert.equal(M.dayQuestion(sydney, none).same, false);
+  }
+  for (let i = 0; i < 200; i++) {                                        // whatever the two clocks: "Your device says" is followed by the device's date, never by the place's when they differ
+    const ms = Date.UTC(2026, Math.floor(12 * r()), 1 + Math.floor(28 * r()), Math.floor(24 * r()), Math.floor(60 * r())), offset = 60 * Math.round(26 * r() - 12);
+    const site = C.SITES[1 + Math.floor(r() * (C.SITES.length - 1))], st = M.chooseSite(M.initialState({ nowMs: ms }), site.key), dev = deviceDate(ms, offset), q = M.dayQuestion(st, dev);
+    const devWords = WEEK[new Date(Date.UTC(dev.year, dev.month - 1, dev.day)).getUTCDay()] + " " + dev.day + " " + C.MONTH_NAMES[dev.month - 1] + " " + dev.year;
+    const p = M.dateView(st).parts, same = p.year === dev.year && p.month === dev.month && p.day === dev.day;
+    assert.equal(q.same, same);
+    assert.ok(q.text.includes(same ? "Your device says today is " + devWords + "." : "Your device says " + devWords + "."), `${site.key} ${offset}: ${q.text}`);
+    if (!same) assert.ok(q.text.includes(" it is now " + weekdayAt(ms, site.lonEast) + " " + p.day + " " + C.MONTH_NAMES[p.month - 1] + " " + p.year + "."), q.text);
+  }
+  // the telemetry's sidereal time is the local one: at the Kebar and at Sydney it is not Greenwich's
+  for (const st of [kebar("navigator"), M.setLens(M.confirmDay(M.chooseSite(fresh(), "sydney")), "navigator"), M.setLens(M.confirmDay(M.chooseSite(fresh(), "mauna-kea")), "holographer")]) {
+    const sky = C.skyState(st.jdUt, st.site.lat, st.site.lonEast), shown = M.telemetry(st, SIZE).find((x) => x.key === "lst").value;
+    assert.equal(shown, C.formatClock(sky.last / 15), st.site.key);
+    assert.notEqual(shown, C.formatClock(sky.gast / 15), `${st.site.key}: not Greenwich sidereal time`);
+    near(C.norm180(sky.last - sky.gast - st.site.lonEast), 0, 1e-9, "local sidereal time is Greenwich's plus the longitude");
+    assert.equal(M.placeReadout(st)[2].value, C.formatClock(sky.last / 15) + " (" + sky.last.toFixed(2) + "°)");
+  }
+  assert.equal(M.telemetry(kebar("navigator"), SIZE).find((x) => x.key === "lst").value, "15:11");
+  // a move of the latitude alone is a new sky (the sky that was asked last is kept, by time, latitude and longitude)
+  const a = M.confirmDay(M.typePlace(fresh(), 20, 30).state), b = M.typePlace(a, 30, 30).state;
+  assert.equal(b.jdUt, a.jdUt); assert.equal(b.site.lonEast, a.site.lonEast);
+  assert.deepEqual(M.skyOf(a), C.skyState(a.jdUt, 20, 30)); assert.deepEqual(M.skyOf(b), C.skyState(b.jdUt, 30, 30)); assert.deepEqual(M.skyOf(a), C.skyState(a.jdUt, 20, 30));
+  assert.notDeepEqual(M.skyOf(b), M.skyOf(a));
+  near(M.skyOf(b).zenith.dec, 30, 1e-9); near(M.skyOf(a).zenith.dec, 20, 1e-9);
+  assert.equal(M.placeReadout(M.setLens(b, "navigator"))[1].value, "30.00°"); assert.equal(M.placeReadout(M.setLens(a, "navigator"))[1].value, "20.00°");
+  const sunAltitude = (st) => M.inspector(M.setLens(M.setStep(st, 3), "navigator"), "sun").rows[0].value;
+  assert.notEqual(sunAltitude(a), sunAltitude(b), "the Sun's altitude in the inspector follows the latitude");
+  assert.equal(sunAltitude(b), C.skyState(b.jdUt, 30, 30).sun.alt.toFixed(1) + "° (below the horizon)");
+  // the Moon within a few minutes of its rising or setting: above the horizon seen from Earth's centre, below it seen from the place.
+  // (This instant is a moonset.) The list, the chart, the status line, the inspector and the Moon picture all say what is seen from the place.
+  const rise = M.setDims(M.setStep(M.initialState({ hash: "#site=greenwich&jd=2461359.32222", nowMs: NOW_MS }), 3), "2D"), sky = M.skyOf(rise);
+  const geocentric = C.horFromDir(C.bodyDirection(sky, "moon", "hor")).alt;
+  assert.ok(geocentric > 0.5 && sky.moon.alt < -0.1, `geocentric ${geocentric}, from the place ${sky.moon.alt}`);
+  const item = M.objectList(rise).find((o) => o.key === "moon"), dot = M.scene(rise, SIZE).bodies.find((x) => x.key === "moon");
+  assert.equal(item.name, "Moon, 26 per cent lit, below the horizon, south-west");
+  assert.equal(item.below, true, "listed as below"); assert.equal(dot.hollow, true, "drawn hollow"); assert.equal(dot.below, true);
+  assert.equal(M.objectPoint(rise, "moon").below, true); assert.ok(M.objectPoint(rise, "moon").dir[0] !== 0, "the direction on the chart stays the geocentric one");
+  assert.ok(M.statusSentence(rise).endsWith("Moon 26 per cent lit, below the horizon."));
+  assert.ok(M.moonFigure(rise).below && M.moonFigure(rise).question === null);
+  assert.equal(M.inspector(M.setLens(rise, "navigator"), "moon").rows[0].value, "-0.2° (below the horizon)");
+  assert.equal(M.inspector(rise, "moon").rows[0].value, "below the horizon, south-west");
+  assert.equal(M.scene(M.setDims(rise, "3D"), SIZE).bodies.find((x) => x.key === "moon").hollow, true, "in the ball too");
+  // an hour earlier it is up for both, and in the galactic frame "below" is the side of the galactic plane
+  const up = M.setJd(rise, rise.jdUt - 1 / 24);
+  assert.ok(!M.objectList(up).find((o) => o.key === "moon").below && !M.scene(up, SIZE).bodies.find((x) => x.key === "moon").hollow);
+  const gal = M.setFrame(M.setLens(rise, "navigator"), "gal");
+  assert.equal(M.objectPoint(gal, "moon").below, M.objectDirection(gal, "moon")[2] < 0);
+  for (const key of ["sun", "polaris", "m31"]) assert.equal(M.objectPoint(rise, key).below, C.horFromDir(C.bodyDirection(sky, key, "hor")).alt < 0, key);
+});
+
+test("state: the steps in any order light the sky; the edge after a lens change; years typed with BC or AD", () => {
+  const s = fresh(), keysOf = (st) => M.objectList(st).map((o) => o.key);
+  const choices = [["a preset", (x) => M.chooseSite(x, "greenwich")], ["two numbers", (x) => M.typePlace(x, 10, 20).state], ["a link", (x) => M.applyHash(x, "#site=kyoto")]];
+  // a place chosen after step 3, 4 or 5 was opened lights the whole sky, exactly as the step pressed after the place does
+  for (const n of [3, 4, 5]) for (const [name, choose] of choices) {
+    const late = choose(M.setStep(s, n)), early = M.setStep(choose(s), n);
+    assert.deepEqual({ ...late.lit }, { place: true, day: true, sky: true }, `step ${n}, then ${name}`);
+    assert.equal(late.dims, n === 3 ? "3D" : "2D", `step ${n}: step 3 opens in 3D the first time`);
+    assert.deepEqual(keysOf(late), keysOf(early)); assert.equal(late.dims, early.dims); assert.equal(late.step, n);
+    assert.ok(keysOf(late).includes("moon") && keysOf(late).includes("m31") && keysOf(late).includes("cmb"));
+  }
+  // so the quick buttons of step 4 work, the switches of step 3 draw, and step 5 seals a sky the chart shows
+  const four = M.chooseSite(M.setStep(s, 4), "greenwich");
+  for (const key of ["moon", "sun", "sgr_a_star", "rim"]) { const d = M.dive(four, key); assert.equal(d.selected, key === "rim" ? "cmb" : key, key); assert.ok(d.centred && M.viewDistance(d) > 0.1, key); }
+  const three = M.setDims(M.chooseSite(M.setStep(s, 3), "greenwich"), "2D");
+  assert.equal(M.scene(M.toggleOverlay(three, "rings"), SIZE).rings.length, 8); assert.equal(M.scene(M.toggleOverlay(three, "sightLines"), SIZE).rays.filter((x) => x.kind === "sight").length, 8);
+  assert.ok(M.scene(M.chooseSite(M.setStep(s, 5), "greenwich"), SIZE).bodies.length >= 17);
+  // the Lexicon Explorer's link to the lab, then out of the lab, then a place
+  const viaLab = M.chooseSite(M.closeLab(M.initialState({ hash: "#lab=square", nowMs: NOW_MS })), "greenwich");
+  assert.equal(viaLab.step, 4); assert.deepEqual({ ...viaLab.lit }, { place: true, day: true, sky: true }); assert.equal(M.dive(viaLab, "moon").selected, "moon");
+  // at steps 1 and 2 the day question is still asked; and a second place at step 3 does not switch the dims again
+  for (const n of [1, 2]) for (const [name, choose] of choices) assert.deepEqual({ ...choose(M.setStep(s, n)).lit }, { place: true, day: false, sky: false }, `step ${n}, then ${name}`);
+  assert.equal(M.chooseSite(three, "kyoto").dims, "2D");
+  assert.equal(M.setStep(s, 3).lit.sky, false, "no place, no sky");
+  // "The edge" after a lens change: a pole that is no longer shown is not aimed at
+  const gal = M.setFrame(M.setLens(M.setStep(atGreenwich(), 4), "navigator"), "gal"), pole = M.select(gal, "ngp");
+  assert.equal(pole.rimOf, "ngp");
+  const down = M.setLens(pole, "stargazer");
+  assert.equal(down.frame, "hor"); assert.equal(down.selected, null); assert.equal(down.rimOf, "zenith");
+  const edge = M.dive(down, "rim");
+  assert.equal(edge.selected, "cmb"); assert.deepEqual(M.objectDirection(edge, "cmb"), M.objectDirection(edge, "zenith"), "with nothing selected the edge is met straight up");
+  assert.ok(M.objectPoint(edge, "cmb").nominal);
+  assert.equal(M.setLens(M.select(M.setLens(M.setStep(atGreenwich(), 4), "navigator"), "moon"), "stargazer").rimOf, "moon", "a selection that is still shown is still aimed at");
+  assert.equal(M.setLens(pole, "holographer").rimOf, "ngp");
+  assert.equal(M.setLens(fresh(), "navigator").rimOf, "zenith");
+  // a year typed as it is written, with BC or AD: there is no year 0, and no year below it; nothing rolls over silently
+  const g = atGreenwich();
+  for (const bc of [false, true]) for (const n of [0, -1, -593]) {
+    const r = M.pickEraDate(g, { n, bc, month: 3, day: 1 });
+    assert.equal(r.message, "That day does not exist.", `year ${n} ${bc ? "BC" : "AD"}`); assert.equal(r.state.jdUt, g.jdUt); assert.equal(r.state.notes.date, "That day does not exist.");
+  }
+  assert.equal(M.dateView(M.pickEraDate(g, { n: 1, bc: true, month: 3, day: 1 }).state).text, "1 March 1 BC (Julian calendar)");
+  assert.equal(M.dateView(M.pickEraDate(g, { n: 1, bc: false, month: 3, day: 1 }).state).text, "1 March AD 1 (Julian calendar)");
+  assert.equal(M.dateView(M.pickEraDate(g, { n: 593, bc: true, month: 7, day: 31 }).state).text, "31 July 593 BC (Julian calendar)");
+  assert.equal(M.dateView(M.pickEraDate(g, { n: 2031, bc: false, month: 3, day: 9 }).state).text, "9 March 2031");
+  assert.equal(M.dateView(M.pickEraDate(g, { n: 2031, month: 3, day: 9 }).state).text, "9 March 2031", "no era given: AD");
+  assert.deepEqual(M.pickEraDate(g, { n: 593, bc: true, month: 7, day: 31 }), M.pickDate(g, { year: -592, month: 7, day: 31 }));
+  assert.equal(M.pickEraDate(g, { n: 2027, bc: false, month: 2, day: 29 }).message, "That day does not exist. Showing 1 March.");
+  for (const bad of [{ n: 2001, bc: true, month: 1, day: 1 }, { n: 3001, bc: false, month: 1, day: 1 }, { n: 2026.5, bc: false, month: 1, day: 1 }, { n: NaN, bc: false, month: 1, day: 1 }, { month: 1, day: 1 }, null]) {
+    const r = M.pickEraDate(g, bad); assert.equal(r.message, "This page works for the years 2000 BC to AD 3000."); assert.equal(r.state.jdUt, g.jdUt);
+  }
+  assert.equal(M.dateView(M.pickEraDate(g, { n: 2000, bc: true, month: 7, day: 31 }).state).text, "31 July 2000 BC (Julian calendar)");
+});
+
+/**
+ * The area inside a closed path of straight sides on the curved map, by another road than the model's: the turns at the corners
+ * added up, less one whole turn (Gauss and Bonnet). Each corner is first moved to the centre of the map, where the map shows
+ * angles as they are. Points are hyperboloid points [x, y, 0, t]; the result is positive for a path that runs anticlockwise.
+ * Not for a path that doubles back on itself, nor for one that crosses itself.
+ */
+function areaByCorners(points) {
+  const m = points.length;
+  let turn = 0;
+  for (let i = 0; i < m; i++) {
+    const T = H.centreOn(S.toBall(points[i])), from = S.lapply(T, points[(i + m - 1) % m]), to = S.lapply(T, points[(i + 1) % m]);
+    turn += Math.atan2(from[1] * to[0] - from[0] * to[1], -(from[0] * to[0] + from[1] * to[1]));       // from the way it came (minus "from") to the way it goes
+  }
+  return turn > 0 ? turn - 2 * Math.PI : turn + 2 * Math.PI;
+}
+
+test("lab: the area inside a path is worked out from the path itself; a walker that is not turned gets whole sentences", () => {
+  const path = (word, a = 1) => [...word].reduce((l, c) => M.labSlide(l, { f: "forward", l: "left", b: "back", r: "right" }[c]), M.labSetA(M.labStart(), a, false));
+  const cornersOf = (lab) => M.labFrames(lab).slice(0, -1).map((F) => S.originOf(F));
+  const TWO_PI = 2 * Math.PI, sameAngle = (x, y) => Math.abs(Math.sin((x - y) / 2)) < 1e-7;
+  // the four slides: the area is the turn (1.362 at a = 1), as before
+  const four = M.labReadout(M.labHome(path("flbr")), "navigator");
+  assert.equal(four.area.text, "the area inside your five-sided path: 1.362 (the turn, measured in radians)");
+  near(four.area.value, H.squareWalkTurn(1), 1e-9); near(M.labArea(M.labHome(path("flbr"))).signed, H.squareWalkTurn(1), 1e-9);
+  near(M.labArea(M.labHome(path("frbl"))).signed, -H.squareWalkTurn(1), 1e-9, "the other way round, the same size");
+  assert.equal(M.labReadout(M.labHome(path("frbl")), "navigator").area.text, four.area.text);
+  // a path that goes round more than half a turn's worth: forward, forward, left, left, back, back, right, right at step 1.
+  // The turn is shown the short way (134 degrees to the left); the area is not 2π less the true area (2.333), it is 3.950.
+  const eight = M.labHome(path("ffllbbrr")), wide = M.labReadout(eight, "stargazer");
+  assert.equal(wide.text, "You are home. You face 134 degrees to the left of where you began. No slide turned you.");
+  near(wide.area.value, 3.9504, 5e-5); near(wide.area.value, areaByCorners(cornersOf(eight)), 1e-9, "the same by the corners' turns");
+  assert.ok(wide.area.value > Math.PI && Math.abs(wide.area.value - 2.333) > 1);
+  assert.equal(wide.area.text, "The area inside your nine-sided path: 3.950.");
+  assert.equal(M.labReadout(eight, "navigator").area.text, "the area inside your nine-sided path: 3.950, measured in radians. The turn matches it, give or take whole turns.");
+  near(wide.turnClockwise, wide.area.value, 1e-9, "turned clockwise by the area");
+  for (const [word, a, want] of [["ffllbbrr", 1.25, 4.3152], ["ffllbbrr", 1.5, 4.4903], ["ffflllbbbrrr", 1, 4.4903], ["fflbr", 1, 1.7427], ["fl", 1, 0.4208], ["flb", 1, 0.9950], ["fflb", 1.5, 2.3218]]) {
+    const lab = M.labHome(path(word, a)), out = M.labReadout(lab, "navigator");
+    near(out.area.value, want, 5e-5, `${word} at ${a}`); near(out.area.value, Math.abs(areaByCorners(cornersOf(lab))), 1e-6, `${word} at ${a}, by the corners' turns`);
+    assert.ok(sameAngle(out.turnClockwise, M.labArea(lab).signed), "the turn is the area, up to whole turns");
+    assert.equal(out.area.text.endsWith("(the turn, measured in radians)"), want < Math.PI, `${word} at ${a}: the turn itself only while the area is under half a turn`);
+    assert.ok(out.area.text.startsWith("the area inside your " + M.numberWord(word.length + 1) + "-sided path: " + want.toFixed(3)));
+  }
+  // bigger loop, bigger area: doubling the square does not seem to enclose less
+  assert.ok(wide.area.value > 2 * four.area.value);
+  // random paths: whenever an area is printed it is the area by the corners' turns, and the turn equals it up to whole turns
+  const r = rng(101); let printed = 0, withheld = 0;
+  for (let i = 0; i < 400; i++) {
+    let word = ""; const len = 2 + Math.floor(7 * r());
+    while (word.length < len) { const c = "flbr"[Math.floor(4 * r())]; if (word !== "" && "flbr".indexOf(c) === ("flbr".indexOf(word[word.length - 1]) + 2) % 4) continue; word += c; }   // never straight back
+    const lab = M.labHome(path(word, 0.25 + 1.25 * r())), out = M.labReadout(lab, "navigator"), inside = M.labArea(lab);
+    assert.equal(out.area === null, inside === null);
+    if (!inside) { withheld += 1; continue; }
+    printed += 1;
+    near(inside.value, Math.abs(areaByCorners(cornersOf(lab))), 1e-6, `${word} at ${lab.a}`);
+    assert.ok(sameAngle(out.turnClockwise, inside.signed), `${word} at ${lab.a}: turn and area`);
+    assert.equal(inside.value, Math.abs(inside.signed)); assert.ok(inside.value > 0 && inside.value < (word.length - 1) * Math.PI, "less than the area of an ideal polygon of so many sides");
+  }
+  assert.ok(printed > 100 && withheld > 30, `${printed} printed, ${withheld} withheld`);
+  // no inside, no area: all corners on one line, out and back the same way, not closed, too few slides, too far
+  for (const word of ["ff", "ffff", "ffb", "flrb", "f", "fb"]) assert.equal(M.labReadout(M.labHome(path(word)), "stargazer").area, null, word);
+  assert.equal(M.labArea(path("flbr")), null, "not closed: no Slide home yet"); assert.equal(M.labReadout(path("flbr"), "navigator").area, null);
+  assert.equal(M.labArea(M.labStart()), null); assert.equal(M.labArea(M.labHome(M.labStart())), null);
+  assert.equal(M.labArea(M.labHome(path("ffffffffffff", 1.5))), null, "corners 18 from home");
+  // a path with a tail has the inside of its loop: out, back and then round a triangle
+  near(M.labArea(M.labHome(path("ffbl"))).value, M.labArea(M.labHome(path("fl"))).value, 1e-9);
+  // a path that crosses itself has no single inside: nothing is printed as "the area inside", though the walker comes home turned
+  const crossed = M.labHome(path("fflf")), c = cornersOf(crossed), side = (p, q, x) => p[0] * (q[1] * x[3] - q[3] * x[1]) - p[1] * (q[0] * x[3] - q[3] * x[0]) + p[3] * (q[0] * x[1] - q[1] * x[0]);
+  assert.ok(side(c[2], c[3], c[4]) * side(c[2], c[3], c[0]) < 0 && side(c[4], c[0], c[2]) * side(c[4], c[0], c[3]) < 0, "the slide home crosses the third side");
+  assert.equal(M.labArea(crossed), null); assert.equal(M.labReadout(crossed, "navigator").area, null);
+  assert.ok(M.labReadout(crossed, "navigator").text.startsWith("You are home. You face 12 degrees to the right of where you began."));
+  assert.equal(M.labReadout(M.labHome(path("flflbrbr", 1.5)), "navigator").area, null);
+  // the tile: its area is the turn, 72 degrees
+  const tile = M.labReadout(M.labHome(M.labTile(M.labStart())), "navigator");
+  near(tile.area.value, H.tilingConstants(4, 5).area, 1e-9); assert.equal(tile.area.text, "the area inside your four-sided path: 1.257 (the turn, measured in radians)");
+  // a walker that is not turned: whole sentences, away from home and at home; a turn under 0.05 degrees is no turn
+  assert.equal(M.labReadout(path("f"), "stargazer").text, "You are 1.00 of a step from home. Sliding home, you would face the way you began.");
+  assert.equal(M.labReadout(path("fff", 1.5), "navigator").text, "You are 3.00 of a step from home. Sliding home, you would face the way you began.");
+  assert.equal(M.labReadout(path("ffb"), "stargazer").text, "You are 1.00 of a step from home. Sliding home, you would face the way you began.");
+  for (const word of ["f", "ff", "fb", "flrb", "ffffffffffff"]) assert.equal(M.labReadout(M.labHome(path(word, 1.5)), "stargazer").text, "You are home, facing the way you began.", word);
+  const far = M.labReadout(M.labHome(path("ffffffffffff", 1.5)), "navigator");
+  assert.ok(far.turnClockwise < 1e-6 || far.turnClockwise > TWO_PI - 1e-6, "rounding leaves a turn far under 0.05 degrees");
+  const texts = ["f", "ff", "fb", "fl", "flbr", "ffllbbrr", "flrb"].flatMap((w) => [M.labReadout(path(w), "stargazer").text, M.labReadout(M.labHome(path(w)), "stargazer").text]);
+  for (const t of texts) { assert.ok(!/not turned/.test(t), t); assert.ok(!/face (0|360) degrees/.test(t), t); for (const sentence of t.split(/(?<=\.)\s+/)) assert.match(sentence, /^[A-Z].*\.$/, sentence); }
+});
+
+test("chart: the centre caption belongs to the dot at the centre; a plate covers no other dot and no mark", () => {
+  // the caption "straight up has no compass direction" is about the dot at the centre of the screen: after a slide another thing is there
+  const st = lit("stargazer"), home = M.scene(st, SIZE);
+  assert.equal(home.centreCaption, "straight up has no compass direction");
+  const moon = home.bodies.find((b) => b.key === "moon"), tapped = M.tapView(st, SIZE, moon.x, moon.y).state, sc = M.scene(tapped, SIZE);
+  const at = (scn, key) => { const b = scn.bodies.find((x) => x.key === key); return Math.hypot(b.x - 200, b.y - 200); };
+  near(at(sc, "moon"), 0, 1e-6); assert.ok(at(sc, "zenith") > 20, "the straight-up dot has left the centre");
+  assert.equal(sc.centreCaption, "", "the Moon is at the centre now");
+  assert.equal(M.scene(M.nudgeView(st, "left"), SIZE).centreCaption, ""); assert.equal(M.scene(M.dive(st, "m31"), SIZE).centreCaption, "");
+  assert.equal(M.scene(M.goHome(tapped), SIZE).centreCaption, "straight up has no compass direction");
+  assert.equal(M.scene(M.dive(st, "zenith"), SIZE).centreCaption, "straight up has no compass direction", "straight up selected: the view stays at home");
+  const gal = M.setFrame(lit("navigator"), "gal");
+  assert.equal(M.scene(gal, SIZE).centreCaption, "the pole has no direction round the plane"); assert.equal(M.scene(M.dive(gal, "sgr_a_star"), SIZE).centreCaption, "");
+  // plates and dots: no label box lies over the dot of another object, nor over a mark A to D and the room for its letter
+  const clearOf = (sc, what) => {
+    let over = 0;
+    const forced = new Set(["home", ...sc.bodies.filter((b) => b.selected || b.centred).map((b) => b.key)]);
+    for (const key of sc.covering) assert.ok(forced.has(key), `${what}: only a label that must be shown may lie over a dot (${key})`);
+    for (const l of sc.labels) {
+      if (sc.covering.includes(l.key)) { over += 1; continue; }
+      for (const b of sc.bodies) if (b.key !== l.key) assert.ok(!(b.x > l.x - b.r && b.x < l.x + l.w + b.r && b.y > l.y - b.r && b.y < l.y + l.h + b.r), `${what}: the plate of ${l.key} lies over the dot of ${b.key}`);
+      if (l.key !== "home") assert.ok(!(sc.home.x > l.x - 5 && sc.home.x < l.x + l.w + 5 && sc.home.y > l.y - 5 && sc.home.y < l.y + l.h + 5), `${what}: the plate of ${l.key} lies over home`);
+      for (const m of sc.marks) assert.ok(!(m.x > l.x - M.LABEL.markRoom && m.x < l.x + l.w + M.LABEL.markRoom && m.y > l.y - M.LABEL.markRoom && m.y < l.y + l.h + M.LABEL.markRoom), `${what}: the plate of ${l.key} lies over mark ${m.label}`);
+    }
+    return over;
+  };
+  // the first scenes a visitor meets, at the phone's and the desktop's canvas sizes
+  const first = [
+    ["Greenwich, step 3, flat", lit("stargazer")],
+    ["the Kebar preset, step 3, flat", M.setDims(M.setStep(kebar("navigator"), 3), "2D")],
+    ["Greenwich, step 4, the Moon centred", M.setStep(M.initialState({ hash: "#site=greenwich&focus=moon&lens=navigator", nowMs: D16 }), 4)],
+    ["Greenwich, step 4, Stargazer, the Moon tapped", M.setStep(tapped, 4)],
+  ];
+  for (const [name, state] of first) for (const side of [358, 420, 560, 700]) {
+    const scn = M.scene(state, { w: side, h: side });
+    assert.equal(clearOf(scn, `${name} at ${side}`), 0, `${name} at ${side}: no plate over a dot`);
+    assert.ok(scn.labels.length >= 6, `${name} at ${side}: ${scn.labels.length} labels are left`);
+    if (name.includes("step 4") && state.lens !== "stargazer") assert.equal(scn.marks.length, 4);
+  }
+  // and on random skies, views and switches (as the labels test above)
+  const r = rng(22), sites = C.SITES.map((s) => s.key), objects = ["moon", "sun", "pleiades", "polaris", "vela_pulsar", "cyg_x1", "sgr_a_star", "m31", "north", "cmb", "holography", "memory"];
+  let over = 0, scenes = 0;
+  for (let i = 0; i < 200; i++) {
+    let s2 = M.setStep(M.setJd(M.chooseSite(fresh(), sites[Math.floor(r() * sites.length)]), 2400000 + r() * 80000), 3 + (i % 2));
+    s2 = M.setDims(M.setLens(s2, LENSES[i % 3]), i % 4 < 2 ? "2D" : "3D");
+    if (s2.lens !== "stargazer" && r() < 0.4) s2 = M.setFrame(s2, "gal");
+    for (const o of M.OVERLAYS) if (r() < 0.4) s2 = M.toggleOverlay(s2, o.key);
+    const key = objects[Math.floor(r() * objects.length)];
+    if (r() < 0.7) s2 = M.dive(s2, key);
+    if (r() < 0.5) s2 = M.dive(s2, key);
+    over += clearOf(M.scene(s2, { w: 320 + Math.floor(r() * 500), h: 320 + Math.floor(r() * 400) }), `random ${i}`); scenes += 1;
+  }
+  assert.ok(over <= scenes / 20, `a label that must be shown lay over a dot in ${over} of ${scenes} scenes`);   // home, deep in a dive, where everything near it sits on it
+  // the rule itself: a plate that would cover a dot goes to another side; with no side free the item stays a dot, unless it must be shown
+  const dot = (key, x, y) => ({ key, text: "", x, y, r: 5, forced: false });
+  const one = M.placeLabels([{ key: "a", text: "Alpha", x: 100, y: 100, r: 5, forced: false }, dot("right", 130, 100)], { w: 400, h: 400 });
+  assert.deepEqual(one.labels.map((l) => l.key), ["a"]); assert.ok(one.labels[0].x + one.labels[0].w < 100, "to the left of its dot"); assert.deepEqual(one.covering, []);
+  const ring = [dot("right", 130, 100), dot("left", 70, 100), dot("above", 100, 80), dot("below", 100, 120)];
+  const shut = M.placeLabels([{ key: "a", text: "Alpha", x: 100, y: 100, r: 5, forced: false }, ...ring], { w: 400, h: 400 });
+  assert.deepEqual(shut.labels, []); assert.ok(shut.dots.includes("a"));
+  const corner = M.placeLabels([{ key: "a", text: "Alpha", x: 100, y: 100, r: 5, forced: true }, ...ring], { w: 400, h: 400 });
+  assert.deepEqual(corner.labels.map((l) => l.key), ["a"]); assert.deepEqual(corner.covering, [], "a label that must be shown also tries the four corners");
+  const walled = [...ring, dot("ne", 130, 80), dot("se", 130, 120), dot("nw", 70, 80), dot("sw", 70, 120)];
+  const must = M.placeLabels([{ key: "a", text: "Alpha", x: 100, y: 100, r: 5, forced: true }, ...walled], { w: 400, h: 400 });
+  assert.deepEqual(must.labels.map((l) => l.key), ["a"]); assert.deepEqual(must.covering, ["a"], "with no place free it is shown all the same, and said to lie over a dot");
+  assert.deepEqual(M.placeLabels([{ key: "a", text: "Alpha", x: 100, y: 100, r: 5, forced: false }, ...walled], { w: 400, h: 400 }).labels, []);
+  const kept = M.placeLabels([{ key: "a", text: "Alpha", x: 100, y: 100, r: 5, forced: false }], { w: 400, h: 400, avoid: [{ x: 130, y: 100, r: 12 }] });
+  assert.ok(kept.labels[0].x + kept.labels[0].w < 100, "a point to keep clear counts as a dot does");
+  assert.equal(M.LABEL.markRoom, 12); assert.equal(M.LABEL.clear, 28);
+});
+
+test("dialog: every SAID sentence names who says it; a judgement of this project is READING", () => {
+  // Who speaks, as it stands in the sentence itself: a person, a team or a work with what it does, a source in brackets, or this
+  // project's named search. A sentence that only goes on ("He writes …") counts when the sentence before it in the same item named him.
+  const SPEAKERS = [
+    /^Van Paassen (writes|argues)\b/,
+    /^This project's search of two scans of the 1949 book found\b/,
+    /^Planck 2018 \(arXiv:\d+\.\d+, Table 2\) gives\b/,
+    /\((Helfand and others 2001|Pasterski 2021; Raclariu 2021|the NANOGrav collaboration 2025)\)\.$/,
+    /\bare those given by the sources named in each object's inspector\.$/,
+    /^Other people measured\b.*\band the page names them\.$/,
+  ];
+  const GOES_ON = /^He (writes|argues)\b/;
+  const unnamed = (text) => {
+    const out = []; let named = false;
+    for (const sentence of M.sentencesOf(unquoted(text))) {
+      if (SPEAKERS.some((re) => re.test(sentence))) named = true;
+      else if (!(named && GOES_ON.test(sentence))) out.push(sentence);
+    }
+    return out;
+  };
+  const D = M.DIALOG, legend = new Set(KIT.LAYER_META.map((m) => m.legend));
+  const said = [D.first, ...D.inShort, ...D.sections.flatMap((s) => s.items)].filter((p) => p.layer === "said" && !legend.has(p.text));   // the legend's own line about SAID is the one exemption
+  assert.equal(said.length, 9, "the SAID sentences of the dialog");
+  for (const p of said) assert.deepEqual(unnamed(p.text), [], `no speaker in: ${p.text.slice(0, 70)}`);
+  // the check notices the sentences the first review found: an opening word is not a speaker
+  for (const bad of [
+    "The history is from one book: Pierre van Paassen, Why Jesus Died (Dial Press, 1949). Words in quotation marks are his and were checked against the text.",
+    "What he argues. Jesus was a Galilean Jew in the line of Israel's prophets who announced the Kingdom of God on earth.",
+    "Where others differ. Most Christians, and many historians, disagree with parts of that.",
+    "Most Christians and many historians disagree with parts of it.",
+    "He writes as a Unitarian.",
+    "The places and distances of the six objects beyond the Sun and Moon are those given by the sources named in each object's inspector. This page works out only where each one stands in your sky.",
+  ]) assert.ok(unnamed(bad).length >= 1, bad.slice(0, 50));
+  // what this project thinks of a source is this project's view, labelled so
+  const judged = [D.first, ...D.inShort, ...D.sections.flatMap((s) => s.items)].filter((p) => /most Christians|many historians|sources are dated/i.test(p.text));
+  assert.equal(judged.length, 1); assert.equal(judged[0].layer, "reading"); assert.ok(judged[0].text.startsWith("This project's view:"));
+  // the Event Horizon Telescope's paper on Sagittarius A* is of 2022 (The Astrophysical Journal Letters 930, L12); 2023 was the year of a later posting
+  const eht = M.objectOf("sgr_a_star").text.holographer[0];
+  assert.equal(eht.layer, "said"); assert.ok(eht.text.startsWith("The Event Horizon Telescope collaboration (2022) reports an image “consistent with the expected appearance of a Kerr black hole"));
+  assert.ok(!allSentences().some((x) => x.text.includes("Event Horizon Telescope collaboration (2023)")));
+});
+
+// ─── the second pass of the review: wording for all ages, the caption, the thread of the gold boxes ───────────
+
+test("second pass: plain words at the Stargazer lens, the caption names the middle, the gold boxes keep their thread", () => {
+  const g = atGreenwich(), words = (s) => s.split(/\s+/).filter((w) => /[\p{L}\p{N}]/u.test(w)).length;
+  // the sliders of "My place": plain words at the Stargazer lens, the astronomers' words from Navigator up
+  assert.deepEqual({ ...M.CONTROLS.latitude }, { stargazer: "How far north or south", navigator: "Latitude", holographer: "Latitude" });
+  assert.deepEqual({ ...M.CONTROLS.longitude }, { stargazer: "How far east or west", navigator: "Longitude", holographer: "Longitude" });
+  // the Sun's year: "the shortest day" only where it is one; the Navigator form is the core's name everywhere
+  const season = (lat, month, day, lens = "stargazer") => M.seasonLine(M.setLens(M.pickDate(M.typePlace(g, lat, 10).state, { year: 2026, month, day }).state, lens)).text;
+  assert.equal(M.seasonLine(g).text, "37 days before the shortest day"); assert.equal(M.seasonLine(M.setLens(g, "navigator")).text, "37 days before the December solstice");
+  assert.equal(season(51, 12, 1), "20 days before the shortest day"); assert.equal(season(-34, 12, 1), "20 days before the longest day");
+  assert.equal(season(51, 6, 30), "9 days after the longest day"); assert.equal(season(-34, 6, 30), "9 days after the shortest day");
+  assert.equal(season(0, 12, 1), "20 days before the day the Sun is farthest south", "on the equator no day is the shortest");
+  assert.equal(season(80, 12, 1), "20 days before the day the Sun is farthest south", "inside the polar circle that day has no daylight at all");
+  assert.equal(season(-80, 6, 30), "9 days after the day the Sun is farthest north");
+  assert.equal(season(66, 12, 1), "20 days before the shortest day"); assert.equal(season(67, 12, 1), "20 days before the day the Sun is farthest south"); assert.equal(season(0.9, 12, 1), "20 days before the day the Sun is farthest south");
+  assert.equal(season(51, 3, 1), "19 days before the March day when day and night are about equal"); assert.equal(season(-34, 10, 1), "9 days after the September day when day and night are about equal");
+  assert.equal(season(51, 12, 1, "navigator"), "20 days before the December solstice"); assert.equal(season(-34, 3, 1, "holographer"), "19 days before the March equinox");
+  const june = C.nearestSeasonJd(C.jdFromParts({ year: 2026, month: 6, day: 20 })).jdUt, onDay = M.setJd(g, june);
+  assert.equal(M.seasonLine(onDay).text, "the longest day"); assert.equal(M.seasonLine(M.setLens(onDay, "navigator")).text, "the day of the June solstice");
+  // the day of the solstice really is the shortest or the longest: the Sun's noon height against a month earlier and later
+  for (const [lat, month, shortest] of [[51, 12, true], [-34, 12, false], [20, 6, false], [-66, 6, true]]) {
+    const at = M.typePlace(g, lat, 10).state, sol = C.nearestSeasonJd(C.jdFromParts({ year: 2026, month, day: 20 })).jdUt;
+    const length = (jd) => { const p = C.partsFromJd(jd + 10 / 360); const r = C.sunEventOnLocalDay(p, lat, 10, "rise"), s = C.sunEventOnLocalDay(p, lat, 10, "set"); return r && s && r.jdUt && s.jdUt ? s.jdUt - r.jdUt : null; };
+    const here = length(sol), before = length(sol - 30), after = length(sol + 30);
+    if (here !== null && before !== null && after !== null) assert.ok(shortest ? here < before && here < after : here > before && here > after, `latitude ${lat}, month ${month}`);
+    assert.ok(M.seasonLine(M.setJd(at, sol)).text.endsWith(shortest ? "the shortest day" : "the longest day"), `latitude ${lat}, month ${month}: ${M.seasonLine(M.setJd(at, sol)).text}`);
+  }
+  // the Sun's line on the chart follows the lens too
+  assert.equal(M.scene(lit("stargazer"), SIZE).bodies.find((b) => b.key === "sun").detail, "37 days before the shortest day");
+  assert.equal(M.scene(lit("navigator"), SIZE).bodies.find((b) => b.key === "sun").detail, "37 days before the December solstice");
+  // the lab at the Stargazer lens: no radians, and the tile needs no second sentence
+  const tile = M.labHome(M.labTile(M.labStart())), star = M.labReadout(tile, "stargazer"), nav = M.labReadout(tile, "navigator");
+  assert.equal(star.area.text, "The area inside your four-sided path: 1.257."); assert.equal(star.tile, null);
+  assert.equal(star.text, "You are home. You face 72 degrees to the right of where you began. No slide turned you.");
+  assert.equal(nav.tile, "home again, turned 72° clockwise, the area of the tile"); assert.ok(nav.area.text.endsWith("(the turn, measured in radians)"));
+  for (const lab of [tile, M.labHome(M.labFour(M.labStart())), M.labHome(["forward", "forward", "left", "left", "back", "back", "right", "right"].reduce((l, d) => M.labSlide(l, d), M.labStart()))]) {
+    const r = M.labReadout(lab, "stargazer");
+    assert.ok(!/radian/.test([r.text, r.flat, r.area.text, r.tile || ""].join(" ")), r.area.text); assert.match(r.area.text, /^The area inside your \w+-sided path: \d\.\d{3}\.$/);
+    assert.equal(r.area.value, M.labReadout(lab, "navigator").area.value, "the same number at every lens");
+  }
+  // the lines beside the Moon picture are whole sentences at every lens; the labels of buttons begin with a capital
+  for (const st of [g, kebar("stargazer"), kebar("navigator"), M.setClock(g, 6), M.setLens(M.findMoon(g, 180).state, "holographer")]) {
+    for (const line of M.moonFigure(st).lines) assert.match(line, /^[A-Z0-9].*\.$/, line);
+    for (const b of M.moonButtons(st)) assert.match(b.label, /^[A-Z]/, b.label);
+  }
+  assert.equal(M.moonFigure(g).lean, "bright side towards 4 o'clock", "inside the picture's label the words stay as they were");
+  for (const c of M.ezekielChoices()) assert.match(c.label, /^[A-Z0-9]/, c.label);
+  for (const s of M.sentencesOf(M.BLUEPRINT.badge.text)) assert.ok(words(s) <= 16, s);
+  assert.equal(M.BLUEPRINT.badge.text, "The whole scale is this project's reading: a chosen way of drawing. It is not a claim about the shape of space.");
+
+  // the caption under the chart: nothing twice, and after a slide it names what is in the middle
+  const count = (text, part) => text.toLowerCase().split(part.toLowerCase()).length - 1;
+  const said = (st) => { const sc = M.scene(st, SIZE); return { rimLabel: sc.rimLabel, centreCaption: sc.centreCaption }; };
+  const cap = (st) => M.chartCaption(st, said(st));
+  const nav2 = lit("navigator"), star2 = lit("stargazer");
+  assert.equal(cap(nav2), "a flat map of direction round the plane and of depth; height above the plane is not shown; seen from above: north up, east right; the rim is your horizon. Straight up has no compass direction.");
+  assert.equal(count(cap(nav2), "the rim is your horizon"), 1);
+  // with the horizon drawn the chart reports "the rim is your horizon" itself: the Navigator caption has said so already (the reviewer read it twice)
+  const navH = M.toggleOverlay(nav2, "horizon"), starH = M.toggleOverlay(star2, "horizon");
+  assert.equal(said(navH).rimLabel, "the rim is your horizon"); assert.equal(said(starH).rimLabel, "the rim is your horizon");
+  assert.equal(cap(navH), cap(nav2), "nothing is added that the caption holds"); assert.equal(count(cap(navH), "the rim is your horizon"), 1);
+  assert.equal(cap(starH), "This is a flat map, seen from above. North is up and east is right. How high a thing stands is not shown. The rim is your horizon. Straight up has no compass direction.");
+  assert.ok(cap(M.dive(M.dive(navH, "m31"), "m31")).endsWith("; the rim is your horizon. Andromeda galaxy is in the middle of the map."));
+  assert.equal(cap(star2), "This is a flat map, seen from above. North is up and east is right. How high a thing stands is not shown. Straight up has no compass direction.");
+  assert.equal(M.centreWords(star2), ""); assert.equal(M.centreWords(fresh()), "");
+  const half = M.dive(nav2, "m31"), there = M.dive(half, "m31");
+  assert.equal(M.centreWords(half), "Half way to Andromeda galaxy is in the middle of the map."); assert.equal(M.centreWords(there), "Andromeda galaxy is in the middle of the map.");
+  assert.ok(cap(there).endsWith("the rim is your horizon. Andromeda galaxy is in the middle of the map.")); assert.ok(!/straight up/i.test(cap(there)), "straight up is no longer the dot in the middle");
+  assert.notEqual(cap(there), cap(nav2), "the description changes when the view does");
+  assert.equal(M.centreWords(M.dive(M.dive(star2, "sgr_a_star"), "sgr_a_star")), "The middle of our galaxy is in the middle of the map.");
+  assert.equal(M.centreWords(M.dive(star2, "sgr_a_star")), "Half way to the middle of our galaxy is in the middle of the map.");
+  assert.equal(M.centreWords(M.dive(M.dive(star2, "moon"), "moon")), "Moon is in the middle of the map.");
+  assert.equal(M.centreWords(M.dive(M.dive(star2, "cmb"), "cmb")), "The oldest light is in the middle of the map.");
+  // a direction or a point of the rim never reaches the middle: the caption does not say it did
+  for (const key of ["north", "holography", "celestial_sphere"]) for (const st of [M.dive(star2, key), M.dive(M.dive(star2, key), key)]) {
+    assert.match(M.centreWords(st), /^The map has slid towards /, key); assert.ok(!/is in the middle/.test(M.centreWords(st)), key);
+  }
+  assert.equal(M.centreWords(M.dive(M.dive(star2, "holography"), "holography")), "The map has slid towards a bold idea about the edge.");
+  assert.equal(M.centreWords(M.dive(M.dive(nav2, "north"), "north")), "The map has slid towards North point.");
+  // straight up selected: the view stays at home and the caption keeps its sentence about the dot in the middle
+  assert.equal(M.centreWords(M.dive(star2, "zenith")), ""); assert.ok(cap(M.dive(star2, "zenith")).endsWith("Straight up has no compass direction."));
+  // a nudge, a tap on an empty point, and Home again
+  const nudged = M.nudgeView(star2, "left");
+  assert.equal(M.centreWords(nudged), "The map has slid: home is no longer in the middle."); assert.ok(cap(nudged).endsWith("How high a thing stands is not shown. The map has slid: home is no longer in the middle."));
+  assert.equal(cap(M.goHome(there)), cap(nav2));
+  // the ball, the galactic frame, the dark disc and the lab
+  const ball = M.dive(M.dive(lit("stargazer", "3D"), "moon"), "moon");
+  assert.equal(M.chartCaption(ball, said(ball)), "This is the same map as a ball, seen from outside. Straight up is a line. The edge is the sky of directions. Moon is in the middle of the map.");
+  const gal = M.setFrame(lit("navigator"), "gal");
+  assert.equal(count(cap(gal), "the rim is the galactic plane"), 1); assert.ok(cap(gal).endsWith("The pole has no direction round the plane."));
+  assert.equal(M.chartCaption(fresh(), { rimLabel: "the rim is your horizon", centreCaption: "x" }), M.sceneCaption(fresh()), "the dark disc has its own caption and nothing more");
+  assert.equal(M.centreWords(M.openLab(there)), "");
+  for (const st of [nav2, star2, half, there, nudged, ball, gal]) { const t = M.chartCaption(st, said(st)); assert.ok(t.endsWith(".") && !/\.\./.test(t) && !/\. [a-z]/.test(t), t); }
+
+  // reduced motion: the words for one press that draws all four slides
+  assert.equal(M.LAB_COPY.fourAtOnce, "All four slides were drawn at once."); assert.equal(M.labFour(M.labStart()).slides.length, 4);
+
+  // the Seal step at the Stargazer lens says where the pretend receivers are shown
+  assert.equal(M.SEAL_COPY.witness.stargazer.text, "One stamp is one witness. The rule in the verse asks for two or three. In the Lexicon Explorer, the Navigator level shows pretend receivers checking it too.");
+  assert.equal(M.SEAL_COPY.witness.stargazer.layer, "reading");
+  // and that is so on the other page: for a sky its Navigator lens has the Send station, where the receivers answer
+  if (OTHER && typeof OTHER.visibleStations === "function") assert.ok(OTHER.visibleStations("navigator", "page").some((x) => x.key === "send"), "the Navigator lens of the Lexicon Explorer has a Send station for a sky");
+
+  // the river: "the Kebar (Chebar in the King James Version)" at the first use of the name in a step's own text, plain "the Kebar" after it
+  const GLOSS = "the Kebar (Chebar in the King James Version)";
+  for (const lens of LENSES) for (const s of M.STEPS) {
+    // a step's own text: what STRIX says and what the gold box says in this page's voice (a verse, and a row read from the lexicon, are another's words)
+    const v = M.stepView(s.n, lens), own = [...v.say, v.bridge.opening, v.bridge.reading, ...v.bridge.stands.flatMap((x) => (x.layer === "text" || x.source ? [x.note] : [x, x.note]))].filter(Boolean).map((p) => p.text).join(" ");
+    const first = own.indexOf("Kebar");
+    if (first < 0) { assert.ok(!own.includes("Chebar"), `${s.key} ${lens}`); continue; }
+    assert.ok([1, 2].includes(s.n), `${s.key} names the river`);
+    assert.equal(own.indexOf(GLOSS), first - 4, `${s.key} ${lens}: the first use has both spellings`);
+    assert.equal(count(own, "Chebar"), 1, `${s.key} ${lens}: said once`); assert.ok(count(own, "Kebar") >= 1);
+  }
+  const note1 = M.STEPS[0].bridge.stands[0].note;
+  assert.deepEqual({ ...note1 }, { layer: "reading", text: "We write the Kebar (Chebar in the King James Version): one river, two spellings." });
+  assert.ok(M.STEPS[0].bridge.stands[0].text.endsWith("by the river of Chebar"), "it stands under the verse that has the King James spelling");
+  assert.ok(VERSES.get("26.1.1")[4].includes("river of Chebar") && C.SITES.find((x) => x.key === "kebar").label.includes("Kebar"), "the two spellings are the verse's and the place's");
+  assert.ok(M.stepView(2, "navigator").bridge.stands[2].text.includes("Over the site by the Kebar (Chebar in the King James Version) it grew from 40 % lit"));
+  assert.equal(M.stepView(2, "stargazer").bridge.stands[2].text, "Worked out: if that date is right, the Moon grew to half lit that day. Open the sky by the Kebar (Chebar in the King James Version) and look.");
+  if (OTHER && OTHER.KEBAR_NAZARETH) assert.ok(M.stepView(1, "navigator").bridge.stands[2].text.startsWith(OTHER.KEBAR_NAZARETH.text), "the sentence both pages share is untouched");
+
+  // the thread of the reading: each later Stargazer box has one sentence that carries it on, a plain form of what the Navigator box says
+  const CARRY = [null,
+    ["We read Ezekiel's date as his answer to the second and third.", /^We read the verse's date as an answer to this panel's second and third questions/],
+    ["We set two openings of heaven side by side: Ezekiel's, and one when Jesus was baptised.", /^We set two openings of heaven side by side, .*Ezekiel's by the river, and the one at the baptism of Jesus\./],
+    ["Keeping straight is true of each slide, not of a whole trip.", /Holding a heading is a property of each step, not of the whole trip\./],
+    ["First Explorers ends on its middle line; here that line is the line straight up.", /First Explorers ends on the line through the zero point; in this panel that line is the zenith line\./]];
+  for (const s of M.STEPS.slice(1)) {
+    const star3 = M.sentencesOf(s.bridge.reading.stargazer.text), [carry, source] = CARRY[s.n - 1];
+    assert.equal(star3.length, 4, s.key); assert.equal(star3.filter((x) => x === carry).length, 1, s.key); assert.equal(star3[3], "You may see it another way.");
+    assert.ok(words(carry) <= 16, carry); assert.equal(s.bridge.reading.stargazer.layer, "reading");
+    assert.match(s.bridge.reading.navigator.text, source, `${s.key}: the Navigator box says it`);
+    assert.ok(!/no check depends|bridge is not in/.test(s.bridge.reading.stargazer.text), "the disclaimer of the first box is said once, there");
+  }
+  // Jesus is named at the Stargazer lens only where the Navigator box names him
+  for (const s of M.STEPS.slice(1)) assert.equal(/Jesus/.test(s.bridge.reading.stargazer.text), /Jesus/.test(s.bridge.reading.navigator.text), s.key);
+  assert.ok(M.BRIDGE_OPENING.stargazer.text.includes("This is our reading, and no check depends on it. The word bridge is not in the King James Bible."));
+
+  // who speaks: the name beside the narration, and one sentence of the dialog's "In short"
+  assert.deepEqual({ ...M.STRIX }, { name: "STRIX", who: "STRIX is the owl that speaks on this page.", all: "All that STRIX says here", more: "more", moreFrom: "more from STRIX" });
+  assert.deepEqual(M.DIALOG.inShort.filter((p) => /STRIX/.test(p.text)).map((p) => ({ ...p })), [{ layer: "reading", text: "STRIX is the owl that speaks on this page." }]);
+
+  // the way on: a button at the end of the card at steps 2 to 4
+  const s2 = M.setStep(g, 2), asked = M.setStep(M.chooseSite(fresh(), "greenwich"), 2);
+  assert.deepEqual([2, 3, 4].map((n) => M.nextStep(M.setStep(g, n))), [{ n: 3, label: "Next: Look around" }, { n: 4, label: "Next: Slide the map" }, { n: 5, label: "Next: Stamp it" }]);
+  assert.deepEqual([2, 3, 4].map((n) => M.nextStep(M.setLens(M.setStep(g, n), "navigator")).label), ["Next: Project", "Next: Dive", "Next: Seal"]);
+  assert.equal(M.nextStep(M.setStep(g, 1)), null, "step 1 has its own button"); assert.equal(M.nextStep(M.setStep(g, 5)), null);
+  assert.equal(M.nextStep(asked), null, "not before the day is answered"); assert.deepEqual(M.nextStep(M.confirmDay(asked)), { n: 3, label: "Next: Look around" });
+  assert.equal(M.nextStep(M.setStep(fresh(), 3)), null, "not before a place is chosen"); assert.equal(M.nextStep(M.openLab(M.setStep(g, 4))), null, "not inside the lab");
+  assert.deepEqual(M.nextStep(M.dive(M.setStep(g, 4), "moon")), { n: 5, label: "Next: Stamp it" }, "also under an inspector");
+  assert.equal(M.setStep(s2, M.nextStep(s2).n).step, 3);
 });

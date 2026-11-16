@@ -100,7 +100,10 @@
 //    opacity; rings; rays, objects and home sorted by depth; the near halves; the labels. A label is the
 //    object's glyph and the name the model chose (the short name far from the centre, the full name and one
 //    detail line within the model's VIEW.near). Labels are LABEL_PX and never scale. Only the selected object
-//    has a glow. Colours: none of the four layer colours is used on a canvas.
+//    has a glow. Colours: none of the four layer colours is used on a canvas. No box of text lies over another
+//    object's dot or over a mark A to D: the model places the names so, and the boxes made here (detail lines,
+//    circle names, counts) keep the same rule. A name that must be shown and found no free place is the one
+//    exception: the dots under its plate are painted again, over the plate.
 //
 // 2. createMoonPicture(canvas, options) -> picture     (the Moon as it looks from the place; also the small
 //    pictures of the eight Moon-shape buttons)
@@ -470,7 +473,9 @@ function paintSky(ctx, sc, selected) {
   if (!skyGround(ctx, sc)) return boxes;
   const measure = (text, weight) => { ctx.font = font(LABEL_PX, weight || 600); return Math.ceil(ctx.measureText(text).width); };
   const free = (box, but) => box.x >= 1 && box.y >= 1 && box.x + box.w <= W - 1 && box.y + box.h <= H - 1 && boxes.every((b) => b === but || b.kind === "rim" || !overlaps(b, box));
-  const onDot = (box, but) => sc.bodies.some((b) => b !== but && finite(b.x, b.y) && inside({ x: box.x - 4, y: box.y - 4, w: box.w + 8, h: box.h + 8 }, b.x, b.y));
+  // a box of text keeps clear of every other object's dot, and of the marks A to D with the room for their letters
+  const onDot = (box, but) => sc.bodies.some((b) => b !== but && finite(b.x, b.y) && inside({ x: box.x - 4, y: box.y - 4, w: box.w + 8, h: box.h + 8 }, b.x, b.y))
+    || sc.marks.some((m) => finite(m.x, m.y) && inside({ x: box.x - LABEL.markRoom, y: box.y - LABEL.markRoom, w: box.w + 2 * LABEL.markRoom, h: box.h + 2 * LABEL.markRoom }, m.x, m.y));
 
   if (!sc.dark) {
     if (!flat) for (const c of sc.circles) {                    // far halves
@@ -580,6 +585,13 @@ function paintSky(ctx, sc, selected) {
     boxes.push(d.own);
   }
   if (sc.dark) return boxes;
+  // The model keeps every plate clear of the other dots. Only a name that must be shown (home, the centred or the selected
+  // object) may have found no such place, deep in a dive where everything near home sits on home: a dot under a plate
+  // that is not its own is painted again, over the plate, so that no object is hidden.
+  for (const b of sc.bodies) {
+    if (finite(b.x, b.y) && drawn.some((d) => d.body !== b && inside({ x: d.box.x - 2, y: d.box.y - 2, w: d.box.w + 4, h: d.box.h + 4 }, b.x, b.y))) drawObject(ctx, b, sc);
+  }
+  if (finite(sc.home.x, sc.home.y) && drawn.some((d) => d.kind !== "home" && inside(d.box, sc.home.x, sc.home.y))) homeMark(ctx, sc.home, flat ? 1 : Math.max(0.85, depthAlpha(sc.home.k)));
 
   // ── one detail line under (or over) the name of each near object ──
   for (const d of drawn) {

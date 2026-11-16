@@ -60,6 +60,7 @@ function allCopy() {
       s.say[l].forEach((p, i) => add(`${s.key} say ${l} ${i}`, p));
       if (s.skySay) s.skySay[l].forEach((p, i) => add(`${s.key} sky say ${l} ${i}`, p));
       s.notes.forEach((n, i) => add(`${s.key} note ${l} ${i}`, n[l]));
+      if (s.skyNotes) s.skyNotes.forEach((n, i) => add(`${s.key} sky note ${l} ${i}`, n[l]));
       if (s.bridge.opening) add(`${s.key} opening ${l}`, s.bridge.opening[l]);
       add(`${s.key} reading ${l}`, s.bridge.reading[l]);
     }
@@ -71,6 +72,8 @@ function allCopy() {
   M.CERTIFIED.forEach((p, i) => add(`certified ${i}`, p));
   add("certified stargazer", M.CERTIFIED_STARGAZER);
   add("send reading", M.SEND_READING); add("tree price", M.TREE_PRICE);
+  add("quorum limit", M.QUORUM_LIMIT); add("kebar and nazareth", M.KEBAR_NAZARETH); add("wordings note", M.WORDINGS_NOTE);
+  for (const [a, lead] of M.ENTRY_LEADS) add(`lead ${a}`, lead);
   for (const l of LENSES) add(`wheel ${l}`, M.WHEEL_COPY.perLens[l]);
   add("wheel stargazer", M.WHEEL_COPY.stargazerWheel); add("wheel ladder", M.WHEEL_COPY.ladder); add("wheel parity", M.WHEEL_COPY.parity);
   add("dialog first", M.DIALOG.first);
@@ -124,7 +127,7 @@ test("the module is DOM-free and imports the cores, the kit and the two data mod
 });
 
 test("page names, lens hints and the built-in lexicon", () => {
-  assert.deepEqual({ ...M.PAGE }, { title: "Lexicon Explorer", subtitle: "Ezekiel 1:1-9 in hyperbolic space" });
+  assert.deepEqual({ ...M.PAGE }, { title: "Lexicon Explorer", subtitle: "Ezekiel 1:1-9 in hyperbolic space", stargazerSubtitle: "Ezekiel 1:1-9 on a curved map" });
   assert.deepEqual({ ...M.LENS_HINTS }, { stargazer: "ages 6 and up", navigator: "names, dates and sources", holographer: "formats and hashes" });
   assert.deepEqual(Object.keys(M.LENS_HINTS), KIT.LENSES.map((l) => l.id));
   assert.equal(M.EZEKIEL.origin, "builtin");
@@ -195,7 +198,9 @@ test("which stations and tabs each lens and each kind of lexicon shows", () => {
   assert.ok(!skyPlace.say.some((p) => p.text.includes("John")));
   const first = M.stationView("read", "stargazer");
   assert.equal(first.say[0].text, M.FIRST_LINE);
-  assert.equal(M.FIRST_LINE, "Long ago a man named Ezekiel wrote down where he stood and what day it was. Tap a shining word to see what we know about it.");
+  assert.equal(M.FIRST_LINE, "The book of Ezekiel begins with a place and a day. Tap a shining word to see what we know about it.");
+  assert.equal(M.STATIONS[0].say.stargazer[0].layer, "reading");
+  assert.ok(!/\b(Ezekiel|he|a man) (wrote|stood|saw)\b/.test(M.FIRST_LINE), "the page does not say in its own voice who wrote the book");
   assert.equal(first.bridge.title, "THE BRIDGE");
   assert.equal(first.bridge.opening.text, M.BRIDGE_OPENING.stargazer.text);
   assert.equal(M.stationView("count", "navigator").bridge.opening, null);
@@ -244,15 +249,33 @@ test("every sentence of the copy carries one layer; a TEXT sentence is cut out o
 });
 
 test("SAID names its speaker, CHECKED begins with what was done, READING speaks as we or the author", () => {
+  // Each of these is a person, a work, a tradition or a search of this project. The first words of a sentence are not a speaker.
   const speakers = ["van Paassen", "Van Paassen", "Irenaeus", "The book says", "This project's search", "King James Version, from the Project Gutenberg e-text", "John Wilkinson", "A law book of 1618",
-    "SHD-CCP RFC 02", "This project's rule book", "This project searched", "Scripture quotations taken from", "Rabbinic tradition", "The history is from one book", "What he argues", "Where others differ"];
+    "SHD-CCP RFC 02", "This project's rule book", "This project searched", "Scripture quotations taken from", "Rabbinic tradition", "This project reports", "The Jewish Encyclopedia says"];
+  const hasSpeaker = (text) => speakers.some((s) => text.includes(s));
   for (const c of COPY.filter((x) => x.layer === "said" && !x.where.startsWith("dialog The four layers"))) {      // the legend describes the layer itself
-    assert.ok(speakers.some((s) => c.text.includes(s)), `${c.where}: no speaker in "${c.text.slice(0, 60)}"`);
+    assert.ok(hasSpeaker(c.text), `${c.where}: no speaker in "${c.text.slice(0, 60)}"`);
     if (!c.where.startsWith("dialog Ezekiel 1 in Jewish tradition")) assert.ok(!/\b(but|however|in fact|actually)\b/i.test(unquoted(c.text)), `${c.where}: a SAID sentence argues`);
   }
+  // every SAID item of the dialog is among the sentences just checked, and the check refuses the three sentences the dialog once had:
+  // a sentence that names nobody, and two whose opening words stood in the list of speakers
+  const dialogSaid = M.DIALOG.sections.filter((s) => s.heading !== "The four layers").flatMap((s) => s.items.filter((i) => i.layer === "said"));
+  assert.ok(dialogSaid.length >= 6);
+  for (const item of dialogSaid) {
+    assert.ok(COPY.some((c) => c.layer === "said" && c.text === item.text), "a SAID item of the dialog is not in the copy that is checked");
+    assert.ok(hasSpeaker(item.text), `the dialog: no speaker in "${item.text.slice(0, 60)}"`);
+  }
+  for (const old of [
+    "Where others differ. Most Christians, and many historians, disagree with parts of that. Some of his sources are dated, among them Robert Eisler's reconstruction of an armed rising.",
+    "The history is from one book. Words in quotation marks were checked against the text.",
+    "What he argues. Jesus was a Galilean Jew in the line of Israel's prophets.",
+    "Most Christians and many historians disagree with parts of it.",
+  ]) assert.equal(hasSpeaker(old), false, `the speaker check lets through: ${old.slice(0, 40)}`);
+  // a judgement of this project about a source is a READING, in the dialog as in the rows
+  for (const c of COPY.filter((x) => /most Christians|many historians|sources are dated/i.test(x.text))) assert.equal(c.layer, "reading", c.where);
   for (const s of M.STATIONS) {
     for (const x of s.bridge.stands.filter((y) => y.layer === "checked")) {
-      for (const t of [x.text, x.stargazer].filter(Boolean)) assert.match(t, /^(Counted|Computed|Tested|Built|Worked out|Read from the rows): /, `${s.key}: ${t.slice(0, 40)}`);
+      for (const t of [x.text, x.stargazer].filter(Boolean)) assert.match(t, /^(Counted|Computed|Computed from approximate positions|Tested|Built|Worked out|Read from the rows): /, `${s.key}: ${t.slice(0, 40)}`);
     }
     for (const l of LENSES) {
       const r = s.bridge.reading[l].text;
@@ -303,6 +326,7 @@ test("the dialog holds the sentences section 8.6 prescribes", () => {
     "It also shows ten notes its author wrote, and marks them as the author's.",
     "A stamp shows that the writing has not changed. It cannot show that the writing is true.",
     "The Bible words do not prove the numbers. The numbers do not prove the Bible words.",
+    "STRIX is the owl that speaks on this page.",
   ]);
   assert.equal(M.DIALOG.first.text, "This page sets Bible verses beside sky calculations because its author asked for that. The numbers do not depend on the verses, and the verses are not offered as science.");
   assert.ok(M.DIALOG.inShort.length >= 4 && M.DIALOG.inShort.length <= 6);
@@ -326,18 +350,57 @@ test("the dialog holds the sentences section 8.6 prescribes", () => {
   assert.equal(M.CERTIFIED_TEXT, "Certified: these bytes, their order, their addresses, the label each entry was given, the lineage and the ledger, unchanged since they were sealed with this key. "
     + "Not certified: that a TEXT entry matches its source, that a SAID entry is faithful, that a CHECKED number is right, that any READING is true, or who sealed it. "
     + "A TEXT row is checked by reading the source it names, a CHECKED row by running the code, a SAID row by opening the work cited. "
-    + "For the lexicon shipped here, this project's tests compared the TEXT rows with the source files; that review, not the seal, is the reason to trust its labels.");
+    + "This project reports: its tests compared the verse entries with the Project Gutenberg King James files (November 2026), and its builders compared each quotation with the source named. "
+    + "That review, not the seal, is the reason to trust the labels; you can repeat it by opening the sources.");
+  // the fourth sentence is a report of this project, not something a visitor can repeat on the page: SAID, with its speaker
+  assert.deepEqual(M.CERTIFIED.map((s) => s.layer), ["checked", "checked", "reading", "said"]);
+  assert.ok(M.CERTIFIED[3].text.startsWith("This project reports: "));
+  // the bridge section: several writers are quoted; what van Paassen argues is SAID by him; this project's view of him is a READING
+  const bridge = M.DIALOG.sections.find((s) => s.heading === "The bridge narrative (the gold boxes)").items;
+  assert.deepEqual(bridge.slice(1, 4).map((i) => [i.layer, i.text]), [
+    ["reading", "The gold boxes quote several writers, each named where it is quoted. Where a box quotes Pierre van Paassen, Why Jesus Died (Dial Press, 1949), the words in quotation marks are his and were checked against a scan of the book."],
+    ["said", "Van Paassen argues that Jesus was a Galilean Jew in the line of Israel's prophets who announced the Kingdom of God on earth: justice, and all people as kin; that Pontius Pilate alone ordered his death; that later tellings moved the blame onto the Jewish people; and that Greek-speaking missionaries, starting from Antioch, remade his message. He writes as a Unitarian and does not take the resurrection, the virgin birth or the Trinity as history."],
+    ["reading", "This project's view: most Christians and many historians would disagree with parts of that. Some of his sources are dated, among them Robert Eisler's reconstruction of an armed rising and the old theory of a dying and rising god."],
+  ]);
+  assert.ok(!all.includes("The history is from one book") && !all.includes("Words in quotation marks are his and were checked against the text"));
+  assert.ok(!/"dying and rising gods"/.test(all), "a phrase his book does not have is not put in quotation marks");
+  // the gold boxes do quote several writers: Irenaeus, a law book, this project's own RFC
+  const quotedIn = (who) => M.STATIONS.some((s) => s.bridge.stands.some((x) => x.layer === "said" && x.text.includes(who) && /"[^"]+"/.test(x.text)));
+  for (const who of ["van Paassen", "Irenaeus", "John Wilkinson", "SHD-CCP RFC 02"]) assert.ok(quotedIn(who), `${who} is quoted in a gold box`);
+  // the Bible words: what is King James is every verse entry; other translations are quoted in entries that name them
+  const bible = M.DIALOG.sections.find((s) => s.heading === "The Bible words").items;
+  assert.ok(bible[0].text.endsWith(" Every verse entry in the lexicon is in that wording."));
+  assert.ok(!all.includes("Every Bible quotation"));
+  assert.ok(DATA.ROWS.some((r) => r[2] !== "verse" && /Douay|American Standard|Brenton/.test(r[4])), "the rows do quote other translations");
   assert.equal(M.RESEAL_TEXT, "These are different bytes under a different key. A seal protects what was sealed. It cannot tell you that a label is deserved or whose key it is.");
   assert.equal(M.TAMPER_COPY.relabel.noticed, "The seal noticed that a label was changed.");
-  assert.equal(M.OUTSIDE_NOTICE, "This lexicon was not made by this page. Its words and its labels are its sender's. The checks below show only that its bytes have not changed since some key signed them.");
+  assert.equal(M.OUTSIDE_NOTICE, "This lexicon was not made by this page. Its words and its labels are its sender's. The checks below show only that the lexicon, its labels and the ledger up to the signed point have not changed since some key signed them.");
   assert.ok(M.OUTSIDE_NOTICE.startsWith(M.OUTSIDE_BANNER));
+  assert.equal(M.sentencesOf(M.OUTSIDE_NOTICE).length, 3);
+  assert.equal(M.OUTSIDE_LEGEND, "What these labels would mean on this page's own lexicon. Here they are the sender's claims.");
+  assert.equal(M.OUTSIDE_ROWS_HEADING, "Entries under this one, as their sender labelled them");
+  // a sky has no entry 100 and no author's notes: its Seal station says only the half that is true of it
+  assert.equal(copyText("seal sky note navigator"), "Epochs follow address order.");
+  assert.equal(copyText("seal sky note stargazer"), "The parts are stamped in number order.");
+  assert.equal(SKY.lexicon.byAddress.has("100"), false);
+  for (const l of LENSES) {
+    for (const s of M.visibleStations(l, "page")) {
+      const v = M.stationView(s.key, l, SKY.lexicon);
+      for (const p of [...v.say, ...v.notes]) assert.ok(!/author|\b100\b|Bible|Ezekiel/.test(p.text), `a sky is told at ${s.key}, ${l}: ${p.text}`);
+    }
+    assert.deepEqual(M.stationView("seal", l, SKY.lexicon).notes.map((p) => p.layer), ["checked"]);
+    assert.ok(M.stationView("seal", l, M.EZEKIEL).notes[0].text.includes("100"), "the Ezekiel lexicon keeps its sentence");
+  }
   assert.equal(copyText("seal note navigator"), "Epochs follow address order. The author's notes are sealed last because 100 is the largest index, not because they continue the Bible.");
   assert.equal(copyText("layers note navigator"), "The label is part of the sealed line: change it and the seal no longer fits. The seal does not judge the label.");
   // the specification's caption has 17 words ("are the same size as"); one sentence of at most 16 says the same
   assert.equal(M.WHEEL_COPY.perLens.stargazer.text, "On this curved map the thin outer lights are as big as the wide inner ones.");
   assert.equal(M.WHEEL_COPY.ladder.text, "1 → 4 → 16 → 64: bit, sector, quarter, word");
   assert.equal(M.WHEEL_COPY.parity.text, "Parity catches one flipped bit, or any odd number. Two flips cancel: parity holds again although the word has changed; the crystal check catches that.");
-  assert.deepEqual(M.WITNESS_MARKS.map((m) => m.label), ["two: established by the rule of Deuteronomy 19:15", "three: the stricter count in the same verse"]);
+  assert.deepEqual(M.WITNESS_MARKS.map((m) => m.label), ["two: enough for the rule of Deuteronomy 19:15, as a demonstration", "three: the stricter count in the same verse"]);
+  for (const m of M.WITNESS_MARKS) assert.ok(!/establish/i.test(m.label), "a mark does not say that four simulated receivers establish anything");
+  assert.deepEqual({ ...M.QUORUM_LIMIT }, { layer: "checked", text: "This shows how a two-witness rule is checked. It does not show that independent parties have looked." });
+  assert.ok(M.quorumSentence(3).endsWith(M.QUORUM_LIMIT.text));
   assert.deepEqual({ ...M.PLACE_LABELS }, { steps: "steps along the tree", straight: "straight distance in the chart" });
 });
 
@@ -414,12 +477,23 @@ test("the numbers the copy states as CHECKED are the ones the cores give", async
   // east of the zero point
   const naz = CC.SITES.find((s) => s.key === "nazareth"), keb = CC.SITES.find((s) => s.key === "kebar");
   const east = CC.bearingAndDistance(naz.lat, naz.lonEast, keb.lat, keb.lonEast);
-  assert.deepEqual({ ...F.kebar }, { bearing: Math.round(east.bearing), km: Math.round(east.km) });
-  assert.deepEqual({ ...F.kebar }, { bearing: 91, km: 934 });
+  const latApart = Math.abs(keb.lat - naz.lat), minutesApart = Math.abs(keb.lonEast - naz.lonEast) * 4;      // a star takes 4 minutes for a degree of longitude
+  assert.deepEqual({ ...F.kebar }, { bearing: Math.round(east.bearing), km: Math.round(east.km), latApart: Number(latApart.toFixed(2)), minutes: Math.round(minutesApart / 5) * 5, kmRounded: Math.round(east.km / 10) * 10 });
+  assert.deepEqual({ ...F.kebar }, { bearing: 91, km: 934, latApart: 0.57, minutes: 40, kmRounded: 930 });
+  // the copy states the three numbers no finer than two approximate positions bear: half a degree, 40 minutes, 930 km, roughly due east
+  assert.ok(latApart >= 0.45 && latApart <= 0.65, "about half a degree");
+  assert.ok(Math.abs(east.bearing - 90) <= 5, "roughly due east");
+  assert.ok(/approximate/.test(keb.note) && /approximate/.test(naz.note), "both positions are approximate in the core");
+  assert.equal(M.KEBAR_NAZARETH.layer, "checked");
+  assert.equal(M.KEBAR_NAZARETH.text, "Computed from approximate positions: the Kebar site (Nippur) and Nazareth lie about half a degree apart in latitude, so almost the same stars pass overhead at both, "
+    + `about ${Math.round(minutesApart / 5) * 5} minutes apart. From Nazareth the site lies roughly due east, about ${Math.round(east.km / 10) * 10} km.`);
+  assert.equal(M.KEBAR_NAZARETH.text, "Computed from approximate positions: the Kebar site (Nippur) and Nazareth lie about half a degree apart in latitude, so almost the same stars pass overhead at both, about 40 minutes apart. From Nazareth the site lies roughly due east, about 930 km.");
   assert.deepEqual([...F.roads], OW.CROSSROADS.map((c) => c.bearing));
   for (const b of F.roads) assert.ok(Math.abs(((b - 90 + 540) % 360) - 180) > 45, `the road at ${b} degrees does not run east`);
-  assert.ok(copyText("send stand 2").includes("bearing 91°, 934 km") && copyText("send stand 2").includes("11°, 253°, 303° and 304°"));
-  assert.ok(copyText("send stand 2 stargazer").includes("934 km"));
+  assert.ok(station("send").bridge.stands[2].text.startsWith(M.KEBAR_NAZARETH.text + " ") && copyText("send stand 2").includes("11°, 253°, 303° and 304°"));
+  for (const t of [station("send").bridge.stands[2].text, station("send").bridge.stands[2].stargazer]) assert.ok(!/934|0\.57|\b91\b|bearing|lies due east/.test(t), `finer than the positions bear: ${t}`);
+  const starEast = station("send").bridge.stands[2].stargazer;
+  assert.ok(starEast.includes("about 930 km") && starEast.includes("roughly east") && starEast.includes("about equally far north"), "the Stargazer form keeps the hedges");
   assert.ok(copyText("send say navigator").includes(OW.CROSSROADS.map((c) => c.city).slice(0, 3).join(", ") + " and " + OW.CROSSROADS[3].city));
   // three squares
   assert.equal(HM.gramTqf([0, 0], [3, 0], [0, 4]), 576n);
@@ -475,7 +549,8 @@ test("Stargazer strings: no sentence over 16 words and none of the hard words", 
   assert.deepEqual(["seal", "home", "prev", "ball"].map((k) => M.uiLabel(k, "navigator")), ["Seal this lexicon", "Home", "Previous sibling", "3D"]);
   assert.equal(M.uiLabel("constructor", "navigator"), "");
   // station and tamper names at Stargazer
-  assert.deepEqual(M.tamperRows("stargazer").map((r) => r.label), ["Change a word", "Drop an entry", "Add an entry"]);
+  assert.deepEqual(M.tamperRows("stargazer").map((r) => r.label), ["Change a word", "Drop a thing", "Add a thing"]);
+  assert.deepEqual(M.tamperRows("navigator").slice(0, 3).map((r) => r.label), ["Change a word", "Drop an entry", "Add an entry"]);
   assert.equal(M.tamperRows("navigator").length, OW.LEXICON_TAMPERS.length);
   assert.equal(M.tamperRows("navigator").at(-1).label, "Relabel a READING as TEXT and seal it again with a new key");
 });
@@ -593,7 +668,12 @@ test("the reader with the supplied passage: two wordings, every term a button, t
     else assert.equal(r.foot, null);
     // above the reader: row 0.3 belongs first to the Hebrew Bible, and the lexicon does not explain the vision
     assert.equal(r.head.source, "0.3");
-    assert.equal(r.head.layer, ROW.get("0.3").layer);
+    // the excerpt leaves out the sentences that name the row's speakers: it is this project's framing, with a link to the row
+    assert.equal(ROW.get("0.3").layer, "said");
+    assert.equal(r.head.layer, "reading");
+    for (const speaker of ["Rabbinic tradition", "Jewish Encyclopedia", "Mishnah"]) assert.ok(ROW.get("0.3").text.includes(speaker) && !r.head.text.includes(speaker));
+    assert.deepEqual(r.head.link, { address: "0.3", label: "What Jewish tradition says about this chapter" });
+    assert.deepEqual(r.switchNote, { layer: "reading", text: "The Bible has been put into English many times. Here are two: the one the author sent, and the King James. Kebar and Chebar are one river." });
     assert.equal(r.head.first, "Ezekiel 1 belongs first to the Hebrew Bible.");
     assert.ok(ROW.get("0.3").text.startsWith(r.head.first) && ROW.get("0.3").text.endsWith(r.head.last));
     assert.ok(r.head.last.endsWith("It does not explain the vision."));
@@ -746,7 +826,7 @@ test("Count with me: the count rows whose words stand in the reader light them",
 // ─── the Entry ───────────────────────────────────────────────────────────────
 
 test("the Entry at Stargazer: the words, the plain rows, then More for older readers", () => {
-  assert.deepEqual(M.entryView(M.EZEKIEL, null, "stargazer"), { empty: true, prompt: "Tap a shining word" });
+  assert.deepEqual(M.entryView(M.EZEKIEL, null, "stargazer"), { empty: true, prompt: "Tap a shining word", invite: M.NOTES_INVITE });
   const e = M.entryView(M.EZEKIEL, "26.1.1.4", "stargazer", { wording: "supplied" });
   assert.equal(e.name, "the river of Chebar");
   assert.deepEqual(e.show, { address: false, kind: false, path: false, hash: false });
@@ -773,7 +853,9 @@ test("the Entry at Stargazer: the words, the plain rows, then More for older rea
   for (const r of DATA.ROWS.filter((x) => x[2] === "term" || /^100\.\d+$/.test(x[0]))) {
     const view = M.entryView(M.EZEKIEL, r[0], "stargazer");
     const plain = view.first.filter((x) => x.kind === "plain");
-    assert.ok(plain.length + (view.author && view.author.facet && view.author.facet.kind === "plain" ? 1 : 0) >= 1, `${r[0]} shows a plain row at Stargazer`);
+    // (line 8 is the one exception: its framing stands under the quotation, and the two plain rows that say the same are not listed again)
+    const withLine = view.author ? [...view.author.before, view.author.facet].filter((x) => x && x.kind === "plain").length + (view.author.framing ? 1 : 0) : 0;
+    assert.ok(plain.length + withLine >= 1, `${r[0]} shows a plain row at Stargazer`);
     assert.ok(view.first.every((x) => x.group === "plain" || x.group === "parts"));
   }
 });
@@ -794,7 +876,10 @@ test("the Entry from Navigator up: address, path, kind, both wordings, the child
       assert.deepEqual(ranks, ranks.slice().sort((a, b) => a - b), `${r[0]}: the groups come in the fixed order`);
       for (const g of order) assert.deepEqual(e.rows.filter((x) => x.group === g).map((x) => x.address), kids.filter((k) => e.rows.find((x) => x.address === k).group === g), "canonical order inside a group");
       assert.deepEqual(e.more, []);
-      assert.deepEqual([...e.first.map((x) => x.address), ...(e.author && e.author.facet ? [e.author.facet.address] : [])].sort(), kids.slice().sort());
+      const withLine = e.author ? [...e.author.before.map((x) => x.address), ...(e.author.facet ? [e.author.facet.address] : [])] : [];
+      assert.deepEqual([...e.first.map((x) => x.address), ...withLine, ...e.hidden].sort(), kids.slice().sort(), "every child is shown once, or is one of the rows line 8's framing stands for");
+      assert.deepEqual(e.hidden, r[0] === "100.8" ? ["100.8.1", "100.8.2", "100.8.6"] : []);
+      assert.equal(e.lead, null, "the short leads are for Stargazer");
       for (const x of e.rows) {
         if (x.kind === "plain") assert.equal(x.group, "plain");
         else if (x.kind === "link") assert.equal(x.group, ROW.get(x.text).layer === "text" ? "written" : "reading");
@@ -1545,7 +1630,7 @@ test("the first state and what a link does to it", () => {
   assert.deepEqual(s.filter, { text: true, said: true, checked: true, reading: true });
   assert.deepEqual([s.marks, s.wordingChosen, s.flight, s.counting, s.sky], [false, false, null, null, null]);
   assert.deepEqual(s.wheel, { packet: 0, flips: [], view: "wheel", sector: null });
-  assert.deepEqual(M.entryView(s.lexicon, s.selected, s.lens), { empty: true, prompt: "Tap a shining word" });
+  assert.deepEqual(M.entryView(s.lexicon, s.selected, s.lens), { empty: true, prompt: "Tap a shining word", invite: M.NOTES_INVITE });
   // #entry selects and centres; the open verse follows
   const e = M.initialState("#entry=26.1.4.2&lens=navigator");
   assert.deepEqual([e.lens, e.selected, e.view.focus, e.verse, e.wording, e.notes], ["navigator", "26.1.4.2", "26.1.4.2", "26.1.4", "kjv", []]);
@@ -1581,4 +1666,467 @@ test("the first state and what a link does to it", () => {
   const before = JSON.stringify({ ...s, lexicon: null });
   M.setLens(s, "holographer"); M.selectEntry(s, "26.1.1.1"); M.applyHash(s, "#entry=26.1.2"); M.setWording(s, "kjv");
   assert.equal(JSON.stringify({ ...s, lexicon: null }), before);
+});
+
+// ─── after the review: one test for each fault that lived in the model ───────
+
+test("a sealed package names its chain at every lens; the words about the key stand only beside this page's own seal", async () => {
+  // the Seal station shows the chain name under the verdict, at Stargazer in the sky page's words (the sky page says: compare with a friend)
+  for (const lens of LENSES) assert.deepEqual(M.sealView(SEAL, lens).chain, { label: lens === "stargazer" ? "The name of this stamp" : "Chain name", value: SEAL.chainId });
+  assert.equal(M.sealView(null, "stargazer").chain, null);
+  const sky = await M.sealLexicon(SKY.lexicon, { at: AT });
+  const there = await OW.buildLexiconBundle(CC.skyLexiconRows(CC.skyState(1505042.16624, 32.13, 45.23)).map((r) => OW.makeEntry(...r)), { at: "2031-01-01T00:00:00.000Z" });
+  assert.equal(M.sealView(sky, "stargazer").chain.value, there.chain.chainId, "the name shown at Stargazer is the one the sky page shows");
+  // this page made the key of its own seal in this visit, and says so there
+  assert.equal(M.OWN_KEY_NOTE, "(a key made for this visit)");
+  assert.equal(M.sealView(SEAL, "navigator").rows.find((r) => r.key === "seal").value, SEAL.certificate.sealId + " (a key made for this visit)");
+  // a package from a file: neither the core's check details nor anything the model adds says when or for whom the key was made
+  const other = await OW.newSessionKeys(), bundle = await OW.buildLexiconBundle([OW.makeEntry("1", "checked", "note", "A note", "Words.")], { at: AT });
+  const { certificate } = await OW.issueCertificate(bundle, other, AT);
+  const out = await M.readOutside(JSON.stringify(OW.makeHyperpack({ ...bundle, certificate })));
+  assert.equal(out.ok, true);
+  assert.equal(out.checks.find((c) => c.name === "signature").detail, "ECDSA P-256 by " + certificate.sealId);
+  assert.ok(!JSON.stringify({ ...out, lexicon: null }).includes("this visit"), "a key from a file is not called a key of this visit");
+  assert.ok(!JSON.stringify(out.lexicon.entries).includes("this visit"));
+  assert.equal(out.signature, `signed by key ${certificate.sealId}; this page cannot know whose key that is`);
+});
+
+test("a package from outside: the ledger is listed up to the certified head, and each of its strings is cut to 96 code points", async () => {
+  // (a) one entry appended after the head: it is not listed as covered, and the page says how many there are
+  const pack = JSON.parse(SEAL.wire), head = pack.trace.findIndex((e) => e.hash === pack.certificate.traceHead);
+  assert.equal(head, pack.trace.length - 1);
+  OW.traceAppend(pack.trace, "someone", "added.later", "after the seal", AT);
+  const late = await M.readOutside(JSON.stringify(pack));
+  assert.equal(late.ok, true, "the front door accepts it: the signature covers the ledger up to its head");
+  assert.equal(late.covered.ledger.length, head + 1);
+  assert.ok(!late.covered.ledger.some((e) => e.event === "added.later" || e.actor === "someone"));
+  assert.deepEqual(late.notCovered.items.find((i) => i.label === "ledger entries after the certified head"), { label: "ledger entries after the certified head", value: "1" });
+  const whole = await M.readOutside(SEAL.wire);
+  assert.equal(whole.covered.ledger.length, SEAL.bundle.trace.length);
+  assert.ok(!whole.notCovered.items.some((i) => i.label.startsWith("ledger entries")));
+  // an honest ledger is shown as it is: nothing the page shows of it is cut
+  assert.deepEqual(whole.covered.ledger.map((e) => [e.n, e.actor, e.event, e.at, e.cut]), SEAL.bundle.trace.map((e) => [e.n, e.actor, e.event, e.at, false]));
+  assert.equal(whole.covered.ledgerCut, false);
+  // a sender may write a ledger string of any length; one unbroken string of 100,000 characters froze the tab. It never reaches the page.
+  const entries = [OW.makeEntry("1", "reading", "note", "A note", "Words.")], long = "A".repeat(100000), astral = "𝔸".repeat(500);
+  const bundle = await OW.buildLexiconBundle(entries, { at: AT });
+  OW.traceAppend(bundle.trace, long, "note", "a detail", AT);
+  OW.traceAppend(bundle.trace, "actor", astral, "x".repeat(5000), AT);
+  const { certificate } = await OW.issueCertificate(bundle, await OW.newSessionKeys(), AT);
+  const wire = JSON.stringify(OW.makeHyperpack({ ...bundle, certificate }));
+  assert.ok(wire.length > 100000);
+  const out = await M.readOutside(wire);
+  assert.equal(out.ok, true);
+  assert.equal(M.LEDGER_POINTS, 96);
+  for (const e of out.covered.ledger) for (const v of [e.actor, e.event, e.detail, e.at]) assert.ok(typeof v === "string" && [...v].length <= 96, "a ledger string of more than 96 code points was handed to the shell");
+  const [a, b] = out.covered.ledger.slice(-2);
+  assert.equal(a.actor, "A".repeat(95) + "…");
+  assert.equal(b.event, "𝔸".repeat(95) + "…", "cut by code points, never inside a pair");
+  assert.deepEqual([a.cut, b.cut, out.covered.ledgerCut], [true, true, true]);
+  assert.ok(JSON.stringify({ ...out, lexicon: null, checks: null }).length < 20000, "the full values are not in what the page is given");
+  assert.ok(M.LEDGER_CUT_NOTE.includes("…") && M.LEDGER_CUT_NOTE.includes("95"));
+});
+
+test("a link that replaces the lexicon drops the seal, the tampers and what was sent", () => {
+  // (b) the Chain tab would otherwise show the Ezekiel chain over a sky of 25 entries
+  const sealed = { ...M.initialState("#lens=navigator"), seal: SEAL, tampers: { word: { ran: true } }, send: { k: 4 }, tab: "chain", counting: { words: ["four"], word: "four" } };
+  assert.equal(M.tabFor(sealed), "chain");
+  const toSky = M.applyHash(sealed, "#sky=1505042.16624,32.13,45.23&lens=navigator");
+  assert.equal(toSky.lexicon.origin, "page");
+  assert.deepEqual([toSky.seal, toSky.tampers, toSky.send, toSky.tab, toSky.counting], [null, {}, null, "entry", null]);
+  const skySealed = { ...toSky, seal: SEAL, tampers: { drop: { ran: true } }, send: { k: 2 }, tab: "chain" };
+  const back = M.applyHash(skySealed, "#lens=navigator");
+  assert.deepEqual([back.lexicon, back.seal, back.tampers, back.send, back.tab], [M.EZEKIEL, null, {}, null, "entry"]);
+  // the same sky again keeps what was sealed
+  const same = M.applyHash(skySealed, "#sky=1505042.16624,32.13,45.23&entry=2.2&lens=navigator");
+  assert.equal(same.seal, SEAL);
+  // selecting an entry clears a count that was lit
+  assert.equal(M.selectEntry({ ...M.initialState(""), counting: { words: ["four"], word: "four" } }, "26.1.5").counting, null);
+  // a link value is judged as the page will use it, rounded: one that rounds to the end of the range is ignored like any other bad value
+  assert.equal(CC.skyInputsValid(2817152.499996, 0, 0), true, "in range as typed");
+  assert.equal(CC.skyInputsValid(CC.roundSkyInputs(2817152.499996, 0, 0).jdUt, 0, 0), false, "out of range as the pages round it");
+  assert.deepEqual([M.parseHash("#sky=2817152.499996,0,0").values.sky, M.parseHash("#sky=2817152.499996,0,0").note], [undefined, "a link value was ignored"]);
+  assert.equal(M.skyLexicon([2817152.499996, 0, 0]).why, "These three numbers are outside what this page can work out.");
+  assert.equal(M.initialState("#sky=2817152.499996,0,0").lexicon, M.EZEKIEL);
+  assert.equal(M.initialState("#sky=2817152.49999,0,0").lexicon.origin, "page");
+});
+
+test("the tree and the ball: a centred entry's children are all drawn; 2D and 3D give different straight distances; a turn goes the way it says", () => {
+  // (c) 2,400 children push most of them past the rim cut; the children of the centred entry are never hidden (8.1)
+  const many = [OW.makeEntry("1", "reading", "note", "One", "")];
+  for (let i = 1; i <= 2400; i++) many.push(OW.makeEntry("1." + i, "reading", "note", "n" + i, ""));
+  const lexicon = M.makeLexicon(many, "page", "many", ""), scene = M.treeScene(lexicon, M.viewAt(lexicon, "1"), "2D");
+  const drawn = new Set(scene.nodes.map((n) => n.address));
+  assert.deepEqual([scene.count, scene.crowded], [2400, true]);
+  for (let i = 1; i <= 2400; i++) assert.ok(drawn.has("1." + i), `child 1.${i} of the centred entry is not drawn`);
+  assert.ok(scene.nodes.filter((n) => n.relation === "child" && n.radius > M.RIM_CUT).length > 1000, "most of them lie beyond the rim cut, and are drawn all the same");
+  assert.equal(scene.hidden, 0);
+  assert.equal(scene.nodes.filter((n) => n.label !== null && n.relation === "child").length, 0);
+  // hidden counts entries, not the root: from the root of the Ezekiel lexicon everything further than two edges and near the rim is left out
+  const top = M.treeScene(M.EZEKIEL, M.viewAt(M.EZEKIEL, ""), "2D");
+  assert.equal(top.hidden, M.EZEKIEL.entries.length - top.nodes.filter((n) => n.address !== "").length);
+  assert.ok(top.hidden > 0);
+  // (d) the straight distance is the one of the layout on screen
+  const a = "26.1.1.4", b = "43.3.16";
+  const flat = M.placeNumbers(M.EZEKIEL, "2D", a, b), ball = M.placeNumbers(M.EZEKIEL, "3D", a, b);
+  assert.equal(flat.steps, ball.steps);
+  assert.notEqual(flat.straight.toFixed(2), ball.straight.toFixed(2));
+  close(ball.straight, Math.acosh(HM.relativeFrame(HM.treeLayout(M.EZEKIEL.addresses, "3D"), a, b)[15]), 1e-9, "3D");
+  close(flat.straight, Math.acosh(HM.relativeFrame(HM.treeLayout(M.EZEKIEL.addresses, "2D"), a, b)[15]), 1e-9, "2D");
+  assert.ok(ball.sentence.includes(ball.straight.toFixed(2) + " straight distance in the chart") && flat.sentence.includes(flat.straight.toFixed(2) + " straight distance in the chart"));
+  // (e) the point of the ball that faces the visitor is (0, 0, 1); x is to the right and y is up
+  const front = (R) => [R[2], R[6], R[10]];
+  assert.ok(front(M.orbitTurn(OW.IDENT, "left"))[0] < -0.1, "left turns the front of the ball to the left");
+  assert.ok(front(M.orbitTurn(OW.IDENT, "right"))[0] > 0.1);
+  assert.ok(front(M.orbitTurn(OW.IDENT, "up"))[1] > 0.1, "up turns the front of the ball up");
+  assert.ok(front(M.orbitTurn(OW.IDENT, "down"))[1] < -0.1);
+  assert.deepEqual(M.orbitTurn(OW.IDENT, "sideways"), [...OW.IDENT]);
+});
+
+test("a tamper's verdict is the front door's answer, and its sentence is worded for the lens it is shown in", async () => {
+  const r = await M.runTamper(SEAL, "word", { at: AT, lens: "holographer" });
+  assert.deepEqual([r.ran, r.why, r.verdict, r.got], [true, null, "REFUSED", "crystal"]);
+  assert.equal(r.sentence, M.tamperSentence(r, "holographer"));
+  // the result keeps the facts; each lens words them: from Navigator up with the name of the check that refused (8.2)
+  assert.equal(M.tamperSentence(r, "stargazer"), "The stamp no longer fits. A word was changed.");
+  assert.equal(M.tamperSentence(r, "navigator"), "Refused at the check called crystal. The seal noticed that a word was changed.");
+  const star = await M.runTamper(SEAL, "drop", { at: AT, lens: "stargazer" });
+  assert.equal(star.sentence, "The stamp no longer fits. Something is missing.");
+  assert.equal(M.tamperSentence(star, "navigator"), "Refused at the check called lexicon. The seal noticed that an entry is missing.");
+  for (const row of OW.LEXICON_TAMPERS) for (const lens of LENSES) {
+    const got = row.expected === "accepted" ? "accepted" : row.expected, s = M.tamperSentence({ ran: true, key: row.key, expected: row.expected, got, accepted: got === "accepted" }, lens);
+    assert.ok(s.length > 20 && (got === "accepted" || lens === "stargazer" || s.includes("the check called " + got)), `${row.key} at ${lens}: ${s}`);
+  }
+  // before sealing, and a change that cannot be made
+  assert.equal(M.tamperSentence({ ran: false, why: "unsealed" }, "stargazer"), "Stamp it first.");
+  assert.equal(M.tamperSentence({ ran: false, why: "unsealed" }, "navigator"), "Seal the lexicon first.");
+  assert.equal(M.tamperSentence(null, "holographer"), "Seal the lexicon first.");
+  const unmade = await M.runTamper(SEAL, "word", { rows: [{ key: "word", label: "Change a word", expected: "crystal", apply: async () => { throw new Error("no"); } }] });
+  assert.deepEqual([unmade.ran, unmade.why, unmade.sentence, M.tamperSentence(unmade, "stargazer")], [false, "unmade", "This change could not be made on this package.", "This change could not be made on this package."]);
+  assert.equal((await M.runTamper(null, "word")).why, "unsealed");
+  // (f) a change the front door lets through although its row expects a refusal is reported as ACCEPTED and as not noticed,
+  // never as REFUSED because the table said so. No tamper of the core does this today; a table of the test's own does.
+  const slips = [{ key: "word", label: "Change a word", expected: "crystal", apply: async (pack) => pack }];
+  for (const lens of LENSES) {
+    const through = await M.runTamper(SEAL, "word", { at: AT, lens, rows: slips });
+    assert.deepEqual([through.ran, through.verdict, through.got, through.accepted, through.asDeclared, through.sentence], [true, "ACCEPTED", "accepted", true, false, "This change was not noticed."]);
+    assert.equal(through.sealId, SEAL.certificate.sealId);
+  }
+  // and a refusal where an acceptance is expected is a refusal
+  const refused = await M.runTamper(SEAL, "reseal", { at: AT, lens: "navigator", rows: [{ key: "reseal", label: "x", expected: "accepted", apply: OW.LEXICON_TAMPERS.find((t) => t.key === "word").apply }] });
+  assert.deepEqual([refused.verdict, refused.got, refused.asDeclared, refused.accepted], ["REFUSED", "crystal", false, false]);
+  assert.ok(!refused.sentence.includes(M.RESEAL_TEXT));
+});
+
+test("an author's line: the plain rows before its first said or checked row keep their place; line 8's framing stands once", () => {
+  // line 2: Ezekiel's wheels, then the report, then the author's belief (the order of the rows), at every lens and in the list of the ten lines
+  for (const lens of LENSES) {
+    const e = M.entryView(M.EZEKIEL, "100.2", lens);
+    assert.deepEqual([e.author.before.map((r) => r.address), e.author.facet.address, e.first[0].address], [["100.2.1"], "100.2.2", "100.2.3"]);
+    assert.deepEqual([e.author.before[0].layer, e.author.facet.layer, e.first[0].layer], ["reading", "said", "reading"]);
+    assert.ok(e.author.before[0].text.includes("a wheel in the middle of a wheel") && e.author.facet.text.includes("Skeptical Inquirer") && e.first[0].text.includes("the author's own belief"));
+  }
+  for (const r of DATA.ROWS.filter((x) => /^100\.\d+$/.test(x[0]) && x[0] !== "100.11")) {
+    const kids = DATA.ROWS.filter((x) => OW.parentOf(x[0]) === r[0]).map((x) => x[0]);
+    for (const lens of LENSES) {
+      const e = M.entryView(M.EZEKIEL, r[0], lens), facet = e.author.facet.address, before = e.author.before.map((x) => x.address);
+      for (const b of e.author.before) assert.ok(b.kind === "plain" && kids.indexOf(b.address) < kids.indexOf(facet), `${b.address} is a plain row before ${facet}`);
+      assert.deepEqual(before, kids.slice(0, kids.indexOf(facet)).filter((k) => ROW.get(k).kind === "plain" && !e.hidden.includes(k)), "all of them, in the order of the rows");
+      assert.deepEqual([...before, facet, ...e.first.map((x) => x.address), ...e.more.map((x) => x.address), ...e.hidden].sort(), kids.slice().sort(), `${r[0]}: every row once`);
+    }
+  }
+  // line 8: the framing is on the card once, under the quotation; no row that is listed says it again
+  const says = (t) => /not saying them to you|in the style of (a|the) court/i.test(t);
+  assert.deepEqual([...M.LINE8_RESTATED], ["100.8.1", "100.8.2", "100.8.6"]);
+  for (const a of M.LINE8_RESTATED) assert.ok(ROW.get(a) && ROW.get(a).layer === "reading" && says(ROW.get(a).text), `${a} restates the framing`);
+  for (const r of DATA.ROWS.filter((x) => OW.parentOf(x[0]) === "100.8" && !M.LINE8_RESTATED.includes(x[0]))) assert.ok(!says(r[4]), `${r[0]} says something else`);
+  for (const lens of LENSES) {
+    const e = M.entryView(M.EZEKIEL, "100.8", lens);
+    assert.ok(says(e.author.framing));
+    assert.deepEqual(e.hidden, ["100.8.1", "100.8.2", "100.8.6"]);
+    const shown = [...e.author.before, e.author.facet, ...e.first, ...e.more];
+    assert.equal(shown.filter((x) => says(x.text)).length, 0, `line 8 at ${lens}: the framing a second time`);
+    assert.equal(e.author.facet.address, "100.8.5");
+    // the rows themselves are still entries of the lexicon and can be opened
+    assert.equal(e.rows.length, DATA.ROWS.filter((x) => OW.parentOf(x[0]) === "100.8").length);
+    assert.equal(M.entryView(M.EZEKIEL, "100.8.6", lens).text, M.LINE8_FRAMING);
+  }
+  assert.deepEqual(M.entryView(M.EZEKIEL, "100.7", "navigator").hidden, []);
+});
+
+test("three entries have a Stargazer sentence of their own; a verse reached through a link names its translation", () => {
+  assert.deepEqual([...M.ENTRY_LEADS].map(([a, lead]) => [a, lead.layer, lead.text]), [
+    ["0", "reading", "This page lists words and where they come from."],
+    ["0.3", "said", "The Jewish Encyclopedia says Jewish teachers explained this chapter with great care."],
+    ["100", "reading", "Ten lines the author wrote under the passage."],
+  ]);
+  const words = (s) => s.split(/\s+/).filter((w) => /[\p{L}\p{N}]/u.test(w)).length;
+  for (const [a, lead] of M.ENTRY_LEADS) {
+    assert.ok(words(lead.text) <= 16 && M.sentencesOf(lead.text).length === 1);
+    assert.equal(lead.layer, ROW.get(a).layer, "the lead wears the badge of its entry");
+    const star = M.entryView(M.EZEKIEL, a, "stargazer");
+    assert.deepEqual(star.lead, { ...lead });
+    assert.equal(star.text, ROW.get(a).text, "the entry's own words are unchanged; the shell puts them behind More for older readers");
+    for (const lens of ["navigator", "holographer"]) assert.equal(M.entryView(M.EZEKIEL, a, lens).lead, null);
+  }
+  // what the lead of 0.3 says is what the row reports: the Jewish Encyclopedia, on a rule about explaining the chapter
+  assert.ok(ROW.get("0.3").text.includes("As the Jewish Encyclopedia reports it") && ROW.get("0.3").text.includes("must not be explained"));
+  assert.ok(ROW.get("100").text.startsWith("Ten lines the author wrote under the passage"));
+  // only these three, and only in the built-in lexicon
+  assert.equal(DATA.ROWS.filter((r) => M.entryView(M.EZEKIEL, r[0], "stargazer").lead !== null).length, 3);
+  const made = M.makeLexicon([OW.makeEntry("0", "reading", "about", "About", "A sender's words."), OW.makeEntry("0.1", "text", "verse", "A verse", "Words."), OW.makeEntry("0.2", "reading", "link", "See", "0.1")], "outside", "t", "");
+  assert.equal(M.entryView(made, "0", "stargazer").lead, null);
+  // a verse set beside an entry by a link is a King James row: its citation is followed by the name of the translation
+  let seen = 0;
+  for (const r of DATA.ROWS.filter((x) => x[2] === "link")) {
+    const target = ROW.get(r[4]), link = M.entryView(M.EZEKIEL, r[0], "stargazer").link;
+    assert.equal(link.translation, target.kind === "verse" && target.layer === "text" ? "King James Version" : null, r[0]);
+    assert.equal(M.entryView(M.EZEKIEL, OW.parentOf(r[0]), "stargazer").rows.find((x) => x.address === r[0]).link.translation, link.translation);
+    if (link.translation) seen += 1;
+  }
+  assert.ok(seen >= 20);
+  assert.equal(M.entryView(made, "0.2", "navigator").link.translation, null, "a sender's verse is not called King James by this page");
+  // the gold box under John 3:16 is row 100.3.6, both sentences: he is not presented as support for a reading he argues against
+  const stand = station("place").bridge.stands[2];
+  assert.deepEqual([stand.layer, stand.source, stand.text], ["said", "100.3.6", ROW.get("100.3.6").text]);
+  assert.ok(stand.text.includes("\"God so loved it and still loves it\"") && stand.text.includes("a Greek idea that does not stem from Jesus"));
+  assert.equal(M.sentencesOf(ROW.get("100.3.6").text).length, 2);
+  // station 7 at Stargazer says what row 100.6.2 says, and gives no instruction under a CHECKED badge
+  assert.equal(station("fourth").say.stargazer[0].text, M.sentencesOf(ROW.get("100.6.2").text)[0]);
+  for (const s of M.STATIONS) for (const p of s.say.stargazer.filter((x) => x.layer === "checked")) assert.ok(!/^Pin /.test(p.text), s.key);
+  // the Stargazer form under 2 Chronicles 18:15 says whose words the oath's are: not "these words" after a Bible verse
+  const law = station("seal").bridge.stands[1].stargazer;
+  assert.equal(law, "A law book of 1618 has an oath for witnesses. Its words are \"the truth, the whole trueth, and nothing but the trueth\", in old spelling.");
+  assert.ok(station("seal").bridge.stands[1].text.includes("\"the truth, the whole trueth, and nothing but the trueth\""), "the same printed words as from Navigator up");
+  assert.ok(!/these words/.test(law) && !/so help/i.test(law));
+});
+
+// ─── the second pass: finding the way (John 3:16, the author's notes, pointers, the ways out) ───────────────────
+
+test("John 3:16 has a gold box at every lens while it is the chosen entry, with the way from the river and the entries that point to it", () => {
+  const john = DATA.HANDLES.john316, river = DATA.HANDLES.place;
+  assert.equal(john, "43.3.16");
+  assert.equal(river, "26.1.1.4");
+  assert.match(ROW.get(river).name, /river/);
+  for (const lens of LENSES) {
+    for (const s of M.visibleStations(lens, "builtin")) {
+      const b = M.bridgeView(s.key, lens, M.EZEKIEL, john);
+      assert.equal(b.john, true, `${lens} ${s.key}`);
+      assert.equal(b.opening, null);
+      assert.equal(b.reading.layer, "reading");
+      assert.ok(b.reading.text.startsWith("We read John 3:16 as the bridge") && b.reading.text.endsWith("You may see it another way."), b.reading.text);
+      assert.deepEqual(b.fly, { from: river, to: john, label: "Fly here from the river" });
+      assert.equal(b.go, null);
+      // what it stands on: the verse itself first, as TEXT cut from the row, then the same stands as the Place station
+      assert.equal(b.stands[0].layer, "text");
+      assert.equal(b.stands[0].text, ROW.get(john).text);
+      assert.deepEqual(b.stands.map((x) => x.layer), ["text", "text", "said", "checked"]);
+      // another entry, or none: the station's own box
+      for (const other of [null, river, "100.3"]) assert.deepEqual(M.bridgeView(s.key, lens, M.EZEKIEL, other), M.stationView(s.key, lens).bridge);
+      assert.equal(M.stationView(s.key, lens).bridge.john, false);
+    }
+  }
+  assert.equal(M.bridgeView("read", "stargazer", M.EZEKIEL, john).reading.text, "We read John 3:16 as the bridge, in the Gospel's own words. It is love from its source to the world. You may see it another way.");
+  assert.equal(M.bridgeView("seal", "navigator", M.EZEKIEL, john).reading.text, M.stationView("place", "navigator").bridge.reading.text);
+  // the way walks the tree: both ends are entries and a path joins them
+  const p = M.placeNumbers(M.EZEKIEL, "2D", river, john);
+  assert.equal(p.ok, true);
+  assert.ok(p.steps >= 2);
+  // the first gold box leads there and to First Explorers; no other box does
+  for (const lens of LENSES) {
+    const first = M.stationView("read", lens).bridge;
+    assert.deepEqual(first.go, { address: john, label: "Go to John 3:16" });
+    assert.deepEqual(first.links, [{ label: "Open First Explorers", href: KIT.LINKS.firstExplorers }]);
+    for (const s of M.visibleStations(lens, "builtin").filter((x) => x.key !== "read")) { const b = M.stationView(s.key, lens).bridge; assert.equal(b.go, null); assert.deepEqual(b.links, []); assert.equal(b.fly, null); }
+  }
+  // a sky and a lexicon from outside have no gold box, whatever is chosen
+  const sky = M.skyLexicon([2461360.25, 51.48, 0]).lexicon;
+  assert.equal(M.bridgeView("seal", "navigator", sky, john), null);
+  assert.equal(M.bridgeView("seal", "navigator", M.makeLexicon(M.EZEKIEL.entries, "outside", "x", ""), john), null);
+  // the Entry of John 3:16 names the entries that point to it: the author's line 3 and the outline
+  assert.deepEqual(M.pointedFrom(M.EZEKIEL, john).map((x) => [x.address, x.label]), [["100.3", "Go to Line 3"], ["100.11", "Go to One outline: John 3:16 as three numbers"]]);
+  for (const x of M.pointedFrom(M.EZEKIEL, john)) assert.ok(DATA.ROWS.some((r) => r[2] === "link" && r[4] === john && r[0].startsWith(x.address + ".")), x.address);
+  for (const lens of LENSES) assert.deepEqual(M.entryView(M.EZEKIEL, john, lens).from, M.pointedFrom(M.EZEKIEL, john));
+  assert.deepEqual(M.entryView(M.EZEKIEL, river, "navigator").from, []);
+  assert.deepEqual(M.entryView(M.EZEKIEL, "", "navigator").from, []);
+  assert.deepEqual(M.pointedFrom(M.makeLexicon(M.EZEKIEL.entries, "outside", "x", ""), john), []);
+});
+
+test("the card shown while nothing is chosen says where the author's ten lines are, and quotes none of them", () => {
+  assert.deepEqual({ ...M.NOTES_INVITE }, { layer: "reading", text: "The author wrote ten lines under this passage.", label: "Open the author's notes", short: "The author's notes", address: "100" });
+  assert.equal(M.NOTES_INVITE.address, DATA.HANDLES.notes);
+  const lines = M.childrenOf(M.EZEKIEL, "100").filter((a) => M.isAuthorLine(M.EZEKIEL, a));
+  assert.equal(lines.length, 10);
+  for (const a of lines) assert.ok(!M.NOTES_INVITE.text.includes(ROW.get(a).text) && !M.NOTES_INVITE.label.includes(ROW.get(a).text));
+  assert.ok(!/["“”]/.test(M.NOTES_INVITE.text));
+  for (const lens of LENSES) assert.deepEqual(M.entryView(M.EZEKIEL, null, lens).invite, M.NOTES_INVITE);
+  assert.equal(M.entryView(M.skyLexicon([2461360.25, 51.48, 0]).lexicon, null, "navigator").invite, null);
+  assert.equal(M.entryView(M.makeLexicon(M.EZEKIEL.entries, "outside", "x", ""), null, "navigator").invite, null);
+});
+
+test("a row whose closing words name a place of the page carries a button to that place, and only where the lens has the place", () => {
+  // the closing words that send the reader somewhere: every such row under lines 5, 6, 9 and 10 has a pointer
+  const sends = /^(See it |Try three points|Try it in the lab|Press Seal|Hide a corner|Flip one light|Pick four lights|Count the slices|Open the three|Open both)/;
+  const closing = (a) => { const s = M.sentencesOf(ROW.get(a).text); return s[s.length - 1]; };
+  const under = DATA.ROWS.map((r) => r[0]).filter((a) => /^100\.(5|6|9|10)\./.test(a));
+  const pointing = under.filter((a) => sends.test(closing(a)));
+  assert.ok(pointing.length >= 11, String(pointing.length));
+  for (const a of pointing) assert.ok(M.POINTER_ADDRESSES.includes(a), `${a}: "${closing(a)}" has no button`);
+  for (const a of M.POINTER_ADDRESSES) assert.ok(ROW.has(a) && ROW.get(a).kind !== "link" && ROW.get(a).kind !== "plain", a);
+  const figures = M.FOURTH_PARTS.map((f) => f.key);
+  for (const a of M.POINTER_ADDRESSES) {
+    const nav = M.pointerOf(M.EZEKIEL, a, "navigator"), holo = M.pointerOf(M.EZEKIEL, a, "holographer"), star = M.pointerOf(M.EZEKIEL, a, "stargazer");
+    assert.ok(nav, a);
+    assert.deepEqual(holo, { ...nav, href: holo.href });
+    assert.ok(nav.place === "entries" ? nav.entries.length >= 2 && nav.label === "" : nav.label !== "", a);
+    assert.deepEqual(M.rowView(M.EZEKIEL, a, "navigator").pointer, nav);
+    if (nav.station) assert.ok(M.visibleStations("navigator", "builtin").some((s) => s.key === nav.station), a);
+    if (nav.place === "figure") { assert.equal(nav.station, "fourth"); assert.ok(figures.includes(nav.figure)); assert.equal(nav.label, "See the figure: " + M.FOURTH_PARTS.find((f) => f.key === nav.figure).title); }
+    if (nav.place === "wheel") { assert.equal(nav.tab, "wheel"); assert.ok(M.visibleTabs("navigator", {}).some((t) => t.key === "wheel")); }
+    if (nav.place === "sky") { assert.ok(KIT.isAllowedUrl(nav.href)); assert.equal(nav.href, M.skyPageHref("lab", "navigator")); assert.ok(closing(a).startsWith(nav.label), a); }
+    for (const x of nav.entries) { assert.ok(M.EZEKIEL.byAddress.has(x.address)); assert.equal(x.label, "Go to " + ROW.get(x.address).name); }
+    // Stargazer: a figure it does not have gives no button; what it has is inside "Stamp it"
+    if (star) {
+      if (star.station) { assert.equal(star.station, "seal"); assert.ok(M.visibleStations("stargazer", "builtin").some((s) => s.key === "seal")); }
+      assert.equal(star.tab, null);
+      if (star.place === "figure") assert.equal(star.figure, "b");
+    } else assert.ok(nav.place === "figure" && nav.figure !== "b", a);
+  }
+  // the pairs the rows name
+  const place = (a, lens = "navigator") => { const p = M.pointerOf(M.EZEKIEL, a, lens); return p && [p.place, p.station, p.figure, p.tab]; };
+  assert.deepEqual(place("100.5.3"), ["figure", "fourth", "b", null]);      // "See it at The fourth square." (the mirror step)
+  assert.deepEqual(place("100.5.4"), ["station", "seal", null, null]);      // "Press Seal and watch."
+  assert.deepEqual(place("100.6.8"), ["figure", "fourth", "a", null]);      // "Try three points of your own."
+  assert.deepEqual(place("100.6.9"), ["figure", "fourth", "b", null]);      // "Hide a corner and see."
+  assert.deepEqual(place("100.10.7"), ["wheel", null, null, "wheel"]);      // "Count the slices of the wheel."
+  assert.deepEqual(place("100.6.9", "stargazer"), ["figure", "seal", "b", null]);
+  assert.equal(place("100.6.8", "stargazer"), null);
+  assert.deepEqual(M.pointerOf(M.EZEKIEL, "100.9.4", "navigator").entries.map((x) => x.address), ["26.1.9", "26.1.12", "26.1.17"]);
+  assert.equal(M.pointerOf(M.EZEKIEL, "100.5.4", "stargazer").label, "Go to Stamp it");
+  assert.equal(M.pointerOf(M.EZEKIEL, "100.5.4", "navigator").label, "Go to the Seal station");
+  // lines 5 and 6 themselves: a button to the mirror word at Stargazer only (from Navigator up their rows carry the buttons)
+  for (const a of ["100.5", "100.6"]) {
+    const star = M.pointerOf(M.EZEKIEL, a, "stargazer");
+    assert.deepEqual([star.place, star.station, star.figure], ["figure", "seal", "b"]);
+    assert.equal(M.pointerOf(M.EZEKIEL, a, "navigator"), null);
+    assert.deepEqual(M.entryView(M.EZEKIEL, a, "stargazer").actions.filter((x) => x.key === "pointer").map((x) => x.label), [star.label]);
+    assert.deepEqual(M.entryView(M.EZEKIEL, a, "navigator").actions.filter((x) => x.key === "pointer"), []);
+  }
+  assert.equal(M.pointerOf(M.EZEKIEL, "100.5", "stargazer").label, "See the mirror pictures");
+  assert.equal(M.pointerOf(M.EZEKIEL, "100.6", "stargazer").label, "See three corners give the fourth");
+  // no pointer for any other lexicon, an unknown address or a row without such words
+  assert.equal(M.pointerOf(M.makeLexicon(M.EZEKIEL.entries, "outside", "x", ""), "100.6.9", "navigator"), null);
+  assert.equal(M.pointerOf(M.EZEKIEL, "nope", "navigator"), null);
+  assert.equal(M.pointerOf(M.EZEKIEL, "100.6.15", "navigator"), null);
+  // station 7 runs line 6 and links to it; the mirror word has Stargazer words of its own
+  assert.equal(M.FOURTH_LINE, "100.6");
+  assert.equal(M.MIRROR_STARGAZER.layer, "checked");
+  assert.match(M.MIRROR_STARGAZER.text, /^Built: /);
+  const mirror = M.mirrorFigure([1, 0, 0, 1], { hidden: true });
+  assert.equal(mirror.restored, true, "the caption's claim: the other three give the hidden corner back");
+  assert.equal(M.mirrorCaptionStargazer(mirror), "The last corner is hidden. The picture shows what the other three corners give.");
+  assert.match(M.mirrorCaptionStargazer(M.mirrorFigure([1, 0, 0, 1], { wrongBit: 5 })), /^One light in the last corner was flipped\./);
+  assert.match(M.mirrorCaptionStargazer(M.mirrorFigure([1, 0, 0, 1])), /^All four corners are shown\./);
+});
+
+test("the ways out of the page are the kit's links: the dialog's other pages, the sky page with a sky's own place and time", () => {
+  assert.equal(M.DIALOG.pagesHeading, "Other pages");
+  assert.deepEqual(M.DIALOG.pages.map((p) => [p.label, p.href]), [["First Explorers", KIT.LINKS.firstExplorers], ["Celestial Control Panel", KIT.LINKS.celestialControlPanel], ["Experimental Systems", KIT.LINKS.wingIndex]]);
+  for (const p of M.DIALOG.pages) assert.ok(KIT.isAllowedUrl(p.href));
+  assert.ok(!M.DIALOG.pages.some((p) => p.href === KIT.LINKS.lexiconExplorer));
+  // the Send station's gold box: the words "Open the sky page" are a link now, not a sentence
+  for (const lens of ["navigator", "holographer"]) {
+    const stand = M.stationView("send", lens).bridge.stands[2];
+    assert.deepEqual(stand.link, { label: "Open the sky page", href: M.skyPageHref("home", lens) });
+    assert.ok(stand.text.endsWith("none runs east.") && !stand.text.includes("Open the sky page"));
+    assert.ok(KIT.isAllowedUrl(stand.link.href));
+  }
+  for (const lens of LENSES) for (const s of M.visibleStations(lens, "builtin")) for (const [i, x] of M.stationView(s.key, lens).bridge.stands.entries()) if (!(s.key === "send" && i === 2)) assert.equal(x.link, null);
+  // a sky built from a link: the banner says what it is and what to do, and never who stamped it
+  assert.equal(M.SKY_BANNER, "This sky was built from a link: a place and a time. Stamp it here. The same place and time always get the same name.");
+  assert.ok(!/\byou(r)?\b/i.test(M.SKY_BANNER));
+  const made = M.skyLexicon([2461360.25, 51.48, 0]);
+  assert.deepEqual(made.sky, { jd: "2461360.25000", lat: "51.48", lon: "0.00" });
+  const href = M.skyPageHref("sky", "stargazer", made.sky);
+  assert.equal(href, "../Celestial_Control_Panel/index.html#jd=2461360.25000&lat=51.48&lon=0.00&lens=stargazer");
+  assert.ok(KIT.isAllowedUrl(href));
+  assert.ok(!/BC-|S-[0-9a-f]/.test(href), "no stamp and no name in a link");
+  // the keys are the ones the sky page reads (its grammar names jd, lat and lon)
+  const skyModel = readFileSync(path.join(ROOT, "Library/Experimental_Systems/Celestial_Control_Panel/celestial-panel-model.js"), "utf8");
+  for (const key of ["jd", "lat", "lon"]) assert.ok(skyModel.includes(`freeze(["${key}", `), key);
+  assert.equal(M.skyPageHref("sky", "navigator", null), "../Celestial_Control_Panel/index.html#lens=navigator");
+  assert.equal(M.skyPageHref("sky", "navigator", { jd: "x", lat: "1", lon: "2" }), "../Celestial_Control_Panel/index.html#lens=navigator");
+  // the same place and time always get the same name: two builds of one sky give one text, so one chain
+  assert.equal(M.lexiconTextOf(M.skyLexicon([2461360.25, 51.48, 0]).lexicon), M.lexiconTextOf(made.lexicon));
+  // a lexicon from a file: the one line of the banner under 700 px says what the first two sentences of the notice say
+  assert.equal(M.OUTSIDE_SHORT, "Not made by this page. Its words and labels are its sender's.");
+  assert.ok(M.OUTSIDE_NOTICE.startsWith("This lexicon was not made by this page. Its words and its labels are its sender's."));
+});
+
+test("Stargazer is told what the Navigator level adds, and every thing the line names is there and is not at Stargazer", () => {
+  assert.equal(M.MORE_LEVELS.text, "The Navigator level shows more: the chain, the Overwatch checks and four receivers. It also shows the path to John 3:16 and the fourth square.");
+  assert.deepEqual([M.MORE_LEVELS.label, M.MORE_LEVELS.lens], ["Switch to Navigator", "navigator"]);
+  const stations = (lens) => M.visibleStations(lens, "builtin").map((s) => s.key), tabs = (lens) => M.visibleTabs(lens, { origin: "builtin", sealed: true, sent: true }).map((t) => t.key);
+  for (const key of ["place", "send", "fourth"]) { assert.ok(stations("navigator").includes(key)); assert.ok(!stations("stargazer").includes(key)); }
+  for (const key of ["chain", "overwatch", "witnesses"]) { assert.ok(tabs("navigator").includes(key)); assert.ok(!tabs("stargazer").includes(key)); }
+  assert.equal(M.RECEIVERS.length, 4);
+  assert.match(M.stationView("place", "navigator").bridge.reading.text, /John 3:16/);
+});
+
+test("without a pointer: a point of figure (a) moves by buttons, the flip button reaches all sixteen lights, the list says what its keys do", () => {
+  const start = M.TQF_PRESETS[0].points;
+  assert.deepEqual(M.TQF_MOVES.map((m) => m.key), ["left", "right", "up", "down"]);
+  assert.deepEqual(M.tqfStep(start, 1, "right"), [[0, 0], [4, 0], [0, 4]]);
+  assert.deepEqual(M.tqfStep(start, 2, "up"), [[0, 0], [3, 0], [0, 5]]);
+  assert.deepEqual(M.tqfStep(start, 0, "left"), [[0, 0], [3, 0], [0, 4]], "kept inside the grid");
+  assert.deepEqual(M.tqfStep(start, 0, "down"), [[0, 0], [3, 0], [0, 4]]);
+  assert.deepEqual(M.tqfStep(start, 7, "up"), start.map((p) => p.slice()));
+  assert.deepEqual(M.tqfStep(start, 1, "sideways"), start.map((p) => p.slice()));
+  assert.notEqual(M.tqfStep(start, 1, "up")[1], start[1], "a copy, not the preset's own point");
+  // every grid point can be reached by the buttons, and each result is what a drag to that point gives
+  let pts = start.map((p) => p.slice());
+  for (let i = 0; i < 9; i++) pts = M.tqfStep(pts, 1, "right");
+  assert.deepEqual(pts[1], [M.TQF_GRID.max, 0]);
+  for (let i = 0; i < 9; i++) pts = M.tqfStep(pts, 1, "up");
+  assert.deepEqual(pts[1], [M.TQF_GRID.max, M.TQF_GRID.max]);
+  assert.equal(M.threeSquares(pts).ok, true);
+  assert.deepEqual(M.tqfStep(start, 1, "left")[1], M.tqfSnap(...M.tqfPlace([2, 0])));
+  // the flip button: light 6 first (as before), then every other light once, then the corner as it was
+  const seen = [];
+  let bit = null;
+  for (let i = 0; i < 16; i++) { bit = M.nextWrongBit(bit); seen.push(bit); }
+  assert.equal(seen[0], 5);
+  assert.deepEqual(seen.slice().sort((a, b) => a - b), Array.from({ length: 16 }, (_, k) => k));
+  assert.equal(M.nextWrongBit(bit), null);
+  assert.equal(M.nextWrongBit(undefined), 5);
+  for (const k of seen) assert.equal(M.mirrorFigure([1, 0, 0, 1], { wrongBit: k }).caught, true, `light ${k} is caught`);
+  // the list: the centred entry and what stands above it are expanded; a child's own children are not shown
+  const list = M.neighbourhood(M.EZEKIEL, "26.1.1", "navigator");
+  assert.deepEqual(list.filter((i) => i.relation !== "child").map((i) => [i.address, i.expanded]), [["", true], ["26", true], ["26.1", true], ["26.1.1", true]]);
+  assert.ok(list.filter((i) => i.relation === "child").every((i) => i.expanded === null));
+  const leaf = M.EZEKIEL.addresses.find((a) => M.childrenOf(M.EZEKIEL, a).length === 0);
+  assert.equal(M.neighbourhood(M.EZEKIEL, leaf, "navigator").find((i) => i.relation === "focus").expanded, false);
+  for (const [key, word] of [["ArrowUp", "Up"], ["ArrowDown", "Down"], ["ArrowLeft", "Left"], ["ArrowRight", "Right"], ["Home", "Home"]]) {
+    assert.ok(M.LIST_KEYS.other.includes(word) && M.LIST_KEYS.stargazer.includes(word), key);
+    assert.notEqual(M.treeKey(M.EZEKIEL, "26.1.2", key), null, key + " does something");
+  }
+  assert.ok(!/\bentr(y|ies)\b/.test(M.LIST_KEYS.stargazer));
+});
+
+test("Stargazer words: the line under the title, a light's name, the wheel's field names, the labels that said entry", () => {
+  assert.ok(!/hyperbolic/i.test(M.PAGE.stargazerSubtitle));
+  const cells = M.wheelView(M.EZEKIEL, { packet: 0, flips: [] }, "stargazer").cells, named = M.wheelView(M.EZEKIEL, { packet: 0, flips: [] }, "navigator").cells;
+  assert.equal(M.wheelView(M.EZEKIEL, { packet: 0, flips: [] }, "stargazer").plain, true);
+  assert.equal(M.wheelView(M.EZEKIEL, { packet: 0, flips: [] }, "navigator").plain, false);
+  assert.equal(M.wheelView(M.EZEKIEL, { packet: 0, flips: [] }, "holographer").plain, false);
+  const labels = M.WORD_FIELDS.filter((f) => !f.guard).map((f) => f.label);
+  for (const c of cells) {
+    assert.match(c.name, c.guard ? /^Light 5 of 64, the guard, (on|off)$/ : /^Light \d+ of 64, (on|off)$/);
+    assert.ok(c.guard || !labels.some((l) => c.name.includes(l)), c.name);
+  }
+  assert.equal(cells[56].name, "Light 57 of 64, " + (cells[56].on ? "on" : "off"));
+  assert.match(named[56].name, /^Light 57 of 64, checksum, (on|off)$/);
+  assert.equal(M.lightName(named[0]), M.lightName(named[0], "navigator"));
+  for (const key of ["chooseEntry", "packetEntry", "skipList"]) { assert.ok(!/\bentr(y|ies)\b/.test(M.UI[key].stargazer), key); assert.match(M.UI[key].other, /\bentr(y|ies)\b/); }
+  for (const r of M.tamperRows("stargazer")) assert.ok(!/\bentr(y|ies)\b/.test(r.label), r.label);
 });

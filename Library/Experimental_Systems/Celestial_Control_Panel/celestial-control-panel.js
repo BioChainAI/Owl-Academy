@@ -10,17 +10,24 @@
 //
 // REGIONS (ids in index.html, in the DOM order that is the phone order of 1.6)
 //   strip        the five steps (buttons step-1 … step-5)
-//   say          STRIX's sentence (sayText), the one main control of the step (mainRow, mainRow2), the panel a
-//                main button opens (mainPanel: pick a place, type a place, pick a day), a message (mainNote)
-//   stage        the canvas sky (the chart, or the lab's stage), nudge and turn buttons, "Drag the map", the
-//                caption skyCap, the HUD on wide screens (hud), the line about an ignored link value (linkNote)
+//   lensHint     under 700 px, the line under the header that says what the chosen reading level is for
+//   say          STRIX's line (sayText: the name STRIX, the narration in sayBody and, under 700 px, the button
+//                sayMore when not all of it is shown), the one main control of the step (mainRow, mainRow2), the
+//                panel a main button opens (mainPanel: pick a place, type a place, pick a day), a message (mainNote)
+//   stage        the canvas sky (the chart, or the lab's stage), nudge and turn buttons, "Drag the map", under
+//                700 px the 2D/3D button (dimsBtn), the caption skyCap, the HUD on wide screens (hud), the line
+//                about an ignored link value (linkNote)
+//   cardCol      explain and bridge (from 1100 px the right-hand column; no box of its own below that):
 //   explain      the card under the canvas: the inspector of the selected object, or the card of the step (the
-//                Moon picture, the lab's results, the seal); under 700 px the HUD is its last part (hudNarrow)
+//                day and the Moon picture of that day, the lab's results, the seal); under 700 px the HUD is its
+//                last part but one (hudNarrow); last, at steps 2 to 4, the button to the next step (explainNext)
 //   bridge       the gold box of the step: "Our reading", then "What it stands on"
-//   more         stepBox (stepCtl: the step's further controls; stepRead: its read-outs), strixBox (all that
-//                STRIX says, phone only), legendBox (the four badges)
-//   under        listBox: every object on the chart as a button (obj-KEY, aria-pressed)
-//   aside        teleBox (telemetry, from Navigator up), the second Blueprint button, the lens hint
+//   more         legendBox (the four badges: the first box here from 700 px; under 700 px it is moved to stand
+//                directly under the card), stepBox (stepCtl: the step's further controls; stepRead: its
+//                read-outs), strixBox (all that STRIX says, phone only)
+//   under        listBox: every object on the chart as a button (obj-KEY, aria-pressed); it is made again
+//                whenever what it lists changes (the rings come and go with their switch and with the view)
+//   aside        teleBox (telemetry, from Navigator up), the second Blueprint button
 //   status       the one status line; about and blueprint: the two dialogs
 //
 // A region is rebuilt only when what it shows has changed (each has a signature), and never while a field inside
@@ -39,13 +46,14 @@
 //   lab          labOpen, slide-forward, slide-left, slide-back, slide-right, labFour, labHome, labAgain,
 //                labClose, labPlay, labNext, labTiling, labTile, stepSlider; labText, fiveText (results)
 //   seal         sealBtn, sealFile, sealVerdict, linkField, copyBtn
+//   the way on   nextBtn (the last button of the card at steps 2 to 4), sayMore (opens strixBox)
 import {
   $, h, setText, badge, layerLegend, checkList, downloadText, describeCanvas, wireDialog, nextPaint, withBusy,
   keepFocus, statusLine, lensSwitch, foldBox, prefersReducedMotion, formatHashWith, LINKS,
 } from "../explorer-kit.js";
 import * as M from "./celestial-panel-model.js";
 import { createSkyChart, createMoonPicture, createShellsFigure } from "./celestial-chart.js";
-import { RINGS } from "../../../scripts/celestial-core.js";
+import { RINGS, jdFromUnixMs } from "../../../scripts/celestial-core.js";
 
 // ─── words of the shell itself (interface chrome; every other sentence is the model's) ──────────────────────
 
@@ -83,6 +91,11 @@ const L = (record) => M.forLens(record, state.lens);
 const wide = () => typeof matchMedia === "function" && matchMedia("(min-width: 700px)").matches;
 const asking = () => !!state.site && state.step === 2 && !state.lit.day && !state.lab.open;
 const small = () => !!chart && chart.size.w < M.LAB.smallCanvas;
+/** The calendar date this device's own clock shows for the instant of the state. Question 2 sets it beside the date at the place: the two can be a day apart. */
+function deviceDay() {
+  const d = new Date(Math.round((state.jdUt - jdFromUnixMs(0)) * 86400000));
+  return { year: d.getFullYear(), month: d.getMonth() + 1, day: d.getDate() };
+}
 /** The badge of a sentence of the page's copy, in the words of the lens. */
 const tag = (layer) => badge(layer, { lens: state.lens });
 /** One sentence of the copy with its badge. */
@@ -112,7 +125,7 @@ function canFocus(el) {
 function holdFocus(home) {
   const a = document.activeElement;
   if (a && a !== document.body && a !== document.documentElement) return;
-  const next = home && home.isConnected ? Array.from(home.querySelectorAll("button, summary, a[href], select, input")).find(canFocus) : null;
+  const next = home && home.isConnected ? Array.from(home.querySelectorAll("button:not(.say-more), summary, a[href], select, input")).find(canFocus) : null;   // not the "more" of STRIX's line, which comes and goes with the room
   (next || $("aboutBtn")).focus({ preventScroll: true });
 }
 /** After a tap or a drag on the canvas (which is not focusable) the focus is never left on the body: it goes to the list button of the selected object when that is on show, else to the first control of the canvas panel. */
@@ -172,6 +185,7 @@ function render(...names) {
     }
     updateCaption();
     updateHud();
+    fitSay();
   });
 }
 const siteSig = () => (state.site ? join(state.site.key, state.site.lat, state.site.lonEast) : "-");
@@ -238,7 +252,7 @@ function buildFrame() {
   body.setAttribute("data-dims", state.dims);
   body.setAttribute("data-dark", String(dark));
   body.setAttribute("data-ask", String(asking()));
-  $("tools").hidden = dark || lab;
+  $("tools").hidden = dark || lab;               // the row of map tools, and under 700 px the 2D/3D button in it: a dark disc has nothing to move or to turn
   $("turns").hidden = !ball;
   $("dimsBtn").hidden = lab;
   if (lab && chart && chart.pointer.dragging) chart.pointer.setDragging(false);
@@ -261,7 +275,7 @@ function buildFrame() {
 function buildStrip() {
   fill($("strip"), M.visibleSteps(state.lens).map((s) => h("li", null,
     h("button", { type: "button", id: "step-" + s.n, "data-key": "step-" + s.n, "aria-current": s.n === state.step ? "step" : null, onclick: act(() => setStep(s.n)) },
-      h("span", { class: "st-n" }, String(s.n)), h("span", { class: "st-name" }, s.title)))));
+      h("span", { class: "st-n" }, String(s.n)), " ", h("span", { class: "st-name" }, s.title)))));
 }
 
 // ─── STRIX's sentence ────────────────────────────────────────────────────────
@@ -273,15 +287,65 @@ function sayItems() {
     return [{ layer: t.layer, text: "“" + t.text + "” (" + t.name + ")." }, ...M.stepView(4, state.lens).bridge.stands.filter((x) => x.layer === "checked")];
   }
   if (!state.site) return [L(M.FIRST_RUN.say)];
-  if (asking()) return [{ layer: null, text: M.dayQuestion(state).text }];
+  if (asking()) return [{ layer: null, text: M.dayQuestion(state, deviceDay()).text }];
   const items = M.stepView(state.step, state.lens).say;
   return state.step === 1 && state.site.key === M.FIRST_RUN.defaultSite ? [M.FIRST_RUN.afterDefault, ...items] : items;
 }
 function buildSay() {
   const items = sayItems(), view = M.stepView(state.step, state.lens);
   setText($("sayQ"), state.lab.open ? UI.lab : view.question);
-  fill($("sayText"), items.map((it) => [it.layer ? tag(it.layer) : null, it.text, " "]));
+  sayParts = items.flatMap((it) => M.sentencesOf(it.text).map((text, i) => ({ layer: i === 0 ? it.layer : null, text })));
+  showSay(sayParts.length);
   fill($("strixAll"), h("h3", null, state.lab.open ? UI.lab : view.question), items.map((it) => line(it)));
+}
+
+// Under 700 px STRIX speaks above the map in whole sentences, never in a cut one: as many as leave the first line of the
+// card on the first screen of a phone (rule 1.6: above y = 844 at 390 x 844; on a taller screen, above its own height). It
+// is measured here after every change of the page, because the room depends on what stands above the card: the rows of
+// map tools, the caption, the buttons of the step. A panel the visitor opened (pick a place, type a place, pick a day)
+// is not counted: it closes again. When anything is left out, the button "more" at the end of the line opens the box that
+// holds all of it and moves the focus there; when not even the first sentence fits, the button alone stands there and
+// names the box. On the first screen (no place yet) and while the day is asked, everything is said: those lines are
+// questions. From 700 px everything is shown.
+const FIRST_SCREEN = 844;
+let sayParts = [], sayShown = -1;
+function showSay(n) {
+  const body = $("sayBody"), more = $("sayMore"), focused = document.activeElement === more;
+  fill(body, sayParts.slice(0, n).map((p) => [p.layer ? tag(p.layer) : null, p.text, " "]));
+  more.hidden = n === sayParts.length;
+  setText(more, n === 0 ? M.STRIX.all : M.STRIX.more);
+  if (n === 0) more.removeAttribute("aria-label"); else more.setAttribute("aria-label", M.STRIX.moreFrom);
+  if (focused && more.hidden) holdFocus($("say"));       // the button went while it had the focus: the main control of the step takes it
+  sayShown = n;
+}
+/** Where the first line of the card ends, in page coordinates: its title and the first line of text under it. */
+function cardLine() {
+  let y = $("explainTitle").getBoundingClientRect().bottom;
+  const walker = document.createTreeWalker($("explainBody"), NodeFilter.SHOW_TEXT);
+  while (walker.nextNode()) {
+    const t = walker.currentNode;
+    if (!t.nodeValue.trim()) continue;
+    const range = document.createRange();
+    range.selectNodeContents(t);
+    const rects = range.getClientRects();
+    if (rects.length) { y = Math.max(y, rects[0].bottom); break; }
+  }
+  return y + scrollY;
+}
+function fitSay() {
+  const total = sayParts.length;
+  if (wide() || !state.site || asking() || total === 0) { if (sayShown !== total) showSay(total); return; }
+  const limit = Math.max(FIRST_SCREEN, innerHeight) - 2;
+  const opened = () => [$("mainPanel"), $("mainNote")].reduce((sum, el) => sum + (el.hidden ? 0 : el.getBoundingClientRect().height + parseFloat(getComputedStyle(el).marginTop)), 0);
+  const fits = () => cardLine() - opened() <= limit;
+  if (sayShown === total && fits()) return;
+  let n = total;
+  showSay(n);
+  while (n > 0 && !fits()) showSay(--n);
+}
+function openStrix() {
+  $("strixBox").open = true;
+  $("strixSum").focus();                          // the browser scrolls the box into view
 }
 
 // ─── the one main control of the step, and the panel it may open ─────────────
@@ -308,7 +372,7 @@ function buildMain() {
   } else if (state.step === 1) {
     row.push(...placeButtons(true), btn(UI.next, () => setStep(2), { id: "placeNext", class: "btn gold" }));
   } else if (state.step === 2 && asking()) {
-    const q = M.dayQuestion(state);
+    const q = M.dayQuestion(state, deviceDay());
     row.push(btn(q.yes, () => apply(M.confirmDay(state)), { id: "dayYes", class: "btn gold" }), btn(q.change, () => togglePanel("date"), { id: "dayChange", "aria-expanded": String(ui.panel === "date") }));
   } else if (state.step === 2) {
     for (const b of M.DAY_BUTTONS) {
@@ -380,7 +444,7 @@ function datePanel() {
   const p = ui.picked || (ui.picked = { month: d.parts.month, day: String(d.parts.day), year: String(era ? d.era.n : d.parts.year), bc: d.era.era === "BC" });
   const go = btn(UI.showDay, () => {
     const n = String(p.year).trim() === "" ? NaN : Number(p.year), before = state.jdUt;
-    const r = M.pickDate(state, { year: era && p.bc ? 1 - n : n, month: Number(p.month), day: String(p.day).trim() === "" ? NaN : Number(p.day) });
+    const r = M.pickEraDate(state, { n, bc: era && p.bc, month: Number(p.month), day: String(p.day).trim() === "" ? NaN : Number(p.day) });   // there is no year 0: the model says so
     if (r.state.jdUt !== before) ui.picked = null;
     if (!r.message) ui.panel = null;
     applyResult(r, { fromPanel: true });
@@ -400,12 +464,7 @@ function datePanel() {
 
 function updateCaption() {
   const lab = state.lab.open;
-  let text = lab ? M.LAB.caption : M.sceneCaption(state);
-  if (!lab && state.site) {
-    for (const extra of [ui.scene.rimLabel, ui.scene.centreCaption]) {
-      if (extra) text = text.replace(/[.\s]+$/, "") + ". " + extra[0].toUpperCase() + extra.slice(1) + ".";
-    }
-  }
+  const text = lab ? M.LAB.caption : M.chartCaption(state, ui.scene);
   setText($("skyCap"), text);
   const label = lab ? UI.labCanvas : UI.skyCanvas;
   if ($("sky").getAttribute("aria-label") !== label) $("sky").setAttribute("aria-label", label);
@@ -427,12 +486,12 @@ function updateHud() {
 
 const moonCanvas = h("canvas", { class: "moon-pic" });
 const moonPicture = createMoonPicture(moonCanvas, {});
-/** The Moon as it looks from the place, its lines in words, and the third question as a check. */
-function moonBlock() {
+/** The Moon as it looks from the place, its lines in words, and the third question as a check. day: a row of the day's read-out, written first beside the picture (the card of step 2: the day, and the Moon of that day). */
+function moonBlock(day) {
   const f = M.moonFigure(state);
   if (!f) return null;
   moonPicture.set(f);
-  const cap = h("div", { class: "cap" }, f.lines.map((t) => h("p", { class: "cap" }, t)));
+  const cap = h("div", { class: "cap" }, day ? h("p", { class: "cap" }, tag(day.layer), day.value) : null, f.lines.map((t) => h("p", { class: "cap" }, t)));
   describeCanvas(moonCanvas, f.label, cap);
   return [h("div", { class: "moon-box" }, moonCanvas, cap), f.question ? line(f.question) : null];
 }
@@ -477,10 +536,23 @@ function sealCard() {
   out.push(line(L(M.SEAL_COPY.about)));
   const href = M.lexiconSkyHref(state) || v.link;
   if (v.ok && href) out.push(h("div", { class: "wrap-row" }, h("a", { class: "btn", "data-key": "sealLink", href }, M.SEAL_COPY.buttons.open)));
-  out.push(line(M.SEAL_COPY.privacy));
+  out.push(line(L(M.SEAL_COPY.privacy)));
   return out;
 }
+/** The way on: the next step opens and the focus goes to its button in the strip, which brings the top of the step into view. */
+function goNext() {
+  const next = M.nextStep(state);
+  if (!next) return;
+  setStep(next.n);
+  const target = document.getElementById("step-" + next.n);
+  if (target) target.focus();
+}
 function buildExplain() {
+  explainCard();
+  const next = M.nextStep(state);
+  fill($("explainNext"), next ? btn(next.label, goNext, { id: "nextBtn", class: "btn gold" }) : null);
+}
+function explainCard() {
   const title = $("explainTitle"), body = $("explainBody");
   const selected = state.selected && !state.lab.open ? inspectorCard(state.selected) : null;
   const o = selected ? M.inspector(state, state.selected) : null;
@@ -494,7 +566,7 @@ function buildExplain() {
   if (selected) { fill(title, h("span", { class: "glyph", "aria-hidden": "true" }, o.glyph), o.title); fill(body, selected); return; }
   fill(title, L(M.CONTROLS.inspector));
   if (state.step === 1) fill(body, line(M.FIRST_RUN.card), rowsTable(M.placeReadout(state)));
-  else if (state.step === 2 && state.lit.day) fill(body, moonBlock(), note(L(M.CONTROLS.nothingSelected)));
+  else if (state.step === 2 && state.lit.day) fill(body, moonBlock(M.dayReadout(state)[0]), note(L(M.CONTROLS.nothingSelected)));   // the day, and the Moon of that day
   else fill(body, h("p", null, L(M.CONTROLS.nothingSelected)));
 }
 
@@ -530,8 +602,8 @@ function placeControls() {
   const lat = state.site ? Math.round(state.site.lat) : 0, lon = state.site ? Math.round(state.site.lonEast) : 0;
   const move = (la, lo) => { ui.typed = null; apply(M.typePlace(state, la, lo).state, { jump: true }); };
   return [
-    slider("latSlider", M.CONTROLS.latitude, -90, 90, 1, lat, (v) => M.latitudeWords(v), (v) => move(v, state.site ? state.site.lonEast : 0)),
-    slider("lonSlider", M.CONTROLS.longitude, -180, 180, 1, lon, (v) => M.longitudeWords(v), (v) => move(state.site ? state.site.lat : 0, v)),
+    slider("latSlider", L(M.CONTROLS.latitude), -90, 90, 1, lat, (v) => M.latitudeWords(v), (v) => move(v, state.site ? state.site.lonEast : 0)),
+    slider("lonSlider", L(M.CONTROLS.longitude), -180, 180, 1, lon, (v) => M.longitudeWords(v), (v) => move(state.site ? state.site.lat : 0, v)),
   ];
 }
 function dayControls() {
@@ -581,7 +653,7 @@ function projectControls() {
 }
 function labControls() {
   const t = M.LAB_COPY.title, verse = h("p", null, tag(t.layer), "“" + t.text + "” ", h("a", { href: M.entryHref(t.source, state.lens) }, t.name));
-  if (!state.lab.open) return [verse, h("div", { class: "row" }, btn(M.LAB_COPY.open, () => apply(M.openLab(state)), { id: "labOpen", class: "btn gold" }))];
+  if (!state.lab.open) return [verse, h("div", { class: "row" }, btn(M.LAB_COPY.open, () => { apply(M.openLab(state)); const first = document.getElementById("slide-" + M.LAB.four[0]); if (first) first.focus(); }, { id: "labOpen", class: "btn gold" }))];
   const max = small() ? M.LAB.aMaxSmall : M.LAB.aMax, words = (v) => UI.stepWords + Number(v).toFixed(2);
   const out = [verse];
   const row = [];
@@ -609,7 +681,7 @@ function linkControls() {
   const press = () => {
     try { navigator.clipboard.writeText(url).then(() => done(true), () => done(false)); } catch { done(false); }
   };
-  return [h("div", { class: "field" }, h("label", { for: "linkField" }, M.SEAL_COPY.buttons.copy), h("div", { class: "copy-row" }, field, btn(UI.copy, press, { id: "copyBtn" }))), told, line(M.SEAL_COPY.privacy)];
+  return [h("div", { class: "field" }, h("label", { for: "linkField" }, M.SEAL_COPY.buttons.copy), h("div", { class: "copy-row" }, field, btn(UI.copy, press, { id: "copyBtn" }))), told, line(L(M.SEAL_COPY.privacy))];
 }
 function buildStepCtl() {
   const view = M.stepView(state.step, state.lens);
@@ -631,7 +703,8 @@ function buildStepRead() {
     if (state.site.key === M.EZEKIEL_PRESET.site) kids.push(line(M.EZEKIEL_COPY.site));
     else if (!isStar() && state.site.note) kids.push(note(state.site.note));
   } else if (state.step === 2) {
-    kids = [rowsTable(M.dayReadout(state)), state.notes.moon ? h("p", null, tag("checked"), state.notes.moon) : null, line(M.MOON_COPY.computed)];
+    const rows = M.dayReadout(state), inCard = state.lit.day && !state.selected;   // with the day answered and nothing selected the card under the canvas shows the day itself
+    kids = [rowsTable(inCard ? rows.slice(1) : rows), state.notes.moon ? h("p", null, tag("checked"), state.notes.moon) : null, line(M.MOON_COPY.computed)];
   } else if (state.step === 5) {
     const v = M.sealView(state.seal, state.lens);
     if (v && isStar()) kids = [line(M.CERTIFIED_STARGAZER), line(L(M.SEAL_COPY.witness))];
@@ -647,10 +720,23 @@ function buildStepRead() {
 
 // ─── the list, the telemetry, the legend ─────────────────────────────────────
 
+/**
+ * A choice in the list: the object is selected and the map slides (a ring cannot be centred: it is selected and its card shown). The
+ * list stands under the map, so the map or the card may be outside the window: then the map is scrolled into view, at once
+ * where motion is reduced. The status line says the name of what was chosen, or, at a second press, what is in the middle now.
+ */
+function choose(o) {
+  const before = state.selected;
+  if (o.kind === "ring") apply(M.select(state, o.key)); else dive(o.key);
+  if (state.selected === before) say(M.centreWords(state) || o.name);
+  const head = document.querySelector("header.top"), top = getComputedStyle(head).position === "sticky" ? head.getBoundingClientRect().bottom : 0;
+  const outside = (el) => { const r = el.getBoundingClientRect(); return r.top < top || r.bottom > innerHeight; };
+  if (outside($("sky")) || outside($("explainTitle"))) $("stage").scrollIntoView({ block: "start", behavior: prefersReducedMotion() ? "auto" : "smooth" });
+}
 function buildList() {
   const items = M.objectList(state);
   fill($("list"), items.length === 0 ? h("li", null, M.MESSAGES.needPlace) : items.map((o) => h("li", null,
-    h("button", { type: "button", id: "obj-" + o.key, "data-key": "obj-" + o.key, class: o.below ? "below" : null, "aria-pressed": String(o.pressed), onclick: act(() => (o.kind === "ring" ? apply(M.select(state, o.key)) : dive(o.key))) },   // a ring cannot be centred: it is selected and its card shown
+    h("button", { type: "button", id: "obj-" + o.key, "data-key": "obj-" + o.key, class: o.below ? "below" : null, "aria-pressed": String(o.pressed), onclick: act(() => choose(o)) },
       h("span", { class: "glyph", "aria-hidden": "true" }, o.glyph), o.name))));
 }
 const teleRows = () => (chart ? M.telemetry(state, chart.size) : []);
@@ -690,13 +776,20 @@ function buildDialogs() {
 /** One press in the lab that is not part of "Four slides": the lab changes and the walker follows. */
 function labAct(change, options) {
   ui.four = null;
+  if (chart.paused) chart.finish();          // a walk the visitor paused is ended first (the Play button goes with ui.four): the walker stands at the end of its path and walks on from there
   apply({ ...state, lab: change(state.lab) }, options);
 }
-/** "Four slides": forward, left, back and right, one slide after another (2 s each); with reduced motion each press draws the next slide at once. */
+/** "Four slides": forward, left, back and right, one slide after another (2 s each). With reduced motion there is no walk to watch: one press draws all four at once, and the status line says so. */
 function fourPress() {
-  if (ui.four && ui.four.paused && !prefersReducedMotion()) { fourPlayPause(); return; }   // paused by the visitor: go on playing
-  if (ui.four && ui.four.paused && M.labNext(state.lab)) { fourStep(M.LAB.slideMs); return; }
-  ui.four = { paused: prefersReducedMotion() };
+  if (prefersReducedMotion()) {
+    ui.four = null;
+    if (chart.paused) chart.finish();
+    apply({ ...state, lab: M.labFour(state.lab) }, { jump: true, quiet: true });
+    say(M.LAB_COPY.fourAtOnce + " " + M.labReadout(state.lab, state.lens).text);
+    return;
+  }
+  if (ui.four && ui.four.paused) { fourPlayPause(); return; }   // paused by the visitor: go on playing
+  ui.four = { paused: false };
   state = { ...state, lab: M.labReset(state.lab) };
   chart.set(state, { jump: true });
   fourStep(M.LAB.slideMs);
@@ -758,22 +851,29 @@ async function sealPress() {
 
 region("frame", $("stage"), () => join(state.lens, state.dims, !!state.site, state.lab.open, asking(), state.notes.link), buildFrame);
 region("strip", $("strip"), () => join(state.lens, state.step), buildStrip);
-region("say", $("sayText"), () => join(state.lens, state.step, siteSig(), litSig(), state.lab.open, asking() ? M.dayQuestion(state).text : ""), buildSay);
+region("say", $("sayBody"), () => join(state.lens, state.step, siteSig(), litSig(), state.lab.open, asking() ? M.dayQuestion(state, deviceDay()).text : ""), buildSay);
 region("main", $("say"), () => join(state.lens, state.step, !!state.site, asking(), state.lab.open, ui.panel, state.overlays.rings, state.overlays.sightLines,
   state.seal.ok && state.seal.wire ? state.seal.chainId : "-", state.notes.date, state.notes.time, state.notes.place, ui.panel === "date" ? state.jdUt : "", ui.panel === "pick" ? siteSig() : ""), buildMain);
 region("explain", $("explain"), () => join(state.lens, state.step, state.selected, skySig(), litSig(), state.frame, labSig(), sealSig()), buildExplain);
 region("bridge", $("bridge"), () => join(state.lens, state.step), buildBridge);
 region("stepCtl", $("stepCtl"), () => join(state.lens, state.step, skySig(), state.lab.open, state.lab.a, state.lab.tiling, fourSig(), !!chart && chart.walking, state.frame,
   M.OVERLAYS.map((o) => Number(!!state.overlays[o.key])).join(""), small()), buildStepCtl);
-region("stepRead", $("stepRead"), () => join(state.lens, state.step, skySig(), state.notes.moon, sealSig(), !!state.selected), buildStepRead);
-region("list", $("list"), () => join(state.lens, skySig(), litSig(), state.frame, state.selected), buildList);
+region("stepRead", $("stepRead"), () => join(state.lens, state.step, skySig(), litSig(), state.notes.moon, sealSig(), !!state.selected), buildStepRead);
+region("list", $("list"), () => join(state.lens, M.objectList(state).map((o) => join(o.key, o.name, o.pressed, o.below)).join(";")), buildList);   // the list itself: its rings come and go with their switch and with the view
 region("tele", $("tele"), () => state.lens + "|" + teleRows().map((r) => r.value).join("|"), buildTele);
 region("legend", $("legend"), () => state.lens, buildLegend);
 region("dialogs", $("aboutBody"), () => state.lens, buildDialogs);
 
 say = statusLine($("status"));
 lens = lensSwitch({ mount: $("lensMount"), lens: state.lens, hints: M.LENS_HINTS, onChange: (id) => apply(M.setLens(state, id)) });
-$("lensHint").append(lens.hint);
+$("lensHint").append(lens.hint);                // under 700 px, the line under the header (wider screens have the hints in the buttons)
+/** The badge legend is the first box of the further controls from 700 px; under 700 px it stands directly under the card. It is one box, moved when the width changes. */
+function placeLegend() {
+  const box = $("legendBox");
+  if (wide()) { if ($("more").firstElementChild !== box) $("more").prepend(box); }
+  else if (box.previousElementSibling !== $("explain")) $("explain").after(box);
+}
+placeLegend();
 
 chart = createSkyChart($("sky"), {
   state,
@@ -791,6 +891,7 @@ chart = createSkyChart($("sky"), {
   onScene(sc) {
     ui.scene = { rimLabel: (sc && sc.rimLabel) || "", centreCaption: (sc && sc.centreCaption) || "" };
     updateCaption();
+    fitSay();
   },
 });
 describeCanvas($("sky"), UI.skyCanvas, $("skyCap"));
@@ -805,6 +906,8 @@ for (const [dir, nudge, turn] of arrows) {
   nudge.addEventListener("click", act(() => apply(M.nudgeView(state, dir), { quiet: true })));
   turn.addEventListener("click", act(() => apply({ ...state, orbit: M.orbitTurn(state.orbit, dir) }, { quiet: true })));
 }
+setText($("sayName"), M.STRIX.name);
+$("sayMore").addEventListener("click", act(openStrix));
 $("dims2d").addEventListener("click", act(() => setDims("2D")));
 $("dims3d").addEventListener("click", act(() => setDims("3D")));
 $("dimsBtn").addEventListener("click", act(() => setDims(state.dims === "3D" ? "2D" : "3D")));
@@ -816,7 +919,8 @@ addEventListener("hashchange", () => {
   apply(M.applyHash(state, location.hash));
   lens.set(state.lens);
 });
-addEventListener("resize", () => render());
+addEventListener("resize", () => { placeLegend(); render(); });
+if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => fitSay());   // other letters, other line breaks
 
 if (wide()) {
   $("stepBox").open = true;

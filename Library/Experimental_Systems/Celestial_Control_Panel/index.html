@@ -10,19 +10,39 @@
 <style>
   /* Celestial Control Panel: the rules of this page only. Sizes, colours, the phone order and the touch rules are the kit's. */
 
-  /* Wide screens: the steps run across the top and the step's further controls sit above the gold box
-     in the first column. Placement is by grid
-     area; the DOM order (strip, say, stage, explain, bridge, more, under, aside) is the phone order. */
-  @media (min-width: 700px) and (max-width: 1099.98px) {
-    .explorer { grid-template-areas: "strip strip" "say stage" "explain stage" "more stage" "bridge stage" "under stage" "aside stage" ". stage" "wide wide"; }
+  /* Where the header stays at the top it is opaque (no text shows through it), and what is scrolled to stops below it. */
+  @media (min-width: 700px) and (min-height: 700px) { .top { background: var(--bg); } html { scroll-padding-top: 88px; } }
+  /* The header's second line is for readers of astronomy: the Stargazer lens does without it. */
+  body[data-lens="stargazer"] .top .sub { display: none; }
+
+  /* Wide screens. Placement is by grid area; the order in the document (strip, say, stage, explain, bridge, more, under,
+     aside) is the phone order and is the same at every width. #cardCol holds the card and the gold box: under 1100 px it
+     is no box at all (its two children are placed as if it were not there); from 1100 px it is the right-hand column,
+     so that the gold box begins directly under the card whatever the height of the other columns.
+     Two columns: everything to read on the left, the map on the right. */
+  #cardCol { display: contents; }
+  #cardCol > * { min-width: 0; }
+  @media (min-width: 700px) {
+    #cardCol > * { margin-bottom: 12px; }
   }
+  @media (min-width: 700px) and (max-width: 1099.98px) {
+    .explorer { grid-template-areas: "strip strip" "say stage" "explain stage" "bridge stage" "more stage" "under stage" "aside stage" ". stage" "wide wide"; }
+  }
+  /* Three columns: STRIX and the further controls | the map, the list, the telemetry | the card and the gold box.
+     Each column is filled from the top: a row that holds nothing of its own (the third, the sixth) takes what the tall
+     thing beside it needs, so the list begins directly under the map and the controls directly under STRIX. */
   @media (min-width: 1100px) {
-    .explorer { grid-template-areas: "strip strip strip" "say stage explain" "more stage explain" "bridge stage explain" ". under aside" "wide wide wide"; }
+    .explorer {
+      grid-template-rows: auto auto auto auto auto auto minmax(0, 1fr);
+      grid-template-areas: "strip strip strip" "say stage card" "more stage card" "more under card" "more aside card" "more . card" ". . card";
+    }
+    #cardCol { display: flex; flex-direction: column; grid-area: card; }
+    #cardCol > :last-child { margin-bottom: 0; }
   }
 
   /* the step strip: on a phone the open step shows its name, the others their number */
   .steps button { overflow-wrap: normal; }
-  .st-n { font-family: var(--mono); margin-right: 4px; }
+  .st-n { font-family: var(--mono); margin-right: 2px; }
   @media (max-width: 699.98px) {
     .steps button:not([aria-current]) .st-name { position: absolute; width: 1px; height: 1px; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
     .steps button:not([aria-current]) .st-n { margin-right: 0; }
@@ -44,22 +64,29 @@
   .block > h3 { margin-bottom: 4px; color: var(--dim); }
   .wrap-row { display: flex; flex-wrap: wrap; gap: 4px; }
   .wrap-row > .btn { flex: 1 1 auto; }
+  /* Who speaks: the name beside the first line. Under 700 px STRIX says whole sentences only, as many as leave the
+     first line of the card on the first screen (the shell measures); "more" at the end of the line opens the box
+     with all of it. The button is as high as any control, and its margins keep the line it stands in from growing. */
+  .strix-name { margin-right: 6px; }
+  .say-more { margin: -10px 0 -10px 2px; padding: 0 6px; border: 0; background: transparent; color: var(--cyan-ink); font-weight: 600; text-decoration: underline; vertical-align: middle; }
+  @media (min-width: 700px) { .say-more { display: none; } }
+  #lensHint { padding: 0 12px; }
+  #lensHint .lens-hint-line { line-height: 1.2; }
   @media (max-width: 699.98px) {
-    /* a little tighter than the kit, so that the first line of the card under the canvas is on the first screen */
-    .explorer { gap: 4px; padding-top: 4px; }
+    /* a little tighter than the kit, so that the first line of the card under the canvas is on the first screen;
+       the line under the header (what the chosen reading level is for) is paid for with these paddings */
+    .top { padding-top: 4px; padding-bottom: 2px; row-gap: 3px; }
+    .explorer { gap: 3px; padding-top: 2px; }
     .one-row { margin-top: 4px; }
     .stage { gap: 2px; }
-    #say { padding-top: 6px; padding-bottom: 6px; }
-    #sayText { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; line-clamp: 3; overflow: hidden; }
-    body[data-dims="3D"] #sayText { -webkit-line-clamp: 2; line-clamp: 2; }
-    body[data-dark="true"] #sayText, body[data-ask="true"] #sayText { display: block; overflow: visible; }
+    #say { padding-top: 4px; padding-bottom: 4px; }
     #explain { padding-top: 6px; }
-    #stage { padding-top: 4px; padding-bottom: 4px; }
+    #stage { padding-top: 2px; padding-bottom: 2px; }
     .stage .cap { line-height: 1.3; }
   }
 
-  /* the chart: square, never clipped round (the name of the rim is written outside the disc) */
-  .dims-corner { position: absolute; top: 4px; right: 4px; z-index: 1; padding: 2px 6px; background: rgba(3, 5, 10, .85); }
+  /* the chart: square, never clipped round (the name of the rim is written outside the disc). Under 700 px the
+     2D/3D button stands in the row of map tools under the canvas, so that it covers nothing of the map. */
   .stage-tools .btn { padding: 2px 6px; }
   .tool-group { display: inline-flex; gap: 2px; }
   @media (max-width: 699.98px) { .tool-group { gap: 0; } }
@@ -69,6 +96,7 @@
 
   /* the inspector and the read-outs */
   .explain-body > * + * { margin-top: 6px; }
+  #explainNext:not(:empty) { margin-top: 10px; }
   .glyph { display: inline-block; min-width: 1.2em; margin-right: 4px; text-align: center; color: var(--cyan-ink); }
   .rows td:first-child { width: 46%; color: var(--dim); }
   .rows .badge { margin-right: 4px; }
@@ -112,49 +140,53 @@
     <button type="button" id="dims3d" data-key="dims-3d" aria-pressed="false">Ball</button>
   </div>
 </header>
+<div class="only-narrow" id="lensHint"></div>
 <main class="explorer" id="main">
   <nav class="area-strip" id="stripNav" aria-label="Steps"><ol class="steps" id="strip"></ol></nav>
   <section class="panel area-say" id="say" aria-label="STRIX and the main control of this step">
     <h2 class="only-wide" id="sayQ"></h2>
-    <p class="read" id="sayText"></p>
+    <p class="read" id="sayText"><span class="label violet strix-name" id="sayName">STRIX</span><span id="sayBody"></span><button class="say-more" id="sayMore" type="button" data-key="say-more" hidden>more</button></p>
     <div class="one-row" id="mainRow"></div>
     <div class="one-row" id="mainRow2" hidden></div>
     <div id="mainPanel" hidden></div>
     <p class="err" id="mainNote" hidden></p>
   </section>
   <section class="panel stage area-stage" id="stage" aria-label="The map of the sky">
-    <button class="btn ghost dims-corner only-narrow" id="dimsBtn" type="button" data-key="dims-toggle" aria-pressed="false">Ball</button>
     <canvas class="chart" id="sky"></canvas>
     <div class="stage-tools" id="tools">
-      <span class="tool-group" id="nudges">
+      <span class="tool-group" id="nudges" role="group" aria-label="Move the map">
         <button class="btn ghost" id="nudgeLeft" type="button" data-key="nudge-left">&#8592;</button>
         <button class="btn ghost" id="nudgeUp" type="button" data-key="nudge-up">&#8593;</button>
         <button class="btn ghost" id="nudgeDown" type="button" data-key="nudge-down">&#8595;</button>
         <button class="btn ghost" id="nudgeRight" type="button" data-key="nudge-right">&#8594;</button>
       </span>
-      <span class="tool-group" id="turns" hidden>
+      <span class="tool-group" id="turns" role="group" aria-label="Turn the ball" hidden>
         <button class="btn ghost" id="turnLeft" type="button" data-key="turn-left">&#8630;</button>
-        <button class="btn ghost" id="turnUp" type="button" data-key="turn-up">&#10514;</button>
-        <button class="btn ghost" id="turnDown" type="button" data-key="turn-down">&#10515;</button>
+        <button class="btn ghost" id="turnUp" type="button" data-key="turn-up">&#8657;</button>
+        <button class="btn ghost" id="turnDown" type="button" data-key="turn-down">&#8659;</button>
         <button class="btn ghost" id="turnRight" type="button" data-key="turn-right">&#8631;</button>
       </span>
       <button class="btn ghost" id="dragBtn" type="button" data-key="drag">Drag the map</button>
+      <button class="btn ghost only-narrow" id="dimsBtn" type="button" data-key="dims-toggle" aria-pressed="false">Ball</button>
     </div>
     <p class="note" id="dragNote"></p>
     <p class="cap" id="skyCap"></p>
     <div class="hud only-wide" id="hud"></div>
     <p class="note" id="linkNote" hidden></p>
   </section>
-  <section class="panel area-explain" id="explain" aria-label="About the chosen thing">
-    <h2 id="explainTitle"></h2>
-    <div class="explain-body" id="explainBody"></div>
-    <div class="hud only-narrow" id="hudNarrow"></div>
-  </section>
-  <section class="panel bridge area-bridge" id="bridge" aria-label="The bridge: our reading"></section>
+  <div id="cardCol">
+    <section class="panel area-explain" id="explain" aria-label="About the chosen thing">
+      <h2 id="explainTitle"></h2>
+      <div class="explain-body" id="explainBody"></div>
+      <div class="hud only-narrow" id="hudNarrow"></div>
+      <div id="explainNext"></div>
+    </section>
+    <section class="panel bridge area-bridge" id="bridge" aria-label="The bridge: our reading"></section>
+  </div>
   <div class="area-more" id="more">
-    <details class="more" id="stepBox"><summary id="stepSum" data-key="step-more">More at this step</summary><div class="more-body"><div id="stepCtl"></div><div id="stepRead"></div></div></details>
-    <details class="more only-narrow" id="strixBox"><summary data-key="strix-more">All that STRIX says here</summary><div class="more-body" id="strixAll"></div></details>
     <details class="more" id="legendBox"><summary data-key="legend-more">What the badges mean</summary><div class="more-body" id="legend"></div></details>
+    <details class="more" id="stepBox"><summary id="stepSum" data-key="step-more">More at this step</summary><div class="more-body"><div id="stepCtl"></div><div id="stepRead"></div></div></details>
+    <details class="more only-narrow" id="strixBox"><summary id="strixSum" data-key="strix-more">All that STRIX says here</summary><div class="more-body" id="strixAll"></div></details>
   </div>
   <div class="area-under" id="under">
     <details class="more" id="listBox"><summary id="listSum" data-key="list-more">Everything on the map</summary><div class="more-body"><ul class="pick-list" id="list"></ul></div></details>
@@ -162,7 +194,6 @@
   <div class="area-aside" id="aside">
     <details class="more" id="teleBox" hidden><summary id="teleSum" data-key="tele-more">Telemetry</summary><div class="more-body" id="tele"></div></details>
     <button class="btn ghost only-narrow" id="blueprintBtn2" type="button" data-key="blueprint2">Blueprint</button>
-    <div id="lensHint"></div>
   </div>
 </main>
 <p class="status" id="status"></p>

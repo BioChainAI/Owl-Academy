@@ -13,34 +13,87 @@
   .chart { border-radius: 50%; box-shadow: 0 0 0 1px var(--line2); background: radial-gradient(circle, rgba(56, 189, 248, .06), rgba(124, 58, 237, .12)); }
   @media (max-width: 699.98px) { .stage { --stage-side: 27vh; } }
   /* Where the header stays at the top it is opaque (no text shows through it), and what is scrolled to stops below it. */
-  @media (min-width: 700px) and (min-height: 700px) { .top { background: var(--bg); } html { scroll-padding-top: 88px; } }
-  .dims-corner { position: absolute; top: 4px; left: 4px; z-index: 1; padding: 2px 6px; background: rgba(3, 5, 10, .85); }
+  /* The header and, under it, the banner of a lexicon from a file are one block that stays at the top. Where the header does not
+     stay (under 700 px wide or high) the block is no box at all, and the banner alone stays at the top of the window. */
+  .top-wrap { display: contents; }
+  @media (min-width: 700px) and (min-height: 700px) {
+    .top-wrap { display: block; position: sticky; top: 0; z-index: 5; background: var(--bg); }
+    .top-wrap .top { position: static; background: var(--bg); }
+    html { scroll-padding-top: 88px; }
+    html:has(#banner:not([hidden])) { scroll-padding-top: 180px; }
+  }
+  @media (min-width: 700px) and (min-height: 700px) and (max-width: 1099.98px) { html:has(#banner:not([hidden])) { scroll-padding-top: 260px; } }
+  @media not ((min-width: 700px) and (min-height: 700px)) { html:has(#banner:not([hidden])) { scroll-padding-top: 76px; } }
+  #banner { position: sticky; top: 0; z-index: 4; display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px; padding: 4px 12px; border-width: 0 0 1.5px; border-radius: 0; background: var(--dark); }
+  #banner p { flex: 1 1 0; min-width: 0; font-size: var(--fs-ui); line-height: 1.45; }
+  @media (min-width: 700px) { #say[data-origin="outside"] { display: none; } }
+  .top .lens-line { margin: 0; }
+  #wingLink { padding: 2px 9px; }
+  /* The link to the wing index is shown where the header still has one row with it (the dialog's "Other pages" has it at every width):
+     the card stays below a header of one row from 1100 px. */
+  @media (max-width: 1239.98px) { #wingLink { display: none; } }
   .stage-tools .btn { padding: 2px 6px; }
   #linkNote { flex-basis: 100%; text-align: center; }
   .strix-name { margin-right: 6px; }
   #stationMain:not(:empty), #verseBox, #strixRest { margin-top: 6px; }
   .verse-head h2 { margin-right: auto; }
   .steps button { overflow-wrap: normal; }
-  /* Seven stations do not fit in one row by name: the others show their number, the open one its name. */
-  .steps.many button { position: relative; }
-  .steps.many button:not([aria-current]) .st-name { position: absolute; width: 1px; height: 1px; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
-  .steps.many li:has(button[aria-current]) { flex-grow: 4; }
+  /* Under 700 px seven stations do not fit in one row by name: the others show their number, the open one its name.
+     From 700 px the strip spans the columns and every station shows its name. */
   @media (max-width: 699.98px) {
+    .steps.many button { position: relative; }
+    .steps.many button:not([aria-current]) .st-name { position: absolute; width: 1px; height: 1px; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+    .steps.many li:has(button[aria-current]) { flex-grow: 4; }
     .stage .cap { line-height: 1.3; }
     #explain { padding-top: 6px; }
-  }
-  .count-line { margin-top: 2px; }
-  /* On a phone STRIX speaks in a few lines above the open verse; the whole narration is in the first closed box below. */
-  @media (max-width: 699.98px) {
-    #strixLine { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2; overflow: hidden; }
-    body[data-lens="stargazer"] #strixLine { -webkit-line-clamp: 4; line-clamp: 4; }
-    body:not([data-lens="stargazer"]) #say[data-station="count"] #strixLine { -webkit-line-clamp: 1; line-clamp: 1; }
-    /* A sky has a banner above STRIX: one line of narration there (two at Stargazer), the rest in the box below. */
-    #say[data-origin="page"] #strixLine { -webkit-line-clamp: 1; line-clamp: 1; }
-    body[data-lens="stargazer"] #say[data-origin="page"] #strixLine { -webkit-line-clamp: 2; line-clamp: 2; }
     .banner { padding: 5px 9px; }
     .banner .gap { margin-top: 4px; }
+    #skyBanner { padding: 3px 9px; }
+    #skyBanner .gap { margin-top: 2px; }
+    #skyBanner .btn { padding: 4px 8px; }
+    #skyTitle { font-size: var(--fs-ui); font-weight: 600; }
+    #skyNotice { line-height: 1.3; }
+    #verseNote { line-height: 1.3; }
   }
+  .count-line { margin-top: 2px; }
+  /* Under 700 px STRIX speaks in whole sentences above the open verse (the shell fits them); "more" opens the box with all of it.
+     The button is as tall as any control, and its margins keep the line it ends as high as the lines above it. */
+  .strix-more { margin: -10px 0 -10px 4px; padding: 0 6px; border: 0; background: transparent; color: var(--cyan-ink); font-weight: 600; text-decoration: underline; vertical-align: middle; }
+  @media (min-width: 700px) { .strix-more { display: none; } }
+  .title-row { flex-wrap: nowrap; align-items: flex-start; }
+  .title-row h2 { margin-right: auto; }
+  .bridge-head .label { margin-right: auto; }
+  .bridge-head .btn { padding: 2px 9px; }
+  #stripNav { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px; }
+  #stripNav .steps { flex: 1 1 320px; }
+  #levels { flex: 1 1 420px; margin: 0; }
+  #levels .btn, #levelsBox .btn { margin-left: 4px; }
+  /* Two columns: the strip spans both. */
+  @media (min-width: 700px) and (max-width: 1099.98px) {
+    .explorer { grid-template-areas: "strip strip" "say stage" "explain stage" "bridge stage" "more stage" "under stage" "aside stage" ". stage" "wide wide"; }
+  }
+  /* Three columns. The strip spans them. Left: STRIX, the gold box directly under it, then the tall boxes (the passage and the others).
+     Middle: the map, and directly below it Home, Up, the siblings and the list. Right: the card, which stays in view while the page
+     scrolls and scrolls by itself when it is taller than the window. The third row is as high as the map leaves it beside STRIX's
+     panel: the gold box fills that row and scrolls by itself when it holds more, so that it never pushes the list down. */
+  @media (min-width: 1100px) {
+    /* the strip has a row of its own now: the map is that much smaller, so that Home, Up and the list begin on the first screen */
+    .explorer { --stage-side: max(260px, calc(100vh - 330px)); }
+    .explorer {
+      grid-template-rows: auto auto minmax(0, 1fr) auto auto auto;
+      grid-template-areas: "strip strip strip" "say stage explain" "bridge stage explain" "more under explain" "aside under explain" "wide wide wide";
+    }
+    .explorer:has(#bridge:not([hidden])) { grid-template-rows: auto auto minmax(232px, 1fr) auto auto auto; }
+    #bridge { height: 0; min-height: calc(100% - 12px); overflow-y: auto; overscroll-behavior: contain; }
+    #explain { position: sticky; top: 12px; max-height: calc(100vh - 24px); overflow-y: auto; overscroll-behavior: contain; }
+  }
+  @media (min-width: 1100px) and (min-height: 700px) {
+    #explain { top: 70px; max-height: calc(100vh - 82px); }
+    html:has(#banner:not([hidden])) #explain { top: 124px; max-height: calc(100vh - 136px); }
+  }
+  /* The skip link: seen only while it has the focus. */
+  .skip { position: absolute; width: 1px; height: 1px; min-width: 0; min-height: 0; margin: -1px; padding: 0; border: 0; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+  .skip:focus { position: static; width: auto; height: auto; min-width: var(--tap); min-height: var(--tap); margin: 0; padding: 4px 13px; border: 1px solid var(--line); overflow: visible; clip-path: none; }
   .verse-head .btn { padding: 2px 8px; }
   .vnum { margin-right: 4px; font-family: var(--mono); }
   .reader-verse { margin-top: 4px; }
@@ -60,6 +113,8 @@
   .wheel-canvas { display: block; width: min(100%, 380px); aspect-ratio: 1 / 1; margin: 0 auto; touch-action: pan-y pinch-zoom; }
   .bitgrid-wrap { overflow-x: auto; }
   .bitgrid { display: grid; grid-template-columns: repeat(8, minmax(var(--tap), 1fr)); gap: 1px; min-width: calc(8 * var(--tap) + 7px); }
+  /* On the narrowest phones eight lights of full size do not fit across: there they are 34 px, so that the square needs no sideways swipe. */
+  @media (max-width: 359.98px) { .bitgrid { --tap: 34px; } }
   @media (max-width: 699.98px) { .bitgrid-wrap { margin: 0 -6px; } }
   .tabs button { flex: 1 1 auto; padding: 4px; overflow-wrap: normal; }
   /* A check is named by a whole sentence here, so its detail goes on a line of its own. */
@@ -87,8 +142,11 @@
 </style>
 </head>
 <body>
+<div class="top-wrap" id="topWrap">
 <header class="top">
-  <div class="brand"><div><h1>Lexicon Explorer</h1><p class="sub">Ezekiel 1:1-9 in hyperbolic space</p></div></div>
+  <div class="brand"><div><h1>Lexicon Explorer</h1><p class="sub" id="sub">Ezekiel 1:1-9 in hyperbolic space</p><div class="only-narrow lens-line" id="lensLine"></div></div></div>
+  <a class="btn ghost only-wide" id="wingLink" href="../index.html" data-key="wing">Experimental Systems</a>
+  <button class="btn ghost only-narrow" id="dimsBtn" type="button" data-key="dims-toggle" aria-pressed="false">3D</button>
   <button class="btn ghost" id="aboutBtn" type="button" data-key="about" aria-label="What is real here?"><span class="only-wide">What is real here?</span><span class="only-narrow" aria-hidden="true">?</span></button>
   <div id="lensMount"></div>
   <div class="seg only-wide" id="dimsSeg" role="group" aria-label="Flat map or ball">
@@ -96,16 +154,18 @@
     <button type="button" id="dims3d" data-key="dims-3d" aria-pressed="false">3D</button>
   </div>
 </header>
+<div class="banner" id="banner" role="note" aria-label="About the lexicon on show" hidden></div>
+</div>
 <main class="explorer" id="main">
-  <nav class="area-strip" id="stripNav" aria-label="Stations"><ol class="steps" id="strip"></ol></nav>
+  <nav class="area-strip" id="stripNav" aria-label="Stations"><ol class="steps" id="strip"></ol><p class="note only-wide" id="levels" hidden></p></nav>
   <section class="panel area-say" id="say" aria-label="STRIX and the open verse">
-    <div class="banner" id="banner" hidden></div>
+    <div class="banner" id="skyBanner" hidden></div>
+    <p class="only-narrow" id="outsideNotice" hidden></p>
     <div id="strix"></div>
     <div id="stationMain"></div>
     <div id="verseBox"></div>
   </section>
   <section class="panel stage side-tools area-stage" id="stage" aria-label="The map of the lexicon">
-    <button class="btn ghost dims-corner only-narrow" id="dimsBtn" type="button" data-key="dims-toggle" aria-pressed="false">3D</button>
     <canvas class="chart" id="tree"></canvas>
     <div class="stage-tools" id="tools">
       <button class="btn ghost" id="nudgeLeft" type="button" data-key="nudge-left">&#8592;</button>
@@ -114,8 +174,9 @@
       <button class="btn ghost" id="nudgeDown" type="button" data-key="nudge-down">&#8595;</button>
       <button class="btn ghost" id="turnLeft" type="button" data-key="turn-left" hidden>&#8630;</button>
       <button class="btn ghost" id="turnRight" type="button" data-key="turn-right" hidden>&#8631;</button>
-      <button class="btn ghost" id="turnUp" type="button" data-key="turn-up" hidden>&#10514;</button>
-      <button class="btn ghost" id="turnDown" type="button" data-key="turn-down" hidden>&#10515;</button>
+      <button class="btn ghost" id="turnUp" type="button" data-key="turn-up" hidden>&#8657;</button>
+      <button class="btn ghost" id="turnDown" type="button" data-key="turn-down" hidden>&#8659;</button>
+      <button class="btn ghost only-narrow" id="toolHome" type="button" data-key="tool-home">Home</button>
       <button class="btn ghost" id="dragBtn" type="button" data-key="drag">Drag the map</button>
     </div>
     <p class="note" id="dragNote"></p>
@@ -132,6 +193,7 @@
   </section>
   <section class="panel bridge area-bridge" id="bridge" aria-label="The bridge: our reading"></section>
   <div class="area-more" id="more">
+    <button class="btn ghost skip" id="skipList" type="button" data-key="skip-list">Skip to the list of entries</button>
     <details class="more" id="stationBox"><summary id="stationSum" data-key="station-more">More at this station</summary><div class="more-body" id="stationBody"></div></details>
     <details class="more" id="readerBox"><summary id="readerSum" data-key="reader-more">The passage</summary><div class="more-body" id="reader"></div></details>
     <details class="more" id="legendBox"><summary data-key="legend-more">What the badges mean</summary><div class="more-body" id="legend"></div></details>
@@ -143,7 +205,7 @@
       <button class="btn ghost" id="navPrev" type="button" data-key="nav-prev">Previous</button>
       <button class="btn ghost" id="navNext" type="button" data-key="nav-next">Next</button>
     </div>
-    <details class="more" id="listBox"><summary id="listSum" data-key="list-more">Entries around the centre</summary><div class="more-body"><ul class="pick-list tree-list" id="list" role="tree" aria-label="Entries around the centre"></ul></div></details>
+    <details class="more" id="listBox"><summary id="listSum" data-key="list-more">Entries around the centre</summary><div class="more-body"><ul class="pick-list tree-list" id="list" role="tree" aria-label="Entries around the centre" aria-describedby="listKeys"></ul><p class="note only-wide gap" id="listKeys"></p></div></details>
   </div>
   <div class="area-aside" id="aside">
     <details class="more" id="loadBox" hidden><summary data-key="load-more">Load a package file</summary><div class="more-body">
